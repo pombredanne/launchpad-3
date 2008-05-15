@@ -86,6 +86,15 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
             FatLocalTransport(urlutils.local_path_to_url('.')))
         self._sftp_server = TransportSFTPServer(transport)
 
+    def assertSFTPError(self, sftp_code, function, *args, **kwargs):
+        """Assert that calling functions fails with `sftp_code`."""
+        deferred = defer.maybeDeferred(function, *args, **kwargs)
+        deferred = self.assertFailure(deferred, filetransfer.SFTPError)
+        def check_sftp_code(exception):
+            self.assertEqual(sftp_code, exception.code)
+            return exception
+        return deferred.addCallback(check_sftp_code)
+
     def openFile(self, path, flags, attrs):
         return self._sftp_server.openFile(path, flags, attrs)
 
@@ -99,16 +108,34 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
 
     def test_writeChunk(self):
         # writeChunk writes data to the file.
-        handle = self.openFile('foo', 0, {})
+        handle = self.openFile('foo', filetransfer.FXF_WRITE, {})
         deferred = handle.writeChunk(0, 'bar')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('bar', 'foo'))
 
+    def test_writeToReadOpenedFile(self):
+        # writeChunk raises an error if we try to write to a file that has
+        # been opened only for reading.
+        self.build_tree_contents([('foo', 'bar')])
+        handle = self.openFile('foo', filetransfer.FXF_READ, {})
+        return self.assertSFTPError(
+            filetransfer.FX_PERMISSION_DENIED,
+            handle.writeChunk, 0, 'new content')
+
+    def test_writeToAppendingFileIgnoresOffset(self):
+        # If a file is opened with the 'append' flag, writeChunk ignores its
+        # offset parameter.
+        self.build_tree_contents([('foo', 'bar')])
+        handle = self.openFile('foo', filetransfer.FXF_APPEND, {})
+        deferred = handle.writeChunk(0, 'baz')
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual('barbaz', 'foo'))
+
     def test_writeChunkError(self):
         # Errors in writeChunk are translated to SFTPErrors.
         os.mkdir('foo')
-        handle = self.openFile('foo', 0, {})
+        handle = self.openFile('foo', filetransfer.FXF_WRITE, {})
         deferred = handle.writeChunk(0, 'bar')
         return self.assertFailure(deferred, filetransfer.SFTPError)
 

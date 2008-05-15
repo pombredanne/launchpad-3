@@ -89,9 +89,21 @@ class TransportSFTPFile:
 
     def __init__(self, transport, name, flags):
         self.name = name
+        self._flags = flags
         self.transport = transport
         self._should_create = TransportSFTPFile._shouldCreate(flags)
         self._written = False
+
+    def _append(self):
+        """Is this file opened append?"""
+        return bool(self._flags & filetransfer.FXF_APPEND)
+
+    def _writable(self):
+        """Is this file opened writable?"""
+        write_mask = (
+            filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
+            filetransfer.FXF_CREAT)
+        return bool(self._flags & write_mask)
 
     @staticmethod
     def _shouldCreate(flags):
@@ -103,8 +115,15 @@ class TransportSFTPFile:
     @with_sftp_error
     def writeChunk(self, offset, data):
         """See `ISFTPFile`."""
+        if not self._writable():
+            raise filetransfer.SFTPError(
+                filetransfer.FX_PERMISSION_DENIED,
+                "%r was opened read-only." % self.name)
         self._written = True
-        return self.transport.writeChunk(self.name, offset, data)
+        if self._append():
+            return self.transport.append_bytes(self.name, data)
+        else:
+            return self.transport.writeChunk(self.name, offset, data)
 
     @with_sftp_error
     def readChunk(self, offset, length):
