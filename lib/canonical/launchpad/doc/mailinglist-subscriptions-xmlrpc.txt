@@ -17,6 +17,10 @@ words, Mailman polls Launchpad to see if there is any work for Mailman to do.
 Mailman requests membership information for specific list of teams.  Let's
 create and populate some teams to demonstrate.
 
+    # login() as an admin so that we can call join() on anyone
+    # and change their mailing list auto-subscription settings.
+    >>> login('foo.bar@canonical.com')
+
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     new_team, new_person)
     >>> team_one, list_one = new_team('team-one', with_list=True)
@@ -30,8 +34,6 @@ create and populate some teams to demonstrate.
     >>> hank = new_person('Hank')
     >>> people = [anne, bart, cris, dirk, elle, fred, gwen, hank]
 
-    # login() as an admin so that we can call join() on all the people above.
-    >>> login('foo.bar@canonical.com')
     >>> for person in people:
     ...     person.join(team_one)
     ...     list_one.subscribe(person)

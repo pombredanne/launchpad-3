@@ -34,7 +34,7 @@ import time
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility
+from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
@@ -92,6 +92,7 @@ from canonical.launchpad.webapp.interfaces import (
     POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -184,7 +185,9 @@ class NavigationMenuTabs(LaunchpadView):
     """
 
     def initialize(self):
-        menu = INavigationMenu(self.context, None)
+        requested_view = get_current_view(self.request)
+        facet = get_facet(requested_view)
+        menu = queryAdapter(self.context, INavigationMenu, name=facet)
         if menu is None:
             # There are no menu entries.
             self.links = []

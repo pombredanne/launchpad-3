@@ -27,6 +27,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
@@ -171,6 +172,7 @@ def setGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
+    test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
 
 
 def setUp(test):

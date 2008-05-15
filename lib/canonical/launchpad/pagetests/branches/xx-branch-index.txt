@@ -314,21 +314,16 @@ So we need to fake that here.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: The Landscape Project
-    Download URL:
-      bzr+ssh://&lt;name&gt;@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    Example:
-      bzr branch bzr+ssh://name12@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+    Get this branch:
+      bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
 
-Public branches use http.
+Public branches use the lp spec bzr lookup name.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     Project: GNOME Terminal
-    Download URL:
-      http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
-    Example:
-      bzr branch http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
+    Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...

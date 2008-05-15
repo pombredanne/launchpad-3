@@ -56,10 +56,10 @@
     <tr>
       <th>Uploaders:</th>
     </tr>
-    <tr tal:repeat="dcu context/uploaders">
-      <th><tal:component replace="dcu/component/name" /></th>
+    <tr tal:repeat="permission context/uploaders">
+      <th><tal:component replace="permission/component/name" /></th>
       <td>
-        <a tal:replace="structure dcu/uploader/fmt:link" />
+        <a tal:replace="structure permission/person/fmt:link" />
       </td>
     </tr>
   </tbody>

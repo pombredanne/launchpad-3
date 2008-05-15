@@ -575,7 +575,7 @@ class Builder(SQLBase):
 
         candidate = BuildQueue.selectFirst(
             query, clauseTables=clauseTables, prejoins=['build'],
-            orderBy=['-buildqueue.lastscore'])
+            orderBy=['-buildqueue.lastscore', 'build.id'])
 
         return candidate
 

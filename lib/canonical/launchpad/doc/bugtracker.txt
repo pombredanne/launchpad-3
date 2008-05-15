@@ -130,29 +130,21 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
 
 == Getting Bug Trackers ==
 
-You can get a specific bug tracker from the database by querying by its
-base URL.
+You can get a specific bug tracker from the database by querying by
+its base URL.
 
-    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'https://bugzilla.mozilla.org/')
-    >>> mozilla_bugzilla.baseurl
-    u'https://bugzilla.mozilla.org/'
+    >>> ubuntu_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'http://bugzilla.ubuntu.com/bugs/')
+    >>> ubuntu_bugzilla.baseurl
+    u'http://bugzilla.ubuntu.com/bugs/'
 
 It's necessary to specify the exact URL, differences in the schema
 (http vs. https) and trailing slashes are accepted.
 
-    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'http://bugzilla.mozilla.org')
-    >>> mozilla_bugzilla.baseurl
-    u'https://bugzilla.mozilla.org/'
-
-If the exact bugtracker isn't found but a the url searched for
-is a substring of an existing bugtracker, we use the first match.
-
-    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
-    ...     u'zilla.mozilla.org')
-    >>> mozilla_bugzilla.baseurl
-    u'https://bugzilla.mozilla.org/'
+    >>> ubuntu_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'https://bugzilla.ubuntu.com/bugs')
+    >>> ubuntu_bugzilla.baseurl
+    u'http://bugzilla.ubuntu.com/bugs/'
 
 If no bug tracker can be found None is returned.
 

@@ -42,9 +42,9 @@
 
     <tbody>
       <tr tal:repeat="bugtracker view/bugtrackers">
-          <td><a tal:attributes="href bugtracker/name"
-                 tal:content="bugtracker/title">$Bugtracker.title
-              </a></td>
+          <td>
+            <a tal:replace="structure bugtracker/fmt:link" />
+          </td>
           <td>
             <a tal:replace="structure bugtracker/fmt:external-link" />
           </td>
