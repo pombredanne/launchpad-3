@@ -190,10 +190,12 @@ class GoogleSearchService:
         #response = urlopen(search_url)
         #gsp_xml = response.read()
         from os import path
-        if start == 0:
+        if terms == 'bug' and start == 0:
             file_name = 'googlesearchservice-bugs-1.xml'
-        else:
+        elif terms == 'bug' and start == 20:
             file_name = 'googlesearchservice-bugs-2.xml'
+        else:
+            file_name = 'googlesearchservice-no-results.xml'
         gsp_xml_file_name_1 = path.normpath(path.join(
             path.dirname(__file__), '..', 'ftests', 'googlesearches',
             file_name))
@@ -258,23 +260,33 @@ class GoogleSearchService:
         :return: `ISearchResults` (PageMatches).
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
-        error_message =  "The xml is not Google Search Protocol version 3.2."
+        error_message = "The xml is not Google Search Protocol version 3.2."
         gsp_doc = ET.fromstring(gsp_xml)
         start_param = self._getElementByAttributeValue(
             gsp_doc, './PARAM', 'name', 'start')
-        results = gsp_doc.find('RES')
         try:
-            total = int(results.find('M').text)
             start = int(start_param.get('value'))
         except (AttributeError, ValueError):
             # The datatype is not what PageMatches requires.
             raise GoogleWrongGSPVersion(error_message)
         page_matches = []
+        total = 0
+        results = gsp_doc.find('RES')
+        if results is None:
+            # Google did not match any pages. Return an empty PageMatches.
+            return PageMatches(page_matches, start, total)
+
+        try:
+            total = int(results.find('M').text)
+        except (AttributeError, ValueError):
+            # The datatype is not what PageMatches requires.
+            raise GoogleWrongGSPVersion(error_message)
         for result in results.findall('R'):
-            title = result.find('T').text
-            url = result.find('U').text
-            summary = result.find('S').text
-            if None in (title, url, summary):
+            try:
+                title = result.find('T').text
+                url = result.find('U').text
+                summary = result.find('S').text
+            except (AttributeError, ValueError):
                 # There is not enough data to create a PageMatch object.
                 raise GoogleWrongGSPVersion(error_message)
             page_matches.append(PageMatch(title, url, summary))

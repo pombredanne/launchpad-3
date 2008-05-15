@@ -95,6 +95,16 @@ All the items in the collection can be iterated.
     'http://bugs.launchpad.dev/bugs/bugtrackers'
     'http://bugs.launchpad.dev/bugs/bugtrackers/debbugs'
 
+An empty PageMatches is returns if there are no results.
+
+    >>> no_page_matches = google_search.search(terms='fnord')
+    >>> no_page_matches.start
+    0
+    >>> no_page_matches.total
+    0
+    >>> len(no_page_matches)
+    0
+
 
 == PageMatch ==
 
@@ -144,9 +154,8 @@ configuration may set a testing site.
     >>> google_search.site
     'http://launchpad.dev:8091/'
 
-The client_id is the client-id issued by Google for
-the GoogleSearchService to connect to the Custom Search Buiness
-Edition service.
+The client_id is the client-id issued by Google for the
+GoogleSearchService to connect to the Custom Search Engine service.
 
     >>> config.google.client_id == google_search.client_id
     True
@@ -158,7 +167,7 @@ _default_values dict. All csbe clients must set the client param to
 'google-csbe'. GoogleSearchService always requests 20 matches (the
 maximum number allowed by Google) for launchpad.net. The input and
 output encoding is UTF-8. The request states that the response XML
-should not contain a DTD. The cx parameter is provided by the
+should not contain a DTD. The 'cx' parameter is provided by the
 client_id config value. The q (terms) and start params are provided at
 the time of the search.
 
@@ -207,6 +216,90 @@ The start parameter can be changed by passing a start int argument.
 
     >>> google_search.create_search_url(terms='svg +bugs', start=20)
     'http://launchpad.dev:8091/...q=svg+%2Bbugs&start=20'
+
+
+== Google Search Protocol parsing ==
+
+The GoogleSearchService's _parse_google_search_protocol() requires a
+subset of the the GSP 3.2 markup to create the PageMatch and PageMatches
+objects. An error is raised when the XML document cannot be parsed into
+objects. The probable cause of an error is that Google returned a new
+and incompatible version of GSP.
+
+The PageMatches's start attribute comes from the GSP XML element
+'<PARAM name="start" value="0" original_value="0"/>'. When it cannot
+be found and the value cast to an int, an error is raised. There is
+nothing in the value attribute in the next test, so an error is raised.
+
+    >>> from os import path
+
+    >>> base_path = path.normpath(path.join(
+    ...         path.dirname(__file__), '..', 'ftests', 'googlesearches'))
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-incompatible-param.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <PARAM name="start" value="" original_value="0"/>...
+
+    >>> google_search._parse_google_search_protocol(gsp_xml)
+    Traceback (most recent call last):
+     ...
+    GoogleWrongGSPVersion: The xml is not Google Search Protocol version 3.2.
+
+The PageMatches's total attribute comes from the GSP XML element
+'<M>5</M>'. When it cannot be found and the value cast to an int,
+an error is raised. If Google were to use a '~' in the 'M' element
+to indicate the approximate total, an error would be raised.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-incompatible-matches.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="1">
+    <M>~1</M>...
+
+    >>> google_search._parse_google_search_protocol(gsp_xml)
+    Traceback (most recent call last):
+     ...
+    GoogleWrongGSPVersion: The xml is not Google Search Protocol version 3.2.
+
+A PageMatch requires a title, url, and a summary. If those elements
+('<T>', '<U>', '<S>') cannot be found nested in an '<R>' element
+an error is raised. In this example, the 'U' element is replaced with
+a 'url' element.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-incompatible-result.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="1">
+    <M>1</M>
+    ...
+    <R N="1">
+      <url>https://bugs.launchpad.net/</url>
+      <UE>https://bugs.launchpad.net/</UE>
+      <T>Launchpad Bugs</T>
+      <RK>0</RK>
+      <CRAWLDATE>17 hours ago</CRAWLDATE>
+      <S>This 'R'esult is missing a 'U' element, it has a 'url' instead.</S>
+      <LANG>en</LANG>
+      <Label>_cse_ixpjdn21yfg</Label>
+      <HAS><L/><RT/></HAS>
+    </R>...
+
+    >>> google_search._parse_google_search_protocol(gsp_xml)
+    Traceback (most recent call last):
+     ...
+    GoogleWrongGSPVersion: The xml is not Google Search Protocol version 3.2.
 
 
 === URL rewriting ===
