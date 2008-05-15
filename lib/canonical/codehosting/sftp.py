@@ -93,18 +93,24 @@ class TransportSFTPFile:
         self.name = name
         self._flags = flags
         self.transport = transport
-        self._should_create = TransportSFTPFile._shouldCreate(flags)
         self._written = False
 
-    def _append(self):
+    def _shouldAppend(self):
         """Is this file opened append?"""
         return bool(self._flags & filetransfer.FXF_APPEND)
 
-    def _truncate(self):
+    def _shouldCreate(self):
+        """Should we create a file?"""
+        create_mask = (
+            filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
+            filetransfer.FXF_CREAT)
+        return bool(self._flags & create_mask)
+
+    def _shouldTruncate(self):
         """Should we truncate the file?"""
         return bool(self._flags & filetransfer.FXF_TRUNC)
 
-    def _writable(self):
+    def _shouldWrite(self):
         """Is this file opened writable?"""
         # The Twisted VFS adapter creates a file when any of these flags are
         # set. It's possible that we only need to check for FXF_CREAT.
@@ -113,26 +119,19 @@ class TransportSFTPFile:
             filetransfer.FXF_CREAT)
         return bool(self._flags & write_mask)
 
-    @staticmethod
-    def _shouldCreate(flags):
-        create_mask = (
-            filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
-            filetransfer.FXF_CREAT)
-        return bool(flags & create_mask)
-
     @with_sftp_error
     def writeChunk(self, offset, data):
         """See `ISFTPFile`."""
-        if not self._writable():
+        if not self._shouldWrite():
             raise filetransfer.SFTPError(
                 filetransfer.FX_PERMISSION_DENIED,
                 "%r was opened read-only." % self.name)
         self._written = True
-        if self._truncate():
+        if self._shouldTruncate():
             deferred = self.transport.put_bytes(self.name, '')
         else:
             deferred = defer.succeed(None)
-        if self._append():
+        if self._shouldAppend():
             deferred.addCallback(
                 lambda ignored:
                 self.transport.append_bytes(self.name, data))
@@ -185,10 +184,10 @@ class TransportSFTPFile:
 
     def close(self):
         """See `ISFTPFile`."""
-        if self._written or not self._should_create:
+        if self._written or not self._shouldCreate():
             return defer.succeed(None)
 
-        if self._truncate():
+        if self._shouldTruncate():
             return self.transport.put_bytes(self.name, '')
 
         deferred = self.transport.has(self.name)
