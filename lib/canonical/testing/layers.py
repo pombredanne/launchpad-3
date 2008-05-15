@@ -798,11 +798,11 @@ class GoogleServiceLayer(BaseLayer):
 
     @classmethod
     def setUp(cls):
-        GoogleServiceTestSetup.setUp()
+        GoogleServiceTestSetup().setUp()
 
     @classmethod
     def tearDown(cls):
-        GoogleServiceTestSetup.tearDown()
+        GoogleServiceTestSetup().tearDown()
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
