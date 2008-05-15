@@ -615,8 +615,11 @@ class BaseImageUpload(Bytes):
         return True
 
     def validate(self, value):
-        value.seek(0)
-        content = value.read()
+        if hasattr(value, 'seek'):
+            value.seek(0)
+            content = value.read()
+        else:
+            content = value
         Bytes.validate(self, content)
         self._valid_image(content)
 
