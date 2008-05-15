@@ -121,9 +121,9 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
             self.openFile, 'doesntexist/foo', 0, {})
 
     def test_openFileInNonDirectory(self):
-        # openFile fails with a no such file error if we try to open a file in
-        # a directory that doesn't exist. The flags passed to openFile() do
-        # not have any effect.
+        # openFile fails with a no such file error if we try to open a file
+        # that has another file as one of its "parents". The flags passed to
+        # openFile() do not have any effect.
         self.build_tree_contents([('filename', 'content')])
         return self.assertSFTPError(
             filetransfer.FX_NO_SUCH_FILE,
