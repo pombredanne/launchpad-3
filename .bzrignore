@@ -20,3 +20,5 @@ lint.txt
 sourcecode/launchpadlib/build
 sourcecode/launchpadlib/*.egg*
 sourcecode/launchpadlib/dist
+development-nohup.out
+testrunner-appserver-quiet.log
