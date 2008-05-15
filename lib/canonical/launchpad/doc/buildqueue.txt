@@ -236,7 +236,6 @@ language pack build.
     >>> na_hoary = hoary.getSourcePackage('netapplet')
     >>> na_spr = removeSecurityProxy(
     ...     na_hoary.currentrelease.sourcepackagerelease)
-    >>> na_spr_original_section = na_spr.section
     >>> na_spr.section = transl_section
 
 The build score for the fake language pack is zero.
@@ -244,8 +243,7 @@ The build score for the fake language pack is zero.
     >>> na_build = na_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)
-    >>> na_bqe = na_build.createBuildQueueEntry()
-    >>> na_bqe.lastscore
+    >>> na_build.createBuildQueueEntry().lastscore
     0
 
 The fake language pack will be queued behind the other source packages
@@ -258,6 +256,7 @@ as intended.
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
     hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
     i386 build of netapplet 1.0-1 in ubuntu hoary RELEASE (0, 5)
+
 
 Restricting the domain to only hoary/hppa:
 
