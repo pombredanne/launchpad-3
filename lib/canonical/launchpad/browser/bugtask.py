@@ -2461,12 +2461,12 @@ class BugTasksAndNominationsView(LaunchpadView):
 
             target_nominations = bug.getNominations(
                 target, nominations=nominations)
-            bugtask_and_nomination_views += [
+            bugtask_and_nomination_views.extend(
                 self._getTableRowView(
                     nomination, is_converted_to_question, False)
                 for nomination in target_nominations
                 if nomination.status != BugNominationStatus.APPROVED
-                ]
+                )
 
         # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
         # so that checking person.is_valid_person, when rendering the
