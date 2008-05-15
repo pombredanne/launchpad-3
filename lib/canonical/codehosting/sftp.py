@@ -51,13 +51,14 @@ class FatLocalTransport(LocalTransport):
         abspath = self._abspath(name)
         osutils.check_legal_path(abspath)
         try:
-            chunk_file = open(abspath, 'w')
-        except IOError, e:
+            chunk_file = os.open(abspath, os.O_CREAT | os.O_WRONLY)
+        except OSError, e:
             if e.errno != errno.EISDIR:
                 raise
             raise FileIsADirectory(name)
-        chunk_file.seek(offset)
-        chunk_file.write(data)
+        os.lseek(chunk_file, offset, 0)
+        os.write(chunk_file, data)
+        os.close(chunk_file)
 
     def local_realPath(self, path):
         """Return the absolute path to `path`."""

@@ -45,6 +45,20 @@ class AsyncTransport:
         return mergeFunctionMetadata(maybe_method, defer_it)
 
 
+class TestFatLocalTransport(TestCaseInTempDir):
+
+    def setUp(self):
+        TestCaseInTempDir.setUp(self)
+        self.transport = FatLocalTransport(urlutils.local_path_to_url('.'))
+
+    def test_writeChunk(self):
+        # writeChunk writes a chunk of data to a file at a given offset.
+        filename = 'foo'
+        self.transport.put_bytes(filename, 'content')
+        self.transport.writeChunk(filename, 1, 'razy')
+        self.assertEqual('crazynt', self.transport.get_bytes(filename))
+
+
 class TestSFTPAdapter(TrialTestCase):
 
     def makeLaunchpadAvatar(self):
@@ -106,13 +120,23 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('', 'foo'))
 
-    def test_writeChunk(self):
+    def test_createFileWithData(self):
         # writeChunk writes data to the file.
-        handle = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        handle = self.openFile(
+            'foo', filetransfer.FXF_CREAT | filetransfer.FXF_WRITE, {})
         deferred = handle.writeChunk(0, 'bar')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('bar', 'foo'))
+
+    def test_writeChunkToFile(self):
+        self.build_tree_contents([('foo', 'bar')])
+        handle = self.openFile(
+            'foo', filetransfer.FXF_CREAT | filetransfer.FXF_WRITE, {})
+        deferred = handle.writeChunk(1, 'qux')
+        deferred.addCallback(lambda ignored: handle.close())
+        return deferred.addCallback(
+            lambda ignored: self.assertFileEqual('bqux', 'foo'))
 
     def test_writeToReadOpenedFile(self):
         # writeChunk raises an error if we try to write to a file that has
