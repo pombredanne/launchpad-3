@@ -382,6 +382,8 @@ source upload, and we can see its overridden values there:
 Rejecting 'alsa-utils' source:
 
   >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['4']
+  >>> upload_manager_browser.getControl(name="Reject").disabled
+  False
   >>> upload_manager_browser.getControl(name="Reject").click()
   >>> for message in get_feedback_messages(upload_manager_browser.contents):
   ...     print message
@@ -398,6 +400,36 @@ One rejection email is generated:
   >>> [rejection] = pop_notifications()
   >>> rejection['Subject']
   'netapplet-1.0.0.tar.gz rejected'
+
+The override controls are now available for rejected packages.
+
+Navigate to the rejected items queue.
+
+    >>> upload_manager_browser.getControl(
+    ...    name="queue_state", index=0).displayValue = ['Rejected']
+    >>> upload_manager_browser.getControl("Update").click()
+
+    >>> upload_manager_browser.getControl(
+    ...     name="queue_state", index=0).displayValue
+    ['Rejected']
+
+The various override controls are present now.
+
+    >>> upload_manager_browser.getControl(
+    ...     name="component_override").displayValue
+    ['(no change)']
+    >>> upload_manager_browser.getControl(
+    ...     name="section_override").displayValue
+    ['(no change)']
+    >>> upload_manager_browser.getControl(
+    ...     name="priority_override").displayValue
+    ['(no change)']
+
+Since the user looks at packages in the rejected queue the "Reject"
+button will be disabled.
+
+  >>> upload_manager_browser.getControl(name="Reject").disabled
+  True
 
 
 == Clean up ==
