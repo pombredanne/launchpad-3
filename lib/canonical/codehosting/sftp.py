@@ -119,6 +119,10 @@ class TransportSFTPFile:
             filetransfer.FXF_CREAT)
         return bool(self._flags & write_mask)
 
+    def _truncateFile(self):
+        """Truncate this file."""
+        return self.transport.put_bytes(self.name, '')
+
     @with_sftp_error
     def writeChunk(self, offset, data):
         """See `ISFTPFile`."""
@@ -128,7 +132,7 @@ class TransportSFTPFile:
                 "%r was opened read-only." % self.name)
         self._written = True
         if self._shouldTruncate():
-            deferred = self.transport.put_bytes(self.name, '')
+            deferred = self._truncateFile()
         else:
             deferred = defer.succeed(None)
         if self._shouldAppend():
@@ -188,12 +192,12 @@ class TransportSFTPFile:
             return defer.succeed(None)
 
         if self._shouldTruncate():
-            return self.transport.put_bytes(self.name, '')
+            return self._truncateFile()
 
         deferred = self.transport.has(self.name)
         def maybe_create_file(already_exists):
             if not already_exists:
-                return self.transport.put_bytes(self.name, '')
+                return self._truncateFile()
         return deferred.addCallback(maybe_create_file)
 
 
