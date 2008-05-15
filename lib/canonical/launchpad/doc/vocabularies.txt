@@ -319,9 +319,11 @@ All the teams the person is an active member of.
     >>> person_active_membership = vocabulary_registry.get(
     ...     foo_bar, 'PersonActiveMembership')
     >>> len(person_active_membership)
-    8
+    9
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
+    canonical-partner-dev Canonical Partner Developers
+        Canonical Partner Developers
     guadamen GuadaMen GuadaMen
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
@@ -348,6 +350,8 @@ membership is public.
     >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
+    canonical-partner-dev Canonical Partner Developers
+        Canonical Partner Developers
     guadamen GuadaMen GuadaMen
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
@@ -361,6 +365,8 @@ membership is public.
     >>> otherteam.visibility = PersonVisibility.PUBLIC
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
+    canonical-partner-dev Canonical Partner Developers
+        Canonical Partner Developers
     guadamen GuadaMen GuadaMen
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
@@ -1348,6 +1354,7 @@ returned.
     ...        for team in vocab.search(None))
     [(u'Bass Players', u'David Allouche'),
      (u'Bazaar Experts', u'Tim Penhey'),
+     (u'Canonical Partner Developers', u'Celso Providelo'),
      (u'Drummers', u'David Allouche'),
      (u'Flautists', u'David Allouche'),
      (u'GuadaMen', u'Foo Bar'),
