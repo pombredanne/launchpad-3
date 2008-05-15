@@ -47,7 +47,7 @@ class ByteStorageResource(HTTPResource):
         self.request.response.setHeader('Location', self.context.alias_url)
         return ''
 
-    def do_PUT(self, type, representation)
+    def do_PUT(self, type, representation):
         """See IByteStorageResource."""
         try:
             self.context.field.validate(representation)
