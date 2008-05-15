@@ -44,11 +44,18 @@ class GoogleRequestHandler(BaseHTTPRequestHandler):
 
 
 def url_to_xml_map(self):
-    """Return our URL-to-XML mapping table."""
+    """Return our URL-to-XML mapping as a dictionary."""
     mapfile = config.google_test_service.mapfile
     mapping = {}
     for line in mapfile:
-        url, fname = line.split(':')
+        if line.startswith('#') or len(line.strip()) == 0:
+            # Skip comments and blank lines.
+            continue
+        try:
+            url, fname = line.split()
+        except ValueError:
+            # We got a bad key, so skip it.
+            continue
         mapping[url.strip()] = fname.strip()
 
 def start_as_process():
