@@ -101,6 +101,8 @@ class TransportSFTPFile:
 
     def _shouldCreate(self):
         """Should we create a file?"""
+        # The Twisted VFS adapter creates a file when any of these flags are
+        # set. It's possible that we only need to check for FXF_CREAT.
         create_mask = (
             filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
             filetransfer.FXF_CREAT)
@@ -112,11 +114,7 @@ class TransportSFTPFile:
 
     def _shouldWrite(self):
         """Is this file opened writable?"""
-        # The Twisted VFS adapter creates a file when any of these flags are
-        # set. It's possible that we only need to check for FXF_CREAT.
-        write_mask = (
-            filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
-            filetransfer.FXF_CREAT)
+        write_mask = (filetransfer.FXF_WRITE | filetransfer.FXF_APPEND)
         return bool(self._flags & write_mask)
 
     def _truncateFile(self):
@@ -269,7 +267,8 @@ class TransportSFTPServer:
 
     def openFile(self, path, flags, attrs):
         """See `ISFTPServer`."""
-        return TransportSFTPFile(self.transport, path, flags)
+        return defer.succeed(
+            TransportSFTPFile(self.transport, path, flags))
 
     def readLink(self, path):
         """See `ISFTPServer`."""
@@ -284,14 +283,18 @@ class TransportSFTPServer:
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        return self.openFile(path, 0, {}).setAttrs(attrs)
+        deferred = self.openFile(path, 0, {})
+        deferred.addCallback(lambda handle: handle.setAttrs(attrs))
+        return deferred
 
     def getAttrs(self, path, followLinks):
         """See `ISFTPServer`.
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        return self.openFile(path, 0, {}).getAttrs()
+        deferred = self.openFile(path, 0, {})
+        deferred.addCallback(lambda handle: handle.getAttrs())
+        return deferred
 
     def gotVersion(self, otherVersion, extensionData):
         """See `ISFTPServer`."""

@@ -115,15 +115,21 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
     def test_createEmptyFile(self):
         # Opening a file with create flags and then closing it will create a
         # new, empty file.
-        handle = self.openFile('foo', filetransfer.FXF_CREAT, {})
+        deferred = self.openFile('foo', filetransfer.FXF_CREAT, {})
+        return deferred.addCallback(self._test_createEmptyFile_callback)
+
+    def _test_createEmptyFile_callback(self, handle):
         deferred = handle.close()
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('', 'foo'))
 
     def test_createFileWithData(self):
         # writeChunk writes data to the file.
-        handle = self.openFile(
+        deferred = self.openFile(
             'foo', filetransfer.FXF_CREAT | filetransfer.FXF_WRITE, {})
+        return deferred.addCallback(self._test_createFileWithData_callback)
+
+    def _test_createFileWithData_callback(self, handle):
         deferred = handle.writeChunk(0, 'bar')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
@@ -131,8 +137,11 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
 
     def test_writeChunkToFile(self):
         self.build_tree_contents([('foo', 'contents')])
-        handle = self.openFile(
+        deferred = self.openFile(
             'foo', filetransfer.FXF_WRITE, {})
+        return deferred.addCallback(self._test_writeChunkToFile_callback)
+
+    def _test_writeChunkToFile_callback(self, handle):
         deferred = handle.writeChunk(1, 'qux')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
@@ -143,7 +152,11 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # if the create flag is not set. NOTE: This behaviour is unspecified
         # in the SFTP drafts at
         # http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/
-        handle = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        return deferred.addCallback(
+            self._test_writeChunkToNonexistentFile_callback)
+
+    def _test_writeChunkToNonexistentFile_callback(self, handle):
         deferred = handle.writeChunk(1, 'qux')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
@@ -153,7 +166,11 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # writeChunk raises an error if we try to write to a file that has
         # been opened only for reading.
         self.build_tree_contents([('foo', 'bar')])
-        handle = self.openFile('foo', filetransfer.FXF_READ, {})
+        deferred = self.openFile('foo', filetransfer.FXF_READ, {})
+        return deferred.addCallback(
+            self._test_writeToReadOpenedFile_callback)
+
+    def _test_writeToReadOpenedFile_callback(self, handle):
         return self.assertSFTPError(
             filetransfer.FX_PERMISSION_DENIED,
             handle.writeChunk, 0, 'new content')
@@ -162,8 +179,11 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # writeChunk overwrites a file if write, create and trunk flags are
         # set.
         self.build_tree_contents([('foo', 'contents')])
-        handle = self.openFile(
+        deferred = self.openFile(
             'foo', filetransfer.FXF_CREAT | filetransfer.FXF_TRUNC | filetransfer.FXF_WRITE, {})
+        return deferred.addCallback(self._test_overwriteFile_callback)
+
+    def _test_overwriteFile_callback(self, handle):
         deferred = handle.writeChunk(0, 'bar')
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('bar', 'foo'))
@@ -172,7 +192,11 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # If a file is opened with the 'append' flag, writeChunk ignores its
         # offset parameter.
         self.build_tree_contents([('foo', 'bar')])
-        handle = self.openFile('foo', filetransfer.FXF_APPEND, {})
+        deferred = self.openFile('foo', filetransfer.FXF_APPEND, {})
+        return deferred.addCallback(
+            self._test_writeToAppendingFileIgnoresOffset_callback)
+
+    def _test_writeToAppendingFileIgnoresOffset_callback(self, handle):
         deferred = handle.writeChunk(0, 'baz')
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('barbaz', 'foo'))
@@ -181,7 +205,11 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # If we open a file with the 'create' flag and without the 'truncate'
         # flag, the file remains unchanged.
         self.build_tree_contents([('foo', 'bar')])
-        handle = self.openFile('foo', filetransfer.FXF_CREAT, {})
+        deferred = self.openFile('foo', filetransfer.FXF_CREAT, {})
+        return deferred.addCallback(
+            self._test_openAndCloseExistingFileLeavesUnchanged_callback)
+
+    def _test_openAndCloseExistingFileLeavesUnchanged_callback(self, handle):
         deferred = handle.close()
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('bar', 'foo'))
@@ -190,8 +218,12 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # If we open a file with the 'create' flag and the 'truncate' flag,
         # the file is reset to empty.
         self.build_tree_contents([('foo', 'bar')])
-        handle = self.openFile(
+        deferred = self.openFile(
             'foo', filetransfer.FXF_TRUNC | filetransfer.FXF_CREAT, {})
+        return deferred.addCallback(
+            self._test_openAndCloseExistingFileTruncation_callback)
+
+    def _test_openAndCloseExistingFileTruncation_callback(self, handle):
         deferred = handle.close()
         return deferred.addCallback(
             lambda ignored: self.assertFileEqual('', 'foo'))
@@ -199,48 +231,51 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
     def test_writeChunkOnDirectory(self):
         # Errors in writeChunk are translated to SFTPErrors.
         os.mkdir('foo')
-        handle = self.openFile('foo', filetransfer.FXF_WRITE, {})
-        deferred = handle.writeChunk(0, 'bar')
+        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        deferred.addCallback(lambda handle: handle.writeChunk(0, 'bar'))
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_readChunk(self):
         # readChunk reads a chunk of data from the file.
         self.build_tree_contents([('foo', 'bar')])
-        handle = self.openFile('foo', 0, {})
-        deferred = handle.readChunk(1, 2)
+        deferred = self.openFile('foo', 0, {})
+        deferred.addCallback(lambda handle: handle.readChunk(1, 2))
         return deferred.addCallback(self.assertEqual, 'ar')
 
     def test_readChunkEOF(self):
         # readChunk returns the empty string if it reads past the end-of-file.
         # See comment in _check_for_eof for more details.
         self.build_tree_contents([('foo', 'bar')])
-        handle = self.openFile('foo', 0, {})
-        deferred = handle.readChunk(2, 10)
+        deferred = self.openFile('foo', 0, {})
+        deferred.addCallback(lambda handle: handle.readChunk(2, 10))
         return deferred.addCallback(self.assertEqual, '')
 
     def test_readChunkError(self):
         # Errors in readChunk are translated to SFTPErrors.
-        handle = self.openFile('foo', 0, {})
-        deferred = handle.readChunk(1, 2)
+        deferred = self.openFile('foo', 0, {})
+        deferred.addCallback(lambda handle: handle.readChunk(1, 2))
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_setAttrs(self):
         # setAttrs on TransportSFTPFile does nothing.
         self.build_tree_contents([('foo', 'bar')])
-        self.openFile('foo', 0, {}).setAttrs({})
+        deferred = self.openFile('foo', 0, {})
+        return deferred.addCallback(lambda handle: handle.setAttrs({}))
 
     def test_getAttrs(self):
         # getAttrs on TransportSFTPFile returns a dictionary consistent
         # with the results of os.stat.
         self.build_tree_contents([('foo', 'bar')])
         stat_value = os.stat('foo')
-        deferred = self.openFile('foo', 0, {}).getAttrs()
+        deferred = self.openFile('foo', 0, {})
+        deferred.addCallback(lambda handle: handle.getAttrs())
         return deferred.addCallback(self.checkAttrs, stat_value)
 
     def test_getAttrsError(self):
         # Errors in getAttrs on TransportSFTPFile are translated into
         # SFTPErrors.
-        deferred = self.openFile('foo', 0, {}).getAttrs()
+        deferred = self.openFile('foo', 0, {})
+        deferred.addCallback(lambda handle: handle.getAttrs())
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
 
