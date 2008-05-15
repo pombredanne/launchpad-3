@@ -176,22 +176,6 @@ less work than constructing a new document and sending it with PATCH.
   >>> salgado['display_name']
   u'GUILHERME SALGADO'
 
-  >>> for key, value in salgado.items():
-  ...     if key.endswith('_link'):
-  ...         print value, webservice.get(value).getOutput().split('\n')[0]
-  http://api.launchpad.dev/beta/~salgado/languages HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/members HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/open_membership_invitations HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/irc_nicknames HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/team_memberships HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/teams_participated_in HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/member_memberships HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/+email/guilherme.salgado@canonical.com HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/wiki_names HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/teams_indirectly_participated_in HTTP/1.1 200 Ok
-  http://api.launchpad.dev/beta/~salgado/jabber_ids HTTP/1.1 200 Ok
-
   >>> salgado['display_name'] = 'Guilherme Salgado'
   >>> print modify_person('salgado', salgado, 'PUT')
   HTTP/1.1 200 Ok

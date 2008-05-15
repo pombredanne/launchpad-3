@@ -1,16 +1,128 @@
-= People =
+= People and teams =
 
-Basic operations on people are described in xx-collections.txt. This
-document shows some of the other features of a person.
+Since we use a single class (Person) to represent a person or a team,
+representations of people and teams are supposed to have nearly the
+same keys.  I say nearly because some attributes are only made available
+for teams (as they're defined in the ITeam interface).
+
+  >>> salgado = webservice.get("/beta/~salgado").jsonBody()
+  >>> for key, value in sorted(salgado.items()):
+  ...     print "%s: %s" % (key, value)
+  confirmed_email_addresses_collection_link:
+      http://.../~salgado/confirmed_email_addresses
+  date_created: 2005-06-06T08:59:51.596025+00:00
+  display_name: Guilherme Salgado
+  hide_email_addresses: False
+  homepage_content: None
+  irc_nicknames_collection_link: http://.../~salgado/irc_nicknames
+  is_team: False
+  is_valid: True
+  jabber_ids_collection_link: http://.../~salgado/jabber_ids
+  karma: 0
+  languages_collection_link: http://.../~salgado/languages
+  mailing_list_auto_subscribe_policy: Ask me when I join a team
+  member_memberships_collection_link: http://.../~salgado/member_memberships
+  members_collection_link: http://.../~salgado/members
+  name: salgado
+  open_membership_invitations_collection_link:
+      http://.../~salgado/open_membership_invitations
+  preferred_email_address_link:
+      http://.../~salgado/+email/guilherme.salgado@canonical.com
+  self_link: http://.../~salgado
+  team_memberships_collection_link: http://.../~salgado/team_memberships
+  teams_indirectly_participated_in_collection_link:
+      http://.../~salgado/teams_indirectly_participated_in
+  teams_participated_in_collection_link:
+      http://.../~salgado/teams_participated_in
+  timezone: None
+  visibility: Public
+  wiki_names_collection_link: http://.../~salgado/wiki_names
+
+  >>> ubuntu_team = webservice.get("/beta/~ubuntu-team").jsonBody()
+  >>> for key, value in sorted(ubuntu_team.items()):
+  ...     print "%s: %s" % (key, value)
+  confirmed_email_addresses_collection_link:
+      http://.../~ubuntu-team/confirmed_email_addresses
+  date_created: 2005-06-06T08:59:51.605760+00:00
+  default_membership_period: None
+  default_renewal_period: None
+  display_name: Ubuntu Team
+  hide_email_addresses: False
+  homepage_content: None
+  irc_nicknames_collection_link: http://.../~ubuntu-team/irc_nicknames
+  is_team: True
+  is_valid: True
+  jabber_ids_collection_link: http://.../~ubuntu-team/jabber_ids
+  karma: 0
+  languages_collection_link: http://.../~ubuntu-team/languages
+  mailing_list_auto_subscribe_policy: Ask me when I join a team
+  member_memberships_collection_link:
+      http://.../~ubuntu-team/member_memberships
+  members_collection_link: http://.../~ubuntu-team/members
+  name: ubuntu-team
+  open_membership_invitations_collection_link:
+      http://.../~ubuntu-team/open_membership_invitations
+  preferred_email_address_link:
+      http://.../~ubuntu-team/+email/support@ubuntu.com
+  renewal_policy: invite them to apply for renewal
+  self_link: http://.../~ubuntu-team
+  subscription_policy: Moderated Team
+  team_description: This Team is responsible for the Ubuntu Distribution
+  team_memberships_collection_link: http://.../~ubuntu-team/team_memberships
+  team_owner_link: http://.../~sabdfl
+  teams_indirectly_participated_in_collection_link:
+      http://.../~ubuntu-team/teams_indirectly_participated_in
+  teams_participated_in_collection_link:
+      http://.../~ubuntu-team/teams_participated_in
+  timezone: None
+  visibility: Public
+  wiki_names_collection_link: http://.../~ubuntu-team/wiki_names
+
+  >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
+  [u'default_membership_period', u'default_renewal_period',
+   u'renewal_policy', u'subscription_policy', u'team_description',
+   u'team_owner_link']
+  
+  >>> sorted(set(salgado.keys()).difference(ubuntu_team.keys()))
+  []
 
 
-== Team memberships ==
+== Links to related things ==
+
+As seen above, many attributes of a person are actually links to other
+things (or collections).
+
+
+=== Email addresses ===
+
+Apart from the link to the preferred email, there is a link to the
+collection of other confirmed email addresses of that person/team.
+
+  >>> sample_person = webservice.get("/beta/~name12").jsonBody()
+  >>> print sample_person['preferred_email_address_link']
+  http://api.launchpad.dev/beta/~name12/+email/test@canonical.com
+  >>> emails = sample_person['confirmed_email_addresses_collection_link']
+  >>> print emails
+  http://api.launchpad.dev/beta/~name12/confirmed_email_addresses
+  >>> print_self_link_of_entries(webservice.get(emails).jsonBody())
+  http://api.launchpad.dev/beta/~name12/+email/testing@canonical.com
+
+Email addresses are first-class objects with their own URLs and
+representations, but for now their representation contain only self_link
+as we haven't yet exported anything from IEmailAddress.
+
+  >>> email = webservice.get(
+  ...     sample_person['preferred_email_address_link']).jsonBody()
+  >>> sorted(email)
+  [u'self_link']
+
+
+=== Team memberships ===
 
 A person is linked to their team memberships.
 
-  >>> salgado = webservice.get("/beta/~salgado").jsonBody()
-
-  >>> salgado['team_memberships_collection_link']
+  >>> salgado_memberships = salgado['team_memberships_collection_link']
+  >>> salgado_memberships
   u'http://api.launchpad.dev/beta/~salgado/team_memberships'
 
 Similarly, a team is linked to the team memberships of its members.
@@ -20,17 +132,27 @@ Similarly, a team is linked to the team memberships of its members.
   >>> landscape_developers['member_memberships_collection_link']
   u'http://api.launchpad.dev/beta/~landscape-developers/member_memberships'
 
+And to all membership invitations sent to it.
+
+  >>> lp_team = webservice.get("/beta/~launchpad").jsonBody()
+  >>> lp_invitations = lp_team['open_membership_invitations_collection_link']
+  >>> lp_invitations
+  u'http://api.launchpad.dev/beta/~launchpad/open_membership_invitations'
+
+  >>> print_self_link_of_entries(webservice.get(lp_invitations).jsonBody())
+  http://api.launchpad.dev/beta/~landscape-developers/+member/launchpad
+
 Team memberships are first-class objects with their own URLs.
 
-  >>> salgado_memberships = sorted(webservice.get(
-  ...     "/beta/~salgado/team_memberships").jsonBody()['entries'])
-  >>> [m['self_link'] for m in salgado_memberships]
-  [u'http://api.launchpad.dev/beta/~admins/+member/salgado',
-   u'http://api.launchpad.dev/beta/~landscape-developers/+member/salgado']
+  >>> print_self_link_of_entries(
+  ...     webservice.get(salgado_memberships).jsonBody())
+  http://api.launchpad.dev/beta/~admins/+member/salgado
+  http://api.launchpad.dev/beta/~landscape-developers/+member/salgado
 
 Team memberships also have data fields.
 
-  >>> salgado_landscape = salgado_memberships[1]
+  >>> salgado_landscape = sorted(webservice.get(
+  ...     salgado_memberships).jsonBody()['entries'])[1]
   >>> sorted(salgado_landscape)
   [u'date_expires', u'date_joined',
    u'last_change_comment', u'last_changed_by_link', u'member_link',
@@ -57,20 +179,96 @@ person includes a link to that person's team memberships. But it's
 possible to navigate from a team, to the collection of peoples'
 memberships in the team.
 
-  >>> landscape_memberships = webservice.get(
-  ...     "/beta/~landscape-developers/member_memberships").jsonBody()
-
-  >>> [m['self_link'] for m in sorted(landscape_memberships['entries'])]
-  [u'http://api.launchpad.dev/beta/~landscape-developers/+member/name12',
-   u'http://api.launchpad.dev/beta/~landscape-developers/+member/salgado']
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~landscape-developers/member_memberships").jsonBody())
+  http://api.launchpad.dev/beta/~landscape-developers/+member/name12
+  http://api.launchpad.dev/beta/~landscape-developers/+member/salgado
 
 A list of team memberships is distinct from a list of a team's
 members. Members are people; memberships are TeamMemberships. You've
 seen the memberships for the 'landscape-developers' team above; here
 are the members.
 
-  >>> landscape_members = webservice.get(
-  ...     "/beta/~landscape-developers/members").jsonBody()
-  >>> [m['self_link'] for m in sorted(landscape_members['entries'])]
-  [u'http://api.launchpad.dev/beta/~salgado',
-   u'http://api.launchpad.dev/beta/~name12']
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~landscape-developers/members").jsonBody())
+  http://api.launchpad.dev/beta/~name12
+  http://api.launchpad.dev/beta/~salgado
+
+A person/team is also linked to all teams in which they participate.
+
+  >>> salgado['teams_participated_in_collection_link']
+  u'http://api.launchpad.dev/beta/~salgado/teams_participated_in'
+  >>> print_self_link_of_entries(webservice.get(
+  ...     salgado['teams_participated_in_collection_link']).jsonBody())
+  http://api.launchpad.dev/beta/~admins
+  http://api.launchpad.dev/beta/~landscape-developers
+  http://api.launchpad.dev/beta/~mailing-list-experts
+
+And to the teams in which they're indirect members.
+
+  >>> link = salgado['teams_indirectly_participated_in_collection_link']
+  >>> link
+  u'http://api.launchpad.dev/beta/~salgado/teams_indirectly_participated_in'
+
+  >>> print_self_link_of_entries(webservice.get(link).jsonBody())
+  http://api.launchpad.dev/beta/~mailing-list-experts
+
+
+=== Wiki names ===
+
+All wiki names associated to a person/team are also linked to that
+person/team.
+
+  >>> wikis_link = sample_person['wiki_names_collection_link']
+  >>> print wikis_link
+  http://api.launchpad.dev/beta/~name12/wiki_names
+  >>> print_self_link_of_entries(webservice.get(wikis_link).jsonBody())
+  http://api.launchpad.dev/beta/~name12/+wikiname/12
+
+Wiki names are first-class objects with their own URLs and
+representations, but for now their representation contain only self_link
+as we haven't yet exported anything from IWikiName.
+
+  >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
+  >>> sorted(wiki_name)
+  [u'self_link']
+
+
+=== Jabber IDs ===
+
+Jabber IDs of a person are also linked.
+
+  >>> sabdfl = webservice.get("/beta/~sabdfl").jsonBody()
+  >>> jabber_ids_link = sabdfl['jabber_ids_collection_link']
+  >>> print jabber_ids_link
+  http://api.launchpad.dev/beta/~sabdfl/jabber_ids
+  >>> print_self_link_of_entries(webservice.get(jabber_ids_link).jsonBody())
+  http://api.launchpad.dev/beta/~sabdfl/+jabberid/markshuttleworth@jabber.org
+
+Jabber IDs are first-class objects with their own URLs and
+representations, but for now their representation contain only self_link
+as we haven't yet exported anything from IJabberID.
+
+  >>> jabber_id = sorted(
+  ...     webservice.get(jabber_ids_link).jsonBody()['entries'])[0]
+  >>> sorted(jabber_id)
+  [u'self_link']
+
+
+=== IRC nicknames ===
+
+The same for IRC nicknames
+
+  >>> irc_ids_link = sabdfl['irc_nicknames_collection_link']
+  >>> print irc_ids_link
+  http://api.launchpad.dev/beta/~sabdfl/irc_nicknames
+  >>> print_self_link_of_entries(webservice.get(irc_ids_link).jsonBody())
+  http://api.launchpad.dev/beta/~sabdfl/+ircnick/1
+
+Jabber IDs are first-class objects with their own URLs and
+representations, but for now their representation contain only self_link
+as we haven't yet exported anything from IJabberID.
+
+  >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
+  >>> sorted(irc_id)
+  [u'self_link']

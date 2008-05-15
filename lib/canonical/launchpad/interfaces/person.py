@@ -16,13 +16,9 @@ __all__ = [
     'InvalidName',
     'IObjectReassignment',
     'IPerson',
-    'IPersonAdminWriteRestricted',
     'IPersonChangePassword',
     'IPersonClaim',
-    'IPersonEditRestricted',
-    'IPersonPublic',
     'IPersonSet',
-    'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
@@ -518,11 +514,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     datecreated = exported(
         Datetime(title=_('Date Created'), required=True, readonly=True),
         exported_as='date_created')
-    # XXX: The two ones below must not be changed directly either, so if we
-    # decide to publish them they should be readonly.
     creation_rationale = Choice(
         title=_("Rationale for this entry's creation"), required=False,
-        readonly=False, values=PersonCreationRationale.items)
+        readonly=True, values=PersonCreationRationale.items)
     creation_comment = TextLine(
         title=_("Comment for this entry's creation"),
         description=_(
@@ -532,7 +526,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "foo package was imported into Ubuntu Breezy'). The only "
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
-        required=False, readonly=False)
+        required=False, readonly=True)
     # XXX Guilherme Salgado 2006-11-10:
     # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
@@ -558,27 +552,24 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         title=_("Key used to generate opaque OpenID identities."),
         readonly=True, required=False)
 
-    # XXX: The two ones below are actually internal values and are not
-    # supposed to be changed directly, so it probably doesn't make sense to
-    # expose them.
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
-        readonly=False, vocabulary=AccountStatus)
+        readonly=True, vocabulary=AccountStatus)
 
     account_status_comment = Text(
         title=_("Why are you deactivating your account?"), required=False,
-        readonly=False)
+        readonly=True)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
     is_team = exported(
         Bool(title=_('Is this object a team?')))
-    # XXX: Not yet sure any of these two are needed.
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
-    is_valid_person_or_team = Bool(
-        title=_("This is an active user or a team."), readonly=True)
+    is_valid_person_or_team = exported(
+        Bool(title=_("This is an active user or a team."), readonly=True),
+        exported_as='is_valid')
     is_openid_enabled = Bool(
         title=_("This user can use Launchpad as an OpenID provider."),
         readonly=True)
@@ -649,8 +640,13 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     guessedemails = Attribute(
         "List of emails with status NEW. These email addresses probably "
         "came from a gina or POFileImporter run.")
-    # XXX: What names to use for the two ones below?
-    validatedemails = Attribute("Emails with status VALIDATED")
+    validatedemails = exported(
+        CollectionField(
+            title=_("Confirmed e-mails of this person."),
+            description=_(
+                "Confirmed e-mails are the ones in the VALIDATED state"),
+            value_type=Object(schema=IEmailAddress)),
+        exported_as='confirmed_email_addresses')
     unvalidatedemails = Attribute(
         "Emails this person added in Launchpad but are not yet validated.")
     specifications = Attribute(
@@ -683,10 +679,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         exported_as='team_owner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-    teamdescription = exported(
-        Text(title=_('Team Description'), required=False, readonly=False,
-             description=_('Use plain text; URLs will be linkified')),
-        exported_as='team_description')
 
     preferredemail = exported(
         Object(title=_("Preferred email address"), readonly=True,
@@ -712,52 +704,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     verbose_bugnotifications = Bool(
         title=_("Include bug descriptions when sending me bug notifications"),
         required=False, default=True)
-
-    defaultmembershipperiod = exported(
-        Int(title=_('Subscription period'), required=False,
-            description=_(
-                "Number of days a new subscription lasts before expiring. "
-                "You can customize the length of an individual subscription "
-                "when approving it. Leave this empty or set to 0 for "
-                "subscriptions to never expire.")),
-        exported_as='default_membership_period')
-
-    defaultrenewalperiod = exported(
-        Int(title=_('Renewal period'), required=False,
-            description=_(
-                "Number of days a subscription lasts after being renewed. "
-                "You can customize the lengths of individual renewals, but "
-                "this is what's used for auto-renewed and user-renewed "
-                "memberships.")),
-        exported_as='default_renewal_period')
-
-    defaultexpirationdate = Attribute(
-        "The date, according to team's default values, in which a newly "
-        "approved membership will expire.")
-
-    defaultrenewedexpirationdate = Attribute(
-        "The date, according to team's default values, in "
-        "which a just-renewed membership will expire.")
-
-    # XXX: Does it make sense to include a 'subscription_policy' in the
-    # people (not teams) representations that we send to clients?  Can we do
-    # anything about it?
-    subscriptionpolicy = exported(
-        Choice(title=_('Subscription policy'),
-               vocabulary=TeamSubscriptionPolicy,
-               default=TeamSubscriptionPolicy.MODERATED, required=False,
-               description=_(
-                   "'Moderated' means all subscriptions must be approved. "
-                   "'Open' means any user can join without approval. "
-                   "'Restricted' means new members can be added only by a "
-                   "team administrator.")),
-        exported_as='subscription_policy')
-
-    renewal_policy = exported(
-        Choice(title=_("When someone's membership is about to expire, "
-                       "notify them and"),
-               required=True, vocabulary=TeamMembershipRenewalPolicy,
-               default=TeamMembershipRenewalPolicy.NONE))
 
     mailing_list_auto_subscribe_policy = exported(
         Choice(title=_('Mailing List Auto-subscription Policy'),
@@ -817,31 +763,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         # person-related forms.
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
-
-    @invariant
-    def defaultRenewalPeriodIsRequiredForSomeTeams(person):
-        """Teams may specify a default renewal period.
-
-        The team renewal period cannot be less than 1 day, and when the
-        renewal policy is is 'On Demand' or 'Automatic', it cannot be None.
-        """
-        # The person arg is a zope.formlib.form.FormData instance.
-        # Instead of checking 'not person.isTeam()' or 'person.teamowner',
-        # we check for a field in the schema to identify this as a team.
-        try:
-            renewal_policy = person.renewal_policy
-        except NoInputData:
-            # This is not a team.
-            return
-
-        renewal_period = person.defaultrenewalperiod
-        automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
-                               TeamMembershipRenewalPolicy.ONDEMAND]
-        cannot_be_none = renewal_policy in [automatic, ondemand]
-        if ((renewal_period is None and cannot_be_none)
-            or (renewal_period is not None and renewal_period <= 0)):
-            raise Invalid(
-                'You must specify a default renewal period greater than 0.')
 
     def convertToTeam(team_owner):
         """Convert this person into a team owned by the given team_owner.
@@ -1245,6 +1166,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
 
+# XXX: salgado, 2008-05-15: Attributes in this interface will be exported in a
+# future branch.  This one is already too big.
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
@@ -1433,11 +1356,89 @@ class INewPersonForm(IPerson):
         title=_('Create password'), required=True, readonly=False)
 
 
-class ITeam(IPerson, IHasIcon):
+class ITeamPublic(Interface):
+    """Public attributes of a Team."""
+
+    @invariant
+    def defaultRenewalPeriodIsRequiredForSomeTeams(person):
+        """Teams may specify a default renewal period.
+
+        The team renewal period cannot be less than 1 day, and when the
+        renewal policy is is 'On Demand' or 'Automatic', it cannot be None.
+        """
+        # The person arg is a zope.formlib.form.FormData instance.
+        # Instead of checking 'not person.isTeam()' or 'person.teamowner',
+        # we check for a field in the schema to identify this as a team.
+        try:
+            renewal_policy = person.renewal_policy
+        except NoInputData:
+            # This is not a team.
+            return
+
+        renewal_period = person.defaultrenewalperiod
+        automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
+                               TeamMembershipRenewalPolicy.ONDEMAND]
+        cannot_be_none = renewal_policy in [automatic, ondemand]
+        if ((renewal_period is None and cannot_be_none)
+            or (renewal_period is not None and renewal_period <= 0)):
+            raise Invalid(
+                'You must specify a default renewal period greater than 0.')
+
+    teamdescription = exported(
+        Text(title=_('Team Description'), required=False, readonly=False,
+             description=_('Use plain text; URLs will be linkified')),
+        exported_as='team_description')
+
+    subscriptionpolicy = exported(
+        Choice(title=_('Subscription policy'),
+               vocabulary=TeamSubscriptionPolicy,
+               default=TeamSubscriptionPolicy.MODERATED, required=True,
+               description=_(
+                   "'Moderated' means all subscriptions must be approved. "
+                   "'Open' means any user can join without approval. "
+                   "'Restricted' means new members can be added only by a "
+                   "team administrator.")),
+        exported_as='subscription_policy')
+
+    renewal_policy = exported(
+        Choice(title=_("When someone's membership is about to expire, "
+                       "notify them and"),
+               required=True, vocabulary=TeamMembershipRenewalPolicy,
+               default=TeamMembershipRenewalPolicy.NONE))
+
+    defaultmembershipperiod = exported(
+        Int(title=_('Subscription period'), required=False,
+            description=_(
+                "Number of days a new subscription lasts before expiring. "
+                "You can customize the length of an individual subscription "
+                "when approving it. Leave this empty or set to 0 for "
+                "subscriptions to never expire.")),
+        exported_as='default_membership_period')
+
+    defaultrenewalperiod = exported(
+        Int(title=_('Renewal period'), required=False,
+            description=_(
+                "Number of days a subscription lasts after being renewed. "
+                "You can customize the lengths of individual renewals, but "
+                "this is what's used for auto-renewed and user-renewed "
+                "memberships.")),
+        exported_as='default_renewal_period')
+
+    defaultexpirationdate = Attribute(
+        "The date, according to team's default values, in which a newly "
+        "approved membership will expire.")
+
+    defaultrenewedexpirationdate = Attribute(
+        "The date, according to team's default values, in "
+        "which a just-renewed membership will expire.")
+
+
+class ITeam(IPerson, ITeamPublic):
     """ITeam extends IPerson.
 
     The teamowner should never be None.
     """
+    export_as_webservice_entry()
 
     # Logo and Mugshot are here so that they can have a description on a
     # Team which is different to the description they have on a Person.
@@ -1456,11 +1457,14 @@ class ITeam(IPerson, IHasIcon):
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on the team page in Launchpad. It "
             "should be no bigger than 100kb in size. "))
-    displayname = StrippedTextLine(
+
+    displayname = exported(
+        StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_(
                 "This team's name as you would like it displayed throughout "
-                "Launchpad."))
+                "Launchpad.")),
+        exported_as='display_name')
 
 
 class IPersonSet(Interface):
@@ -1531,10 +1535,13 @@ class IPersonSet(Interface):
         subscriptionpolicy='subscription_policy',
         defaultmembershipperiod='default_membership_period',
         defaultrenewalperiod='default_renewal_period')
+    @operation_parameters(
+        subscriptionpolicy=Choice(
+            title=_('Subscription policy'), vocabulary=TeamSubscriptionPolicy,
+            required=False, default=TeamSubscriptionPolicy.MODERATED))
     @export_factory_operation(
-        IPerson, ['name', 'displayname', 'teamdescription',
-                  'subscriptionpolicy', 'defaultmembershipperiod',
-                  'defaultrenewalperiod'])
+        ITeam, ['name', 'displayname', 'teamdescription',
+                'defaultmembershipperiod', 'defaultrenewalperiod'])
     def newTeam(teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):

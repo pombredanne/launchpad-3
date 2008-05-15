@@ -466,6 +466,13 @@ def print_batch_header(soup):
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
+def print_self_link_of_entries(json_body):
+    """Print the self_link attribute of each entry in the given JSON body."""
+    links = sorted(entry['self_link'] for entry in json_body['entries'])
+    for link in links:
+        print link
+
+
 def print_ppa_packages(contents):
     packages = find_tags_by_class(contents, 'ppa_package_row')
     for pkg in packages:
@@ -560,6 +567,7 @@ def setUpGlobs(test):
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
     test.globs['print_ppa_packages'] = print_ppa_packages
+    test.globs['print_self_link_of_entries'] = print_self_link_of_entries
 
 
 class PageStoryTestCase(unittest.TestCase):

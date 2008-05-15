@@ -3298,6 +3298,7 @@ class JabberIDSet:
 
 
 class IrcID(SQLBase):
+    """See `IIrcID`"""
     implements(IIrcID)
 
     _table = 'IrcID'
@@ -3308,10 +3309,13 @@ class IrcID(SQLBase):
 
 
 class IrcIDSet:
+    """See `IIrcIDSet`"""
     implements(IIrcIDSet)
 
     def get(self, id):
+        """See `IIrcIDSet`"""
         return IrcID.selectOneBy(id=id)
 
     def new(self, person, network, nickname):
+        """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)

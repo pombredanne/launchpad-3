@@ -752,8 +752,7 @@ them as well.
     
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> dave = personset.getByName('justdave')
-    >>> login('dave.miller@ubuntulinux.com')
-    >>> dave.account_status = AccountStatus.DEACTIVATED
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> flush_database_updates()
     >>> list(personset.findPerson('dave'))
     []
@@ -763,7 +762,7 @@ them as well.
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
-    >>> dave.account_status = AccountStatus.ACTIVE
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.ACTIVE
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 

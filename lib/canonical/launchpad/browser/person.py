@@ -97,6 +97,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
+from canonical.lazr.interface import copy_field
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
@@ -144,6 +145,7 @@ from canonical.launchpad.browser.mailinglists import (
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -284,6 +286,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepthrough('+email')
     def traverse_email(self, email):
+        if not WebServiceLayer.providedBy(self.request):
+            return None
         email = getUtility(IEmailAddressSet).getByEmail(email)
         if email is None or email.person != self.context:
             return None
@@ -291,6 +295,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepthrough('+wikiname')
     def traverse_wikiname(self, id):
+        if not WebServiceLayer.providedBy(self.request):
+            return None
         wiki = getUtility(IWikiNameSet).get(id)
         if wiki is None or wiki.person != self.context:
             return None
@@ -298,6 +304,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepthrough('+jabberid')
     def traverse_jabberid(self, jabber_id):
+        if not WebServiceLayer.providedBy(self.request):
+            return None
         jabber = getUtility(IJabberIDSet).getByPerson(jabber_id)
         if jabber is None or jabber.person != self.context:
             return None
@@ -305,6 +313,8 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepthrough('+ircnick')
     def traverse_ircnick(self, id):
+        if not WebServiceLayer.providedBy(self.request):
+            return None
         irc_nick = getUtility(IIrcIDSet).get(id)
         if irc_nick is None or irc_nick.person != self.context:
             return None
@@ -1246,10 +1256,23 @@ class PersonAddView(LaunchpadFormView):
 class PersonDeactivateAccountView(LaunchpadFormView):
 
     schema = IPerson
-    field_names = ['account_status_comment', 'password']
     label = "Deactivate your Launchpad account"
     custom_widget('account_status_comment', TextAreaWidget, height=5,
                   width=60)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        Copy fields from IPerson and make account_status_comment a read-write
+        field so that the user can give a comment.  That field is defined as
+        read only in IPerson because we don't want it to be changed directly.
+        """
+        password_field = copy_field(IPerson['password'])
+        comment_field = copy_field(
+            IPerson['account_status_comment'], readonly=False)
+        self.form_fields = FormFields(comment_field, password_field)
+        comment_field.custom_widget = self.custom_widgets[
+            'account_status_comment']
 
     def validate(self, data):
         loginsource = getUtility(IPlacelessLoginSource)
