@@ -2,7 +2,7 @@
 
 """Run the standalone launchpadlib tests.
 
-XXX BarryWarsaw 14-May-2008: This shim is here that the tests within the
+XXX BarryWarsaw 14-May-2008: This shim is here so that the tests within the
 launchpadlib package will run as part of Launchpad's standard test suite.
 Those tests cannot yet be run on their own, since they require a running
 Launchpad appserver (but not the real Launchpad!).  Eventually, there will be
@@ -40,10 +40,8 @@ def test_suite():
     # Sort the tests.
     for filename in sorted(doctest_files):
         path = doctest_files[filename]
-        # XXX BarryWarsaw 14-May-2008: Full implementation of these tests will
-        # require the AppServerLayer branch, which is currently in separate
-        # review.  For now, until that branch lands, these tests are extremely
-        # simple.
+        # XXX BarryWarsaw 14-May-2008: Add layer=AppServerLayer when that
+        # branch (currently in review) lands.
         doctest = LayeredDocFileSuite(path, package=launchpadlib)
         suite.addTest(doctest)
 

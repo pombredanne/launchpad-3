@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Setup for launchpadlib library."""
+"""Setup for the launchpadlib library."""
 
 import ez_setup
 ez_setup.use_setuptools()
@@ -20,7 +20,6 @@ hosting and development website, making it easy to collaborate across multiple
 projects.""",
     author      = 'The Launchpad developers',
     author_email= 'launchpadlib@lists.launchpad.net',
-    license     = 'LGPLv2.1 or later',
     url         = 'https://help.launchpad.net/API/launchpadlib',
     download_url= 'https://launchpad.net/launchpadlib/+download',
     packages    = find_packages(),

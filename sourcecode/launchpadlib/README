@@ -1,4 +1,4 @@
-Copyright (C) 2008 Canonical Ltd
+Copyright (C) 2008 Canonical Ltd.  All rights reserved.
 
 launchpadlib is a standalone Python library for scripting Launchpad through
 its web services interface.  It is the officially supported bindings to the
@@ -24,6 +24,3 @@ API documentation for launchpadlib, users guides and more is available at
 Please submit bug reports to
 
     https://bugs.launchpad.net/launchpadlib
-
-launchpadlib is distributed under the terms of the GNU Lesser General Public
-License, version 2.1 or later.  See the LICENSE file for details.
