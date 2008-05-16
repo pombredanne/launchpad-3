@@ -267,7 +267,7 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None):
+    def getSourcesForDeletion(self, name=None, status=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -289,11 +289,23 @@ class Archive(SQLBase):
                 Build.sourcepackagerelease = SourcePackageRelease.id)
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
 
+        source_deletable_states = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            )
         clauses.append("""
-           (%s OR SourcePackagePublishingHistory.status = %s)
+           (%s OR SourcePackagePublishingHistory.status IN %s)
         """ % (has_published_binaries_clause,
-               quote(PackagePublishingStatus.PUBLISHED)))
+               quote(source_deletable_states)))
 
+        if status is not None:
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
+            clauses.append("""
+                SourcePackagePublishingHistory.status IN %s
+            """ % sqlvalues(tuple(status)))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
