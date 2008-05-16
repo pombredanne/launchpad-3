@@ -1,0 +1,91 @@
+= Request time out =
+
+Launchpad request shouldn't take more than a fix number of seconds to
+complete. The database adapter isssues RequestExpired errors when the
+database takes too long to respond (see
+lib/canonical/launchpad/webapp/ftests/test_adapter.txt)
+
+The app server is also configured with a default timeout function (for
+functions wrapped with the @with_timeout decorator) that computes the
+time remaining before the request should time out.
+
+    >>> from canonical.lazr.timeout import get_default_timeout_function
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     set_launchpad_default_timeout)
+    >>> old_func =  get_default_timeout_function()
+
+    >>> from zope.app.appsetup import ProcessStarting
+
+    # We don't use notify here, because we don't want to invoke the
+    # other subscribers.
+    >>> set_launchpad_default_timeout(ProcessStarting())
+
+    >>> get_default_timeout_function()
+    <function launchpad_default_timeout...>
+
+The timeout to use is the number of seconds remaining before
+db_statement_timeout is expired.
+
+    >>> from textwrap import dedent
+    >>> from canonical.config import config
+    >>> config.push('timeout', dedent('''\
+    ... [database]
+    ... db_statement_timeout = 10'''))
+
+    >>> timeout_func = get_default_timeout_function()
+
+(Set the request to have started a few seconds in the past.)
+
+    >>> import time
+    >>> from canonical.launchpad.webapp.adapter import set_request_started
+    >>> now = time.time()
+    >>> set_request_started(now-5)
+
+So the computed timeout should be more or less 5 seconds (10-5).
+
+    >>> timeout_func() - now <= 5
+    True
+
+If the timeout is already expired, a RequestExpired error is raised:
+
+    >>> from canonical.launchpad.webapp.adapter import clear_request_started
+    >>> clear_request_started()
+    >>> set_request_started(now-12)
+    >>> timeout_func()
+    Traceback (most recent call last):
+      ...
+    RequestExpired: request expired.
+
+Same thing if a function decorated using @with_timeout is called.
+
+    >>> from canonical.lazr.timeout import with_timeout
+    >>> @with_timeout()
+    ... def wait_a_little():
+    ...     time.sleep(1)
+    >>> wait_a_little()
+    Traceback (most recent call last):
+      ...
+    RequestExpired: request expired.
+
+If there is no db_statement_timeout, then the default timeout is None
+and a TimeoutError is never raised.
+
+    >>> config.push('no-timeout', dedent('''\
+    ... [database]
+    ... db_statement_timeout = None'''))
+
+    >>> print timeout_func()
+    None
+
+    >>> wait_a_little()
+
+
+== Clean up ===
+
+    >>> ignored = config.pop('timeout')
+
+    >>> from canonical.lazr.timeout import set_default_timeout_function
+    >>> set_default_timeout_function(old_func)
+
+    >>> clear_request_started()
+
