@@ -3,18 +3,13 @@
 The Google stub web service is a stand-alone process that returns
 XML documents for a pre-determined set of URLs.
 
-The URL mapping is specified in a stand-alone text file, whose path
-comes from the current configuration.
-
-    >>> from canonical.config import config
-    >>> xml_mapfile = config.google_test_service.mapfile
+The URL mapping is specified in a stand-alone text file.  The mapping
+determines which XML files will be returned when a specific URL is accessed.
 
     # Fetch our URL-to-XML file mapping table.
     >>> from canonical.launchpad.testing.googletestservice import (
     ...     url_to_xml_map)
-    >>> routes = url_to_xml_map(xml_mapfile)
-
-    >>> routes
+    >>> routes = url_to_xml_map()
 
     >>> for key in sorted(routes.keys()):
     ...     print key, routes[key]
@@ -24,20 +19,26 @@ comes from the current configuration.
 
 
 The service is accessible via a local URL, also pulled from the
-config.  Accessing the default URL will return the XML file specified
-as the default route, '*'.
+config.  The URL-to-XML mapping has a default route, '*'.  This is a
+catch-all: requests that are not specific to any other service URL
+will return the default route's XML.
 
     >>> from os.path import join
+    >>> from canonical.config import config
     >>> response_dir = config.google_test_service.canned_response_directory
+
     >>> def get_xml_for_url(url):
     ...     fname = routes[url]
     ...     fullname = join(response_dir, fname)
     ...     return file(fullname).read()
 
     >>> default_xml = get_xml_for_url('*')
+    >>> default_xml == ''
+    False
 
     # Grab a Zope testbrowser that talks across the network.
     >>> from zope.testbrowser.browser import Browser
+    >>> browser = Browser()
     >>> test_url = config.google.site
     >>> browser.open(join(test_url, 'something'))
 
@@ -54,12 +55,16 @@ The returned content-type should UTF-8 encoded XML.
 
 Accessing a specific key returns the appropriate XML file:
 
-    >>> url = '/search?foo'
-    >>> xml_for_path = get_xml_for_url(path)
+    # Find any key that is *not* the default route.
+    >>> path = [ url for url in routes.keys() if url != '*' ].pop()
+
+    >>> xml_for_specific_path = get_xml_for_url(path)
     >>> browser.open(join(test_url, path))
 
     >>> browser.headers['content-type']
     'text/xml; charset=UTF-8'
 
-    >>> browser.contents == xml_for_path
+    >>> browser.contents == xml_for_specific_path
     True
+    >>> browser.contents == default_xml
+    False

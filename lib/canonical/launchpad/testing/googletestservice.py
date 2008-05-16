@@ -34,7 +34,7 @@ class GoogleRequestHandler(BaseHTTPRequestHandler):
         location, specified in the service configuration.
         """
         self.send_response(200)
-        self.send_header('Content-Type', default_content_type)
+        self.send_header('Content-Type', self.default_content_type)
         self.end_headers()
 
         content_dir = config.google_test_service.canned_response_directory
@@ -43,7 +43,7 @@ class GoogleRequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(content_body)
 
 
-def url_to_xml_map(self):
+def url_to_xml_map():
     """Return our URL-to-XML mapping as a dictionary."""
     mapfile = config.google_test_service.mapfile
     mapping = {}
