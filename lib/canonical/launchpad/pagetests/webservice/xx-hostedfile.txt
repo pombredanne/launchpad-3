@@ -35,11 +35,12 @@ Once the mugshot has been uploaded, we can GET it. The resource acts
 as a dispatcher pointing to the library-managed mugshot on the public
 Internet.
 
-    >>> print webservice.get(salgado_mugshot)
+    >>> result = webservice.get(salgado_mugshot)
+    >>> print result
     HTTP/1.1 303 See Other
     ...
-    Location: http://localhost:58000/90/mugshot
-
+    Location: http://localhost:58000/.../mugshot
+    >>> initial_url = result.getHeader('Location')
 
 PUT is also used to modify a mugshot.
 
@@ -50,11 +51,9 @@ PUT is also used to modify a mugshot.
 
 The new mugshot is available at a different URL.
 
-    >>> print webservice.get(salgado_mugshot)
-    HTTP/1.1 303 See Other
-    ...
-    Location: http://localhost:58000/91/mugshot
-
+    >>> result = webservice.get(salgado_mugshot)
+    >>> initial_url == result.getHeader('Location')
+    False
 
 Deleting a mugshot (with DELETE) disables the redirect.
 

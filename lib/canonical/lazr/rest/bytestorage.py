@@ -39,28 +39,25 @@ class ByteStorageResource(HTTPResource):
             self.request.response.setHeader("Allow", allow_string)
 
     def do_GET(self):
-        """See IByteStorageResource."""
+        """See `IByteStorageResource`."""
         if not self.context.is_stored:
             # No stored document exists here yet.
             raise NotFound(self.context, self.context.filename, self.request)
         self.request.response.setStatus(303) # See Other
         self.request.response.setHeader('Location', self.context.alias_url)
-        return ''
 
     def do_PUT(self, type, representation):
-        """See IByteStorageResource."""
+        """See `IByteStorageResource`."""
         try:
             self.context.field.validate(representation)
         except ValidationError, e:
             self.request.response.setStatus(400) # Bad Request
             return str(e)
         self.context.createStored(type, representation)
-        return ''
 
     def do_DELETE(self):
-        """See IByteStorageResource."""
+        """See `IByteStorageResource`."""
         self.context.deleteStored()
-        return ''
 
 
 class ByteStorageMarshaller(SimpleFieldMarshaller):

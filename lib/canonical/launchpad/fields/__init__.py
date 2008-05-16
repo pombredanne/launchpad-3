@@ -614,13 +614,13 @@ class BaseImageUpload(Bytes):
                              'height': required_height}))
         return True
 
-    def validate(self, value):
+    def _validate(self, value):
         if hasattr(value, 'seek'):
             value.seek(0)
             content = value.read()
         else:
             content = value
-        Bytes.validate(self, content)
+        super(BaseImageUpload, self)._validate(content)
         self._valid_image(content)
 
     def set(self, object, value):
