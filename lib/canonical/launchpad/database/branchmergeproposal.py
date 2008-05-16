@@ -142,6 +142,7 @@ class BranchMergeProposal(SQLBase):
         return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
 
     def getMessage(self, id):
+        """Return the CodeReviewMessage with the specified ID."""
         return CodeReviewMessage.get(id)
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
