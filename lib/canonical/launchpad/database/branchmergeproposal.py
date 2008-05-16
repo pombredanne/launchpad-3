@@ -138,6 +138,7 @@ class BranchMergeProposal(SQLBase):
 
     @property
     def all_messages(self):
+        """All the messages associated with this proposal."""
         return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
 
     def getMessage(self, id):

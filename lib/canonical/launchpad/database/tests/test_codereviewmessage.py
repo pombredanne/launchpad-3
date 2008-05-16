@@ -61,6 +61,5 @@ class TestCodeReviewMessage(unittest.TestCase):
                           CodeReviewVote.ABSTAIN, message)
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

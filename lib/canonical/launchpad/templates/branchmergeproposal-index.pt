@@ -44,10 +44,10 @@
     </div>
   </tal:whiteboard>
   <a href="#" tal:attributes="href view/comment_location">Add comment</a>
-      <tal:actions repeat="row view/comments" >
+      <tal:comments repeat="row view/comments" >
       <div tal:content="structure row/comment/@@+fragment-summary"
            tal:attributes="style row/style" />
-      </tal:actions>
+      </tal:comments>
 
   <div id="source-revisions"
        tal:condition="not: context/queue_status/enumvalue:MERGED">

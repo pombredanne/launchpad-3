@@ -58,6 +58,7 @@ class TestMessage(unittest.TestCase):
                     (1, message3)]
         self.assertEqual(expected, flattened)
 
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTests(DocTestSuite('canonical.launchpad.database.message'))

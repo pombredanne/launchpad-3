@@ -9,8 +9,7 @@
             <span tal:condition="context/vote" >vote:
                 <span id="comment-vote" tal:content="context/vote/title" />
             </span>
-              <span id="comment-body"
-                  tal:content="view/first_line" />
+            <span id="comment-body" tal:content="view/first_line" />
             (<a tal:attributes="href context/fmt:url" >full message</a>)
         </div>
     </div>

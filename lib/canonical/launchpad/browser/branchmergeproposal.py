@@ -258,6 +258,11 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
 
     @property
     def comments(self):
+        """Return comments associated with this proposal, plus styling info.
+
+        Comments are in threaded order, and the style indicates indenting
+        for use with threads.
+        """
         message_to_comment = {}
         messages = []
         for comment in self.context.all_messages:

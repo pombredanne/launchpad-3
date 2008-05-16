@@ -22,6 +22,9 @@ class CodeReviewMessageSummary(LaunchpadView):
 
     @property
     def first_line(self):
+        """Return the first line in the message.
+
+        A trailing elipsis is added for messages with more than one line."""
         lines = self.context.message.text_contents.splitlines()
         if len(lines) == 0:
             return ''
