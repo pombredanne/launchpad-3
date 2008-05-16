@@ -19,8 +19,9 @@ None
 
 Only admins or the person attached to an account can see or edit Account
 details. This is obviously wrong, as the account should have access rather
-than the (optional) attached person. This involves more surgery to
-Launchpad's security systems.
+than the (optional) attached person. In particular, it means Accounts without
+Person records cannot be managed by the Account owner. Fixing this involves
+more surgery to Launchpad's security systems.
 
 >>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
 >>> stub_account.date_created
@@ -28,15 +29,6 @@ Traceback (most recent call last):
 ...
 Unauthorized...
 >>> del stub_account
-
-
-An Account may be linked to a Person record
-
->>> from canonical.launchpad.interfaces import IPerson
->>> IPerson.providedBy(account.person)
-True
->>> account.person.name
-u'no-priv'
 
 
 An Account has an encrypted password and an OpenID identifier used to generate
@@ -83,7 +75,10 @@ The Account's displayname is synced to the Person's displayname if there is
 one. If the Person.displayname is changed, the Account.displayname is changed
 too.
 
->>> account.person.displayname = 'Something New'
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> personset = getUtility(IPersonSet)
+>>> person = personset.getByEmail('no-priv@canonical.com')
+>>> person.displayname = 'Something New'
 >>> account.displayname
 u'Something New'
 
@@ -93,9 +88,9 @@ Instead, a cron job will sync this information later. This allows displayname
 changes to happen even when the Person table is unavailable.
 
 >>> account.displayname = 'No Privileges Account'
->>> account.person.displayname
+>>> person.displayname
 u'Something New'
->>> account.person.displayname = 'No Privileges Person'
+>>> person.displayname = 'No Privileges Person'
 >>> account.displayname
 u'No Privileges Person'
 

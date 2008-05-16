@@ -8,13 +8,15 @@ __all__ = [
         'AccountStatus',
         'AccountCreationRationale',
         'IAccount',
+        'IAccountPrivate',
+        'IAccountPublic',
         'IAccountSet',
         'INACTIVE_ACCOUNT_STATUSES',
         ]
 
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Object, Text, TextLine
+from zope.schema import Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
@@ -174,18 +176,19 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
 
-class IAccount(Interface):
-    """Interface describing an Account."""
+class IAccountPublic(Interface):
+    """Public information on an IAccount."""
+    id = Int(title=_('ID'), required=True, readonly=True)
+
+
+class IAccountPrivate(Interface):
+    """Private information on an IAccount."""
     date_created = Datetime(
             title=_('Date Created'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
                 description=_("Your name as you would like it displayed."))
-
-    # We can't use IPerson in our attribute definition due to circular imports
-    #person = Object(schema=IPerson, title=_('Person'), required=False)
-    person = Attribute(_('Person'))
 
     creation_rationale = Choice(
             title=_("Rationale for this account's creation."), required=True,
@@ -207,6 +210,10 @@ class IAccount(Interface):
 
     password = PasswordField(
             title=_("Password."), readonly=False, required=True)
+
+
+class IAccount(IAccountPublic, IAccountPrivate):
+    """Interface describing an Account."""
 
 
 class IAccountSet(Interface):
@@ -235,10 +242,3 @@ class IAccountSet(Interface):
         exist in the database or is not linked to an IAccount.
         """
 
-    def getByPerson(person):
-        """Return the IAccount linked to the given IPerson.
-
-        :param person: An IPerson provider.
-
-        :return: An IAccount or None
-        """

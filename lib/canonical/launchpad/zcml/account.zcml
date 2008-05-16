@@ -2,8 +2,11 @@
 
     <content class="canonical.launchpad.database.Account">
         <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IAccountPublic" />
+        <require
             permission="launchpad.View"
-            interface="canonical.launchpad.interfaces.IAccount" />
+            interface="canonical.launchpad.interfaces.IAccountPrivate" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IAccount" />

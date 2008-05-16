@@ -110,11 +110,10 @@ from canonical.launchpad.validators.person import (
     public_person_validator, visibility_validator)
 
 
-class ValidPersonOrTeamCache(SQLBase):
-    """Flags if a Person or Team is active and usable in Launchpad.
+class ValidPersonCache(SQLBase):
+    """Flags if a Person is active and usable in Launchpad.
 
-    This is readonly, as the underlying table is maintained using
-    database triggers.
+    This is readonly, as this is a view in the database.
     """
     # Look Ma, no columns! (apart from id)
 
@@ -132,6 +131,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     _sortingColumnsForSetOperations = SQLConstant(
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
+
+    account = ForeignKey(dbName='account', foreignKey='Account', default=None)
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
 
@@ -160,9 +161,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         We can't do this in a DB trigger as soon the Account table will
         in a seperate database to the Person table.
         """
-        account = getUtility(IAccountSet).getByPerson(self)
-        if account is not None:
-            account.displayname = value
+        if self.account is not None:
+            self.account.displayname = value
         self._SO_set_displayname(value)
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
@@ -182,48 +182,41 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     # on Account or fixing the callsites -- StuartBishop 20080513
     @property
     def openid_identifier(self):
-        account = getUtility(IAccountSet).getByPerson(self)
-        if account is not None:
-            return removeSecurityProxy(account).openid_identifier
+        if self.account is not None:
+            return removeSecurityProxy(self.account).openid_identifier
 
     def _get_password(self):
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
         # this method is scheduled for demolition -- StuartBishop 20080514
-        account = getUtility(IAccountSet).getByPerson(self)
-        if account is not None:
-            return removeSecurityProxy(account).password
+        if self.account is not None:
+            return removeSecurityProxy(self.account).password
 
     def _set_password(self, value):
-        account = getUtility(IAccountSet).getByPerson(self)
-        assert account is not None, 'No account for this Person'
-        removeSecurityProxy(account).password = value
+        assert self.account is not None, 'No account for this Person'
+        removeSecurityProxy(self.account).password = value
 
     password = property(_get_password, _set_password)
 
     def _get_account_status(self):
-        account = getUtility(IAccountSet).getByPerson(self)
-        if account is not None:
-            return removeSecurityProxy(account).status
+        if self.account is not None:
+            return removeSecurityProxy(self.account).status
         else:
             return AccountStatus.NOACCOUNT
 
     def _set_account_status(self, value):
-        account = getUtility(IAccountSet).getByPerson(self)
-        assert account is not None, 'No account for this Person'
-        removeSecurityProxy(account).status = value
+        assert self.account is not None, 'No account for this Person'
+        removeSecurityProxy(self.account).status = value
 
     account_status = property(_get_account_status, _set_account_status)
 
     def _get_account_status_comment(self):
-        account = getUtility(IAccountSet).getByPerson(self)
-        if account is not None:
-            return removeSecurityProxy(account).status_comment
+        if self.account is not None:
+            return removeSecurityProxy(self.account).status_comment
 
     def _set_account_status_comment(self, value):
-        account = getUtility(IAccountSet).getByPerson(self)
-        assert account is not None, 'No account for this Person'
-        removeSecurityProxy(account).status_comment = value
+        assert self.account is not None, 'No account for this Person'
+        removeSecurityProxy(self.account).status_comment = value
 
     account_status_comment = property(
             _get_account_status_comment, _set_account_status_comment)
@@ -320,10 +313,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             "Only Person entries whose account_status is NOACCOUNT can be "
             "converted into teams.")
         # Teams don't have Account records
-        account = Account.selectOneBy(person=self)
-        if account is not None:
-            Account.delete(account.id)
-            del account
+        if self.account is not None:
+            account_id = self.account.id
+            self.account = None
+            Account.delete(account_id)
         self.creation_rationale = None
         self.teamowner = team_owner
         alsoProvides(self, ITeam)
@@ -1064,19 +1057,30 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def is_valid_person_or_team(self):
         """See `IPerson`."""
-        try:
-            if ValidPersonOrTeamCache.get(self.id) is not None:
-                return True
-        except SQLObjectNotFound:
-            pass
-        return False
+        # Teams are always valid
+        if self.isTeam():
+            return True
+
+        return self.is_valid_person
+
+        # An IPerson is valid if it has a preferred email address and
+        # an Account with status AccountStatus.ACTIVE. We should probably
+        # drop the concept of valid people - just users with an Account.
+        if self.account.status <> AccountStatus.ACTIVE:
+            return False
+        
+        return True
 
     @property
     def is_valid_person(self):
         """See `IPerson`."""
         if self.isTeam():
             return False
-        return self.is_valid_person_or_team
+        try:
+            ValidPersonCache.get(self.id)
+            return True
+        except SQLObjectNotFound:
+            return False
 
     @property
     def is_openid_enabled(self):
@@ -1671,8 +1675,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
-            # This table is handled entirely by triggers.
-            ('validpersonorteamcache', 'id'),
             ]
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
@@ -2262,6 +2264,9 @@ class PersonSet:
                 plaintext_password=password,
                 encrypted_password=passwordEncrypted)
 
+        person.account = account
+        email.account = account
+
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
@@ -2304,12 +2309,20 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None."""
-        account = Account.selectOneBy(openid_identifier=openid_identifier)
-        if account is not None and account.person.is_valid_person:
-            return account.person
-        else:
-            return None
+        """Returns a Person with the given openid_identifier, or None.
+        
+        XXX: This method no longer makes sense. The only things we need to
+        lookup by openid identifier are Accounts -- StuartBishop 20080516
+        """
+        return Person.selectOne(
+                AND(
+                    Person.q.accountID == Account.q.id,
+                    Account.q.openid_identifier == openid_identifier,
+                    Account.q.status == AccountStatus.ACTIVE,
+                    EmailAddress.q.personID == Person.q.id,
+                    EmailAddress.q.status == EmailAddressStatus.PREFERRED,
+                    ),
+                )
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""
@@ -2335,9 +2348,7 @@ class PersonSet:
         if orderBy is None:
             orderBy = Person.sortingColumns
         return Person.select(
-            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
-            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
-            )
+                Person.q.id == ValidPersonCache.q.id, orderBy=orderBy)
 
     def teamsCount(self):
         """See `IPersonSet`."""
@@ -2407,14 +2418,13 @@ class PersonSet:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
 
-
         base_query = "Person.teamowner IS NULL AND Person.merged IS NULL"
         clause_tables = []
 
         if exclude_inactive_accounts:
             clause_tables.append('Account')
             base_query += """
-                AND Account.person = Person.id
+                AND Person.account = Account.id
                 AND Account.status NOT IN (%s)
                 """ % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES))
 
@@ -2646,8 +2656,6 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
-            # This table is handled entirely by triggers.
-            ('validpersonorteamcache', 'id'),
             ('translationrelicensingagreement', 'person'),
             ]
 
@@ -3160,6 +3168,12 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
+        # And nuke any referencing Account
+        cur.execute('''
+            DELETE FROM Account USING Person
+            WHERE Person.account = Account.id AND Person.id=%(from_id)d
+            ''' % vars())
+
         # Append a -merged suffix to the account's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
         cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
@@ -3202,9 +3216,13 @@ class PersonSet:
         person_ids = [person.id for person in persons]
         if len(person_ids) == 0:
             return []
-        valid_person_cache = ValidPersonOrTeamCache.select(
-            "id IN %s" % sqlvalues(person_ids))
-        valid_person_ids = set(cache.id for cache in valid_person_cache)
+
+        # This has the side effect of sucking in the ValidPersonCache
+        # items into the cache, allowing Person.is_valid_person calls to
+        # not hit the DB.
+        valid_person_ids = set(
+                person_id.id for person_id in ValidPersonCache.select(
+                    "id IN %s" % sqlvalues(person_ids)))
         return [
             person for person in persons if person.id in valid_person_ids]
 

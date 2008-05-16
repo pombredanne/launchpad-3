@@ -27,7 +27,6 @@ class Account(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     displayname = StringCol(dbName='displayname', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', default=None)
 
     creation_rationale = EnumCol(
             dbName='creation_rationale', schema=AccountCreationRationale,
@@ -75,8 +74,7 @@ class AccountSet:
         """See IAccountSet."""
 
         account = Account(
-                displayname=displayname, creation_rationale=rationale,
-                person=emailaddress.person)
+                displayname=displayname, creation_rationale=rationale)
 
         # Link the EmailAddress to the Account.
         emailaddress.account = account

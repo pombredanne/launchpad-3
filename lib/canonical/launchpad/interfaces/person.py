@@ -59,7 +59,7 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -377,6 +377,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
+    account = Object(schema=IAccount)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,

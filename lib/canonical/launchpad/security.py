@@ -68,21 +68,15 @@ class EditAccount(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
+    # XXX: This is wrong as we need to give an Account rather than a
+    # Person ability to edit an account. -- StuartBishop 20080514
     def checkAuthenticated(self, user):
-        # XXX: This is wrong as we need to give an Account rather than a
-        # Person ability to edit an account. -- StuartBishop 20080514
-        return ((self.obj.person is not None
-                    and user.id == self.obj.person.id)
+        return ((user.account is not None and user.account.id == self.obj.id)
                 or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
 
 class ViewAccount(EditAccount):
     permission = 'launchpad.View'
-    def checkAuthenticated(self, user):
-        return ((self.obj.person is not None
-                    and user.id == self.obj.person.id)
-                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
-
 
 
 class EditOAuthAccessToken(AuthorizationBase):

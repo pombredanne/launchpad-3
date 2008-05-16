@@ -146,6 +146,16 @@ it issuing a DB query.
     [u'name16']
 
 
+=== Accounts ===
+
+A Person may be linked to an Account.
+
+>>> login('no-priv@canonical.com')
+>>> person = personset.getByEmail('no-priv@canonical.com')
+>>> person.account.openid_identifier
+u'no-priv_oid'
+
+
 === Personal standing ===
 
 People have a property called 'personal standing', which affects for
@@ -215,6 +225,9 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
 
 
 === Looking Up Users by OpenID Identifier ===
+
+XXX: This no longer makes sense - we only need to look up Accounts by
+openid identifier -- StuartBishop 20080516
 
 Each Launchpad user is assigned an unchanging OpenID identity URL.
 The last component of this URL is specific to the user, and can be
