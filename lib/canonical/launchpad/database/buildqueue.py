@@ -23,7 +23,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
-    PackagePublishingStatus, SourcePackageUrgency)
+    PackagePublishingPocket, PackagePublishingStatus, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -113,6 +113,19 @@ class BuildQueue(SQLBase):
                 "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
             return
 
+        # XXX Al-maisan, 2008-05-14 (bug #230330):
+        # We keep touching the code here whenever a modification to the
+        # scoring parameters/weights is needed. Maybe the latter can be
+        # externalized?
+
+        score_pocketname = {
+            PackagePublishingPocket.PROPOSED: 0,
+            PackagePublishingPocket.BACKPORTS: 1500,
+            PackagePublishingPocket.RELEASE: 3000,
+            PackagePublishingPocket.UPDATES: 4500,
+            PackagePublishingPocket.SECURITY: 6000,
+            }
+
         score_componentname = {
             'multiverse': 0,
             'universe': 250,
@@ -140,6 +153,8 @@ class BuildQueue(SQLBase):
             (300, 5),
         ]
 
+        private_archive_increment = 10000
+
         score = 0
         msg = "%s (%d) -> " % (self.build.title, self.lastscore)
 
@@ -153,6 +168,11 @@ class BuildQueue(SQLBase):
             urgency = score_urgency[self.urgency]
             score += urgency
             msg += "U+%d " % urgency
+
+            # Calculates the pocket-related part of the score.
+            score_pocket = score_pocketname[self.build.pocket]
+            score += score_pocket
+            msg += "P+%d " % score_pocket
 
             # Calculates the component-related part of the score.
             score_component = score_componentname[
@@ -173,7 +193,7 @@ class BuildQueue(SQLBase):
 
             # Private builds get uber score.
             if self.build.archive.private:
-                score += 1000
+                score += private_archive_increment
 
         # Store current score value.
         self.lastscore = score

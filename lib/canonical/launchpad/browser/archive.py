@@ -598,7 +598,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             source_copy = source.copyTo(destination_series, pocket, archive)
             copies.append(source_copy)
             if not include_binaries:
-                source_copy.createMissingBuilds(ignore_pas=True)
+                source_copy.createMissingBuilds()
                 continue
             for binary in source.getPublishedBinaries():
                 binary_copy = binary.copyTo(

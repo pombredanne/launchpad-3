@@ -354,7 +354,7 @@ Each data row is expandable to contain some sections containing:
       i386
     Built Packages
       mozilla-firefox ff from iceweasel
-    Files
+    Download files from Librarian
       firefox-0.9.2.orig.tar.gz (9.5 MiB)
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)

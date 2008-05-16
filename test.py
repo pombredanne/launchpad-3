@@ -96,10 +96,6 @@ warnings.filterwarnings(
 warnings.filterwarnings(
         'ignore', 'bzrlib.*was deprecated', DeprecationWarning
         )
-# This warning can be removed once we upgrade PQM to hardy.
-warnings.filterwarnings(
-        'ignore', 'docutils.utils.Reporter.set_conditions', DeprecationWarning
-        )
 
 # This warning will be triggered if the beforeTraversal hook fails. We
 # want to ensure it is not raised as an error, as this will mask the real
