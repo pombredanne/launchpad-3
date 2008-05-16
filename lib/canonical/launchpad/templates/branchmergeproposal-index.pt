@@ -45,7 +45,7 @@
   </tal:whiteboard>
   <a href="#" tal:attributes="href view/comment_location">Add comment</a>
       <tal:actions repeat="row view/comments" >
-      <div tal:content="structure row/comment/@@+fragment"
+      <div tal:content="structure row/comment/@@+fragment-summary"
            tal:attributes="style row/style" />
       </tal:actions>
 

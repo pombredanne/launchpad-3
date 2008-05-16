@@ -3,6 +3,7 @@ __metaclass__ = type
 __all__ = [
     'CodeReviewMessageAddView',
     'CodeReviewMessageView',
+    'CodeReviewMessageSummary',
     ]
 
 from zope.interface import Interface
@@ -13,6 +14,21 @@ from canonical.launchpad.interfaces import CodeReviewVote, ICodeReviewMessage
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView,
     LaunchpadView)
+
+
+class CodeReviewMessageSummary(LaunchpadView):
+    """Standard view of a CodeReviewMessage"""
+    __used_for__ = ICodeReviewMessage
+
+    @property
+    def first_line(self):
+        lines = self.context.message.text_contents.splitlines()
+        if len(lines) == 0:
+            return ''
+        elif len(lines) == 1:
+            return lines[0]
+        else:
+            return lines[0].rstrip('.') + '...'
 
 
 class CodeReviewMessageView(LaunchpadView):

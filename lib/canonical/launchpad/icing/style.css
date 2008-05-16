@@ -1100,7 +1100,9 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .description {font-size: 1.125em;}
 /* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
-.boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
+.boardComment, .boardCommentSummary {border: 1px solid #ddd;}
+.boardComment {margin: 1em 0 1.5em;}
+.boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
 .boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}

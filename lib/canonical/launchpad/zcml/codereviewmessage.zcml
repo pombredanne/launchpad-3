@@ -31,6 +31,12 @@
       permission="zope.Public"
       template="../templates/codereviewmessage-fragment.pt" />
     <browser:page
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        class="canonical.launchpad.browser.CodeReviewMessageSummary"
+        name="+fragment-summary"
+        permission="zope.Public"
+        template="../templates/codereviewmessage-fragment-summary.pt" />
+    <browser:page
         name="+reply"
         facet="branches"
         for="canonical.launchpad.interfaces.ICodeReviewMessage"
