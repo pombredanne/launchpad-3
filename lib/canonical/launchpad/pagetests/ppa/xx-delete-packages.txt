@@ -387,7 +387,7 @@ records are presented.
     ...     name='field.status_filter').value = ['published']
     >>> user_browser.getControl("Update").click()
     >>> print_ppa_packages(user_browser.contents)
-    Source           Published   Status     Series          Section  Built
+    No matching source packages for ''.
 
 When he selects 'Superseded' the SUPERSEDED source shows up again.
 
