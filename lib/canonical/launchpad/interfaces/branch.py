@@ -950,6 +950,12 @@ class BranchListingSort(EnumeratedType):
     # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
     # that are not visible in the listing!
 
+    DEFAULT = Item("""
+        by most interesting
+
+        Sort branches by the default ordering for the view.
+        """)
+
     PRODUCT = Item("""
         by project name
 

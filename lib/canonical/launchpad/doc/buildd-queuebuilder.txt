@@ -538,7 +538,7 @@ happen in parallel with build creation.
     >>> print build_queue.build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
     >>> build_queue.lastscore
-    1005
+    4005
 
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.

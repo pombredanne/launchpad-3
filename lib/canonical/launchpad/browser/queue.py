@@ -13,9 +13,9 @@ import operator
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IComponentSet, IHasQueueItems, IPackageUploadSet, ISectionSet,
-    NotFoundError, PackagePublishingPriority, QueueInconsistentStateError,
-    UnexpectedFormData, PackageUploadStatus)
+    IArchivePermissionSet, IComponentSet, IHasQueueItems, IPackageUploadSet,
+    ISectionSet, NotFoundError, PackagePublishingPriority,
+    QueueInconsistentStateError, UnexpectedFormData, PackageUploadStatus)
 from canonical.launchpad.scripts.queue import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -87,19 +87,20 @@ class QueueItemsView(LaunchpadView):
 
         Returns a list of labelled actions or an empty list.
         """
-        # states that support actions
+        # States that support actions.
         mutable_states = [
             PackageUploadStatus.NEW,
-            PackageUploadStatus.UNAPPROVED,
+            PackageUploadStatus.REJECTED,
+            PackageUploadStatus.UNAPPROVED
             ]
 
-        # return actions only for supported states and require
-        # edit permission
+        # Return actions only for supported states and require
+        # edit permission.
         if (self.state in mutable_states and
             check_permission('launchpad.Edit', self.queue)):
             return ['Accept', 'Reject']
 
-        # no actions for unsupported states
+        # No actions for unsupported states.
         return []
 
     def performQueueAction(self):
@@ -139,6 +140,14 @@ class QueueItemsView(LaunchpadView):
             self.error = "Invalid component: %s" % component_override
             return
 
+        # Get a list of components that the user has rights to accept and
+        # override to or from.
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.context.main_archive, self.user)
+        allowed_components = set(
+            permission.component for permission in permissions)
+
         try:
             if section_override:
                 new_section = getUtility(ISectionSet)[section_override]
@@ -171,12 +180,30 @@ class QueueItemsView(LaunchpadView):
         failure = []
         for queue_id in queue_ids:
             queue_item = queue_set.get(int(queue_id))
+            # First check that the user has rights to accept/reject this
+            # item by virtue of which component it has.
+            if not check_permission('launchpad.Edit', queue_item):
+                existing_component_names = ", ".join(
+                    component.name for component in queue_item.components)
+                failure.append(
+                    "FAILED: %s (You have no rights to %s component(s) "
+                    "'%s')" % (queue_item.displayname,
+                               action,
+                               existing_component_names))
+                continue
+
             # Sources and binaries are mutually exclusive when it comes to
             # overriding, so only one of these will be set.
-            source_overridden = queue_item.overrideSource(
-                new_component, new_section)
-            binary_overridden = queue_item.overrideBinaries(
-                new_component, new_section, new_priority)
+            try:
+                source_overridden = queue_item.overrideSource(
+                    new_component, new_section, allowed_components)
+                binary_overridden = queue_item.overrideBinaries(
+                    new_component, new_section, new_priority,
+                    allowed_components)
+            except QueueInconsistentStateError, info:
+                failure.append("FAILED: %s (%s)" %
+                               (queue_item.displayname, info))
+                continue
 
             feedback_interpolations = {
                 "name"      : queue_item.displayname,

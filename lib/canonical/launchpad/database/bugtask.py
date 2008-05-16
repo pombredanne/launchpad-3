@@ -443,12 +443,18 @@ class BugTask(SQLBase, BugTaskMixin):
     def getConjoinedMaster(self, bugtasks):
         """See `IBugTask`."""
         conjoined_master = None
-        if (IDistroBugTask.providedBy(self) and
-            self.distribution.currentseries is not None):
+        if IDistroBugTask.providedBy(self):
+            possible_masters = [
+                bugtask for bugtask in bugtasks
+                if (bugtask.distroseries is not None and
+                    bugtask.sourcepackagename == self.sourcepackagename)]
+            # Return early, so that we don't have to get currentseries,
+            # which is expensive.
+            if len(possible_masters) == 0:
+                return None
             current_series = self.distribution.currentseries
-            for bugtask in bugtasks:
-                if (bugtask.distroseries == current_series and
-                    bugtask.sourcepackagename == self.sourcepackagename):
+            for bugtask in possible_masters:
+                if bugtask.distroseries == current_series:
                     conjoined_master = bugtask
                     break
         elif IUpstreamBugTask.providedBy(self):
@@ -1663,6 +1669,7 @@ class BugTaskSet:
                 SELECT BugTask.id
                 FROM BugTask
                     JOIN Bug ON BugTask.bug = Bug.id
+                    LEFT JOIN BugWatch on Bug.id = BugWatch.bug
                 """ + unconfirmed_bug_join + """
                 """ + target_join + """
                 WHERE
@@ -1671,11 +1678,11 @@ class BugTaskSet:
                 """ + bug_privacy_filter + """
                     AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
-                    AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
+                    AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
