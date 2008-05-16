@@ -40,9 +40,10 @@ from canonical.launchpad.interfaces import (
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
-    QueueInconsistentStateError, QueueStateWriteProtectedError,
-    QueueSourceAcceptError, SourcePackageFileType)
+    PackageUploadCustomFormat, pocketsuffix, NonBuildableSourceUploadError,
+    QueueBuildAcceptError, QueueInconsistentStateError,
+    QueueStateWriteProtectedError,QueueSourceAcceptError,
+    SourcePackageFileType)
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, simple_sendmail)
 from canonical.launchpad.scripts.processaccepted import (
@@ -214,18 +215,16 @@ class PackageUpload(SQLBase):
             self, changesfile_object=changesfile_object)
         changesfile_object.close()
 
-    def _checkBuildsForSource(self, sourcepackagerelease, builds):
+    def _validateBuildsForSource(self, sourcepackagerelease, builds):
         """Check if the sourcepackagerelease generates at least one build.
 
-        :raise QueueInconsistentStateError: when the uploaded source doesn't
-            result in any builds.
+        :raise NonBuildableSourceUploadError: when the uploaded source
+            doesn't result in any builds in its targeted distroseries.
         """
-        if len(builds) > 0:
-            return
-
-        raise QueueInconsistentStateError(
-            "Cannot build any of the architectures requested: %s" %
-            sourcepackagerelease.architecturehintlist)
+        if len(builds) == 0:
+            raise NonBuildableSourceUploadError(
+                "Cannot build any of the architectures requested: %s" %
+                sourcepackagerelease.architecturehintlist)
 
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
@@ -242,7 +241,7 @@ class PackageUpload(SQLBase):
         debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
         builds = pub_source.createMissingBuilds(logger=logger)
-        self._checkBuildsForSource(pub_source.sourcepackagerelease, builds)
+        self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
 
         self._closeBugs(changesfile_path, logger)
 
@@ -260,7 +259,7 @@ class PackageUpload(SQLBase):
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
             builds = pub_source.createMissingBuilds(ignore_pas=True)
-            self._checkBuildsForSource(
+            self._validateBuildsForSource(
                 pub_source.sourcepackagerelease, builds)
 
         # When accepting packages, we must also check the changes file
@@ -937,7 +936,7 @@ class PackageUploadBuild(SQLBase):
                     % (binary.component.name, distroseries.name))
             if binary.section not in distroseries.sections:
                 raise QueueBuildAcceptError(
-                    'Section "%s" is not allowed in %s' %
+                    'Section "q%s" is not allowed in %s' %
                         (binary.section.name,
                          distroseries.name))
 

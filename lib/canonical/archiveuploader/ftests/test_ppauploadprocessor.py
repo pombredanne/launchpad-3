@@ -888,7 +888,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Next version can't be accepted because it can't be built.
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
         packager.buildSource()
-        error = self.assertRaisesSpecial(
+        error = self.assertRaisesAndReturnError(
             AssertionError,
             packager.uploadSourceVersion, '1.0-2',
             archive=self.name16.archive)

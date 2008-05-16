@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
     IDistroSeriesSet, ILibraryFileAliasSet, PackagePublishingPocket,
     PackagePublishingStatus, PackageUploadStatus,
-    QueueInconsistentStateError)
+    NonBuildableSourceUploadError)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -93,11 +93,13 @@ class TestUploadProcessorBase(unittest.TestCase):
                         "'%s' is not in logged output\n\n%s"
                         % (line, '\n'.join(self.log.lines)))
 
-    def assertRaisesSpecial(self, excClass, callableObj, *args, **kwargs):
+    def assertRaisesAndReturnError(self, excClass, callableObj, *args,
+                                   **kwargs):
         """See `TestCase.assertRaises`.
 
-        Unlike `TestCase.assertRaised`, this method returns contents when an
-        exception is raised.  Callsites can then easily check the contents.
+        Unlike `TestCase.assertRaises`, this method returns the exception
+        object when it is raised.  Callsites can then easily check the
+        exception contents.
         """
         try:
             callableObj(*args, **kwargs)
@@ -852,8 +854,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # just-uploaded changesfile from librarian.
         self.layer.txn.commit()
 
-        error = self.assertRaisesSpecial(
-            QueueInconsistentStateError,
+        error = self.assertRaisesAndReturnError(
+            NonBuildableSourceUploadError,
             queue_record.acceptFromQueue, 'announce@ubuntu.com')
         self.assertEqual(
             str(error),
@@ -870,7 +872,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # uploader will receive a rejection email).
         packager.buildVersion('1.0-3', suite=self.breezy.name, arch="m68k")
         packager.buildSource()
-        error = self.assertRaisesSpecial(
+        error = self.assertRaisesAndReturnError(
             AssertionError,
             packager.uploadSourceVersion, '1.0-3')
         self.assertEqual(
