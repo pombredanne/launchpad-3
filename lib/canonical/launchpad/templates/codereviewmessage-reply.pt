@@ -20,8 +20,7 @@
   <h1>Code review comment</h1>
   <tal:content replace="structure context/@@+fragment"/>
   <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info" style="clear: both">
-    </div>
+    <div metal:fill-slot="extra_info" style="clear: both" />
   </div>
 </div>
 </body>

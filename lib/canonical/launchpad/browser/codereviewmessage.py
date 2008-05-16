@@ -8,12 +8,11 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice, Text, TextLine
 
-from canonical.launchpad.interfaces import ICodeReviewMessage
-from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView,
-    LaunchpadView)
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import CodeReviewVote, ICodeReviewMessage
+from canonical.launchpad.interfaces import (
+    CodeReviewVote, ICodeReviewMessage ICodeReviewMessage)
+from canonical.launchpad.webapp import (
+    action, canonical_url, LaunchpadFormView, LaunchpadView)
 
 
 class CodeReviewMessageView(LaunchpadView):
@@ -22,6 +21,7 @@ class CodeReviewMessageView(LaunchpadView):
 
     @property
     def reply_link(self):
+        """Location of the page for replying to this message"""
         return canonical_url(self.context, view_name='+reply')
 
 
