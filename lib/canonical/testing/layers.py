@@ -26,7 +26,8 @@ __all__ = [
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
     'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'ExperimentalLaunchpadZopelessLayer', 'TwistedLaunchpadZopelessLayer'
+    'ExperimentalLaunchpadZopelessLayer', 'TwistedLaunchpadZopelessLayer',
+    'disconnect_stores', 'reconnect_stores',
     ]
 
 import gc
@@ -42,6 +43,7 @@ from unittest import TestCase, TestResult
 from urllib import urlopen
 
 import psycopg2
+from storm.zope.interfaces import IZStorm
 import transaction
 
 import zope.app.testing.functional
@@ -52,8 +54,9 @@ from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 
-from canonical.config import config
-from canonical.database.sqlbase import ZopelessTransactionManager
+from canonical.config import config, dbconfig
+from canonical.database.revision import confirm_dbrevision
+from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
@@ -115,6 +118,47 @@ def is_ca_available():
         return False
     else:
         return True
+
+
+def disconnect_stores():
+    """Disconnect Storm stores."""
+    zstorm = getUtility(IZStorm)
+    stores = []
+    for store_name in ['main', 'session']:
+        if store_name in zstorm._named:
+            store = zstorm.get(store_name)
+            zstorm.remove(store)
+            stores.append(store)
+    # If we have any stores, abort the transaction and close them.
+    if stores:
+        transaction.abort()
+        for store in stores:
+            store.close()
+
+
+def reconnect_stores(database_config_section='launchpad'):
+    """Reconnect Storm stores, resetting the dbconfig to its defaults.
+
+    After reconnecting, the database revision will be checked to make
+    sure the right data is available.
+    """
+    disconnect_stores()
+    dbconfig.setConfigSection(database_config_section)
+
+    main_store = getUtility(IZStorm).get('main')
+    assert main_store is not None, 'Failed to reconnect'
+
+    # Confirm the database has the right patchlevel
+    confirm_dbrevision(cursor())
+
+    # Confirm that SQLOS is again talking to the database (it connects
+    # as soon as SQLBase._connection is accessed
+    r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
+    assert r.get_one()[0] > 0, 'Storm is not talking to the database'
+
+    session_store = getUtility(IZStorm).get('session')
+    assert session_store is not None, 'Failed to reconnect'
+    transaction.abort()
 
 
 class BaseLayer:
@@ -807,10 +851,9 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         # Reset any statistics
         from canonical.launchpad.webapp.opstats import OpStats
         OpStats.resetStats()
-        from canonical.launchpad.ftests.harness import _reconnect_sqlos
 
-        # Connect SQLOS
-        _reconnect_sqlos()
+        # Connect Storm
+        reconnect_stores()
 
     @classmethod
     @profiled
@@ -825,9 +868,8 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         from canonical.launchpad.webapp.opstats import OpStats
         OpStats.resetStats()
 
-        # Disconnect SQLOS so it doesn't get in the way of database resets
-        from canonical.launchpad.ftests.harness import _disconnect_sqlos
-        _disconnect_sqlos()
+        # Disconnect Storm so it doesn't get in the way of database resets
+        disconnect_stores()
 
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
@@ -854,25 +896,17 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     def testSetUp(cls):
         # LaunchpadZopelessLayer takes care of reconnecting the stores
         if not LaunchpadZopelessLayer.isSetUp:
-            from canonical.launchpad.ftests.harness import _reconnect_sqlos
-            # Connect SQLOS
-            _reconnect_sqlos()
+            reconnect_stores()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        # LaunchpadZopelessLayer takes care of disconnecting the stores
-        if not LaunchpadZopelessLayer.isSetUp:
-            # Disconnect SQLOS so it doesn't get in the way of database resets
-            from canonical.launchpad.ftests.harness import _disconnect_sqlos
-            _disconnect_sqlos()
+        disconnect_stores()
 
     @classmethod
     @profiled
     def switchDbConfig(cls, database_config_section):
-        from canonical.launchpad.ftests.harness import _reconnect_sqlos
-        # Connect SQLOS
-        _reconnect_sqlos(database_config_section=database_config_section)
+        reconnect_stores(database_config_section=database_config_section)
 
 
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):
@@ -902,9 +936,8 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
                 )
         initZopeless()
 
-        # Connect SQLOS
-        from canonical.launchpad.ftests.harness import _reconnect_sqlos
-        _reconnect_sqlos()
+        # Connect Storm
+        reconnect_stores()
 
     @classmethod
     @profiled
@@ -914,8 +947,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
                 )
-        from canonical.launchpad.ftests.harness import _disconnect_sqlos
-        _disconnect_sqlos()
+        # LaunchpadScriptLayer will disconnect the stores for us.
 
     @classmethod
     @profiled
