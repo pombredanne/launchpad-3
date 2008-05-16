@@ -148,7 +148,7 @@ class TestRetryDepwait(unittest.TestCase):
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(depwait_build.buildqueue_record.lastscore, 255)
+        self.assertEqual(depwait_build.buildqueue_record.lastscore, 3255)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

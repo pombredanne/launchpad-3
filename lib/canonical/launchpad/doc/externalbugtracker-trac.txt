@@ -115,7 +115,7 @@ an UnknownRemoteStatusError will be raised.
     >>> trac.convertRemoteStatus('eggs').title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: eggs
 
 
 == Initialization ==
