@@ -305,7 +305,7 @@ what component is uploadable to by what person or group of people.
    >>> from operator import attrgetter
    >>> for permission in sorted(
    ...     ubuntu.uploaders, key=attrgetter("id")):
-   ...     assert permission.archive == ubuntu.main_archive
+   ...     assert not permission.archive.is_ppa
    ...     print permission.component.name
    ...     print permission.person.displayname
    universe
@@ -314,6 +314,8 @@ what component is uploadable to by what person or group of people.
    Ubuntu Team
    main
    Ubuntu Team
+   partner
+   Canonical Partner Developers
 
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).

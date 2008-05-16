@@ -705,16 +705,14 @@ Retrieve a known DistroArchSeries
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+    >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
 
 Create a totally bogus CHROOT
 
     >>> from canonical.launchpad.database import LibraryFileAlias
-    >>> from canonical.launchpad.database import PocketChroot
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
-    >>> pocket = PackagePublishingPocket.RELEASE
-    >>> chroot = LibraryFileAlias.get(1)
-    >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
-    ...                  pocket=pocket, chroot=chroot)
+    >>> fake_chroot = LibraryFileAlias.get(1)
+    >>> unused = hoary_i386.addOrUpdateChroot(fake_chroot)
+    >>> unused = warty_i386.addOrUpdateChroot(fake_chroot)
 
 Setup a buildd-slave instance for a successful 'scan' procedure.
 

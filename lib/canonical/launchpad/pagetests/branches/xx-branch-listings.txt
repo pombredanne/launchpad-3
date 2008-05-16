@@ -292,6 +292,7 @@ options that can be selected.
     ItemNotFoundError: insufficient items with name 'by project name'
     >>> for option in sort_by_control.options:
     ...     print option
+    by most interesting
     by lifecycle status
     by author name
     by branch name
@@ -309,7 +310,7 @@ lifecycle ceases to be relevant, and the default is to sort by author.
     >>> status_control.value = ['MATURE']
     >>> browser.getControl('Filter').click()
     >>> browser.getControl(name='field.sort_by').value
-    ['by author name']
+    ['by most interesting']
 
 The implicitly sorted listings do not have an ordering widget at all.
 
