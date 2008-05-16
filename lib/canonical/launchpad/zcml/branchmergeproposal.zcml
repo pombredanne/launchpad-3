@@ -163,7 +163,6 @@
       permission="launchpad.Edit"
       template="../templates/branchmergeproposal-edit.pt" />
 
-
   <browser:url
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       path_expression="string:+merge/${id}"

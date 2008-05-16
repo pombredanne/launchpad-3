@@ -2,22 +2,20 @@
    xmlns:tal="http://xml.zope.org/namespaces/tal"
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
-  <metal:view-message define-macro="view-message">
     <div class="boardComment">
         <div class="boardCommentDetails">
-            <span tal:content="structure comment/message/owner/fmt:link"
+            <span tal:content="structure context/message/owner/fmt:link"
                   id="comment-from" />
-            <span tal:condition="comment/vote" >vote:
-                <span id="comment-vote" tal:content="comment/vote/title" />
+            <span tal:condition="context/vote" >vote:
+                <span id="comment-vote" tal:content="context/vote/title" />
             </span>
         </div>
         <div class="boardCommentBody">
-            <tt id="comment-subject" tal:content="comment/message/subject" />
+            <tt id="comment-subject" tal:content="context/message/subject" />
             <div>
               <tt id="comment-body"
-                  tal:content="comment/message/text_contents" />
+                  tal:content="context/message/text_contents" />
             </div>
         </div>
     </div>
-  </metal:view-message>
 </tal:root>
