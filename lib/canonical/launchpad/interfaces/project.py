@@ -282,9 +282,9 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
                            required=True, readonly=True,
                            constraint=name_validator)
 
-    title = TextLine(title=u'The title for this project series.', required=True,
-                     readonly=True)
+    title = TextLine(title=u'The title for this project series.',
+                     required=True, readonly=True)
 
-    project = Object(schema=IProject, 
+    project = Object(schema=IProject,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
