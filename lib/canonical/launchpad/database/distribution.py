@@ -138,12 +138,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    upload_sender = StringCol(
-        dbName='upload_sender', notNull=False, default=None)
-    upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person',
-        validator=public_person_validator, default=None,
-        notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
@@ -155,8 +149,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def uploaders(self):
         """See `IDistribution`."""
-        return getUtility(
-            IArchivePermissionSet).uploadersForComponent(self.main_archive)
+        # Get all the distribution archives and find out the uploaders
+        # for each.
+        distro_uploaders = []
+        permission_set = getUtility(IArchivePermissionSet)
+        for archive in self.all_distro_archives:
+            uploaders = permission_set.uploadersForComponent(archive)
+            distro_uploaders.extend(uploaders)
+
+        return distro_uploaders
 
     @property
     def official_codehosting(self):

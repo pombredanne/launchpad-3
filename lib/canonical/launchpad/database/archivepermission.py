@@ -85,8 +85,8 @@ class ArchivePermissionSet:
 
         return auth
 
-    def componentsForUploader(self, archive, user):
-        """See `IArchivePermissionSet`,"""
+    def _componentsFor(self, archive, user, permission_type):
+        """Helper function to get ArchivePermission objects."""
         return ArchivePermission.select("""
             ArchivePermission.archive = %s AND
             ArchivePermission.permission = %s AND
@@ -95,8 +95,13 @@ class ArchivePermissionSet:
                     FROM TeamParticipation
                     WHERE TeamParticipation.person = %s AND
                           TeamParticipation.team = ArchivePermission.person)
-            """ % sqlvalues(archive, ArchivePermissionType.UPLOAD, user),
+            """ % sqlvalues(archive, permission_type, user),
             prejoins=["component"])
+
+    def componentsForUploader(self, archive, user):
+        """See `IArchivePermissionSet`,"""
+        return self._componentsFor(
+            archive, user, ArchivePermissionType.UPLOAD)
 
     def uploadersForComponent(self, archive, component=None):
         "See `IArchivePermissionSet`."""
@@ -131,3 +136,8 @@ class ArchivePermissionSet:
             archive=archive, permission=ArchivePermissionType.QUEUE_ADMIN,
             component=component)
         return results.prejoin(["component"])
+
+    def componentsForQueueAdmin(self, archive, user):
+        """See `IArchivePermissionSet`."""
+        return self._componentsFor(
+            archive, user, ArchivePermissionType.QUEUE_ADMIN)

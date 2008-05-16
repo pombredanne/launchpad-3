@@ -175,7 +175,32 @@ queues in that component.
 
     >>> archive_admins = permission_set.queueAdminsForComponent(
     ...     ubuntu.main_archive, main_component)
-    >>> for archive_admin in sorted(archive_admins,
-    ...     key=operator.attrgetter("id")):
+    >>> for archive_admin in sorted(
+    ...     archive_admins, key=operator.attrgetter("id")):
     ...     print archive_admin.person.name
     ubuntu-team
+    name12
+
+componentsForQueueAdmin() returns the ArchivePermission records for all
+the components that the supplied user has permission to administer in
+the distroseries queue.
+
+    >>> name12 = getUtility(IPersonSet).getByName("name12")
+    >>> permissions = permission_set.componentsForQueueAdmin(
+    ...     ubuntu.main_archive, name12)
+    >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
+    ...     print permission.component.name
+    main
+    restricted
+    universe
+    multiverse
+
+    >>> no_team = getUtility(IPersonSet).getByName("no-team-memberships")
+    >>> permissions = permission_set.componentsForQueueAdmin(
+    ...     ubuntu.main_archive, no_team)
+    >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
+    ...     print permission.component.name
+    universe
+    multiverse
+
+
