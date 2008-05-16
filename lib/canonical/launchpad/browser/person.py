@@ -83,6 +83,7 @@ import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 import pytz
+import subprocess
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
@@ -2467,6 +2468,20 @@ class PersonEditSSHKeysView(LaunchpadView):
             self.error_message = 'Invalid public key'
             return
 
+        process = subprocess.Popen(
+            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = process.communicate(sshkey)
+        if 'compromised' in out.lower():
+            self.error_message = (
+                'This key is known to be compromised due to a security flaw '
+                'in the software used to generate it, so it will not be '
+                'accepted by Launchpad. See the full '
+                '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
+                'Notice</a> for further information and instructions on how '
+                'to generate another key.')
+            return
+
         if kind == 'ssh-rsa':
             keytype = SSHKeyType.RSA
         elif kind == 'ssh-dss':
@@ -3750,6 +3765,7 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
+    no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
 
@@ -3757,7 +3773,7 @@ class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
     @property
     def branch_search_context(self):
@@ -3770,7 +3786,7 @@ class PersonOwnedBranchesView(BranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
     @property
     def branch_search_context(self):
@@ -3783,6 +3799,7 @@ class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
     @property
     def branch_search_context(self):
