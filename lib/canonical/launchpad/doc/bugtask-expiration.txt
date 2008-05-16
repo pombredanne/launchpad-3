@@ -94,6 +94,18 @@ for creating old bugs and printing a summary of their state.
     >>> jokosher_bugtask.bug.can_expire
     True
 
+A bugtask for a product with a bug watch. Note that this bugtask
+has otherwise the same parameters as jokosher_bugtask. The 
+bugwatch prevents expiration, hence this bugtask will not appear
+in the listings of expirable bugtasks below.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> jokosher_bugtask_watched = create_old_bug('jokosher watched', 
+    ...     61, jokosher, external_bugtracker=mozilla_bugtracker)
+    >>> jokosher_bugtask_watched.bug.can_expire
+    False
+
 Let's also make some bugs that almost qualify for expiration.
 
     # A bugtask whose status is not Incomplete is not expirable.
@@ -190,26 +202,27 @@ The ubuntu, hoary, and jokosher bugs are the only ones that can be
 expired. The other bugs do not meet one of the preconditions.
 
     >>> bugtasks = [ubuntu_bugtask, hoary_bugtask, jokosher_bugtask,
-    ...     new_bugtask, assigned_bugtask, confirmed_bugtask,
-    ...     duplicate_bugtask, external_bugtask, milestone_bugtask,
-    ...     recent_bugtask, no_expiration_bugtask]
+    ...     jokosher_bugtask_watched, new_bugtask, assigned_bugtask,
+    ...     confirmed_bugtask, duplicate_bugtask, external_bugtask, 
+    ...     milestone_bugtask, recent_bugtask, no_expiration_bugtask]
 
     # Sync the bugs and bugtasks defined above with their modified DB values.
     >>> sync_bugtasks(bugtasks)
 
     >>> summarize_bugtasks(bugtasks)
-    ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
-    ubuntu       True    351  Incomplete  False     False  False  False
-    hoary        True    351  Incomplete  False     False  False  False
-    jokosher     True     61  Incomplete  False     False  False  False
-    thunderbird  False   351  New         False     False  False  False
-    assigned     True     61  Incomplete  True      False  False  False
-    confirmed    True     61  Confirmed   False     False  False  False
-    duplicate    True     61  Incomplete  False     True   False  False
-    external     False    61  Incomplete  False     False  False  False
-    milestone    True     61  Incomplete  False     False  True   False
-    recent       True     31  Incomplete  False     False  False  False
-    no_expire    False    61  Incomplete  False     False  False  False
+    ROLE             EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    ubuntu           True    351  Incomplete  False     False  False  False
+    hoary            True    351  Incomplete  False     False  False  False
+    jokosher         True     61  Incomplete  False     False  False  False
+    jokosher watched True     61  Incomplete  False     False  False  False
+    thunderbird      False   351  New         False     False  False  False
+    assigned         True     61  Incomplete  True      False  False  False
+    confirmed        True     61  Confirmed   False     False  False  False
+    duplicate        True     61  Incomplete  False     True   False  False
+    external         False    61  Incomplete  False     False  False  False
+    milestone        True     61  Incomplete  False     False  True   False
+    recent           True     31  Incomplete  False     False  False  False
+    no_expire        False    61  Incomplete  False     False  False  False
 
 
 == findExpirableBugTasks() Part 2 ==
@@ -447,18 +460,19 @@ by findExpirableBugTasks(), it was expired because its master (hoary)
 was expired. The remaining bugtasks are unchanged.
 
     >>> summarize_bugtasks(bugtasks)
-    ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
-    ubuntu       True      0  Invalid     False     False  False  False
-    hoary        True      0  Invalid     False     False  False  False
-    jokosher     True      0  Invalid     False     False  False  False
-    thunderbird  False     0  Won't Fix   False     False  False  False
-    assigned     True     61  Incomplete  True      False  False  False
-    confirmed    True     61  Confirmed   False     False  False  False
-    duplicate    True     61  Incomplete  False     True   False  False
-    external     False    61  Incomplete  False     False  False  False
-    milestone    True     61  Incomplete  False     False  True   False
-    recent       True     31  Incomplete  False     False  False  False
-    no_expire    False    61  Incomplete  False     False  False  False
+    ROLE             EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
+    ubuntu           True      0  Invalid     False     False  False  False
+    hoary            True      0  Invalid     False     False  False  False
+    jokosher         True      0  Invalid     False     False  False  False
+    jokosher watched True     61  Incomplete  False     False  False  False
+    thunderbird      False     0  Won't Fix   False     False  False  False
+    assigned         True     61  Incomplete  True      False  False  False
+    confirmed        True     61  Confirmed   False     False  False  False
+    duplicate        True     61  Incomplete  False     True   False  False
+    external         False    61  Incomplete  False     False  False  False
+    milestone        True     61  Incomplete  False     False  True   False
+    recent           True     31  Incomplete  False     False  False  False
+    no_expire        False    61  Incomplete  False     False  False  False
 
 Only the three test bugtasks were expired in the entire database. The
 evolution task was already Invalid.

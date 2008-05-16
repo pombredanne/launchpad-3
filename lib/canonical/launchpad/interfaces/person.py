@@ -1822,3 +1822,10 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+# Can't import IPerson in interfaces/teammembership.py, so we need to do this
+# here.
+ITeamMembership['team'].schema = IPerson
+ITeamMembership['person'].schema = IPerson
+ITeamMembership['last_changed_by'].schema = IPerson
