@@ -142,27 +142,9 @@ class ArchiveViewBase:
         else:
             return '%s binary packages' % self.context.number_of_binaries
 
-
-class ArchiveView(ArchiveViewBase, LaunchpadView):
-    """Default Archive view class.
-
-    Implements useful actions and collects useful sets for the page template.
-    """
-
-    __used_for__ = IArchive
-
-    def initialize(self):
-        """Setup infrastructure for the PPA index page.
-
-        Setup sources list entries widget, package filter widget and the
-        search result list.
-        """
-        self.setupSourcesListEntries()
-        self.setupStatusFilterWidget()
-        self.setupPackageBatchResult()
-
-    def setupStatusFilterWidget(self):
-        """Build a customized publishing status select widget.
+    @cachedproperty
+    def simplified_status_vocabulary(self):
+        """Return a simplified publishing status vocabulary.
 
         Receives the one of the established field values:
 
@@ -190,15 +172,39 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
                        'superseded', 'Superseded'),
             SimpleTerm(StatusCollection(), 'any', 'Any Status')
             ]
-        status_vocabulary = SimpleVocabulary(status_terms)
+        return SimpleVocabulary(status_terms)
 
+
+class ArchiveView(ArchiveViewBase, LaunchpadView):
+    """Default Archive view class.
+
+    Implements useful actions and collects useful sets for the page template.
+    """
+
+    __used_for__ = IArchive
+
+    def initialize(self):
+        """Setup infrastructure for the PPA index page.
+
+        Setup sources list entries widget, package filter widget and the
+        search result list.
+        """
+        self.setupSourcesListEntries()
+        self.setupStatusFilterWidget()
+        self.setupPackageBatchResult()
+
+    def setupStatusFilterWidget(self):
+        """Build a customized publishing status select widget.
+
+        See `status_vocabulary`.
+        """
         status_filter = self.request.get('field.status_filter', 'published')
-        self.selected_status_filter = status_vocabulary.getTermByToken(
-            status_filter)
+        self.selected_status_filter = (
+            self.simplified_status_vocabulary.getTermByToken(status_filter))
 
         field = Choice(
             __name__='status_filter', title=_("Status Filter"),
-            vocabulary=status_vocabulary, required=True)
+            vocabulary=self.simplified_status_vocabulary, required=True)
         setUpWidget(self, 'status_filter',  field, IInputWidget)
 
     @property
@@ -246,31 +252,46 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     max_sources_presented = 50
 
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
+    custom_widget('status_filter', LaunchpadDropdownWidget)
 
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
         In addition to setting schema fields, also initialize the
-        'name_filter' widget required to setup 'selected_sources' field.
+        'name_filter' and 'status_filter' widgets required to setup
+        'selected_sources' field.
 
-        See `createSelectedSourcesField` method.
+        See `createSimplifiedStatusFilterField` and
+        `createSelectedSourcesField` methods.
         """
         LaunchpadFormView.setUpFields(self)
+
+        # Build and store 'status_filter' field.
+        status_field = self.createSimplifiedStatusFilterField()
+
+        # Setup widgets for the for 'name_filter' and 'status_filter'
+        # fields because they are required to build 'selected_sources'
+        # field.
+        initial_fields = status_field + self.form_fields.select('name_filter')
         self.widgets = form.setUpWidgets(
-            self.form_fields.select('name_filter'),
-            self.prefix, self.context, self.request,
+            initial_fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
-        self.form_fields = (
-            self.createSelectedSourcesField() + self.form_fields)
+        # Build and store 'selected_sources' field.
+        selected_sources_field = self.createSelectedSourcesField()
+
+        # Append the just created fields to the global form fields, so
+        # `setupWidgets` will do its job.
+        self.form_fields += status_field + selected_sources_field
 
     def setUpWidgets(self):
         """Override `LaunchpadFormView`.
 
-        Omitting the fields already processed in setUpFields ('name_filter').
+        Omitting the fields already processed in setUpFields ('name_filter'
+        and 'status_filter').
         """
         self.widgets += form.setUpWidgets(
-            self.form_fields.omit('name_filter'),
+            self.form_fields.omit('name_filter').omit('status_filter'),
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
@@ -282,6 +303,17 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         if not self.has_sources:
             return ''
         return LaunchpadFormView.focusedElementScript(self)
+
+    def createSimplifiedStatusFilterField(self):
+        """Return a simplified publishing status filter field.
+
+        See `status_vocabulary` and `default_status_filter`.
+        """
+        return form.Fields(
+            Choice(__name__='status_filter', title=_("Status Filter"),
+                   vocabulary=self.simplified_status_vocabulary,
+                   required=True, default=self.default_status_filter.value),
+            custom_widget=self.custom_widgets['status_filter'])
 
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
@@ -301,8 +333,7 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
                  default=[],
                  description=_('Select one or more sources to be submitted '
                                'to an action.')),
-            custom_widget=self.custom_widgets['selected_sources'],
-            render_context=self.render_context)
+            custom_widget=self.custom_widgets['selected_sources'])
 
     def refreshSelectedSourcesWidget(self):
         """Refresh 'selected_sources' widget.
@@ -318,11 +349,6 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
             self.form_fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
-    def getSources(self, name=None):
-        """Source lookup method, should be implemented by callsites."""
-        raise NotImplementedError(
-            'Source lookup should be implemented by callsites')
-
     @property
     def sources(self):
         """Query undeleted source publishing records.
@@ -333,7 +359,14 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
             name_filter = self.widgets['name_filter'].getInputValue()
         else:
             name_filter = None
-        return self.getSources(name=name_filter)
+
+        if self.widgets['status_filter'].hasInput():
+            status_filter = self.widgets['status_filter'].getInputValue()
+        else:
+            status_filter = self.widgets['status_filter'].context.default
+
+        return self.getSources(
+            name=name_filter, status=status_filter.collection)
 
     @cachedproperty
     def has_sources(self):
@@ -351,6 +384,18 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         """Whether or not some sources are not displayed in the widget."""
         return self.available_sources_size > self.max_sources_presented
 
+    @property
+    def default_status_filter(self):
+        """Return the default status_filter value."""
+        raise NotImplementedError(
+            'Default status_filter should be defined by callsites')
+
+    def getSources(self, name=None, status=None):
+        """Source lookup method, should be implemented by callsites."""
+        raise NotImplementedError(
+            'Source lookup should be implemented by callsites')
+
+
 
 class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """Archive package deletion view class.
@@ -363,13 +408,18 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
 
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
 
-    def getSources(self, name=None):
+    @property
+    def default_status_filter(self):
+        """Present records in any status by default."""
+        return self.simplified_status_vocabulary.getTermByToken('any')
+
+    def getSources(self, name=None, status=None):
         """Return all undeleted sources in the context PPA.
 
         Filters the results using the given 'name'.
         See `IArchive.getSourcesForDeletion`.
         """
-        return self.context.getSourcesForDeletion(name=name)
+        return self.context.getSourcesForDeletion(name=name, status=status)
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
@@ -462,6 +512,19 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
 
     default_pocket = PackagePublishingPocket.RELEASE
 
+    @property
+    def default_status_filter(self):
+        """Present published records by default."""
+        return self.simplified_status_vocabulary.getTermByToken('published')
+
+    def getSources(self, name=None, status=None):
+        """Return all sources ever published in the context PPA.
+
+        Filters the results using the given 'name'.
+        See `IArchive.getPublishedSources`.
+        """
+        return self.context.getPublishedSources(name=name, status=status)
+
     def setUpFields(self):
         """Override `ArchiveSourceSelectionFormView`.
 
@@ -509,8 +572,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    description=_("Select the destination PPA."),
                    missing_value=self.context,
                    required=required),
-            custom_widget=self.custom_widgets['destination_archive'],
-            render_context=self.render_context)
+            custom_widget=self.custom_widgets['destination_archive'])
 
     def createDestinationSeriesField(self):
         """Create the 'destination_series' field."""
@@ -531,16 +593,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                    vocabulary=SimpleVocabulary(terms),
                    description=_("Select the destination series."),
                    required=False),
-            custom_widget=self.custom_widgets['destination_series'],
-            render_context=self.render_context)
-
-    def getSources(self, name=None):
-        """Return all sources ever published in the context PPA.
-
-        Filters the results using the given 'name'.
-        See `IArchive.getPublishedSources`.
-        """
-        return self.context.getPublishedSources(name=name)
+            custom_widget=self.custom_widgets['destination_series'])
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
@@ -739,8 +792,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                  default=[],
                  description=_(
                     'Select one or more dependencies to be removed.')),
-            custom_widget=self.custom_widgets['selected_dependencies'],
-            render_context=self.render_context)
+            custom_widget=self.custom_widgets['selected_dependencies'])
 
     def refreshSelectedDependenciesWidget(self):
         """Refresh 'selected_dependencies' widget.

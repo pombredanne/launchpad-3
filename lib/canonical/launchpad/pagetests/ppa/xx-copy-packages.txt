@@ -435,7 +435,21 @@ In the minute after James had deleted the package, he discovered that
 No problem, he goes back to the copy-package interface in his PPA and
 still able to copy the deleted source to the warty series.
 
+By default the copy presents only PUBLISHED or PENDING packages.
+
     >>> jblack_browser.getLink('Copy packages').click()
+    >>> print jblack_browser.getControl(name='field.status_filter').value
+    ['published']
+
+    >>> print_ppa_packages(jblack_browser.contents)
+    Source          Published   Status     Series           Section  Built
+    pmount - 0.1-1              Pending    Grumpy           Editors  i386
+
+Packages in other status can be browsed by adjusting the status
+filter dropdown box.
+
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl("Update").click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
     pmount - 0.1-1              Pending    Grumpy           Editors  i386
@@ -633,6 +647,8 @@ insane because PPA-copy-ui is so cool.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl("Update").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
@@ -681,6 +697,8 @@ interface can be used to resurrect deleted packages.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl("Update").click()
 
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> deleted_pub_id = getPPAPubIDsFor(
