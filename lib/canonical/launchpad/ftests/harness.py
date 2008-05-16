@@ -73,7 +73,7 @@ class LaunchpadTestSetup(PgTestSetup):
 
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
-    txn = None
+    txn = ZopelessTransactionManager
     def setUp(self, dbuser=None):
         assert ZopelessTransactionManager._installed is None, \
                 'Last test using Zopeless failed to tearDown correctly'
@@ -84,9 +84,7 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
             raise NotImplementedError('port not supported yet')
         if dbuser is not None:
             self.dbuser = dbuser
-        LaunchpadZopelessTestSetup.txn = initZopeless(
-                dbname=self.dbname, dbuser=self.dbuser
-                )
+        initZopeless(dbname=self.dbname, dbuser=self.dbuser)
 
     def tearDown(self):
         LaunchpadZopelessTestSetup.txn.uninstall()

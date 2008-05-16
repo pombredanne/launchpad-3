@@ -830,105 +830,6 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         _disconnect_sqlos()
 
 
-class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
-    """Full Zopeless environment including Component Architecture and
-    database connections initialized.
-    """
-    @classmethod
-    @profiled
-    def setUp(cls):
-        # Make a TestMailBox available
-        # This is registered via ZCML in the LaunchpadFunctionalLayer
-        # XXX flacoste 2006-10-25 bug=68189: This should be configured
-        # from ZCML but execute_zcml_for_scripts() doesn't cannot support
-        # a different testing configuration.
-        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        # Signal Layer cannot be torn down fully
-        raise NotImplementedError
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        from canonical.launchpad.ftests.harness import (
-                LaunchpadZopelessTestSetup
-                )
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerIsolationError(
-                "Last test using Zopeless failed to tearDown correctly"
-                )
-        LaunchpadZopelessLayer.txn = initZopeless()
-        LaunchpadZopelessTestSetup.txn = LaunchpadZopelessLayer.txn
-
-        # Connect SQLOS
-        from canonical.launchpad.ftests.harness import _reconnect_sqlos
-        _reconnect_sqlos()
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        LaunchpadZopelessLayer.txn.abort()
-        LaunchpadZopelessLayer.txn.uninstall()
-        if ZopelessTransactionManager._installed is not None:
-            raise LayerInvariantError(
-                "Failed to uninstall ZopelessTransactionManager"
-                )
-        from canonical.launchpad.ftests.harness import _disconnect_sqlos
-        _disconnect_sqlos()
-
-    @classmethod
-    @profiled
-    def commit(cls):
-        LaunchpadZopelessLayer.txn.commit()
-
-    @classmethod
-    @profiled
-    def abort(cls):
-        LaunchpadZopelessLayer.txn.abort()
-
-    @classmethod
-    @profiled
-    def switchDbUser(cls, dbuser):
-        LaunchpadZopelessLayer.alterConnection(dbuser=dbuser)
-
-    @classmethod
-    @profiled
-    def alterConnection(cls, **kw):
-        """Reset the connection, and reopen the connection by calling
-        initZopeless with the given keyword arguments.
-        """
-        from canonical.launchpad.ftests.harness import (
-                LaunchpadZopelessTestSetup
-                )
-        LaunchpadZopelessLayer.txn.abort()
-        LaunchpadZopelessLayer.txn.uninstall()
-        LaunchpadZopelessLayer.txn = initZopeless(**kw)
-        LaunchpadZopelessTestSetup.txn = LaunchpadZopelessLayer.txn
-
-
-class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
-    """LaunchpadZopelessLayer using the mock database."""
-
-    @classmethod
-    def setUp(cls):
-        DatabaseLayer.use_mockdb = True
-
-    @classmethod
-    def tearDown(cls):
-        DatabaseLayer.use_mockdb = False
-
-    @classmethod
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    def testTearDown(cls):
-        pass
-
-
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
 
@@ -951,16 +852,20 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        from canonical.launchpad.ftests.harness import _reconnect_sqlos
-        # Connect SQLOS
-        _reconnect_sqlos()
+        # LaunchpadZopelessLayer takes care of reconnecting the stores
+        if not LaunchpadZopelessLayer.isSetUp:
+            from canonical.launchpad.ftests.harness import _reconnect_sqlos
+            # Connect SQLOS
+            _reconnect_sqlos()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        # Disconnect SQLOS so it doesn't get in the way of database resets
-        from canonical.launchpad.ftests.harness import _disconnect_sqlos
-        _disconnect_sqlos()
+        # LaunchpadZopelessLayer takes care of disconnecting the stores
+        if not LaunchpadZopelessLayer.isSetUp:
+            # Disconnect SQLOS so it doesn't get in the way of database resets
+            from canonical.launchpad.ftests.harness import _disconnect_sqlos
+            _disconnect_sqlos()
 
     @classmethod
     @profiled
@@ -968,6 +873,93 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         from canonical.launchpad.ftests.harness import _reconnect_sqlos
         # Connect SQLOS
         _reconnect_sqlos(database_config_section=database_config_section)
+
+
+class LaunchpadZopelessLayer(LaunchpadScriptLayer):
+    """Full Zopeless environment including Component Architecture and
+    database connections initialized.
+    """
+
+    isSetUp = False
+    txn = ZopelessTransactionManager
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        LaunchpadZopelessLayer.isSetUp = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        LaunchpadZopelessLayer.isSetUp = False
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        if ZopelessTransactionManager._installed is not None:
+            raise LayerIsolationError(
+                "Last test using Zopeless failed to tearDown correctly"
+                )
+        initZopeless()
+
+        # Connect SQLOS
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+        _reconnect_sqlos()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        ZopelessTransactionManager.uninstall()
+        if ZopelessTransactionManager._installed is not None:
+            raise LayerInvariantError(
+                "Failed to uninstall ZopelessTransactionManager"
+                )
+        from canonical.launchpad.ftests.harness import _disconnect_sqlos
+        _disconnect_sqlos()
+
+    @classmethod
+    @profiled
+    def commit(cls):
+        transaction.commit()
+
+    @classmethod
+    @profiled
+    def abort(cls):
+        transaction.abort()
+
+    @classmethod
+    @profiled
+    def switchDbUser(cls, dbuser):
+        LaunchpadZopelessLayer.alterConnection(dbuser=dbuser)
+
+    @classmethod
+    @profiled
+    def alterConnection(cls, **kw):
+        """Reset the connection, and reopen the connection by calling
+        initZopeless with the given keyword arguments.
+        """
+        ZopelessTransactionManager.uninstall()
+        initZopeless(**kw)
+
+
+class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
+    """LaunchpadZopelessLayer using the mock database."""
+
+    @classmethod
+    def setUp(cls):
+        DatabaseLayer.use_mockdb = True
+
+    @classmethod
+    def tearDown(cls):
+        DatabaseLayer.use_mockdb = False
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
 
 
 class MockHTTPTask:
