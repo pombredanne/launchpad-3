@@ -9,18 +9,11 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-
 <body>
-
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
-
-<div metal:fill-slot="main">
-
-  <h1>Code review comment</h1>
-  <div tal:define="comment context">
-      <metal:comment use-macro="context/@@+macros/view-message" />
-  </div>
-</div>
+    <metal:portlets fill-slot="portlets" />
+    <div metal:fill-slot="main">
+      <h1>Code review comment</h1>
+      <tal:content replace="structure context/@@+fragment"/>
+    </div>
 </body>
 </html>
