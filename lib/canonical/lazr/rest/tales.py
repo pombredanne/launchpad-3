@@ -10,9 +10,10 @@ import urllib
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
+from zope.component import getMultiAdapter
 from zope.interface.interfaces import IInterface
 from zope.schema import getFields
-from zope.schema.interfaces import IChoice, IObject
+from zope.schema.interfaces import IBytes, IChoice, IObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
@@ -20,8 +21,9 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, IEntry, IResourceGETOperation,
-    IResourceOperation, IResourcePOSTOperation, IScopedCollection)
+    ICollection, ICollectionField, IEntry, IFieldMarshaller,
+    IResourceGETOperation, IResourceOperation, IResourcePOSTOperation,
+    IScopedCollection)
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import CollectionResource
 
@@ -311,11 +313,19 @@ class WadlFieldAPI(WadlAPI):
 
     @property
     def name(self):
-        """The name of this field."""
+        """The name of this field.
+
+        It would be nice to farm this out to IFieldMarshaller, but
+        IFieldMarshaller can't be instantiated except on a field
+        that's been bound to an object. Here there's no object since
+        we're doing introspection on the class. A possible solution is
+        to split IFieldMarshaller.representation_name() into a
+        separate interface.
+        """
         name = self.field.__name__
         if ICollectionField.providedBy(self.field):
             return name + '_collection_link'
-        elif IObject.providedBy(self.field):
+        elif IObject.providedBy(self.field) or IBytes.providedBy(self.field):
             return name + '_link'
         else:
             return name
@@ -341,11 +351,17 @@ class WadlFieldAPI(WadlAPI):
     def is_link(self):
         """Is this field a link to another resource?"""
         return (IObject.providedBy(self.field) or
-                ICollectionField.providedBy(self.field))
+                ICollectionField.providedBy(self.field) or
+                IBytes.providedBy(self.field))
 
     @property
     def type_link(self):
         """The URL of the description of the type this field is a link to."""
+        # Handle externally-hosted binary documents.
+        if IBytes.providedBy(self.field):
+            return "%s#HostedFile" % self._service_root_url()
+
+        # Handle entries and collections of entries.
         if ICollectionField.providedBy(self.field):
             schema = self.field.value_type.schema
         elif IObject.providedBy(self.field):

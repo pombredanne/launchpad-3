@@ -113,7 +113,6 @@ the representation of a top-level collection.
     >>> wadl = webservice.get('/beta/~admins/members',
     ...                       'application/vd.sun.wadl+xml').getBody()
 
-    >>> open("wadl.html", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
     >>> tree.tag
     '...application'
@@ -143,6 +142,7 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
+    >>> open("wadl.txt", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
 
 Like all WADL documents, the WADL representation of the service root
@@ -380,11 +380,16 @@ tags devoted to it in the WADL document:
    example, and the "#IBugEntry-page" referenced in the very first
    example.
 
+(The last <resource_type> tag is a hard-coded description of a hosted
+binary file resource. Since it's hard-coded, this test doesn't deal
+with it.)
+
 This code splits the tags into 5-tuples and stores the tuples in
 'entry_resource_descriptions'.
 
     >>> entry_resource_descriptions = []
-    >>> entry_resource_types = other_children[first_entry_type_index:]
+    >>> entry_resource_types = other_children[first_entry_type_index:-1]
+    >>> hosted_binary_resource_type = other_children[-1]
     >>> for index in range(0, len(entry_resource_types), 5):
     ...     entry_resource_descriptions.append(
     ...         (tuple(entry_resource_types[index:index + 5])))
@@ -725,6 +730,59 @@ valid values.
 
     >>> sorted([value.attrib['value'] for value in list(status)])
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
+
+
+== Hosted binary files ==
+
+One interesting type of parameter not shown above is a link to a
+binary file managed by the web service, such as a person's mugshot.
+
+    >>> person_desc = [entry for entry in entry_resource_descriptions
+    ...                if entry[0].attrib['id'] == 'PersonEntryAdapter'][0]
+    >>> (person_entry_type, person_full_rep, person_diff_rep,
+    ...  person_scoped_collection_type, person_collection_rep) = person_desc
+    >>> mugshot_param = [param for param in person_full_rep
+    ...                  if param.attrib['name'] == 'mugshot_link'][0]
+    >>> doc, mugshot_link = list(mugshot_param)
+    >>> mugshot_link.attrib['type']
+    'http://api.launchpad.dev/beta/#HostedFile'
+
+What can the client to do this binary file resource?
+
+    >>> get, put, delete = list(hosted_binary_resource_type)
+
+The client can send GET to the resource, and be redirected to a binary
+file hosted externally.
+
+    >>> get.tag
+    '...method'
+    >>> get.attrib['name']
+    'GET'
+    >>> get_response, = list(get)
+    >>> get_representation, = list(get_response)
+    >>> get_representation.attrib['status']
+    '303'
+    >>> redirect_param, = list(get_representation)
+    >>> redirect_param.tag
+    '...param'
+    >>> redirect_param.attrib['style']
+    'header'
+    >>> redirect_param.attrib['name']
+    'Location'
+
+The client can PUT a binary file:
+
+    >>> put.tag
+    '...method'
+    >>> put.attrib['name']
+    'PUT'
+
+The client can DELETE an existing file:
+
+    >>> delete.tag
+    '...method'
+    >>> delete.attrib['name']
+    'DELETE'
 
 
 == A scoped collection resource type ==
