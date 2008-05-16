@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -83,7 +84,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
                IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget):
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
+               IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -240,9 +242,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this project's attributes are
         updated automatically."""))
-
-    active = Bool(title=_('Active'), description=_("""Whether or not
-        this project is considered active."""))
 
     license_reviewed = Bool(
         title=_('License reviewed'),

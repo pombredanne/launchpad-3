@@ -151,6 +151,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
+    active = True # Required by IPillar interface.
 
     @property
     def uploaders(self):

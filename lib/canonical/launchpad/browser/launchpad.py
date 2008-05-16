@@ -544,15 +544,11 @@ class LaunchpadRootNavigation(Navigation):
                 canonical_url(self.context) + canonical_name(name),
                 status=301)
 
-        commercial_admins = getUtility(ILaunchpadCelebrities).commercial_admin
-        user = getUtility(ILaunchBag).user
-        ignore_inactive = True
-        if user and user.inTeam(commercial_admins):
-            # Commercial Admins should be able to access deactivated projects.
-            ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
-            name, ignore_inactive=ignore_inactive)
-        return pillar
+            name, ignore_inactive=False)
+        if pillar is not None and check_permission('launchpad.View', pillar):
+            return pillar
+        return None
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect.

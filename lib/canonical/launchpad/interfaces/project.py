@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -48,7 +49,7 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
                IHasMentoringOffers, IHasMilestones, IHasMugshot,
                IHasOwner, IHasSpecifications, IHasSprints,
                IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext):
+               IKarmaContext, IPillar):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -174,10 +175,6 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasDrivers,
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on this project group's home page in Launchpad. It should be no "
             "bigger than 100kb in size. "))
-
-    active = Bool(title=_('Active'), required=False,
-        description=_(
-	    "Whether or not this project group is considered active."))
 
     reviewed = Bool(title=_('Reviewed'), required=False,
         description=_("Whether or not this project group has been reviewed."))

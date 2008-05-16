@@ -18,7 +18,8 @@ from canonical.launchpad.interfaces import (
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
     ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
     IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson,
+    IPillar, IPoll,
     IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
@@ -73,6 +74,23 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.admin))
+
+
+class ViewPillarName(AuthorizationBase):
+    usedfor = IPillar
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        return self.obj.active
+
+    def checkAuthenticated(self, user):
+        """The Admins & Commercial Admins can see inactive pillars."""
+        if self.obj.active:
+            return True
+        else:
+            celebrities = getUtility(ILaunchpadCelebrities)
+            return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.admin))
 
 
 class EditOAuthAccessToken(AuthorizationBase):

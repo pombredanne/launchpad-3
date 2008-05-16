@@ -219,13 +219,27 @@ The Admins and Commercial Admins can deactivate a project.
     http://launchpad.dev/projects
 
 The product overview page should show a notice that a product is
-inactive with a link to a form to re-activate it.
+inactive with a link to a form to re-activate it. Admins and
+Commercial Admins can still see the product, but regular users
+can't.
 
     >>> commercial_browser.open('http://launchpad.dev/firefox/')
     >>> contents = find_main_content(commercial_browser.contents)
     >>> print contents.find(id='project-inactive')
     <p...This project is currently inactive...
     <a...href="+review-license"...
+    >>> admin_browser.open('http://launchpad.dev/firefox/')
+    >>> contents = find_main_content(admin_browser.contents)
+    >>> print contents.find(id='project-inactive')
+    <p...This project is currently inactive...
+    <a...href="+review-license"...
+    >>> user_browser.open('http://launchpad.dev/firefox/')
+    Traceback (most recent call last):
+    ...
+    NotFound...
+
+The product can then be reactivated.
+
     >>> commercial_browser.getLink('(change this)').click()
     >>> print commercial_browser.url
     http://launchpad.dev/firefox/+review-license
