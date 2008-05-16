@@ -128,6 +128,9 @@ class ISourcePackageRelease(Interface):
         "The LibraryFileAlias for the changesfile this package was uploaded "
         "with.")
 
+    def queue_record(distroseries=None):
+        """Return the `PackageUpload` record for this source package."""
+
     def addFile(file):
         """Add the provided library file alias (file) to the list of files
         in this package.

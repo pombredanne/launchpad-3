@@ -496,7 +496,18 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def upload_changesfile(self):
-        """See ISourcePackageRelease."""
+        """See `ISourcePackageRelease`."""
+        queue_record = self.queue_record()
+        if not queue_record:
+            return None
+
+        return queue_record.changesfile
+
+    def queue_record(self, distroseries=None):
+        """See `ISourcepackageRelease`."""
+        if distroseries is None:
+            distroseries = self.upload_distroseries
+
         clauseTables = [
             'PackageUpload',
             'PackageUploadSource',
@@ -507,15 +518,9 @@ class SourcePackageRelease(SQLBase):
         PackageUpload.distroseries = %s AND
         PackageUploadSource.sourcepackagerelease = %s AND
         PackageUpload.status = %s
-        """ % sqlvalues(self.upload_distroseries, self,
-                        PackageUploadStatus.DONE)
-        queue_record = PackageUpload.selectOne(
+        """ % sqlvalues(distroseries, self, PackageUploadStatus.DONE)
+        return PackageUpload.selectOne(
             query, clauseTables=clauseTables, prejoins=preJoins)
-
-        if not queue_record:
-            return None
-
-        return queue_record.changesfile
 
     @property
     def change_summary(self):

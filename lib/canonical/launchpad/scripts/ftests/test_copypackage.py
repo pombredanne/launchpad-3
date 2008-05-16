@@ -20,7 +20,8 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet, IPersonSet, PackagePublishingStatus)
+    IComponentSet, IDistributionSet, IPersonSet,
+    ISourcePackagePublishingHistory, PackagePublishingStatus)
 from canonical.librarian.ftests.harness import (
     cleanupLibrarianFiles, fillLibrarianFile)
 from canonical.testing import LaunchpadZopelessLayer
@@ -509,6 +510,19 @@ class TestCopyPackage(unittest.TestCase):
                     self.layer.txn.commit()
                     self.layer.switchDbUser('launchpad')
 
+        # Also make the changes files restricted.
+        for published in sources:
+            queue = published.sourcepackagerelease.queue_record(
+                distroseries=published.distroseries)
+            self.layer.txn.commit()
+            self.layer.switchDbUser('librariangc')
+            if queue is not None:
+                lfa = removeSecurityProxy(queue).changesfile
+                lfa.restricted = True
+                fillLibrarianFile(lfa.content.id, content=FAKE_CONTENT)
+                lfa.content.filesize = len(FAKE_CONTENT)
+            self.layer.txn.commit()
+            self.layer.switchDbUser('launchpad')
 
         # Now switch the to the user that the script runs as.
         self.layer.txn.commit()
@@ -547,6 +561,11 @@ class TestCopyPackage(unittest.TestCase):
                 published.secure_record.component.name, universe.name)
             for published_file in published.files:
                 self.assertFalse(published_file.libraryfilealias.restricted)
+            # Also check the sources' changesfiles.
+            if ISourcePackagePublishingHistory.providedBy(published):
+                queue = published.sourcepackagerelease.queue_record(
+                    distroseries=published.distroseries)
+                self.assertFalse(queue.changesfile.restricted)
 
         cleanupLibrarianFiles()
 
