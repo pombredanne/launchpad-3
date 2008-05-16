@@ -804,6 +804,18 @@ class GoogleServiceLayer(BaseLayer):
     def tearDown(cls):
         GoogleServiceTestSetup().tearDown()
 
+    @classmethod
+    def testSetUp(self):
+        # We need to prevent BaseLayer.testSetUp() from
+        # firing, or else we will get a LayerIsolationError.
+        pass
+
+    @classmethod
+    def testTearDown(self):
+        # We need to prevent BaseLayer.testTearDown() from
+        # firing, or else we will get a LayerIsolationError.
+        pass
+
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
                                GoogleServiceLayer):
