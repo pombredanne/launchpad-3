@@ -441,7 +441,9 @@ def flush_database_caches():
     connection's cache, and synchronises them with the database.  This
     ensures that they all reflect the values in the database.
     """
-    getUtility(IZStorm).get('main').invalidate()
+    store = getUtility(IZStorm).get('main')
+    store.flush()
+    store.invalidate()
 
 
 def block_implicit_flushes(func):

@@ -8,62 +8,19 @@ canonical.testing
 
 __metaclass__ = type
 
-from storm.zope.interfaces import IZStorm
-import transaction
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.app.testing.functional import FunctionalTestSetup
-from zope.component import getUtility
-from zope.component.exceptions import ComponentLookupError
 
-from canonical.config import dbconfig
-from canonical.database.revision import confirm_dbrevision
-from canonical.database.sqlbase import (
-    cursor, SQLBase, ZopelessTransactionManager)
+from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.ftests.pgsql import PgTestSetup
-from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.lp import initZopeless
 from canonical.testing import BaseLayer, FunctionalLayer, ZopelessLayer
+from canonical.testing.layers import disconnect_stores, reconnect_stores
 
 
 __all__ = [
     'LaunchpadTestSetup', 'LaunchpadZopelessTestSetup',
     'LaunchpadFunctionalTestSetup',
-    '_disconnect_sqlos', '_reconnect_sqlos'
     ]
-
-
-def _disconnect_sqlos():
-    zstorm = getUtility(IZStorm)
-    stores = []
-    for store_name in ['main', 'session']:
-        if store_name in zstorm._named:
-            store = zstorm.get(store_name)
-            zstorm.remove(store)
-            stores.append(store)
-    # If we have any stores, abort the transaction and close them.
-    if stores:
-        transaction.abort()
-        for store in stores:
-            store.close()
-
-
-def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
-    _disconnect_sqlos()
-    dbconfig.setConfigSection(database_config_section)
-
-    main_store = getUtility(IZStorm).get('main')
-    assert main_store is not None, 'Failed to reconnect'
-
-    # Confirm the database has the right patchlevel
-    confirm_dbrevision(cursor())
-
-    # Confirm that SQLOS is again talking to the database (it connects
-    # as soon as SQLBase._connection is accessed
-    r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
-    assert r.get_one()[0] > 0, 'Storm is not talking to the database'
-
-    session_store = getUtility(IZStorm).get('session')
-    assert session_store is not None, 'Failed to reconnect'
 
 
 class LaunchpadTestSetup(PgTestSetup):
@@ -73,7 +30,7 @@ class LaunchpadTestSetup(PgTestSetup):
 
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
-    txn = None
+    txn = ZopelessTransactionManager
     def setUp(self, dbuser=None):
         assert ZopelessTransactionManager._installed is None, \
                 'Last test using Zopeless failed to tearDown correctly'
@@ -84,9 +41,7 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
             raise NotImplementedError('port not supported yet')
         if dbuser is not None:
             self.dbuser = dbuser
-        LaunchpadZopelessTestSetup.txn = initZopeless(
-                dbname=self.dbname, dbuser=self.dbuser
-                )
+        initZopeless(dbname=self.dbname, dbuser=self.dbuser)
 
     def tearDown(self):
         LaunchpadZopelessTestSetup.txn.uninstall()
@@ -111,13 +66,16 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         self._checkLayerInvariants()
         if dbuser is not None:
             self.dbuser = dbuser
-        _disconnect_sqlos()
+        assert self.dbuser == 'launchpad', (
+            "Non-default user names should probably be using "
+            "script layer or zopeless layer.")
+        disconnect_stores()
         super(LaunchpadFunctionalTestSetup, self).setUp()
         FunctionalTestSetup().setUp()
-        _reconnect_sqlos(self.dbuser)
+        reconnect_stores()
 
     def tearDown(self):
         self._checkLayerInvariants()
         FunctionalTestSetup().tearDown()
-        _disconnect_sqlos()
+        disconnect_stores()
         super(LaunchpadFunctionalTestSetup, self).tearDown()
