@@ -269,9 +269,8 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
         # Build and store 'status_filter' field.
         status_field = self.createSimplifiedStatusFilterField()
 
-        # Setup widgets for the for 'name_filter' and 'status_filter'
-        # fields because they are required to build 'selected_sources'
-        # field.
+        # Setup widgets for 'name_filter' and 'status_filter' fields
+        # because they are required to build 'selected_sources' field.
         initial_fields = status_field + self.form_fields.select('name_filter')
         self.widgets = form.setUpWidgets(
             initial_fields, self.prefix, self.context, self.request,
