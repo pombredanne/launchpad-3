@@ -423,7 +423,7 @@
     name="+review-license"
     for="canonical.launchpad.interfaces.IProduct"
     facet="overview"
-    class="canonical.launchpad.browser.ProductReviewView"
+    class="canonical.launchpad.browser.ProductReviewLicenseView"
     permission="launchpad.Commercial"
     template="../templates/product-review-license.pt"
     />

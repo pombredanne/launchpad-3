@@ -247,7 +247,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     license_reviewed = Bool(
         title=_('License reviewed'),
         description=_("""Whether or not this project's license has been
-        reviewed. Editable only by reviewers (Commercial Admins)."""))
+        reviewed. Editable only by reviewers (Admins & Commercial Admins)."""))
 
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
@@ -257,7 +257,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         required=False,
         description=_(
             "Notes on the project's license, editable only by reviewers "
-            "(Commercial Admins)."))
+            "(Admins & Commercial Admins)."))
 
     licenses = Set(
         title=_('Licenses'),

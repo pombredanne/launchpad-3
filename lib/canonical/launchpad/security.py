@@ -65,7 +65,7 @@ class AdminByAdminsTeam(AuthorizationBase):
         return user.inTeam(admins)
 
 
-class AdminByCommercializationTeam(AuthorizationBase):
+class AdminByCommercialTeamOrAdmins(AuthorizationBase):
     permission = 'launchpad.Commercial'
     usedfor = Interface
 

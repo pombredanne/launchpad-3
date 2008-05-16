@@ -27,7 +27,7 @@ __all__ = [
     'ProductEditView',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
-    'ProductReviewView',
+    'ProductReviewLicenseView',
     'ProductAddSeriesView',
     'ProductReassignmentView',
     'ProductRdfView',
@@ -938,7 +938,7 @@ class ProductAdminView(ProductEditView):
         return canonical_url(self.context)
 
 
-class ProductReviewView(ProductAdminView):
+class ProductReviewLicenseView(ProductAdminView):
     label = "Review project licensing"
     field_names = ["active", "private_bugs",
                    "license_reviewed", "reviewer_whiteboard"]

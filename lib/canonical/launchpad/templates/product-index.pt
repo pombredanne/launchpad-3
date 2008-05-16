@@ -18,7 +18,13 @@
 <div metal:fill-slot="main">
 
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
-    This project is currently inactive <a href="+review-license">(change this)</a>
+    This project is currently inactive 
+    <tal:comment condition="nothing">
+      This page links to the +review-license form to reactivate the product
+      since both the admins and commercial-admins have access to this form
+      unlike the product/+admin form.
+    </tal:comment>
+    <a href="+review-license">(change this)</a>
   </p>
 
   <p id="project-admin-whiteboard" class="whiteboard"
