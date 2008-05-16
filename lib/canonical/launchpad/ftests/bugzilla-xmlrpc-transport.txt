@@ -1,0 +1,13 @@
+= TestBugzillaXMLRPCTransport =
+
+The TestBugzillaXMLRPCTransport is an XML-RPC transport which simulates
+a remote Bugzilla instance that implements both the Bugzilla XMLRPC API
+and the additional Launchpad plugin API.
+
+    >>> import xmlrpclib
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestBugzillaXMLRPCTransport)
+    >>> bugzilla_transport = TestBugzillaXMLRPCTransport()
+    >>> server = xmlrpclib.ServerProxy(
+    ...     'http://example.com/', transport=bugzilla_transport)
+

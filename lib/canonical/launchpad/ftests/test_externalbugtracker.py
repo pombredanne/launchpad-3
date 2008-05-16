@@ -13,5 +13,8 @@ from canonical.launchpad.testing.systemdocs import (
 
 def test_suite():
     return LayeredDocFileSuite(
+        'bugzilla-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer)
+    return LayeredDocFileSuite(
         'trac-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
         layer=LaunchpadFunctionalLayer)

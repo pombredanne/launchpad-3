@@ -327,6 +327,34 @@ class TestOldBugzilla(TestBugzilla):
                 123543: ('ASSIGNED', '')}
 
 
+class TestBugzillaXMLRPCTransport:
+    """A test implementation of the Bugzilla XML-RPC interface."""
+
+    def request(self, host, handler, request, verbose=None):
+        """Call the corresponding XML-RPC method.
+
+        The method name and arguments are extracted from `request`. The
+        method on this class with the same name as the XML-RPC method is
+        called, with the extracted arguments passed on to it.
+        """
+        args, method_name = xmlrpclib.loads(request)
+        prefix = 'Launchpad.'
+        assert method_name.startswith(prefix), (
+            'All methods should be in the Launchpad namespace')
+
+        # All the Bugzilla XML-RPC methods need authentication. We
+        # raise a 403 if we are't authenticated.
+        if (self.auth_cookie is None or
+            self.auth_cookie == self.expired_cookie):
+            raise xmlrpclib.ProtocolError(
+                method_name, errcode=403, errmsg="Forbidden",
+                headers=None)
+
+        method_name = method_name[len(prefix):]
+        method = getattr(self, method_name)
+        return method(*args)
+
+
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
 
