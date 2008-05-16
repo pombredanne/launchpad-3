@@ -301,6 +301,7 @@ class MaloneHandler:
                 try:
                     notify(bug_event)
                 except CreatedBugWithNoBugTasksError:
+                    rollback()
                     raise IncomingEmailError(
                         get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:

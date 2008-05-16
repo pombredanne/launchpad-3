@@ -157,7 +157,7 @@ class ICodeImportMachineSet(Interface):
         """Create a new CodeImportMachine.
 
         The machine will initially be in the given 'state', which defaults to
-        OFFLINE.
+        OFFLINE, but can also be ONLINE.
         """
 
     def getByHostname(hostname):

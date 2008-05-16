@@ -284,7 +284,7 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(
             'i386 build of bar 1.0-1 in ubuntu breezy-autotest RELEASE',
             build.title)
-        self.assertEqual(build.buildqueue_record.lastscore, 255)
+        self.assertEqual(build.buildqueue_record.lastscore, 3255)
 
     def testAcceptingBinaryDoesntGenerateEmail(self):
         """Check if accepting a binary package does not generate email."""
@@ -544,8 +544,17 @@ class TestQueueTool(TestQueueBase):
         Step 4: the remaining duplicated cnews item in UNAPPROVED queue can
         only be rejected.
         """
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+
+        # Add a chroot to breezy-autotest/i386, so the system can create
+        # builds for it.
+        a_file = getUtility(ILibraryFileAliasSet)[1]
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest['i386'].addOrUpdateChroot(a_file)
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser("queued")
 
         # Certify we have a 'cnews' upload duplication in UNAPPROVED.
         self.assertQueueLength(

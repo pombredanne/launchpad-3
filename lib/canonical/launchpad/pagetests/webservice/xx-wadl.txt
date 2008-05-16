@@ -1,4 +1,4 @@
- = Launchpad's WADL documents =
+= Launchpad's WADL documents =
 
 Every resource in the web service has a WADL representation that
 describes the capabilities of the resource in a machine-readable
@@ -210,7 +210,7 @@ resources.
     # this test.
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    [...'BugEntryAdapter', 'BugTaskEntry', ... 'TeamMembershipEntry']
+    [...'BugEntryAdapter', 'BugTaskEntry', ... 'TeamMembershipEntryAdapter']
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
