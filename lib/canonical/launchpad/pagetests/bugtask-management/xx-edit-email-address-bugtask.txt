@@ -30,8 +30,12 @@
 
 == "Normal" (not Email Address) bugtasks ==
 
-Normally, it's not possible to edit the status of a bugtask associated
-with a bugwatch.
+Normally, it's not possible to edit the status or importance of a
+bugtask associated with a bugwatch that is linked to an external bug
+tracker, because status and importance are updated by checkwatches.
+
+To prepare, we must add a task that references a bug tracked
+elsewhere:
 
     >>> user_browser.open('http://bugs.launchpad.dev/'
     ...                   'jokosher/+bug/12/+choose-affected-product')
@@ -95,6 +99,9 @@ And the bug supervisor can't see the widgets either.
 
 The status and importance of a bugtask with an email address bugwatch
 will be editable.
+
+To prepare, we add a task that references a bug that's tracked by
+email:
 
     >>> user_browser.open('http://bugs.launchpad.dev/'
     ...                   'gnome-terminal/+bug/12/+choose-affected-product')
