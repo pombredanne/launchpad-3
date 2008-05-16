@@ -756,7 +756,7 @@ There is also the getAdministratedTeams() method that returns all the
 teams for which the person/team has admin rights.
 
     >>> [team.name for team in cprov.getAdministratedTeams()]
-    [u'guadamen', u'launchpad-buildd-admins']
+    [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
 == Querying a person for team participation ==
 
