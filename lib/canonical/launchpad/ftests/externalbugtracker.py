@@ -342,14 +342,6 @@ class TestBugzillaXMLRPCTransport:
         assert method_name.startswith(prefix), (
             'All methods should be in the Launchpad namespace')
 
-        # All the Bugzilla XML-RPC methods need authentication. We
-        # raise a 403 if we are't authenticated.
-        if (self.auth_cookie is None or
-            self.auth_cookie == self.expired_cookie):
-            raise xmlrpclib.ProtocolError(
-                method_name, errcode=403, errmsg="Forbidden",
-                headers=None)
-
         method_name = method_name[len(prefix):]
         method = getattr(self, method_name)
         return method(*args)
