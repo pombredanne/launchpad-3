@@ -507,8 +507,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
 
-distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
-
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')

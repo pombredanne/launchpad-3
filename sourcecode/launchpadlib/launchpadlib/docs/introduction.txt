@@ -1,0 +1,11 @@
+= launchpadlib =
+
+launchpadlib is the standalone Python language bindings to Launchpad's web
+services API.  It is officially supported by Canonical, although third party
+packages may be available to provide bindings to other programming languages.
+
+launchpadlib is currently in pre-alpha release.
+
+    >>> import launchpadlib
+    >>> launchpadlib.__version__
+    '0.1'
