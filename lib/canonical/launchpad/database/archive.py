@@ -305,7 +305,7 @@ class Archive(SQLBase):
                 status = (status,)
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
-            """ % sqlvalues(tuple(status)))
+            """ % sqlvalues(status))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
