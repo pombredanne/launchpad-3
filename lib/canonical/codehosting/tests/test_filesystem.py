@@ -155,6 +155,17 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/+junk/banana'))
 
     @defer_to_thread
+    def test_get_stacking_policy(self):
+        # A stacking policy control file is served underneath product
+        # directories for products that have a default stacked-on branch.
+        transport = self.getTransport()
+        control_file = transport.get_bytes(
+            '~testuser/evolution/.bzr/control.conf')
+        self.assertEqual(
+            'default_stack_on=/~vcs-imports/evolution/main',
+            control_file.strip())
+
+    @defer_to_thread
     @wait_for_disconnect
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an

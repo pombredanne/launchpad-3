@@ -66,6 +66,7 @@ from bzrlib.transport import (
     Transport,
     unregister_transport,
     )
+from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
 from twisted.python import failure
@@ -181,6 +182,10 @@ class InvalidOwnerDirectory(NotABranchPath):
             reason="Path must start with a user or team directory.")
 
 
+class InvalidControlDirectory(BzrError):
+    """Raised when we try to parse an invalid control directory."""
+
+
 class BlockingProxy:
 
     def __init__(self, proxy):
@@ -211,6 +216,7 @@ class CachingAuthserverClient:
         """
         self._authserver = authserver
         self._branch_info_cache = {}
+        self._stacked_branch_cache = {}
         self._user_id = user_id
 
     def createBranch(self, owner, product, branch):
@@ -277,6 +283,18 @@ class CachingAuthserverClient:
             self._branch_info_cache[
                 (owner, product, branch)] = branch_info
             return branch_info
+        return deferred.addCallback(add_to_cache)
+
+    def getDefaultStackedOnBranch(self, product):
+        branch_name = self._stacked_branch_cache.get(product)
+        if branch_name is not None:
+            return defer.succeed(branch_name)
+
+        deferred = defer.maybeDeferred(
+            self._authserver.callRemote, 'getDefaultStackedOnBranch', product)
+        def add_to_cache(branch_name):
+            self._stacked_branch_cache[product] = branch_name
+            return branch_name
         return deferred.addCallback(add_to_cache)
 
     def requestMirror(self, branch_id):
@@ -503,9 +521,42 @@ class LaunchpadServer(Server):
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
+    def _buildControlDirectory(self, unique_name):
+        """Return a MemoryTransport that has '.bzr/control.conf' in it."""
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        transport = get_transport(memory_server.get_url())
+        transport.mkdir('.bzr')
+        if unique_name != '':
+            transport.put_bytes(
+                '.bzr/control.conf',
+                'default_stack_on=/%s\n' % unique_name)
+        return transport
+
     def _getBranch(self, virtual_path):
         return LaunchpadBranch.from_virtual_path(
             self._authserver, virtual_path)
+
+    def _parseProductControlDirectory(self, virtual_path):
+        """Parse `virtual_path` and return a product and path in that product.
+
+        If we can't parse `virtual_path`, raise `InvalidControlDirectory`.
+        """
+        segments = get_path_segments(virtual_path, 3)
+        if len(segments) < 3:
+            raise InvalidControlDirectory(virtual_path)
+        user, product, control = segments[:3]
+        if not user.startswith('~'):
+            raise InvalidControlDirectory(virtual_path)
+        if control != '.bzr':
+            raise InvalidControlDirectory(virtual_path)
+        return product, '/'.join([control] + segments[3:])
+
+    def _translateControlPath(self, virtual_path):
+        product, path = self._parseProductControlDirectory(virtual_path)
+        deferred = self._authserver.getDefaultStackedOnBranch(product)
+        deferred.addCallback(self._buildControlDirectory)
+        return deferred.addCallback(lambda transport: (transport, path))
 
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -560,7 +611,11 @@ class LaunchpadServer(Server):
         try:
             branch, path = self._getBranch(virtual_path)
         except NotABranchPath:
-            return defer.fail(failure.Failure())
+            fail = failure.Failure()
+            deferred = defer.maybeDeferred(
+                self._translateControlPath, virtual_path)
+            deferred.addErrback(lambda ignored: fail)
+            return deferred
 
         virtual_path_deferred = branch.getRealPath(path)
 

@@ -31,13 +31,13 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, BlockingProxy, LaunchpadServer, set_up_logging,
-    VirtualTransport)
+    AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
+    LaunchpadServer, set_up_logging, VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class TestLaunchpadServer(BzrTestCase):
+class TestLaunchpadServer(TrialTestCase, BzrTestCase):
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -182,6 +182,70 @@ class TestLaunchpadServer(BzrTestCase):
                     '~testuser/firefox/baz/.bzr'))
         deferred.addCallback(assert_path_starts_with, branch_id_to_path(1))
         return deferred
+
+    def test_translateControlPath(self):
+        deferred = self.server.translateVirtualPath(
+            '~testuser/evolution/.bzr/control.conf')
+        def check_control_file((transport, path)):
+            self.assertEqual(
+                'default_stack_on=/~vcs-imports/evolution/main\n',
+                transport.get_bytes(path))
+        return deferred.addCallback(check_control_file)
+
+    def test_buildControlDirectory(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+        branch = '~user/product/branch'
+        transport = self.server._buildControlDirectory(branch)
+        self.assertEqual(
+            'default_stack_on=/%s\n' % (branch,),
+            transport.get_bytes('.bzr/control.conf'))
+
+    def test_buildControlDirectory_no_branch(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+        transport = self.server._buildControlDirectory('')
+        self.assertEqual([], transport.list_dir('.bzr'))
+
+    def test_parseProductControlDirectory(self):
+        # _parseProductControlDirectory takes a path to a product control
+        # directory and returns the name of the product, followed by the path.
+        product, path = self.server._parseProductControlDirectory(
+            '~user/product/.bzr')
+        self.assertEqual('product', product)
+        self.assertEqual('.bzr', path)
+        product, path = self.server._parseProductControlDirectory(
+            '~user/product/.bzr/foo')
+        self.assertEqual('product', product)
+        self.assertEqual('.bzr/foo', path)
+
+    def test_parseProductControlDirectoryNotControlDir(self):
+        # If the directory isn't a control directory (doesn't have '.bzr'),
+        # raise an error.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user/product/branch')
+
+    def test_parseProductControlDirectoryTooShort(self):
+        # If there aren't enough path segments, raise an error.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user')
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user/product')
+
+    def test_parseProductControlDirectoryInvalidUser(self):
+        # If the user directory is invalid, raise an InvalidControlDirectory.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            'user/product/.bzr/foo')
 
 
 class TestVirtualTransport(TestCaseInTempDir):
