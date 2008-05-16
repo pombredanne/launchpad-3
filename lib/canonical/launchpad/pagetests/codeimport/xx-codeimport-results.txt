@@ -11,7 +11,8 @@ on the branch index page with the other code import details.
 The make_all_result_types helper method adds a code import result of
 each possible status value.
 
-    >>> make_all_result_types(code_import, factory)
+    >>> odin = factory.makeCodeImportMachine(hostname='odin')
+    >>> make_all_result_types(code_import, factory, machine=odin)
     >>> branch_url = canonical_url(code_import.branch)
     >>> logout()
 
@@ -22,29 +23,31 @@ file stored with the result.
     >>> browser.open(branch_url)
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
     >>> print extract_text(import_results).replace('&mdash;', '--')
-    Import started on 2007-12-09 on machine-... and finished on 2007-12-09
+    Import started on 2007-12-09 on odin and finished on 2007-12-09
       taking nine hours -- see the log
-    Import started on 2007-12-08 on machine-... and finished on 2007-12-08
+    Import started on 2007-12-08 on odin and finished on 2007-12-08
       taking eight hours -- see the log
-    Import started on 2007-12-07 on machine-... and finished on 2007-12-07
+    Import started on 2007-12-07 on odin and finished on 2007-12-07
       taking seven hours -- see the log
-    Import started on 2007-12-06 on machine-... and finished on 2007-12-06
+    Import started on 2007-12-06 on odin and finished on 2007-12-06
       taking six hours -- see the log
-    Import started on 2007-12-05 on machine-... and finished on 2007-12-05
+    Import started on 2007-12-05 on odin and finished on 2007-12-05
       taking five hours -- see the log
-    Import started on 2007-12-04 on machine-... and finished on 2007-12-04
+    Import started on 2007-12-04 on odin and finished on 2007-12-04
       taking four hours -- see the log
-    Import started on 2007-12-03 on machine-... and finished on 2007-12-03
+    Import started on 2007-12-03 on odin and finished on 2007-12-03
       taking three hours -- see the log
-    Import started on 2007-12-02 on machine-... and finished on 2007-12-02
+    Import started on 2007-12-02 on odin and finished on 2007-12-02
       taking two hours -- see the log
-    Import started on 2007-12-01 on machine-... and finished on 2007-12-01
+    Import started on 2007-12-01 on odin and finished on 2007-12-01
       taking an hour -- see the log
 
 Each of the lines is prefixed with a tick if the result status was
 success, or a cross if the status was a failure.  The title of the image
 is the text of the failure type.
 
+    >>> # The ordering here is dependant on the order the status values
+    >>> # are declared in the enumeration.
     >>> for img in import_results.fetch('img'):
     ...     print img
     <img src="/@@/no" title="Job killed" />

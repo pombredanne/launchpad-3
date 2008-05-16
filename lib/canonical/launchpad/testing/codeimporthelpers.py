@@ -109,7 +109,7 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
     return code_import
 
 
-def make_all_result_types(code_import=None, factory=None):
+def make_all_result_types(code_import=None, factory=None, machine=None):
     """Make a code import result of each possible type for the code import."""
     if factory is None:
         factory = LaunchpadObjectFactory()
@@ -121,4 +121,5 @@ def make_all_result_types(code_import=None, factory=None):
         datetime(2007,12,1,13, tzinfo=UTC), timedelta(days=1, hours=1))
     for result_status in CodeImportResultStatus.items:
         factory.makeCodeImportResult(
-            code_import, result_status, start_dates.next(), end_dates.next())
+            code_import, result_status, start_dates.next(), end_dates.next(),
+            machine=machine)
