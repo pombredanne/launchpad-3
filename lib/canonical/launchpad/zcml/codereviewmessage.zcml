@@ -25,11 +25,11 @@
         permission="zope.Public"
         template="../templates/codereviewmessage-index.pt"
         />
-  <browser:page
-      for="canonical.launchpad.interfaces.ICodeReviewMessage"
-      name="+fragment"
-      permission="zope.Public"
-      template="../templates/codereviewmessage-fragment.pt" />
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        name="+fragment"
+        permission="zope.Public"
+        template="../templates/codereviewmessage-fragment.pt" />
     <browser:page
         name="+reply"
         facet="branches"
