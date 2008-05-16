@@ -18,7 +18,6 @@ from canonical.launchpad.scripts.ftpmaster import (
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.interfaces import (
     IComponentSet, IDistributionSet, IPersonSet,
     ISourcePackagePublishingHistory, PackagePublishingStatus)
