@@ -32,6 +32,7 @@ from canonical.authserver.interfaces import (
     IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
     READ_ONLY, WRITABLE)
 
+from twisted.internet import defer
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
 from twisted.web.xmlrpc import Fault
@@ -398,6 +399,21 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         # We don't really care who requests a mirror of a branch.
         branch.requestMirror()
         return True
+
+    def getDefaultStackedOnBranch(self, project_name):
+        return deferToThread(
+            self._getDefaultStackedOnBranchInteraction, project_name)
+
+    @read_only_transaction
+    def _getDefaultStackedOnBranchInteraction(self, project_name):
+        if project_name == '+junk':
+            return ''
+        product = getUtility(IProductSet).getByName(project_name)
+        branch = product.default_stacked_on_branch
+        if branch is None:
+            return ''
+        else:
+            return branch.unique_name
 
     def getBranchInformation(self, loginID, userName, productName,
                              branchName):

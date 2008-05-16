@@ -293,6 +293,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         vocabulary='FilteredProductSeries',
         description=_('The "trunk" series where development is focused'))
 
+    default_stacked_on_branch = Attribute(
+        _('The branch that new branches will be stacked on by default.'))
+
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
         "product; otherwise, simply returns the product name."))
