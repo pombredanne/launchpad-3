@@ -253,6 +253,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
 
     @property
     def comment_location(self):
+        """Location of page for commenting on this proposal"""
         return canonical_url(self.context, view_name='+comment')
 
     @property

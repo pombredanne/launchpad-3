@@ -25,11 +25,11 @@
         permission="zope.Public"
         template="../templates/codereviewmessage-index.pt"
         />
-  <browser:page
-      for="canonical.launchpad.interfaces.ICodeReviewMessage"
-      name="+fragment"
-      permission="zope.Public"
-      template="../templates/codereviewmessage-fragment.pt" />
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        name="+fragment"
+        permission="zope.Public"
+        template="../templates/codereviewmessage-fragment.pt" />
     <browser:page
         for="canonical.launchpad.interfaces.ICodeReviewMessage"
         class="canonical.launchpad.browser.CodeReviewMessageSummary"
@@ -44,11 +44,11 @@
         permission="launchpad.AnyPerson"
         template="../templates/codereviewmessage-reply.pt"
         />
-  <browser:page
-      name="+comment"
-      for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      class="canonical.launchpad.browser.CodeReviewMessageAddView"
-      facet="branches"
-      permission="launchpad.AnyPerson"
-      template="../templates/codereviewmessage-reply.pt" />
+    <browser:page
+        name="+comment"
+        for="canonical.launchpad.interfaces.IBranchMergeProposal"
+        class="canonical.launchpad.browser.CodeReviewMessageAddView"
+        facet="branches"
+        permission="launchpad.AnyPerson"
+        template="../templates/codereviewmessage-reply.pt" />
 </configure>

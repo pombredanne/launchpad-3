@@ -10,10 +10,10 @@ from zope.interface import Interface
 from zope.schema import Choice, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import CodeReviewVote, ICodeReviewMessage
+from canonical.launchpad.interfaces import (
+    CodeReviewVote, ICodeReviewMessage ICodeReviewMessage)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView,
-    LaunchpadView)
+    action, canonical_url, LaunchpadFormView, LaunchpadView)
 
 
 class CodeReviewMessageSummary(LaunchpadView):
@@ -37,10 +37,12 @@ class CodeReviewMessageView(LaunchpadView):
 
     @property
     def reply_link(self):
+        """Location of the page for replying to this message"""
         return canonical_url(self.context, view_name='+reply')
 
 
 class IEditCodeReviewMessage(Interface):
+    """Interface for use as a schema for CodeReviewMessage forms"""
 
     vote = Choice(
         title=_('Vote'), required=False, vocabulary=CodeReviewVote)
@@ -55,15 +57,18 @@ class IEditCodeReviewMessage(Interface):
 
 
 class CodeReviewMessageAddView(LaunchpadFormView):
+    """View that lets you add a CodeReviewMessage"""
 
     schema = IEditCodeReviewMessage
 
     @property
     def is_reply(self):
+        """True if this message is a reply to another message, else False."""
         return ICodeReviewMessage.providedBy(self.context)
 
     @property
     def branch_merge_proposal(self):
+        """The BranchMergeProposal being commented on."""
         if self.is_reply:
             return self.context.branch_merge_proposal
         else:
@@ -71,6 +76,7 @@ class CodeReviewMessageAddView(LaunchpadFormView):
 
     @property
     def reply_to(self):
+        """The message being replied to, or None."""
         if self.is_reply:
             return self.context
         else:
