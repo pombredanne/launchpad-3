@@ -45,22 +45,10 @@
   </tal:whiteboard>
   <a href="#" tal:attributes="href view/comment_location">Add comment</a>
       <tal:actions repeat="row view/comments">
-        <div class="boardComment" tal:attributes="style row/style">
-        <div class="boardCommentDetails">
-            <span tal:content="structure row/comment/message/owner/fmt:link"
-                  id="comment-from" />
-            <span tal:condition="row/comment/vote" >vote:
-                <span id="comment-vote" tal:content="row/comment/vote/title" />
-            </span>
-        </div>
-        <div class="boardCommentBody">
-            <tt tal:content="row/comment/message/subject" />
-            <div>
-              <tt id="comment-body"
-                  tal:content="row/comment/message/text_contents" />
-            </div>
-        </div>
-        </div>
+      <div tal:define="comment row/comment" tal:attributes="style row/style">
+          <metal:context-message
+           use-macro="view/comment_macros/macros/view-message"/>
+      </div>
       </tal:actions>
 
   <div id="source-revisions"

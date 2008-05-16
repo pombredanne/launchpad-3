@@ -25,6 +25,7 @@ from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Int
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -268,6 +269,9 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    comment_macros = ViewPageTemplateFile(
+        "../templates/codereviewmessage-macros.pt")
 
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
