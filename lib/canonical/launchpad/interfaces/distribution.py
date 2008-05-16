@@ -144,14 +144,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     is_read_only = Attribute(
         "True if this distro is just monitored by Launchpad, rather than "
         "allowing you to use Launchpad to actually modify the distro.")
-    upload_sender = TextLine(
-        title=_("Uploader sender"),
-        description=_("The default upload processor sender name."),
-        required=False)
-    upload_admin = PublicPersonChoice(
-        title=_("Upload Manager"),
-        description=_("The distribution upload admin."),
-        required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))

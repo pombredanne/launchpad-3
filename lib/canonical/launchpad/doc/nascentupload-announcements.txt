@@ -281,12 +281,7 @@ AUTO_APPROVED source uploads for 'translations' section:
   >>> lang_pack.logger = mock_logger
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Package diff from language-pack-pt - 1.0-2 to language-pack-pt - 1.0-1 requested
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Creating PENDING publishing record.
-  DEBUG: Creating PENDING build for hppa.
-  DEBUG: Creating PENDING build for i386.
-  DEBUG: Closing bugs.
+  ...
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
@@ -399,13 +394,6 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Package diff from bar - 1.0-4 to bar - 1.0-1 requested
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Creating PENDING publishing record.
-  DEBUG: Creating PENDING build for hppa.
-  DEBUG: Creating PENDING build for i386.
-  DEBUG: Closing bugs.
-  DEBUG: Building recipients list.
   ...
   DEBUG: Skipping announcement, it is a BACKPORT.
   DEBUG: Sent a mail:
@@ -458,13 +446,6 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Package diff from bar - 1.0-2 to bar - 1.0-1 requested
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Creating PENDING publishing record.
-  DEBUG: Creating PENDING build for hppa.
-  DEBUG: Creating PENDING build for i386.
-  DEBUG: Closing bugs.
-  DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
   ...
