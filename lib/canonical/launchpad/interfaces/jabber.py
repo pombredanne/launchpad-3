@@ -10,19 +10,25 @@ __all__ = [
     'IJabberIDSet',
     ]
 
-from zope.schema import Int, TextLine
+from zope.schema import Int, Object, TextLine
 from zope.interface import Interface
-from canonical.launchpad import _
 
-from canonical.lazr.rest.declarations import export_as_webservice_entry
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
+from canonical.launchpad import _
 
 
 class IJabberID(Interface):
     """Jabber specific user ID """
     export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    person = Int(title=_("Owner"), required=True)
-    jabberid = TextLine(title=_("Jabber user ID"), required=True)
+    # schema=Interface will be overriden in person.py because of circular
+    # dependencies.
+    person = exported(
+        Object(title=_("Owner"), required=True, schema=Interface))
+    jabberid = exported(
+        TextLine(title=_("Jabber user ID"), required=True))
 
     def destroySelf():
         """Delete this JabberID from the database."""

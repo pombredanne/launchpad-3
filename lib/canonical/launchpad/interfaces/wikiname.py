@@ -7,11 +7,13 @@ __all__ = [
     'IWikiNameSet',
     ]
 
-from zope.schema import Int, TextLine
-from zope.interface import Interface, Attribute
-from canonical.launchpad import _
+from zope.schema import Int, Object, TextLine
+from zope.interface import Interface
 
-from canonical.lazr.rest.declarations import export_as_webservice_entry
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
+from canonical.launchpad import _
 
 
 UBUNTU_WIKI_URL = 'https://wiki.ubuntu.com/'
@@ -21,10 +23,16 @@ class IWikiName(Interface):
     """Wiki for Users"""
     export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    person = Int(title=_("Owner"), required=True)
-    wiki = TextLine(title=_("Wiki host"), required=True)
-    wikiname = TextLine(title=_("Wikiname"), required=True)
-    url = Attribute("The URL for this wiki home page.")
+    # schema=Interface will be overriden in person.py because of circular
+    # dependencies.
+    person = exported(
+        Object(title=_("Owner"), schema=Interface, required=True))
+    wiki = exported(
+        TextLine(title=_("Wiki host"), required=True))
+    wikiname = exported(
+        TextLine(title=_("Wikiname"), required=True))
+    url = exported(
+        TextLine(title=_("The URL for this wiki home page.")))
 
     def destroySelf():
         """Remove this WikiName from the database."""

@@ -1924,3 +1924,8 @@ class NameAlreadyTaken(Exception):
 ITeamMembership['team'].schema = IPerson
 ITeamMembership['person'].schema = IPerson
 ITeamMembership['last_changed_by'].schema = IPerson
+
+IIrcID['person'].schema = IPerson
+IJabberID['person'].schema = IPerson
+IWikiName['person'].schema = IPerson
+IEmailAddress['person'].schema = IPerson
