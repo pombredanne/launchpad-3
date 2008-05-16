@@ -76,7 +76,7 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
                 or user.inTeam(celebrities.admin))
 
 
-class ViewPillarName(AuthorizationBase):
+class ViewPillar(AuthorizationBase):
     usedfor = IPillar
     permission = 'launchpad.View'
 
