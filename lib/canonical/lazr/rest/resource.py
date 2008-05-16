@@ -320,6 +320,9 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
 
     def _processCustomOperationResult(self, result):
         """Process the result of a custom operation."""
+        if result is None:
+            return ""
+
         if isinstance(result, basestring):
             # The operation took care of everything and just needs
             # this string served to the client.

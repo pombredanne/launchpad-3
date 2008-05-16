@@ -86,6 +86,7 @@ class WebServiceCaller:
             scheme, netloc, path, query, fragment = urlsplit(path_or_url)
         else:
             path = path_or_url
+        path = str(path)
         # Make an HTTP request.
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:

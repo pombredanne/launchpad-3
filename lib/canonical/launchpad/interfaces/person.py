@@ -47,8 +47,8 @@ from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation, export_operation_as,
-   export_read_operation, exported, operation_parameters,
-   rename_parameters_as, REQUEST_USER, webservice_error)
+   export_read_operation, export_write_operation, exported,
+   operation_parameters, rename_parameters_as, REQUEST_USER, webservice_error)
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad import _
@@ -530,7 +530,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     # XXX Guilherme Salgado 2006-11-10:
     # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
-    # appart from here.
+    # apart from here.
     registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
@@ -1234,7 +1234,6 @@ class IPersonViewRestricted(Interface):
         privilege by virtue of being a member of a team with admin rights.
         """
 
-    @export_operation_as('getMembersByStatus')
     @operation_parameters(status=copy_field(ITeamMembership['status']))
     @export_read_operation()
     def getMembersByStatus(status, orderby=None):
@@ -1247,6 +1246,9 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @export_write_operation()
     def join(team, requester=None, may_subscribe_to_list=True):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
@@ -1270,6 +1272,8 @@ class IPersonEditRestricted(Interface):
             the team mailing list.
         """
 
+    @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @export_write_operation()
     def leave(team):
         """Leave the given team.
 
@@ -1297,6 +1301,12 @@ class IPersonEditRestricted(Interface):
         requires it.
         """
 
+    @call_with(reviewer=REQUEST_USER)
+    @operation_parameters(
+        person=copy_field(ITeamMembership['person']),
+        status=copy_field(ITeamMembership['status']),
+        comment=Text(required=False))
+    @export_write_operation()
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None, force_team_add=False,
                   may_subscribe_to_list=True):
@@ -1324,6 +1334,10 @@ class IPersonEditRestricted(Interface):
     def deactivateAllMembers(comment, reviewer):
         """Deactivate all the members of this team."""
 
+    @operation_parameters(
+        team=copy_field(ITeamMembership['team']),
+        comment=Text())
+    @export_write_operation()
     def acceptInvitationToBeMemberOf(team, comment):
         """Accept an invitation to become a member of the given team.
 
@@ -1332,6 +1346,10 @@ class IPersonEditRestricted(Interface):
         to APPROVED.
         """
 
+    @operation_parameters(
+        team=copy_field(ITeamMembership['team']),
+        comment=Text())
+    @export_write_operation()
     def declineInvitationToBeMemberOf(team, comment):
         """Decline an invitation to become a member of the given team.
 

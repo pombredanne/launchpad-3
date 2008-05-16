@@ -309,3 +309,44 @@ as we haven't yet exported anything from IJabberID.
   >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
   >>> sorted(irc_id)
   [u'self_link']
+
+
+== Custom operations ==
+
+Joining and leaving teams:
+
+  >>> from urllib import quote
+  >>> print webservice.named_post(
+  ...     salgado['self_link'], 'join', {},
+  ...     team=quote(ubuntu_team['self_link']))
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print webservice.named_post(
+  ...     salgado['self_link'], 'leave', {},
+  ...     team=quote(landscape_developers['self_link']))
+  HTTP/1.1 200 Ok
+  ...
+
+Adding an arbitrary member to a team:
+
+  >>> print webservice.named_post(
+  ...     ubuntu_team['self_link'], 'addMember', {},
+  ...     person=quote(landscape_developers['self_link']),
+  ...     comment='Just a test')
+  HTTP/1.1 200 Ok
+  ...
+
+Accepting or declining a membership invitation:
+
+  >>> print webservice.named_post(
+  ...     landscape_developers['self_link'], 'acceptInvitationToBeMemberOf',
+  ...     {}, team=quote(ubuntu_team['self_link']), comment='Just a test')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print webservice.named_post(
+  ...     '/beta/~name20', 'declineInvitationToBeMemberOf', {},
+  ...     team=quote(ubuntu_team['self_link']), comment='Just a test')
+  HTTP/1.1 200 Ok
+  ...
