@@ -19,10 +19,9 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
-    PackagePublishingStatus, PackageUploadStatus)
+    PackagePublishingStatus)
 from canonical.lazr import decorates
 
 
