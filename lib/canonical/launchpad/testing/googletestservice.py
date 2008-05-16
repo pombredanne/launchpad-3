@@ -13,6 +13,14 @@ import subprocess
 import os
 import time
 import socket
+import logging
+
+
+# Set up basic logging.
+log = logging.getLogger(__name__)
+filelog = logging.FileHandler(config.google_test_service.log)
+log.addHandler(filelog)
+log.setLevel(logging.DEBUG)
 
 
 class GoogleRequestHandler(BaseHTTPRequestHandler):
@@ -41,6 +49,16 @@ class GoogleRequestHandler(BaseHTTPRequestHandler):
         filepath = os.path.join(content_dir, filename)
         content_body = file(filepath).read()
         self.wfile.write(content_body)
+
+    def log_message(self, format, *args):
+        """See `BaseHTTPRequestHandler.log_message()`."""
+        # Substitute the base class's logger with the Python Standard
+        # Library logger.
+        message = ("%s - - [%s] %s" %
+                   (self.address_string(),
+                    self.log_date_time_string(),
+                    format%args))
+        log.info(message)
 
 
 def url_to_xml_map():
@@ -127,7 +145,7 @@ def main():
     host, port = get_service_endpoint()
     server = HTTPServer((host, port), GoogleRequestHandler)
 
-    print "Starting HTTP Google webservice server on port", port
+    log.info("Starting HTTP Google webservice server on port %s", port)
     server.serve_forever()
 
 
