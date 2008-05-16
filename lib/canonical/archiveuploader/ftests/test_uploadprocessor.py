@@ -37,7 +37,8 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackageUploadStatus,
     NonBuildableSourceUploadError)
 from canonical.launchpad.mail import stub
-from canonical.launchpad.testing.fakepackager import FakePackager
+from canonical.launchpad.testing.fakepackager import (
+    FakePackager, FakePackagerRejectedUploadError)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -873,7 +874,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         packager.buildVersion('1.0-3', suite=self.breezy.name, arch="m68k")
         packager.buildSource()
         error = self.assertRaisesAndReturnError(
-            AssertionError,
+            FakePackagerRejectedUploadError,
             packager.uploadSourceVersion, '1.0-3')
         self.assertEqual(
             str(error),

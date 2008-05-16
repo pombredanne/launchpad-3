@@ -24,7 +24,8 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PackageUploadStatus,
     PackagePublishingStatus, PackagePublishingPocket)
-from canonical.launchpad.testing.fakepackager import FakePackager
+from canonical.launchpad.testing.fakepackager import (
+    FakePackager, FakePackagerRejectedUploadError)
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.mail import stub
 
@@ -889,7 +890,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
         packager.buildSource()
         error = self.assertRaisesAndReturnError(
-            AssertionError,
+            FakePackagerRejectedUploadError,
             packager.uploadSourceVersion, '1.0-2',
             archive=self.name16.archive)
         self.assertEqual(

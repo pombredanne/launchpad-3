@@ -7,7 +7,10 @@ suite.
 """
 
 __metaclass__ = type
-__all__ = ['FakePackager']
+__all__ = [
+    'FakePackager',
+    'FakePackagerRejectedUploadError',
+    ]
 
 import atexit
 import os
@@ -72,6 +75,10 @@ clean:
 
 binary: binary-arch
 """
+
+
+class FakePackagerRejectedUploadError(Exception):
+    """Raised when a package uploaded via FakePackager is rejected."""
 
 
 class FakePackager:
@@ -284,8 +291,9 @@ class FakePackager:
         if not upload.is_rejected:
             upload.do_accept(notify=notify)
 
-        assert not upload.is_rejected, (
-            "Upload was rejected: %s" % upload.rejection_message)
+        if upload.is_rejected:
+            raise FakePackagerRejectedUploadError(
+                "Upload was rejected: %s" % upload.rejection_message)
 
         return upload.queue_root
 
