@@ -22,7 +22,9 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
 
 from canonical.buildd.utils import notes
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
+from canonical.config import config
 
 
 def determineArchitecturesToBuild(pubrec, legal_archserieses,
@@ -87,7 +89,8 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     elif hint_string == 'all':
         nominated_arch = distroseries.nominatedarchindep
         assert nominated_arch in legal_archserieses, (
-            'nominatedarchindep is not present in legal_archseries')
+            'nominatedarchindep is not present in legal_archseries: %s' %
+            ' '.join(legal_arch_tags))
         package_tags = set([nominated_arch.architecturetag])
     else:
         my_archs = hint_string.split()
@@ -203,7 +206,8 @@ class BuilddMaster:
                 "No nominatedarchindep for %s, skipping" % distroseries.name)
             return
 
-        # listify to avoid hitting this MultipleJoin multiple times
+        # Listify the architectures to avoid hitting this MultipleJoin
+        # multiple times.
         distroseries_architectures = list(distroseries.architectures)
         if not distroseries_architectures:
             self._logger.debug(
@@ -211,14 +215,34 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
+        architectures_available = [
+            arch for arch in distroseries_architectures
+            if arch.getPocketChroot() is not None]
+
+        if not architectures_available:
+            self._logger.debug(
+                "Chroots missing for %s, skipping" % distroseries.name)
+            return
+
+        self._logger.info(
+            "Supported architectures: %s" %
+            " ".join(arch_series.architecturetag
+                     for arch_series in architectures_available))
+
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, distroseries)
+
         sources_published = distroseries.getSourcesPublishedForAllArchives()
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            builds = pubrec.createMissingBuilds(logger=self._logger)
-            if len(builds) > 0:
-                self.commit()
+            builds = pubrec.createMissingBuilds(
+                architectures_available=architectures_available,
+                pas_verify=pas_verify, logger=self._logger)
+            if len(builds) == 0:
+                continue
+            self.commit()
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """
