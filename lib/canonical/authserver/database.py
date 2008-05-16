@@ -409,6 +409,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if project_name == '+junk':
             return ''
         product = getUtility(IProductSet).getByName(project_name)
+        if product is None:
+            raise Fault(
+                NOT_FOUND_FAULT_CODE,
+                "Project %r does not exist." % project_name)
         branch = product.default_stacked_on_branch
         if branch is None:
             return ''

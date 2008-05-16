@@ -627,6 +627,16 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         branch = store._getDefaultStackedOnBranchInteraction('firefox')
         self.assertEqual('', branch)
 
+    def test_getDefaultStackedOnBranch_no_product(self):
+        # getDefaultStackedOnBranch raises a Fault if there is no such
+        # product.
+        store = DatabaseUserDetailsStorageV2(None)
+        product = 'no-such-product'
+        self.assertRaisesFault(
+            NOT_FOUND_FAULT_CODE,
+            'Project %r does not exist.' % (product,),
+            store._getDefaultStackedOnBranchInteraction, product)
+
     def test_getDefaultStackedOnBranch(self):
         # getDefaultStackedOnBranch returns the empty string when there is no
         # branch set.
