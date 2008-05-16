@@ -18,7 +18,9 @@
 <div metal:fill-slot="main">
 
   <h1>Code review comment</h1>
-  <metal:landing-target use-macro="context/@@+macros/view-message"/>
+  <div tal:define="comment context">
+      <metal:comment use-macro="context/@@+macros/view-message" />
+  </div>
   <a href="#" tal:attributes="href view/reply_link">Reply</a>
 </div>
 

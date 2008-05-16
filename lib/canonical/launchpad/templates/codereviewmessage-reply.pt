@@ -18,7 +18,7 @@
 <div metal:fill-slot="main">
 
   <h1>Code review comment</h1>
-  <tal:previous tal:condition="view/is_reply">
+  <tal:previous tal:condition="view/is_reply" tal:define="comment context">
       <metal:context-message use-macro="context/@@+macros/view-message"/>
   </tal:previous>
   <div metal:use-macro="context/@@launchpad_form/form">
