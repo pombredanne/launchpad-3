@@ -16,11 +16,12 @@ from zope.interface import implements
 from canonical.lazr.interfaces import IByteStorage
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
 class LibraryBackedByteStorage:
-    """See IByteStorage."""
-    implements(IByteStorage)
+    """See `IByteStorage`."""
+    implements(IByteStorage, ICanonicalUrlData)
 
     def __init__(self, entry, field):
         """Initialize as the backing storage for one entry's field."""
@@ -29,27 +30,39 @@ class LibraryBackedByteStorage:
         self.file_alias = getattr(self.entry, self.filename)
 
     @property
+    def rootsite(self):
+        return None
+
+    @property
+    def inside(self):
+        return self.entry.context
+
+    @property
+    def path(self):
+        return self.filename
+
+    @property
     def alias_url(self):
-        """See IByteStorage."""
+        """See `IByteStorage`."""
         return self.file_alias.getURL()
 
     @property
     def filename(self):
-        """See IByteStorage."""
+        """See `IByteStorage`."""
         return self.field.__name__
 
     @property
     def is_stored(self):
-        """See IByteStorage."""
+        """See `IByteStorage`."""
         return self.file_alias is not None
 
-    def createStored(self, type, representation):
-        """See IByteStorage."""
+    def createStored(self, mediaType, representation):
+        """See `IByteStorage`."""
         stored = getUtility(ILibraryFileAliasSet).create(
             name=self.filename, size=len(representation),
-            file=StringIO(representation), contentType=type)
+            file=StringIO(representation), contentType=mediaType)
         setattr(self.entry, self.filename, stored)
 
     def deleteStored(self):
-        """See IByteStorage."""
+        """See `IByteStorage`."""
         setattr(self.entry, self.filename, None)

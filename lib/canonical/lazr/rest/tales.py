@@ -73,10 +73,6 @@ class WadlResourceAPI(WadlAPI):
     @property
     def url(self):
         """Return the full URL to the resource."""
-        try:
-            canonical_url(self.context)
-        except:
-            import pdb; pdb.set_trace()
         return canonical_url(self.context)
 
 

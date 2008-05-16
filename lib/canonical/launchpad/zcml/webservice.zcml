@@ -61,12 +61,6 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.ITeamMembership"
-        provides="canonical.launchpad.rest.ITeamMembershipEntry"
-        factory="canonical.launchpad.rest.TeamMembershipEntry"
-        />
-
-    <adapter
         for="canonical.launchpad.interfaces.IBugComment"
         provides="canonical.lazr.interfaces.rest.IEntry"
         factory="canonical.launchpad.rest.bugcomment_to_entry"

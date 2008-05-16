@@ -96,7 +96,7 @@ description of an entry. It's an <application> tag that contains a
 The <resource> tag defines the capabilities of the collection resource
 by referencing another WADL document.
 
-    >>> resource, = resources
+    >>> resource, = list(resources)
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -123,7 +123,7 @@ the representation of a top-level collection.
     >>> resources.attrib['href']
     'http://api.launchpad.dev/beta/~admins/members'
 
-    >>> resource, = resources
+    >>> resource, = list(resources)
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
@@ -141,6 +141,27 @@ client might want to know how to create one.
     >>> wadl = webservice.get(
     ...     '/beta/~salgado/mugshot',
     ...     'application/vd.sun.wadl+xml').getBody()
+    >>> tree = ET.fromstring(wadl)
+
+As you might have expected by this point, the WADL representation of a
+hosted file is just a reference to another WADL file.
+
+    >>> tree.tag
+    '...application'
+
+    >>> resources, = list(tree)
+    >>> resources.tag
+    '...resources'
+    >>> resources.attrib['href']
+    'http://api.launchpad.dev/beta/~salgado/mugshot'
+
+    >>> resource, = list(resources)
+    >>> resource.tag
+    '...resource'
+    >>> resource.attrib['path']
+    ''
+    >>> resource.attrib['type']
+    'http://api.launchpad.dev/beta/#HostedFile'
 
 
 == The service root ==
@@ -155,7 +176,6 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> open("wadl.txt", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
 
 Like all WADL documents, the WADL representation of the service root
@@ -495,9 +515,9 @@ The 'find' custom operation accepts one parameter in addition to
 Now let's look at how the service root WADL describes entry
 resources.
 
-    >>> sorted([entry_tuple[0].attrib['id']
-    ...         for entry_tuple in entry_resource_descriptions])
-    ['BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntry']
+    >>> sorted([entry[0].attrib['id']
+    ...         for entry in entry_resource_descriptions])
+    ['BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntryAdapter']
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.

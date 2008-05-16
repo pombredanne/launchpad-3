@@ -426,17 +426,20 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         If no nomination is found, a NotFoundError is raised.
 
-        :nomination_target: An IDistroSeries or IProductSeries.
+        :param nomination_target: An IDistroSeries or IProductSeries.
         """
 
-    def getNominations(target=None):
+    def getNominations(target=None, nominations=None):
         """Return a list of all IBugNominations for this bug.
 
         The list is ordered by IBugNominations.target.bugtargetdisplayname.
 
-        Optional filtering arguments:
-
-        :target: An IProduct or IDistribution.
+        :param target: An IProduct or IDistribution. Only nominations
+            for this target are returned.
+        :param nominations: The list of nominations to search through.
+            If none is given, the bug's nominations are looked through.
+            This can be useful when having to call this method multiple
+            times, to avoid getting the list of nominations each time.
         """
 
     def getBugWatch(bugtracker, remote_bug):

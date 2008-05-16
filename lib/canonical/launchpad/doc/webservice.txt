@@ -1122,7 +1122,6 @@ A cookbook can be given a cover with PUT.
     ...     cover_url, body=body, environ=headers, method='PUT')
     >>> file_resource = put_request.traverse(app)
     >>> file_resource()
-    ''
 
     >>> C2.cover
     <LibraryFileAlias ...>
@@ -1132,7 +1131,6 @@ At this point it exists:
     >>> get_request = create_web_service_request(cover_url)
     >>> file_resource = get_request.traverse(app)
     >>> file_resource()
-    ''
     >>> get_request.response.getStatus()
     303
     >>> get_request.response.getHeader('Location')
@@ -1144,7 +1142,6 @@ The cover can be deleted with DELETE.
     ...     cover_url, method='DELETE')
     >>> file_resource = delete_request.traverse(app)
     >>> file_resource()
-    ''
 
     >>> get_request = create_web_service_request(cover_url)
     >>> file_resource = get_request.traverse(app)
