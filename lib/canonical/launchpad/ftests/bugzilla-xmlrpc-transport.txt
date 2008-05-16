@@ -11,3 +11,36 @@ and the additional Launchpad plugin API.
     >>> server = xmlrpclib.ServerProxy(
     ...     'http://example.com/', transport=bugzilla_transport)
 
+
+== Launchpad.time() ==
+
+Launchpad.time() returns the current time on the remote server, the
+remote server's timezone and what the remote server believes to be the
+current UTC time.
+
+    >>> time_dict = server.Launchpad.time()
+    >>> for key in sorted(time_dict):
+    ...     print "%s: %s" % (key, time_dict[key])
+    local_time: ...
+    tz_name: UTC
+    utc_time: ...
+
+We can set the local time value on the remote server to make testing
+more useful.
+
+    >>> import time
+    >>> from datetime import datetime
+
+    >>> remote_datetime = datetime(2008, 5, 15, 16, 19, 53)
+    >>> bugzilla_transport.seconds_since_epoch = time.mktime(
+    ...     remote_datetime.timetuple())
+    >>> bugzilla_transport.timezone = "US/Central"
+    >>> bugzilla_transport.utc_offset = -6*60*60
+
+    >>> time_dict = server.Launchpad.time()
+    >>> for key in sorted(time_dict):
+    ...     print "%s: %s" % (key, time_dict[key])
+    local_time: 20080515T16:19:53
+    tz_name: US/Central
+    utc_time: 20080515T22:19:53
+

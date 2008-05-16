@@ -330,6 +330,10 @@ class TestOldBugzilla(TestBugzilla):
 class TestBugzillaXMLRPCTransport:
     """A test implementation of the Bugzilla XML-RPC interface."""
 
+    seconds_since_epoch = None
+    timezone = 'UTC'
+    utc_offset = 0
+
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 
@@ -345,6 +349,22 @@ class TestBugzillaXMLRPCTransport:
         method_name = method_name[len(prefix):]
         method = getattr(self, method_name)
         return method(*args)
+
+    def time(self):
+        """Return a dict of the local time, UTC time and the timezone."""
+        seconds_since_epoch = self.seconds_since_epoch
+        if seconds_since_epoch is None:
+            seconds_since_epoch = time.time()
+
+        # We return xmlrpc dateTimes rather than doubles since that's
+        # what BugZilla will return.
+        local_time = xmlrpclib.DateTime(seconds_since_epoch)
+        utc_time = xmlrpclib.DateTime(seconds_since_epoch - self.utc_offset)
+        return {
+            'local_time': local_time,
+            'utc_time': utc_time,
+            'tz_name': self.timezone,
+            }
 
 
 class TestMantis(Mantis):
