@@ -25,6 +25,7 @@ from bzrlib.transport.local import LocalTransport
 from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
 from twisted.internet import defer
+from twisted.python import util
 from zope.interface import implements
 
 from canonical.codehosting.transport import (
@@ -79,7 +80,7 @@ def with_sftp_error(func):
         deferred = func(*args, **kwargs)
         return deferred.addErrback(TransportSFTPServer.translateError,
                                    func.__name__)
-    return decorator
+    return util.mergeFunctionMetadata(func, decorator)
 
 
 class TransportSFTPFile:
@@ -90,11 +91,12 @@ class TransportSFTPFile:
 
     implements(ISFTPFile)
 
-    def __init__(self, transport, name, flags):
+    def __init__(self, transport, name, flags, server):
         self.name = name
         self._flags = flags
         self.transport = transport
         self._written = False
+        self._server = server
 
     def _shouldAppend(self):
         """Is this file opened append?"""
@@ -170,22 +172,12 @@ class TransportSFTPFile:
         """
         # XXX 2008-05-09 JonathanLange: This should at least raise an error,
         # not do nothing silently.
-        pass
+        return self._server.setAttrs(self.name, attrs)
 
     @with_sftp_error
     def getAttrs(self):
         """See `ISFTPFile`."""
-        deferred = self.transport.stat(self.name)
-        def translate_stat(stat_val):
-            return {
-                'size': stat_val.st_size,
-                'uid': stat_val.st_uid,
-                'gid': stat_val.st_gid,
-                'permissions': stat_val.st_mode,
-                'atime': stat_val.st_atime,
-                'mtime': stat_val.st_mtime,
-            }
-        return deferred.addCallback(translate_stat)
+        return self._server.getAttrs(self.name, False)
 
     def close(self):
         """See `ISFTPFile`."""
@@ -275,7 +267,7 @@ class TransportSFTPServer:
         deferred = self.transport.stat(directory)
         def open_file(stat_result):
             if stat.S_ISDIR(stat_result.st_mode):
-                return TransportSFTPFile(self.transport, path, flags)
+                return TransportSFTPFile(self.transport, path, flags, self)
             else:
                 raise filetransfer.SFTPError(
                     filetransfer.FX_NO_SUCH_FILE, directory)
@@ -294,18 +286,25 @@ class TransportSFTPServer:
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        deferred = self.openFile(path, 0, {})
-        deferred.addCallback(lambda handle: handle.setAttrs(attrs))
-        return deferred
+        return defer.succeed(None)
 
+    @with_sftp_error
     def getAttrs(self, path, followLinks):
         """See `ISFTPServer`.
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        deferred = self.openFile(path, 0, {})
-        deferred.addCallback(lambda handle: handle.getAttrs())
-        return deferred
+        deferred = self.transport.stat(path)
+        def translate_stat(stat_val):
+            return {
+                'size': stat_val.st_size,
+                'uid': stat_val.st_uid,
+                'gid': stat_val.st_gid,
+                'permissions': stat_val.st_mode,
+                'atime': stat_val.st_atime,
+                'mtime': stat_val.st_mtime,
+            }
+        return deferred.addCallback(translate_stat)
 
     def gotVersion(self, otherVersion, extensionData):
         """See `ISFTPServer`."""
