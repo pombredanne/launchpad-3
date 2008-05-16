@@ -454,13 +454,16 @@ class LaunchpadObjectFactory:
         return machine
 
     def makeCodeImportResult(self, code_import=None, result_status=None,
-                             date_started=None, date_finished=None):
+                             date_started=None, date_finished=None,
+                             log_excerpt=None, log_alias=None, machine=None):
         """Create and return a new CodeImportResult."""
         if code_import is None:
             code_import = self.makeCodeImport()
-        machine = self.makeCodeImportMachine()
+        if machine is None:
+            machine = self.makeCodeImportMachine()
         requesting_user = None
-        log_excerpt = self.getUniqueString()
+        if log_excerpt is None:
+            log_excerpt = self.getUniqueString()
         if result_status is None:
             result_status = CodeImportResultStatus.FAILURE
         if date_finished is None:
@@ -472,7 +475,8 @@ class LaunchpadObjectFactory:
                 date_finished = date_started + timedelta(hours=4)
         if date_started is None:
             date_started = date_finished - timedelta(hours=4)
-        log_alias = self.makeLibraryFileAlias()
+        if log_alias is None:
+            log_alias = self.makeLibraryFileAlias()
         return getUtility(ICodeImportResultSet).new(
             code_import, machine, requesting_user, log_excerpt, log_alias,
             result_status, date_started, date_finished)
@@ -522,9 +526,10 @@ class LaunchpadObjectFactory:
         request.setQuantities({flavour: template.quantities})
         return request
 
-    def makeLibraryFileAlias(self):
+    def makeLibraryFileAlias(self, log_data=None):
         """Make a library file, and return the alias."""
-        log_data = self.getUniqueString()
+        if log_data is None:
+            log_data = self.getUniqueString()
         filename = self.getUniqueString('filename')
         log_alias_id = getUtility(ILibrarianClient).addFile(
             filename, len(log_data), StringIO(log_data), 'text/plain')
