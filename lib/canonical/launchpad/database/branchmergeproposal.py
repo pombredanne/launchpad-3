@@ -30,6 +30,8 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus, IBranchMergeProposal,
     ILaunchpadCelebrities,
     UserNotBranchReviewer)
+from canonical.launchpad.mailout.notificationrecipientset import \
+    NotificationRecipientSet
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -144,7 +146,6 @@ class BranchMergeProposal(SQLBase):
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
-        owner_recipients = NotificationRecipientSet()
 
         branches = [self.source_branch, self.target_branch]
         if self.dependent_branch is not None:
