@@ -153,7 +153,11 @@ Let's grant the package specific upload permissions first.
     >>> main_component = getUtility(IComponentSet)['main']
     >>> noteam_person = getUtility(IPersonSet).getByEmail(
     ...     'no-team-memberships@test.com')
-    >>> pmount_name = getUtility(ISourcePackageNameSet).findByName("pmount")
+    >>> pmount_name = getUtility(ISourcePackageNameSet).queryByName("pmount")
+
+    # XXX jamesh 2008-05-16: setting both sourcepackagename and
+    # component triggers the component_or_sourcepackagename check.
+    >>> pmount_name = None
     >>> discard = ArchivePermission(
     ...     archive=ubuntu.main_archive, person=noteam_person,
     ...     permission=ArchivePermissionType.UPLOAD,
