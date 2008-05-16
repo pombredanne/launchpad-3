@@ -744,6 +744,45 @@ The branch location is shown using the lp: Bazaar lookup names.
     >>> print branch.bzr_identity
     lp://dev/~landscape-developers/landscape/trunk
 
+Branches associated with product series have shorter identities.
+
+    >>> landscape = branch.product
+    >>> landscape.development_focus.user_branch = branch
+    >>> syncUpdate(landscape.development_focus)
+
+Private branches still show the full branch name.
+
+    >>> print branch.bzr_identity
+    lp://dev/~landscape-developers/landscape/trunk
+
+    >>> branch.private = False
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+
+If the series is not the main development focus, then the series
+name is appended.  The branch will always use the shorter of the
+names if possible.
+
+    >>> series = landscape.newSeries(branch.owner, 'experimental', '', branch)
+    >>> len(list(branch.associatedProductSeries()))
+    2
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+    >>> landscape.development_focus.user_branch = None
+    >>> syncUpdate(landscape.development_focus)
+    >>> print branch.bzr_identity
+    lp://dev/landscape/experimental
+
+Junk branches associated with a series do not get the short form of
+bzr_identity.
+
+    >>> print junkcode.product
+    None
+    >>> series.user_branch = junkcode
+    >>> syncUpdate(series)
+    >>> print junkcode.bzr_identity
+    lp://dev/~ddaa/+junk/junkcode
+
 
 == Branch Scan List ==
 

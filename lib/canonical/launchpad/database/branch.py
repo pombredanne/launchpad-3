@@ -241,7 +241,11 @@ class Branch(SQLBase):
         # authenticated, we can't resolve series branches that end
         # up pointing to private branches, so don't show short names
         # for the branch if it is private.
-        if not self.private:
+        # XXX: TimPenhey 2008-05-06 bug=230805
+        # There are +junk branches that have been assigned to product
+        # series.  Until the database has been cleaned, don't check
+        # for associated product series for junk branches.
+        if not self.private and self.product is not None:
             for series in self.associatedProductSeries():
                 # If the branch is associated with the development focus
                 # then we'll use that, otherwise use the series with the
@@ -258,7 +262,7 @@ class Branch(SQLBase):
         else:
             return "%(prefix)s%(product)s/%(series)s" % {
                 'prefix': lp_prefix,
-                'product': self.product.name,
+                'product': use_series.product.name,
                 'series': use_series.name}
 
     @property
