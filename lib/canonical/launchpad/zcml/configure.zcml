@@ -58,7 +58,6 @@
     <include file="distributionsourcepackage.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
-    <include file="distrocomponentuploader.zcml" />
     <include file="distroseries.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
     <include file="distroseriespackagecache.zcml" />

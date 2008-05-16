@@ -110,5 +110,10 @@ class CodeImportMachineSet(object):
 
     def new(self, hostname, state=CodeImportMachineState.OFFLINE):
         """See `ICodeImportMachineSet`."""
-        return CodeImportMachine(
-            hostname=hostname, heartbeat=None, state=state)
+        machine = CodeImportMachine(hostname=hostname, heartbeat=None)
+        if state == CodeImportMachineState.ONLINE:
+            machine.setOnline()
+        elif state != CodeImportMachineState.OFFLINE:
+            raise AssertionError(
+                "Invalid machine creation state: %r." % state)
+        return machine

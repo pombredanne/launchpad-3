@@ -8,11 +8,11 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IArchive, IBazaarApplication, IBranch,
-    IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
-    IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
-    ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportResult,
+    ArchivePurpose, IAnnouncement, IArchive, IArchivePermissionSet,
+    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
+    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
+    IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
+    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
@@ -1026,16 +1026,13 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
     def checkAuthenticated(self, user):
         """Define who may download these translations.
 
-        Admins and Translations admins have access, as do the owner of
-        the translation group (if applicable) and whoever is allowed to
-        upload new versions of the source package.
+        Admins and Translations admins have access, as does the owner of
+        the translation group (if applicable).
         """
         translation_group = self.obj.distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            # User has upload rights to this package.
-            user.inTeam(self.obj.distribution.upload_admin) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
@@ -1088,12 +1085,34 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        return user.inTeam(self.obj.distroseries.distribution.upload_admin)
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.obj.distroseries.main_archive, user)
+        return permissions.count() > 0
 
 
-class EditPackageUpload(EditPackageUploadQueue):
+class EditPackageUpload(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
+
+    def checkAuthenticated(self, user):
+        """Return True if user has an ArchivePermission or is an admin."""
+        if AdminByAdminsTeam.checkAuthenticated(self, user):
+            return True
+
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.obj.archive, user)
+        if permissions.count() == 0:
+            return False
+        allowed_components = set(
+            permission.component for permission in permissions)
+        existing_components = self.obj.components
+        # The intersection of allowed_components and
+        # existing_components must be equal to existing_components
+        # to allow the operation to go ahead.
+        return (allowed_components.intersection(existing_components)
+                == existing_components)
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -1132,7 +1151,7 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def checkAuthenticated(self, user):
+    def _ppaCheckAuthenticated(self, user):
         """Allow only BuilddAdmins and PPA owner."""
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
@@ -1141,6 +1160,28 @@ class EditBuildRecord(AdminByBuilddAdmin):
             return True
 
         return False
+
+    def checkAuthenticated(self, user):
+        """Check write access for user and different kinds of archives.
+
+        Allow
+        
+            * BuilddAdmins and PPA owner for PPAs
+            * users with upload permissions (for the respective distribution)
+              otherwise.
+        """
+        # Is this a PPA? Call the respective method if so.
+        if self.obj.archive.purpose == ArchivePurpose.PPA:
+            return self._ppaCheckAuthenticated(user)
+
+        # Primary or partner section here: is the user in question allowed
+        # to upload to the respective component? Allow user to retry build
+        # if so.
+        if self.obj.archive.canUpload(user, self.obj.current_component):
+            return True
+        else:
+            return self.obj.archive.canUpload(
+                user, self.obj.sourcepackagerelease.sourcepackagename)
 
 
 class ViewBuildRecord(EditBuildRecord):
