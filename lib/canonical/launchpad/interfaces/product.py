@@ -11,8 +11,8 @@ __all__ = [
     'License',
     ]
 
-from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -252,7 +252,7 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     reviewer_whiteboard = Text(
         title=_('Notes for the project reviewer'),
-        required=False, 
+        required=False,
         description=_(
             "Notes on the project, viewable only by reviewers "
             "(administrators and registry experts)."))
@@ -329,6 +329,36 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     aggregatetranslationpermission = Attribute("The translation permission "
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
+
+    commercial_subscription = Attribute("""
+        An object which contains the timeframe and the voucher
+        code of a subscription.""")
+
+    requires_commercial_subscription = Attribute("""
+        Whether the project's licensing requires a commercial
+        subscription to use launchpad.""")
+
+    is_permitted = Attribute("""
+        Whether the project's licensing qualifies for free
+        hosting or the project has an up-to-date subscription.""")
+
+    license_approved = Attribute("""
+        Whether a license is manually approved for free hosting
+        after automatic approval fails.""")
+
+    def redeemSubscriptionVoucher(voucher, registrant, purchaser,
+                                  subscription_months, whiteboard=None):
+        """Redeem a voucher and extend the subscription expiration date.
+
+        The voucher must have already been verified to be redeemable.
+        :param voucher: The voucher id as tracked in the external system.
+        :param registrant: Who is redeeming the voucher.
+        :param purchaser: Who purchased the voucher.  May not be known.
+        :param subscription_months: integer indicating the number of months
+            the voucher is for.
+        :param whiteboard: Notes for this activity.
+        :return: None
+        """
 
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
@@ -470,4 +500,3 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-

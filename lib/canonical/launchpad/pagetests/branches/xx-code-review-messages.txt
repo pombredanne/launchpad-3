@@ -2,7 +2,6 @@
 
 Set up required objects
 
-    >>> from canonical.launchpad.interfaces import CodeReviewVote
     >>> # We need to be admin to add a landing target to a random branch
     >>> login('foo.bar@canonical.com')
     >>> merge_proposal = factory.makeBranchMergeProposal()
