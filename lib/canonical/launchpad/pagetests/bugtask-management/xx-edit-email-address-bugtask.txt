@@ -2,31 +2,33 @@
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet, IDistributionSet)
+    >>> from canonical.launchpad.interfaces import IPersonSet, IProductSet
     >>> from canonical.launchpad.ftests import login, logout
 
-    >>> login("foo.bar@canonical.com")
-    >>> personset = getUtility(IPersonSet)
-    >>> no_priv = personset.getByName("no-priv")
-    >>> #sabdfl = personset.getByName("sabdfl")
-    >>> #firefox = getUtility(IProductSet).getByName("firefox")
-    >>> #ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> logout()
-
-    >>> def user_sees_importance_widget(user, url):
+    >>> def widget_visbility(user, url):
     ...     browser = setupBrowser(
     ...         "Basic %s:test" % user.preferredemail.email)
     ...     browser.open(url)
     ...     try:
+    ...         browser.getControl("Status")
+    ...     except LookupError:
+    ...         status = False
+    ...     else:
+    ...         status = True
+    ...     try:
     ...         browser.getControl("Importance")
     ...     except LookupError:
-    ...         return False
+    ...         importance = False
     ...     else:
-    ...         return True
+    ...         importance = True
+    ...     return status, importance
+
+    >>> def print_widget_visibility(user, url):
+    ...     status, importance = widget_visbility(user, url)
+    ...     print 'Status: %s\nImportance: %s' % (status, importance)
 
 
-== Email Address bugtasks ==
+== "Normal" (not Email Address) bugtasks ==
 
 Normally, it's not possible to edit the status of a bugtask associated
 with a bugwatch.
@@ -45,7 +47,7 @@ with a bugwatch.
     >>> user_browser.url
     'http://bugs.launchpad.dev/gnome-terminal/+bug/12'
 
-Even the product owner cannot see the Importance widget:
+The product owner cannot see the Status or Importance widgets:
 
     >>> login("foo.bar@canonical.com")
     >>> gnome_terminal = getUtility(IProductSet).getByName("gnome-terminal")
@@ -54,13 +56,45 @@ Even the product owner cannot see the Importance widget:
     >>> gnome_terminal.owner.name
     u'name12'
 
-    >>> user_sees_importance_widget(
+    >>> print_widget_visibility(
     ...     user=gnome_terminal.owner,
     ...     url=('http://bugs.launchpad.dev/'
     ...          'gnome-terminal/+bug/12/+editstatus'))
-    False
+    Status: False
+    Importance: False
 
-But if we add a bugwatch with an email address, it will be editable.
+Nor can an ordinary user:
+
+    >>> login("foo.bar@canonical.com")
+    >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
+    >>> logout()
+
+    >>> print_widget_visibility(
+    ...     user=no_priv,
+    ...     url=('http://bugs.launchpad.dev/'
+    ...          'gnome-terminal/+bug/12/+editstatus'))
+    Status: False
+    Importance: False
+
+And the bug supervisor can't see the widgets either.
+
+    >>> login("foo.bar@canonical.com")
+    >>> gnome_terminal.setBugSupervisor(no_priv, no_priv)
+    >>> flush_database_updates()
+    >>> logout()
+
+    >>> print_widget_visibility(
+    ...     user=no_priv,
+    ...     url=('http://bugs.launchpad.dev/'
+    ...          'gnome-terminal/+bug/12/+editstatus'))
+    Status: False
+    Importance: False
+
+
+== Email Address bugtasks ==
+
+The status and importance of a bugtask with an email address bugwatch
+will be editable.
 
     >>> user_browser.open('http://bugs.launchpad.dev/'
     ...                   'gnome-terminal/+bug/12/+choose-affected-product')
@@ -75,8 +109,7 @@ But if we add a bugwatch with an email address, it will be editable.
     >>> user_browser.url
     'http://bugs.launchpad.dev/alsa-utils/+bug/12'
 
-The Importance widget is visible, but subject to the same restrictions
-as before.
+The owner can see the Status and Importance widgets.
 
     >>> login("foo.bar@canonical.com")
     >>> alsa_utils = getUtility(IProductSet).getByName("alsa-utils")
@@ -85,31 +118,38 @@ as before.
     >>> alsa_utils.owner.name
     u'sabdfl'
 
-The owner can see the Importance widget.
-
-    >>> user_sees_importance_widget(
+    >>> print_widget_visibility(
     ...     user=alsa_utils.owner,
     ...     url=('http://bugs.launchpad.dev/'
     ...          'alsa-utils/+bug/12/+editstatus'))
-    True
+    Status: True
+    Importance: True
 
-An ordinary user cannot.
+An ordinary user can see the Status widget. He can't see the
+Importance widget because he would not normally be permitted to alter
+the importance of a bugtask in Alsa Utils.
 
-    >>> user_sees_importance_widget(
+    >>> login("foo.bar@canonical.com")
+    >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
+    >>> logout()
+
+    >>> print_widget_visibility(
     ...     user=no_priv,
     ...     url=('http://bugs.launchpad.dev/'
     ...          'alsa-utils/+bug/12/+editstatus'))
-    False
+    Status: True
+    Importance: False
 
-But a bug supervisor can.
+A bug supervisor can see both.
 
     >>> login("foo.bar@canonical.com")
     >>> alsa_utils.setBugSupervisor(no_priv, no_priv)
     >>> flush_database_updates()
     >>> logout()
 
-    >>> user_sees_importance_widget(
+    >>> print_widget_visibility(
     ...     user=no_priv,
     ...     url=('http://bugs.launchpad.dev/'
     ...          'alsa-utils/+bug/12/+editstatus'))
-    True
+    Status: True
+    Importance: True
