@@ -73,6 +73,10 @@ class WadlResourceAPI(WadlAPI):
     @property
     def url(self):
         """Return the full URL to the resource."""
+        try:
+            canonical_url(self.context)
+        except:
+            import pdb; pdb.set_trace()
         return canonical_url(self.context)
 
 
@@ -127,6 +131,14 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
             collection_class = self.resource.collection.__class__
             adapter = WadlCollectionAdapterAPI(collection_class)
             return adapter.type_link
+
+
+class WadlByteStorageResourceAPI(WadlResourceAPI):
+    """Namespace for functions that operate on byte storage resources."""
+
+    def type_link(self):
+        "The URL to the resource type for the object."
+        return "%s#HostedFile" % self._service_root_url()
 
 
 class WadlServiceRootResourceAPI(WadlAPI):

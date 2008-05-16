@@ -40,6 +40,11 @@ class ByteStorageResource(HTTPResource):
 
     def do_GET(self):
         """See IByteStorageResource."""
+        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
+            result = self.toWADL().encode("utf-8")
+            self.request.response.setHeader(
+                'Content-Type', self.WADL_TYPE)
+            return result
         if not self.context.is_stored:
             # No stored document exists here yet.
             raise NotFound(self.context, self.context.filename, self.request)

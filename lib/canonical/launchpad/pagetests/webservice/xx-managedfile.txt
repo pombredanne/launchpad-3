@@ -55,7 +55,6 @@ The new mugshot is available at a different URL.
     ...
     Location: http://localhost:58000/91/mugshot
 
-
 Deleting a mugshot (with DELETE) disables the redirect.
 
     >>> print webservice.delete(salgado_mugshot)

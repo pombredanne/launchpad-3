@@ -130,6 +130,19 @@ the representation of a top-level collection.
     'http://api.launchpad.dev/beta/#PersonEntryAdapter-scoped-collection'
 
 
+== Hosted file resources ==
+
+Ordinarily if you send a GET request to a hosted file resource, you'll
+get a redirect to the hosted file. But if you ask for a WADL
+description of the resource, you'll get a WADL document. Note that
+this works even if there's no underlying hosted file--after all, the
+client might want to know how to create one.
+
+    >>> wadl = webservice.get(
+    ...     '/beta/~salgado/mugshot',
+    ...     'application/vd.sun.wadl+xml').getBody()
+
+
 == The service root ==
 
 All the WADL documents we've seen so far have been very simple,
