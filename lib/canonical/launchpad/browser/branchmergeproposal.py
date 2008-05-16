@@ -223,6 +223,7 @@ class BranchMergeProposalRevisionIdMixin:
 
 
 class BranchMergeProposalNavigation(Navigation):
+    """Navigation from BranchMergeProposal to CodeReviewComment views."""
 
     usedfor = IBranchMergeProposal
 
