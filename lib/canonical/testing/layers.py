@@ -158,7 +158,6 @@ def reconnect_stores(database_config_section='launchpad'):
 
     session_store = getUtility(IZStorm).get('session')
     assert session_store is not None, 'Failed to reconnect'
-    transaction.abort()
 
 
 class BaseLayer:
