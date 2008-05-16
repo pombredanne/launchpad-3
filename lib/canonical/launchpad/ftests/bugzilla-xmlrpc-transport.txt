@@ -25,6 +25,8 @@ current UTC time.
     tz_name: UTC
     utc_time: ...
 
+    >>> time_dict['utc_time']
+
 We can set the local time value on the remote server to make testing
 more useful.
 
