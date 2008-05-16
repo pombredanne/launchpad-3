@@ -27,9 +27,9 @@
         />
   <browser:page
       for="canonical.launchpad.interfaces.ICodeReviewMessage"
-      name="+macros"
+      name="+fragment"
       permission="zope.Public"
-      template="../templates/codereviewmessage-macros.pt" />
+      template="../templates/codereviewmessage-fragment.pt" />
     <browser:page
         name="+reply"
         facet="branches"
