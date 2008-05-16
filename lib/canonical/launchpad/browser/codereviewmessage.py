@@ -47,10 +47,12 @@ class CodeReviewMessageAddView(LaunchpadFormView):
 
     @property
     def is_reply(self):
+        """True if this message is a reply to another message, else False."""
         return ICodeReviewMessage.providedBy(self.context)
 
     @property
     def branch_merge_proposal(self):
+        """The BranchMergeProposal being commented on."""
         if self.is_reply:
             return self.context.branch_merge_proposal
         else:
@@ -58,6 +60,7 @@ class CodeReviewMessageAddView(LaunchpadFormView):
 
     @property
     def reply_to(self):
+        """The message being replied to, or None."""
         if self.is_reply:
             return self.context
         else:
