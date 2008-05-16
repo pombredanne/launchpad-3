@@ -26,6 +26,7 @@ class CodeReviewMessageView(LaunchpadView):
 
 
 class IEditCodeReviewMessage(Interface):
+    """Interface for use as a schema for CodeReviewMessage forms"""
 
     vote = Choice(
         title=_('Vote'), required=False, vocabulary=CodeReviewVote)
@@ -40,6 +41,7 @@ class IEditCodeReviewMessage(Interface):
 
 
 class CodeReviewMessageAddView(LaunchpadFormView):
+    """View that lets you add a CodeReviewMessage"""
 
     schema = IEditCodeReviewMessage
 
