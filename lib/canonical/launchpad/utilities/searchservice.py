@@ -186,25 +186,8 @@ class GoogleSearchService:
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
-        # XXX sinzui 2008-05-14:
-        # Replace this fake code with the fetchurl() function created
-        # by flacoste.
-        from os import path
-        if terms == 'bug' and start == 0:
-            file_name = 'googlesearchservice-bugs-1.xml'
-        elif terms == 'bug' and start == 20:
-            file_name = 'googlesearchservice-bugs-2.xml'
-        else:
-            file_name = 'googlesearchservice-no-results.xml'
-        gsp_xml_file_name_1 = path.normpath(path.join(
-            path.dirname(__file__), '..', 'ftests', 'googlesearches',
-            file_name))
-        gsp_xml_file = open(gsp_xml_file_name_1, 'r')
-        gsp_xml = gsp_xml_file.read()
-        gsp_xml_file.close()
-
-        #from canonical.lazr.timeout import urlfetch
-        #gsp_xml = urlfetch(search_url)
+        from canonical.lazr.timeout import urlfetch
+        gsp_xml = urlfetch(search_url)
 
         page_matches = self._parse_google_search_protocol(gsp_xml)
         return page_matches

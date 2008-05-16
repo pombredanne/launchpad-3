@@ -12,6 +12,11 @@ The GoogleSearchService implements the ISearchService.
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import ISearchService
+    >>> from canonical.lazr.timeout import (
+    ...     get_default_timeout_function, set_default_timeout_function)
+
+    >>> old_timeout_function = get_default_timeout_function()
+    >>> set_default_timeout_function(lambda: None)
 
     >>> google_search = getUtility(ISearchService)
     >>> verifyObject(ISearchService, google_search)
@@ -149,7 +154,7 @@ configuration may set a testing site.
     >>> config.google.site == google_search.site
     True
     >>> google_search.site
-    'http://launchpad.dev:8091/'
+    'http://launchpad.dev:8091/cse'
 
 The client_id is the client-id issued by Google for the
 GoogleSearchService to connect to the Custom Search Engine service.
@@ -202,7 +207,7 @@ argument to the method. The argument is http quoted and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
-    'http://launchpad.dev:8091/?as_sitesearch=launchpad.net
+    'http://launchpad.dev:8091/cse?as_sitesearch=launchpad.net
     client=google-csbe
     cx=011948274177882366108%3Aixpjdn21yfg
     ie=utf8
@@ -349,3 +354,6 @@ is only run in one environment, so links to that site will be preserved.
     >>> page_match.url
     'http://help.launchpad.net/OpenID'
 
+== Clean-up ==
+
+    >>> set_default_timeout_function(old_timeout_function)
