@@ -464,7 +464,12 @@ class LaunchpadObjectFactory:
         if result_status is None:
             result_status = CodeImportResultStatus.FAILURE
         if date_finished is None:
-            date_finished = time_counter().next()
+            # If a date_started is specified, then base the finish time
+            # on that.
+            if date_started is None:
+                date_finished = time_counter().next()
+            else:
+                date_finished = date_started + timedelta(hours=4)
         if date_started is None:
             date_started = date_finished - timedelta(hours=4)
         log_alias = self.makeLibraryFileAlias()

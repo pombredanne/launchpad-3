@@ -369,11 +369,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
-        code_import = self.context.code_import
-        if code_import:
-            return list(code_import.results[:10])
-        else:
-            return None
+        return list(self.context.code_import.results[:10])
 
 
 class DecoratedMergeProposal:
