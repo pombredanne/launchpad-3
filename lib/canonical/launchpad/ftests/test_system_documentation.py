@@ -761,8 +761,8 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
-    'google-test-service.txt': LayeredDocFileSuite(
-            '../doc/google-test-service.txt',
+    'google-service-stub.txt': LayeredDocFileSuite(
+            '../doc/google-service-stub.txt',
             layer=GoogleServiceLayer,
             ),
     }
