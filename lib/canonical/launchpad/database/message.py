@@ -275,7 +275,6 @@ class MessageSet:
                 # in the database, but the message headers and/or content
                 # are different. For the moment, we have chosen to allow
                 # this, but in future we may want to flag it in some way
-                pass
 
         # Stuff a copy of the raw email into the Librarian, if it isn't
         # already in there.

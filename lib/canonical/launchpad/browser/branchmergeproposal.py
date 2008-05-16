@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0322
 
 """Views, navigation and actions for BranchMergeProposals."""
 
@@ -25,7 +26,6 @@ from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Int
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
