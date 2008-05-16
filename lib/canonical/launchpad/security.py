@@ -1412,6 +1412,11 @@ class CodeReviewMessageView(AuthorizationBase):
         return bmp_checker.checkAuthenticated(user)
 
     def checkUnauthenticated(self):
+        """Are not-logged-in people able to view the code review message?
+
+        They can see a code review message if they can see the branch merge
+        proposal.
+        """
         bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
         return bmp_checker.checkUnauthenticated()
 

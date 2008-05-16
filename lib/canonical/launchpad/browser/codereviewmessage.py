@@ -6,8 +6,7 @@ __all__ = [
 
 
 from canonical.launchpad.interfaces import ICodeReviewMessage
-from canonical.launchpad.webapp import (
-    LaunchpadView)
+from canonical.launchpad.webapp import LaunchpadView
 
 
 class CodeReviewMessageView(LaunchpadView):
