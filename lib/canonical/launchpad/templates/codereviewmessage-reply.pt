@@ -18,7 +18,9 @@
 <div metal:fill-slot="main">
 
   <h1>Code review comment</h1>
-  <metal:context-message use-macro="context/@@+macros/view-message"/>
+  <div tal:define="comment context">
+      <metal:context-message use-macro="context/@@+macros/view-message"/>
+  </div>
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info" style="clear: both">
     </div>
