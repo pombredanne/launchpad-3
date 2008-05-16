@@ -65,6 +65,8 @@ from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.timeout import (
+    get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
@@ -572,6 +574,11 @@ class DatabaseLayer(BaseLayer):
         return LaunchpadTestSetup().dropDb()
 
 
+def test_default_timeout():
+    """Don't timeout by default in tests."""
+    return None
+
+
 class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     """Provides access to the Launchpad database and daemons.
 
@@ -594,12 +601,19 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        # By default, don't make external service tests timeout.
+        if get_default_timeout_function() is not None:
+            raise LayerInvariantError(
+                "Global default timeout function should be None.")
+        set_default_timeout_function(test_default_timeout)
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        if get_default_timeout_function() is not test_default_timeout:
+            raise LayerInvariantError(
+                "Test didn't reset default timeout function.")
+        set_default_timeout_function(None)
 
 
 class FunctionalLayer(BaseLayer):
