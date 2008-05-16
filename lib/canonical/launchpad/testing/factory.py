@@ -17,16 +17,16 @@ import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
-    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
-    CodeReviewNotificationLevel, CreateBugParams, EmailAddressStatus,
-    IBranchSet, IBugSet, ICodeImportJobWorkflow, ICodeImportMachineSet,
-    ICodeImportEventSet, ICodeImportResultSet, ICodeImportSet, ICountrySet,
-    IEmailAddressSet, IPersonSet, IProductSet, IProjectSet, IRevisionSet,
-    IShippingRequestSet, ISpecificationSet, IStandardShipItRequestSet,
-    ITranslationGroupSet, License, PersonCreationRationale,
-    RevisionControlSystems, ShipItFlavour, ShippingRequestStatus,
-    SpecificationDefinitionStatus, TeamSubscriptionPolicy,
-    UnknownBranchTypeError)
+    BranchType, CodeImportMachineState, CodeImportResultStatus,
+    CodeImportReviewStatus, CodeReviewNotificationLevel, CreateBugParams,
+    EmailAddressStatus, IBranchSet, IBugSet, ICodeImportEventSet,
+    ICodeImportJobWorkflow, ICodeImportMachineSet, ICodeImportResultSet,
+    ICodeImportSet, ICountrySet, IEmailAddressSet, IPersonSet, IProductSet,
+    IProjectSet, IRevisionSet, IShippingRequestSet, ISpecificationSet,
+    IStandardShipItRequestSet, ITranslationGroupSet, License,
+    PersonCreationRationale, RevisionControlSystems, ShipItFlavour,
+    ShippingRequestStatus, SpecificationDefinitionStatus,
+    TeamSubscriptionPolicy, UnknownBranchTypeError)
 from canonical.launchpad.ftests import syncUpdate
 
 
@@ -419,9 +419,11 @@ class LaunchpadObjectFactory:
         The machine will be in the OFFLINE state."""
         if hostname is None:
             hostname = self.getUniqueString('machine-')
-        machine = getUtility(ICodeImportMachineSet).new(hostname)
         if set_online:
-            machine.setOnline()
+            state = CodeImportMachineState.ONLINE
+        else:
+            state = CodeImportMachineState.OFFLINE
+        machine = getUtility(ICodeImportMachineSet).new(hostname, state)
         return machine
 
     def makeCodeImportResult(self):

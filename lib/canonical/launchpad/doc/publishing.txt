@@ -530,7 +530,6 @@ Using the same Ubuntu source publishing example as above:
     ...     print file.filename
     foo.dsc
     foo-bin_all.deb
-    foo-bin_all.deb
 
 We can also publish a package in a PPA and query on its files:
 
@@ -544,7 +543,6 @@ We can also publish a package in a PPA and query on its files:
     >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
     foo.dsc
-    foo-bin_all.deb
     foo-bin_all.deb
 
 Notice that some files appear twice if they are published in more than one

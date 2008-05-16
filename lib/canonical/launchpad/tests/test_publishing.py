@@ -152,7 +152,7 @@ class SoyuzTestPublisher:
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries)
 
-        builds = pub_source.createMissingBuilds(ignore_pas=True)
+        builds = pub_source.createMissingBuilds()
         published_binaries = []
         for build in builds:
             pub_binaries = self.buildAndPublishBinaryForSource(

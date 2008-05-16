@@ -277,55 +277,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             errors.FileExists, transport.mkdir, 'branch/.bzr/dir1')
 
 
-class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
-
-    layer = TwistedLaunchpadZopelessLayer
-
-    def installServer(self, server):
-        self.server = server
-
-    def getDefaultServer(self):
-        return make_sftp_server()
-
-    @defer_to_thread
-    def test_make_toplevel_directory_error(self):
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.PermissionDenied, transport.mkdir, 'directory')
-        self.assertIn(
-            "Branches must be inside a person or team directory.", str(e))
-
-    @defer_to_thread
-    def test_remove_branch_error(self):
-        transport = self.getTransport()
-        transport.mkdir('~testuser/+junk/foo')
-        e = self.assertRaises(
-            errors.PermissionDenied, transport.rmdir, '~testuser/+junk/foo')
-        self.assertIn(
-            "removing branch directory 'foo' is not allowed.", str(e))
-
-    @defer_to_thread
-    def test_make_product_directory_for_nonexistent_product_error(self):
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.PermissionDenied,
-            transport.mkdir, '~testuser/no-such-product/new-branch')
-        self.assertIn(
-            "Directories directly under a user directory must be named after "
-            "a project name registered in Launchpad",
-            str(e))
-
-    @defer_to_thread
-    def test_mkdir_not_team_member_error(self):
-        # You can't make a branch under the directory of a team that you don't
-        # belong to.
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.NoSuchFile,
-            transport.mkdir, '~not-my-team/firefox/new-branch')
-        self.assertIn("~not-my-team", str(e))
-
-
 def test_suite():
     # Parametrize the tests so they run against the SFTP server and a Bazaar
     # smart server. This ensures that both services provide the same
@@ -334,6 +285,4 @@ def test_suite():
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()
     filesystem_suite = loader.loadTestsFromTestCase(TestFilesystem)
-    error_suite = loader.loadTestsFromTestCase(TestErrorMessages)
-    return unittest.TestSuite(
-        [adapt_suite(adapter, filesystem_suite), error_suite])
+    return adapt_suite(adapter, filesystem_suite)

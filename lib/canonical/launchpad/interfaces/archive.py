@@ -249,14 +249,19 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
-    def canUpload(user, component=None):
+    def canUpload(user, component_or_package=None):
         """Check to see if user is allowed to upload to component.
 
         :param user: An `IPerson` whom should be checked for authentication.
-        :param component: An optional context `IComponent` for the check.
+        :param component_or_package: The context `IComponent` or an
+            `ISourcePackageName` for the check.  This parameter is
+            not required if the archive is a PPA.
 
-        Return True if 'user' is allowed to upload to 'component'.  If
-        'component' is not supplied, all components are considered.
+        :return: True if 'user' is allowed to upload to the specified
+            component or package name.
+        :raise TypeError: If component_or_package is not one of
+            `IComponent` or `ISourcePackageName`.
+
         """
 
     def canAdministerQueue(user, component):
@@ -265,7 +270,7 @@ class IArchive(IHasOwner):
         :param user: An `IPerson` whom should be checked for authenticate.
         :param component: The context `IComponent` for the check.
 
-        :return True: if 'user' is allowed to administer the package upload
+        :return: True if 'user' is allowed to administer the package upload
         queue for items with 'component'.
         """
 

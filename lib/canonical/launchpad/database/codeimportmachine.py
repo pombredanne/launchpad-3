@@ -22,7 +22,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportMachineOfflineReason, CodeImportMachineState,
-    ICodeImportEventSet, ICodeImportMachine, ICodeImportMachinePublic,
+    ICodeImportEventSet, ICodeImportMachine,
     ICodeImportMachineSet)
 
 
@@ -31,7 +31,7 @@ class CodeImportMachine(SQLBase):
 
     _defaultOrder = ['hostname']
 
-    implements(ICodeImportMachine, ICodeImportMachinePublic)
+    implements(ICodeImportMachine)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
@@ -43,8 +43,12 @@ class CodeImportMachine(SQLBase):
     current_jobs = SQLMultipleJoin(
         'CodeImportJob', joinColumn='machine', orderBy='date_started')
 
+    events = SQLMultipleJoin(
+        'CodeImportEvent', joinColumn='machine',
+        orderBy=['-date_created', '-id'])
+
     def shouldLookForJob(self):
-        """See `ICodeImportMachinePublic`."""
+        """See `ICodeImportMachine`."""
         job_count = self.current_jobs.count()
 
         if self.state == CodeImportMachineState.OFFLINE:
@@ -61,16 +65,16 @@ class CodeImportMachine(SQLBase):
             raise AssertionError(
                 "Unknown machine state %r??" % self.state)
 
-    def setOnline(self):
+    def setOnline(self, user=None, message=None):
         """See `ICodeImportMachine`."""
         if self.state != CodeImportMachineState.OFFLINE:
             raise AssertionError(
                 "State of machine %s was %s."
                 % (self.hostname, self.state.name))
         self.state = CodeImportMachineState.ONLINE
-        getUtility(ICodeImportEventSet).newOnline(self)
+        getUtility(ICodeImportEventSet).newOnline(self, user, message)
 
-    def setOffline(self, reason):
+    def setOffline(self, reason, user=None, message=None):
         """See `ICodeImportMachine`."""
         if self.state not in (CodeImportMachineState.ONLINE,
                               CodeImportMachineState.QUIESCING):
@@ -78,9 +82,10 @@ class CodeImportMachine(SQLBase):
                 "State of machine %s was %s."
                 % (self.hostname, self.state.name))
         self.state = CodeImportMachineState.OFFLINE
-        getUtility(ICodeImportEventSet).newOffline(self, reason)
+        getUtility(ICodeImportEventSet).newOffline(
+            self, reason, user, message)
 
-    def setQuiescing(self, user, message):
+    def setQuiescing(self, user, message=None):
         """See `ICodeImportMachine`."""
         if self.state != CodeImportMachineState.ONLINE:
             raise AssertionError(
@@ -105,5 +110,10 @@ class CodeImportMachineSet(object):
 
     def new(self, hostname, state=CodeImportMachineState.OFFLINE):
         """See `ICodeImportMachineSet`."""
-        return CodeImportMachine(
-            hostname=hostname, heartbeat=None, state=state)
+        machine = CodeImportMachine(hostname=hostname, heartbeat=None)
+        if state == CodeImportMachineState.ONLINE:
+            machine.setOnline()
+        elif state != CodeImportMachineState.OFFLINE:
+            raise AssertionError(
+                "Invalid machine creation state: %r." % state)
+        return machine

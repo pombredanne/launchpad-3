@@ -23,8 +23,6 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
-from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
-from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -539,19 +537,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=prejoins)
 
-    def createMissingBuilds(self, ignore_pas=False, logger=None):
+    def createMissingBuilds(self, architectures_available=None,
+                            pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA or ignore_pas:
+        if self.archive.purpose == ArchivePurpose.PPA:
             pas_verify = None
-        else:
-            pas_verify = BuildDaemonPackagesArchSpecific(
-                config.builddmaster.root, self.distroseries)
 
-        if self.archive.require_virtualized:
+        if architectures_available is None:
             architectures_available = [
-                arch for arch in self.distroseries.virtualized_architectures]
-        else:
-            architectures_available = self.distroseries.architectures
+                arch for arch in self.distroseries.architectures
+                if arch.getPocketChroot() is not None]
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)
@@ -562,18 +557,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 arch, logger=logger)
             if build_candidate is not None:
                 builds.append(build_candidate)
+
         return builds
 
     def _createMissingBuildForArchitecture(self, arch, logger=None):
         """Create a build for a given architecture if it doesn't exist yet.
 
         Return the just-created `IBuild` record already scored or None
-        if no chroot is available for the given `IDistroArchSeries` or
-        a suitable build is already present.
+        if a suitable build is already present.
         """
-        if arch.getChroot() is None:
-            return None
-
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
 
@@ -582,14 +574,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
              build_candidate.buildstate == BuildStatus.FULLYBUILT)):
             return None
 
-        if logger is not None:
-            logger.debug("Creating PENDING build for %s."
-                         % arch.architecturetag)
-
         build = self.sourcepackagerelease.createBuild(
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
         build_queue = build.createBuildQueueEntry()
         build_queue.score()
+
+        if logger is not None:
+            logger.debug(
+                "Created %s [%d] in %s (%d)"
+                % (build.title, build.id, build.archive.title,
+                   build_queue.lastscore))
 
         return build
 
@@ -619,25 +613,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackageFile.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.build=Build.id AND
-            Build.sourcepackagerelease=%s AND
-            DistroArchSeries.distroseries=%s AND
-
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchseries=
-                DistroArchSeries.id AND
-            BinaryPackagePublishingHistory.archive=%s AND
-            BinaryPackagePublishingHistory.pocket=%s AND
-            BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(
-                    self.sourcepackagerelease,
-                    self.distroseries,
-                    self.archive,
-                    self.pocket,
-                    PackagePublishingStatus.PUBLISHED)
+            Build.sourcepackagerelease=%s AND
+            BinaryPackagePublishingHistory.archive=%s
+            """ % sqlvalues(self.sourcepackagerelease, self.archive)
+
         binariesClauseTables = [
             'BinaryPackageFile', 'BinaryPackagePublishingHistory',
-            'BinaryPackageRelease', 'Build', 'DistroArchSeries']
+            'BinaryPackageRelease', 'Build']
 
         preJoins = ['content']
 
@@ -646,7 +630,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             prejoins=preJoins)
         binariesQuery = LibraryFileAlias.select(
             binariesClause, clauseTables=binariesClauseTables,
-            prejoins=preJoins)
+            prejoins=preJoins, distinct=True)
 
         # I would like to use UNION here to merge the two result sets, but
         # that silently drops the preJoins.

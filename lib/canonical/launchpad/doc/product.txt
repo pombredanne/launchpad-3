@@ -364,11 +364,11 @@ no longer appear in the result set.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchLifecycleStatus, IBranchSet)
-    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForProduct(
-    ...     product=productset.getByName('thunderbird'),
+    >>> thunderbird_branches = getUtility(IBranchSet).getBranchesForContext(
+    ...     context=productset.getByName('thunderbird'),
     ...     lifecycle_statuses=None)
     >>> for branch_view in thunderbird_branches:
-    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForProduct
+    ...     # XXX: MichaelHudson 2007-10-12 bug=154016: getBranchesForContext
     ...     # returns objects from BranchWithSortKeys, which is a view and so
     ...     # can't be modified.  Get the branch with the same id.  This can
     ...     # go away when BranchWithSortKeys goes away, i.e. when we get

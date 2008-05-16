@@ -49,6 +49,9 @@ class IPackageDiff(Interface):
 
     title = Attribute(_(u"The Package diff title."))
 
+    def performDiff():
+        """Performs a diff between two packages."""
+
 
 class IPackageDiffSet(Interface):
     """The set of PackageDiff."""
