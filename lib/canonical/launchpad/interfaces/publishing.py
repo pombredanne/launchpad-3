@@ -353,8 +353,8 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
     def getSourceAndBinaryLibraryFiles():
         """Return LibraryFileAlias records for all source and binaries.
 
-        All the published source and binary files associated with this
-        source publishing are returned as LibraryFileAlias records.
+        All the source files and all binary files ever published to the
+        same archive context are returned as LibraryFileAlias records.
         """
 
     def changeOverride(new_component=None, new_section=None):

@@ -199,7 +199,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'upload_admin', 'ppas', 'subscribe']
+             'ppas', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -276,12 +276,6 @@ class DistributionOverviewMenu(ApplicationMenu):
     def members(self):
         text = 'Change members team'
         return Link('+selectmemberteam', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def upload_admin(self):
-        text = 'Change upload manager'
-        summary = 'Someone with permission to manage uploads'
-        return Link('+uploadadmin', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def mirror_admin(self):
@@ -542,13 +536,6 @@ class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
         results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
-
-
-class DistributionRedirectingEditView(SQLObjectEditView):
-    """A deprecated view to be used by the +driver and +uploadadmin pages."""
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class DistributionBrandingView(BrandingChangeView):
