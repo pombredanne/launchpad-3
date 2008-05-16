@@ -184,6 +184,9 @@ memberships in the team.
   http://api.launchpad.dev/beta/~landscape-developers/+member/name12
   http://api.launchpad.dev/beta/~landscape-developers/+member/salgado
 
+
+=== Members ===
+
 A list of team memberships is distinct from a list of a team's
 members. Members are people; memberships are TeamMemberships. You've
 seen the memberships for the 'landscape-developers' team above; here
@@ -191,6 +194,19 @@ are the members.
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~landscape-developers/members").jsonBody())
+  http://api.launchpad.dev/beta/~name12
+  http://api.launchpad.dev/beta/~salgado
+
+Here the admins:
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~landscape-developers/admins").jsonBody())
+  http://api.launchpad.dev/beta/~name12
+
+All participants (direct or indirect members):
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~landscape-developers/participants").jsonBody())
   http://api.launchpad.dev/beta/~name12
   http://api.launchpad.dev/beta/~salgado
 
@@ -212,6 +228,27 @@ And to the teams in which they're indirect members.
 
   >>> print_self_link_of_entries(webservice.get(link).jsonBody())
   http://api.launchpad.dev/beta/~mailing-list-experts
+
+There are also links to proposed, invited, deactivated and expired
+members.
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~myteam/proposed_members").jsonBody())
+  http://api.launchpad.dev/beta/~no-priv
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~ubuntu-team/invited_members").jsonBody())
+  http://api.launchpad.dev/beta/~name20
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~admins/deactivated_members").jsonBody())
+  http://api.launchpad.dev/beta/~cprov
+  http://api.launchpad.dev/beta/~ddaa
+  http://api.launchpad.dev/beta/~jblack
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     "/beta/~landscape-developers/expired_members").jsonBody())
+  http://api.launchpad.dev/beta/~karl
 
 
 === Wiki names ===

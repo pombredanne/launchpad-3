@@ -1166,8 +1166,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
 
-# XXX: salgado, 2008-05-15: Attributes in this interface will be exported in a
-# future branch.  This one is already too big.
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
@@ -1178,36 +1176,62 @@ class IPersonViewRestricted(Interface):
             title=_("List of members with ADMIN or APPROVED status"),
             value_type=Object(schema=Interface)),
         exported_as='members')
-    adminmembers = Attribute("List of members with ADMIN status")
+    adminmembers = exported(
+        CollectionField(
+            title=_("List of this team's admins."),
+            value_type=Object(schema=Interface)),
+        exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    allmembers = Attribute(
-        "List of all direct and indirect people and teams who, one way or "
-        "another, are a part of this team. If you want a method to check if "
-        "a given person is a member of a team, you should probably look at "
-        "IPerson.inTeam().")
+    allmembers = exported(
+        CollectionField(
+            title=_("All participants of this team."),
+            description=_(
+                "List of all direct and indirect people and teams who, one "
+                "way or another, are a part of this team. If you want a "
+                "method to check if a given person is a member of a team, "
+                "you should probably look at IPerson.inTeam()."),
+            value_type=Object(schema=Interface)),
+        exported_as='participants')
     approvedmembers = Attribute("List of members with APPROVED status")
     deactivated_member_count = Attribute("Number of deactivated members")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    deactivatedmembers = exported(
+        CollectionField(
+            title=_(
+                "All members whose membership is in the DEACTIVATED state"),
+            value_type=Object(schema=Interface)),
+        exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
-    expiredmembers = Attribute("List of members with EXPIRED status")
+    expiredmembers = exported(
+        CollectionField(
+            title=_("All members whose membership is in the EXPIRED state"),
+            value_type=Object(schema=Interface)),
+        exported_as='expired_members')
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
     inactive_member_count = Attribute("Number of inactive members")
-    invited_members = Attribute("List of members with INVITED status")
+    invited_members = exported(
+        CollectionField(
+            title=_("All members whose membership is in the INVITED state"),
+            value_type=Object(schema=Interface)))
     invited_member_count = Attribute("Number of members with INVITED status")
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
-    proposedmembers = Attribute("List of members with PROPOSED status")
+    proposedmembers = exported(
+        CollectionField(
+            title=_("All members whose membership is in the PROPOSED state"),
+            value_type=Object(schema=Interface)),
+        exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
     def getDirectAdministrators():
         """Return this team's administrators.
 
-         This includes all direct members with admin rights and also
-         the team owner. Note that some other persons/teams might have admin
-         privilege by virtue of being a member of a team with admin rights.
+        This includes all direct members with admin rights and also
+        the team owner. Note that some other persons/teams might have admin
+        privilege by virtue of being a member of a team with admin rights.
         """
 
     @export_operation_as('getMembersByStatus')
@@ -1344,6 +1368,11 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 
 
 IPersonViewRestricted['activemembers'].schema = IPerson
+IPersonViewRestricted['adminmembers'].schema = IPerson
+IPersonViewRestricted['proposedmembers'].schema = IPerson
+IPersonViewRestricted['invited_members'].schema = IPerson
+IPersonViewRestricted['deactivatedmembers'].schema = IPerson
+IPersonViewRestricted['expiredmembers'].schema = IPerson
 
 
 class INewPersonForm(IPerson):
