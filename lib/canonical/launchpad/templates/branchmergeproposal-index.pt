@@ -44,11 +44,9 @@
     </div>
   </tal:whiteboard>
   <a href="#" tal:attributes="href view/comment_location">Add comment</a>
-      <tal:actions repeat="row view/comments">
-      <div tal:define="comment row/comment" tal:attributes="style row/style">
-          <metal:context-message
-           use-macro="view/comment_macros/macros/view-message"/>
-      </div>
+      <tal:actions repeat="row view/comments" >
+      <div tal:content="structure row/comment/@@+fragment"
+           tal:attributes="style row/style" />
       </tal:actions>
 
   <div id="source-revisions"

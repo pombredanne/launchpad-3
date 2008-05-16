@@ -270,9 +270,6 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             result.append(dict(style=style, comment=comment))
         return result
 
-    comment_macros = ViewPageTemplateFile(
-        "../templates/codereviewmessage-macros.pt")
-
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
     """The view used to set a proposal back to 'work in progress'."""
