@@ -8,6 +8,9 @@ __all__ = ['Product', 'ProductSet']
 
 
 import operator
+import datetime
+import calendar
+import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -26,6 +29,8 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.commercialsubscription import (
+    CommercialSubscription)
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
@@ -156,6 +161,90 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     bug_reporting_guidelines = StringCol(default=None)
 
     license_info = StringCol(dbName='license_info', default=None)
+    license_approved = BoolCol(dbName='license_approved',
+                               notNull=True, default=False)
+
+    @cachedproperty('_commercial_subscription_cached')
+    def commercial_subscription(self):
+        return CommercialSubscription.selectOneBy(product=self)
+
+    def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
+                                  subscription_months, whiteboard=None):
+        """See `IProduct`."""
+
+        def add_months(start, num_months):
+            """Given a start date find the new date `num_months` later.
+
+            If the start date day is the last day of the month and the new
+            month does not have that many days, then the new date will be the
+            last day of the new month.  February is handled correctly too,
+            including leap years, where th 28th-31st maps to the 28th or
+            29th.
+            """
+            years, new_month = divmod(start.month + num_months, 12)
+            new_year = start.year + years
+            # If the day is not valid for the new month, make it the last day
+            # of that month, e.g. 20080131 + 1 month = 20080229.
+            weekday, days_in_month = calendar.monthrange(new_year, new_month)
+            new_day = min(days_in_month, start.day)
+            new_date = start.replace(year=new_year,
+                                     month=new_month,
+                                     day=new_day)
+            return new_date
+
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        if self.commercial_subscription is None:
+            date_starts = now
+            date_expires = add_months(date_starts, subscription_months)
+            subscription = CommercialSubscription(
+                product=self,
+                date_starts=date_starts,
+                date_expires=date_expires,
+                registrant=registrant,
+                purchaser=purchaser,
+                sales_system_id=voucher,
+                whiteboard=whiteboard)
+            self._commercial_subscription_cached = subscription
+        else:
+            if (now <= self.commercial_subscription.date_expires):
+                # Extend current subscription.
+                self.commercial_subscription.date_expires = (
+                    add_months(self.commercial_subscription.date_expires,
+                               subscription_months))
+            else:
+                self.commercial_subscription.date_starts = now
+                self.commercial_subscription.date_expires = (
+                    add_months(date_starts, subscription_months))
+            self.commercial_subscription.sales_system_id = voucher
+            self.commercial_subscription.registrant = registrant
+            self.commercial_subscription.purchaser = purchaser
+
+    @property
+    def requires_commercial_subscription(self):
+        """See `IProduct`."""
+        other_licenses = (License.OTHER_PROPRIETARY,
+                          License.OTHER_OPEN_SOURCE)
+        if self.license_approved:
+            # The license was manually approved for free hosting.
+            return False
+        elif (len(self.licenses) > 0 and
+              self.license_info in ('', None) and
+              len(set(self.licenses).intersection(other_licenses)) == 0):
+            # The project has only valid open source license(s).
+            return False
+        else:
+            return True
+
+    @property
+    def is_permitted(self):
+        """See `IProduct`."""
+        if not self.requires_commercial_subscription:
+            # The project qualifies for free hosting.
+            return True
+        elif self.commercial_subscription is None:
+            return False
+        else:
+            return self.commercial_subscription.is_active
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
@@ -183,7 +272,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 raise AssertionError("%s is not a License" % license)
 
         for license in old_licenses.difference(licenses):
-            product_license = ProductLicense.selectOneBy(product=self, 
+            product_license = ProductLicense.selectOneBy(product=self,
                                                          license=license)
             product_license.destroySelf()
 
