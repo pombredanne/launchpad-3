@@ -99,7 +99,7 @@ A helper property exists to give the duration of the job run.
 == Retrieving CodeImportResults ==
 
 The CodeImportResult objects for a given import can be retrieved in
-reverse chronological order with the getResultsForImport method.
+reverse chronological order with the results attribute on a code import.
 
 We need to create a few result objects before we can test that this
 method works as expected.
@@ -118,7 +118,7 @@ not present.
 
 Then we can test that the results are in the order expected.
 
-    >>> results = list(result_set.getResultsForImport(sample_import))
+    >>> results = list(sample_import.results)
     >>> len(results)
     3
     >>> results.index(newest_result)

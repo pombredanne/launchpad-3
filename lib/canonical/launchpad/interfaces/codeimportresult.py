@@ -163,12 +163,3 @@ class ICodeImportResultSet(Interface):
         :param date_job_started: The date the job started.
         :param date_job_finished: The date the job finished, defaults to now.
         """
-
-    def getResultsForImport(code_import):
-        """Return an iterable of the results for the given import.
-
-        The results are sorted to have the newest result first.
-
-        :param code_import: The code import to return results for.
-        """
-
