@@ -2,7 +2,7 @@
 
 When making a request to an external resource (web service, external
 process), we want to make sure that this request is interrupted if it
-takes to long to complete.
+takes too long to complete.
 
 The canonical.lazr.timeout module provides a @with_timeout decorator
 that makes implementing that kind of behaviour easy.
@@ -22,7 +22,7 @@ decorator.
     >>> wait_for(0.1)
     'Succeeded.'
 
-If the operation cannot be completed in the alloted time, a TimeoutError
+If the operation cannot be completed in the allotted time, a TimeoutError
 is raised.
 
     >>> wait_for(1)
@@ -45,13 +45,14 @@ Other exceptions are reported correctly to the caller though:
 
 Since we want to time out operations involving an external resource
 (subprocess, remote site), we need a way to clean-up these resources
-once they time out. To this end, the with_timeout decorator takes a
-cleanup parameter taking a callable that will be invoked if the
+once they time out. To this end, the with_timeout decorator accepts a
+callable parameter (named 'cleanup') that will be invoked if the
 operation times out.
 
     >>> import socket
 
-    # Make sure that errors in this test doesn't hang forever.
+    # Make sure that potential failures on this test don't cause it to
+    # hang forever.
     >>> old_timeout = socket.getdefaulttimeout()
     >>> socket.setdefaulttimeout(5)
 

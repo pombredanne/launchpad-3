@@ -39,7 +39,7 @@ class TimeoutError(Exception):
 class ThreadCapturingResult(Thread):
     """Thread subclass that saves the return value of its target.
 
-    It also saves potential exception.
+    It also saves exceptions raised when invoking the target.
     """
 
     def __init__(self, target, args, kwargs, **opt):
@@ -88,6 +88,8 @@ class with_timeout:
             be called if the timeout is exceeded.
         :param timeout: The number of seconds to wait for.
         """
+        # If the cleanup function is specified by name, the function but be a
+        # method, so defined in a class definition context.
         if isinstance(cleanup, basestring):
             frame = sys._getframe(1)
             f_locals = frame.f_locals

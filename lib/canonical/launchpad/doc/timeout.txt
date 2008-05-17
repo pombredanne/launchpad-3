@@ -1,7 +1,7 @@
 = Request time out =
 
 Launchpad request shouldn't take more than a fix number of seconds to
-complete. The database adapter isssues RequestExpired errors when the
+complete. The database adapter issues RequestExpired errors when the
 database takes too long to respond (see
 lib/canonical/launchpad/webapp/ftests/test_adapter.txt)
 

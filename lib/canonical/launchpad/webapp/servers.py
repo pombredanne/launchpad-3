@@ -1272,7 +1272,6 @@ def launchpad_default_timeout():
     return left
 
 
-# ---- End publication classes.
 def set_launchpad_default_timeout(event):
     """Set the LAZR default timeout function."""
     set_default_timeout_function(launchpad_default_timeout)
