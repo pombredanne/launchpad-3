@@ -28,6 +28,11 @@
       <metal:search
         use-macro="context/@@+bugtarget-macros-search/simple-search-form"
       />
+      <script type="text/javascript">
+        <!--
+            document.forms["search"].elements['field.searchtext'].focus();
+          -->
+      </script>
 
       <div class="columns">
           <script type="text/javascript"

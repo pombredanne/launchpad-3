@@ -78,10 +78,13 @@
   <div metal:define-slot="extra-search-widgets">
   </div>
 </form>
-<script type="text/javascript">
-  <!--
-      document.forms["search"].elements['field.searchtext'].focus();
-    -->
-</script>
+
+    <tal:comment condition="nothing">
+      bugtarget-bugs.pt is the only template that uses this form in a page
+      where the search field should be auto-focused. If another template
+      ever falls into this category, the auto-focusing code should be moved
+      here from bugtarget-bugs.pt, but made optional and off by default.
+    </tal:comment>
+
 </metal:block>
 </tal:root>
