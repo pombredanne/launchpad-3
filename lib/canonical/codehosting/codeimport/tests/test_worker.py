@@ -191,7 +191,7 @@ class TestForeignTreeStore(WorkerTest):
         """Set up a code import for an SVN working tree."""
         super(TestForeignTreeStore, self).setUp()
         self.source_details = CodeImportSourceDetails.fromArguments(
-            ['123', 'svn', self.factory.getUniqueURL()])
+            ['123', 'svn', '0', self.factory.getUniqueURL()])
         self.temp_dir = self.makeTemporaryDirectory()
 
     def makeForeignTreeStore(self, transport=None):
@@ -213,7 +213,7 @@ class TestForeignTreeStore(WorkerTest):
         store = ForeignTreeStore(None)
         svn_branch_url = self.factory.getUniqueURL()
         source_details = CodeImportSourceDetails.fromArguments(
-            ['123', 'svn', self.factory.getUniqueURL()])
+            ['123', 'svn', '0', self.factory.getUniqueURL()])
         working_tree = store._getForeignTree(source_details, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(
@@ -223,7 +223,7 @@ class TestForeignTreeStore(WorkerTest):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
         store = ForeignTreeStore(None)
         source_details = CodeImportSourceDetails.fromArguments(
-            ['123', 'cvs', 'root', 'module'])
+            ['123', 'cvs', '0', 'root', 'module'])
         working_tree = store._getForeignTree(source_details, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(working_tree.root, source_details.cvs_root)
@@ -315,7 +315,7 @@ class TestWorkerCore(WorkerTest):
     def setUp(self):
         WorkerTest.setUp(self)
         self.source_details = CodeImportSourceDetails.fromArguments(
-            ['123', 'svn', self.factory.getUniqueURL()])
+            ['123', 'svn', '0', self.factory.getUniqueURL()])
 
     def makeBazaarBranchStore(self):
         """Make a Bazaar branch store."""
@@ -512,7 +512,7 @@ class TestCVSImport(WorkerTest, TestActualImportMixin):
         cvs_server.makeModule('trunk', [('README', 'original\n')])
 
         return CodeImportSourceDetails.fromArguments(
-            ['123', 'cvs', cvs_server.getRoot(), 'trunk'])
+            ['123', 'cvs', '0', cvs_server.getRoot(), 'trunk'])
 
 
 class TestSubversionImport(WorkerTest, TestActualImportMixin):
@@ -543,7 +543,7 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
         return CodeImportSourceDetails.fromArguments(
-            ['123', 'svn', svn_branch_url])
+            ['123', 'svn', '0', svn_branch_url])
 
     def test_bazaarBranchStored(self):
         # The worker stores the Bazaar branch after it has imported the new
