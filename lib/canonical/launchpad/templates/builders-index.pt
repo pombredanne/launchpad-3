@@ -50,9 +50,9 @@
          </th>
        </tr>
        <tr class="builder-row" tal:repeat="builder builder_group/builders">
-         <td width="15%" style="text-align: left">
+         <td style="text-align: left; width: 15em">
            <a tal:attributes="href builder/fmt:url"
-              tal:content="builder/title">Bob</a>
+              tal:content="builder/title/fmt:shorten/30">Bob</a>
          </td>
          <td style="text-align: left">
            <tal:status replace="builder/status">OK</tal:status>
