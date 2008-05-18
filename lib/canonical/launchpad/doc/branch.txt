@@ -744,7 +744,9 @@ The branch location is shown using the lp: Bazaar lookup names.
     >>> print branch.bzr_identity
     lp://dev/~landscape-developers/landscape/trunk
 
-Branches associated with product series have shorter identities.
+Branches associated with product series have shorter identities.  To
+show this the landscape trunk branch will be associated as the primary
+development focus branch.
 
     >>> landscape = branch.product
     >>> landscape.development_focus.user_branch = branch
