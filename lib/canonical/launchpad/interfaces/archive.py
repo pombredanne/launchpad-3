@@ -138,7 +138,7 @@ class IArchive(IHasOwner):
         :param: name: source name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
         :param: version: source version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
         :param: distroseries: `IDistroSeries` filter.
         :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
