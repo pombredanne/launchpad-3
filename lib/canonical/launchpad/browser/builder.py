@@ -168,7 +168,7 @@ class BuilderSetView(CommonBuilderView):
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Building PPA packages', virtualized=True)
+            'PPA builds', virtualized=True)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -176,7 +176,7 @@ class BuilderSetView(CommonBuilderView):
     def other_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Building other packages', virtualized=False)
+            'Official distribution builds', virtualized=False)
         builder_category.groupBuilders(self.builders)
         return builder_category
 

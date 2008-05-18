@@ -40,31 +40,29 @@
    <h2 tal:content="category/title" />
 
    <table class="listing">
+     <tbody>
      <tal:group repeat="builder_group category/groups">
-       <tr class="category">
-         <th
-           style="text-align: left"
-           tal:content="builder_group/processor_name"
-         />
-         <th>
-             <tal:queue-size replace="builder_group/queue_size"
-               >2</tal:queue-size> waiting
+       <tr class="highlighted">
+         <th colspan="2" style="text-align: left">
+             <tal:processor replace="builder_group/processor_name" />
+             (<tal:queue-size replace="builder_group/queue_size"
+               >2</tal:queue-size> waiting in queue)
          </th>
        </tr>
-       <tr>
-         <td colspan="2">
-           <table width="100%">
-            <tr class="builder-row" tal:repeat="builder builder_group/builders">
-            <td>
-              <a tal:attributes="href builder/fmt:url"
-                 tal:content="builder/title">Bob</a>
-            </td>
-            <td tal:content="builder/status">OK</td>
-            </tr>
-           </table>
-        </td>
+       <tr class="builder-row" tal:repeat="builder builder_group/builders">
+         <td width="10%" style="text-align: left">
+           <a tal:attributes="href builder/fmt:url"
+              tal:content="builder/title">Bob</a>
+         </td>
+         <td style="text-align: left">
+           <tal:status replace="builder/status">OK</tal:status>
+         </td>
        </tr>
-    </tal:group>
+       <tr tal:condition="not: repeat/builder_group/end" class="note">
+         <td>&nbsp;</td>
+       </tr>
+     </tal:group>
+     </tbody>
   </table>
 
 </metal:macro>
