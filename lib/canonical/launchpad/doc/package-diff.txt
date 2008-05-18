@@ -287,8 +287,7 @@ Now we can compare the package diff outcome to the debdiff output
     -
     -  * cookies
     -
-    - -- Foo Bar <foo.bar@canonical.com>  ...
-    -
+    - -- Foo Bar <foo.bar@canonical.com> ...
      biscuit (1.0-1) hoary; urgency=low
     <BLANKLINE>
        * Initial Upstream package
