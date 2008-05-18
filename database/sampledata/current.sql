@@ -8719,6 +8719,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (175, 243618, 243617);
 INSERT INTO teamparticipation (id, team, person) VALUES (178, 243620, 243620);
 INSERT INTO teamparticipation (id, team, person) VALUES (176, 243621, 243621);
 INSERT INTO teamparticipation (id, team, person) VALUES (179, 243621, 243622);
+INSERT INTO teamparticipation (id, team, person) VALUES (180, 243622, 243622);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
