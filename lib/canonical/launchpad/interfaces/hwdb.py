@@ -262,6 +262,22 @@ class HWBus(DBEnumeratedType):
 
     SERIAL = DBItem(6, 'Serial port')
 
+    IDE = DBItem(7, 'IDE')
+
+    ATA = DBItem(8, 'ATA')
+
+    FLOPPY = DBItem(9, 'Floppy')
+
+    IPI = DBItem(10, 'IPI')
+
+    SATA = DBItem(11, 'SATA')
+
+    SAS = DBItem(12, 'SAS')
+
+    PCCARD = DBItem(13, 'PC Card')
+
+    PCMCIA = DBItem(14, 'PCMCIA')
+
 
 class IHWVendorName(Interface):
     """A list of vendor names."""

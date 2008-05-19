@@ -29,6 +29,7 @@ import pytz
 
 from canonical.config import config
 from canonical.launchpad.helpers import simple_popen2
+from canonical.launchpad.interfaces import HWBus
 
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
@@ -133,6 +134,10 @@ class SubmissionParser:
 
     def _logError(self, message, submission_key):
         self.logger.error(
+            'Parsing submission %s: %s' % (submission_key, message))
+
+    def _logWarning(self, message, submission_key):
+        self.logger.warning(
             'Parsing submission %s: %s' % (submission_key, message))
 
     def _getValidatedEtree(self, submission, submission_key):
@@ -924,3 +929,194 @@ class SubmissionParser:
             return False
 
         return True
+
+    def buildDeviceList(self, parsed_data):
+        """Create a list of devices from a submission."""
+        self.hal_devices = hal_devices = {}
+        for hal_data in parsed_data['hardware']['hal']['devices']:
+            udi = hal_data['udi']
+            hal_devices[udi] = HALDevice(hal_data['id'], udi,
+                                         hal_data['properties'], self)
+        for device in hal_devices.values():
+            parent_udi = device.parent_udi
+            if parent_udi is not None:
+                hal_devices[parent_udi].addChild(device)
+                device.parent = hal_devices[parent_udi]
+
+
+class HALDevice:
+    """The representation of a HAL device node."""
+
+    def __init__(self, id, udi, properties, parser):
+        self.id = id
+        self.udi = udi
+        self.properties = properties
+        self.children = []
+        self.parser = parser
+
+    def addChild(self, child):
+        assert type(child) == type(self)
+        self.children.append(child)
+
+    def getProperty(self, property_name):
+        """Return the property property_name.
+
+        Note that there is no check of the property type.
+        """
+        result = self.properties.get(property_name)
+        if result is not None:
+            return result[0]
+        return None
+
+    @property
+    def parent_udi(self):
+        parent = self.properties.get('info.parent')
+        if parent is not None:
+            return parent[0]
+        return None
+
+    # Translation of the HAL info.bus property to HWBus enumerated busses.
+    hal_bus_hwbus = {
+        'pcmcia': HWBus.PCMCIA,
+        'usb_device': HWBus.USB,
+        'ide': HWBus.IDE,
+        'serio': HWBus.SERIAL,
+        }
+
+    # Translation of subclasses of the PCI class storage to HWBus
+    # enumerated busses. The Linux kernel accesses IDE and SATA disks
+    # and CDROM drives via the SCSI system; we want to know the real bus
+    # of the drive. See for example the file include/linux/pci_ids.h
+    # in the Linux kernel sources for a list of PCI device classes and
+    # subclasses. Note that the subclass 4 (RAID) is missing. While it
+    # may make sense to declare a RAID storage class for PCI devices,
+    # "RAID" does not tell us anything about the bus of the storage
+    # devices.
+    pci_storage_subclass_hwbus = {
+        0: HWBus.SCSI,
+        1: HWBus.IDE,
+        2: HWBus.FLOPPY,
+        3: HWBus.IPI, # Intelligent Peripheral Interface
+        5: HWBus.ATA,
+        6: HWBus.SATA,
+        7: HWBus.SAS,
+        }
+
+    def getBus(self):
+        """Return the bus this device connects to on the host side.
+
+        :return: A bus as enumerated in HWBus or None, if the bus
+            cannot be determined.
+        """
+        device_bus = self.getProperty('info.bus')
+        result = self.hal_bus_hwbus.get(device_bus)
+        if result is not None:
+            return result
+
+        # Special cases:
+        if device_bus == 'scsi':
+            # The kernel uses the SCSI layer to access storage devices
+            # connected via the USB, IDE, SATA busses. See `real_device`
+            # for more details.
+            #
+            # If the grandparent node has a USB interface, it is clearly
+            # a USB/IDE or USB/SATA adapter; if the grandparent node has
+            # a PCI interface, we see from the PCI device class and
+            # subclass, if we have a real SCSI controller or another
+            # controller.
+
+            # While SCSI devices from valid submissions should have a
+            # parent and a grandparent, we can't be sure for bogus or
+            # broken submissions.
+            parent = getattr(self, 'parent', None)
+            if parent is None:
+                self.parser._logWarning(
+                    'Found SCSI device without a parent: %s' % self.udi)
+                return None
+            else:
+                grandparent = getattr(parent, 'parent', None)
+                if grandparent is None:
+                    self.parser._logWarning(
+                        'Found SCSI device without a grandparent: %s'
+                        % self.udi)
+                    return None
+
+            grandparent_bus = grandparent.getProperty('info.bus')
+            if grandparent_bus == 'usb':
+                # USB storage devices have the following HAL device hiearchy:
+                # - HAL node for the USB device. info.bus == 'usb_device',
+                #   device class == 0, device subclass == 0
+                # - HAL node for the USB storage interface. info.bus == 'usb',
+                #   interface class 8, interface subclass 6
+                #   (see http://www.usb.org/developers/devclass_docs
+                #   /usb_msc_overview_1.2.pdf)
+                # - HAL node for the (fake) SCSI host. info.bus n/a
+                # - HAL node for the (fake) SCSI device. info.bus == 'scsi'
+                # - HAL node for the mass storage device
+                #
+                # Physically, the storage device can be:
+                # (1) a genuine USB device, like a memory stick
+                # (2) a IDE/SATA hard disk, connected to a USB -> SATA/IDE
+                #     bridge
+                # (3) a card reader
+                # There is no formal way to distiguish cases (1) and (2):
+                # The device and interface classes are in both cases
+                # identical; the only way to figure out, if we have a USB
+                # hard disk enclosure or a USB memory stick would be to
+                # look at the vendor or product names, or to look up some
+                # external data sources. Of course, we can also ask the
+                # submitter in the future.
+                #
+                # The cases (1) and (2) differ from (3) in the property
+                # the property storage.removable. For (1) and (2), this
+                # property is False, for (3) it is True. Since we do not
+                # store at present any device characteristics in the HWDB,
+                # so there is no point to distinguish between (1), (2) on
+                # one side and (3) on the other side. Distinguishing
+                # between (1) and (2) might be more interesting, because
+                # a hard disk is clearly a separate device, but as written,
+                # it is hard to distinguish between (1) and (2)
+                #
+                # To sum up: we cannot get any interesting and reliable
+                # information about the details of USB storage device,
+                # so we'll treat those devices as "black boxes".
+                return None
+            elif grandparent_bus == 'pci':
+                if grandparent.getProperty('pci.device_class') != 1:
+                    # This is not a storage class PCI device? This
+                    # indicates a bug somewhere in HAL or in the hwdb
+                    # client, or a fake submission.
+                    self.parser.logWarning(
+                        'A (possibly fake) SCSI device %s is connected to '
+                        'PCI device %s that has the PCI device class %s; '
+                        'expeected class 1')
+                    return None
+                pci_subclass = grandparent.getProperty('pci.device_subclass')
+                return self.pci_storage_subclass_hwbus.get(pci_subclass)
+            else:
+                return HWBus.SCSI
+        elif device_bus == 'pci':
+            # Cardbus (aka PCCard, sometimes also incorrectly called
+            # PCMCIA) devices are treated as PCI devices by the kernel.
+            # We can detect PCCards by checking that the parent device
+            # is a PCI bridge (device class 6) for the Cardbus (device
+            # subclass 7).
+            # XXX Abel Deuring 2005-05-14 How can we detect ExpressCards?
+            # I do not have any such card at present... 
+            parent = self.parent
+            if (parent.getProperty('pci.device_class') == 6
+                and parent.getProperty('pci.device_subclass') == 7):
+                return HWBus.PCCARD
+            else:
+                return HWBus.PCI
+        elif self.udi == '/org/freedesktop/Hal/devices/computer':
+            # The computer itself. HAL gives it the info.bus property,
+            # 'unknown', hence it is better to rely on the machine's
+            # UDI for identification.
+            return HWBus.SYSTEM
+        else:
+            self.parser._logWarning(
+                'Unknown bus %r for device %s' % (device_bus, self.udi),
+                self.parser.submission_key)
+            return None
+
