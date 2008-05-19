@@ -3,12 +3,12 @@
 
   <class
     class="canonical.launchpad.utilities.PageMatch">
-    <allow attributes="title url summary" />
+    <allow interface="canonical.launchpad.interfaces.ISearchResult" />
   </class>
 
   <class
     class="canonical.launchpad.utilities.PageMatches">
-    <allow attributes="start total __len__ __getitem__ __iter__" />
+    <allow interface="canonical.launchpad.interfaces.ISearchResults" />
   </class>
 
   <securedutility
