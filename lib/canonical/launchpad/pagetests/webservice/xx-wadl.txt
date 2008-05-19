@@ -113,7 +113,6 @@ the representation of a top-level collection.
     >>> wadl = webservice.get('/beta/~admins/members',
     ...                       'application/vd.sun.wadl+xml').getBody()
 
-    >>> open("wadl.html", "w").write(wadl)
     >>> tree = ET.fromstring(wadl)
     >>> tree.tag
     '...application'
