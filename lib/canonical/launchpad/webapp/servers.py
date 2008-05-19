@@ -48,6 +48,8 @@ from canonical.launchpad.interfaces import (
     IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
     OAuthPermission, NonceAlreadyUsed)
 
+from canonical.launchpad.webapp.adapter import (
+    get_request_duration, RequestExpired)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -63,6 +65,8 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.opstats import OpStats
+
+from canonical.lazr.timeout import set_default_timeout_function
 
 
 class StepsToGo:
@@ -1246,7 +1250,21 @@ class ProtocolErrorException(Exception):
         """
         return "Protocol error: %s" % self.status
 
-# ---- End publication classes.
+
+def launchpad_default_timeout():
+    """Return the time before the request should be expired."""
+    timeout = config.database.db_statement_timeout
+    if timeout is None:
+        return None
+    left = timeout - get_request_duration()
+    if left < 0:
+        raise RequestExpired('request expired.')
+    return left
+
+
+def set_launchpad_default_timeout(event):
+    """Set the LAZR default timeout function."""
+    set_default_timeout_function(launchpad_default_timeout)
 
 
 def register_launchpad_request_publication_factories():
