@@ -274,11 +274,12 @@ class ForeignTreeStore:
         """Transitional code."""
         if source_details.source_product_series_id == 0:
             raise NoSuchFile("")
-        tarball_name = self._getOldTarballName(source_details)
-        if not self.transport.has(tarball_name):
-            raise NoSuchFile(tarball_name)
-        _download(self.transport, tarball_name, tarball_name)
-        extract_tarball(tarball_name, target_path)
+        old_tarball_name = self._getOldTarballName(source_details)
+        if not self.transport.has(old_tarball_name):
+            raise NoSuchFile(old_tarball_name)
+        basename = os.path.basename(old_tarball_name)
+        _download(self.transport, old_tarball_name, basename)
+        extract_tarball(basename, target_path)
         tree = self._getForeignTree(source_details, target_path)
         self.archive(source_details, tree)
         tree.update()

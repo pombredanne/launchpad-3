@@ -20,6 +20,7 @@ from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import get_rocketfuel_root
+from canonical.codehosting.codeimport.tarball import create_tarball
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, CodeImportSourceDetails, ForeignTreeStore,
     ImportWorker, get_default_bazaar_branch_store,
@@ -297,6 +298,49 @@ class TestForeignTreeStore(WorkerTest):
         foreign_tree2 = store.fetchFromArchive(
             self.source_details, new_temp_dir)
         self.assertUpdated(foreign_tree2)
+
+    def copyCreatingDirectories(self, transport, relpath, source_file):
+        """Copy `source_file` onto `transport`, creating prefix directories.
+        """
+        assert relpath.count('/') == 1, (
+            "This function is only partially implemented")
+        dirname, filename = os.path.split(relpath)
+        transport.ensure_base()
+        transport.mkdir(dirname)
+        transport.put_bytes(relpath, open(source_file).read())
+
+    def test_fetchFromOldLocation_svn(self):
+        # fetchFromOldLocationAndUploadToNewLocation looks for a Subversion
+        # working tree in the legacy location and uploads it to the modern
+        # location.
+        store = self.makeForeignTreeStore()
+        self.build_tree_contents([('svnworking/',), ('svnworking/file', 'contents')])
+        create_tarball('svnworking', 'svnworking.tgz')
+        self.copyCreatingDirectories(
+            store.transport, '00000001/svnworking.tgz', 'svnworking.tgz')
+        source_details = CodeImportSourceDetails.fromArguments(
+            ['123', 'svn', '1', 'http://example.com/repos/project/trunk'])
+        os.mkdir('new_path')
+        store.fetchFromOldLocationAndUploadToNewLocation(source_details, 'new_path')
+        new_tarball_name = store._getTarballName(source_details.branch_id)
+        self.assertTrue(store.transport.has(new_tarball_name))
+        self.assertDirectoryTreesEqual('svnworking', 'new_path')
+
+    def test_fetchFromOldLocation_cvs(self):
+        # fetchFromOldLocationAndUploadToNewLocation looks for a CVS working
+        # tree in the legacy location and uploads it to the modern location.
+        store = self.makeForeignTreeStore()
+        self.build_tree_contents([('cvsworking/',), ('cvsworking/file', 'contents')])
+        create_tarball('cvsworking', 'cvsworking.tgz')
+        self.copyCreatingDirectories(
+            store.transport, '00000001/cvsworking.tgz', 'cvsworking.tgz')
+        source_details = CodeImportSourceDetails.fromArguments(
+            ['123', 'cvs', '1', 'root', 'module'])
+        os.mkdir('new_path')
+        store.fetchFromOldLocationAndUploadToNewLocation(source_details, 'new_path')
+        new_tarball_name = store._getTarballName(source_details.branch_id)
+        self.assertTrue(store.transport.has(new_tarball_name))
+        self.assertDirectoryTreesEqual('cvsworking', 'new_path')
 
 
 class FakeForeignTreeStore(ForeignTreeStore):
