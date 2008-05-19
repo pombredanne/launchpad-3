@@ -239,25 +239,37 @@ to commit the transaction here.
 
 The auxiliary function below will facilitate the viewing of diff results.
 
-    >>> from subprocess import Popen, PIPE
+    >>> import os
+    >>> import shutil
+    >>> import subprocess
     >>> import tempfile
+
+    >>> from canonical.librarian.utils import copy_and_close
 
     >>> def get_diff_results(diff):
     ...     lfa = diff.diff_content
     ...     if lfa is None:
     ...         return None
     ...     lfa.open()
-    ...     pdiff_content = lfa.read()
-    ...     lfa.close()
-    ...     fhandle, fname = tempfile.mkstemp()
-    ...     fhandle = open(fname, 'w')
-    ...     fhandle.write(pdiff_content)
-    ...     fhandle.close()
-    ...     fhandle = open(fname)
-    ...     child = Popen(['gunzip'], stdin=fhandle, stdout=PIPE)
-    ...     diffresult = child.stdout.read()
-    ...     fhandle.close()
-    ...     return diffresult
+    ...     jail = tempfile.mkdtemp()
+    ...     local = os.path.abspath('')
+    ...     jail = tempfile.mkdtemp()
+    ...     fhandle = open(os.path.join(jail, "the.diff.gz"), 'w')
+    ...     copy_and_close(lfa, fhandle)
+    ...     os.chdir(jail)
+    ...     p = subprocess.Popen(
+    ...          ['gunzip', "the.diff.gz"], stdout=subprocess.PIPE)
+    ...     p.communicate()
+    ...     p = subprocess.Popen(
+    ...          ['splitdiff', "-a", "-d", "-p1", "the.diff"],
+    ...          stdout=subprocess.PIPE)
+    ...     p.communicate()
+    ...     diffs = [filename for filename in sorted(os.listdir('.'))
+    ...              if filename != 'the.diff']
+    ...     ordered_diff_contents = [open(diff).read() for diff in diffs]
+    ...     os.chdir(local)
+    ...     shutil.rmtree(jail)
+    ...     return "".join(ordered_diff_contents)
 
 Let's obtain the diff that was created when package "biscuit - 1.0-8"
 was uploaded.
@@ -276,10 +288,11 @@ transaction before we can access the file.
 Now we can compare the package diff outcome to the debdiff output
 (obtained manually on the shell) for the packages in question.
 
-    >>> actual_diff = get_diff_results(diff)
-    >>> print "Diff follows:\n" + actual_diff
-    Diff follows:...
-    diff -u biscuit-1.0/debian/changelog biscuit-1.0/debian/changelog
+    >>> print get_diff_results(diff)
+    --- biscuit-1.0/contents
+    +++ biscuit-1.0/contents
+    @@ -3 +2,0 @@
+    -1.0-8
     --- biscuit-1.0/debian/changelog
     +++ biscuit-1.0/debian/changelog
     @@ -1,9 +1,3 @@
@@ -288,27 +301,11 @@ Now we can compare the package diff outcome to the debdiff output
     -  * cookies
     -
     - -- Foo Bar <foo.bar@canonical.com> ...
+    -
      biscuit (1.0-1) hoary; urgency=low
     <BLANKLINE>
        * Initial Upstream package
-    ...
-
-XXX cprov 20080515: the first and the last ellipses in the text
-printed above are necessary to cope with the different ordering used
-in the dapper vs hardy `debdiff` package. They ignore the diff in the
-'biscuit-1.0/contents' file, which is presented at the end in hardy
-and at the begin in dapper. In order to be safer, we will at least
-check that the unordered chunk is included in the actual diff
-
-    >>> unordered_chunk = (
-    ...     "diff -u biscuit-1.0/contents biscuit-1.0/contents\n"
-    ...     "--- biscuit-1.0/contents\n"
-    ...     "+++ biscuit-1.0/contents\n"
-    ...     "@@ -3 +2,0 @@\n"
-    ...     "-1.0-8\n")
-
-    >>> unordered_chunk in actual_diff
-    True
+    <BLANKLINE>
 
 
 == Dealing with all PackageDiff objects ==
