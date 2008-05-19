@@ -16,14 +16,16 @@ __all__ = [
     'URLDereferencingMixin',
     ]
 
+import copy
 from datetime import datetime
 import simplejson
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
-from zope.component import adapts, getAdapters, getMultiAdapter
+from zope.component import adapts, getAdapters, getMultiAdapter, getUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
+from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
@@ -37,9 +39,10 @@ from canonical.lazr.enum import BaseItem
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IFieldDeserializer, IHTTPResource, IJSONPublishable,
+    IEntryResource, IFieldMarshaller, IHTTPResource, IJSONPublishable,
     IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
     IServiceRootResource)
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
@@ -399,23 +402,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data['self_link'] = canonical_url(self.context)
         for name, field in getFields(self.entry.schema).items():
             value = getattr(self.entry, name)
-
-            if ICollectionField.providedBy(field):
-                # The field is a collection; include a link to the
-                # collection resource.
-                if value is not None:
-                    key = name + '_collection_link'
-                    data[key] = "%s/%s" % (data['self_link'], name)
-            elif self._fieldValueIsObject(field):
-                # The field is an entry; include a link to the
-                # entry resource.
-                if value is not None:
-                    key = name + '_link'
-                    data[key] = canonical_url(value)
-            else:
-                # It's a data field; display it as part of the
-                # representation.
-                data[name] = value
+            field = field.bind(self.context)
+            marshaller = getMultiAdapter((field, self.request),
+                                          IFieldMarshaller)
+            repr_name = marshaller.representationName(name)
+            repr_value = marshaller.unmarshall(self.entry, name, value)
+            data[repr_name] = repr_value
         return data
 
     def processAsJSONHash(self, media_type, representation):
@@ -493,10 +485,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # read-only), or is marked read-only. It's okay for
                 # the client to omit a value for this attribute.
                 continue
-            if self._fieldValueIsObject(field):
-                repr_name = name + '_link'
-            else:
-                repr_name = name
+            field = field.bind(self.context)
+            marshaller = getMultiAdapter((field, self.request),
+                                         IFieldMarshaller)
+            repr_name = marshaller.representationName(name)
             if (changeset.get(repr_name) is None
                 and getattr(self.entry, name) is not None):
                 # This entry has a value for the attribute, but the
@@ -527,94 +519,80 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         :param changeset: A dictionary. Should come from an incoming
         representation.
+
+        :return: An error message to be propagated to the client.
         """
+        changeset = copy.copy(changeset)
         validated_changeset = {}
         errors = []
-        for repr_name, value in changeset.items():
-            if repr_name == 'self_link':
-                # The self link isn't part of the schema, so it's
-                # handled separately.
-                if value != canonical_url(self.context):
-                    errors.append("self_link: You tried to modify "
-                                  "a read-only attribute.")
+
+        # The self link isn't part of the schema, so it's
+        # handled separately.
+        if 'self_link' in changeset:
+            if changeset['self_link'] != canonical_url(self.context):
+                errors.append("self_link: You tried to modify "
+                              "a read-only attribute.")
+            del(changeset['self_link'])
+
+        # For every field in the schema, see if there's a corresponding
+        # field in the changeset.
+        for name, field in getFields(self.entry.schema).items():
+            if name.startswith('_'):
+                # This field is not part of the web service interface.
+                continue
+            field = field.bind(self.context)
+            marshaller = getMultiAdapter((field, self.request),
+                                         IFieldMarshaller)
+            repr_name = marshaller.representationName(name)
+            if not repr_name in changeset:
+                # The client didn't try to set a value for this field.
                 continue
 
-            change_this_field = True
-
-            # We chop off the end of the string rather than use .replace()
-            # because there's a chance the name of the field might already
-            # have "_link" or (very unlikely) "_collection_link" in it.
-            if repr_name.endswith('_collection_link'):
-                name = repr_name[:-16]
-            elif repr_name.endswith('_link'):
-                name = repr_name[:-5]
-            else:
-                name = repr_name
-            element = self.entry.schema.get(name)
-
-            if (name.startswith('_') or element is None
-                or ((ICollection.providedBy(element)
-                     or IObject.providedBy(element)) and repr_name == name)):
-                # That last clause needs some explaining. It's the
-                # situation where we have a collection represented as
-                # 'foo_collection_link' or an object represented as
-                # 'bar_link', and the user sent in a PATCH request
-                # that tried to change 'foo' or 'bar'. This code tells
-                # the user: you can't change 'foo' or 'bar' directly;
-                # you have to use 'foo_collection_link' or 'bar_link'.
-                # (Of course, you also can't change
-                # 'foo_collection_link', but that's taken care of
-                # below.)
-                errors.append("%s: You tried to modify a nonexistent "
-                              "attribute." % repr_name)
-                continue
-
-            # Around this point the specific value provided by the client
-            # becomes relevant, so we deserialize it.
-            element = element.bind(self.context)
-            deserializer = getMultiAdapter((element, self.request),
-                                           IFieldDeserializer)
+            # The client tried to set a value for this field. Marshall
+            # it, validate it, and move it from the client changeset
+            # to the validated changeset.
+            original_value = changeset[repr_name]
+            del(changeset[repr_name])
             try:
-                value = deserializer.deserialize(value)
+                value = marshaller.marshall(original_value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
 
-            if (IObject.providedBy(element)
-                and not ICollectionField.providedBy(element)):
-                # TODO leonardr 2008-15-04
-                # blueprint=api-wadl-description: This should be moved
-                # into the ObjectLookupFieldDeserializer, once we make
-                # it possible for Vocabulary fields to specify a
-                # schema class the way IObject fields can.
-                if not element.schema.providedBy(value):
+            # If the new value is the URL to an object, make sure it points
+            # to the right kind of object.
+            if (IObject.providedBy(field)
+                and not ICollectionField.providedBy(field)):
+                # XXX leonardr 2008-15-04 blueprint=api-wadl-description:
+                # This should be moved into the
+                # ObjectLookupFieldMarshaller, once we make it
+                # possible for Vocabulary fields to specify a schema
+                # class the way IObject fields can.
+                if not field.schema.providedBy(value):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
                     continue
 
-            # The current value of the attribute also becomes
-            # relevant, so we obtain that. If the attribute designates
-            # a collection, the 'current value' is considered to be
-            # the URL to that collection.
-            if ICollectionField.providedBy(element):
-                current_value = (
-                    "%s/%s" % (canonical_url(self.context), name))
-            else:
-                current_value = getattr(self.entry, name)
+            # Obtain the current value of the field, as it would be
+            # shown in an outgoing representation. This gives us an easy
+            # way to see if the client changed the value.
+            current_value = marshaller.unmarshall(
+                self.entry, name, getattr(self.entry, name))
 
+            change_this_field = True
             # Read-only attributes and collection links can't be
             # modified. It's okay to specify a value for an attribute
             # that can't be modified, but the new value must be the
             # same as the current value.  This makes it possible to
             # GET a document, modify one field, and send it back.
-            if ICollectionField.providedBy(element):
+            if ICollectionField.providedBy(field):
                 change_this_field = False
                 if value != current_value:
                     errors.append("%s: You tried to modify a collection "
                                   "attribute." % repr_name)
                     continue
 
-            if element.readonly:
+            if field.readonly:
                 change_this_field = False
                 if value != current_value:
                     errors.append("%s: You tried to modify a read-only "
@@ -622,10 +600,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                     continue
 
             if change_this_field is True and value != current_value:
-                if not IObject.providedBy(element):
+                if not IObject.providedBy(field):
                     try:
                         # Do any field-specific validation.
-                        element.validate(value)
+                        field.validate(value)
                     except ConstraintNotSatisfied, e:
                         # Try to get a string error message out of
                         # the exception; otherwise use a generic message
@@ -645,6 +623,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                         errors.append("%s: %s" % (repr_name, error))
                         continue
                 validated_changeset[name] = value
+        # If there are any fields left in the changeset, they're
+        # fields that don't correspond to some field in the
+        # schema. They're all errors.
+        for invalid_field in changeset.keys():
+            errors.append("%s: You tried to modify a nonexistent "
+                          "attribute." % invalid_field)
 
         # If there were errors, display them and send a status of 400.
         if len(errors) > 0:
@@ -712,32 +696,63 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
         return super(CollectionResource, self).toWADL('wadl-collection.pt')
 
 
-class ServiceRootResource:
+class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
-    implements(IServiceRootResource, ICanonicalUrlData)
+    implements(IServiceRootResource, ICanonicalUrlData, IJSONPublishable)
 
     inside = None
     path = ''
     rootsite = None
 
+    def __init__(self):
+        """Initialize the resource.
+
+        The service root constructor is different from other
+        HTTPResource constructors because Zope initializes the object
+        with no request or context, and then passes the request in
+        when it calls the service root object.
+        """
+        # We're not calling the superclass constructor because
+        # it assumes it's being called in the context of a particular
+        # request.
+        # pylint:disable-msg=W0231
+        pass
+
+    @property
+    def request(self):
+        """Fetch the current browser request."""
+        return get_current_browser_request()
+
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
         if REQUEST.method == "GET":
-            return self.do_GET(REQUEST)
+            return self.do_GET()
         else:
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")
 
-    def do_GET(self, request):
+    def do_GET(self):
         """Describe the capabilities of the web service in WADL."""
 
+        if self.getPreferredSupportedContentType() == self.WADL_TYPE:
+            result = self.toWADL().encode("utf-8")
+            self.request.response.setHeader('Content-Type', self.WADL_TYPE)
+            return result
+
+        # The client didn't want WADL, so we'll give them JSON.
+        # Specifically, a JSON map containing links to all the
+        # top-level resources.
+        self.request.response.setHeader('Content-type', self.JSON_TYPE)
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
+
+    def toWADL(self):
         # Find all resource types.
         site_manager = zapi.getGlobalSiteManager()
         entry_classes = []
         collection_classes = []
         for registration in site_manager.registrations():
             provided = registration.provided
-            if hasattr(provided, 'extends'):
+            if IInterface.providedBy(provided):
                 if (provided.isOrExtends(IEntry)
                     and IEntry.implementedBy(registration.value)):
                     # The implementedBy check is necessary because
@@ -745,21 +760,58 @@ class ServiceRootResource:
                     # schemas; they're functions. We can ignore these
                     # functions because their return value will be one
                     # of the classes with schemas, which we do describe.
-                    entry_classes.append((registration.value,
-                                          registration.required))
+                    entry_classes.append(registration.value)
                 elif (provided.isOrExtends(ICollection)
-                      and ICollection.implementedBy(registration.value)):
+                      and ICollection.implementedBy(registration.value)
+                      and not IScopedCollection.implementedBy(
+                        registration.value)):
                     # See comment above re: implementedBy check.
-                    collection_classes.append((registration.value,
-                                               registration.required))
+                    # We omit IScopedCollection because those are handled
+                    # by the entry classes.
+                    collection_classes.append(registration.value)
         template = LazrPageTemplateFile('../templates/wadl-root.pt')
         namespace = template.pt_getContext()
+        namespace['context'] = self
+        namespace['request'] = self.request
         namespace['entries'] = entry_classes
         namespace['collections'] = collection_classes
-        wadl = template.pt_render(namespace).encode('utf8')
-        request.response.setHeader(
-            'Content-Type', 'application/vd.sun.wadl+xml')
-        return wadl
+        return template.pt_render(namespace)
+
+    def toDataForJSON(self):
+        """Return a map of links to top-level collection resources.
+
+        A top-level resource is one that adapts a utility.  Currently
+        top-level entry resources (should there be any) are not
+        represented.
+        """
+        data_for_json = {}
+        publications = self.getTopLevelPublications()
+        for link_name, publication in publications.items():
+            data_for_json[link_name] = canonical_url(publication)
+        return data_for_json
+
+    def getTopLevelPublications(self):
+        """Return a mapping of top-level link names to published objects.
+
+        This method assumes that only collections are exposed at the top
+        level.
+        """
+        top_level_resources = {}
+        site_manager = zapi.getGlobalSiteManager()
+        for registration in site_manager.registrations():
+            provided = registration.provided
+            if IInterface.providedBy(provided):
+                if (provided.isOrExtends(ICollection)
+                     and ICollection.implementedBy(registration.value)):
+                    try:
+                        utility = getUtility(registration.required[0])
+                    except ComponentLookupError:
+                        # It's not a top-level resource.
+                        continue
+                    link_name = ("%s_collection_link"
+                                 % registration.value.__name__)
+                    top_level_resources[link_name] = utility
+        return top_level_resources
 
 
 class Entry:
@@ -794,6 +846,15 @@ class ScopedCollection:
         self.collection = collection
         # Unknown at this time. Should be set by our call-site.
         self.relationship = None
+
+    @property
+    def entry_schema(self):
+        """The schema for the entries in this collection."""
+        # We are given a model schema (IFoo). Look up the
+        # corresponding entry schema (IFooEntry).
+        model_schema = self.relationship.value_type.schema
+        return zapi.getGlobalSiteManager().adapters.lookup1(
+            model_schema, IEntry).schema
 
     def find(self):
         """See `ICollection`."""

@@ -15,7 +15,7 @@
                   rcs_type cvs_root cvs_module svn_branch_url
                   date_last_successful
                   update_interval effective_update_interval
-                  import_job" />
+                  import_job results" />
     <require
       permission="launchpad.Edit"
       attributes="approve invalidate suspend updateFromData" />
@@ -56,6 +56,12 @@
         template="../templates/codeimport.pt"
         permission="zope.Public"
         />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImport"
+        name="+macros"
+        permission="zope.Public"
+        template="../templates/codeimport-macros.pt" />
 
   </facet>
 
