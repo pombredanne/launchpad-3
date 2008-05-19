@@ -2619,7 +2619,6 @@ XXX: Add tests for non-ascii mails.
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IBugWatchSet, IProductSet)
 
-
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
 
@@ -2654,7 +2653,7 @@ XXX: Add tests for non-ascii mails.
     ...
     ... You are not in my comments and I deny categorically that you are
     ... sending me any messages. Foolish cat.
-    ... """ % (bug_with_watch.id, message.rfc822msgid)
+    ... """ % (bug_with_watch.id, str(message.rfc822msgid))
 
     >>> process_email(reply_mail)
     >>> print message.parent == bug_message
