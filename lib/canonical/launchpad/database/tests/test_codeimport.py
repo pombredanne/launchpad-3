@@ -15,8 +15,9 @@ from canonical.launchpad.database.codeimportjob import (
     CodeImportJob, CodeImportJobSet)
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportReviewStatus,
-    IPersonSet, RevisionControlSystems)
+    BranchCreationException, BranchType, CodeImportJobState,
+    CodeImportReviewStatus, IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
+    IPersonSet, ImportStatus, RevisionControlSystems)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
 from canonical.testing import LaunchpadFunctionalLayer
@@ -315,6 +316,211 @@ class TestCodeImportResultsAttribute(unittest.TestCase):
         self.assertEqual(first, results[0])
         self.assertEqual(second, results[1])
         self.assertEqual(third, results[2])
+
+
+class TestReviewStatusFromImportStatus(unittest.TestCase):
+    """Tests for `CodeImportSet.reviewStatusFromImportStatus`."""
+
+    def setUp(self):
+        self.code_import_set = CodeImportSet()
+
+    def assertImportStatusTranslatesTo(self, import_status, expected):
+        """Assert that `import_status` is translated into `expected`."""
+        review_status = self.code_import_set._reviewStatusFromImportStatus(
+            import_status)
+        self.assertEqual(review_status, expected)
+
+    def assertImportStatusDoesNotTranslate(self, import_status):
+        """Assert that trying to translate `import_status` raises."""
+        self.assertRaises(AssertionError,
+            self.code_import_set._reviewStatusFromImportStatus, import_status)
+
+    def testDontsync(self):
+        self.assertImportStatusDoesNotTranslate(ImportStatus.DONTSYNC)
+
+    def testTesting(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.TESTING, CodeImportReviewStatus.NEW)
+
+    def testTestfailed(self):
+        self.assertImportStatusDoesNotTranslate(ImportStatus.TESTFAILED)
+
+    def testAutotested(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.AUTOTESTED, CodeImportReviewStatus.NEW)
+
+    def testProcessing(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.PROCESSING, CodeImportReviewStatus.REVIEWED)
+
+    def testSyncing(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.SYNCING, CodeImportReviewStatus.REVIEWED)
+
+    def testStopped(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.STOPPED, CodeImportReviewStatus.SUSPENDED)
+
+
+class StubProductSeries:
+    """Stub ProductSeries class used in unit tests."""
+
+
+class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
+    """Tests for `CodeImportSet._dateLastSuccessfulFromProductSeries`."""
+
+    def setUp(self):
+        # dateLastSuccessfulFromProductSeries does not need database access.
+        self.code_import_set = CodeImportSet()
+
+    def makeStubSeries(self, import_status):
+        """Create a stub ProductSeries.
+
+        The returned 'series' will have a datelastsynced and the given import
+        status.
+        """
+        series = StubProductSeries()
+        series.importstatus = import_status
+        series.datelastsynced = datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC)
+        return series
+
+    def assertDateLastSuccessfulIsReturned(self, import_status):
+        """Assert that the datelastsynced is return for the given status."""
+        series = self.makeStubSeries(import_status)
+        date_last_successful = \
+            self.code_import_set._dateLastSuccessfulFromProductSeries(series)
+        self.assertEqual(date_last_successful, series.datelastsynced)
+
+    def assertNoneIsReturned(self, import_status):
+        """Assert that None is returned for a given status."""
+        series = self.makeStubSeries(import_status)
+        date_last_successful = \
+            self.code_import_set._dateLastSuccessfulFromProductSeries(series)
+        self.assertEqual(date_last_successful, None)
+
+    def assertAssertionErrorRaised(self, import_status):
+        """Assert that an AssertionError is raised for the given status."""
+        series = self.makeStubSeries(import_status)
+        self.assertRaises(AssertionError,
+            self.code_import_set._dateLastSuccessfulFromProductSeries, series)
+
+    def testDontsync(self):
+        self.assertAssertionErrorRaised(ImportStatus.DONTSYNC)
+
+    def testTesting(self):
+        self.assertNoneIsReturned(ImportStatus.TESTING)
+
+    def testTestfailed(self):
+        self.assertAssertionErrorRaised(ImportStatus.TESTFAILED)
+
+    def testAutotested(self):
+        self.assertNoneIsReturned(ImportStatus.AUTOTESTED)
+
+    def testProcessing(self):
+        self.assertNoneIsReturned(ImportStatus.PROCESSING)
+
+    def testSyncing(self):
+        self.assertDateLastSuccessfulIsReturned(ImportStatus.SYNCING)
+
+    def testStopped(self):
+        self.assertDateLastSuccessfulIsReturned(ImportStatus.STOPPED)
+
+
+class TestCreateCodeImport(unittest.TestCase):
+    """Test that `CodeImportSync.createCodeImport` creates a CodeImport with
+    the right values from a given ProductSeries.
+    """
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        self.code_import_set = getUtility(ICodeImportSet)
+        self.factory = LaunchpadObjectFactory()
+        login('david.allouche@canonical.com')
+
+    def createTestingSeries(self, name):
+        """Create an import series in with TESTING importstatus."""
+        series = self.factory.makeSeries(name=name)
+        series.importstatus = ImportStatus.TESTING
+        self.updateSeriesWithSubversion(series)
+        # ProductSeries may have datelastsynced for any importstatus, but it
+        # must only be copied to the CodeImport in some cases.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(series).datelastsynced = \
+            datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC)
+        return series
+
+    def updateSeriesWithCvs(self, series):
+        """Update a productseries to use CVS details."""
+        series.rcstype = RevisionControlSystems.CVS
+        series.svnrepository = None
+        series.cvsroot = ':pserver:anonymous@cvs.example.com/cvsroot'
+        series.cvsmodule = series.name
+        series.cvsbranch = 'MAIN'
+
+    def updateSeriesWithSubversion(self, series):
+        """Update a productseries to use Subversion details."""
+        series.rcstype = RevisionControlSystems.SVN
+        series.cvsroot = None
+        series.cvsmodule = None
+        series.cvsbranch = None
+        series.svnrepository = 'svn://example.com/' + series.name
+
+    def assertImportMatchesSeries(self, code_import, series):
+        """Fail if the CodeImport is not consistent with the ProductSeries."""
+        # Since ProductSeries does not record who requested an import, all
+        # CodeImports created by the sync script are recorded as registered by
+        # the vcs-imports user.
+        self.assertEqual(code_import.registrant.name, u'vcs-imports')
+
+        # The VCS details must be identical.
+        self.assertEqual(code_import.rcs_type, series.rcstype)
+        self.assertEqual(code_import.svn_branch_url, series.svnrepository)
+        self.assertEqual(code_import.cvs_root, series.cvsroot)
+        self.assertEqual(code_import.cvs_module, series.cvsmodule)
+
+        # dateLastSuccessfulFromProductSeries is carefully unit-testing in
+        # TestDateLastSuccessfulFromProductSeries, so we can rely on it here.
+        last_successful = \
+            CodeImportSet()._dateLastSuccessfulFromProductSeries(series)
+        self.assertEqual(code_import.date_last_successful, last_successful)
+
+        # reviewStatusFromImportStatus is carefully unit-tested in
+        # TestReviewStatusFromImportStatus, so we can rely on it here.
+        review_status = CodeImportSet()._reviewStatusFromImportStatus(
+            series.importstatus)
+        self.assertEqual(code_import.review_status, review_status)
+
+        # If series.import_branch is set, it should be the same as
+        # code_import.branch.
+        if series.import_branch is not None:
+            self.assertEqual(code_import.branch, series.import_branch)
+
+    def testSubversion(self):
+        # Test correct creation of a CodeImport with Subversion details.
+        series = self.createTestingSeries('testing')
+        code_import = self.code_import_set.newFromProductSeries(series)
+        self.assertImportMatchesSeries(code_import, series)
+
+    def testTestingCvs(self):
+        # Test correct creation of CodeImport with CVS details.
+        series = self.createTestingSeries('testing')
+        self.updateSeriesWithCvs(series)
+        code_import = self.code_import_set.newFromProductSeries(series)
+        self.assertImportMatchesSeries(code_import, series)
+
+    def testBranchNameConflict(self):
+        # If it is not possible to create an import branch using the standard
+        # name ~vcs-imports/product/series, an error is raised.
+        series = self.createTestingSeries('testing')
+        # Create a branch with the standard name, but do not associate it with
+        # the productseries, so we will attempt to create a new one.
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = getUtility(IBranchSet).new(
+            BranchType.IMPORTED,
+            name=series.name, registrant=vcs_imports, owner=vcs_imports,
+            product=series.product, url=None)
+        self.assertRaises(BranchCreationException,
+                          self.code_import_set.newFromProductSeries, series)
 
 
 def test_suite():
