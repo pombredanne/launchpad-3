@@ -55,7 +55,7 @@ For a product bug supervisor.
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/firefox/+bug/1/+editstatus")
+    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
     True
 
 For a product owner.
@@ -69,7 +69,7 @@ For a product owner.
 
     >>> user_sees_importance_widget(
     ...     user=sample_person,
-    ...     url="http://localhost:9000/firefox/+bug/1/+editstatus")
+    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
     True
 
 For someone else. We'll unset no_priv as the bug supervisor, and note that
@@ -82,7 +82,7 @@ he can no longer see the widget.
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/firefox/+bug/1/+editstatus")
+    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
     False
 
 For a distribution bug supervisor.
@@ -94,7 +94,8 @@ For a distribution bug supervisor.
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url='http://bugs.launchpad.dev/'
+    ...         'ubuntu/+source/mozilla-firefox/+bug/1/+editstatus')
     True
 
 For a distribution owner.
@@ -106,7 +107,8 @@ For a distribution owner.
 
     >>> user_sees_importance_widget(
     ...     user=sabdfl,
-    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url='http://bugs.launchpad.dev/'
+    ...         'ubuntu/+source/mozilla-firefox/+bug/1/+editstatus')
     True
 
 For someone else, on Ubuntu.
@@ -118,5 +120,6 @@ For someone else, on Ubuntu.
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url='http://bugs.launchpad.dev/'
+    ...         'ubuntu/+source/mozilla-firefox/+bug/1/+editstatus')
     False
