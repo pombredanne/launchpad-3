@@ -17,6 +17,7 @@ from canonical.launchpad.database.codeimportevent import CodeImportEvent
 from canonical.launchpad.database.codeimportjob import (
     CodeImportJob, CodeImportJobSet)
 from canonical.launchpad.database.codeimportresult import CodeImportResult
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, CodeImportJobState,
     CodeImportReviewStatus, IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
@@ -519,6 +520,71 @@ class TestDateCreatedFromProductSeries(unittest.TestCase):
             self.code_import_set._dateCreatedFromProductSeries(series))
 
 
+class TestUpdateIntervalFromProductSeries(unittest.TestCase):
+    """Tests for `CodeImportSet._updateIntervalFromProductSeries`."""
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This class is testing
+    # functionality that is is only necessary for the transition from the old
+    # to the new code import system, and should be deleted after that process
+    # is done.
+
+    def setUp(self):
+        # _updateIntervalFromProductSeries does not need database access.
+        self.code_import_set = CodeImportSet()
+
+    def makeSeries(self, rcstype, syncinterval):
+        """Create a stub ProductSeries.
+
+        If syncinterval is None, set series.syncinterval to the default value.
+        Otherwise, set it to syncinterval.
+        """
+        series = StubProductSeries()
+        series.rcstype = rcstype
+        # Total hack to avoid duplicating knowledge about what the defaults
+        # are into the test.
+        ProductSeries.certifyForSync.im_func(series)
+        if syncinterval is not None:
+            # If this fails, it's a bug in the test.
+            self.assertNotEquals(series.syncinterval, syncinterval)
+            series.syncinterval = syncinterval
+        return series
+
+    def test_defaultCVS(self):
+        # update_interval should be set to None from a CVS import with the
+        # default syncinterval.
+        series = self.makeSeries(
+            RevisionControlSystems.CVS, None)
+        self.assertEquals(
+            None,
+            self.code_import_set._updateIntervalFromProductSeries(series))
+
+    def test_defaultSubversion(self):
+        # update_interval should be set to None from a Subversion import with
+        # the default syncinterval.
+        series = self.makeSeries(
+            RevisionControlSystems.SVN, None)
+        self.assertEquals(
+            None,
+            self.code_import_set._updateIntervalFromProductSeries(series))
+
+    def test_nonDefaultCVS(self):
+        # A CVS import with a changed syncinterval should have that copied to
+        # update_interval.
+        series = self.makeSeries(
+            RevisionControlSystems.CVS, timedelta(hours=1))
+        self.assertEquals(
+            timedelta(hours=1),
+            self.code_import_set._updateIntervalFromProductSeries(series))
+
+    def test_nonDefaultSubversion(self):
+        # A Subversion import with a changed syncinterval should have that
+        # copied to update_interval.
+        series = self.makeSeries(
+            RevisionControlSystems.SVN, timedelta(hours=1))
+        self.assertEquals(
+            timedelta(hours=1),
+            self.code_import_set._updateIntervalFromProductSeries(series))
+
+
 class TestNewFromProductSeries(unittest.TestCase):
     """Tests for `CodeImportSet.newFromProductSeries`."""
     # XXX: MichaelHudson 2008-05-20, bug=232076: This class is testing
@@ -650,6 +716,13 @@ class TestNewFromProductSeries(unittest.TestCase):
         snapshot = self.snapshotSeries(series)
         code_import = self.code_import_set.newFromProductSeries(series)
         self.assertImportMatchesSeriesSnapshot(code_import, snapshot)
+
+    def testConvertingSyncingSeriesCreatesJob(self):
+        # If we convert a ProductSeries that is active, we should create a
+        # code import job.
+        series = self.createSyncingSeries()
+        code_import = self.code_import_set.newFromProductSeries(series)
+        self.assertTrue(code_import.import_job is not None)
 
     def testStopsSeries(self):
         # When a code import is created from a series, that series is marked

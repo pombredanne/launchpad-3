@@ -196,7 +196,7 @@ class CodeImportSet:
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(SQLObjectCreatedEvent(code_import))
 
-        # If created in the reviewd state, create a job.
+        # If created in the reviewed state, create a job.
         if review_status == CodeImportReviewStatus.REVIEWED:
             CodeImportJobWorkflow().newJob(code_import)
 
@@ -258,6 +258,21 @@ class CodeImportSet:
         else:
             return DEFAULT
 
+    def _updateIntervalFromProductSeries(self, series):
+        """The value for 'update_interval' from `series`.
+
+        If the series has a non-default syncinterval, return that.  Otherwise
+        return None.
+        """
+        if series.rcstype == RevisionControlSystems.CVS and \
+               series.syncinterval != timedelta(hours=12):
+            return series.syncinterval
+        elif series.rcstype == RevisionControlSystems.SVN and \
+               series.syncinterval != timedelta(hours=6):
+            return series.syncinterval
+        else:
+            return None
+
     def newFromProductSeries(self, product_series):
         """See `ICodeImportSet`."""
         # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
@@ -290,7 +305,8 @@ class CodeImportSet:
         svn_branch_url = product_series.svnrepository
         date_last_successful = self._dateLastSuccessfulFromProductSeries(
             product_series)
-        update_interval = None
+        update_interval = self._updateIntervalFromProductSeries(
+            product_series)
 
         code_import = CodeImport(
             date_created=date_created, branch=branch, registrant=registrant,
@@ -312,11 +328,17 @@ class CodeImportSet:
                     product_series.import_branch
             product_series.import_branch = None
 
+        # If created in the reviewed state, create a job.
+        if review_status == CodeImportReviewStatus.REVIEWED:
+            # This will more-or-less by chance create a job that is due now,
+            # which is fine.
+            CodeImportJobWorkflow().newJob(code_import)
+
         # We deliberately don't fire an object created event or call
         # newCreate.
 
-        # XXX Record association between the new code import and the
-        # productseries here!
+        # XXX MichaelHudson 2008-05-20, bug=232080: Record association between
+        # the new code import and the productseries here!
 
         return code_import
 
