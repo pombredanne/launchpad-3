@@ -25,63 +25,82 @@
         factory="canonical.lazr.rest.JSONItem"
         />
 
-    <!-- IFieldDeserializer adapters -->
+    <!-- Byte storage resources -->
+    <adapter
+        for="canonical.lazr.interfaces.IByteStorage
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IHTTPResource"
+        factory="canonical.lazr.rest.ByteStorageResource"
+        />
+
+    <class class="canonical.lazr.rest.ByteStorageResource">
+        <allow interface='canonical.lazr.interfaces.IByteStorageResource' />
+    </class>
+
+    <!-- IFieldMarshaller adapters -->
     <adapter
         for="zope.schema.interfaces.IField
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.SimpleFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IInt
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.IntFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IDatetime
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.DateTimeFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.DateTimeFieldMarshaller"
         />
 
     <adapter
-        for="zope.schema.interfaces.Int
+        for="zope.schema.interfaces.IBytes
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.IntFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.ByteStorageMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.VocabularyLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.VocabularyLookupFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.lazr.enum.IEnumeratedType"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.ObjectLookupFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IObject
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.ObjectLookupFieldMarshaller"
         />
 
     <adapter
-        for="canonical.lazr.interfaces.ICollectionField
+        for="canonical.lazr.interfaces.rest.ICollectionField
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.CollectionFieldMarshaller"
         />
 
 </configure>
