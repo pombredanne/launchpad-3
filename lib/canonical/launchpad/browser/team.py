@@ -41,8 +41,8 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
-    IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingList,
+    IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
     PostedMessageStatus, TeamContactMethod, TeamMembershipStatus,
     TeamSubscriptionPolicy, UnexpectedFormData)
@@ -330,19 +330,16 @@ class TeamContactAddressView(MailingListTeamBaseView):
         list_set = getUtility(IMailingListSet)
         contact_method = data['contact_method']
         if contact_method == TeamContactMethod.NONE:
-            if context.preferredemail is not None:
-                # The user wants the mailing list to stop being the
-                # team's contact address, but not to be deactivated
-                # altogether. So we demote the list address from
-                # 'preferred' address to being just a regular address.
-                context.preferredemail.status = EmailAddressStatus.VALIDATED
+            context.setContactAddress(None)
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
             assert mailing_list is not None and mailing_list.isUsable(), (
                 "A team can only use a usable mailing list as its contact "
                 "address.")
-            context.setContactAddress(
-                email_set.getByEmail(mailing_list.address))
+            email = email_set.getByEmail(mailing_list.address)
+            assert email is not None, (
+                "Cannot find mailing list's posting address")
+            context.setContactAddress(email)
         elif contact_method == TeamContactMethod.EXTERNAL_ADDRESS:
             contact_address = data['contact_address']
             email = email_set.getByEmail(contact_address)

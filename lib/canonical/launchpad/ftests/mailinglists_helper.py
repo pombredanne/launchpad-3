@@ -25,11 +25,11 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
-    IMailingListSet, IPersonSet, MailingListAutoSubscribePolicy,
-    MailingListStatus, PersonCreationRationale, TeamSubscriptionPolicy)
+    IMailingListSet, IMessageApprovalSet, IPersonSet,
+    MailingListAutoSubscribePolicy, MailingListStatus,
+    PersonCreationRationale, PostedMessageStatus, TeamSubscriptionPolicy)
 
 
 def fault_catcher(func):
@@ -276,14 +276,27 @@ class MailmanStub:
     """A stand-in for Mailman's XMLRPC client for page tests."""
 
     def act(self):
-        """Perform the effects of the Mailman XMLRPC client."""
-        # This doesn't have to be complete.
-        login('foo.bar@canonical.com')
+        """Perform the effects of the Mailman XMLRPC client.
+
+        This doesn't have to be complete, it just has to do whatever the
+        appropriate tests require.
+        """
+        # Simulate constructing and activating new mailing lists.
         mailing_list_set = getUtility(IMailingListSet)
         for mailing_list in mailing_list_set.approved_lists:
             mailing_list.startConstructing()
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
-        logout()
+        # Simulate acknowledging held messages.
+        message_set = getUtility(IMessageApprovalSet)
+        message_ids = set()
+        for status in (PostedMessageStatus.APPROVAL_PENDING,
+                       PostedMessageStatus.REJECTION_PENDING,
+                       PostedMessageStatus.DISCARD_PENDING):
+            for message in message_set.getHeldMessagesWithStatus(status):
+                message_ids.add(message.message_id)
+        for message_id in message_ids:
+            message = message_set.getMessageByMessageID(message_id)
+            message.acknowledge()
         flush_database_updates()
 
 

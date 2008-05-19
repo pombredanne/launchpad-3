@@ -67,7 +67,7 @@ def import_public_key(email_addr):
 
 def iter_test_key_emails():
     """Iterates over the email addresses for the keys in the gpgkeysdir."""
-    for name in os.listdir(gpgkeysdir):
+    for name in sorted(os.listdir(gpgkeysdir), reverse=True):
         if name.endswith('.pub'):
             yield name[:-4]
 

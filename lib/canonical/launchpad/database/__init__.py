@@ -34,6 +34,7 @@ from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugnomination import *
 from canonical.launchpad.database.bugnotification import *
+from canonical.launchpad.database.commercialsubscription import *
 from canonical.launchpad.database.cve import *
 from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
@@ -124,7 +125,6 @@ from canonical.launchpad.database.questionmessage import *
 from canonical.launchpad.database.questionreopening import *
 from canonical.launchpad.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
-from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
 from canonical.launchpad.database.archive import *
@@ -137,3 +137,4 @@ from canonical.launchpad.database.hwdb import *
 from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
 from canonical.launchpad.database.codereviewmessage import *
+from canonical.launchpad.database.archivepermission import *

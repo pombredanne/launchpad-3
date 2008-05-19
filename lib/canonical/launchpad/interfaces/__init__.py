@@ -15,6 +15,9 @@ from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.messagetarget import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.archivedependency import *
+from canonical.launchpad.interfaces.archivepermission import *
 from canonical.launchpad.interfaces.announcement import *
 from canonical.launchpad.interfaces.answercontact import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
@@ -55,6 +58,7 @@ from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.codereviewmessage import *
 from canonical.launchpad.interfaces.codereviewvote import *
+from canonical.launchpad.interfaces.commercialsubscription import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.cve import *
@@ -130,6 +134,7 @@ from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
+from canonical.launchpad.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
@@ -175,7 +180,4 @@ from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
-from canonical.launchpad.interfaces.distrocomponentuploader import *
-from canonical.launchpad.interfaces.archive import *
-from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.packagediff import *

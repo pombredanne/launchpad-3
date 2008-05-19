@@ -33,9 +33,9 @@ from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
-    IHasOwner, IHasBuildRecords, IBuildSet, ILaunchpadCelebrities,
-    PackagePublishingStatus)
+    ArchiveDependencyError, ArchivePermissionType, ArchivePurpose, IArchive,
+    IArchivePermissionSet, IArchiveSet, IHasOwner, IHasBuildRecords,
+    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -243,8 +243,10 @@ class Archive(SQLBase):
             orderBy.insert(1, desc_version_order)
 
         if status is not None:
-            if not isinstance(status, list):
-                status = [status]
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -267,7 +269,7 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None):
+    def getSourcesForDeletion(self, name=None, status=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -289,11 +291,23 @@ class Archive(SQLBase):
                 Build.sourcepackagerelease = SourcePackageRelease.id)
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
 
+        source_deletable_states = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            )
         clauses.append("""
-           (%s OR SourcePackagePublishingHistory.status = %s)
+           (%s OR SourcePackagePublishingHistory.status IN %s)
         """ % (has_published_binaries_clause,
-               quote(PackagePublishingStatus.PUBLISHED)))
+               quote(source_deletable_states)))
 
+        if status is not None:
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
+            clauses.append("""
+                SourcePackagePublishingHistory.status IN %s
+            """ % sqlvalues(status))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
@@ -609,6 +623,26 @@ class Archive(SQLBase):
                 "This dependency is already recorded.")
 
         return ArchiveDependency(archive=self, dependency=dependency)
+
+    def canUpload(self, user, component_or_package=None):
+        """See `IArchive`."""
+        if self.is_ppa:
+            return user.inTeam(self.owner)
+        else:
+            return self._authenticate(
+                user, component_or_package, ArchivePermissionType.UPLOAD)
+
+    def canAdministerQueue(self, user, component):
+        """See `IArchive`."""
+        return self._authenticate(
+            user, component, ArchivePermissionType.QUEUE_ADMIN)
+
+    def _authenticate(self, user, component, permission):
+        """Private helper method to check permissions."""
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.checkAuthenticated(
+            user, self, permission, component)
+        return permissions.count() > 0
 
 
 class ArchiveSet:

@@ -12,13 +12,16 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+from StringIO import StringIO
 import pytz
 
 from zope.component import getUtility
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
+    CodeImportMachineState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
@@ -32,6 +35,8 @@ from canonical.launchpad.interfaces import (
     ICodeImportResultSet,
     ICodeImportSet,
     ICountrySet,
+    IEmailAddressSet,
+    ILibraryFileAliasSet,
     IPersonSet,
     IProductSet,
     IProjectSet,
@@ -158,13 +163,25 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeTeam(self, team_member, email=None, password=None,
-                 displayname=None):
-        team = self.makePerson(displayname=displayname, email=email,
-                               password=password)
-        team.teamowner = team_member
-        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        team_member.join(team, team)
+    def makeTeam(self, owner, displayname=None, email=None):
+        """Create and return a new, arbitrary Team.
+
+        The subscription policy of this new team will be OPEN.
+
+        :param owner: The IPerson to use as the team's owner.
+        :param displayname: The team's display name.  If not given we'll use
+            the auto-generated name.
+        :param email: The email address to use as the team's contact address.
+        """
+        name = self.getUniqueString('team-name')
+        if displayname is None:
+            displayname = name
+        team = getUtility(IPersonSet).newTeam(
+            owner, name, displayname,
+            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+        if email is not None:
+            team.setContactAddress(
+                getUtility(IEmailAddressSet).new(email, team))
         return team
 
     def makeTranslationGroup(
@@ -429,22 +446,40 @@ class LaunchpadObjectFactory:
         The machine will be in the OFFLINE state."""
         if hostname is None:
             hostname = self.getUniqueString('machine-')
-        machine = getUtility(ICodeImportMachineSet).new(hostname)
         if set_online:
-            machine.setOnline()
+            state = CodeImportMachineState.ONLINE
+        else:
+            state = CodeImportMachineState.OFFLINE
+        machine = getUtility(ICodeImportMachineSet).new(hostname, state)
         return machine
 
-    def makeCodeImportResult(self):
+    def makeCodeImportResult(self, code_import=None, result_status=None,
+                             date_started=None, date_finished=None,
+                             log_excerpt=None, log_alias=None, machine=None):
         """Create and return a new CodeImportResult."""
-        code_import = self.makeCodeImport()
-        machine = self.makeCodeImportMachine()
-        requesting_user = self.makePerson()
-        log_excerpt = self.getUniqueString()
-        status = CodeImportResultStatus.FAILURE
-        started = time_counter().next()
-        return getUtility(ICodeImportResultSet).new(code_import, machine,
-            requesting_user, log_excerpt, log_file=None, status=status,
-            date_job_started=started)
+        if code_import is None:
+            code_import = self.makeCodeImport()
+        if machine is None:
+            machine = self.makeCodeImportMachine()
+        requesting_user = None
+        if log_excerpt is None:
+            log_excerpt = self.getUniqueString()
+        if result_status is None:
+            result_status = CodeImportResultStatus.FAILURE
+        if date_finished is None:
+            # If a date_started is specified, then base the finish time
+            # on that.
+            if date_started is None:
+                date_finished = time_counter().next()
+            else:
+                date_finished = date_started + timedelta(hours=4)
+        if date_started is None:
+            date_started = date_finished - timedelta(hours=4)
+        if log_alias is None:
+            log_alias = self.makeLibraryFileAlias()
+        return getUtility(ICodeImportResultSet).new(
+            code_import, machine, requesting_user, log_excerpt, log_alias,
+            result_status, date_started, date_finished)
 
     def makeSeries(self, user_branch=None, import_branch=None,
                    name=None, product=None):
@@ -490,3 +525,12 @@ class LaunchpadObjectFactory:
             flavour)[0]
         request.setQuantities({flavour: template.quantities})
         return request
+
+    def makeLibraryFileAlias(self, log_data=None):
+        """Make a library file, and return the alias."""
+        if log_data is None:
+            log_data = self.getUniqueString()
+        filename = self.getUniqueString('filename')
+        log_alias_id = getUtility(ILibrarianClient).addFile(
+            filename, len(log_data), StringIO(log_data), 'text/plain')
+        return getUtility(ILibraryFileAliasSet)[log_alias_id]

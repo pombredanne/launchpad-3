@@ -743,6 +743,24 @@ ALTER TABLE archivedependency ENABLE TRIGGER ALL;
 
 ALTER TABLE archivepermission DISABLE TRIGGER ALL;
 
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (1, '2006-10-16 18:31:43.464753', 17, 1, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (2, '2006-10-16 18:31:43.46438', 17, 1, 1, 2, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (3, '2006-10-16 18:31:43.463125', 17, 1, 1, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (4, '2006-10-16 18:31:43.464753', 17, 1, 8, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (5, '2006-10-16 18:31:43.465111', 17, 1, 8, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (6, '2006-10-16 18:31:43.465111', 17, 2, 1, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (7, '2006-10-16 18:31:43.465111', 17, 2, 1, 2, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (8, '2006-10-16 18:31:43.465111', 17, 2, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (9, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (10, '2006-10-16 18:31:43.465111', 17, 2, 1, 5, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (11, '2006-10-16 18:31:43.465111', 13, 1, 1, NULL, 1);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (12, '2006-10-16 18:31:43.465111', 243620, 1, 12, 5, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (13, '2006-10-16 18:31:43.465111', 12, 2, 1, 1, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (14, '2006-10-16 18:31:43.465111', 12, 2, 1, 2, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (15, '2006-10-16 18:31:43.465111', 12, 2, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (16, '2006-10-16 18:31:43.465111', 12, 2, 1, 4, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (17, '2006-10-16 18:31:43.465111', 243602, 2, 1, 3, NULL);
+INSERT INTO archivepermission (id, date_created, person, permission, archive, component, sourcepackagename) VALUES (18, '2006-10-16 18:31:43.465111', 243602, 2, 1, 4, NULL);
 
 
 ALTER TABLE archivepermission ENABLE TRIGGER ALL;
@@ -4188,6 +4206,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243617, 'Tim Penhey', '8Z3kccpOP4HerugZDi/VS5VePtVDHk48XE11Mx0DmpnqiPsDLczI3g==', NULL, NULL, 'thumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'CALDpFr', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243618, 'Bazaar Experts', NULL, 243617, 'This team is responsible for the management of Bazaar branches in Launchpad.', 'bazaar-experts', NULL, NULL, NULL, NULL, 3, NULL, '2008-03-06 09:57:59.957489', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'DxX7xPn', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243620, 'Canonical Partner Developers', NULL, 28, NULL, 'canonical-partner-dev', NULL, NULL, NULL, NULL, 2, NULL, '2008-05-14 10:29:17.539543', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'GKhyxKf', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8525,6 +8544,8 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (76, 33, 19, 2, '2008-01-16 23:53:40.266137', NULL, 1, NULL, 1, NULL, 1, '2008-01-16 23:53:40.266137', NULL, NULL, '2008-01-16 23:53:40.266137', NULL, NULL, NULL, '2008-02-15 13:59:17.006906');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (77, 19, 17, 2, '2008-01-16 23:56:17.986769', NULL, 1, 'Yeah, we want in!', 1, NULL, 1, '2008-01-16 23:56:17.986769', NULL, NULL, '2008-01-16 23:56:17.986769', NULL, NULL, NULL, '2008-02-15 13:59:17.007142');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (78, 243617, 243618, 3, '2008-03-06 23:56:17.986769', NULL, 1, NULL, 1, NULL, 1, '2008-03-06 23:56:17.986769', NULL, NULL, '2008-03-06 23:56:17.986769', NULL, NULL, NULL, '2008-03-06 23:56:17.007142');
+INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (80, 28, 243620, 3, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, 28, NULL, 28, '2008-05-14 10:29:25.097554', NULL, NULL, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, '2008-05-14 10:29:17.539543');
+INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (81, 16, 243620, 2, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, 16, NULL, 16, '2008-05-14 12:07:14.22745', NULL, NULL, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, '2008-05-14 12:07:14.140921');
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -8690,6 +8711,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (172, 17, 33);
 INSERT INTO teamparticipation (id, team, person) VALUES (173, 243617, 243617);
 INSERT INTO teamparticipation (id, team, person) VALUES (174, 243618, 243618);
 INSERT INTO teamparticipation (id, team, person) VALUES (175, 243618, 243617);
+INSERT INTO teamparticipation (id, team, person) VALUES (178, 243620, 243620);
+INSERT INTO teamparticipation (id, team, person) VALUES (179, 243620, 28);
+INSERT INTO teamparticipation (id, team, person) VALUES (180, 243620, 16);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9500,7 +9524,7 @@ INSERT INTO validpersonorteamcache (id) VALUES (243612);
 INSERT INTO validpersonorteamcache (id) VALUES (243613);
 INSERT INTO validpersonorteamcache (id) VALUES (243617);
 INSERT INTO validpersonorteamcache (id) VALUES (243618);
-
+INSERT INTO validpersonorteamcache (id) VALUES (243620);
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
 

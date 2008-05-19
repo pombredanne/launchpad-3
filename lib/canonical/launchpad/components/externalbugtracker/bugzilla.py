@@ -159,7 +159,7 @@ class Bugzilla(ExternalBugTracker):
         elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.NEW
         else:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
 
         return malone_status
 

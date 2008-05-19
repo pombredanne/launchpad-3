@@ -341,6 +341,14 @@
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
+        name="fmt"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -569,6 +577,12 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
+        />
+
+    <!-- Set the default timeout function. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
         />
 
     <subscriber

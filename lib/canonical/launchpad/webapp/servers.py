@@ -25,7 +25,7 @@ from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.security.interfaces import Unauthorized
+from zope.security.interfaces import IParticipation, Unauthorized
 from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -46,6 +46,8 @@ from canonical.launchpad.interfaces import (
     IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
     OAuthPermission, NonceAlreadyUsed)
 
+from canonical.launchpad.webapp.adapter import (
+    get_request_duration, RequestExpired)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -61,6 +63,8 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.opstats import OpStats
+
+from canonical.lazr.timeout import set_default_timeout_function
 
 
 class StepsToGo:
@@ -623,8 +627,11 @@ class LaunchpadTestRequest(TestRequest):
     >>> request.needs_datepicker_iframe
     False
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest,
+    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
+    # These two attributes satisfy IParticipation.
+    principal = None
+    interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
@@ -666,6 +673,10 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    def setPrincipal(self, principal):
+        """See `IPublicationRequest`."""
+        self.principal = principal
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
@@ -1249,7 +1260,21 @@ class ProtocolErrorException(Exception):
         """
         return "Protocol error: %s" % self.status
 
-# ---- End publication classes.
+
+def launchpad_default_timeout():
+    """Return the time before the request should be expired."""
+    timeout = config.database.db_statement_timeout
+    if timeout is None:
+        return None
+    left = timeout - get_request_duration()
+    if left < 0:
+        raise RequestExpired('request expired.')
+    return left
+
+
+def set_launchpad_default_timeout(event):
+    """Set the LAZR default timeout function."""
+    set_default_timeout_function(launchpad_default_timeout)
 
 
 def register_launchpad_request_publication_factories():

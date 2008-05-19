@@ -209,6 +209,10 @@ def webservice_error(status):
 
     That status code will be used by the view used to handle that kind of
     exceptions on the web service.
+
+    This is only effective when the exception is raised from within a
+    published method.  For example, if the exception is raised by the field's
+    validation its specified status won't propagate to the response.
     """
     frame = sys._getframe(1)
     f_locals = frame.f_locals

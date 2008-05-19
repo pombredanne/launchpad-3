@@ -135,8 +135,7 @@ class TestWorkerMonitorUnit(TestCase):
         """Return the `CodeImportResult`s for the `CodeImport` we created.
         """
         code_import = getUtility(ICodeImportSet).get(self.code_import_id)
-        return getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import)
+        return code_import.results
 
     def getOneResultForOurCodeImport(self):
         """Return the only `CodeImportResult` for the `CodeImport` we created.
@@ -393,7 +392,6 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.repo_path)
-        self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeCVSCodeImport(self):
         """Make a `CodeImport` that points to a real CVS repository."""
@@ -431,15 +429,13 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.factory.makePerson())
         getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        job = getUtility(ICodeImportJobSet).getJobForMachine(self.machine)
+        job = getUtility(ICodeImportJobSet).getJobForMachine('machine')
         self.assertEqual(code_import, job.code_import)
         return job
 
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
-        results = list(getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import))
-        self.failUnlessEqual(len(results), 1)
+        self.failUnlessEqual(len(list(code_import.results)), 1)
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
