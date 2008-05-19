@@ -603,7 +603,7 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     def testSetUp(cls):
         # By default, don't make external service tests timeout.
         if get_default_timeout_function() is not None:
-            raise LayerInvariantError(
+            raise LayerIsolationError(
                 "Global default timeout function should be None.")
         set_default_timeout_function(test_default_timeout)
 
@@ -611,7 +611,7 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     @profiled
     def testTearDown(cls):
         if get_default_timeout_function() is not test_default_timeout:
-            raise LayerInvariantError(
+            raise LayerIsolationError(
                 "Test didn't reset default timeout function.")
         set_default_timeout_function(None)
 
