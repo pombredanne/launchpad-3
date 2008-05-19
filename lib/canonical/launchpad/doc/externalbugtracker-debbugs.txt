@@ -462,6 +462,7 @@ tracker.
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...
     INFO    Committing the transaction.
+    <BLANKLINE>
 
     >>> commit()
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs
