@@ -98,7 +98,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
-from canonical.lazr.interface import copy_field
+from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
@@ -146,7 +146,6 @@ from canonical.launchpad.browser.mailinglists import (
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
-from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -287,8 +286,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepthrough('+email')
     def traverse_email(self, email):
-        if not WebServiceLayer.providedBy(self.request):
-            return None
+        """Traverse to this person's emails on the webservice layer."""
         email = getUtility(IEmailAddressSet).getByEmail(email)
         if email is None or email.person != self.context:
             return None
@@ -296,8 +294,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepthrough('+wikiname')
     def traverse_wikiname(self, id):
-        if not WebServiceLayer.providedBy(self.request):
-            return None
+        """Traverse to this person's WikiNames on the webservice layer."""
         wiki = getUtility(IWikiNameSet).get(id)
         if wiki is None or wiki.person != self.context:
             return None
@@ -305,17 +302,15 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 
     @stepthrough('+jabberid')
     def traverse_jabberid(self, jabber_id):
-        if not WebServiceLayer.providedBy(self.request):
-            return None
-        jabber = getUtility(IJabberIDSet).getByPerson(jabber_id)
+        """Traverse to this person's JabberIDs on the webservice layer."""
+        jabber = getUtility(IJabberIDSet).getByJabberID(jabber_id)
         if jabber is None or jabber.person != self.context:
             return None
         return jabber
 
     @stepthrough('+ircnick')
     def traverse_ircnick(self, id):
-        if not WebServiceLayer.providedBy(self.request):
-            return None
+        """Traverse to this person's IrcIDs on the webservice layer."""
         irc_nick = getUtility(IIrcIDSet).get(id)
         if irc_nick is None or irc_nick.person != self.context:
             return None
@@ -1254,26 +1249,17 @@ class PersonAddView(LaunchpadFormView):
         token.sendProfileCreatedEmail(person, creation_comment)
 
 
+class DeactivateAccountSchema(Interface):
+    use_template(IPerson, include=['password'])
+    comment = copy_field(
+        IPerson['account_status_comment'], readonly=False, __name__='comment')
+
+
 class PersonDeactivateAccountView(LaunchpadFormView):
 
-    schema = IPerson
+    schema = DeactivateAccountSchema
     label = "Deactivate your Launchpad account"
-    custom_widget('account_status_comment', TextAreaWidget, height=5,
-                  width=60)
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`.
-
-        Copy fields from IPerson and make account_status_comment a read-write
-        field so that the user can give a comment.  That field is defined as
-        read only in IPerson because we don't want it to be changed directly.
-        """
-        password_field = copy_field(IPerson['password'])
-        comment_field = copy_field(
-            IPerson['account_status_comment'], readonly=False)
-        self.form_fields = FormFields(comment_field, password_field)
-        comment_field.custom_widget = self.custom_widgets[
-            'account_status_comment']
+    custom_widget('comment', TextAreaWidget, height=5, width=60)
 
     def validate(self, data):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -1286,7 +1272,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        self.context.deactivateAccount(data['account_status_comment'])
+        self.context.deactivateAccount(data['comment'])
         logoutPerson(self.request)
         self.request.response.addNoticeNotification(
             _(u'Your account has been deactivated.'))

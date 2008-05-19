@@ -1,21 +1,27 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
+__all__ = [
+    'TimezoneNameVocabulary',
+    ]
+
 __metaclass__ = type
 
 import pytz
 
+from zope.interface import directlyProvides
 from zope.schema.vocabulary import SimpleVocabulary
 
-__all__ = ['TimezoneNameVocabulary']
+from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
 
 
-class TimezoneNameVocabulary(SimpleVocabulary):
+# create a sorted list of the common time zone names, with UTC at the start
+_values = sorted(pytz.common_timezones)
+_values.remove('UTC')
+_values.insert(0, 'UTC')
 
-    def __init__(self, terms, *interfaces):
-        # Create a sorted list of the common time zone names, with UTC at the
-        # start.
-        values = sorted(pytz.common_timezones)
-        values.remove('UTC')
-        values.insert(0, 'UTC')
-        terms = [self.createTerm(value) for value in values]
-        super(TimezoneNameVocabulary, self).__init__(terms)
+_timezone_vocab = SimpleVocabulary.fromValues(_values)
+directlyProvides(_timezone_vocab, ITimezoneNameVocabulary)
+del _values
+
+def TimezoneNameVocabulary(context=None):
+    return _timezone_vocab

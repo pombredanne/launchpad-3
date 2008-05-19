@@ -10,7 +10,6 @@ import os
 import re
 import simplejson
 import unittest
-from urlparse import urlsplit
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
@@ -30,6 +29,7 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
 

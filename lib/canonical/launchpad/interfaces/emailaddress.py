@@ -76,7 +76,7 @@ class EmailAddressStatus(DBEnumeratedType):
 
 
 class IEmailAddress(Interface):
-    """The object that stores the IPerson's emails."""
+    """The object that stores the `IPerson`'s emails."""
     export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
