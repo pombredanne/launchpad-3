@@ -1379,6 +1379,7 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry()
 
 
+IPersonViewRestricted['allmembers'].value_type.schema = IPerson
 IPersonViewRestricted['activemembers'].value_type.schema = IPerson
 IPersonViewRestricted['adminmembers'].value_type.schema = IPerson
 IPersonViewRestricted['proposedmembers'].value_type.schema = IPerson
