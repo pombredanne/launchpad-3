@@ -10,7 +10,6 @@ import urllib
 from epydoc.markup.restructuredtext import parse_docstring
 
 from zope.app.zapi import getGlobalSiteManager
-from zope.component import getMultiAdapter
 from zope.interface.interfaces import IInterface
 from zope.schema import getFields
 from zope.schema.interfaces import IBytes, IChoice, IObject
@@ -21,9 +20,8 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, IEntry, IFieldMarshaller,
-    IResourceGETOperation, IResourceOperation, IResourcePOSTOperation,
-    IScopedCollection)
+    ICollection, ICollectionField, IEntry, IResourceGETOperation,
+    IResourceOperation, IResourcePOSTOperation, IScopedCollection)
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import CollectionResource
 
