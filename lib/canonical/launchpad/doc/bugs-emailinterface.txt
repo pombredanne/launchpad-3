@@ -2622,9 +2622,12 @@ XXX: Add tests for non-ascii mails.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
 
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_with_watch = firefox.createBug(CreateBugParams(
     ...     getUtility(ILaunchBag).user, 'New Bug with watch',
-    ...     comment='New bug.'))
+    ...     comment='New bug.', datecreated=now))
     >>> commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -2638,25 +2641,48 @@ XXX: Add tests for non-ascii mails.
     >>> bug_with_watch = getUtility(IBugSet).get(bug_with_watch.id)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
 
-    >>> message = getUtility(IMessageSet).fromText(
-    ...     "An example comment", "I'm in ur comments, sending u a mesj.",
-    ...     no_priv)
+    >>> imported_comments = """From: no-priv@canonical.com
+    ... To: %s@malone-domain
+    ... """
+
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> initial_mail = """From: test@canonical.com
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <76543@launchpad.net>
+    ... Subject: Bug %(bug_id)s
+    ...
+    ... Oh, hai!
+    ...
+    ... I'm in ur comments, sendin u a msej.
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': now.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     }
+    >>> message = getUtility(IMessageSet).fromEmail(
+    ...     initial_mail, no_priv)
 
     >>> bug_message = bug_with_watch.linkMessage(message, bug_watch)
 
+    >>> now = datetime.now(pytz.timezone('UTC'))
     >>> reply_mail = """From: test@canonical.com
-    ... To: %s@malone-domain
-    ... Date: Mon May 19 11:59 CET 2008
-    ... Message-Id: <some-funky-msg-id>
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <1234567890@launchpad.net>
     ... Subject: Replying to your comment about being in my comments
-    ... In-Reply-To: %s
+    ... In-Reply-To: %(rfc822msgid)s
     ...
     ... You are not in my comments and I deny categorically that you are
     ... sending me any messages. Foolish cat.
-    ... """ % (bug_with_watch.id, str(message.rfc822msgid))
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': now.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     'rfc822msgid': str(message.rfc822msgid),
+    ...     }
 
     >>> process_email(reply_mail)
-    >>> print message.parent == bug_message
-    True
+    >>> commit()
 
-
+    >>> [reply_message] = list(bug_with_watch.messages)[-1:]
+    >>> print reply_message.rfc822msgid
+    <1234567890@launchpad.net>
