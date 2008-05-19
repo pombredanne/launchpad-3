@@ -7,9 +7,11 @@ import unittest
 
 import pytz
 from sqlobject import SQLObjectNotFound
+from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 
 from canonical.codehosting.codeimport.publish import ensure_series_branch
+from canonical.database.constants import DEFAULT
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.codeimportevent import CodeImportEvent
 from canonical.launchpad.database.codeimportjob import (
@@ -425,6 +427,84 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
 
     def testStopped(self):
         self.assertDateLastSuccessfulIsReturned(ImportStatus.STOPPED)
+
+
+class TestDateCreatedFromProductSeries(unittest.TestCase):
+    """Tests for `CodeImportSet._dateLastSuccessfulFromProductSeries`."""
+
+    def setUp(self):
+        # dateLastSuccessfulFromProductSeries does not need database access.
+        self.code_import_set = CodeImportSet()
+
+    def makeSeries(self, dateprocessapproved, dateautotested):
+        """Create a stub ProductSeries.
+
+        The returned 'series' will have a datelastsynced and the given import
+        status.
+        """
+        series = StubProductSeries()
+        series.dateprocessapproved = dateprocessapproved
+        series.dateautotested = dateautotested
+        return series
+
+    def assertEqualsCarefully(self, expected, result):
+        """Assert that expected equals results, taking care with SQLConstants.
+
+        Instances of SQLConstant are 'equal' to anything:
+
+            >>> from sqlobject.sqlbuilder import SQLConstant
+            >>> SQLConstant("hi") == None
+            ((hi) IS NULL)
+            >>> bool(SQLConstant("hi") == None)
+            True
+
+        So we have to treat instances of this class separately.
+        """
+        if isinstance(result, SQLConstant) or \
+               isinstance(expected, SQLConstant):
+            self.assertTrue(expected is result)
+        else:
+            self.assertEquals(expected, result)
+
+    def test_neitherSet(self):
+        series = self.makeSeries(
+            dateprocessapproved=None,
+            dateautotested=None)
+        self.assertEqualsCarefully(
+            DEFAULT,
+            self.code_import_set._dateCreatedFromProductSeries(series))
+
+    def test_dateprocessapprovedSet(self):
+        series = self.makeSeries(
+            dateprocessapproved=datetime(2007, 1, 1),
+            dateautotested=None)
+        self.assertEqualsCarefully(
+            datetime(2007, 1, 1),
+            self.code_import_set._dateCreatedFromProductSeries(series))
+
+    def test_dateautotestedSet(self):
+        series = self.makeSeries(
+            dateprocessapproved=None,
+            dateautotested=datetime(2007, 1, 1))
+        self.assertEqualsCarefully(
+            datetime(2007, 1, 1),
+            self.code_import_set._dateCreatedFromProductSeries(series))
+
+    def test_dateautotestedFirst(self):
+        series = self.makeSeries(
+            dateprocessapproved=datetime(2008, 1, 1),
+            dateautotested=datetime(2007, 1, 1))
+        self.assertEqualsCarefully(
+            datetime(2007, 1, 1),
+            self.code_import_set._dateCreatedFromProductSeries(series))
+
+    def test_dateprocessapprovedFirst(self):
+        series = self.makeSeries(
+            dateprocessapproved=datetime(2007, 1, 1),
+            dateautotested=datetime(2008, 1, 1))
+        self.assertEqualsCarefully(
+            datetime(2007, 1, 1),
+            self.code_import_set._dateCreatedFromProductSeries(series))
 
 
 class TestNewFromProductSeries(unittest.TestCase):

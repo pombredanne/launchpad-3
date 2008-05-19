@@ -235,9 +235,12 @@ class CodeImportSet:
     def _dateCreatedFromProductSeries(self, series):
         """Make up a date_created field for the new code import.
 
-        This returns the longest ago of whichever of
+        As the entering of import details is not treated like an event in the
+        old code import system, this requires a touch of creativity.  What we
+        do is return the longest ago of whichever of
         series.dateprocessapproved and series.dateautotested have been set, or
-        DEFAULT if neither have."""
+        DEFAULT if neither have.
+        """
         candidates = [date for date in (series.dateprocessapproved,
                                         series.dateautotested)
                       if date is not None]
