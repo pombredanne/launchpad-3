@@ -22,9 +22,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import get_rocketfuel_root
 from canonical.codehosting.codeimport.tarball import create_tarball
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, CodeImportSourceDetails, ForeignTreeStore,
-    ImportWorker, get_default_bazaar_branch_store,
-    get_default_foreign_tree_store)
+    BazaarBranchStore, ForeignTreeStore, ImportWorker,
+    get_default_bazaar_branch_store, get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
 from canonical.codehosting.tests.helpers import (
@@ -212,7 +211,8 @@ class TestForeignTreeStore(WorkerTest):
         # code imports.
         store = ForeignTreeStore(None)
         svn_branch_url = self.factory.getUniqueURL()
-        source_details = self.factory.makeCodeImportSourceDetails(rcstype='svn')
+        source_details = self.factory.makeCodeImportSourceDetails(
+            rcstype='svn')
         working_tree = store._getForeignTree(source_details, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(
@@ -221,7 +221,8 @@ class TestForeignTreeStore(WorkerTest):
     def test_getForeignTreeCVS(self):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
         store = ForeignTreeStore(None)
-        source_details = self.factory.makeCodeImportSourceDetails(rcstype='cvs')
+        source_details = self.factory.makeCodeImportSourceDetails(
+            rcstype='cvs')
         working_tree = store._getForeignTree(source_details, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(working_tree.root, source_details.cvs_root)
@@ -318,14 +319,16 @@ class TestForeignTreeStore(WorkerTest):
         # for foreign trees and can be deleted when the new system has been
         # running for a while.
         store = self.makeForeignTreeStore()
-        self.build_tree_contents([('svnworking/',), ('svnworking/file', 'contents')])
+        self.build_tree_contents(
+            [('svnworking/',), ('svnworking/file', 'contents')])
         create_tarball('svnworking', 'svnworking.tgz')
         self.copyCreatingDirectories(
             store.transport, '00000001/svnworking.tgz', 'svnworking.tgz')
         source_details = self.factory.makeCodeImportSourceDetails(
             rcstype='svn', source_product_series_id=1)
         os.mkdir('new_path')
-        store.fetchFromOldLocationAndUploadToNewLocation(source_details, 'new_path')
+        store.fetchFromOldLocationAndUploadToNewLocation(
+            source_details, 'new_path')
         new_tarball_name = store._getTarballName(source_details.branch_id)
         self.assertTrue(store.transport.has(new_tarball_name))
         self.assertDirectoryTreesEqual('svnworking', 'new_path')
@@ -338,14 +341,16 @@ class TestForeignTreeStore(WorkerTest):
         # for foreign trees and can be deleted when the new system has been
         # running for a while.
         store = self.makeForeignTreeStore()
-        self.build_tree_contents([('cvsworking/',), ('cvsworking/file', 'contents')])
+        self.build_tree_contents(
+            [('cvsworking/',), ('cvsworking/file', 'contents')])
         create_tarball('cvsworking', 'cvsworking.tgz')
         self.copyCreatingDirectories(
             store.transport, '00000001/cvsworking.tgz', 'cvsworking.tgz')
         source_details = self.factory.makeCodeImportSourceDetails(
             rcstype='cvs', source_product_series_id=1)
         os.mkdir('new_path')
-        store.fetchFromOldLocationAndUploadToNewLocation(source_details, 'new_path')
+        store.fetchFromOldLocationAndUploadToNewLocation(
+            source_details, 'new_path')
         new_tarball_name = store._getTarballName(source_details.branch_id)
         self.assertTrue(store.transport.has(new_tarball_name))
         self.assertDirectoryTreesEqual('cvsworking', 'new_path')

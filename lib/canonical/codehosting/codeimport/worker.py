@@ -176,7 +176,8 @@ class CodeImportSourceDetails:
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
-        result = [str(self.branch_id), self.rcstype, str(self.source_product_series_id)]
+        result = [str(self.branch_id), self.rcstype,
+                  str(self.source_product_series_id)]
         if self.rcstype == 'svn':
             result.append(self.svn_branch_url)
         elif self.rcstype == 'cvs':
