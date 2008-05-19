@@ -923,14 +923,15 @@ class Bug(SQLBase):
 
         return nomination
 
-    def getNominations(self, target=None):
+    def getNominations(self, target=None, nominations=None):
         """See `IBug`."""
         # Define the function used as a sort key.
         def by_bugtargetdisplayname(nomination):
             """Return the friendly sort key verson of displayname."""
             return nomination.target.bugtargetdisplayname.lower()
 
-        nominations = BugNomination.selectBy(bugID=self.id)
+        if nominations is None:
+            nominations = BugNomination.selectBy(bugID=self.id)
         if IProduct.providedBy(target):
             filtered_nominations = []
             for nomination in shortlist(nominations):

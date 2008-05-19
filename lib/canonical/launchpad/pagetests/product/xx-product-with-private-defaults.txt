@@ -6,25 +6,25 @@ to Launchpad users in general.
 
 == Setting private-bugs-by-default ==
 
-If the private_bugs checkbox on a project's +review page is checked, bugs
+If the private_bugs checkbox on a project's +admin page is checked, bugs
 reported about that project will be private by default.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import IProductSet
 
-    >>> admin_browser.open("http://launchpad.dev/redfish/+review")
+    >>> admin_browser.open("http://launchpad.dev/redfish/+admin")
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
 
 However, the product's bug supervisor must be set, and if it is not, as is
 the case with Firefox, the user will get an error:
 
-    >>> admin_browser.open("http://launchpad.dev/firefox/+review")
+    >>> admin_browser.open("http://launchpad.dev/firefox/+admin")
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
     >>> admin_browser.url
-    'http://launchpad.dev/firefox/+review'
+    'http://launchpad.dev/firefox/+admin'
     >>> for tag in find_tags_by_class(admin_browser.contents, "message"):
     ...     print tag.renderContents()
     There is 1 error.

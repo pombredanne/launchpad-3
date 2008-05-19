@@ -14,7 +14,6 @@ __all__ = [
 
 import os
 import shutil
-import tempfile
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -276,31 +275,25 @@ class ImportWorker:
         self.source_details = source_details
         self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
-        self.working_directory = tempfile.mkdtemp()
-        self._foreign_branch = None
         self._logger = logger
-        self._bazaar_working_tree_path = os.path.join(
-            self.working_directory, self.BZR_WORKING_TREE_PATH)
-        self._foreign_working_tree_path = os.path.join(
-            self.working_directory, self.FOREIGN_WORKING_TREE_PATH)
 
     def getBazaarWorkingTree(self):
         """Return the Bazaar `WorkingTree` that we are importing into."""
-        if os.path.isdir(self._bazaar_working_tree_path):
-            shutil.rmtree(self._bazaar_working_tree_path)
+        if os.path.isdir(self.BZR_WORKING_TREE_PATH):
+            shutil.rmtree(self.BZR_WORKING_TREE_PATH)
         return self.bazaar_branch_store.pull(
-            self.source_details.branch_id, self._bazaar_working_tree_path)
+            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH)
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
 
         :return: A `SubversionWorkingTree` or a `CVSWorkingTree`.
         """
-        if os.path.isdir(self._foreign_working_tree_path):
-            shutil.rmtree(self._foreign_working_tree_path)
-        os.mkdir(self._foreign_working_tree_path)
+        if os.path.isdir(self.FOREIGN_WORKING_TREE_PATH):
+            shutil.rmtree(self.FOREIGN_WORKING_TREE_PATH)
+        os.mkdir(self.FOREIGN_WORKING_TREE_PATH)
         return self.foreign_tree_store.fetch(
-            self.source_details, self._foreign_working_tree_path)
+            self.source_details, self.FOREIGN_WORKING_TREE_PATH)
 
     def importToBazaar(self, foreign_tree, bazaar_tree):
         """Actually import `foreign_tree` into `bazaar_tree`.
@@ -345,6 +338,13 @@ class ImportWorker:
                        flags, revisions, bazpath]
         totla.totla(config, self._logger, config.args, SCM.tree(source_dir))
 
+    def getWorkingDirectory(self):
+        """The directory we should change to and store all scratch files in.
+        """
+        base = config.codeimportworker.working_directory_root
+        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
+        return os.path.join(base, dirname)
+
     def run(self):
         """Run the code import job.
 
@@ -361,6 +361,11 @@ class ImportWorker:
          5. Archives the foreign tree, so that we can update it quickly next
             time.
         """
+        working_directory = self.getWorkingDirectory()
+        if os.path.exists(working_directory):
+            shutil.rmtree(working_directory)
+        os.makedirs(working_directory)
+        os.chdir(working_directory)
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
@@ -368,5 +373,3 @@ class ImportWorker:
             self.source_details.branch_id, bazaar_tree)
         self.foreign_tree_store.archive(
             self.source_details, foreign_tree)
-        shutil.rmtree(bazaar_tree.basedir)
-        shutil.rmtree(foreign_tree.local_path)
