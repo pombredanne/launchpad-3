@@ -227,6 +227,33 @@ def listSequences(cur):
                 rv.append( (schema, sequence, None, None) )
     return rv
 
+def generateResetSequencesSQL(cur):
+    """Return SQL that will reset table sequences to match the data in them.
+    """
+    stmt = []
+    for schema, sequence, table, column in listSequences(cur):
+        if table is None or column is None:
+            continue
+        sql = "SELECT max(%s) FROM %s" % (
+                quoteIdentifier(column), quoteIdentifier(table)
+                )
+        cur.execute(sql)
+        last_value = cur.fetchone()[0]
+        if last_value is None:
+            last_value = 1
+            flag = 'false'
+        else:
+            flag = 'true'
+        sql = "setval(%s, %d, %s)" % (
+                quote('%s.%s' % (schema, sequence)), int(last_value), flag
+                )
+        stmt.append(sql)
+    if stmt:
+        stmt = 'SELECT ' + ', '.join(stmt)
+        return stmt
+    else:
+        return ''
+
 def resetSequences(cur):
     """Reset table sequences to match the data in them.
 
@@ -244,22 +271,8 @@ def resetSequences(cur):
     >>> int(cur.fetchone()[0])
     1
     """
-    for schema, sequence, table, column in listSequences(cur):
-        if table is None or column is None:
-            continue
-        sql = "SELECT max(%s) FROM %s" % (
-                quoteIdentifier(column), quoteIdentifier(table)
-                )
-        cur.execute(sql)
-        last_value = cur.fetchone()[0]
-        if last_value is None:
-            last_value = 1
-            flag = 'false'
-        else:
-            flag = 'true'
-        sql = "SELECT setval(%s, %d, %s)" % (
-                quote('%s.%s' % (schema, sequence)), int(last_value), flag
-                )
+    sql = generateResetSequencesSQL(cur)
+    if sql:
         cur.execute(sql)
 
 # Regular expression used to parse row count estimate from EXPLAIN output

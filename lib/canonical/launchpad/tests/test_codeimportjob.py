@@ -717,13 +717,11 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         result_set = getUtility(ICodeImportResultSet)
         # Before calling finishJob() there are no CodeImportResults for the
         # given import...
-        results = list(result_set.getResultsForImport(code_import))
-        self.assertEqual(len(results), 0)
+        self.assertEqual(len(list(code_import.results)), 0)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         # ... and after, there is exactly one.
-        results = list(result_set.getResultsForImport(code_import))
-        self.assertEqual(len(results), 1)
+        self.assertEqual(len(list(code_import.results)), 1)
 
     def getResultForJob(self, job, status=CodeImportResultStatus.SUCCESS,
                         log_alias=None):
@@ -731,8 +729,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         code_import = job.code_import
         getUtility(ICodeImportJobWorkflow).finishJob(
             job, status, log_alias)
-        [result] = getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import)
+        [result] = list(code_import.results)
         return result
 
     def assertFinishJobPassesThroughJobField(self, from_field, to_field,
@@ -761,8 +758,10 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
 
         unchecked_result_fields = set(ICodeImportResult)
 
-        # We don't care about 'id'!
+        # We don't care about 'id', and 'job_duration' only matters
+        # when we have a valid date_created (as opposed to UTC_NOW).
         unchecked_result_fields.remove('id')
+        unchecked_result_fields.remove('job_duration')
         # Some result fields are tested in other tests:
         unchecked_result_fields.difference_update(['log_file', 'status'])
 

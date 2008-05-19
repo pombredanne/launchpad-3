@@ -9,12 +9,17 @@ Pillars are currently Product, Project and Distribution.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int
+from zope.schema import Bool, Int
 
 from canonical.launchpad import _
 
 
-__all__ = ['IPillarName', 'IPillarNameSet']
+__all__ = ['IPillar', 'IPillarName', 'IPillarNameSet']
+
+
+class IPillar(Interface):
+    active = Bool(title=_('Active'), description=_("""Whether or not
+        this pillar is considered active."""))
 
 
 class IPillarName(Interface):

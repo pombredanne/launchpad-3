@@ -271,3 +271,4 @@ displayed.
     The next import is scheduled to run as soon as possible (requested
     by Sample Person).
     Last successful import was on 2007-09-10.
+    ...
