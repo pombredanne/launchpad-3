@@ -116,6 +116,13 @@ as we haven't yet exported anything from IEmailAddress.
   >>> sorted(email)
   [u'self_link']
 
+One can only traverse to the email addresses of the person already
+traversed to, obviously.
+
+  >>> print webservice.get("/beta/~salgado/+email/test@canonical.com")
+  HTTP/1.1 404 Not Found
+  ...
+
 
 === Team memberships ===
 
@@ -270,6 +277,13 @@ as we haven't yet exported anything from IWikiName.
   >>> sorted(wiki_name)
   [u'self_link']
 
+One can only traverse to the WikiNames of the person already traversed
+to, obviously.
+
+  >>> print webservice.get("/beta/~salgado/+wikiname/12")
+  HTTP/1.1 404 Not Found
+  ...
+
 
 === Jabber IDs ===
 
@@ -291,6 +305,14 @@ as we haven't yet exported anything from IJabberID.
   >>> sorted(jabber_id)
   [u'self_link']
 
+One can only traverse to the Jabber IDs of the person already traversed
+to, obviously.
+
+  >>> print webservice.get(
+  ...     "/beta/~salgado/+jabberid/markshuttleworth@jabber.org")
+  HTTP/1.1 404 Not Found
+  ...
+
 
 === IRC nicknames ===
 
@@ -302,13 +324,20 @@ The same for IRC nicknames
   >>> print_self_link_of_entries(webservice.get(irc_ids_link).jsonBody())
   http://api.launchpad.dev/beta/~sabdfl/+ircnick/1
 
-Jabber IDs are first-class objects with their own URLs and
-representations, but for now their representation contain only self_link
-as we haven't yet exported anything from IJabberID.
+IRC IDs are first-class objects with their own URLs and representations,
+but for now their representation contain only self_link as we haven't
+yet exported anything from IIrcID.
 
   >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
   >>> sorted(irc_id)
   [u'self_link']
+
+One can only traverse to the IRC IDs of the person already traversed
+to, obviously.
+
+  >>> print webservice.get("/beta/~salgado/+ircnick/1")
+  HTTP/1.1 404 Not Found
+  ...
 
 
 == Custom operations ==
