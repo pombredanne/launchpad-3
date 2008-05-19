@@ -46,7 +46,12 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate private_bugs
+      set_attributes="name autoupdate"
+      />
+
+    <require
+      permission="launchpad.Commercial"
+      set_attributes="active private_bugs license_reviewed
                       reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
@@ -418,12 +423,21 @@
     />
 
   <browser:page
-    name="+review"
+    name="+admin"
     for="canonical.launchpad.interfaces.IProduct"
     facet="overview"
-    class="canonical.launchpad.browser.ProductReviewView"
+    class="canonical.launchpad.browser.ProductAdminView"
     permission="launchpad.Admin"
     template="../templates/product-admin.pt"
+    />
+
+  <browser:page
+    name="+review-license"
+    for="canonical.launchpad.interfaces.IProduct"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductReviewLicenseView"
+    permission="launchpad.Commercial"
+    template="../templates/product-review-license.pt"
     />
 
   <browser:page

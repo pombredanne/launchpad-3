@@ -2,8 +2,10 @@
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
 
+from datetime import datetime, timedelta
 import unittest
 
+import pytz
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
@@ -16,7 +18,7 @@ from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportReviewStatus,
     IPersonSet, RevisionControlSystems)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -247,6 +249,72 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
         self.assertEqual(
             CodeImportReviewStatus.INVALID,
             self.code_import.review_status)
+
+
+class TestCodeImportResultsAttribute(unittest.TestCase):
+    """Test the results attribute of a CodeImport."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        login(ANONYMOUS)
+        self.factory = LaunchpadObjectFactory()
+        self.code_import = self.factory.makeCodeImport()
+
+    def tearDown(self):
+        logout()
+
+    def test_no_results(self):
+        # Initially a new code import will have no results.
+        self.assertEqual([], list(self.code_import.results))
+
+    def test_single_result(self):
+        # A result associated with the code import can be accessed directly
+        # from the code import object.
+        import_result = self.factory.makeCodeImportResult(self.code_import)
+        results = list(self.code_import.results)
+        self.assertEqual(1, len(results))
+        self.assertEqual(import_result, results[0])
+
+    def test_result_ordering(self):
+        # The results query will order the results by job started time, with
+        # the most recent import first.
+        when = time_counter(
+            origin=datetime(2007, 9, 9, 12, tzinfo=pytz.UTC),
+            delta=timedelta(days=1))
+        first = self.factory.makeCodeImportResult(
+            self.code_import, date_started=when.next())
+        second = self.factory.makeCodeImportResult(
+            self.code_import, date_started=when.next())
+        third = self.factory.makeCodeImportResult(
+            self.code_import, date_started=when.next())
+        self.assertTrue(first.date_job_started < second.date_job_started)
+        self.assertTrue(second.date_job_started < third.date_job_started)
+        results = list(self.code_import.results)
+        self.assertEqual(third, results[0])
+        self.assertEqual(second, results[1])
+        self.assertEqual(first, results[2])
+
+    def test_result_ordering_paranoia(self):
+        # Similar to test_result_ordering, but with results created in reverse
+        # order (this wouldn't really happen) but it shows that the id of the
+        # import result isn't used to sort by.
+        when = time_counter(
+            origin=datetime(2007, 9, 11, 12, tzinfo=pytz.UTC),
+            delta=timedelta(days=-1))
+        first = self.factory.makeCodeImportResult(
+            self.code_import, date_started=when.next())
+        second = self.factory.makeCodeImportResult(
+            self.code_import, date_started=when.next())
+        third = self.factory.makeCodeImportResult(
+            self.code_import, date_started=when.next())
+        self.assertTrue(first.date_job_started > second.date_job_started)
+        self.assertTrue(second.date_job_started > third.date_job_started)
+        results = list(self.code_import.results)
+        self.assertEqual(first, results[0])
+        self.assertEqual(second, results[1])
+        self.assertEqual(third, results[2])
 
 
 def test_suite():
