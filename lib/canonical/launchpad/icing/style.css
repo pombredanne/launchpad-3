@@ -683,6 +683,15 @@ a <div> and dynamically positioned by JavaScript.
   margin-top: 3px;
 }
 
+/* We want the pane itself to have dimensions so that we may position it.
+This works because the element has absolute positioning in the page flow. */
+#help-pane.invisible {
+    position: absolute;
+    visibility: hidden;
+    display: block;
+    left: 0px;
+    top: 0px;
+}
 .invisible {display: none;}
 
 span.help-link {font-weight: normal;}
