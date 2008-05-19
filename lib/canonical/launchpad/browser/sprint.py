@@ -552,10 +552,10 @@ class SprintAttendeesCsvExportView(LaunchpadView):
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
                  in attendance.attendee.ircnicknames])))
-            if attendance.attendee.country is not None:
-                country = attendance.attendee.country.name
-            else:
+            if attendance.attendee.country is None:
                 country = ''
+            else:
+                country = attendance.attendee.country.name
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
