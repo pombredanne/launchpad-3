@@ -2609,3 +2609,55 @@ is properly detected and thus no bug attchement created.
 
 XXX: Add tests for non-ascii mails.
      -- Bjorn Tillenius, 2005-05-20
+
+
+== Reply to a comment on a remote bug ==
+
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IBugWatchSet, IProductSet)
+
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+
+    >>> bug_with_watch = firefox.createBug(CreateBugParams(
+    ...     getUtility(ILaunchBag).user, 'New Bug with watch',
+    ...     comment='New bug.'))
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+    >>> bug_watch = bug_with_watch.addWatch(bug_tracker, '12345', no_priv)
+
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+    >>> bug_with_watch = getUtility(IBugSet).get(bug_with_watch.id)
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     "An example comment", "I'm in ur comments, sending u a mesj.",
+    ...     no_priv)
+
+    >>> bug_message = bug_with_watch.linkMessage(message, bug_watch)
+
+    >>> reply_mail = """From: test@canonical.com
+    ... To: %s@malone-domain
+    ... Date: Mon May 19 11:59 CET 2008
+    ... Message-Id: <some-funky-msg-id>
+    ... Subject: Replying to your comment about being in my comments
+    ... In-Reply-To: %s
+    ...
+    ... You are not in my comments and I deny categorically that you are
+    ... sending me any messages. Foolish cat.
+    ... """ % (bug_with_watch.id, message.rfc822msgid)
+
+    >>> process_email(reply_mail)
+    >>> print message.parent == bug_message
+    True
+
+
