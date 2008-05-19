@@ -330,10 +330,9 @@ class TestWorkerCore(WorkerTest):
 
     def test_construct(self):
         # When we construct an ImportWorker, it has a CodeImportSourceDetails
-        # object and a working directory.
+        # object.
         worker = self.makeImportWorker()
         self.assertEqual(self.source_details, worker.source_details)
-        self.assertEqual(True, os.path.isdir(worker.working_directory))
 
     def test_getBazaarWorkingTreeMakesEmptyTree(self):
         # getBazaarWorkingTree returns a brand-new working tree for an initial
@@ -343,13 +342,12 @@ class TestWorkerCore(WorkerTest):
         self.assertEqual([], bzr_working_tree.branch.revision_history())
 
     def test_bazaarWorkingTreeLocation(self):
-        # getBazaarWorkingTree makes the working tree under the worker's
+        # getBazaarWorkingTree makes the working tree under the current
         # working directory.
         worker = self.makeImportWorker()
         bzr_working_tree = worker.getBazaarWorkingTree()
         self.assertIsSameRealPath(
-            os.path.join(
-                worker.working_directory, worker.BZR_WORKING_TREE_PATH),
+            os.path.abspath(worker.BZR_WORKING_TREE_PATH),
             os.path.abspath(bzr_working_tree.basedir))
 
     def test_getForeignTree(self):
@@ -358,13 +356,12 @@ class TestWorkerCore(WorkerTest):
         worker = self.makeImportWorker()
         branch = worker.getForeignTree()
         self.assertIsSameRealPath(
-            os.path.join(
-                worker.working_directory, worker.FOREIGN_WORKING_TREE_PATH),
+            os.path.abspath(worker.FOREIGN_WORKING_TREE_PATH),
             branch.local_path)
 
 
 def clean_up_default_stores_for_import(source_details):
-    """Clean up default branch and foreign tree stores for an import.
+    """Clean up the default branch and foreign tree stores for an import.
 
     This checks for an existing branch and/or foreign tree tarball
     corresponding to the passed in import and deletes them if they
