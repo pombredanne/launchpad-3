@@ -174,14 +174,11 @@ class BranchMergeProposal(SQLBase):
             owner_recipients.add(
                 self.dependent_branch.owner,
                 'You are the owner of %s' % self.dependent_branch,
-                'Dependent Branch Owner'
+                None,
                 )
-
         for recipient in owner_recipients:
-            subscription, rationale = owner_recipients.getReason(
-                recipient)
+            subscription, rationale = owner_recipients.getReason(recipient)
             recipients[recipient] = (subscription, rationale)
-
         return recipients
 
     def isValidTransition(self, next_state, user=None):
