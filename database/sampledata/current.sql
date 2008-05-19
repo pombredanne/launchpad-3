@@ -8549,7 +8549,6 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (78, 243617, 243618, 3, '2008-03-06 23:56:17.986769', NULL, 1, NULL, 1, NULL, 1, '2008-03-06 23:56:17.986769', NULL, NULL, '2008-03-06 23:56:17.986769', NULL, NULL, NULL, '2008-03-06 23:56:17.007142');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (80, 28, 243620, 3, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, 28, NULL, 28, '2008-05-14 10:29:25.097554', NULL, NULL, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, '2008-05-14 10:29:17.539543');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (81, 16, 243620, 2, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, 16, NULL, 16, '2008-05-14 12:07:14.22745', NULL, NULL, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, '2008-05-14 12:07:14.140921');
-INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (82, 16, 243621, 4, '2008-04-21 21:29:57.08433', NULL, 16, '', 16, NULL, 16, '2008-04-21 21:29:57.08433', '2008-05-12 17:40:18.403248', NULL, '2008-04-21 21:29:57.08433', NULL, NULL, NULL, '2008-04-21 21:29:56.881698');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (83, 243622, 243621, 3, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, 16, NULL, 16, '2008-05-12 17:40:08.720578', NULL, NULL, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, '2008-05-12 17:40:08.637114');
 
 
@@ -8717,9 +8716,11 @@ INSERT INTO teamparticipation (id, team, person) VALUES (173, 243617, 243617);
 INSERT INTO teamparticipation (id, team, person) VALUES (174, 243618, 243618);
 INSERT INTO teamparticipation (id, team, person) VALUES (175, 243618, 243617);
 INSERT INTO teamparticipation (id, team, person) VALUES (178, 243620, 243620);
-INSERT INTO teamparticipation (id, team, person) VALUES (176, 243621, 243621);
-INSERT INTO teamparticipation (id, team, person) VALUES (179, 243621, 243622);
-INSERT INTO teamparticipation (id, team, person) VALUES (180, 243622, 243622);
+INSERT INTO teamparticipation (id, team, person) VALUES (179, 243620, 28);
+INSERT INTO teamparticipation (id, team, person) VALUES (180, 243620, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (181, 243621, 243621);
+INSERT INTO teamparticipation (id, team, person) VALUES (182, 243621, 243622);
+INSERT INTO teamparticipation (id, team, person) VALUES (183, 243622, 243622);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
