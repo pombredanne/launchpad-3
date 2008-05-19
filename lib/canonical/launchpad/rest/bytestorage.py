@@ -31,14 +31,17 @@ class LibraryBackedByteStorage:
 
     @property
     def rootsite(self):
+        """See `ICanonicalUrlData`"""
         return None
 
     @property
     def inside(self):
+        """See `ICanonicalUrlData`"""
         return self.entry.context
 
     @property
     def path(self):
+        """See `ICanonicalUrlData`"""
         return self.filename
 
     @property

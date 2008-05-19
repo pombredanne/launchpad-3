@@ -319,15 +319,14 @@ class WadlFieldAPI(WadlAPI):
 
     @property
     def name(self):
-        """The name of this field.
+        """The name of this field."""
+        # It would be nice to farm this out to IFieldMarshaller, but
+        # IFieldMarshaller can't be instantiated except on a field
+        # that's been bound to an object. Here there's no object since
+        # we're doing introspection on the class. A possible solution is
+        # to split IFieldMarshaller.representation_name() into a
+        # separate interface.
 
-        It would be nice to farm this out to IFieldMarshaller, but
-        IFieldMarshaller can't be instantiated except on a field
-        that's been bound to an object. Here there's no object since
-        we're doing introspection on the class. A possible solution is
-        to split IFieldMarshaller.representation_name() into a
-        separate interface.
-        """
         name = self.field.__name__
         if ICollectionField.providedBy(self.field):
             return name + '_collection_link'
