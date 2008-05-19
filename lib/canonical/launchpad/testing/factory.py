@@ -16,6 +16,7 @@ from StringIO import StringIO
 import pytz
 
 from zope.component import getUtility
+from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
@@ -480,6 +481,30 @@ class LaunchpadObjectFactory:
         return getUtility(ICodeImportResultSet).new(
             code_import, machine, requesting_user, log_excerpt, log_alias,
             result_status, date_started, date_finished)
+
+    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
+                                    svn_branch_url=None, cvs_root=None,
+                                    cvs_module=None,
+                                    source_product_series_id=0):
+        if branch_id is None:
+            branch_id = self.getUniqueInteger()
+        if rcstype is None:
+            rcstype = 'svn'
+        if rcstype == 'svn':
+            assert cvs_root is cvs_module is None
+            if svn_branch_url is None:
+                svn_branch_url = self.getUniqueURL()
+        elif rcstype == 'cvs':
+            assert svn_branch_url is None
+            if cvs_root is None:
+                cvs_root = self.getUniqueString()
+            if cvs_module is None:
+                cvs_module = self.getUniqueString()
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return CodeImportSourceDetails(
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
+            source_product_series_id)
 
     def makeSeries(self, user_branch=None, import_branch=None,
                    name=None, product=None):
