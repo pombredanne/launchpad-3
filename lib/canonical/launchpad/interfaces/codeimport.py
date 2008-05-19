@@ -207,6 +207,9 @@ class ICodeImportSet(Interface):
         ProductSeries, which is asserted to be in the AUTOTESTED, TESTING,
         PROCESSING, SYNCING or STOPPED import states.
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
     def getAll():
         """Return an iterable of all CodeImport objects."""

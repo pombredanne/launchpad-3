@@ -323,6 +323,10 @@ class TestCodeImportResultsAttribute(unittest.TestCase):
 
 class TestReviewStatusFromImportStatus(unittest.TestCase):
     """Tests for `CodeImportSet.reviewStatusFromImportStatus`."""
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This class is testing
+    # functionality that is is only necessary for the transition from the old
+    # to the new code import system, and should be deleted after that process
+    # is done.
 
     def setUp(self):
         self.code_import_set = CodeImportSet()
@@ -371,6 +375,10 @@ class StubProductSeries:
 
 class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
     """Tests for `CodeImportSet._dateLastSuccessfulFromProductSeries`."""
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This class is testing
+    # functionality that is is only necessary for the transition from the old
+    # to the new code import system, and should be deleted after that process
+    # is done.
 
     def setUp(self):
         # dateLastSuccessfulFromProductSeries does not need database access.
@@ -431,6 +439,10 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
 
 class TestDateCreatedFromProductSeries(unittest.TestCase):
     """Tests for `CodeImportSet._dateLastSuccessfulFromProductSeries`."""
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This class is testing
+    # functionality that is is only necessary for the transition from the old
+    # to the new code import system, and should be deleted after that process
+    # is done.
 
     def setUp(self):
         # dateLastSuccessfulFromProductSeries does not need database access.
@@ -509,6 +521,10 @@ class TestDateCreatedFromProductSeries(unittest.TestCase):
 
 class TestNewFromProductSeries(unittest.TestCase):
     """Tests for `CodeImportSet.newFromProductSeries`."""
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This class is testing
+    # functionality that is is only necessary for the transition from the old
+    # to the new code import system, and should be deleted after that process
+    # is done.
 
     layer = LaunchpadFunctionalLayer
 

@@ -205,6 +205,9 @@ class CodeImportSet:
     def _reviewStatusFromImportStatus(self, import_status):
         """The value for review_status corresponding to `import_status`.
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
         if import_status in (ImportStatus.TESTING, ImportStatus.AUTOTESTED):
             review_status = CodeImportReviewStatus.NEW
         elif import_status in (ImportStatus.PROCESSING, ImportStatus.SYNCING):
@@ -220,6 +223,9 @@ class CodeImportSet:
     def _dateLastSuccessfulFromProductSeries(self, series):
         """The value for date_last_successful for the ProductSeries `series`.
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
         if series.importstatus in (ImportStatus.SYNCING, ImportStatus.STOPPED):
             last_successful = series.datelastsynced
         elif series.importstatus in (ImportStatus.TESTING,
@@ -241,6 +247,9 @@ class CodeImportSet:
         series.dateprocessapproved and series.dateautotested have been set, or
         DEFAULT if neither have.
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
         candidates = [date for date in (series.dateprocessapproved,
                                         series.dateautotested)
                       if date is not None]
@@ -251,6 +260,9 @@ class CodeImportSet:
 
     def newFromProductSeries(self, product_series):
         """See `ICodeImportSet`."""
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
         date_created = self._dateCreatedFromProductSeries(product_series)
 
         _vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
