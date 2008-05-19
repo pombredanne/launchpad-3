@@ -812,16 +812,15 @@ class BugTaskEditView(LaunchpadEditFormView):
     @cachedproperty
     def field_names(self):
         """Return the field names that can be edited by the user."""
-        field_names = list(self.default_field_names)
+        field_names = set(self.default_field_names)
 
         # The fields that we present to the users change based upon the
         # current context and the user's permissions, so we update field_names
         # with any fields that may need to be added.
-        for field in self.editable_field_names:
-            if field not in field_names:
-                field_names.append(field)
+        field_names.update(self.editable_field_names)
 
-        return field_names
+        # To help with caching, return an immutable object.
+        return frozenset(field_names)
 
     @cachedproperty
     def editable_field_names(self):
@@ -864,6 +863,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                         and self.userCanEditImportance()):
                         editable_field_names.add('importance')
 
+        # To help with caching, return an immutable object.
         return frozenset(editable_field_names)
 
     @property

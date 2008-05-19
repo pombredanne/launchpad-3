@@ -5,7 +5,7 @@
     >>> from canonical.launchpad.interfaces import IPersonSet, IProductSet
     >>> from canonical.launchpad.ftests import login, logout
 
-    >>> def widget_visbility(user, url):
+    >>> def widget_visibility(user, url):
     ...     browser = setupBrowser(
     ...         "Basic %s:test" % user.preferredemail.email)
     ...     browser.open(url)
@@ -24,7 +24,7 @@
     ...     return status, importance
 
     >>> def print_widget_visibility(user, url):
-    ...     status, importance = widget_visbility(user, url)
+    ...     status, importance = widget_visibility(user, url)
     ...     print 'Status: %s\nImportance: %s' % (status, importance)
 
 
