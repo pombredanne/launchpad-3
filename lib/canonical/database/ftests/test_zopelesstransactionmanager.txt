@@ -1,188 +1,82 @@
-Doctests moved from ZopelessTransactionManager.
+= ZopelessTransactionManager =
 
->>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
->>> dbname = LaunchpadTestSetup().dbname
->>> dbname
-'launchpad_ftest'
->>> from canonical.database.sqlbase import ZopelessTransactionManager
->>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
+The ZopelessTransactionManager used to be an alternative to the Zope
+transaction manager and SQLOS database adapter.
 
-The _connection attribute of SQLBase should now be a descriptor that returns
-sqlobject.dbconnection.Transaction instances.
+With the move to Storm, it was converted to a small compatibility shim
+used to configure the database adapter.
 
->>> from sqlobject.dbconnection import Transaction
->>> from canonical.database.sqlbase import SQLBase
->>> t1 = SQLBase._connection
->>> isinstance(t1, Transaction)
-True
+== Initialisation ==
 
-And it should give the same connection to the same thread over multiple
-accesses.
+The ZopelessTransactionManager is initialised with the initZopeless()
+function.
 
->>> t2 = SQLBase._connection
->>> t1 is t2
-True
+    >>> from canonical.lp import initZopeless
+    >>> ztm = initZopeless()
 
-And different in different threads:
+The returned transaction manager happens to be the same as the
+ZopelessTransactionManager class:
 
->>> from threading import Thread, Lock, Event
->>> l = []
->>> e = Event()
->>> def target():
-...     l.append(SQLBase._connection)
->>> t = Thread(target=target)
->>> t.start()
->>> t.join(20)
+    >>> from canonical.database.sqlbase import ZopelessTransactionManager
+    >>> ztm is ZopelessTransactionManager
+    True
 
->>> l[0] is not t1
-True
+After initZopeless() has been called, the '_installed' attribute of
+ZopelessTransactionManager will be set to the transaction manager:
 
- 
-XXX: ddaa 2005-05-10: This bit is overly dependent on the db...
-Show that concurrent transactions in different threads work correctly
+    >>> ZopelessTransactionManager._installed is ztm
+    True
 
->>> from sqlobject import StringCol
->>> from canonical.launchpad.database import Person
->>> mark = Person.selectOneBy(displayname='Mark Shuttleworth')
->>> mark.id == 1
-True
->>> mark.givenname = 'Markk'
->>> mark.givenname = 'Mark'
->>> ztm.commit()
->>> ztm.commit()
- 
->>> event = Event()
->>> event2 = Event()
->>> def foo(Person=Person, ztm=ztm, event=event, event2=event2):
-...     andrew = Person.selectOneBy(displayname='Andrew Bennetts')
-...     
-...     andrew.givenname = 'Andreww'
-...     andrew.givenname = 'Andrew'
-...     event.set()
-...     event2.wait()
-...     ztm.commit()
-...
->>> t = Thread(target=foo)
->>> t.start()
->>> event.wait()
->>> mark = Person.selectOneBy(displayname='Mark Shuttleworth')
->>> mark.id == 1
-True
->>> mark.givenname = 'Markk'
->>> mark.givenname = 'Mark'
->>> ztm.commit()
->>> event2.set()
->>> t.join(20)
+The initZopeless() call defaults to read committed isolation:
 
-A failed commit, e.g. due to a transaction conflict or integrity error, will
-raise an exception, but still make it possible to begin a new transaction.
+    >>> from canonical.database.sqlbase import cursor
+    >>> c = cursor()
+    >>> c.execute("SHOW transaction_isolation")
+    >>> print c.fetchone()[0]
+    read committed
 
->>> from psycopg import DatabaseError
->>> import sys
->>> ztm.begin()
->>> andrew = Person.byName('spiv')
->>> andrew.name = 'sabdfl'
->>> try: ztm.commit()
-... except DatabaseError: print sys.exc_value
-ERROR:  duplicate ... violates unique constraint "person_name_key"
-<BLANKLINE>
-UPDATE Person SET name = 'sabdfl' WHERE id = 7
->>> ztm.begin()
->>> ztm.abort()
+We can commit transactions:
 
-By default, our connection is reset at the end of every transaction.  That
-means that any session state, such as temporary tables, is lost when we
-commit.
+    >>> c.execute("UPDATE person SET name = 'something' WHERE id = 1")
+    >>> ztm.commit()
 
-Say we create a temporary table called "anothertesttable," which did not exist
-before.
+We can also explicitly start transactions with begin(), and abort
+transactions:
 
->>> from canonical.database.sqlbase import cursor
->>> test_table = "anothertesttable"
->>> cursor().execute("SELECT count(*) FROM %s" % test_table)
-Traceback (most recent call last):
-...
-ProgrammingError: ERROR: relation "..." does not exist
-...
+    >>> ztm.begin()
+    >>> c = cursor()
+    >>> c.execute("UPDATE person SET name = 'blah' WHERE id = 1")
+    >>> ztm.abort()
+    >>> c = cursor()
+    >>> c.execute("SELECT name FROM person WHERE id = 1")
+    >>> print c.fetchone()[0]
+    something
 
->>> ztm.abort()
->>> ztm.begin()
->>> cur = cursor()
->>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
->>> cur.execute("SELECT count(*) FROM %s" % test_table)
->>> print cur.fetchone()
-(0L,)
+The uninstall() method can be used to uninstall the transaction
+manager:
 
-If we commit, the temporary table will be destroyed as our connection is
-reset.  By default a temporary table will survive a commit, but not the end
-of a connection.
+    >>> ztm.uninstall()
+    >>> print ZopelessTransactionManager._installed
+    None
 
->>> ztm.commit()
->>> ztm.begin()
->>> cur = cursor()
->>> cur.execute("SELECT count(*) FROM %s" % test_table)
-Traceback (most recent call last):
-...
-ProgrammingError: ERROR: relation "..." does not exist
-...
+We can log in as alternative users with initZopeless():
 
-The exact same thing happens when a transaction is aborted: temporary tables
-are destroyed.
+    >>> ztm = initZopeless(dbuser='testadmin')
+    >>> c = cursor()
+    >>> c.execute("SELECT current_user")
+    >>> print c.fetchone()[0]
+    testadmin
+    >>> ztm.uninstall()
 
->>> ztm.abort()
->>> ztm.begin()
->>> cur = cursor()
->>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
->>> cur.execute("SELECT count(*) FROM %s" % test_table)
->>> print cur.fetchone()
-(0L,)
+Or we can specify other transaction isolation modes:
 
->>> ztm.abort()
->>> ztm.begin()
->>> cur = cursor()
->>> cur.execute("SELECT count(*) FROM %s" % test_table)
-Traceback (most recent call last):
-...
-ProgrammingError: ERROR: relation "..." does not exist
-...
-
-The automatic resetting of connections is controlled by a Boolean field called
-reset_after_transaction.
-
->>> ztm.reset_after_transaction
-True
-
-When we disable the automatic resetting of connections, the connection remains
-active across transactions.  We don't normally do this because resetting the
-transaction doesn't cost much and guards us against leaks and such.  It may be
-necessary, however, in cases where temporary tables must live across
-transactions such as while copying large amounts of data.
-
->>> ztm.reset_after_transaction = False
->>> ztm.abort()
->>> ztm.begin()
->>> cur = cursor()
->>> cur.execute("CREATE TEMP TABLE %s (col integer)" % test_table)
->>> cur.execute("SELECT count(*) FROM %s" % test_table)
->>> print cur.fetchone()
-(0L,)
->>> ztm.commit()
->>> ztm.begin()
->>> cur.execute("SELECT count(*) FROM %s" % test_table)
->>> print cur.fetchone()
-(0L,)
-
->>> ztm.begin()
->>> ztm.abort()
->>> cur.execute("SELECT count(*) FROM %s" % test_table)
->>> print cur.fetchone()
-(0L,)
-
-Cleanup -- make sure this doctest leaves things in the same state it found
-them.
-
->>> ztm.reset_after_transaction = False
->>> ztm.uninstall()
->>> from canonical.testing import DatabaseLayer
->>> DatabaseLayer.force_dirty_database()
+    >>> from canonical.database.sqlbase import (
+    ...     ISOLATION_LEVEL_SERIALIZABLE)
+    >>> ztm = initZopeless(dbuser='librarian',
+    ...                    isolation=ISOLATION_LEVEL_SERIALIZABLE)
+    >>> c = cursor()
+    >>> c.execute("SHOW transaction_isolation")
+    >>> print c.fetchone()[0]
+    serializable
+    >>> ztm.uninstall()
 

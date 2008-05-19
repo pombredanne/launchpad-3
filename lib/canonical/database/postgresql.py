@@ -32,10 +32,10 @@ def listReferences(cur, table, column, _state=None):
 
     >>> for r in listReferences(cur, 'a', 'aid'):
     ...     print repr(r)
-    ('a', 'selfref', 'a', 'aid', u'a', u'a')
-    ('b', 'aid', 'a', 'aid', u'c', u'c')
-    ('c', 'aid', 'b', 'aid', u'a', u'a')
-    ('d', 'aid', 'b', 'aid', u'a', u'a')
+    (u'a', u'selfref', u'a', u'aid', u'a', u'a')
+    (u'b', u'aid', u'a', u'aid', u'c', u'c')
+    (u'c', u'aid', u'b', u'aid', u'a', u'a')
+    (u'd', u'aid', u'b', u'aid', u'a', u'a')
 
     Of course, there might not be any references
 
@@ -101,26 +101,26 @@ def listUniques(cur, table, column):
     Simple UNIQUE index
 
     >>> listUniques(cur, 'b', 'aid')
-    [('aid',)]
+    [(u'aid',)]
 
     Primary keys are UNIQUE indexes too
 
     >>> listUniques(cur, 'a', 'aid')
-    [('aid',)]
+    [(u'aid',)]
 
     Compound indexes
 
     >>> listUniques(cur, 'c', 'aid')
-    [('aid', 'bid')]
+    [(u'aid', u'bid')]
     >>> listUniques(cur, 'c', 'bid')
-    [('aid', 'bid')]
+    [(u'aid', u'bid')]
 
     And any combination
 
     >>> l = listUniques(cur, 'd', 'aid')
     >>> l.sort()
     >>> l
-    [('aid',), ('aid', 'bid')]
+    [(u'aid',), (u'aid', u'bid')]
 
     If there are no UNIQUE indexes using the secified column
 
@@ -181,8 +181,8 @@ def listSequences(cur):
 
     >>> for r in listSequences(cur):
     ...     print repr(r)
-    ('public', 'a_aid_seq', 'a', 'aid')
-    ('public', 'standalone', None, None)
+    (u'public', u'a_aid_seq', u'a', u'aid')
+    (u'public', u'standalone', None, None)
 
     """
     sql = """
