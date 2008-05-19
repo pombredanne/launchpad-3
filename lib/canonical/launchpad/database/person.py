@@ -3252,12 +3252,12 @@ class WikiNameSet:
         """See `IWikiNameSet`."""
         return WikiName.selectBy(person=person)
 
-    def get(self, id, default=None):
+    def get(self, id):
         """See `IWikiNameSet`."""
-        wiki = WikiName.selectOneBy(id=id)
-        if wiki is None:
-            return default
-        return wiki
+        try:
+            return WikiName.get(id)
+        except SQLObjectNotFound:
+            return None
 
     def new(self, person, wiki, wikiname):
         """See `IWikiNameSet`."""
@@ -3285,12 +3285,9 @@ class JabberIDSet:
         """See `IJabberIDSet`"""
         return JabberID(person=person, jabberid=jabberid)
 
-    def getByJabberID(self, jabberid, default=None):
+    def getByJabberID(self, jabberid):
         """See `IJabberIDSet`"""
-        jabber = JabberID.selectOneBy(jabberid=jabberid)
-        if jabber is None:
-            return default
-        return jabber
+        return JabberID.selectOneBy(jabberid=jabberid)
 
     def getByPerson(self, person):
         """See `IJabberIDSet`"""
@@ -3314,7 +3311,10 @@ class IrcIDSet:
 
     def get(self, id):
         """See `IIrcIDSet`"""
-        return IrcID.selectOneBy(id=id)
+        try:
+            return IrcID.get(id)
+        except SQLObjectNotFound:
+            return None
 
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""

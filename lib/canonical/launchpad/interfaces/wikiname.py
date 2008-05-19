@@ -49,15 +49,11 @@ class IWikiNameSet(Interface):
     def getAllWikisByPerson(person):
         """Return all WikiNames of the given person."""
 
-    def get(id, default=None):
-        """Return the WikiName with the given id.
-
-        Return the default value if nof found.
-        """
+    def get(id):
+        """Return the WikiName with the given id or None."""
 
     def new(person, wiki, wikiname):
         """Create a new WikiName pointing to the given Person."""
 
     def exists(wikiname, wiki=UBUNTU_WIKI_URL):
         """Does a given wikiname & wiki pair already exist?"""
-
