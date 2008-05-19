@@ -30,7 +30,7 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-    FunctionalLayer)
+    FunctionalLayer, GoogleServiceLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -760,6 +760,10 @@ special = {
             '../doc/standing.txt',
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
+            ),
+    'google-service-stub.txt': LayeredDocFileSuite(
+            '../doc/google-service-stub.txt',
+            layer=GoogleServiceLayer,
             ),
     }
 
