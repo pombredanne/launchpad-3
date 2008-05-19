@@ -200,6 +200,14 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
 
+    def newFromProductSeries(self, product_series):
+        """Create a new CodeImport from the import data in a ProductSeries.
+
+        Note that this method deactivates the import associated with the given
+        ProductSeries, which is asserted to be in the TESTING, PROCESSING or
+        SYNCING import states.
+        """
+
     def getAll():
         """Return an iterable of all CodeImport objects."""
 

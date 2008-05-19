@@ -28,10 +28,10 @@ from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    BranchCreationException, BranchType, CodeImportReviewStatus,
-    CodeImportJobState, IBranchSet,
-    ICodeImport, ICodeImportEventSet, ICodeImportSet,
-    ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
+    BranchCreationException, BranchType, CodeImportJobState,
+    CodeImportReviewStatus, IBranchSet, ICodeImport, ICodeImportEventSet,
+    ICodeImportSet, ILaunchpadCelebrities, ImportStatus, NotFoundError,
+    RevisionControlSystems)
 from canonical.launchpad.mailout.codeimport import code_import_status_updated
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -199,6 +199,68 @@ class CodeImportSet:
         # If created in the reviewd state, create a job.
         if review_status == CodeImportReviewStatus.REVIEWED:
             CodeImportJobWorkflow().newJob(code_import)
+
+        return code_import
+
+    def newFromProductSeries(self, product_series):
+        """See `ICodeImportSet`."""
+        date_created = min(
+            product_series.dateautotested, product_series.dateprocessapproved)
+
+        _vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+
+        if product_series.import_branch is not None:
+            branch = product_series.import_branch
+        else:
+            branch_set = getUtility(IBranchSet)
+            if branch_set.getBranch(
+                _vcs_imports, product_series.product, product_series.name):
+                # XXX What do we do here?
+                raise BranchCreationException(
+                    "A branch already exists for the %s project owned by "
+                    "vcs-imports with the name %s" % (
+                    product_series.product.name, product_series.name))
+            branch = branch_set.new(
+                branch_type=BranchType.IMPORTED, name=product_series.name,
+                registrant=_vcs_imports, owner=_vcs_imports,
+                product=product_series.product, url=None)
+
+        registrant = _vcs_imports
+        owner = _vcs_imports
+        assignee = None
+
+        status = product_series.importstatus
+        if status == ImportStatus.TESTING:
+            review_status = CodeImportReviewStatus.NEEDS_REVIEW
+        elif status in [ImportStatus.PROCESSING, ImportStatus.SYNCING]:
+            review_status = CodeImportReviewStatus.REVIEWED
+        else:
+            raise AssertionError("Invalid status %r." % status)
+
+        rcs_type = product_series.rcstype
+        if rcs_type == RevisionControlSystems.CVS:
+            cvs_root = product_series.cvsroot
+            cvs_module = product_series.cvsmodule
+        elif rcs_type == RevisionControlSystems.SVN:
+            svn_branch_url = product_series.svnrepository
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcs_type)
+        date_last_successful = product_series.datelastsynced
+        update_interval = None
+
+        code_import = CodeImport(
+            date_created=date_created, branch=branch, registrant=registrant,
+            owner=owner, assignee=assignee, rcs_type=rcs_type,
+            svn_branch_url=svn_branch_url, cvs_root=cvs_root,
+            cvs_module=cvs_module, review_status=review_status,
+            date_last_successful=date_last_successful,
+            update_interval=update_interval)
+
+        # We deliberately don't fire an object created event or call
+        # newCreate.
+
+        # XXX Record association between the new code import and the
+        # productseries here!
 
         return code_import
 
