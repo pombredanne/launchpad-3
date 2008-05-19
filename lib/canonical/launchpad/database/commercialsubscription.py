@@ -17,7 +17,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import ICommercialSubscription
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class CommercialSubscription(SQLBase):
@@ -31,10 +31,10 @@ class CommercialSubscription(SQLBase):
     date_expires = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None,
-        validator=public_person_validator)
+        storm_validator=validate_public_person)
     purchaser = ForeignKey(
         dbName='purchaser', foreignKey='Person', default=None,
-        validator=public_person_validator)
+        storm_validator=validate_public_person)
     sales_system_id = StringCol(notNull=True)
     whiteboard = StringCol(default=None)
 

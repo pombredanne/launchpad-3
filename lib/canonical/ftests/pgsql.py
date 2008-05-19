@@ -169,7 +169,7 @@ class PgTestSetup(object):
 
     def generateResetSequencesSQL(self):
         """Return a SQL statement that resets all sequences."""
-        con = psycopg.connect(self._connectionString(self.dbname))
+        con = psycopg2.connect(self._connectionString(self.dbname))
         cur = con.cursor()
         try:
             return generateResetSequencesSQL(cur)
