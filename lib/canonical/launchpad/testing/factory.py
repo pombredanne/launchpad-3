@@ -486,6 +486,10 @@ class LaunchpadObjectFactory:
                                     svn_branch_url=None, cvs_root=None,
                                     cvs_module=None,
                                     source_product_series_id=0):
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:

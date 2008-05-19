@@ -122,6 +122,10 @@ class CodeImportSourceDetails:
         self.svn_branch_url = svn_branch_url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
         self.source_product_series_id = source_product_series_id
 
     @classmethod
@@ -129,6 +133,10 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
         source_product_series_id = int(arguments.pop(0))
         if rcstype == 'svn':
             [svn_branch_url] = arguments
@@ -145,6 +153,10 @@ class CodeImportSourceDetails:
     @classmethod
     def fromCodeImport(cls, code_import):
         """Convert a `CodeImport` to an instance."""
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
         source_product_series_id = 0
         if code_import.rcs_type == RevisionControlSystems.SVN:
             rcstype = 'svn'
@@ -247,6 +259,10 @@ class ForeignTreeStore:
             return self.fetchFromArchive(source_details, target_path)
         except NoSuchFile:
             try:
+                # XXX: MichaelHudson 2008-05-19 bug=231819: This code is to do
+                # with the new system looking in legacy locations for foreign
+                # trees and can be deleted when the new system has been
+                # running for a while.
                 return self.fetchFromOldLocationAndUploadToNewLocation(
                     source_details, target_path)
             except NoSuchFile:
@@ -272,6 +288,9 @@ class ForeignTreeStore:
     def fetchFromOldLocationAndUploadToNewLocation(self, source_details,
                                                    target_path):
         """Transitional code."""
+        # XXX: MichaelHudson 2008-05-19 bug=231819: This code is to do with
+        # the new system looking in legacy locations for foreign trees and can
+        # be deleted when the new system has been running for a while.
         if source_details.source_product_series_id == 0:
             raise NoSuchFile("")
         old_tarball_name = self._getOldTarballName(source_details)

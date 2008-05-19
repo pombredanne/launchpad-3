@@ -299,8 +299,11 @@ class TestForeignTreeStore(WorkerTest):
     def copyCreatingDirectories(self, transport, relpath, source_file):
         """Copy `source_file` onto `transport`, creating prefix directories.
         """
+        # XXX: MichaelHudson 2008-05-19 bug=231819: This method is only used
+        # when testing that the new system looks in legacy locations and can
+        # be deleted when the new system has been running for a while.
         assert relpath.count('/') == 1, (
-            "This function is only partially implemented")
+            "This function is only partially implemented!")
         dirname, filename = os.path.split(relpath)
         transport.ensure_base()
         transport.mkdir(dirname)
@@ -310,6 +313,10 @@ class TestForeignTreeStore(WorkerTest):
         # fetchFromOldLocationAndUploadToNewLocation looks for a Subversion
         # working tree in the legacy location and uploads it to the modern
         # location.
+        # XXX: MichaelHudson 2008-05-19 bug=231819: This test and the code it
+        # is testing are to do with the new system looking in legacy locations
+        # for foreign trees and can be deleted when the new system has been
+        # running for a while.
         store = self.makeForeignTreeStore()
         self.build_tree_contents([('svnworking/',), ('svnworking/file', 'contents')])
         create_tarball('svnworking', 'svnworking.tgz')
@@ -326,6 +333,10 @@ class TestForeignTreeStore(WorkerTest):
     def test_fetchFromOldLocation_cvs(self):
         # fetchFromOldLocationAndUploadToNewLocation looks for a CVS working
         # tree in the legacy location and uploads it to the modern location.
+        # XXX: MichaelHudson 2008-05-19 bug=231819: This test and the code it
+        # is testing are to do with the new system looking in legacy locations
+        # for foreign trees and can be deleted when the new system has been
+        # running for a while.
         store = self.makeForeignTreeStore()
         self.build_tree_contents([('cvsworking/',), ('cvsworking/file', 'contents')])
         create_tarball('cvsworking', 'cvsworking.tgz')
