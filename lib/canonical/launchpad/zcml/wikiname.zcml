@@ -24,6 +24,6 @@
         for="canonical.launchpad.interfaces.IWikiName"
         path_expression="string:+wikiname/${id}"
         attribute_to_parent="person"
-        rootsite="mainsite" />
+        rootsite="api" />
 
 </configure>

@@ -18,7 +18,7 @@ from canonical.lazr.rest.declarations import export_as_webservice_entry
 
 
 class IIrcID(Interface):
-    """Wiki for Users"""
+    """A person's nickname on an IRC network."""
     export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
@@ -26,14 +26,14 @@ class IIrcID(Interface):
     nickname = TextLine(title=_("Nickname"), required=True)
 
     def destroySelf():
-        """Delete this IrcId from the database."""
+        """Delete this `IIrcID` from the database."""
 
 
 class IIrcIDSet(Interface):
-    """The set of IrcIDs."""
+    """The set of `IIrcID`s."""
 
     def new(person, network, nickname):
-        """Create a new IrcID pointing to the given Person."""
+        """Create a new `IIrcID` pointing to the given Person."""
 
     def get(id):
         """Return the `IIrcID` with the given id or None."""

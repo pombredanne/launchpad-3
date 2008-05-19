@@ -24,6 +24,6 @@
         for="canonical.launchpad.interfaces.IJabberID"
         path_expression="string:+jabberid/${jabberid}"
         attribute_to_parent="person"
-        rootsite="mainsite" />
+        rootsite="api" />
 
 </configure>

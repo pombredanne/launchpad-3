@@ -24,6 +24,6 @@
         for="canonical.launchpad.interfaces.IIrcID"
         path_expression="string:+ircnick/${id}"
         attribute_to_parent="person"
-        rootsite="mainsite" />
+        rootsite="api" />
 
 </configure>

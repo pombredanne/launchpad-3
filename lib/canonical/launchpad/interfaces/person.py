@@ -502,6 +502,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     languages = exported(
         CollectionField(
             title=_('List of languages known by this person'),
+            readonly=True, required=False,
             value_type=Object(schema=ILanguage)))
     translatable_languages = Attribute(
         _('Languages this person knows, apart from English'))
@@ -586,14 +587,17 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "All WikiNames of this Person that are not the Ubuntu one.")
     allwikis = exported(
         CollectionField(title=_("All WikiNames of this Person."),
+                        readonly=True, required=False,
                         value_type=Object(schema=IWikiName)),
         exported_as='wiki_names')
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
+                        readonly=True, required=False,
                         value_type=Object(schema=IIrcID)),
         exported_as='irc_nicknames')
     jabberids = exported(
         CollectionField(title=_("List of Jabber IDs of this Person."),
+                        readonly=True, required=False,
                         value_type=Object(schema=IJabberID)),
         exported_as='jabber_ids')
     branches = Attribute(
@@ -609,7 +613,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_("All `ITeamMembership`s for Teams this Person is an "
                     "active member of."),
-            value_type=Object(schema=ITeamMembership)),
+            value_type=Object(schema=ITeamMembership),
+            readonly=True, required=False),
         exported_as='team_memberships')
     member_memberships = exported(
         CollectionField(
@@ -618,6 +623,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 "Active TeamMemberships are the ones with the ADMIN or "
                 "APPROVED status.  The results are ordered using "
                 "Person.sortingColumns."),
+            readonly=True, required=False,
             value_type=Object(schema=ITeamMembership)))
 
     open_membership_invitations = exported(
@@ -625,14 +631,17 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             title=_('Open membership invitations.'),
             description=_("All TeamMemberships which represent an invitation "
                           "(to join a team) sent to this person."),
+            readonly=True, required=False,
             value_type=Object(schema=ITeamMembership)))
     teams_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is a participant.'),
+            readonly=True, required=False,
             value_type=Object(schema=ITeamMembership)))
     teams_indirectly_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is an indirect member.'),
+            readonly=True, required=False,
             value_type=Object(schema=ITeamMembership)))
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
@@ -645,6 +654,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             title=_("Confirmed e-mails of this person."),
             description=_(
                 "Confirmed e-mails are the ones in the VALIDATED state"),
+            readonly=True, required=False,
             value_type=Object(schema=IEmailAddress)),
         exported_as='confirmed_email_addresses')
     unvalidatedemails = Attribute(
@@ -681,10 +691,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       readonly=True)
 
     preferredemail = exported(
-        Object(title=_("Preferred email address"), readonly=True,
+        Object(title=_("Preferred email address"),
                description=_("The preferred email address for this person. "
                              "The one we'll use to communicate with them."),
-               schema=IEmailAddress),
+               readonly=True, required=False, schema=IEmailAddress),
         exported_as='preferred_email_address')
 
     safe_email_or_blank = TextLine(
