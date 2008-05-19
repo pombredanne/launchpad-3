@@ -232,27 +232,33 @@ class CodeImportSet:
                 % series.importstatus.name)
         return last_successful
 
+    def _dateCreatedFromProductSeries(self, series):
+        """Make up a date_created field for the new code import.
+
+        This returns the longest ago of whichever of
+        series.dateprocessapproved and series.dateautotested have been set, or
+        DEFAULT if neither have."""
+        candidates = [date for date in (series.dateprocessapproved,
+                                        series.dateautotested)
+                      if date is not None]
+        if candidates:
+            return min(candidates)
+        else:
+            return DEFAULT
+
     def newFromProductSeries(self, product_series):
         """See `ICodeImportSet`."""
-        # ???
-        date_created = min(
-            product_series.dateautotested, product_series.dateprocessapproved)
-        from canonical.database.constants import DEFAULT as date_created
+        date_created = self._dateCreatedFromProductSeries(product_series)
 
         _vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
 
         if product_series.import_branch is not None:
             branch = product_series.import_branch
         else:
-            branch_set = getUtility(IBranchSet)
-            if branch_set.getBranch(
-                _vcs_imports, product_series.product, product_series.name):
-                # XXX What do we do here?
-                raise BranchCreationException(
-                    "A branch already exists for the %s project owned by "
-                    "vcs-imports with the name %s" % (
-                    product_series.product.name, product_series.name))
-            branch = branch_set.new(
+            # Note that it is possible, although unlikely, for there to be a
+            # branch with this name already, so this can raise
+            # BranchCreationException.
+            branch = getUtility(IBranchSet).new(
                 branch_type=BranchType.IMPORTED, name=product_series.name,
                 registrant=_vcs_imports, owner=_vcs_imports,
                 product=product_series.product, url=None)
@@ -278,6 +284,15 @@ class CodeImportSet:
             cvs_module=cvs_module, review_status=review_status,
             date_last_successful=date_last_successful,
             update_interval=update_interval)
+
+        product_series.markStopped()
+
+        if product_series.import_branch:
+            if product_series.user_branch is None:
+                from zope.security.proxy import removeSecurityProxy
+                removeSecurityProxy(product_series).user_branch = \
+                    product_series.import_branch
+            product_series.import_branch = None
 
         # We deliberately don't fire an object created event or call
         # newCreate.

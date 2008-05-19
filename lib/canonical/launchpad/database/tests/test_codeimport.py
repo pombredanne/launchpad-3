@@ -9,6 +9,7 @@ import pytz
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
+from canonical.codehosting.codeimport.publish import ensure_series_branch
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.codeimportevent import CodeImportEvent
 from canonical.launchpad.database.codeimportjob import (
@@ -426,22 +427,37 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
         self.assertDateLastSuccessfulIsReturned(ImportStatus.STOPPED)
 
 
-class TestCreateCodeImport(unittest.TestCase):
-    """Test that `CodeImportSync.createCodeImport` creates a CodeImport with
-    the right values from a given ProductSeries.
-    """
+class TestNewFromProductSeries(unittest.TestCase):
+    """Tests for `CodeImportSet.newFromProductSeries`."""
+
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         self.code_import_set = getUtility(ICodeImportSet)
         self.factory = LaunchpadObjectFactory()
+        # Log in a vcs import member.
         login('david.allouche@canonical.com')
 
-    def createTestingSeries(self, name):
+    def tearDown(self):
+        logout()
+
+    def createTestingSeries(self):
         """Create an import series in with TESTING importstatus."""
-        series = self.factory.makeSeries(name=name)
+        series = self.factory.makeSeries()
         series.importstatus = ImportStatus.TESTING
         self.updateSeriesWithSubversion(series)
+        # ProductSeries may have datelastsynced for any importstatus, but it
+        # must only be copied to the CodeImport in some cases.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(series).datelastsynced = \
+            datetime(2000, 1, 1, 0, 0, 0, tzinfo=pytz.UTC)
+        return series
+
+    def createSyncingSeries(self):
+        series = self.factory.makeSeries()
+        series.importstatus = ImportStatus.SYNCING
+        self.updateSeriesWithSubversion(series)
+        ensure_series_branch(series)
         # ProductSeries may have datelastsynced for any importstatus, but it
         # must only be copied to the CodeImport in some cases.
         from zope.security.proxy import removeSecurityProxy
@@ -465,53 +481,100 @@ class TestCreateCodeImport(unittest.TestCase):
         series.cvsbranch = None
         series.svnrepository = 'svn://example.com/' + series.name
 
-    def assertImportMatchesSeries(self, code_import, series):
-        """Fail if the CodeImport is not consistent with the ProductSeries."""
+    def snapshotSeries(self, series):
+        """Take a snapshot of the ProductSeries `series`.
+
+        Because `newFromProductSeries` mutates the series it is passed, we
+        need to capture the state of the series before we call it.
+        """
+        return dict(
+            cvsmodule=series.cvsmodule,
+            cvsroot=series.cvsroot,
+            datelastsynced=series.datelastsynced,
+            import_branch=series.import_branch,
+            importstatus=series.importstatus,
+            rcstype=series.rcstype,
+            svnrepository=series.svnrepository,
+            )
+
+    def assertImportMatchesSeriesSnapshot(self, code_import, snapshot):
+        """Assert `code_import` is consistent with the `snapshot` of a series.
+
+        See `snapshotSeries`.
+        """
         # Since ProductSeries does not record who requested an import, all
         # CodeImports created by the sync script are recorded as registered by
         # the vcs-imports user.
         self.assertEqual(code_import.registrant.name, u'vcs-imports')
 
         # The VCS details must be identical.
-        self.assertEqual(code_import.rcs_type, series.rcstype)
-        self.assertEqual(code_import.svn_branch_url, series.svnrepository)
-        self.assertEqual(code_import.cvs_root, series.cvsroot)
-        self.assertEqual(code_import.cvs_module, series.cvsmodule)
+        self.assertEqual(code_import.rcs_type, snapshot['rcstype'])
+        self.assertEqual(code_import.svn_branch_url, snapshot['svnrepository'])
+        self.assertEqual(code_import.cvs_root, snapshot['cvsroot'])
+        self.assertEqual(code_import.cvs_module, snapshot['cvsmodule'])
 
         # dateLastSuccessfulFromProductSeries is carefully unit-testing in
         # TestDateLastSuccessfulFromProductSeries, so we can rely on it here.
+        stub_series = StubProductSeries()
+        stub_series.importstatus = snapshot['importstatus']
+        stub_series.datelastsynced = snapshot['datelastsynced']
         last_successful = \
-            CodeImportSet()._dateLastSuccessfulFromProductSeries(series)
+            CodeImportSet()._dateLastSuccessfulFromProductSeries(stub_series)
         self.assertEqual(code_import.date_last_successful, last_successful)
 
         # reviewStatusFromImportStatus is carefully unit-tested in
         # TestReviewStatusFromImportStatus, so we can rely on it here.
         review_status = CodeImportSet()._reviewStatusFromImportStatus(
-            series.importstatus)
+            snapshot['importstatus'])
         self.assertEqual(code_import.review_status, review_status)
 
-        # If series.import_branch is set, it should be the same as
+        # If series.import_branch was set, it should have been transferred to
         # code_import.branch.
-        if series.import_branch is not None:
-            self.assertEqual(code_import.branch, series.import_branch)
+        if snapshot['import_branch'] is not None:
+            self.assertEqual(code_import.branch, snapshot['import_branch'])
 
     def testSubversion(self):
         # Test correct creation of a CodeImport with Subversion details.
-        series = self.createTestingSeries('testing')
+        series = self.createTestingSeries()
+        snapshot = self.snapshotSeries(series)
         code_import = self.code_import_set.newFromProductSeries(series)
-        self.assertImportMatchesSeries(code_import, series)
+        self.assertImportMatchesSeriesSnapshot(code_import, snapshot)
 
-    def testTestingCvs(self):
+    def testCvs(self):
         # Test correct creation of CodeImport with CVS details.
-        series = self.createTestingSeries('testing')
+        series = self.createTestingSeries()
         self.updateSeriesWithCvs(series)
+        snapshot = self.snapshotSeries(series)
         code_import = self.code_import_set.newFromProductSeries(series)
-        self.assertImportMatchesSeries(code_import, series)
+        self.assertImportMatchesSeriesSnapshot(code_import, snapshot)
+
+    def testSyncingSeries(self):
+        # Test correct creation of CodeImport with from SYNCING series.
+        series = self.createSyncingSeries()
+        snapshot = self.snapshotSeries(series)
+        code_import = self.code_import_set.newFromProductSeries(series)
+        self.assertImportMatchesSeriesSnapshot(code_import, snapshot)
+
+    def testStopsSeries(self):
+        # When a code import is created from a series, that series is marked
+        # as STOPPED.
+        series = self.createSyncingSeries()
+        self.code_import_set.newFromProductSeries(series)
+        self.assertEqual(series.importstatus, ImportStatus.STOPPED)
+
+    def testClearsImportBranchSetsUserBranch(self):
+        # When a code import is created from a series, the series' user_branch
+        # is set to the value of the import_branch field, which is cleared.
+        series = self.createSyncingSeries()
+        series_branch = series.import_branch
+        self.code_import_set.newFromProductSeries(series)
+        self.assertEqual(series_branch, series.user_branch)
+        self.assertEqual(None, series.import_branch)
 
     def testBranchNameConflict(self):
         # If it is not possible to create an import branch using the standard
         # name ~vcs-imports/product/series, an error is raised.
-        series = self.createTestingSeries('testing')
+        series = self.createTestingSeries()
         # Create a branch with the standard name, but do not associate it with
         # the productseries, so we will attempt to create a new one.
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
