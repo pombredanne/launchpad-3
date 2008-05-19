@@ -292,6 +292,9 @@ class CodeImportSet:
 
         if product_series.import_branch:
             if product_series.user_branch is None:
+                # Rather than give ~vcs-imports the right to set the
+                # user_branch on any series, it seems cleaner to avoid the
+                # security machinery in this one location.
                 from zope.security.proxy import removeSecurityProxy
                 removeSecurityProxy(product_series).user_branch = \
                     product_series.import_branch

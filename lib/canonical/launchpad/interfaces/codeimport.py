@@ -204,8 +204,8 @@ class ICodeImportSet(Interface):
         """Create a new CodeImport from the import data in a ProductSeries.
 
         Note that this method deactivates the import associated with the given
-        ProductSeries, which is asserted to be in the TESTING, PROCESSING or
-        SYNCING import states.
+        ProductSeries, which is asserted to be in the AUTOTESTED, TESTING,
+        PROCESSING, SYNCING or STOPPED import states.
         """
 
     def getAll():
