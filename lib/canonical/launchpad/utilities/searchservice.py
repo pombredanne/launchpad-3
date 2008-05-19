@@ -43,9 +43,12 @@ class PageMatch:
     def url_rewrite_scheme(self):
         """The URL scheme used in rewritten URLs.
 
-        Configured in config.google.url_rewrite_scheme.
+        Configured in config.vhosts.use_https.
         """
-        return config.google.url_rewrite_scheme
+        if config.vhosts.use_https:
+            return 'https'
+        else:
+            return 'http'
 
     @property
     def url_rewrite_hostname(self):
@@ -110,18 +113,8 @@ class PageMatches:
         :param total: The total number of items that matched a search.
         """
         self._matches = matches
-        self._start = start
-        self._total = total
-
-    @property
-    def start(self):
-        """See `ISearchResults`."""
-        return self._start
-
-    @property
-    def total(self):
-        """See `ISearchResults`."""
-        return self._total
+        self.start = start
+        self.total = total
 
     def __len__(self):
         """See `ISearchResults`."""
@@ -133,8 +126,7 @@ class PageMatches:
 
     def __iter__(self):
         """See `ISearchResults`."""
-        for match in self._matches:
-            yield match
+        return iter(self._matches)
 
 
 class GoogleSearchService:
@@ -192,14 +184,22 @@ class GoogleSearchService:
         page_matches = self._parse_google_search_protocol(gsp_xml)
         return page_matches
 
-    def _checkParameter(self, name, value):
+    def _checkParameter(self, name, value, is_int=False):
         """Check that a parameter value is not None or an empty string."""
         if value in (None, ''):
-            raise GoogleParamError("Parameters must have values: %s." % name)
+            raise AssertionError("Missing value for parameter '%s'." % name)
+        if is_int:
+            try:
+                int(value)
+            except ValueError:
+                raise AssertionError(
+                    "Value for parameter '%s' is not an int." % name)
 
     def create_search_url(self, terms, start=0):
         """Return a Google search url."""
         self._checkParameter('q', terms)
+        self._checkParameter('start', start, is_int=True)
+        self._checkParameter('cx', self.client_id)
         safe_terms = urllib.quote_plus(terms.encode('utf8'))
         search_params = dict(self._default_values)
         search_params['q'] = safe_terms
@@ -208,7 +208,6 @@ class GoogleSearchService:
         search_param_list = []
         for name in sorted(search_params):
             value = search_params[name]
-            self._checkParameter(name, value)
             search_param_list.append('%s=%s' % (name, value))
         query_string = '&'.join(search_param_list)
         return self.site + '?' + query_string
@@ -222,10 +221,11 @@ class GoogleSearchService:
         :param doc: An ElementTree of an XML document.
         :param path: A string path to match the first element.
         :param name: The attribute name to check.
-        :param value: the string value of the named attribute.
+        :param value: The string value of the named attribute.
         """
         elements = doc.findall(path)
-        return [element for element in elements if element.get(name) == value]
+        return [element for element in elements
+                if element.get(name) == value]
 
     def _getElementByAttributeValue(self, doc, path, name, value):
         """Return the first element whose named attribute matches the value.
@@ -247,7 +247,6 @@ class GoogleSearchService:
         :return: `ISearchResults` (PageMatches).
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
-        error_message = "The xml is not Google Search Protocol version 3.2."
         gsp_doc = ET.fromstring(gsp_xml)
         start_param = self._getElementByAttributeValue(
             gsp_doc, './PARAM', 'name', 'start')
@@ -255,7 +254,8 @@ class GoogleSearchService:
             start = int(start_param.get('value'))
         except (AttributeError, ValueError):
             # The datatype is not what PageMatches requires.
-            raise GoogleWrongGSPVersion(error_message)
+            raise GoogleWrongGSPVersion(
+                "Could not get the 'start' from the GSP XML response.")
         page_matches = []
         total = 0
         results = gsp_doc.find('RES')
@@ -267,14 +267,17 @@ class GoogleSearchService:
             total = int(results.find('M').text)
         except (AttributeError, ValueError):
             # The datatype is not what PageMatches requires.
-            raise GoogleWrongGSPVersion(error_message)
+            raise GoogleWrongGSPVersion(
+                "Could not get the 'total' from the GSP XML response.")
         for result in results.findall('R'):
             try:
                 title = result.find('T').text
                 url = result.find('U').text
                 summary = result.find('S').text
-            except (AttributeError, ValueError):
+            except (AttributeError):
                 # There is not enough data to create a PageMatch object.
-                raise GoogleWrongGSPVersion(error_message)
+                raise GoogleWrongGSPVersion(
+                    "Could not get the 'title', 'url', and 'summary' from "
+                    "the GSP XML response.")
             page_matches.append(PageMatch(title, url, summary))
         return PageMatches(page_matches, start, total)

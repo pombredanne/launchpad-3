@@ -13,27 +13,40 @@ __all__ = [
     'GoogleWrongGSPVersion',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
+from zope.schema import Int, Text, TextLine, URI
+
+from canonical.launchpad import _
 
 
 class ISearchResult(Interface):
     """An item that matches a search query."""
 
-    title = Attribute('The title of the item.')
-    url = Attribute('The full URL of the item.')
-    summary = Attribute(
-        'A summary of the item, possibly with information about why '
-        'the item is considered to be a valid result for a search.')
+    title = TextLine(
+        title=_('Title'), required=True,
+        description=_('The title of the item.'))
+    url = URI(
+        title=_('URL'), required=True,
+        description=_('The full URL of the item.'))
+    summary = Text(
+        title=_('Title'), required=True,
+        description=_(
+            'A summary of the item, possibly with information about why the '
+            'item is considered to be a valid result for a search.'))
 
 
 class ISearchResults(Interface):
     """A collection of `ISearchResult` items that match a search query."""
 
-    total = Attribute('The total number of items that matched a search.')
-    start = Attribute(
-        'The index of the first item in the collection relative to the '
-        'total number of items. The collection may only contain a slice '
-        'of the total search results.')
+    total = Int(
+        title=_('Total'), required=True,
+        description=_('The total number of items that matched a search.'))
+    start = Int(
+        title=_('Start'), required=True,
+        description=_(
+            'The index of the first item in the collection relative to the '
+            'total number of items. The collection may only contain a slice '
+            'of the total search results.'))
 
     def __len__():
         """The number of items in the collection returned by the search."""

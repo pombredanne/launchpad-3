@@ -1355,6 +1355,7 @@ returned.
     [(u'Bass Players', u'David Allouche'),
      (u'Bazaar Experts', u'Tim Penhey'),
      (u'Canonical Partner Developers', u'Celso Providelo'),
+     (u'Commercial Subscription Admins', u'Commercial Member'),
      (u'Drummers', u'David Allouche'),
      (u'Flautists', u'David Allouche'),
      (u'GuadaMen', u'Foo Bar'),

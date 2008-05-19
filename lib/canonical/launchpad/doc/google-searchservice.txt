@@ -7,7 +7,7 @@ summary of the matching launchpad.net pages.
 
 == GoogleSearchService ==
 
-The GoogleSearchService implements the ISearchService.
+The GoogleSearchService implements the ISearchService interface.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
@@ -32,9 +32,9 @@ entered in Google search form; the terms should not be escaped.
     >>> first_page_matches
     <...PageMatches ...>
 
-The start parameter sets the number of first match (index from 0) of the
-list of page matches. The default value is 0, to get the first 20
-matching pages.
+The start parameter specifies the index (starting at 0) of the first
+result returned in the overall set of matches. Since 20 results are
+returned, to get the second batch of matches, you would use start=20.
 
     >>> second_page_matches = google_search.search(terms='bug', start=20)
     >>> second_page_matches
@@ -49,13 +49,17 @@ implements ISearchResults.
     >>> verifyObject(ISearchResults, first_page_matches)
     True
 
-ISearchResults defines a few useful attributes for working with search
-results. The total attribute is the number of results for the search,
-which is not necessarily the number in the returned collection. The
-start attribute is the index of the first item in the collection
-relative to the total number. The length of the collection is the actual
-number of items return. The search for 'bugs' returned all the
-items in a single ISearchResults.
+The 'total' attribute is the total number of matches that the search
+found. If that number is higher than 20, it means that multiple requests
+would be needed to retrieve the entire result set.
+
+The 'start' attribute is the index of the first returned item within the
+entire collection of matches. The 'length' attribute contains the number
+of returned results.
+
+The first search for 'bugs' returned a subset of items in the
+ISearchResult. There are 25 total items, but the results contains the
+first 20 matches (because they start at index 0).
 
     >>> first_page_matches.start
     0
@@ -64,9 +68,8 @@ items in a single ISearchResults.
     >>> len(first_page_matches)
     20
 
-The search for 'bugs' returned a subset of items in the ISearchResult.
-There are 25 total items, but the results contains 5, starting from
-index of 20.
+The second search for 'bugs' returned the remainder of the 25 matches.
+They start from index 20.
 
     >>> verifyObject(ISearchResults, second_page_matches)
     True
@@ -190,15 +193,20 @@ An error is raised if any of the parameters are None.
     >>> google_search.create_search_url('')
     Traceback (most recent call last):
      ...
-    GoogleParamError: Parameters must have values: q.
+    AssertionError: Missing value for parameter 'q'.
 
     >>> google_search.create_search_url(None)
     Traceback (most recent call last):
      ...
-    GoogleParamError: Parameters must have values: q.
+    AssertionError: Missing value for parameter 'q'.
+
+    >>> google_search.create_search_url('bugs', start='true')
+    Traceback (most recent call last):
+     ...
+    AssertionError: Value for parameter 'start' is not an int.
 
 The term parameter in this example can be defined by passing the term
-argument to the method. The argument is http quoted and used as the
+argument to the method. The argument is url encoded and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
@@ -252,12 +260,14 @@ nothing in the value attribute in the next test, so an error is raised.
     >>> google_search._parse_google_search_protocol(gsp_xml)
     Traceback (most recent call last):
      ...
-    GoogleWrongGSPVersion: The xml is not Google Search Protocol version 3.2.
+    GoogleWrongGSPVersion: Could not get the 'start' from the
+                           GSP XML response.
 
 The PageMatches's total attribute comes from the GSP XML element
 '<M>5</M>'. When it cannot be found and the value cast to an int,
-an error is raised. If Google were to use a '~' in the 'M' element
-to indicate the approximate total, an error would be raised.
+an error is raised. If Google were to redefine the meaning of the M
+element to use a '~' to indicate an approximate total, an error would
+be raised.
 
     >>> gsp_xml_file_name = path.join(
     ...     base_path, 'googlesearchservice-incompatible-matches.xml')
@@ -272,7 +282,8 @@ to indicate the approximate total, an error would be raised.
     >>> google_search._parse_google_search_protocol(gsp_xml)
     Traceback (most recent call last):
      ...
-    GoogleWrongGSPVersion: The xml is not Google Search Protocol version 3.2.
+    GoogleWrongGSPVersion: Could not get the 'total' from the
+                           GSP XML response.
 
 A PageMatch requires a title, url, and a summary. If those elements
 ('<T>', '<U>', '<S>') cannot be found nested in an '<R>' element
@@ -304,17 +315,18 @@ a 'url' element.
     >>> google_search._parse_google_search_protocol(gsp_xml)
     Traceback (most recent call last):
      ...
-    GoogleWrongGSPVersion: The xml is not Google Search Protocol version 3.2.
+    GoogleWrongGSPVersion: Could not get the 'title', 'url', and 'summary'
+                           from the GSP XML response.
 
 
 === URL rewriting ===
 
 The URL scheme used in the rewritten URL is configured in
-config.google.url_rewrite_scheme. The hostname is set in shared
+config.google.url_rewrite_scheme. The hostname is set in the shared
 key config.vhost.mainsite.hostname.
 
-    >>> config.google.url_rewrite_scheme == page_match.url_rewrite_scheme
-    True
+    >>> config.vhosts.use_https
+    False
     >>> page_match.url_rewrite_scheme
     'http'
 
