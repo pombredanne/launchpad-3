@@ -671,7 +671,8 @@ class TestNewFromProductSeries(unittest.TestCase):
 
         # The VCS details must be identical.
         self.assertEqual(code_import.rcs_type, snapshot['rcstype'])
-        self.assertEqual(code_import.svn_branch_url, snapshot['svnrepository'])
+        self.assertEqual(
+            code_import.svn_branch_url, snapshot['svnrepository'])
         self.assertEqual(code_import.cvs_root, snapshot['cvsroot'])
         self.assertEqual(code_import.cvs_module, snapshot['cvsmodule'])
 

@@ -226,7 +226,8 @@ class CodeImportSet:
         # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
         # necessary for the transition from the old to the new code import
         # system, and should be deleted after that process is done.
-        if series.importstatus in (ImportStatus.SYNCING, ImportStatus.STOPPED):
+        if series.importstatus in (ImportStatus.SYNCING,
+                                   ImportStatus.STOPPED):
             last_successful = series.datelastsynced
         elif series.importstatus in (ImportStatus.TESTING,
                                      ImportStatus.AUTOTESTED,
