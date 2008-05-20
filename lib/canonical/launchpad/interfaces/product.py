@@ -11,8 +11,8 @@ __all__ = [
     'License',
     ]
 
-from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -83,7 +84,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
                IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget):
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
+               IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -241,22 +243,21 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         description=_("""Whether or not this project's attributes are
         updated automatically."""))
 
-    active = Bool(title=_('Active'), description=_("""Whether or not
-        this project is considered active."""))
-
-    reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
-        this project has been reviewed."""))
+    license_reviewed = Bool(
+        title=_('License reviewed'),
+        description=_("""Whether or not this project's license has been
+        reviewed. Editable only by reviewers (Admins & Commercial Admins).
+        """))
 
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
 
     reviewer_whiteboard = Text(
         title=_('Notes for the project reviewer'),
-        required=False, 
+        required=False,
         description=_(
-            "Notes on the project, viewable only by reviewers "
-            "(administrators and registry experts)."))
-
+            "Notes on the project's license, editable only by reviewers "
+            "(Admins & Commercial Admins)."))
 
     licenses = Set(
         title=_('Licenses'),
@@ -329,6 +330,36 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     aggregatetranslationpermission = Attribute("The translation permission "
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
+
+    commercial_subscription = Attribute("""
+        An object which contains the timeframe and the voucher
+        code of a subscription.""")
+
+    requires_commercial_subscription = Attribute("""
+        Whether the project's licensing requires a commercial
+        subscription to use launchpad.""")
+
+    is_permitted = Attribute("""
+        Whether the project's licensing qualifies for free
+        hosting or the project has an up-to-date subscription.""")
+
+    license_approved = Attribute("""
+        Whether a license is manually approved for free hosting
+        after automatic approval fails.""")
+
+    def redeemSubscriptionVoucher(voucher, registrant, purchaser,
+                                  subscription_months, whiteboard=None):
+        """Redeem a voucher and extend the subscription expiration date.
+
+        The voucher must have already been verified to be redeemable.
+        :param voucher: The voucher id as tracked in the external system.
+        :param registrant: Who is redeeming the voucher.
+        :param purchaser: Who purchased the voucher.  May not be known.
+        :param subscription_months: integer indicating the number of months
+            the voucher is for.
+        :param whiteboard: Notes for this activity.
+        :return: None
+        """
 
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
@@ -470,4 +501,3 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-

@@ -135,26 +135,6 @@ translations.
     >>> can_download_translations(gussie_browser)
     True
 
-The Hon. Freddie Threepwood is not an administrator and is not involved
-in the translation effort.  He is, however, a member of the team that
-is allowed to upload packages to Ubuntu.
-
-    >>> login('foo.bar@canonical.com')
-    >>> freddie = factory.makePerson(
-    ...     email='freddie@blandings.example.com', name='freddie',
-    ...     displayname='Freddie Threepwood', password='test')
-    >>> uploaders = factory.makeTeam(freddie)
-    >>> ubuntu.upload_admin = uploaders
-    >>> syncUpdate(ubuntu)
-    >>> logout()
-
-Freddie can download translations based on this qualification alone.
-
-    >>> freddie_browser = setupBrowser(
-    ...     auth='Basic freddie@blandings.example.com:test')
-    >>> can_download_translations(freddie_browser)
-    True
-
 
 == Making the request ==
 

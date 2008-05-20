@@ -17,3 +17,6 @@ TAGS
 cover.txt
 lint.txt
 .shelf
+sourcecode/launchpadlib/build
+sourcecode/launchpadlib/*.egg*
+sourcecode/launchpadlib/dist

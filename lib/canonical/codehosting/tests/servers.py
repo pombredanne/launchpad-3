@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
-from canonical.codehosting.transport import LaunchpadServer
+from canonical.codehosting.transport import BlockingProxy, LaunchpadServer
 
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 
@@ -243,7 +243,7 @@ class FakeLaunchpadServer(LaunchpadServer):
         # The backing transport is supplied during FakeLaunchpadServer.setUp.
         mirror_transport = get_transport(server.get_url())
         LaunchpadServer.__init__(
-            self, authserver, user_id, None, mirror_transport)
+            self, BlockingProxy(authserver), user_id, None, mirror_transport)
         self._schema = 'lp'
 
     def getTransport(self, path=None):
@@ -254,8 +254,7 @@ class FakeLaunchpadServer(LaunchpadServer):
 
     def setUp(self):
         from bzrlib.transport.memory import MemoryTransport
-        self.backing_transport = MemoryTransport()
-        self.authserver = FakeLaunchpad()
+        self._backing_transport = MemoryTransport()
         LaunchpadServer.setUp(self)
 
     def tearDown(self):

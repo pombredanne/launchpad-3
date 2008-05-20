@@ -10,15 +10,20 @@ __all__ = [
     ]
 
 
+from datetime import datetime, timedelta
+
+from pytz import UTC
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
+from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus,
     IBranchSet
     )
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
 
 
 def get_import_for_branch_name(branch_unique_name):
@@ -92,6 +97,7 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
     if code_import.import_job.state != CodeImportJobState.RUNNING:
         machine = factory.makeCodeImportMachine(set_online=True)
         CodeImportJobWorkflow().startJob(code_import.import_job, machine)
+        sync(code_import.import_job)
 
     CodeImportJobWorkflow().finishJob(code_import.import_job, status, None)
 
@@ -101,3 +107,19 @@ def make_finished_import(code_import=None, status=None, date_finished=None,
         naked_import.date_last_successful = date_finished
 
     return code_import
+
+
+def make_all_result_types(code_import=None, factory=None, machine=None):
+    """Make a code import result of each possible type for the code import."""
+    if factory is None:
+        factory = LaunchpadObjectFactory()
+    if code_import is None:
+        code_import = factory.makeCodeImport()
+    start_dates = time_counter(
+        datetime(2007,12,1,12, tzinfo=UTC), timedelta(days=1))
+    end_dates = time_counter(
+        datetime(2007,12,1,13, tzinfo=UTC), timedelta(days=1, hours=1))
+    for result_status in CodeImportResultStatus.items:
+        factory.makeCodeImportResult(
+            code_import, result_status, start_dates.next(), end_dates.next(),
+            machine=machine)

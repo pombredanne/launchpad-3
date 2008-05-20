@@ -138,7 +138,7 @@ class IArchive(IHasOwner):
         :param: name: source name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
         :param: version: source version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
         :param: distroseries: `IDistroSeries` filter.
         :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
@@ -147,10 +147,11 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    def getSourcesForDeletion(name=None):
+    def getSourcesForDeletion(name=None, status=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -249,6 +250,30 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
+    def canUpload(user, component_or_package=None):
+        """Check to see if user is allowed to upload to component.
+
+        :param user: An `IPerson` whom should be checked for authentication.
+        :param component_or_package: The context `IComponent` or an
+            `ISourcePackageName` for the check.  This parameter is
+            not required if the archive is a PPA.
+
+        :return: True if 'user' is allowed to upload to the specified
+            component or package name.
+        :raise TypeError: If component_or_package is not one of
+            `IComponent` or `ISourcePackageName`.
+
+        """
+
+    def canAdministerQueue(user, component):
+        """Check to see if user is allowed to administer queue items.
+
+        :param user: An `IPerson` whom should be checked for authenticate.
+        :param component: The context `IComponent` for the check.
+
+        :return: True if 'user' is allowed to administer the package upload
+        queue for items with 'component'.
+        """
 
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""

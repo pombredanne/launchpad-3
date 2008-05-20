@@ -27,7 +27,9 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import reset_logging
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -111,6 +113,7 @@ def LayeredDocFileSuite(*args, **kw):
         def tearDown(test):
             if kw_tearDown is not None:
                 kw_tearDown(test)
+            reset_logging()
             test._stdout_logger.uninstall()
         kw['tearDown'] = tearDown
 
@@ -171,6 +174,7 @@ def setGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
+    test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
 
 
 def setUp(test):

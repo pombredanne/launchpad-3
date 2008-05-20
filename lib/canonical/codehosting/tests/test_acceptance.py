@@ -15,7 +15,7 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
+    LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
@@ -98,7 +98,7 @@ class SSHTestCase(ServerTestCase):
             push_command.run, remote_url, local_directory)
         return output.getvalue()
 
-    def push(self, local_directory, remote_url):
+    def push(self, local_directory, remote_url, **options):
         """Push the local branch to the given URL.
 
         This method is used to test the end-to-end behaviour of pushing Bazaar
@@ -112,9 +112,10 @@ class SSHTestCase(ServerTestCase):
         output = StringIO()
         push_command = cmd_push()
         push_command.outf = output
+        options['location'] = remote_url
         self.runInChdir(
             local_directory,
-            self.server.runAndWaitForDisconnect, push_command.run, remote_url)
+            self.server.runAndWaitForDisconnect, push_command.run, **options)
         return output.getvalue()
 
     def getLastRevision(self, remote_url):
@@ -456,7 +457,7 @@ class AcceptanceTests(SSHTestCase):
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.push(self.local_branch_path, remote_url)
+        self.push(self.local_branch_path, remote_url, use_existing_dir=True)
         self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     @defer_to_thread
@@ -472,7 +473,7 @@ class AcceptanceTests(SSHTestCase):
         # we care about is the one that cmd_push raises.
         self.captureStderr(
             self.assertRaises,
-            (BzrCommandError, TransportNotPossible),
+            (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
         # XXX: JonathanLange 2008-04-07: In the SFTP test, the authserver logs
         # a fault which comes back to us (although a little undesirable). Here
@@ -489,7 +490,7 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertRaises(
-            (BzrCommandError, TransportNotPossible),
+            (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
     @defer_to_thread
@@ -507,7 +508,7 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertRaises(
-            (BzrCommandError, TransportNotPossible),
+            (PermissionDenied, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
     @defer_to_thread
@@ -593,7 +594,7 @@ class SmartserverTests(SSHTestCase):
         # unit tests).
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
         error = self.assertTransportRaises(
-            TransportNotPossible,
+            PermissionDenied,
             self.push, self.local_branch_path, remote_url)
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
@@ -623,10 +624,8 @@ def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
 
-    # XXX: Disabling the AcceptanceTests tests due to them failing
-    #      intermittently. Bug 221762. -- Bjorn Tillenius, 2008-04-25
-    #suite.addTest(make_server_tests(
-    #        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(
+        base_suite, [make_sftp_server, make_bzr_ssh_server]))
 
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))

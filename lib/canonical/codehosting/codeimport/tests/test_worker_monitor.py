@@ -1,8 +1,10 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Tests for the CodeImportWorkerMonitor and related classes."""
 
 __metaclass__ = type
+__all__ = [
+    'nuke_codeimport_sample_data']
 
 
 import os
@@ -30,7 +32,6 @@ from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer, _make_silent_logger)
 from canonical.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
-from canonical.database.sqlbase import commit
 from canonical.launchpad.database import CodeImport, CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
@@ -134,8 +135,7 @@ class TestWorkerMonitorUnit(TestCase):
         """Return the `CodeImportResult`s for the `CodeImport` we created.
         """
         code_import = getUtility(ICodeImportSet).get(self.code_import_id)
-        return getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import)
+        return code_import.results
 
     def getOneResultForOurCodeImport(self):
         """Return the only `CodeImportResult` for the `CodeImport` we created.
@@ -163,7 +163,8 @@ class TestWorkerMonitorUnit(TestCase):
         self.worker_monitor = self.WorkerMonitor(
             job.id, _make_silent_logger())
         self.worker_monitor._failures = []
-        commit()
+        self.layer.txn.commit()
+        self.layer.switchDbUser('codeimportworker')
 
     def test_getJob(self):
         # getJob() returns the job whose id we passed to the constructor.
@@ -332,7 +333,8 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         self.worker_monitor = self.WorkerMonitor(
             job.id, _make_silent_logger())
         self.worker_monitor.result_status = None
-        commit()
+        self.layer.txn.commit()
+        self.layer.switchDbUser('codeimportworker')
 
     @read_only_transaction
     def assertFinishJobCalledWithStatus(self, ignored, status):
@@ -372,24 +374,24 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         return self.worker_monitor.run()
 
 
+def nuke_codeimport_sample_data():
+    """Delete all the sample data that might interfere with tests."""
+    for job in CodeImportJob.select():
+        job.destroySelf()
+    for code_import in CodeImport.select():
+        code_import.destroySelf()
+
+
 class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     layer = TwistedLaunchpadZopelessLayer
 
-    def nukeCodeImportSampleData(self):
-        """Delete all the sample data that might interfere with tests."""
-        for job in CodeImportJob.select():
-            job.destroySelf()
-        for code_import in CodeImport.select():
-            code_import.destroySelf()
-
     def setUp(self):
         TestCaseWithMemoryTransport.setUp(self)
         self.factory = LaunchpadObjectFactory()
-        self.nukeCodeImportSampleData()
+        nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.repo_path)
-        self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeCVSCodeImport(self):
         """Make a `CodeImport` that points to a real CVS repository."""
@@ -427,15 +429,13 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
             {'review_status': CodeImportReviewStatus.REVIEWED},
             self.factory.makePerson())
         getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        job = getUtility(ICodeImportJobSet).getJobForMachine(self.machine)
+        job = getUtility(ICodeImportJobSet).getJobForMachine('machine')
         self.assertEqual(code_import, job.code_import)
         return job
 
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
-        results = list(getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import))
-        self.failUnlessEqual(len(results), 1)
+        self.failUnlessEqual(len(list(code_import.results)), 1)
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
@@ -462,6 +462,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
         This implementation does it in-process.
         """
+        self.layer.switchDbUser('codeimportworker')
         return CodeImportWorkerMonitor(job_id, _make_silent_logger()).run()
 
     def test_import_cvs(self):
@@ -469,7 +470,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
-        commit()
+        self.layer.txn.commit()
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
@@ -478,7 +479,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
-        commit()
+        self.layer.txn.commit()
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 

@@ -14,7 +14,7 @@
       set_attributes="displayname title summary description
                       translationgroup translationpermission
                       driver members owner
-                      security_contact upload_admin upload_sender
+                      security_contact
                       mirror_admin homepage_content icon logo
                       mugshot bug_reporting_guidelines"
       />
@@ -326,10 +326,6 @@
       template="../templates/object-milestones.pt"
       />
     <browser:page
-      name="+portlet-uploaders"
-      template="../templates/distribution-portlet-uploaders.pt"
-      />
-    <browser:page
       name="+portlet-bounties"
       template="../templates/object-portlet-bounties.pt"
       />
@@ -386,18 +382,6 @@
     facet="overview"
     template="../templates/object-branding.pt"
     />
-
-  <browser:editform
-    name="+uploadadmin"
-    for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.distribution.DistributionRedirectingEditView"
-    fields="upload_admin upload_sender"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/distribution-uploadadmin.pt"
-    >
-  </browser:editform>
 
   <browser:editform
     name="+selectmemberteam"

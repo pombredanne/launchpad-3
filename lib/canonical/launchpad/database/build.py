@@ -559,8 +559,21 @@ class Build(SQLBase):
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
-        if config.builddmaster.notify_owner:
+
+        # Please note that both the package creator and the package uploader
+        # will be notified of failures if:
+        #     * the 'notify_owner' flag is set
+        #     * the package build (failure) occurred in the original
+        #       archive.
+        package_was_not_copied = (
+            self.archive == self.sourcepackagerelease.upload_archive)
+
+        if package_was_not_copied and config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
+            dsc_key = self.sourcepackagerelease.dscsigningkey
+            if dsc_key:
+                recipients = recipients.union(
+                    contactEmailAddresses(dsc_key.owner))
 
         # Modify notification contents according the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
@@ -568,7 +581,7 @@ class Build(SQLBase):
         # main archive candidates.
         # For PPA build notifications we include the archive.owner
         # contact_address.
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))
@@ -724,8 +737,8 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # all orders fallback to -id if the primary order doesn't succeed
-        orderBy.append("-id")
+        # all orders fallback to id if the primary order doesn't succeed
+        orderBy.append("id")
 
 
         queries.append("builder=%s" % builder_id)
@@ -763,8 +776,8 @@ class BuildSet:
             orderBy = ["-Build.datecreated"]
         else:
             orderBy = ["-Build.datebuilt"]
-        # All orders fallback to -id if the primary order doesn't succeed
-        orderBy.append("-id")
+        # All orders fallback to id if the primary order doesn't succeed
+        orderBy.append("id")
 
         queries.append("archive=%s" % sqlvalues(archive))
         clause = " AND ".join(queries)
@@ -824,8 +837,8 @@ class BuildSet:
         else:
             orderBy = ["-Build.datebuilt"]
 
-        # Fallback to ordering by -id as a tie-breaker.
-        orderBy.append("-id")
+        # Fallback to ordering by id as a tie-breaker.
+        orderBy.append("id")
 
         # End of duplication (see XXX cprov 2006-09-25 above).
 
@@ -882,7 +895,7 @@ class BuildSet:
                 continue
             build.updateDependencies()
             if build.dependencies:
-                logger.info(
+                logger.debug(
                     "Skipping %s: %s" % (build.title, build.dependencies))
                 continue
             logger.info("Retrying %s" % build.title)

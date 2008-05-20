@@ -72,7 +72,7 @@
           </li>
         </ul>
       </tal:built-packages>
-      <h3>Files</h3>
+      <h3>Download files from Librarian</h3>
       <span tal:condition="not: published_source_and_binary_files"
          style="padding-left: 1em">No files published for this package.</span>
       <ul tal:repeat="file published_source_and_binary_files"

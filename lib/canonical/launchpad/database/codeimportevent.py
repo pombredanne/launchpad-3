@@ -126,14 +126,24 @@ class CodeImportEventSet:
         self._recordCodeImport(event, code_import)
         return event
 
-    def newOnline(self, machine):
+    def _recordMessage(self, event, message):
+        """Record a message if there is a message set."""
+        if message:
+            _CodeImportEventData(
+                event=event,
+                data_type=CodeImportEventDataType.MESSAGE,
+                data_value=message)
+
+    def newOnline(self, machine, user=None, message=None):
         """See `ICodeImportEventSet`."""
         assert machine is not None, "machine must not be None"
-        return CodeImportEvent(
+        event = CodeImportEvent(
             event_type=CodeImportEventType.ONLINE,
-            machine=machine)
+            machine=machine, person=user)
+        self._recordMessage(event, message)
+        return event
 
-    def newOffline(self, machine, reason):
+    def newOffline(self, machine, reason, user=None, message=None):
         """See `ICodeImportEventSet`."""
         assert machine is not None, "machine must not be None"
         assert (type(reason) == DBItem
@@ -142,23 +152,21 @@ class CodeImportEventSet:
             "but was: %r" % (reason,))
         event = CodeImportEvent(
             event_type=CodeImportEventType.OFFLINE,
-            machine=machine)
+            machine=machine, person=user)
         _CodeImportEventData(
             event=event, data_type=CodeImportEventDataType.OFFLINE_REASON,
             data_value=reason.name)
+        self._recordMessage(event, message)
         return event
 
-    def newQuiesce(self, machine, person, message):
+    def newQuiesce(self, machine, user, message=None):
         """See `ICodeImportEventSet`."""
         assert machine is not None, "machine must not be None"
-        assert person is not None, "person must not be None"
-        assert message is not None, "message must not be None"
+        assert user is not None, "user must not be None"
         event = CodeImportEvent(
             event_type=CodeImportEventType.QUIESCE,
-            machine=machine, person=person)
-        _CodeImportEventData(
-            event=event, data_type=CodeImportEventDataType.MESSAGE,
-            data_value=message)
+            machine=machine, person=user)
+        self._recordMessage(event, message)
         return event
 
     def newStart(self, code_import, machine):

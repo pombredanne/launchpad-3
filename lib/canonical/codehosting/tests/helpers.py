@@ -17,7 +17,7 @@ import unittest
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, TransportNotPossible
+from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
@@ -88,6 +88,8 @@ def exception_names(exceptions):
         # Unfortunately, not all exceptions render themselves as their name.
         # More cases like this may need to be added
         names = ["Transport operation not possible"]
+    elif exceptions is PermissionDenied:
+        names = ['Permission denied', 'PermissionDenied']
     else:
         names = [exceptions.__name__]
     return names
@@ -449,7 +451,7 @@ def create_branch_with_one_revision(branch_dir):
         tree = BzrDir.create_standalone_workingtree(branch_dir)
     except FileExists:
         return
-    f = open(branch_dir + 'hello', 'w')
+    f = open(os.path.join(branch_dir, 'hello'), 'w')
     f.write('foo')
     f.close()
     tree.commit('message')

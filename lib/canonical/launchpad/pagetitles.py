@@ -430,6 +430,9 @@ codeimport_list = 'Code Imports'
 
 codeimport_machines = ViewLabel()
 
+def codeimport_machine_index(context, view):
+    return smartquote('Code Import machine "%s"' % context.hostname)
+
 codeimport_new = ViewLabel()
 
 codeofconduct_admin = 'Administer Codes of Conduct'
@@ -501,8 +504,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
-
-distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
@@ -667,6 +668,8 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 # The general form is a fallback form; I'm not sure why it is
 # needed, nor why it needs a pagetitle, but I can't debug this today.
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
+
+launchpad_invalidbatchsize = "Invalid Batch Size"
 
 launchpad_legal = 'Launchpad legalese'
 
@@ -1023,6 +1026,8 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_files = ContextDisplayName('%s project files')
 
+product_review_license = ContextTitle('Review licensing for %s')
+
 product_series = ContextDisplayName('%s timeline')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
@@ -1143,7 +1148,7 @@ question_change_status = ContextId('Change status of question #%s')
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
 def question_createfaq(context, view):
-    """Return the page title to create an FAQ for a question."""
+    """Return the page title to create a FAQ for a question."""
     return "Create a FAQ for %s" % view.faq_target.displayname
 
 question_edit = ContextId('Edit question #%s details')
@@ -1174,6 +1179,10 @@ question_subscription = ContextId('Subscription to question #%s')
 question_unlinkbugs = ContextId('Remove bug links from question #%s')
 
 questions_index = 'Launchpad Answers'
+
+def questiontarget_createfaq(context, view):
+    """Return the page title to create a FAQ for a questiontarget."""
+    return "Create a FAQ for %s" % context.displayname
 
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 

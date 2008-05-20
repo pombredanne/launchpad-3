@@ -36,8 +36,8 @@ published across all ubuntu PPAs.
     >>> print extract_text(
     ...    find_tag_by_id(anon_browser.contents, 'ppa_statistics'))
     Statistics
-    3 registered
-    2 active
+    3 registered PPAs
+    2 active PPAs
     4 published sources
     4 published binaries
 
@@ -167,7 +167,6 @@ them properly, see doc/package-archive.txt.
     >>> from zope.component import getUtility
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
     >>> login(ANONYMOUS)
@@ -355,10 +354,16 @@ Each data row is expandable to contain some sections containing:
       i386
     Built Packages
       mozilla-firefox ff from iceweasel
-    Files
+    Download files from Librarian
       firefox-0.9.2.orig.tar.gz (9.5 MiB)
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
+
+The package was copied from a PPA. The archive title will hence link
+back to the source PPA.
+
+    >>> admin_browser.getLink("PPA for Mark Shuttleworth").url
+    'http://launchpad.dev/~sabdfl/+archive'
 
 
 == Searching an archive ==

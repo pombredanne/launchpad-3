@@ -52,6 +52,15 @@
       class="canonical.launchpad.webapp.error.RequestExpiredView"
       />
 
+  <!-- TimeoutError -->
+  <browser:page
+      for="canonical.lazr.timeout.TimeoutError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-requestexpired.pt"
+      class="canonical.launchpad.webapp.error.RequestExpiredView"
+      />
+
   <!-- UnexpectedFormData -->
   <browser:page
       for="canonical.launchpad.interfaces.UnexpectedFormData"
@@ -77,6 +86,15 @@
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
       class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
+  <!-- InvalidBatchSizeError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-invalidbatchsize.pt"
+      class="canonical.launchpad.webapp.error.InvalidBatchSizeView"
       />
 
   <!-- TranslationUnavailable -->
