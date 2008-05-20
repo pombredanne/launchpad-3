@@ -1554,7 +1554,8 @@ class IPersonSet(Interface):
         address.
         """
 
-    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
+    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
+            must_have_email=False):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1569,6 +1570,9 @@ class IPersonSet(Interface):
         If exclude_inactive_accounts is True, any accounts whose
         account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
         returned set.
+
+        If must_have_email is True, only people with one or more email
+        addresses are returned.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email

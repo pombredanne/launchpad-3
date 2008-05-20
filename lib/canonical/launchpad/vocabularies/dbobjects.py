@@ -698,7 +698,7 @@ class PersonAccountToMergeVocabulary(
 
     def _select(self, text=""):
         return getUtility(IPersonSet).findPerson(
-            text, exclude_inactive_accounts=False)
+            text, exclude_inactive_accounts=False, must_have_email=True)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
@@ -819,6 +819,47 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         if not text:
             text = ''
         return self._doSearch(text=text)
+
+    def _doSearch(self, text=""):
+        """Return the teams whose fti or email address match :text:"""
+        if self.extra_clause:
+            extra_clause = " AND %s" % self.extra_clause
+        else:
+            extra_clause = ""
+
+        if not text:
+            query = """
+                teamowner IS NOT NULL AND Person.visibility = %s
+                """ % quote(PersonVisibility.PUBLIC)
+            query += extra_clause
+            return Person.select(query)
+
+        name_match_query = """
+            Person.fti @@ ftq(%s)
+            AND Person.visibility = %s
+            AND teamowner IS NOT NULL
+            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+        name_match_query += extra_clause
+        name_matches = Person.select(name_match_query)
+
+        # Note that we must use lower(email) LIKE rather than ILIKE
+        # as ILIKE no longer appears to be hitting the index under PG8.0
+
+        email_match_query = """
+            EmailAddress.person = Person.id
+            AND lower(email) LIKE %s || '%%'
+            AND Person.visibility = %s
+            AND teamowner IS NOT NULL
+            """ % (quote_like(text), quote(PersonVisibility.PUBLIC))
+        email_match_query += extra_clause
+        email_matches = Person.select(
+            email_match_query, clauseTables=['EmailAddress'])
+
+        # XXX Guilherme Salgado 2006-01-30 bug=30053:
+        # We have to explicitly provide an orderBy here as a workaround
+        return name_matches.union(
+            email_matches, orderBy=['displayname', 'name'])
+
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):

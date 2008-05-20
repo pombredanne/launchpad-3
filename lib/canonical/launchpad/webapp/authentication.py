@@ -242,7 +242,7 @@ class LaunchpadLoginSource:
         else:
             return None
 
-    def _principalForPerson(self, person, access_level, want_password):
+    def _principalForPerson(self, person, access_level, want_password=True):
         person = removeSecurityProxy(person)
         if want_password:
             password = person.password
