@@ -1147,7 +1147,7 @@ class AppServerLayer(LaunchpadLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        DatabaseLayer.force_dirty_database()
+        pass
 
     @classmethod
     @profiled

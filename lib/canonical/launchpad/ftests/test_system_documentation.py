@@ -23,7 +23,7 @@ from canonical.launchpad.ftests.bug import (
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)
-from canonical.launchpad.testing import appserver
+from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, setGlobs, tearDown)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -767,12 +767,12 @@ special = {
     'launchpadlib.txt': LayeredDocFileSuite(
         '../doc/launchpadlib.txt',
         layer=AppServerLayer,
-        setUp=appserver.setUp, tearDown=appserver.tearDown,
+        setUp=browser.setUp, tearDown=browser.tearDown,
         ),
     'launchpadlib2.txt': LayeredDocFileSuite(
         '../doc/launchpadlib.txt',
         layer=AppServerLayer,
-        setUp=appserver.setUp, tearDown=appserver.tearDown,
+        setUp=browser.setUp, tearDown=browser.tearDown,
         ),
     }
 
