@@ -55,6 +55,7 @@ import logging
 import os
 import xmlrpclib
 
+from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.errors import (
     BzrError, InProcessTransport, NoSuchFile, PermissionDenied,
     TransportNotPossible)
@@ -526,10 +527,11 @@ class LaunchpadServer(Server):
         memory_server = MemoryServer()
         memory_server.setUp()
         transport = get_transport(memory_server.get_url())
-        transport.mkdir('.bzr')
         if unique_name == '':
             return transport
 
+        format = BzrDirFormat.get_default_format()
+        format.initialize_on_transport(transport)
         transport.put_bytes(
             '.bzr/control.conf',
             'default_stack_on=%s\n'

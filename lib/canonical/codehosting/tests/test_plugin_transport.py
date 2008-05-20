@@ -212,7 +212,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         self.addCleanup(self.server.tearDown)
 
         transport = self.server._buildControlDirectory('')
-        self.assertEqual([], transport.list_dir('.bzr'))
+        self.assertEqual([], transport.list_dir('.'))
 
     def test_parseProductControlDirectory(self):
         # _parseProductControlDirectory takes a path to a product control
