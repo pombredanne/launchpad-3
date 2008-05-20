@@ -507,17 +507,23 @@ We have set two milestones to be not visible, so there is only one left that
 is visible in all_milestones. Remember, all_milestones was defined earlier
 as the set of all milestones regardless of context:
 
+    >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
     >>> for term in all_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     debian: 3.1-rc1
+    >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
     >>> len(firefox_milestones)
     0
+    >>> firefox_task_milestones = vocabulary_registry.get(
+    ...     firefox_task, 'Milestone')
     >>> len(firefox_task_milestones)
     0
 
 There's one exception, though; if a bugtask is assigned to a
 non-visible milestone, that milestone will be in the vocabulary.
 
+    >>> firefox_task_milestones = vocabulary_registry.get(
+    ...     firefox_task, 'Milestone')
     >>> firefox_task.milestone = one_dot_o
     >>> for term in firefox_task_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
