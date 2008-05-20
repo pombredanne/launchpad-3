@@ -552,6 +552,10 @@ class SprintAttendeesCsvExportView(LaunchpadView):
             irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
                  in attendance.attendee.ircnicknames])))
+            if attendance.attendee.country is None:
+                country = ''
+            else:
+                country = attendance.attendee.country.name
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
@@ -560,7 +564,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  attendance.attendee.phone,
                  attendance.attendee.organization,
                  attendance.attendee.city,
-                 attendance.attendee.country,
+                 country,
                  attendance.attendee.timezone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))

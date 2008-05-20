@@ -27,6 +27,8 @@ class IPackageDiff(Interface):
 
     See `doc/package-diff.txt` for details about the attributes.
     """
+    id = Attribute("The PackageDiff unique number.")
+
     from_source = Attribute(_(u"The base ISourcePackageRelease."))
     to_source = Attribute(_(u"The target ISourcePackageRelease."))
 
@@ -54,7 +56,18 @@ class IPackageDiff(Interface):
 
 
 class IPackageDiffSet(Interface):
-    """The set of PackageDiff."""
+    """The set of `PackageDiff`."""
+
+    def __iter__():
+        """Iterate over all `PackageDiff`."""
 
     def get(diff_id):
-        """Retrieve a PackageDiff for the given id."""
+        """Retrieve a `PackageDiff` for the given id."""
+
+    def getPendingDiffs(limit=None):
+        """Return all pending `PackageDiff` records.
+
+        :param limit: optional results limitation.
+
+        :return a `SelectResult` ordered by id respecting the given limit.
+        """

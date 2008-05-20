@@ -18,13 +18,19 @@
 <div metal:fill-slot="main">
 
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
-    This project is currently inactive <a href="+review">(change this)</a>
+    This project is currently inactive 
+    <tal:comment condition="nothing">
+      This page links to the +review-license form to reactivate the product
+      since both the admins and commercial-admins have access to this form
+      unlike the product/+admin form.
+    </tal:comment>
+    <a href="+review-license">(change this)</a>
   </p>
 
   <p id="project-admin-whiteboard" class="whiteboard"
-   tal:condition="context/required:launchpad.Admin">
+   tal:condition="context/required:launchpad.Commercial">
     <span tal:content="context/reviewer_whiteboard" />
-    (<a href="+review">edit reviewer whiteboard</a>)
+    (<a href="+review-license">edit reviewer whiteboard</a>)
   </p>
 
   <span tal:replace="structure context/image:mugshot" />
