@@ -134,4 +134,9 @@ CREATE VIEW ValidPersonCache AS
         AND EmailAddress.status = 4
         AND Account.status = 20;
 
+CREATE VIEW ValidPersonOrTeamCache AS
+    SELECT id FROM ValidPersonCache
+    UNION ALL
+    SELECT id FROM Person WHERE teamowner IS NOT NULL;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 48, 0);
