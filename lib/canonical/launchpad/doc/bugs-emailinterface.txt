@@ -2696,3 +2696,17 @@ XXX: Add tests for non-ascii mails.
     >>> [reply_message] = list(bug_with_watch.messages)[-1:]
     >>> print reply_message.rfc822msgid
     <1234567890@launchpad.net>
+
+    >>> print reply_message.parent.rfc822msgid
+    <76543@launchpad.net>
+
+    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> reply_bug_message = getUtility(
+    ...     IBugMessageSet).getByBugAndMessage(
+    ...         bug_with_watch, reply_message)
+
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+    >>> reply_bug_message.bugwatch == bug_watch
+    True
+
+    >>> bug_message = bug_with_watch.linkMessage(message, bug_watch)
