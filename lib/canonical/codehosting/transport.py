@@ -532,11 +532,13 @@ class LaunchpadServer(Server):
 
         format = BzrDirFormat.get_default_format()
         format.initialize_on_transport(transport)
+        stack_on_url = urlutils.join(
+            config.codehosting.supermirror_root, unique_name)
+        # XXX: JonathanLange 2008-05-20: We should use the higher-level bzrlib
+        # APIs to do this: bzrdir.get_config().set_default_stack_on(). But
+        # those APIs aren't in bzr mainline yet, so...
         transport.put_bytes(
-            '.bzr/control.conf',
-            'default_stack_on=%s\n'
-            % urlutils.join(
-                config.codehosting.supermirror_root, unique_name))
+            '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
         return transport
 
     def _getBranch(self, virtual_path):
