@@ -13,7 +13,8 @@ __all__ = [
 from datetime import timedelta
 
 from sqlobject import (
-    ForeignKey, IntervalCol, SingleJoin, StringCol, SQLObjectNotFound)
+    ForeignKey, IntervalCol, SingleJoin, StringCol, SQLMultipleJoin,
+    SQLObjectNotFound)
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -109,6 +110,10 @@ class CodeImport(SQLBase):
         else:
             # No job, so nothing to do.
             pass
+
+    results = SQLMultipleJoin(
+        'CodeImportResult', joinColumn='code_import',
+        orderBy=['-date_job_started'])
 
     def approve(self, data, user):
         """See `ICodeImport`."""
