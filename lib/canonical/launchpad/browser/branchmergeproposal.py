@@ -22,6 +22,7 @@ __all__ = [
     'BranchMergeProposalWorkInProgressView',
     ]
 
+from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface
@@ -33,7 +34,6 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.database import Message
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
+    IMessageSet,
     IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
@@ -269,9 +270,10 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         for comment in self.context.all_messages:
             message_to_comment[comment.message] = comment
             messages.append(comment.message)
-        threads = Message.threadMessages(messages)
+        message_set = getUtility(IMessageSet)
+        threads = message_set.threadMessages(messages)
         result = []
-        for depth, message in Message.flattenThreads(threads):
+        for depth, message in message_set.flattenThreads(threads):
             comment = message_to_comment[message]
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))

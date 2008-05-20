@@ -7,12 +7,12 @@ import unittest
 from canonical.testing import LaunchpadFunctionalLayer
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.launchpad.database import Message
+from canonical.launchpad.database import MessageSet
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 
-class TestMessage(unittest.TestCase):
+class TestMessageSet(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -35,23 +35,23 @@ class TestMessage(unittest.TestCase):
             message1: [message2, message3],
             message2: [message4],
             message3: [], message4:[]}
-        result, roots = Message._parentToChild(messages)
+        result, roots = MessageSet._parentToChild(messages)
         self.assertEqual(expected, result)
         self.assertEqual([message1], roots)
 
     def test_threadMessages(self):
-        messages = self.create_test_messages()
+        messages = self.createTestMessages()
         message1, message2, message3, message4 = messages
-        threads = Message.threadMessages(messages)
+        threads = MessageSet.threadMessages(messages)
         self.assertEqual(
             [(message1, [(message2, [(message4, [])]), (message3, [])])],
             threads)
 
     def test_flattenThreads(self):
-        messages = self.create_test_messages()
+        messages = self.createTestMessages()
         message1, message2, message3, message4 = messages
-        threads = Message.threadMessages(messages)
-        flattened = list(Message.flattenThreads(threads))
+        threads = MessageSet.threadMessages(messages)
+        flattened = list(MessageSet.flattenThreads(threads))
         expected = [(0, message1),
                     (1, message2),
                     (2, message4),
