@@ -75,14 +75,18 @@ The elements of a collection can be looked up by unique identifier:
   >>> admins_team = webservice.get("/beta/~admins").jsonBody()
   >>> for key, value in sorted(admins_team.items()):
   ...     print "%s: %s" % (key, value)
+  admins_collection_link: http://.../~admins/admins
   confirmed_email_addresses_collection_link:
       http://.../~admins/confirmed_email_addresses
   date_created: 2005-06-06T08:59:51.571899+00:00
+  deactivated_members_collection_link: http://.../~admins/deactivated_members
   default_membership_period: None
   default_renewal_period: None
   display_name: Launchpad Administrators
+  expired_members_collection_link: http://.../~admins/expired_members
   hide_email_addresses: False
   homepage_content: None
+  invited_members_collection_link: http://.../~admins/invited_members
   irc_nicknames_collection_link: http://.../~admins/irc_nicknames
   is_team: True
   is_valid: True
@@ -96,7 +100,9 @@ The elements of a collection can be looked up by unique identifier:
   name: admins
   open_membership_invitations_collection_link:
       http://.../~admins/open_membership_invitations
+  participants_collection_link: http://.../~admins/participants
   preferred_email_address_link: None
+  proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
   self_link: http://.../~admins
   subscription_policy: Moderated Team

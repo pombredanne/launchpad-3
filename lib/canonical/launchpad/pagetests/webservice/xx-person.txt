@@ -8,12 +8,15 @@ for teams (as they're defined in the ITeam interface).
   >>> salgado = webservice.get("/beta/~salgado").jsonBody()
   >>> for key, value in sorted(salgado.items()):
   ...     print "%s: %s" % (key, value)
-  confirmed_email_addresses_collection_link:
-      http://.../~salgado/confirmed_email_addresses
+  admins_collection_link: http://.../~salgado/admins
+  confirmed_email_addresses_collection_link: http://.../~salgado/confirmed_email_addresses
   date_created: 2005-06-06T08:59:51.596025+00:00
+  deactivated_members_collection_link: http://.../~salgado/deactivated_members
   display_name: Guilherme Salgado
+  expired_members_collection_link: http://.../~salgado/expired_members
   hide_email_addresses: False
   homepage_content: None
+  invited_members_collection_link: http://.../~salgado/invited_members
   irc_nicknames_collection_link: http://.../~salgado/irc_nicknames
   is_team: False
   is_valid: True
@@ -23,19 +26,17 @@ for teams (as they're defined in the ITeam interface).
   mailing_list_auto_subscribe_policy: Ask me when I join a team
   member_memberships_collection_link: http://.../~salgado/member_memberships
   members_collection_link: http://.../~salgado/members
-  mugshot_link: http://api.launchpad.dev/beta/~salgado/mugshot
+  mugshot_link: http://.../~salgado/mugshot
   name: salgado
-  open_membership_invitations_collection_link:
-      http://.../~salgado/open_membership_invitations
-  preferred_email_address_link:
-      http://.../~salgado/+email/guilherme.salgado@canonical.com
+  open_membership_invitations_collection_link: http://.../~salgado/open_membership_invitations
+  participants_collection_link: http://.../~salgado/participants
+  preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
+  proposed_members_collection_link: http://.../~salgado/proposed_members
   self_link: http://.../~salgado
   team_memberships_collection_link: http://.../~salgado/team_memberships
   team_owner_link: None
-  teams_indirectly_participated_in_collection_link:
-      http://.../~salgado/teams_indirectly_participated_in
-  teams_participated_in_collection_link:
-      http://.../~salgado/teams_participated_in
+  teams_indirectly_participated_in_collection_link: http://.../~salgado/teams_indirectly_participated_in
+  teams_participated_in_collection_link: http://.../~salgado/teams_participated_in
   timezone: None
   visibility: Public
   wiki_names_collection_link: http://.../~salgado/wiki_names
@@ -43,14 +44,17 @@ for teams (as they're defined in the ITeam interface).
   >>> ubuntu_team = webservice.get("/beta/~ubuntu-team").jsonBody()
   >>> for key, value in sorted(ubuntu_team.items()):
   ...     print "%s: %s" % (key, value)
-  confirmed_email_addresses_collection_link:
-      http://.../~ubuntu-team/confirmed_email_addresses
+  admins_collection_link: http://.../~ubuntu-team/admins
+  confirmed_email_addresses_collection_link: http://.../~ubuntu-team/confirmed_email_addresses
   date_created: 2005-06-06T08:59:51.605760+00:00
+  deactivated_members_collection_link: http://.../~ubuntu-team/deactivated_members
   default_membership_period: None
   default_renewal_period: None
   display_name: Ubuntu Team
+  expired_members_collection_link: http://.../~ubuntu-team/expired_members
   hide_email_addresses: False
   homepage_content: None
+  invited_members_collection_link: http://.../~ubuntu-team/invited_members
   irc_nicknames_collection_link: http://.../~ubuntu-team/irc_nicknames
   is_team: True
   is_valid: True
@@ -58,25 +62,22 @@ for teams (as they're defined in the ITeam interface).
   karma: 0
   languages_collection_link: http://.../~ubuntu-team/languages
   mailing_list_auto_subscribe_policy: Ask me when I join a team
-  member_memberships_collection_link:
-      http://.../~ubuntu-team/member_memberships
+  member_memberships_collection_link: http://.../~ubuntu-team/member_memberships
   members_collection_link: http://.../~ubuntu-team/members
   mugshot_link: http://.../~ubuntu-team/mugshot
   name: ubuntu-team
-  open_membership_invitations_collection_link:
-      http://.../~ubuntu-team/open_membership_invitations
-  preferred_email_address_link:
-      http://.../~ubuntu-team/+email/support@ubuntu.com
+  open_membership_invitations_collection_link: http://.../~ubuntu-team/open_membership_invitations
+  participants_collection_link: http://.../~ubuntu-team/participants
+  preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
+  proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
   renewal_policy: invite them to apply for renewal
   self_link: http://.../~ubuntu-team
   subscription_policy: Moderated Team
   team_description: This Team is responsible for the Ubuntu Distribution
   team_memberships_collection_link: http://.../~ubuntu-team/team_memberships
   team_owner_link: http://.../~sabdfl
-  teams_indirectly_participated_in_collection_link:
-      http://.../~ubuntu-team/teams_indirectly_participated_in
-  teams_participated_in_collection_link:
-      http://.../~ubuntu-team/teams_participated_in
+  teams_indirectly_participated_in_collection_link: http://.../~ubuntu-team/teams_indirectly_participated_in
+  teams_participated_in_collection_link: http://.../~ubuntu-team/teams_participated_in
   timezone: None
   visibility: Public
   wiki_names_collection_link: http://.../~ubuntu-team/wiki_names
