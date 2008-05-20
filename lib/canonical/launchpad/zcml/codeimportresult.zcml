@@ -8,8 +8,7 @@
   <!-- CodeImportResult -->
 
   <content class="canonical.launchpad.database.CodeImportResult">
-    <require
-      permission="launchpad.View"
+    <allow
       interface="canonical.launchpad.interfaces.ICodeImportResult"
       />
   </content>
@@ -19,8 +18,7 @@
   <securedutility
     class="canonical.launchpad.database.CodeImportResultSet"
     provides="canonical.launchpad.interfaces.ICodeImportResultSet" >
-    <require
-      permission="launchpad.View"
+    <allow
       interface="canonical.launchpad.interfaces.ICodeImportResultSet" />
   </securedutility>
 
