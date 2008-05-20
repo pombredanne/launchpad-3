@@ -23,6 +23,7 @@ for teams (as they're defined in the ITeam interface).
   mailing_list_auto_subscribe_policy: Ask me when I join a team
   member_memberships_collection_link: http://.../~salgado/member_memberships
   members_collection_link: http://.../~salgado/members
+  mugshot_link: http://api.launchpad.dev/beta/~salgado/mugshot
   name: salgado
   open_membership_invitations_collection_link:
       http://.../~salgado/open_membership_invitations
@@ -30,6 +31,7 @@ for teams (as they're defined in the ITeam interface).
       http://.../~salgado/+email/guilherme.salgado@canonical.com
   self_link: http://.../~salgado
   team_memberships_collection_link: http://.../~salgado/team_memberships
+  team_owner_link: None
   teams_indirectly_participated_in_collection_link:
       http://.../~salgado/teams_indirectly_participated_in
   teams_participated_in_collection_link:
@@ -59,6 +61,7 @@ for teams (as they're defined in the ITeam interface).
   member_memberships_collection_link:
       http://.../~ubuntu-team/member_memberships
   members_collection_link: http://.../~ubuntu-team/members
+  mugshot_link: http://.../~ubuntu-team/mugshot
   name: ubuntu-team
   open_membership_invitations_collection_link:
       http://.../~ubuntu-team/open_membership_invitations
@@ -80,9 +83,8 @@ for teams (as they're defined in the ITeam interface).
 
   >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
   [u'default_membership_period', u'default_renewal_period',
-   u'renewal_policy', u'subscription_policy', u'team_description',
-   u'team_owner_link']
-  
+   u'renewal_policy', u'subscription_policy', u'team_description']
+
   >>> sorted(set(salgado.keys()).difference(ubuntu_team.keys()))
   []
 
