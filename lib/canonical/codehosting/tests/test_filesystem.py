@@ -15,7 +15,7 @@ from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-
+from canonical.config import config
 from canonical.testing import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
 
@@ -162,7 +162,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         control_file = transport.get_bytes(
             '~testuser/evolution/.bzr/control.conf')
         self.assertEqual(
-            'default_stack_on=/~vcs-imports/evolution/main',
+            'default_stack_on=%s~vcs-imports/evolution/main'
+            % config.codehosting.supermirror_root,
             control_file.strip())
 
     @defer_to_thread

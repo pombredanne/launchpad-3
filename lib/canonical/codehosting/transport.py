@@ -530,7 +530,9 @@ class LaunchpadServer(Server):
         if unique_name != '':
             transport.put_bytes(
                 '.bzr/control.conf',
-                'default_stack_on=/%s\n' % unique_name)
+                'default_stack_on=%s\n'
+                % urlutils.join(
+                    config.codehosting.supermirror_root, unique_name))
         return transport
 
     def _getBranch(self, virtual_path):
