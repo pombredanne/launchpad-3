@@ -203,9 +203,6 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             'default_stack_on=%s%s\n' % (
                 config.codehosting.supermirror_root, branch),
             transport.get_bytes('.bzr/control.conf'))
-        self.assertEqual(
-            'Bazaar-NG meta directory, format 1\n',
-            transport.get_bytes('.bzr/branch-format'))
 
     def test_buildControlDirectory_no_branch(self):
         self.server.setUp()
