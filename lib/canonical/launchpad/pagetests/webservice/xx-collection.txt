@@ -92,9 +92,11 @@ The elements of a collection can be looked up by unique identifier:
   mailing_list_auto_subscribe_policy: Ask me when I join a team
   member_memberships_collection_link: http://.../~admins/member_memberships
   members_collection_link: http://.../~admins/members
+  mugshot_link: http://.../~admins/mugshot
   name: admins
   open_membership_invitations_collection_link:
       http://.../~admins/open_membership_invitations
+  preferred_email_address_link: None
   renewal_policy: invite them to apply for renewal
   self_link: http://.../~admins
   subscription_policy: Moderated Team
