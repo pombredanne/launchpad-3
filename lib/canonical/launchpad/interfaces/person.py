@@ -393,6 +393,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 "Your name as you would like it displayed throughout "
                 "Launchpad. Most people use their full name here.")),
         exported_as='display_name')
+    password = PasswordField(
+        title=_('Password'), required=True, readonly=False)
     karma = Int(
         title=_('Karma'), readonly=False,
         description=_('The cached total karma for this person.'))

@@ -247,11 +247,13 @@ class UserDetailsStorageTest(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
-            UPDATE Person SET password = '%s'
-            WHERE id = (SELECT person FROM EmailAddress WHERE email =
-                        'justdave@bugzilla.org')'''
-            % (ssha,))
+        self.cursor.execute("""
+            INSERT INTO AccountPassword (account, password)
+            VALUES (
+                (SELECT account FROM EmailAddress
+                WHERE email='justdave@bugzilla.org'), %s
+                )
+            """, (ssha,))
         userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
@@ -733,11 +735,13 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorageV2(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
-            UPDATE Person SET password = '%s'
-            WHERE id = (SELECT person FROM EmailAddress
-                        WHERE email = 'justdave@bugzilla.org')'''
-            % (ssha,))
+        self.cursor.execute("""
+            INSERT INTO AccountPassword (account, password)
+            VALUES (
+                (SELECT account FROM EmailAddress
+                WHERE email = 'justdave@bugzilla.org'), %s
+                )
+            """, (ssha,))
         userDict = storage._authUserInteraction(
             'justdave@bugzilla.org', 'supersecret!')
         self.assertEqual({}, userDict)
