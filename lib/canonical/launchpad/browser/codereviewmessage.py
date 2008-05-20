@@ -10,7 +10,7 @@ from zope.schema import Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    CodeReviewVote, ICodeReviewMessage ICodeReviewMessage)
+    CodeReviewVote, ICodeReviewMessage)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 
