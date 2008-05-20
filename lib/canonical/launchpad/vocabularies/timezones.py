@@ -8,7 +8,7 @@ __metaclass__ = type
 
 import pytz
 
-from zope.interface import directlyProvides
+from zope.interface import alsoProvides
 from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.lazr.interfaces.timezone import ITimezoneNameVocabulary
@@ -20,7 +20,7 @@ _values.remove('UTC')
 _values.insert(0, 'UTC')
 
 _timezone_vocab = SimpleVocabulary.fromValues(_values)
-directlyProvides(_timezone_vocab, ITimezoneNameVocabulary)
+alsoProvides(_timezone_vocab, ITimezoneNameVocabulary)
 del _values
 
 def TimezoneNameVocabulary(context=None):
