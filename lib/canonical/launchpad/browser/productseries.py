@@ -48,10 +48,10 @@ from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
-    ICountry, ILaunchpadCelebrities, ImportStatus, IPOTemplateSet,
+    ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
     IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
-    ITranslationImporter, ITranslationImportQueue, NotFoundError,
-    RevisionControlSystems)
+    ITranslationImportQueue, ITranslationImporter, ImportStatus,
+    NotFoundError, RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
@@ -849,6 +849,22 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.context.deleteImport()
         self.request.response.addInfoNotification(
             'Source import deleted.')
+
+    def allowConversion(self, action):
+        return self.isAdmin() and self.context.importstatus in [
+            ImportStatus.AUTOTESTED,
+            ImportStatus.TESTING,
+            ImportStatus.PROCESSING,
+            ImportStatus.SYNCING,
+            ImportStatus.STOPPED,
+            ]
+
+    @action(_('Convert To New Style Import'), name='convert',
+            condition=allowConversion)
+    def convert_action(self, action, data):
+        getUtility(ICodeImportSet).newFromProductSeries(self.context)
+        self.request.response.addInfoNotification(
+            'Nyaa nyaa.')
 
     @property
     def next_url(self):

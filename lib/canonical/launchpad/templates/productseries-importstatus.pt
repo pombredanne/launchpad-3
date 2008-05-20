@@ -78,6 +78,10 @@
 
 <tal:block tal:condition="context/rcstype">
 
+  <p tal:condition="context/new_style_import">
+    Converrrrrrrrrrrrted!
+  </p>
+
   <table>
     <tbody>
         <tal:block condition="context/rcstype/enumvalue:CVS">
