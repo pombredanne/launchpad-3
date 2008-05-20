@@ -235,4 +235,17 @@
   </tal:entry_classes>
   <!--End representation and resource_type definitions for entry
       resources. -->
+
+  <!--Finally, describe the 'hosted binary file' type.-->
+  <resource_type id="HostedFile">
+    <method name="GET" id="HostedFile-get">
+      <response>
+        <representation status="303">
+          <param style="header" name="Location" />
+        </representation>
+      </response>
+    </method>
+    <method name="PUT" id="HostedFile-put" />
+    <method name="DELETE" id="HostedFile-put" />
+  </resource_type>
 </application>
