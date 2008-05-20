@@ -115,21 +115,13 @@ class TestImportdTargetGetterUpgrade(ImportdTargetGetterTestCase):
     """Test upgrade functionality of ImportdTargetGetter."""
 
     def setUpMirror(self):
-        self.setUpOneCommit()
+        self.setUpOneCommit(format='weave')
         self.importd_publisher.publish()
         # The publisher will creates a branch using the default format, so we
         # need to copy our old-format branch in place.
         shutil.rmtree(self.mirrorPath())
         os.rename(self.bzrworking, self.mirrorPath())
         assert self.locationNeedsUpgrade(self.mirrorPath())
-
-    def setUpOneCommit(self):
-        weave_format = get_format_type('weave')
-        os.mkdir(self.bzrworking)
-        branch = BzrDir.create_branch_convenience(
-            self.bzrworking, format=weave_format)
-        workingtree = branch.bzrdir.open_workingtree()
-        workingtree.commit('first commit')
 
     def locationNeedsUpgrade(self, location):
         """Does the branch at the provided location need a format upgrade?"""
