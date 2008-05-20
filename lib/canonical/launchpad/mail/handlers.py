@@ -257,7 +257,6 @@ class MaloneHandler:
                                 filealias=filealias,
                                 parsed_message=signed_msg,
                                 fallback_parent=bug.initial_message)
-                            bugmessage = bug.linkMessage(message)
 
                             # If the new message's parent is linked to
                             # a bug watch we also link this message to
@@ -268,8 +267,12 @@ class MaloneHandler:
                                     bug, message.parent))
 
                             if parent_bug_message.bugwatch:
-                                bugmessage.bugwatch = (
-                                    parent_bug_message.bugwatch)
+                                bug_watch = parent_bug_message.bugwatch
+                            else:
+                                bug_watch = None
+
+                            bugmessage = bug.linkMessage(
+                                message, bug_watch)
 
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
