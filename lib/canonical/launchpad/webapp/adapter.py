@@ -24,9 +24,11 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 from zope.component import getUtility
+from zope.interface import implements
 
-from canonical.launchpad.webapp.opstats import OpStats
 from canonical.config import config, dbconfig
+from canonical.database.interfaces import IRequestExpired
+from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
     'DisconnectionError',
@@ -159,6 +161,11 @@ def hard_timeout_expired():
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
     return _check_expired(config.database.soft_request_timeout)
+
+
+class RequestExpired(RuntimeError):
+    """Request has timed out."""
+    implements(IRequestExpired)
 
 
 # ---- Prevent database access in the main thread of the app server

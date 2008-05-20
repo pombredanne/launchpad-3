@@ -555,8 +555,21 @@ class Build(SQLBase):
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
-        if config.builddmaster.notify_owner:
+
+        # Please note that both the package creator and the package uploader
+        # will be notified of failures if:
+        #     * the 'notify_owner' flag is set
+        #     * the package build (failure) occurred in the original
+        #       archive.
+        package_was_not_copied = (
+            self.archive == self.sourcepackagerelease.upload_archive)
+
+        if package_was_not_copied and config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
+            dsc_key = self.sourcepackagerelease.dscsigningkey
+            if dsc_key:
+                recipients = recipients.union(
+                    contactEmailAddresses(dsc_key.owner))
 
         # Modify notification contents according the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
@@ -564,7 +577,7 @@ class Build(SQLBase):
         # main archive candidates.
         # For PPA build notifications we include the archive.owner
         # contact_address.
-        if self.archive.purpose != ArchivePurpose.PPA:
+        if not self.archive.is_ppa:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))

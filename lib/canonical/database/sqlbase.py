@@ -182,6 +182,10 @@ class ZopelessTransactionManager(object):
             from canonical.config import config
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
+            cls._dbname = dbname
+            cls._dbhost = dbhost
+            cls._dbuser = dbuser
+            cls._isolation = isolation
             cls._reset_store()
             cls._installed = cls
         return cls._installed
@@ -212,6 +216,22 @@ class ZopelessTransactionManager(object):
         config.pop(cls._CONFIG_OVERLAY_NAME)
         cls._reset_store()
         cls._installed = None
+
+    @classmethod
+    def set_isolation_level(cls, isolation):
+        """Set the transaction isolation level.
+
+        Level can be one of ISOLATION_LEVEL_AUTOCOMMIT,
+        ISOLATION_LEVEL_READ_COMMITTED or
+        ISOLATION_LEVEL_SERIALIZABLE. As changing the isolation level
+        must be done before any other queries are issued in the
+        current transaction, this method automatically issues a
+        rollback to ensure this is the case.
+        """
+        assert cls._installed is not None, (
+            "ZopelessTransactionManager not installed")
+        cls.uninstall()
+        cls.initZopeless(cls._dbname, cls._dbhost, cls._dbuser, isolation)
 
     @staticmethod
     def conn():

@@ -24,8 +24,6 @@ from sqlobject import ForeignKey, StringCol, BoolCol
 from storm.store import Store
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
-from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
-from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -435,41 +433,86 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
-    def getPublishedBinaries(self):
-        """See `ISourcePackagePublishingHistory`."""
-        published_status = [
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            ]
+    def _getPublishingBinariesBaseClause(self):
+        """Base query to reach binary publications for the context source.
 
-        clause = """
+         The query follows every `BinaryPackageRelease` ever published in
+         the context `IArchive` and Pocket built from the context
+         `SourcePackageRelease` in any `DistroArchSeries` for the context
+         `DistroSeries`.
+
+        :return: a tuple containing, in this order, a list of clauses and
+            a list clauseTables;
+        """
+        clauses = ["""
             BinaryPackagePublishingHistory.binarypackagerelease=
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.distroarchseries=
                 DistroArchSeries.id AND
             BinaryPackageRelease.build=Build.id AND
-            BinaryPackageRelease.binarypackagename=
-                BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
-            BinaryPackagePublishingHistory.pocket=%s AND
-            BinaryPackagePublishingHistory.status IN %s
+            BinaryPackagePublishingHistory.pocket=%s
         """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
-                        self.archive, self.pocket, published_status)
+                        self.archive, self.pocket)]
+
+        clauseTables = ['Build', 'BinaryPackageRelease', 'DistroArchSeries']
+
+        return (clauses, clauseTables)
+
+    def getPublishedBinaries(self):
+        """See `ISourcePackagePublishingHistory`."""
+        clauses, clauseTables = self._getPublishingBinariesBaseClause()
+
+        published_status = [
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            ]
+        clauses.append("""
+            BinaryPackageRelease.binarypackagename=
+                BinaryPackageName.id AND
+            BinaryPackagePublishingHistory.status IN %s
+        """ % sqlvalues(published_status))
+
+        clauseTables.append('BinaryPackageName')
 
         orderBy = ['BinaryPackageName.name',
-                   'DistroArchSeries.architecturetag']
-
-        clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
-                        'DistroArchSeries']
+                   'DistroArchSeries.architecturetag',
+                   '-BinaryPackagePublishingHistory.id']
 
         preJoins = ['binarypackagerelease',
                     'binarypackagerelease.binarypackagename']
 
         return BinaryPackagePublishingHistory.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables,
+            " AND ".join(clauses), orderBy=orderBy, clauseTables=clauseTables,
             prejoins=preJoins)
+
+    def getBuiltBinaries(self):
+        """See `ISourcePackagePublishingHistory`."""
+        clauses, clauseTables = self._getPublishingBinariesBaseClause()
+        orderBy = ['-BinaryPackagePublishingHistory.id']
+        preJoins = ['binarypackagerelease']
+
+        results = BinaryPackagePublishingHistory.select(
+            " AND ".join(clauses), orderBy=orderBy, clauseTables=clauseTables,
+            prejoins=preJoins)
+        binary_publications = list(results)
+
+        unique_binary_locations = set(
+            [(pub.binarypackagerelease.id, pub.distroarchseries.id)
+             for pub in binary_publications])
+
+        unique_binary_publications = []
+        for pub in binary_publications:
+            location = (pub.binarypackagerelease.id, pub.distroarchseries.id)
+            if location in unique_binary_locations:
+                unique_binary_publications.append(pub)
+                unique_binary_locations.remove(location)
+                if len(unique_binary_locations) == 0:
+                    break
+
+        return unique_binary_publications
 
     def getBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -495,19 +538,16 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             clause, orderBy=orderBy, clauseTables=clauseTables,
             prejoins=prejoins)
 
-    def createMissingBuilds(self, ignore_pas=False, logger=None):
+    def createMissingBuilds(self, architectures_available=None,
+                            pas_verify=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        if self.archive.purpose == ArchivePurpose.PPA or ignore_pas:
+        if self.archive.purpose == ArchivePurpose.PPA:
             pas_verify = None
-        else:
-            pas_verify = BuildDaemonPackagesArchSpecific(
-                config.builddmaster.root, self.distroseries)
 
-        if self.archive.require_virtualized:
+        if architectures_available is None:
             architectures_available = [
-                arch for arch in self.distroseries.virtualized_architectures]
-        else:
-            architectures_available = self.distroseries.architectures
+                arch for arch in self.distroseries.architectures
+                if arch.getPocketChroot() is not None]
 
         build_architectures = determineArchitecturesToBuild(
             self, architectures_available, self.distroseries, pas_verify)
@@ -518,18 +558,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 arch, logger=logger)
             if build_candidate is not None:
                 builds.append(build_candidate)
+
         return builds
 
     def _createMissingBuildForArchitecture(self, arch, logger=None):
         """Create a build for a given architecture if it doesn't exist yet.
 
         Return the just-created `IBuild` record already scored or None
-        if no chroot is available for the given `IDistroArchSeries` or
-        a suitable build is already present.
+        if a suitable build is already present.
         """
-        if arch.getChroot() is None:
-            return None
-
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
 
@@ -538,15 +575,17 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
              build_candidate.buildstate == BuildStatus.FULLYBUILT)):
             return None
 
-        if logger is not None:
-            logger.debug("Creating PENDING build for %s."
-                         % arch.architecturetag)
-
         build = self.sourcepackagerelease.createBuild(
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
         build_queue = build.createBuildQueueEntry()
         build_queue.score()
         Store.of(build).flush()
+
+        if logger is not None:
+            logger.debug(
+                "Created %s [%d] in %s (%d)"
+                % (build.title, build.id, build.archive.title,
+                   build_queue.lastscore))
 
         return build
 

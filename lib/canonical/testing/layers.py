@@ -486,6 +486,13 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         DatabaseLayer.force_dirty_database()
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
+            dbname='launchpad_ftest_template').generateResetSequencesSQL()
 
     @classmethod
     @profiled
@@ -499,6 +506,7 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = None
 
     @classmethod
     @profiled
@@ -508,7 +516,8 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup().setUp()
+            LaunchpadTestSetup(
+                reset_sequences_sql=DatabaseLayer._reset_sequences_sql).setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.

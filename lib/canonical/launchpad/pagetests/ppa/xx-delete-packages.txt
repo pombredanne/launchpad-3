@@ -373,6 +373,31 @@ available for deletion because it contains a PUBLISHED binary.
       foo-bin_i386.deb (18 bytes)
       foo.dsc (28 bytes)
 
+Although the list of 'deletable' sources can be filtered by
+status. The default filter is 'Any Status', but the user can modify it
+anytime.
+
+    >>> print user_browser.getControl(name='field.status_filter').value
+    ['any']
+
+When the user selects 'Published' filter and update the results, no
+records are presented.
+
+    >>> user_browser.getControl(
+    ...     name='field.status_filter').value = ['published']
+    >>> user_browser.getControl("Update").click()
+    >>> print_ppa_packages(user_browser.contents)
+    No matching source packages for ''.
+
+When he selects 'Superseded' the SUPERSEDED source shows up again.
+
+    >>> user_browser.getControl(
+    ...     name='field.status_filter').value = ['superseded']
+    >>> user_browser.getControl("Update").click()
+    >>> print_ppa_packages(user_browser.contents)
+    Source           Published   Status     Series          Section  Built
+    foo - 1.0                    Superseded Hoary           Base
+
 The deletion works exactly as it does for PUBLISHED sources, both,
 source and binaries are marked as DELETED and the corresponding
 'datesuperseded' as set to 'now'.

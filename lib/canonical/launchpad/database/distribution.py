@@ -138,12 +138,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    upload_sender = StringCol(
-        dbName='upload_sender', notNull=False, default=None)
-    upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person',
-        storm_validator=validate_public_person, default=None,
-        notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
@@ -151,6 +145,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
+    active = True # Required by IPillar interface.
 
     @property
     def uploaders(self):

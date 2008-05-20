@@ -497,9 +497,11 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             con = self.connect()
             cur = con.cursor()
-            self.failIf(
-                    hasattr(cur, '__iter__'), "Cursor supports __iter__()")
-            self.failIf(hasattr(cur, 'next'), "Cursor supports next()")
+            # XXX jamesh 2008-05-20: psycopg2 actually does support
+            # iteration.  We don't actually use it though.
+            ## self.failIf(
+            ##         hasattr(cur, '__iter__'), "Cursor supports __iter__()")
+            ## self.failIf(hasattr(cur, 'next'), "Cursor supports next()")
         ##  con = self.connect()
         ##  cur = con.cursor()
         ##  cur.execute("SELECT 1 FROM generate_series(1, 10)")
@@ -513,7 +515,7 @@ class MockDbTestCase(unittest.TestCase):
         ##          len(row), 1, "Should be a single column"
         ##          )
         ##      self.failUnlessEqual(row[0], 1, "Bad result %s" % repr(row))
-  
+
     @dont_retry
     def testFetchAll(self):
         for mode in self.modes():

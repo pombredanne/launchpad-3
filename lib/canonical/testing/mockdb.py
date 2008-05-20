@@ -158,12 +158,12 @@ class ScriptRecorder:
             entry.description = real_cursor.description
             # Might have changed now fetchall() has been done.
             entry.rowcount = real_cursor.rowcount
-        except (psycopg2.InterfaceError, psycopg2.DatabaseError,
-                psycopg2.Warning):
-            raise
-        except psycopg2.Error:
-            # No results, such as an UPDATE query.
-            entry.results = None
+        except psycopg2.ProgrammingError, exc:
+            if exc.args[0] == 'no results to fetch':
+                # No results, such as an UPDATE query.
+                entry.results = None
+            else:
+                raise
 
         self.log.append(entry)
         return entry

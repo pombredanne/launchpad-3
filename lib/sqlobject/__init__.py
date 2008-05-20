@@ -60,7 +60,7 @@ def sqlrepr(value, dbname=None):
     elif isinstance(value, (list, set, tuple)):
         return "(%s)" % ", ".join(sqlrepr(v, dbname) for v in value)
     elif isinstance(value, datetime.datetime):
-        return value.strftime("'%Y-%m-%d %H:%M:%S'")
+        return value.strftime("'%Y-%m-%dT%H:%M:%S'")
     elif isinstance(value, datetime.time):
         return value.strftime("'%H:%M:%S'")
     elif isinstance(value, datetime.date):
