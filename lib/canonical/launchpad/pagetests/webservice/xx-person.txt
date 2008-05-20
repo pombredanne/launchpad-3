@@ -207,7 +207,7 @@ are the members.
   http://api.launchpad.dev/beta/~name12
   http://api.launchpad.dev/beta/~salgado
 
-Here the admins:
+Here are the admins:
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~landscape-developers/admins").jsonBody())
