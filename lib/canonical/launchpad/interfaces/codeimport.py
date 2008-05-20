@@ -145,6 +145,13 @@ class ICodeImport(Interface):
 
     results = Attribute("The results for this code import.")
 
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This attribute is only
+    # necessary for the transition from the old to the new code import system,
+    # and should be deleted after that process is done.
+    source_product_series = Attribute(
+        "The ProductSeries from which this CodeImport was constructed if "
+        "any.")
+
     def approve(data, user):
         """Approve the import.
 

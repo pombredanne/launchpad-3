@@ -653,6 +653,7 @@ class TestNewFromProductSeries(unittest.TestCase):
             cvsmodule=series.cvsmodule,
             cvsroot=series.cvsroot,
             datelastsynced=series.datelastsynced,
+            id=series.id,
             import_branch=series.import_branch,
             importstatus=series.importstatus,
             rcstype=series.rcstype,
@@ -695,6 +696,9 @@ class TestNewFromProductSeries(unittest.TestCase):
         # code_import.branch.
         if snapshot['import_branch'] is not None:
             self.assertEqual(code_import.branch, snapshot['import_branch'])
+
+        self.assertEqual(
+            code_import.source_product_series.id, snapshot['id'])
 
     def testSubversion(self):
         # Test correct creation of a CodeImport with Subversion details.
