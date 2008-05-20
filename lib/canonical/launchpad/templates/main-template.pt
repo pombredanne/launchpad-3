@@ -402,9 +402,6 @@
 
     <div id="help-pane" class="invisible">
       <div id="help-body">
-	<div id="help-wait">
-	  <img id="help-wait-spinner" src="/+icing/spinner.gif" />
-	</div>
         <iframe id="help-pane-content" class="invisible">Loading...</iframe>
       </div>
       <div id="help-footer">
