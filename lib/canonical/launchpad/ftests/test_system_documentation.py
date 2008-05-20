@@ -23,6 +23,7 @@ from canonical.launchpad.ftests.bug import (
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)
+from canonical.launchpad.testing import appserver
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, setGlobs, tearDown)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -761,6 +762,18 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
+    # This test is actually run twice to prove that the AppServerLayer
+    # properly isolates the database between tests.
+    'launchpadlib.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=appserver.setUp, tearDown=appserver.tearDown,
+        ),
+    'launchpadlib2.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=appserver.setUp, tearDown=appserver.tearDown,
+        ),
     }
 
 

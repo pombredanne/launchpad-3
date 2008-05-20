@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (IBugComment,
     IBugMessageSet, ILaunchBag, ILaunchpadCelebrities)
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 from canonical.config import config
 
@@ -35,6 +35,8 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
     for bug_message in imported_bug_messages:
         message_id = bug_message.message.id
         comments[message_id].bugwatch = bug_message.bugwatch
+        comments[message_id].synchronized = (
+            bug_message.remote_comment_id is not None)
 
     for comment in comments.values():
         # Once we have all the chunks related to a comment set up,
@@ -71,6 +73,7 @@ class BugComment:
         self.bugattachments = []
 
         self.display_if_from_bugwatch = config.malone.show_imported_comments
+        self.synchronized = False
 
     @property
     def can_be_shown(self):
@@ -128,6 +131,10 @@ class BugComment:
         return (len(self.text_for_display) == 0 and
             len(self.bugattachments) == 0)
 
+    @property
+    def add_comment_url(self):
+        return canonical_url(self.bugtask, view_name='+addcomment')
+
 
 class BugCommentView(LaunchpadView):
     """View for a single bug comment."""
@@ -138,6 +145,7 @@ class BugCommentView(LaunchpadView):
         bugtask = getUtility(ILaunchBag).bugtask
         LaunchpadView.__init__(self, bugtask, request)
         self.comment = context
+        self.expand_reply_box = True
 
     @property
     def display_comment(self):

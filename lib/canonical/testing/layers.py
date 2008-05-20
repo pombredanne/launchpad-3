@@ -470,6 +470,13 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         DatabaseLayer.force_dirty_database()
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
+            dbname='launchpad_ftest_template').generateResetSequencesSQL()
 
     @classmethod
     @profiled
@@ -483,6 +490,7 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = None
 
     @classmethod
     @profiled
@@ -492,7 +500,8 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup().setUp()
+            LaunchpadTestSetup(
+                reset_sequences_sql=DatabaseLayer._reset_sequences_sql).setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
@@ -1092,7 +1101,7 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
 
-class AppServerLayer(LaunchpadZopelessLayer):
+class AppServerLayer(LaunchpadLayer):
     """Environment for starting and stopping the app server."""
 
     services = ('librarian', 'restricted-librarian')
@@ -1109,7 +1118,9 @@ class AppServerLayer(LaunchpadZopelessLayer):
             # Should never get here...
             os._exit()
         # The parent.  Wait until the app server is responsive, but not
-        # forever.
+        # forever.  Make sure the test database is set up.
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().setUp()
         until = time.time() + 60
         while time.time() < until:
             try:
@@ -1128,6 +1139,9 @@ class AppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def tearDown(cls):
+        # Force the database to reset.
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
         cls.stopAllServices()
         # Ensure that there are no child processes still running.
         try:
@@ -1142,12 +1156,12 @@ class AppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        DatabaseLayer.force_dirty_database()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        DatabaseLayer.force_dirty_database()
 
     @classmethod
     @profiled
