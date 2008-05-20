@@ -396,7 +396,7 @@ When he selects 'Superseded' the SUPERSEDED source shows up again.
     >>> user_browser.getControl("Update").click()
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Built
-    foo - 1.0                    Superseded Hoary           Base     i386
+    foo - 1.0                    Superseded Hoary           Base
 
 The deletion works exactly as it does for PUBLISHED sources, both,
 source and binaries are marked as DELETED and the corresponding
