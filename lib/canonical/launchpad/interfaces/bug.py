@@ -502,7 +502,7 @@ class IBug(IMessageTarget, ICanBeMentored):
 
 # Set Object schemas that were impossible to specify during the
 # definition of IBug itself.
-IBug['duplicates'].schema =  IBug
+IBug['duplicates'].value_type.schema =  IBug
 IBug['duplicateof'].schema = IBug
 
 

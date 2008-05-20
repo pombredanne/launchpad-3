@@ -459,7 +459,7 @@ First let's look at the different collection resource types defined in the
 WADL file, and their representations.
 
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    ['BugCollection', 'PersonSetCollectionAdapter']
+    ['MaloneApplicationCollectionAdapter', 'PersonSetCollectionAdapter']
 
 There's one <resource_type> tag for every top-level collection on the
 site. We'll be taking a close look at the resource type for the
