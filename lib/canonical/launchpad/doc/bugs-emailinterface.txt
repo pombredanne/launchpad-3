@@ -2613,6 +2613,14 @@ XXX: Add tests for non-ascii mails.
 
 == Reply to a comment on a remote bug ==
 
+If someone uses the email interface to reply to a comment which was
+imported into Launchpad from a remote bugtracker their reply will be
+linked to the remote bug (and eventually pushed to the remote server if
+possible).
+
+To demonstrate this we need to set up some example objects. Firstly,
+we'll create a new bug on firefox and link it to a remote bug.
+
     >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
@@ -2626,6 +2634,9 @@ XXX: Add tests for non-ascii mails.
     >>> import pytz
     >>> now = datetime(
     ...     2008, 4, 12, 10, 12, 12, tzinfo=pytz.timezone('UTC'))
+
+We create the initial bug message separately from the bug itself so that
+we can ensure that its datecreated field is set correctly.
 
     >>> initial_bug_message = getUtility(IMessageSet).fromText(
     ...     "A message", "The initial message for the bug.",
@@ -2642,14 +2653,14 @@ XXX: Add tests for non-ascii mails.
     >>> bug_watch = bug_with_watch.addWatch(bug_tracker, '12345', no_priv)
 
     >>> commit()
-
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+Someone comments on the remote bug and that bug is imported into
+Launchpad. We'll simulate this locally rather than using the bug
+importing machinery.
+
     >>> bug_with_watch = getUtility(IBugSet).get(bug_with_watch.id)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
-
-    >>> imported_comments = """From: no-priv@canonical.com
-    ... To: %s@malone-domain
-    ... """
 
     >>> now = datetime(
     ...     2008, 5, 19, 16, 19, 12, tzinfo=pytz.timezone('Europe/Prague'))
@@ -2671,6 +2682,9 @@ XXX: Add tests for non-ascii mails.
     ...     initial_mail, no_priv)
 
     >>> bug_message = bug_with_watch.linkMessage(message, bug_watch)
+
+Now someone uses the email interface to respond to the comment that has
+been submitted.
 
     >>> now = datetime(
     ...     2008, 5, 20, 11, 24, 12, tzinfo=pytz.timezone('Europe/Prague'))
@@ -2697,16 +2711,23 @@ XXX: Add tests for non-ascii mails.
     >>> print reply_message.rfc822msgid
     <1234567890@launchpad.net>
 
+The parent of the new comment is set to the message which was imported
+from the remote bugtracker.
+
     >>> print reply_message.parent.rfc822msgid
     <76543@launchpad.net>
 
+The BugMessage instance which links the emailed comment to the bug also
+links it to the remote bug via the BugWatch that the original comment
+was imported from.
+
     >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+
     >>> reply_bug_message = getUtility(
     ...     IBugMessageSet).getByBugAndMessage(
     ...         bug_with_watch, reply_message)
 
-    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> reply_bug_message.bugwatch == bug_watch
     True
 
-    >>> bug_message = bug_with_watch.linkMessage(message, bug_watch)
