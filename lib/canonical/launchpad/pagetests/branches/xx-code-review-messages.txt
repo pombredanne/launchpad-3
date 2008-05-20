@@ -62,3 +62,9 @@ After this, we are taken to the view page for that comment.
     I like this
     >>> print_tag('comment-vote', nopriv_browser)
     Abstain
+
+The comment's view page has a link that takes us back to the merge proposal.
+
+    >>> nopriv_browser.getLink('Back to merge proposal').click()
+    >>> bool(nopriv_browser.url == merge_proposal_url)
+    True
