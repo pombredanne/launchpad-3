@@ -42,20 +42,48 @@ there is no machine by that name in the database.
     None
 
 
+== Canonical URLs ==
+
+In order to be able to have views for the code import machines, they
+need to have a canonical URL.  The CodeImportMachineSet also has a
+canonical URL for set based views.
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(machine_set)
+    http://code.launchpad.dev/+code-imports/+machines
+
+A single code import machine is identified by the hostname of the machine
+directly after the canonical URL of the code import machine set.
+
+    >>> print canonical_url(sample_machine)
+    http://code.launchpad.dev/+code-imports/+machines/bazaar-importer
+
+
 == Creating CodeImportMachines ==
 
 CodeImportMachines can be created with the 'new' method of
-ICodeImportMachineSet.  New machines can be created in any state, but
-are in the OFFLINE state by default,
+ICodeImportMachineSet.  New machines can be created in either the
+ONLINE or OFFLINE states, but are in the OFFLINE state by default.
 
     >>> new_machine = machine_set.new('frobisher')
     >>> print new_machine.state.name
     OFFLINE
 
+If they are created in the ONLINE state, an ONLINE event is created in
+the CodeImportEvent audit trail.  The NewEvents class helps testing
+the creation of CodeImportEvent objects.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
+    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
+
+    >>> new_events = NewEvents()
     >>> new_machine2 = machine_set.new(
     ...     'innocent', CodeImportMachineState.ONLINE)
     >>> print new_machine2.state.name
     ONLINE
+    >>> print new_events.summary()
+    ONLINE innocent
 
 
 == Modifying CodeImportMachine ==
@@ -71,13 +99,7 @@ Directly setting the state information on CodeImportMachines is not permitted.
 
 Instead, the setOnline() and related methods must be used.  These methods
 update the fields and in addition create events in the CodeImportEvent audit
-trail.  The NewEvents class helps testing the creation of CodeImportEvent
-objects.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
-    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
-
+trail.
 
 === setOnline ===
 

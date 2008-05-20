@@ -23,7 +23,7 @@
                       contains_source contains_build
                       contains_translation contains_installer contains_upgrader
                       contains_ddtp displayname displayarchs displayversion
-                      isPPA"
+                      isPPA components"
           />
       <require
           permission="launchpad.Edit"

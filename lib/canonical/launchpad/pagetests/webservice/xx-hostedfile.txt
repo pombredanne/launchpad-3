@@ -1,0 +1,82 @@
+Some resources have binary files, usually images, associated with
+them. These binary files are managed by the Launchpad library. The
+Launchpad web service exposes these files as resources that respond to
+GET, PUT, and DELETE.
+
+The example used here is a person's mugshot.
+
+Salgado starts out with a link to a mugshot, but no actual mugshot.
+
+    >>> salgado = webservice.get('/beta/~salgado').jsonBody()
+    >>> salgado['mugshot_link']
+    u'http://api.launchpad.dev/beta/~salgado/mugshot'
+
+    >>> salgado_mugshot = '/beta/~salgado/mugshot'
+    >>> print webservice.get(salgado_mugshot)
+    HTTP/1.1 404 Not Found
+    ...
+
+We can upload a mugshot for salgado with PUT.
+
+    >>> import os
+    >>> import canonical
+    >>> def load_image(filename):
+    ...     image_file = os.path.join(
+    ...         os.path.dirname(canonical.launchpad.__file__),
+    ...         'images', filename)
+    ...     return open(image_file).read()
+
+    >>> print webservice.put(salgado_mugshot, 'image/png',
+    ...                      load_image('nyet-mugshot.png'))
+    HTTP/1.1 200 Ok
+    ...
+
+Once the mugshot has been uploaded, we can GET it. The resource acts
+as a dispatcher pointing to the library-managed mugshot on the public
+Internet.
+
+    >>> result = webservice.get(salgado_mugshot)
+    >>> print result
+    HTTP/1.1 303 See Other
+    ...
+    Location: http://localhost:58000/.../mugshot
+    >>> initial_url = result.getHeader('Location')
+
+PUT is also used to modify a mugshot.
+
+    >>> print webservice.put(salgado_mugshot, 'image/png',
+    ...                      load_image('person-mugshot.png'))
+    HTTP/1.1 200 Ok
+    ...
+
+The new mugshot is available at a different URL.
+
+    >>> result = webservice.get(salgado_mugshot)
+    >>> initial_url == result.getHeader('Location')
+    False
+
+Deleting a mugshot (with DELETE) disables the redirect.
+
+    >>> print webservice.delete(salgado_mugshot)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(salgado_mugshot)
+    HTTP/1.1 404 Not Found
+    ...
+
+You can't upload an image that's the wrong type.
+
+    >>> print webservice.put(salgado_mugshot, 'image/png', 'Not an image')
+    HTTP/1.1 400 Bad Request
+    ...
+    The file uploaded was not recognized as an image; please check it
+    and retry.
+
+You also can't upload an image that's the wrong size.
+
+    >>> print webservice.put(salgado_mugshot, 'image/png',
+    ...                      load_image('nyet-icon.png'))
+    HTTP/1.1 400 Bad Request
+    ...
+    This image is not exactly 192x192 pixels in size.

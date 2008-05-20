@@ -4,7 +4,8 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
   <form action="."
-        tal:attributes="action view/action_url"
+        tal:attributes="action view/action_url;
+                        style view/form_style|nothing"
         name="launchpadform"
         method="post"
         enctype="multipart/form-data"

@@ -1,0 +1,137 @@
+= Commercial Subscriptions =
+
+The CommercialSubscription class is used to track whether a project,
+which does not qualify for free hosting, has an unexpired subscription.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICommercialSubscription, IProductSet)
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> login(ANONYMOUS)
+
+An open source project should not have a commercial subscription,
+indicated by 'None'.
+
+    >>> product_set = getUtility(IProductSet)
+    >>> bzr = product_set.getByName('bzr')
+    >>> print bzr.commercial_subscription
+    None
+
+Redeem a voucher and check that the commercial_subscription
+attribute is correct.
+
+    >>> owner = bzr.owner
+    >>> owner.isTeam()
+    False
+    >>> bzr.redeemSubscriptionVoucher('asdf123', owner, owner, 12, 'notes')
+    >>> verifyObject(ICommercialSubscription, bzr.commercial_subscription)
+    True
+    >>> print bzr.commercial_subscription.product.name
+    bzr
+    >>> print bzr.commercial_subscription.sales_system_id
+    asdf123
+
+The expiration date can be extended by redeeming another voucher.  In
+real life this would be done nearer to the expiration date.  For
+testing consistency, let's force the start and expiry dates to a known
+date.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
+    >>> subscription.date_starts = datetime(2008,1,15,tzinfo=UTC)
+    >>> subscription.date_expires = datetime(2009,1,15,tzinfo=UTC)
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> old_date_starts = bzr.commercial_subscription.date_starts
+    >>> bzr.redeemSubscriptionVoucher('foo456', owner, owner, 12, 'notes')
+    >>> print bzr.commercial_subscription.sales_system_id
+    foo456
+
+The start date should not have changed.
+
+    >>> bzr.commercial_subscription.date_starts == old_date_starts
+    True
+
+The difference between the expiration dates is one year -- 365 days
+for 2009.
+
+    >>> expiry_diff = (bzr.commercial_subscription.date_expires -
+    ...                old_date_expires)
+    >>> expiry_diff == timedelta(365)
+    True
+
+A voucher can be redeemed for any number of months (as reported by the
+Salesforce proxy).  Test for a 6 month subscription.
+
+    >>> old_date_expires = bzr.commercial_subscription.date_expires
+    >>> old_date_starts = bzr.commercial_subscription.date_starts
+    >>> bzr.redeemSubscriptionVoucher('foo457', owner, owner, 6, 'notes')
+    >>> print bzr.commercial_subscription.sales_system_id
+    foo457
+
+The start date did not change.
+
+    >>> bzr.commercial_subscription.date_starts == old_date_starts
+    True
+
+The expiration date has been increased by six months, from Jan-15-2010
+to Jul-15-2010.
+
+    >>> expiry_diff = (bzr.commercial_subscription.date_expires -
+    ...                old_date_expires)
+    >>> expiry_diff == (datetime(2010,7,15) - datetime(2010,1,15))
+    True
+
+The requires_commercial_subscription attribute is true if the license
+does not qualifies or there is no license.  The is_permitted
+attribute is true if a commercial subscription is not required or if a
+subscription is required and there is an active subscription.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bzr.licenses
+    ()
+    >>> bzr.license_approved
+    False
+    >>> bzr.requires_commercial_subscription
+    True
+    >>> bzr.commercial_subscription.is_active
+    True
+    >>> bzr.is_permitted
+    True
+    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
+    >>> subscription.date_expires = subscription.date_starts
+    >>> bzr.commercial_subscription.is_active
+    False
+    >>> bzr.is_permitted
+    False
+
+The requires_commercial_subscription attribute should be True
+if the product has License.OTHER_PROPRIETARY or
+License.OTHER_OPEN_SOURCE or a description of another license
+in product.license_info.
+
+    >>> from canonical.launchpad.interfaces import License
+    >>> bzr.licenses = (License.OTHER_PROPRIETARY,)
+    >>> bzr.requires_commercial_subscription
+    True
+    >>> bzr.licenses = (License.GNU_GPL_V2,)
+    >>> bzr.requires_commercial_subscription
+    False
+    >>> bzr.license_info = 'blah'
+    >>> bzr.requires_commercial_subscription
+    True
+
+The requires_commercial_license attribute will be False if
+product.license_approved is True. The product.is_permitted
+attribute will be True if the project does not require a commercial
+subscription.
+
+    >>> bzr.license_approved = True
+    >>> bzr.requires_commercial_subscription
+    False
+    >>> bzr.commercial_subscription.is_active
+    False
+    >>> bzr.is_permitted
+    True

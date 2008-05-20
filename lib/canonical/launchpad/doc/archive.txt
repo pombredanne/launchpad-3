@@ -537,8 +537,9 @@ decreases.
 context it allows us to lookup for `ISourcePackagePublishingHistory`
 records which were not deleted yet.
 
- 1. source publication is in PUBLISHED status OR
- 2. source contains one or more binary publication in PUBLISHED status.
+Basically, it returns any PENDING or PUBLISHED source publication or
+the ones in any state containing one or more binary publication in
+PUBLISHED status, respecting the given name and status filters.
 
     >>> cprov_archive.getSourcesForDeletion().count()
     2
@@ -561,6 +562,28 @@ it continues to be considered 'available for deletion'.
     >>> syncUpdate(deleted)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    1
+
+The status filter can be used to only return sources that can be
+deleted matching a given status.
+
+    >>> cprov_archive.getSourcesForDeletion(
+    ...      name='ice', status=PackagePublishingStatus.DELETED).count()
+    1
+
+    >>> cprov_archive.getSourcesForDeletion(
+    ...      name='ice', status=PackagePublishingStatus.PUBLISHED).count()
+    0
+
+The status filter can also be a sequence of status.
+
+    >>> irrelevant_status = (
+    ...     PackagePublishingStatus.SUPERSEDED,
+    ...     PackagePublishingStatus.DELETED,
+    ...     )
+
+    >>> cprov_archive.getSourcesForDeletion(
+    ...      name='ice', status=irrelevant_status).count()
     1
 
 The source publication is only excluded from 'deletion list' when its
@@ -1296,11 +1319,12 @@ for more details.
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-    >>> ubuntu.main_archive.canUpload(cprov, main_component)
+    >>> ubuntu.main_archive.canUpload(carlos, main_component)
     False
 
-    >>> ubuntu.main_archive.canAdministerQueue(cprov, main_component)
+    >>> ubuntu.main_archive.canAdministerQueue(carlos, main_component)
     False
 
     >>> ubuntu.main_archive.canUpload(ubuntu_team, main_component)
@@ -1309,3 +1333,17 @@ for more details.
     >>> ubuntu.main_archive.canAdministerQueue(ubuntu_team, main_component)
     True
 
+canUpload() can also check someone's permission to upload a specific
+source package.  Carlos, who does not have permission to upload to any
+Ubuntu components, has permission to upload "mozilla-firefox".
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> mozilla = getUtility(
+    ...     ISourcePackageNameSet).queryByName("mozilla-firefox")
+    >>> ubuntu.main_archive.canUpload(carlos, mozilla)
+    True
+
+Cprov does not have permission, however.
+
+    >>> ubuntu.main_archive.canUpload(cprov, mozilla)
+    False

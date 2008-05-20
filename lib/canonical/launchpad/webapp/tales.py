@@ -56,8 +56,9 @@ import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.publisher import (
-    get_current_browser_request, nearest)
+    get_current_browser_request, LaunchpadView, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
@@ -87,19 +88,30 @@ class MenuAPI:
     """
 
     def __init__(self, context):
+        self._tales_context = context
         if zope_isinstance(context, dict):
             # We have what is probably a CONTEXTS dict.
             # We get the context out of here, and use that for self.context.
             # We also want to see if the view has a __launchpad_facetname__
             # attribute.
+
+            # XXX sinzui 2008-05-06 bug=226952: Zope 3.4 will not adapt a
+            # dict to a view object. Templates must switch to 'view'.
             self._context = context['context']
-            view = context['view']
+            self.view = context['view']
             self._request = context['request']
             self._selectedfacetname = getattr(
-                view, '__launchpad_facetname__', None)
+                self.view, '__launchpad_facetname__', None)
+        elif zope_isinstance(context, LaunchpadView):
+            self.view = context
+            self._context = self.view.context
+            self._request = self.view.request
+            self._selectedfacetname = getattr(
+                self.view, '__launchpad_facetname__', None)
         else:
             self._context = context
             self._request = get_current_browser_request()
+            self.view = None
             self._selectedfacetname = None
 
     def __getattr__(self, attribute_name):
@@ -126,7 +138,7 @@ class MenuAPI:
             return {}
 
         menu.request = self._request
-        links = list(menu.iterlinks(requesturi=self._requesturi()))
+        links = list(menu.iterlinks(request_url=self._request_url()))
         return dict((link.name, link) for link in links)
 
     def _nearest_menu(self, menutype):
@@ -135,20 +147,20 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
-    def _requesturi(self):
+    def _request_url(self):
         request = self._request
         if request is None:
             return None
-        requesturiobj = URI(request.getURL())
+        request_urlobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
-        if requesturiobj.path.rstrip('/').endswith(defaultviewname):
-            requesturiobj = URI(request.getURL(1))
+        if request_urlobj.path.rstrip('/').endswith(defaultviewname):
+            request_urlobj = URI(request.getURL(1))
         query = request.get('QUERY_STRING')
         if query:
-            requesturiobj = requesturiobj.replace(query=query)
-        return requesturiobj
+            request_urlobj = request_urlobj.replace(query=query)
+        return request_urlobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
@@ -157,7 +169,7 @@ class MenuAPI:
         else:
             menu.request = self._request
             return list(menu.iterlinks(
-                requesturi=self._requesturi(),
+                request_url=self._request_url(),
                 selectedfacetname=self._selectedfacetname))
 
     def selectedfacetname(self):
@@ -177,7 +189,7 @@ class MenuAPI:
             return []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturi=self._requesturi()))
+            return list(menu.iterlinks(request_url=self._request_url()))
 
     @property
     def context(self):
@@ -186,18 +198,28 @@ class MenuAPI:
             return  {}
         else:
             menu.request = self._request
-            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            links = list(menu.iterlinks(request_url=self._request_url()))
             return dict((link.name, link) for link in links)
 
     @property
     def navigation(self):
         """Navigation menu links list."""
-        menu = INavigationMenu(self._context, None)
+        # NavigationMenus may be associated with a content object or one of
+        # its views. The context we need is the one from the TAL expression.
+        context = self._tales_context
+        if self._selectedfacetname is not None:
+            selectedfacetname = self._selectedfacetname
+        else:
+            # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the
+            # facet name from the layer implemented by the request.
+            view = get_current_view(self._request)
+            selectedfacetname = get_facet(view)
+        menu = queryAdapter(context, INavigationMenu, name=selectedfacetname)
         if menu is None:
             return {}
         else:
             menu.request = self._request
-            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            links = list(menu.iterlinks(request_url=self._request_url()))
             return dict((link.name, link) for link in links)
 
 
@@ -1061,6 +1083,17 @@ class CodeImportFormatterAPI(CustomizableFormatter):
         return {'product': self._context.product.displayname,
                 'branch': branch_title,
                }
+
+
+class CodeImportMachineFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for CodeImport objects"""
+
+    _link_summary_template = _('%(hostname)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {'hostname': self._context.hostname,}
 
 
 class MilestoneFormatterAPI(CustomizableFormatter):
@@ -2352,19 +2385,19 @@ class PageMacroDispatcher:
                 raise TraversalError("Max one path segment after macro:page")
 
             return self.page(pagetype)
-
-        if name == 'pagehas':
+        elif name == 'pagehas':
             if len(furtherPath) != 1:
                 raise TraversalError(
                     "Exactly one path segment after macro:haspage")
 
             layoutelement = furtherPath.pop()
             return self.haspage(layoutelement)
-
-        if name == 'pagetype':
+        elif name == 'pagetype':
             return self.pagetype()
-
-        raise TraversalError()
+        elif name == 'show_actions_menu':
+            return self.show_actions_menu()
+        else:
+            raise TraversalError(name)
 
     def page(self, pagetype):
         if pagetype not in self._pagetypes:
@@ -2381,6 +2414,19 @@ class PageMacroDispatcher:
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')
 
+    def show_actions_menu(self):
+        """Should the actions menu be rendered?
+
+        It should be rendered unless the layout turns it off, or if we are
+        running in development mode and the layout has navigation tabs.
+        """
+        has_actionsmenu = self.haspage('actionsmenu')
+        if has_actionsmenu and config.devmode:
+            # In devmode, actually hides the actions menu if
+            # the navigation tabs are used.
+            return not self.haspage('navigationtabs')
+        return has_actionsmenu
+
     class LayoutElements:
 
         def __init__(self,
@@ -2393,7 +2439,8 @@ class PageMacroDispatcher:
             portlets=False,
             structuralheaderobject=False,
             pagetypewasset=True,
-            actionsmenu=True
+            actionsmenu=True,
+            navigationtabs=False
             ):
             self.elements = vars()
 
@@ -2416,6 +2463,14 @@ class PageMacroDispatcher:
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True),
+        'default2.0':
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
+                navigationtabs=True),
         'defaultnomenu':
             LayoutElements(
                 applicationborder=True,

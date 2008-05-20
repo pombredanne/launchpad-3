@@ -15,7 +15,7 @@ import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
-from bzrlib import urlutils, ui
+from bzrlib import lockdir, urlutils, ui
 
 from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
@@ -64,8 +64,8 @@ class cmd_launchpad_server(Command):
 
         :param authserver: An `xmlrpclib.ServerProxy` (or equivalent) for the
             Launchpad authserver.
-        :param user_id: The database ID of the user whose branches are being
-            served.
+        :param user_id: A unique ID of the user whose branches are being
+            served. This can be a database ID, a nickname or an email address.
         :param hosted_url: Where the branches are uploaded to.
         :param mirror_url: Where all Launchpad branches are mirrored.
         :return: A `LaunchpadTransport`.
@@ -74,8 +74,11 @@ class cmd_launchpad_server(Command):
         from canonical.codehosting import transport
         hosted_transport = self._get_chrooted_transport(hosted_url)
         mirror_transport = self._get_chrooted_transport(mirror_url)
+        # Translate the given 'id' into an actual database id.
+        user_id = authserver.getUser(user_id)['id']
         lp_server = transport.LaunchpadServer(
-            authserver, user_id, hosted_transport, mirror_transport)
+            transport.BlockingProxy(authserver), user_id, hosted_transport,
+            mirror_transport)
         return lp_server
 
     def get_smart_server(self, transport, port, inet):
@@ -131,11 +134,14 @@ class cmd_launchpad_server(Command):
             authserver, user_id, upload_url, mirror_url)
         lp_server.setUp()
 
+        old_lockdir_timeout = lockdir._DEFAULT_TIMEOUT_SECONDS
         try:
             lp_transport = get_transport(lp_server.get_url())
             smart_server = self.get_smart_server(lp_transport, port, inet)
+            lockdir._DEFAULT_TIMEOUT_SECONDS = 0
             self.run_server(smart_server)
         finally:
+            lockdir._DEFAULT_TIMEOUT_SECONDS = old_lockdir_timeout
             lp_server.tearDown()
 
 
