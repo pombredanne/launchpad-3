@@ -11,7 +11,7 @@ __all__ = [
     'ICodeImportSet',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -142,6 +142,8 @@ class ICodeImport(Interface):
         readonly=True, vocabulary='CodeImportJob',
         description=_(
             "The current job for this import, either pending or running."))
+
+    results = Attribute("The results for this code import.")
 
     def approve(data, user):
         """Approve the import.
