@@ -1,4 +1,4 @@
- = Launchpad's WADL documents =
+= Launchpad's WADL documents =
 
 Every resource in the web service has a WADL representation that
 describes the capabilities of the resource in a machine-readable
@@ -39,7 +39,7 @@ this point on.
 The <application> tag for a WADL representation of an entry contains a
 single <resources> tag.
 
-    >>> resources, = list(tree)
+    >>> [resources] = tree
     >>> resources.tag
     '...resources'
 
@@ -53,7 +53,7 @@ The <resources> tag contains a single <resource> tag. The WADL
 description of a person describes only one resource: the person
 itself.
 
-    >>> resource, = list(resources)
+    >>> [resource] = (resources)
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -87,7 +87,7 @@ description of an entry. It's an <application> tag that contains a
     >>> tree.tag
     '...application'
 
-    >>> resources, = list(tree)
+    >>> [resources] = tree
     >>> resources.tag
     '...resources'
     >>> resources.attrib['href']
@@ -96,7 +96,7 @@ description of an entry. It's an <application> tag that contains a
 The <resource> tag defines the capabilities of the collection resource
 by referencing another WADL document.
 
-    >>> resource, = resources
+    >>> [resource] = resources
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -117,17 +117,73 @@ the representation of a top-level collection.
     >>> tree.tag
     '...application'
 
-    >>> resources, = list(tree)
+    >>> [resources] = tree
     >>> resources.tag
     '...resources'
     >>> resources.attrib['href']
     'http://api.launchpad.dev/beta/~admins/members'
 
-    >>> resource, = resources
+    >>> [resource] = resources
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter-scoped-collection'
+
+
+== Hosted file resources ==
+
+A hosted file resource is the web service's access point for a binary
+file hosted elsewhere. Examples of hosted files include a person's
+mugshot image and a project's icon.
+
+A hosted file resource responds to GET requests by redirecting the
+client to the externally hosted file. It responds to PUT or DELETE
+requests by updating or deleting the underlying binary file.
+
+The behavior laid out in the previous paragraph is also defined in the
+WADL documents served by the web service itself. You can use content
+negotiation to get a WADL description of any hosted file resource.
+
+The 'salgado' user starts out with no hosted mugshot, and an ordinary
+GET to the place where the mugshot would be results in a 404 error.
+
+    >>> print webservice.get('/beta/~salgado/mugshot')
+    HTTP/1.1 404 Not Found
+    ...
+
+But if the client is interested in learning how to create a mugshot at
+/beta/~salgado/mugshot, it can use content negotiation to get a WADL
+description of the resource-to-be.
+
+    >>> wadl = webservice.get(
+    ...     '/beta/~salgado/mugshot',
+    ...     'application/vd.sun.wadl+xml').getBody()
+    >>> tree = ET.fromstring(wadl)
+
+Just like with the WADL description of an entry or collection
+resource, the WADL representation of a hosted file resource is not
+much more than a reference to a big WADL file at the service root. To
+find out about the capabilities of the resource-to-be, the client
+needs to fetch the WADL representation of
+http://api.launchpad.dev/beta/ and look for the XML element with the
+ID "HostedFile".
+
+    >>> tree.tag
+    '...application'
+
+    >>> [resources] = tree
+    >>> resources.tag
+    '...resources'
+    >>> resources.attrib['href']
+    'http://api.launchpad.dev/beta/~salgado/mugshot'
+
+    >>> [resource] = resources
+    >>> resource.tag
+    '...resource'
+    >>> resource.attrib['path']
+    ''
+    >>> resource.attrib['type']
+    'http://api.launchpad.dev/beta/#HostedFile'
 
 
 == The service root ==
@@ -188,8 +244,8 @@ representation of type 'service-root-json', or it can get a WADL
 representation. The WADL representation is the document we're looking
 at right now.
 
-    >>> response, = list(get)
-    >>> json_repr, wadl_repr, = list(response)
+    >>> [response] = get
+    >>> json_repr, wadl_repr = list(response)
     >>> json_repr.attrib['href']
     '#service-root-json'
     >>> wadl_repr.attrib['mediaType']
@@ -229,7 +285,7 @@ resource. This is represented in WADL by giving the <param> tag a
 child <link> tag. The <link> tag explains what sort of resource is at
 the other end of the link.
 
-    >>> person_set_param_link, = list(person_set_param)
+    >>> [person_set_param_link] = person_set_param
     >>> person_set_param_link.tag
     '...link'
     >>> person_set_param_link.attrib['type']
@@ -255,7 +311,7 @@ everything.
 As with the <resources> tags shown earlier, this one contains a single
 <resource> tag.
 
-    >>> resource, = resources
+    >>> [resource] = resources
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -379,11 +435,16 @@ tags devoted to it in the WADL document:
    example, and the "#IBugEntry-page" referenced in the very first
    example.
 
+(The last <resource_type> tag is a hard-coded description of a hosted
+binary file resource. Since it's hard-coded, this test doesn't deal
+with it.)
+
 This code splits the tags into 5-tuples and stores the tuples in
 'entry_resource_descriptions'.
 
     >>> entry_resource_descriptions = []
-    >>> entry_resource_types = other_children[first_entry_type_index:]
+    >>> entry_resource_types = other_children[first_entry_type_index:-1]
+    >>> hosted_binary_resource_type = other_children[-1]
     >>> for index in range(0, len(entry_resource_types), 5):
     ...     entry_resource_descriptions.append(
     ...         (tuple(entry_resource_types[index:index + 5])))
@@ -432,7 +493,7 @@ collection (see "The representation of a collection" later in this
 test) or else a short WADL description of a particular collection,
 like the one shown earlier in this test.
 
-    >>> response, = list(get)
+    >>> [response] = get
     >>> json_rep, wadl_rep = list(response)
     >>> json_rep.attrib['href']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter-page'
@@ -553,9 +614,9 @@ Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
 of the link.
 
-    >>> assignee_param, = [param for param in full_params
+    >>> [assignee_param] = [param for param in full_params
     ...                    if param.attrib['name'] == 'assignee_link']
-    >>> assignee_link, = list(assignee_param)
+    >>> [assignee_link] = assignee_param
     >>> assignee_link.tag
     '...link'
 
@@ -570,7 +631,7 @@ to the appropriate scoped collection resource type (defined
 below). For example, the list of a bug task's related tasks is a
 collection of bug tasks.
 
-    >>> related_tasks, = [
+    >>> [related_tasks] = [
     ...     param for param in full_params
     ...     if param.attrib['name'] == 'related_tasks_collection_link']
     >>> (doc, related_tasks_link) = related_tasks.getchildren()
@@ -604,7 +665,7 @@ who take their vocabulary from an EnumeratedValue. For these
 parameters, the server provides the client with information about the
 possible values.
 
-    >>> status_param, = [param for param in full_params
+    >>> [status_param] = [param for param in full_params
     ...                   if param.attrib['name'] == 'status']
     >>> status_options = status_param.getchildren()
     >>> status_options[0].tag
@@ -661,7 +722,7 @@ representations of a bug task: the JSON one described above as
 "BugTask-full", and a WADL document--the sort of document shown in the
 very first section of this test.
 
-    >>> response, = list(get)
+    >>> [response] = get
     >>> response.tag
     '...response'
     >>> full, wadl = list(response)
@@ -680,10 +741,10 @@ Similarly, the standard PUT and PATCH methods each include a 'request'
 tag, which tells the client which representation it should send along
 with a request.
 
-    >>> request, = list(put)
+    >>> [request] = put
     >>> request.tag
     '...request'
-    >>> representation, = list(request)
+    >>> [representation] = request
     >>> representation.attrib['href']
     'http://api.launchpad.dev/beta/#BugTaskEntry-full'
 
@@ -726,6 +787,59 @@ valid values.
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
+== Hosted binary files ==
+
+One interesting type of parameter not shown above is a link to a
+binary file managed by the web service, such as a person's mugshot.
+
+    >>> person_desc = [entry for entry in entry_resource_descriptions
+    ...                if entry[0].attrib['id'] == 'PersonEntryAdapter'][0]
+    >>> (person_entry_type, person_full_rep, person_diff_rep,
+    ...  person_scoped_collection_type, person_collection_rep) = person_desc
+    >>> mugshot_param = [param for param in person_full_rep
+    ...                  if param.attrib['name'] == 'mugshot_link'][0]
+    >>> doc, mugshot_link = mugshot_param
+    >>> mugshot_link.attrib['type']
+    'http://api.launchpad.dev/beta/#HostedFile'
+
+What can the client do to this binary file resource?
+
+    >>> get, put, delete = list(hosted_binary_resource_type)
+
+The client can send GET to the resource, and be redirected to a binary
+file hosted externally.
+
+    >>> get.tag
+    '...method'
+    >>> get.attrib['name']
+    'GET'
+    >>> [get_response] = get
+    >>> [get_representation] = get_response
+    >>> get_representation.attrib['status']
+    '303'
+    >>> [redirect_param] = get_representation
+    >>> redirect_param.tag
+    '...param'
+    >>> redirect_param.attrib['style']
+    'header'
+    >>> redirect_param.attrib['name']
+    'Location'
+
+The client can PUT a binary file:
+
+    >>> put.tag
+    '...method'
+    >>> put.attrib['name']
+    'PUT'
+
+The client can DELETE an existing file:
+
+    >>> delete.tag
+    '...method'
+    >>> delete.attrib['name']
+    'DELETE'
+
+
 == A scoped collection resource type ==
 
 We're almost done with our in-depth look at the WADL description of
@@ -744,7 +858,7 @@ The difference between a scoped collection and a top-level collection
 is that, right now, scoped collections never have custom
 operations. They only support the standard GET operation.
 
-    >>> get, = list(scoped_collection_type)
+    >>> [get] = scoped_collection_type
     >>> get.attrib['id']
     'BugTaskEntry-scoped-collection-get'
 
@@ -752,7 +866,7 @@ In response to that GET operation they'll serve a WADL representation
 (not that interesting) or a JSON representation (interesting, and
 covered immediately below).
 
-    >>> get_response, = list(get)
+    >>> [get_response] = get
     >>> json_representation, wadl_representation = list(get_response)
     >>> json_representation.attrib['href']
     '#BugTaskEntry-page'
@@ -792,7 +906,7 @@ type BugTaskEntry.
 
     >>> entry_links.attrib['path']
     "$['entries'][*]['self_link']"
-    >>> link, = list(entry_links)
+    >>> [link] = entry_links
     >>> link.attrib['type']
     'http://api.launchpad.dev/beta/#BugTaskEntry'
 
@@ -803,10 +917,10 @@ The 'next_collection_link' and 'prev_collection_link' parameters are
 also links to other resources. What are these other resources? Other
 pages of the same collection!
 
-    >>> next_type, = list(next)
+    >>> [next_type] = next
     >>> next_type.attrib['type']
     '#BugTaskEntry-page'
 
-    >>> prev_type, = list(prev)
+    >>> [prev_type] = prev
     >>> prev_type.attrib['type']
     '#BugTaskEntry-page'
