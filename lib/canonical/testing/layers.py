@@ -22,13 +22,22 @@ of one, forcing us to attempt to make some sort of layer tree.
 __metaclass__ = type
 
 __all__ = [
-    'BaseLayer', 'DatabaseLayer', 'GoogleServiceLayer',
-    'LibrarianLayer', 'FunctionalLayer', 'LaunchpadLayer',
-    'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
+    'BaseLayer',
+    'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
-    'TwistedLaunchpadZopelessLayer'
+    'FunctionalLayer',
+    'GoogleServiceLayer',
+    'LaunchpadFunctionalLayer',
+    'LaunchpadLayer',
+    'LaunchpadScriptLayer',
+    'LaunchpadZopelessLayer',
+    'LayerConsistencyError',
+    'LayerIsolationError',
+    'LibrarianLayer',
+    'PageTestLayer',
+    'TwistedLaunchpadZopelessLayer',
+    'TwistedLayer',
+    'ZopelessLayer',
     ]
 
 import gc
@@ -815,14 +824,14 @@ class GoogleServiceLayer(BaseLayer):
 
     @classmethod
     def testSetUp(self):
-        # We need to prevent BaseLayer.testSetUp() from
-        # firing, or else we will get a LayerIsolationError.
+        # We need to override BaseLayer.testSetUp(), or else we will
+        # get a LayerIsolationError.
         pass
 
     @classmethod
     def testTearDown(self):
-        # We need to prevent BaseLayer.testTearDown() from
-        # firing, or else we will get a LayerIsolationError.
+        # We need to override BaseLayer.testTearDown(), or else we will
+        # get a LayerIsolationError.
         pass
 
 

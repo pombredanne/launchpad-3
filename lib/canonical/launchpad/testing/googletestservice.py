@@ -25,9 +25,12 @@ log.setLevel(logging.DEBUG)
 
 class GoogleRequestHandler(BaseHTTPRequestHandler):
 
+    """Return an XML file depending on the requested URL."""
+
     default_content_type = 'text/xml; charset=UTF-8'
 
     def do_GET(self):
+        """See BaseHTTPRequestHandler in the Python Standard Library."""
         urlmap = url_to_xml_map()
         if self.path in urlmap:
             self.return_file(urlmap[self.path])
@@ -74,27 +77,15 @@ def url_to_xml_map():
 
     return mapping
 
-def start_as_process():
-    """Start the script as a stand-alone process."""
-    script = __file__
-    if not script.endswith('.py'):
-        # Make sure we run the .py file, not the .pyc.
-        head, _ = os.path.splitext(script)
-        script = head + '.py'
-    proc = subprocess.Popen(script)
-
-    # Wait for our new service to become available, using a safe
-    # technique to do so.
-    host, port = get_service_endpoint()
-    wait_for_service(host, port)
-    return proc
-
 def get_service_endpoint():
     """Return the host and port that the service is running on."""
     return hostpair(config.google.site)
 
 def service_is_available(timeout=10.0):
-    """Return True if the service is up and running."""
+    """Return True if the service is up and running.
+
+    BLOCK execution for at most `timeout' seconds before returning False.
+    """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout) # Block for `timeout' seconds.
     host, port = get_service_endpoint()
@@ -111,20 +102,20 @@ def service_is_available(timeout=10.0):
 def wait_for_service(host, port, timeout=2.0):
     """Poll the service and BLOCK until we can connect to it.
 
-    The socket has a default timeout, just in case. See the socket
-    module documentation for special timeout values.
+    The socket has a default `timeout', in seconds.  Refer to the
+    socket module documentation in the Standard Library for possible
+    timeout values.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout) # Block for at most X seconds.
 
-    # Try to stop polling after X seconds.
-    start = time.time()
+    start = time.time()  # Record when we started polling.
     try:
         while 1:
             try:
                 sock.connect((host, port))
             except socket.error, err:
-                elapsed = (time.time() - start) # Convert to seconds.
+                elapsed = (time.time() - start)
                 if elapsed > timeout:
                     raise RuntimeError("Socket poll time exceeded.")
             else:
@@ -133,12 +124,30 @@ def wait_for_service(host, port, timeout=2.0):
         sock.close()  # Clean up.
 
 def hostpair(url):
-    """Return the host and port for the specified URL."""
+    """Parse the host and port number out of a URL string."""
     parts  = urlsplit(url)
     host, port = parts[1].split(':')
     port = int(port)
     return (host, port)
 
+def start_as_process():
+    """Run this file as a stand-alone Python script.
+
+    Returns a subprocess.Popen object. (See the `subprocess` module in
+    the Python Standard Library for details.)
+    """
+    script = __file__
+    if not script.endswith('.py'):
+        # Make sure we run the .py file, not the .pyc.
+        head, _ = os.path.splitext(script)
+        script = head + '.py'
+    proc = subprocess.Popen(script)
+
+    # Wait for our new service to become available, using a safe
+    # technique to do so.
+    host, port = get_service_endpoint()
+    wait_for_service(host, port)
+    return proc
 
 def main():
     """Run the HTTP server."""

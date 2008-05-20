@@ -29,8 +29,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-    FunctionalLayer, GoogleServiceLayer)
+    DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))

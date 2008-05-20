@@ -1,7 +1,8 @@
 # This file defines a mapping of Google search service URLs to the XML
 # files that should be returned by them.
 #
-# The format is 'url XMLfile'.
+# The format is 'url XMLfile'. Blank lines and lines starting with '#'
+# are ignored.
 #
 # The special URL, '*', is returned for all un-mapped URLs.
 
