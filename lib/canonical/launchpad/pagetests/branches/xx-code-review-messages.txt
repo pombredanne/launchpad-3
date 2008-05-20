@@ -50,7 +50,8 @@ We can reply to a comment.
     >>> nopriv_browser.url == message_url + '/+reply'
     True
     >>> nopriv_browser.getControl('Subject').value = 'Subjects are nice.'
-    >>> nopriv_browser.getControl('Comment').value = 'I like this'
+    >>> nopriv_browser.getControl('Comment').value = ('I like this.\n'
+    ... 'I wish I had time to review it properly')
     >>> nopriv_browser.getControl('Vote').displayValue = ['Abstain']
     >>> nopriv_browser.getControl('Add').click()
 
@@ -59,7 +60,8 @@ After this, we are taken to the view page for that comment.
     >>> print_tag('comment-subject', nopriv_browser)
     Subjects are nice.
     >>> print_tag('comment-body', nopriv_browser)
-    I like this
+    I like this.
+    I wish I had time to review it properly
     >>> print_tag('comment-vote', nopriv_browser)
     Abstain
 
@@ -69,7 +71,10 @@ The comment's view page has a link that takes us back to the merge proposal.
     >>> bool(nopriv_browser.url == merge_proposal_url)
     True
 
-Our comments are now listed on this page.
+Our comments are now listed on this page.  The second comment has been
+abbreviated at the newline, with a trailing elipsis.  (And there are a total
+of three periods, even though simply appending an elipsis to a sentence with
+a period would give four.)
 
     >>> comments = find_tags_by_class(
     ...     nopriv_browser.contents, 'boardCommentDetails')
@@ -83,5 +88,5 @@ Our comments are now listed on this page.
     No Privileges Person
     vote:
     Abstain
-    I like this
+    I like this...
     (full message)
