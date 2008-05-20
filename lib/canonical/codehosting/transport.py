@@ -527,12 +527,17 @@ class LaunchpadServer(Server):
         memory_server.setUp()
         transport = get_transport(memory_server.get_url())
         transport.mkdir('.bzr')
-        if unique_name != '':
-            transport.put_bytes(
-                '.bzr/control.conf',
-                'default_stack_on=%s\n'
-                % urlutils.join(
-                    config.codehosting.supermirror_root, unique_name))
+        if unique_name == '':
+            return transport
+
+        transport.put_bytes(
+            '.bzr/control.conf',
+            'default_stack_on=%s\n'
+            % urlutils.join(
+                config.codehosting.supermirror_root, unique_name))
+        transport.put_bytes(
+            '.bzr/branch-format',
+            'Bazaar-NG meta directory, format 1\n')
         return transport
 
     def _getBranch(self, virtual_path):

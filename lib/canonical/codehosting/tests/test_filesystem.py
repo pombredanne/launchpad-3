@@ -8,6 +8,7 @@ import unittest
 import stat
 
 from bzrlib import errors
+from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting import branch_id_to_path
@@ -165,6 +166,15 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             'default_stack_on=%s~vcs-imports/evolution/main'
             % config.codehosting.supermirror_root,
             control_file.strip())
+
+    @defer_to_thread
+    def test_can_open_product_control_dir(self):
+        # The stacking policy lives in a bzrdir in the product directory.
+        # Bazaar needs to be able to open this bzrdir.
+        transport = self.getTransport().clone('~testuser/evolution')
+        found_bzrdir = BzrDir.open_containing_from_transport(transport)[0]
+        expected_url = transport.clone('.bzr').base
+        self.assertEqual(expected_url, found_bzrdir.transport.base)
 
     @defer_to_thread
     @wait_for_disconnect
