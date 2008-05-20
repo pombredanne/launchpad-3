@@ -35,7 +35,7 @@
 
       <div
         tal:condition="not: view/is_question"
-        tal:content="structure context/@@+edit-form" />
+        tal:content="structure context/edit-form" />
 
       <h2>Bug description</h2>
 

@@ -48,13 +48,13 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope import formlib
 from zope.interface import implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder, IList
-from zope.schema.interfaces import IContextSourceBinder
 
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
@@ -802,6 +802,7 @@ class BugTaskEditView(LaunchpadEditFormView):
 
     schema = IBugTask
     milestone_source = None
+    edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
 
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
@@ -2438,7 +2439,10 @@ class BugTasksAndNominationsView(LaunchpadView):
     def __init__(self, context, request):
         """Ensure we always have a bug context."""
         LaunchpadView.__init__(self, IBug(context), request)
+        # Cache some values, so that we don't have to recalculate them
+        # for each bug task.
         self.cached_milestone_source = CachedMilestoneSourceFactory()
+        self.user_is_subscribed = self.context.isSubscribed(self.user)
 
     def _getTableRowView(self, context, is_converted_to_question,
                          is_conjoined_slave):
@@ -2455,6 +2459,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
         view.edit_view.milestone_source = self.cached_milestone_source
+        view.edit_view.user_is_subscribed = self.user_is_subscribed
         return view
 
     def getBugTaskAndNominationViews(self):

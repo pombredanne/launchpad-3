@@ -277,14 +277,6 @@
     </browser:page>
 
     <browser:page
-        name="+edit-form"
-        for="canonical.launchpad.interfaces.IUpstreamBugTask"
-        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
-        permission="launchpad.Edit"
-        template="../templates/bugtask-edit-form.pt">
-    </browser:page>
-
-    <browser:page
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IProductSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
