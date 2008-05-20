@@ -1131,7 +1131,6 @@ class AppServerLayer(LaunchpadLayer):
     @profiled
     def tearDown(cls):
         # Force the database to reset.
-        DatabaseLayer.force_dirty_database()
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
         cls.stopAllServices()
@@ -1149,13 +1148,11 @@ class AppServerLayer(LaunchpadLayer):
     @profiled
     def testSetUp(cls):
         DatabaseLayer.force_dirty_database()
-        pass
 
     @classmethod
     @profiled
     def testTearDown(cls):
         DatabaseLayer.force_dirty_database()
-        pass
 
     @classmethod
     @profiled

@@ -19,3 +19,4 @@ lint.txt
 .shelf
 development-nohup.out
 testrunner-appserver-quiet.log
+test-appserver-layer.log
