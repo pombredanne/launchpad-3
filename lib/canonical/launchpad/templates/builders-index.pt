@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
@@ -25,6 +25,13 @@
     <div id="other-builders" tal:define="category view/other_builders">
       <div metal:use-macro="template/macros/builder-category" />
     </div>
+
+    <p>
+      <tal:add_action
+        define="link context/menu:overview/add"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </p>
 
     <p class="discreet">Generated at <span tal:replace="view/now"/></p>
 
@@ -50,7 +57,7 @@
          </th>
        </tr>
        <tr class="builder-row" tal:repeat="builder builder_group/builders">
-         <td style="text-align: left; width: 15em">
+         <td style="text-align: left; width: 10em">
            <a tal:attributes="href builder/fmt:url"
               tal:content="builder/title/fmt:shorten/30">Bob</a>
          </td>
@@ -58,7 +65,7 @@
            <tal:status replace="builder/status">OK</tal:status>
          </td>
        </tr>
-       <tr tal:condition="not: repeat/builder_group/end" class="note">
+       <tr tal:condition="repeat/builder_group/end" class="note">
          <td>&nbsp;</td>
        </tr>
      </tal:group>
