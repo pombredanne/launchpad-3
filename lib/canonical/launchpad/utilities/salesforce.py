@@ -62,10 +62,8 @@ class SalesforceVoucherProxy:
                           config.commercial.voucher_proxy_port)
     @property
     def server_proxy(self):
-        """See `ISalesforceVoucherProxy`.
-
-        This is not a cachedproperty as each use needs a new proxy.
-        """
+        """See `ISalesforceVoucherProxy`."""
+        # This is not a cachedproperty as each use needs a new proxy.
         return xmlrpclib.ServerProxy(self.url,
                                      transport=self.xmlrpc_transport)
     def getUnredeemedVouchers(self, user):

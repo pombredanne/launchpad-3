@@ -104,7 +104,7 @@ class DebBugs(ExternalBugTracker):
         """
         parts = remote_status.split(' ')
         if len(parts) < 2:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
 
         status = parts[0]
         severity = parts[1]
@@ -114,7 +114,7 @@ class DebBugs(ExternalBugTracker):
         try:
             malone_status = debbugsstatusmap[status]
         except KeyError:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
         if status == 'open':
             confirmed_tags = [
                 'help', 'confirmed', 'upstream', 'fixed-upstream']

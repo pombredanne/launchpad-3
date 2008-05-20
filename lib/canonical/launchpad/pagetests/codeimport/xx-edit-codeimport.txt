@@ -212,7 +212,9 @@ should show this as 2 hours.
 == Import details for a import that has been imported successfully ==
 
 If a branch has been successfully imported in the past, then the date
-that it was last successful is shown.
+that it was last successful is shown, as well as when the next import
+will be run -- which is, by default for Subversion, six hours after the
+last import completed, and so in this case in about three hours.
 
     >>> login('david.allouche@canonical.com')
     >>> from canonical.launchpad.testing.codeimporthelpers import (
@@ -228,7 +230,45 @@ that it was last successful is shown.
     >>> import_browser.open(svn_import_location)
     >>> print_import_details(import_browser)
     Status: Reviewed
-    ...
+    This branch is an import of the Subversion branch from
+        svn://svn.example.com/fooix/trunk.
+    The next import is scheduled to run in 3 hours.
     Last successful import was on 2007-09-10.
     ...
 
+
+== Requesting an import ==
+
+If an import is waiting for its next update, any logged in user can
+click a button to request an immediate import.
+
+    >>> sample_person_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> sample_person_browser.open(import_browser.url)
+    >>> sample_person_browser.getControl('Import Now')
+    <SubmitControl ...>
+
+Anonymous users cannot see this button.
+
+    >>> anon_browser.open(import_browser.url)
+    >>> anon_browser.getControl('Import Now')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Import Now'
+
+If the logged in user clicks this button, the import will be scheduled
+to run ASAP and the fact that the import has been requested is
+displayed.
+
+    >>> sample_person_browser.getControl('Import Now').click()
+    >>> for msg in get_feedback_messages(sample_person_browser.contents):
+    ...     print msg
+    Import will run as soon as possible.
+    >>> print_import_details(sample_person_browser)
+    Status: Reviewed
+    This branch is an import of the Subversion branch from
+        svn://svn.example.com/fooix/trunk.
+    The next import is scheduled to run as soon as possible (requested
+    by Sample Person).
+    Last successful import was on 2007-09-10.
+    ...

@@ -298,9 +298,9 @@ relationships to other objects. Here we change the owner of the
 'admins' team from 'sabdfl' to 'salgado'.
 
   >>> admins = webservice.get('/beta/~admins').jsonBody()
-  >>> admins['teamowner_link']
+  >>> admins['team_owner_link']
   u'http://api.launchpad.dev/beta/~sabdfl'
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~salgado'
+  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~salgado'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 200 Ok
   ...
@@ -308,44 +308,44 @@ relationships to other objects. Here we change the owner of the
 Identification of the owner is done by specifying a URL; a random
 string won't work.
 
-  >>> admins['teamowner_link'] = u'A random string'
+  >>> admins['team_owner_link'] = u'A random string'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "A random string".
+  team_owner_link: No such object "A random string".
 
 But not just any URL will do. It has to identify an object in the web
 service.
 
-  >>> admins['teamowner_link'] = u'http://www.canonical.com/'
+  >>> admins['team_owner_link'] = u'http://www.canonical.com/'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "http://www.canonical.com/".
+  team_owner_link: No such object "http://www.canonical.com/".
 
-  >>> admins['teamowner_link'] = u'http://www.canonical.com/beta/~admins'
+  >>> admins['team_owner_link'] = u'http://www.canonical.com/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "http://www.canonical.com/beta/~admins".
+  team_owner_link: No such object "http://www.canonical.com/beta/~admins".
 
 This URL would be valid, but it uses the wrong protocol (HTTPS instead
 of HTTP).
 
-  >>> admins['teamowner_link'] = u'https://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = u'https://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "https://api.launchpad.dev/beta/~admins".
+  team_owner_link: No such object "https://api.launchpad.dev/beta/~admins".
 
 Even a URL that identifies an object in the web service won't work, if
 the object isn't the right kind of object. A bug can't own a team:
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
+  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: Expected a person.
+  team_owner_link: Expected a person.
 
 And a bug can't be a duplicate of a person:
 
@@ -361,11 +361,11 @@ And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
 owner.
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: Constraint not satisfied.
+  team_owner_link: Constraint not satisfied.
 
 
 === Date formats ===

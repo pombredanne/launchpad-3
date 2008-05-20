@@ -138,6 +138,7 @@ from canonical.launchpad.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
+from canonical.launchpad.interfaces.searchservice import *
 from canonical.launchpad.interfaces.shipit import *
 from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackagename import *
@@ -180,5 +181,4 @@ from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
-from canonical.launchpad.interfaces.distrocomponentuploader import *
 from canonical.launchpad.interfaces.packagediff import *

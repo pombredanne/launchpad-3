@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -83,7 +84,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
                IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget):
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
+               IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -241,11 +243,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         description=_("""Whether or not this project's attributes are
         updated automatically."""))
 
-    active = Bool(title=_('Active'), description=_("""Whether or not
-        this project is considered active."""))
-
-    reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
-        this project has been reviewed."""))
+    license_reviewed = Bool(
+        title=_('License reviewed'),
+        description=_("""Whether or not this project's license has been
+        reviewed. Editable only by reviewers (Admins & Commercial Admins).
+        """))
 
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
@@ -254,9 +256,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         title=_('Notes for the project reviewer'),
         required=False,
         description=_(
-            "Notes on the project, viewable only by reviewers "
-            "(administrators and registry experts)."))
-
+            "Notes on the project's license, editable only by reviewers "
+            "(Admins & Commercial Admins)."))
 
     licenses = Set(
         title=_('Licenses'),
@@ -341,6 +342,10 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     is_permitted = Attribute("""
         Whether the project's licensing qualifies for free
         hosting or the project has an up-to-date subscription.""")
+
+    license_approved = Attribute("""
+        Whether a license is manually approved for free hosting
+        after automatic approval fails.""")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):

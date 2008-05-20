@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IComponentSet, IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.librarian.ftests.harness import (
     cleanupLibrarianFiles, fillLibrarianFile)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 
 
 class TestCopyPackageScript(unittest.TestCase):
@@ -42,6 +42,9 @@ class TestCopyPackageScript(unittest.TestCase):
         args.extend(extra_args)
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # The subprocess commits to the database so we need to tell the layer
+        # to fully tear down and restore the testing database.
+        DatabaseLayer.force_dirty_database()
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 

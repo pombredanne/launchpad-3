@@ -9,6 +9,7 @@ __all__ = ['Product', 'ProductSet']
 
 import operator
 import datetime
+import calendar
 import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -144,7 +145,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
-    reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    license_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
@@ -172,12 +173,24 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
 
         def add_months(start, num_months):
-            """Given a start date find the new date 'num_months' later."""
-            years, months = divmod(num_months, 12)
-            days = int((months / 12.0) * 365)
+            """Given a start date find the new date `num_months` later.
 
-            newdate = start.replace(year=start.year + years)
-            return newdate + datetime.timedelta(days)
+            If the start date day is the last day of the month and the new
+            month does not have that many days, then the new date will be the
+            last day of the new month.  February is handled correctly too,
+            including leap years, where th 28th-31st maps to the 28th or
+            29th.
+            """
+            years, new_month = divmod(start.month + num_months, 12)
+            new_year = start.year + years
+            # If the day is not valid for the new month, make it the last day
+            # of that month, e.g. 20080131 + 1 month = 20080229.
+            weekday, days_in_month = calendar.monthrange(new_year, new_month)
+            new_day = min(days_in_month, start.day)
+            new_date = start.replace(year=new_year,
+                                     month=new_month,
+                                     day=new_day)
+            return new_date
 
         now = datetime.datetime.now(pytz.timezone('UTC'))
         if self.commercial_subscription is None:
@@ -208,27 +221,30 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def requires_commercial_subscription(self):
+        """See `IProduct`."""
         other_licenses = (License.OTHER_PROPRIETARY,
                           License.OTHER_OPEN_SOURCE)
         if self.license_approved:
             # The license was manually approved for free hosting.
             return False
-        elif (len(self.licenses) > 0
-              and self.license_info in ('', None)
-              and not set(self.licenses).intersection(other_licenses)):
-            # The project has a valid open source license.
+        elif (len(self.licenses) > 0 and
+              self.license_info in ('', None) and
+              len(set(self.licenses).intersection(other_licenses)) == 0):
+            # The project has only valid open source license(s).
             return False
         else:
             return True
 
     @property
     def is_permitted(self):
+        """See `IProduct`."""
         if not self.requires_commercial_subscription:
             # The project qualifies for free hosting.
             return True
+        elif self.commercial_subscription is None:
+            return False
         else:
-            # The project has an active commmercial subscription.
-            return getattr(self.commercial_subscription, 'is_active', False)
+            return self.commercial_subscription.is_active
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
@@ -790,7 +806,7 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, mugshot=None, logo=None,
+                      license_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
         """See `IProductSet`."""
         product = Product(
@@ -800,7 +816,8 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang, reviewed=reviewed,
+            programminglang=programminglang,
+            license_reviewed=license_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
         if len(licenses) > 0:

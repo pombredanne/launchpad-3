@@ -21,12 +21,13 @@ __all__ = [
     'ProductDownloadFilesView',
     'ProductAddView',
     'ProductAddViewBase',
+    'ProductAdminView',
     'ProductBranchListingView',
     'ProductBrandingView',
     'ProductEditView',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
-    'ProductReviewView',
+    'ProductReviewLicenseView',
     'ProductAddSeriesView',
     'ProductReassignmentView',
     'ProductRdfView',
@@ -36,6 +37,7 @@ __all__ = [
     'ProductSetContextMenu',
     'ProductSetView',
     'ProductBranchOverviewView',
+    'ProductBranchesView',
     'PillarSearchItem',
     ]
 
@@ -292,7 +294,8 @@ class ProductOverviewMenu(ApplicationMenu):
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf', 'subscribe', 'purchase_subscription']
+        'review_license', 'purchase_subscription',
+        'branch_visibility', 'rdf', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -370,7 +373,12 @@ class ProductOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
         text = 'Administer'
-        return Link('+review', text, icon='edit')
+        return Link('+admin', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Commercial')
+    def review_license(self):
+        text = 'Review license'
+        return Link('+review-license', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def branch_visibility(self):
@@ -920,10 +928,9 @@ class ProductChangeTranslatorsView(ProductEditView):
     field_names = ["translationgroup", "translationpermission"]
 
 
-class ProductReviewView(ProductEditView):
+class ProductAdminView(ProductEditView):
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "reviewed",
-                   "private_bugs", "reviewer_whiteboard"]
+    field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bug_supervisor is None:
@@ -932,6 +939,16 @@ class ProductReviewView(ProductEditView):
                     'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
                     'for this project first.',
                     canonical_url(self.context, rootsite="bugs")))
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+
+class ProductReviewLicenseView(ProductAdminView):
+    label = "Review project licensing"
+    field_names = ["active", "private_bugs",
+                   "license_reviewed", "reviewer_whiteboard"]
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1144,7 +1161,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 class ProductAddView(ProductAddViewBase):
 
     field_names = (ProductAddViewBase.field_names
-                   + ['owner', 'project', 'reviewed'])
+                   + ['owner', 'project', 'license_reviewed'])
 
     label = "Register an upstream open source project"
     product = None
@@ -1162,7 +1179,8 @@ class ProductAddView(ProductAddViewBase):
             # the owner and reviewed status during the edit process;
             # this saves time wasted on getting to product/+admin.
             # The fields are not displayed for other people though.
-            self.form_fields = self.form_fields.omit('owner', 'reviewed')
+            self.form_fields = self.form_fields.omit('owner',
+                                                     'license_reviewed')
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
@@ -1173,9 +1191,9 @@ class ProductAddView(ProductAddViewBase):
             # Zope makes sure these are never set, since they are not in
             # self.form_fields
             assert "owner" not in data
-            assert "reviewed" not in data
+            assert "license_reviewed" not in data
             data['owner'] = self.user
-            data['reviewed'] = False
+            data['license_reviewed'] = False
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
             title=data['title'],
@@ -1191,7 +1209,7 @@ class ProductAddView(ProductAddViewBase):
             programminglang=data['programminglang'],
             project=data['project'],
             owner=data['owner'],
-            reviewed=data['reviewed'],
+            license_reviewed=data['license_reviewed'],
             licenses = data['licenses'],
             license_info=data['license_info'])
         self.notifyFeedbackMailingList()
@@ -1310,7 +1328,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def initial_values(self):
         return {
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
-            'sort_by': BranchListingSort.MOST_RECENTLY_CHANGED_FIRST,
+            'sort_by': BranchListingSort.DEFAULT,
             }
 
     @cachedproperty
@@ -1467,3 +1485,24 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     def committer_text(self):
         return self._getPluralText(
             self.committer_count, _('person'), _('people'))
+
+
+class ProductBranchesView(ProductBranchListingView):
+    """View for branch listing for a product."""
+
+    def initialize(self):
+        """Conditionally redirect to the default view.
+
+        If the branch listing requests the default listing, redirect to the
+        default view for the product.
+        """
+        ProductBranchListingView.initialize(self)
+        if self.sort_by == BranchListingSort.DEFAULT:
+            self.request.response.redirect(canonical_url(self.context))
+
+    @property
+    def initial_values(self):
+        return {
+            'lifecycle': BranchLifecycleStatusFilter.CURRENT,
+            'sort_by': BranchListingSort.LIFECYCLE,
+            }

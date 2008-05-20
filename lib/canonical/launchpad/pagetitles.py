@@ -505,8 +505,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
 
-distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
-
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
@@ -1030,6 +1028,8 @@ product_purchase_subscription = ContextDisplayName(
     'Purchase Subscription for %s')
 
 product_files = ContextDisplayName('%s project files')
+
+product_review_license = ContextTitle('Review licensing for %s')
 
 product_series = ContextDisplayName('%s timeline')
 

@@ -28,10 +28,9 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
     IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
-    IDistribution, IDistributionSourcePackage, IDistroSeries,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IPersonSet,
-    IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, NominationError,
+    IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
+    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -575,14 +574,15 @@ class Bug(SQLBase):
             notification.date_emailed = UTC_NOW
             notification.syncUpdate()
 
-    def newMessage(self, owner=None, subject=None, content=None, parent=None):
+    def newMessage(self, owner=None, subject=None,
+                   content=None, parent=None, bugwatch=None):
         """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
         MessageChunk(message=msg, content=content, sequence=1)
 
-        bugmsg = self.linkMessage(msg)
+        bugmsg = self.linkMessage(msg, bugwatch)
         if not bugmsg:
             return
 
@@ -923,14 +923,15 @@ class Bug(SQLBase):
 
         return nomination
 
-    def getNominations(self, target=None):
+    def getNominations(self, target=None, nominations=None):
         """See `IBug`."""
         # Define the function used as a sort key.
         def by_bugtargetdisplayname(nomination):
             """Return the friendly sort key verson of displayname."""
             return nomination.target.bugtargetdisplayname.lower()
 
-        nominations = BugNomination.selectBy(bugID=self.id)
+        if nominations is None:
+            nominations = BugNomination.selectBy(bugID=self.id)
         if IProduct.providedBy(target):
             filtered_nominations = []
             for nomination in shortlist(nominations):

@@ -61,6 +61,7 @@ from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
@@ -456,14 +457,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "the heading of all pages related to you. Traditionally this "
             "is a logo, a small picture or a personal mascot. It should be "
             "no bigger than 50kb in size."))
-    mugshot = MugshotImageUpload(
+    mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on your home page in Launchpad. Traditionally this is a great "
             "big picture of your grinning face. Make the most of it! It "
-            "should be no bigger than 100kb in size. "))
+            "should be no bigger than 100kb in size. ")))
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -546,9 +547,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         vocabulary='TimezoneName')
 
     openid_identifier = TextLine(
-            title=_("Key used to generate opaque OpenID identities."),
-            readonly=True, required=False,
-            )
+        title=_("Key used to generate opaque OpenID identities."),
+        readonly=True, required=False)
 
     account_status = Choice(
         title=_("The status of this person's account"), required=False,
@@ -583,7 +583,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     ircnicknames = Attribute("List of IRC nicknames of this Person.")
     jabberids = Attribute("List of Jabber IDs of this Person.")
     branches = Attribute(
-        "All branches related to this persion. They might be registered, "
+        "All branches related to this person. They might be registered, "
         "authored or subscribed by this person.")
     authored_branches = Attribute("The branches whose author is this person.")
     registered_branches = Attribute(
@@ -649,18 +649,19 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     teamowner = exported(
         PublicPersonChoice(
             title=_('Team Owner'), required=False, readonly=False,
-            vocabulary='ValidTeamOwner'))
+            vocabulary='ValidTeamOwner'),
+        exported_as='team_owner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
     teamdescription = Text(
         title=_('Team Description'), required=False, readonly=False,
         description=_('Use plain text; URLs will be linkified'))
 
-    preferredemail = TextLine(
-        title=_("Preferred Email Address"),
+    preferredemail = Object(
+        title=_("Preferred email address"), readonly=True,
         description=_("The preferred email address for this person. The one "
                       "we'll use to communicate with them."),
-        readonly=True)
+        schema=IEmailAddress)
 
     safe_email_or_blank = TextLine(
         title=_("Safe email for display"),
@@ -1206,6 +1207,8 @@ class IPersonViewRestricted(Interface):
 
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
+    # activemembers.value_type.schema will be set to IPerson once
+    # IPerson is defined.
     activemembers = exported(
         CollectionField(
             title=_("List of members with ADMIN or APPROVED status"),
@@ -1376,7 +1379,7 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry()
 
 
-IPersonViewRestricted['activemembers'].schema = IPerson
+IPersonViewRestricted['activemembers'].value_type.schema = IPerson
 
 
 class INewPersonForm(IPerson):
@@ -1421,7 +1424,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_as_webservice_collection()
+    export_as_webservice_collection(IPerson)
 
     title = Attribute('Title')
 
@@ -1568,7 +1571,6 @@ class IPersonSet(Interface):
         """
 
     @collection_default_content()
-    @export_operation_as('find')
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
@@ -1820,3 +1822,10 @@ class InvalidName(Exception):
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
     webservice_error(409)
+
+
+# Can't import IPerson in interfaces/teammembership.py, so we need to do this
+# here.
+ITeamMembership['team'].schema = IPerson
+ITeamMembership['person'].schema = IPerson
+ITeamMembership['last_changed_by'].schema = IPerson

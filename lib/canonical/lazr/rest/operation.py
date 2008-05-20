@@ -7,7 +7,7 @@ from zope.interface import implements
 from zope.schema.interfaces import RequiredMissing, ValidationError
 
 from canonical.lazr.interfaces import (
-    IFieldDeserializer, IResourceGETOperation, IResourcePOSTOperation)
+    IFieldMarshaller, IResourceGETOperation, IResourcePOSTOperation)
 
 __metaclass__ = type
 __all__ = [
@@ -53,10 +53,10 @@ class ResourceOperation:
                 and not field.required):
                 value = field.default
             else:
-                deserializer = getMultiAdapter(
-                    (field, self.request), IFieldDeserializer)
+                marshaller = getMultiAdapter(
+                    (field, self.request), IFieldMarshaller)
                 try:
-                    value = deserializer.deserialize(self.request.get(name))
+                    value = marshaller.marshall(self.request.get(name))
                 except ValueError, e:
                     errors.append("%s: %s" % (name, e))
                     continue

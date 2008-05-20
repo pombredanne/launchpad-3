@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 
 """Helper classes for testing clients of the external Salesforce proxy."""

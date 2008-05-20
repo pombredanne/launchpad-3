@@ -11,7 +11,7 @@ collection.
 
   >>> people_collection = webservice.get("/beta/people").jsonBody()
   >>> people_collection['total_size']
-  62
+  63
   >>> people_collection['next_collection_link']
   u'http://api.launchpad.dev/beta/people?ws_start=5&ws_size=5'
   >>> people_collection.get('prev_collection_link') is None
@@ -50,7 +50,7 @@ You can also get a larger batch than the default:
 
   >>> bigger_batch = webservice.get("/beta/people?ws_size=75").jsonBody()
   >>> len(bigger_batch['entries'])
-  62
+  63
   >>> bigger_batch.get('next_collection_link') is None
   True
 
@@ -77,11 +77,12 @@ The elements of a collection can be looked up by unique identifier:
     u'http://api.launchpad.dev/beta/~admins/member_memberships'),
    (u'members_collection_link',
       u'http://api.launchpad.dev/beta/~admins/members'),
+   (u'mugshot_link', u'http://api.launchpad.dev/beta/~admins/mugshot'),
    (u'name', u'admins'),
    (u'self_link', u'http://api.launchpad.dev/beta/~admins'),
    (u'team_memberships_collection_link',
     u'http://api.launchpad.dev/beta/~admins/team_memberships'),
-   (u'teamowner_link', u'http://api.launchpad.dev/beta/~sabdfl')]
+   (u'team_owner_link', u'http://api.launchpad.dev/beta/~sabdfl')]
 
 A collection may be scoped to an element:
 
