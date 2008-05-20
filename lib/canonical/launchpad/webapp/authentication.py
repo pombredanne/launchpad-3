@@ -138,10 +138,10 @@ class PlacelessAuthUtility:
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipals(name)
 
-    def getPrincipalByLogin(self, login):
+    def getPrincipalByLogin(self, login, want_password=True):
         """See IAuthenticationService."""
         utility = getUtility(IPlacelessLoginSource)
-        return utility.getPrincipalByLogin(login)
+        return utility.getPrincipalByLogin(login, want_password=want_password)
 
 
 class SSHADigestEncryptor:
@@ -215,9 +215,15 @@ class LaunchpadLoginSource:
         raise NotImplementedError
 
     def getPrincipalByLogin(
-            self, login, access_level=AccessLevel.WRITE_PRIVATE):
+            self, login, access_level=AccessLevel.WRITE_PRIVATE,
+            want_password=True):
         """Return a principal based on the person with the email address
         signified by "login".
+
+        If want_password is False, the pricipal will have None for a password.
+        Use this when trying to retrieve a principal in contexts where we
+        don't need the password and the database connection does not have
+        access to the Account or AccountPassword tables.
 
         Return None if there is no person with the given email address.
 
@@ -231,15 +237,20 @@ class LaunchpadLoginSource:
         """
         person = getUtility(IPersonSet).getByEmail(login)
         if person is not None:
-            return self._principalForPerson(person, access_level)
+            return self._principalForPerson(
+                    person, access_level, want_password)
         else:
             return None
 
-    def _principalForPerson(self, person, access_level):
+    def _principalForPerson(self, person, access_level, want_password):
         person = removeSecurityProxy(person)
+        if want_password:
+            password = person.password
+        else:
+            password = None
         principal = LaunchpadPrincipal(
             person.id, person.browsername, person.displayname,
-            person.password, access_level=access_level)
+            password, access_level=access_level)
         principal.__parent__ = self
         return principal
 
