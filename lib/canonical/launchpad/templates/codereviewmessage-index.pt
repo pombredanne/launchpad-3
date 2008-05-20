@@ -15,6 +15,8 @@
       <h1>Code review comment</h1>
       <tal:content replace="structure context/@@+fragment"/>
       <a href="#" tal:attributes="href view/reply_link">Reply</a>
+      <div><a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
+      proposal</a></div>
     </div>
 </body>
 </html>
