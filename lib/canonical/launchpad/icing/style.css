@@ -1108,6 +1108,7 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardCommentContent { line-height: 1.5em;}
+.boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
 

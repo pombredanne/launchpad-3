@@ -213,6 +213,12 @@
           </p>
         </tal:last-successful>
 
+        <div id="import-results" tal:condition="view/latest_code_import_results">
+          <tal:result repeat="result view/latest_code_import_results">
+            <metal:result use-macro="code_import/@@+macros/show_result"/>
+          </tal:result>
+        </div>
+
         <tal:can-edit condition="code_import/required:launchpad.Edit">
           <p>
             <a href="+edit-import">Edit import source or review import</a>.
