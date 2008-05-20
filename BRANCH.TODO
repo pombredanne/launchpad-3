@@ -17,4 +17,13 @@ need to access these fields should access them directly off Account or
 AccountPassword. This will probably involve losening the security on Account
 and AccountPassword.
 
+- Remove permission on the Account and AccountPassword tables from everything
+except the Launchpad user.
+
+- Make login.launchpad.net use a different database user.
+
+- Remove permission from the Account and AccountPassword tables from the
+launchpad database user. Also update permission on Person from checkwatches
+and other scripts that need it only to link newly created Account records.
+
 
