@@ -207,7 +207,7 @@ Now let's try to insert a product with the same name (testing).
 Normal users don't get to see the owner and reviewed fields
 
     >>> user_browser.open('http://launchpad.dev/projects/+new')
-    >>> user_browser.getControl('Reviewed')
+    >>> user_browser.getControl('License reviewed')
     Traceback (most recent call last):
     ...
     LookupError:...
@@ -231,14 +231,14 @@ the reviewed value should be on.
     >>> browser.getControl(name='field.description').value = 'description'
     >>> browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> browser.getControl(name='field.license_info').value = 'foo'
-    >>> browser.getControl('Reviewed').click()
+    >>> browser.getControl('License reviewed').click()
     >>> browser.getControl('Add').click()
     >>> print browser.url
     http://launchpad.dev/projects/+new
 
     >>> '<p class="error message">There is 1 error.</p>' in browser.contents
     True
-    >>> browser.getControl('Reviewed').selected
+    >>> browser.getControl('License reviewed').selected
     True
 
 
@@ -255,7 +255,7 @@ And now check it was correctly created:
     >>> product = Product.selectOneBy(name="warpage")
     >>> print product.owner.name
     sabdfl
-    >>> print product.reviewed
+    >>> print product.license_reviewed
     True
 
 It's also possible to set the product's icon/emblem at creation time.

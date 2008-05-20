@@ -21,7 +21,7 @@ If we disable some of these projects...
   >>> admin_browser.url
   'http://launchpad.dev/projectgroups'
 
-  >>> admin_browser.open("http://launchpad.dev/netapplet/+review")
+  >>> admin_browser.open("http://launchpad.dev/netapplet/+admin")
   >>> admin_browser.getControl("Active").click()
   >>> admin_browser.getControl("Change").click()
   >>> admin_browser.url
@@ -44,7 +44,7 @@ story!
   >>> admin_browser.open("http://launchpad.dev/gnome/+review")
   >>> admin_browser.getControl("Active").click()
   >>> admin_browser.getControl("Change").click()
-  >>> admin_browser.open("http://launchpad.dev/netapplet/+review")
+  >>> admin_browser.open("http://launchpad.dev/netapplet/+admin")
   >>> admin_browser.getControl("Active").click()
   >>> admin_browser.getControl("Change").click()
 
