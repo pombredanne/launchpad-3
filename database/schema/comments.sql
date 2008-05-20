@@ -588,6 +588,11 @@ COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
 series, as set by the user.  If this is not set, then import_branch is
 considered to be the product series branch';
 
+-- ProductSeriesCodeImport
+
+COMMENT ON TABLE ProductSeriesCodeImport IS 'A record of which ProductSeries'' import data a CodeImport was constructed from.';
+COMMENT ON COLUMN ProductSeriesCodeImport.productseries IS 'The source ProductSeries.';
+COMMENT ON COLUMN ProductSeriesCodeImport.codeimport IS 'The CodeImport that was constructed from the ProductSeries.';
 
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
