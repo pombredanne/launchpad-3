@@ -211,8 +211,13 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             'Invalid value "%s". Acceptable values are: %s' %
             (value, ', '.join(valid_titles)))
 
+    def unmarshall(self, entry, field_name, value):
+        if value is None:
+            return None
+        return value.title
 
-class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
+
+class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
                                   URLDereferencingMixin):
     """A marshaller that turns URLs into data model objects.
 
@@ -221,8 +226,8 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
     """
 
     def __init__(self, field, request, vocabulary=None):
-        super(ObjectLookupFieldMarshaller, self).__init__(
-            field, request, vocabulary)
+        super(ObjectLookupFieldMarshaller, self).__init__(field, request)
+        self.vocabulary = vocabulary
 
     def representationName(self, field_name):
         "Make it clear that the value is a link to an object, not an object."

@@ -1452,31 +1452,29 @@ class ITeam(IPerson, ITeamPublic):
     """
     export_as_webservice_entry()
 
-    # Logo and Mugshot are here so that they can have a description on a
-    # Team which is different to the description they have on a Person.
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/team-logo',
+    # Logo, Mugshot and displayname are here so that they can have a
+    # description on a Team which is different to the description they have on
+    # a Person.
+    logo = copy_field(
+        IPerson['logo'], default_image_resource='/@@/team-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to the team. Traditionally "
             "this is a logo, a small picture or a personal mascot. It "
             "should be no bigger than 50kb in size."))
-    mugshot = MugshotImageUpload(
-        title=_("Mugshot"), required=False,
-        default_image_resource='/@@/team-mugshot',
+
+    mugshot = copy_field(
+        IPerson['mugshot'], default_image_resource='/@@/team-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on the team page in Launchpad. It "
             "should be no bigger than 100kb in size. "))
 
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "This team's name as you would like it displayed throughout "
-                "Launchpad.")),
-        exported_as='display_name')
+    displayname = copy_field(
+        IPerson['displayname'],
+        description=_(
+            "This team's name as you would like it displayed throughout "
+            "Launchpad."))
 
 
 class IPersonSet(Interface):
