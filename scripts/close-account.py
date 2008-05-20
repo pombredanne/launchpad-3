@@ -48,13 +48,20 @@ def close_account(con, log, username):
     # succeed.
     new_name = 'removed%d' % person_id
 
+    # Remove their Account, if there is one.
+    table_notification('Account')
+    cur.execute("""
+        DELETE FROM Account USING Person
+        WHERE person.account = account.id AND Person.id = %(person_id)s
+        """, vars())
+
     # Clean out personal details from the Person table
     table_notification('Person')
     unknown_rationale = PersonCreationRationale.UNKNOWN.value
     cur.execute("""
         UPDATE Person
-        SET displayname='Removed by request', password=NULL,
-            name=%(new_name)s, language=NULL, 
+        SET displayname='Removed by request',
+            name=%(new_name)s, language=NULL, account=NULL, 
             addressline1=NULL, addressline2=NULL, organization=NULL,
             city=NULL, province=NULL, country=NULL, postcode=NULL,
             phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,
