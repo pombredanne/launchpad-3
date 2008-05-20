@@ -2625,7 +2625,7 @@ we'll create a new bug on firefox and link it to a remote bug.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IBugWatchSet, IProductSet)
+    ...     IBugWatchSet, IProductSet)
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
