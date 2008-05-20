@@ -111,13 +111,17 @@ collection of other confirmed email addresses of that person/team.
   http://api.launchpad.dev/beta/~name12/+email/testing@canonical.com
 
 Email addresses are first-class objects with their own URLs and
-representations, but for now their representation contain only self_link
-as we haven't yet exported anything from IEmailAddress.
+representations too.
 
   >>> email = webservice.get(
   ...     sample_person['preferred_email_address_link']).jsonBody()
   >>> sorted(email)
-  [u'self_link']
+  [u'email', u'person_link', u'self_link']
+  >>> for key, value in sorted(email.items()):
+  ...     print "%s: %s" % (key, value)
+  email: test@canonical.com
+  person_link: http://.../~name12
+  self_link: http://.../~name12/+email/test@canonical.com
 
 One can only traverse to the email addresses of the person already
 traversed to, obviously.
@@ -133,31 +137,31 @@ A person is linked to their team memberships.
 
   >>> salgado_memberships = salgado['team_memberships_collection_link']
   >>> salgado_memberships
-  u'http://api.launchpad.dev/beta/~salgado/team_memberships'
+  u'http://.../~salgado/team_memberships'
 
 Similarly, a team is linked to the team memberships of its members.
 
   >>> landscape_developers = webservice.get(
   ...     "/beta/~landscape-developers").jsonBody()
   >>> landscape_developers['member_memberships_collection_link']
-  u'http://api.launchpad.dev/beta/~landscape-developers/member_memberships'
+  u'http://.../~landscape-developers/member_memberships'
 
 And to all membership invitations sent to it.
 
   >>> lp_team = webservice.get("/beta/~launchpad").jsonBody()
   >>> lp_invitations = lp_team['open_membership_invitations_collection_link']
   >>> lp_invitations
-  u'http://api.launchpad.dev/beta/~launchpad/open_membership_invitations'
+  u'http://.../~launchpad/open_membership_invitations'
 
   >>> print_self_link_of_entries(webservice.get(lp_invitations).jsonBody())
-  http://api.launchpad.dev/beta/~landscape-developers/+member/launchpad
+  http://.../~landscape-developers/+member/launchpad
 
 Team memberships are first-class objects with their own URLs.
 
   >>> print_self_link_of_entries(
   ...     webservice.get(salgado_memberships).jsonBody())
-  http://api.launchpad.dev/beta/~admins/+member/salgado
-  http://api.launchpad.dev/beta/~landscape-developers/+member/salgado
+  http://.../~admins/+member/salgado
+  http://.../~landscape-developers/+member/salgado
 
 Team memberships also have data fields.
 
@@ -171,17 +175,17 @@ Team memberships also have data fields.
 Each team membership links to the person who approved the link.
 
   >>> salgado_landscape['last_changed_by_link']
-  u'http://api.launchpad.dev/beta/~name16'
+  u'http://.../~name16'
 
 Also to the person whose membership it is.
 
   >>> salgado_landscape['member_link']
-  u'http://api.launchpad.dev/beta/~salgado'
+  u'http://.../~salgado'
 
 Also to the team in which the membership is valid.
 
   >>> salgado_landscape['team_link']
-  u'http://api.launchpad.dev/beta/~landscape-developers'
+  u'http://.../~landscape-developers'
 
 A TeamMembership relates a person to a team, and the relationship
 works both ways. You've already seen how the representation of a
@@ -191,8 +195,8 @@ memberships in the team.
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~landscape-developers/member_memberships").jsonBody())
-  http://api.launchpad.dev/beta/~landscape-developers/+member/name12
-  http://api.launchpad.dev/beta/~landscape-developers/+member/salgado
+  http://.../~landscape-developers/+member/name12
+  http://.../~landscape-developers/+member/salgado
 
 
 === Members ===
@@ -204,61 +208,61 @@ are the members.
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~landscape-developers/members").jsonBody())
-  http://api.launchpad.dev/beta/~name12
-  http://api.launchpad.dev/beta/~salgado
+  http://.../~name12
+  http://.../~salgado
 
-Here the admins:
+Here are the admins:
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~landscape-developers/admins").jsonBody())
-  http://api.launchpad.dev/beta/~name12
+  http://.../~name12
 
 All participants (direct or indirect members):
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~landscape-developers/participants").jsonBody())
-  http://api.launchpad.dev/beta/~name12
-  http://api.launchpad.dev/beta/~salgado
+  http://.../~name12
+  http://.../~salgado
 
 A person/team is also linked to all teams in which they participate.
 
   >>> salgado['teams_participated_in_collection_link']
-  u'http://api.launchpad.dev/beta/~salgado/teams_participated_in'
+  u'http://.../~salgado/teams_participated_in'
   >>> print_self_link_of_entries(webservice.get(
   ...     salgado['teams_participated_in_collection_link']).jsonBody())
-  http://api.launchpad.dev/beta/~admins
-  http://api.launchpad.dev/beta/~landscape-developers
-  http://api.launchpad.dev/beta/~mailing-list-experts
+  http://.../~admins
+  http://.../~landscape-developers
+  http://.../~mailing-list-experts
 
 And to the teams in which they're indirect members.
 
   >>> link = salgado['teams_indirectly_participated_in_collection_link']
   >>> link
-  u'http://api.launchpad.dev/beta/~salgado/teams_indirectly_participated_in'
+  u'http://.../~salgado/teams_indirectly_participated_in'
 
   >>> print_self_link_of_entries(webservice.get(link).jsonBody())
-  http://api.launchpad.dev/beta/~mailing-list-experts
+  http://.../~mailing-list-experts
 
 There are also links to proposed, invited, deactivated and expired
 members.
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~myteam/proposed_members").jsonBody())
-  http://api.launchpad.dev/beta/~no-priv
+  http://.../~no-priv
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~ubuntu-team/invited_members").jsonBody())
-  http://api.launchpad.dev/beta/~name20
+  http://.../~name20
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~admins/deactivated_members").jsonBody())
-  http://api.launchpad.dev/beta/~cprov
-  http://api.launchpad.dev/beta/~ddaa
-  http://api.launchpad.dev/beta/~jblack
+  http://.../~cprov
+  http://.../~ddaa
+  http://.../~jblack
 
   >>> print_self_link_of_entries(webservice.get(
   ...     "/beta/~landscape-developers/expired_members").jsonBody())
-  http://api.launchpad.dev/beta/~karl
+  http://.../~karl
 
 
 === Wiki names ===
@@ -268,17 +272,23 @@ person/team.
 
   >>> wikis_link = sample_person['wiki_names_collection_link']
   >>> print wikis_link
-  http://api.launchpad.dev/beta/~name12/wiki_names
+  http://.../~name12/wiki_names
   >>> print_self_link_of_entries(webservice.get(wikis_link).jsonBody())
-  http://api.launchpad.dev/beta/~name12/+wikiname/12
+  http://.../~name12/+wikiname/12
 
 Wiki names are first-class objects with their own URLs and
-representations, but for now their representation contain only self_link
-as we haven't yet exported anything from IWikiName.
+representations too.
 
   >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
   >>> sorted(wiki_name)
-  [u'self_link']
+  [u'person_link', u'self_link', u'url', u'wiki', u'wikiname']
+  >>> for key, value in sorted(wiki_name.items()):
+  ...     print "%s: %s" % (key, value)
+  person_link: http://.../~name12
+  self_link: http://.../~name12/+wikiname/12
+  url: https://wiki.ubuntu.com/SamplePerson
+  wiki: https://wiki.ubuntu.com/
+  wikiname: SamplePerson
 
 One can only traverse to the WikiNames of the person already traversed
 to, obviously.
@@ -295,18 +305,22 @@ Jabber IDs of a person are also linked.
   >>> sabdfl = webservice.get("/beta/~sabdfl").jsonBody()
   >>> jabber_ids_link = sabdfl['jabber_ids_collection_link']
   >>> print jabber_ids_link
-  http://api.launchpad.dev/beta/~sabdfl/jabber_ids
+  http://.../~sabdfl/jabber_ids
   >>> print_self_link_of_entries(webservice.get(jabber_ids_link).jsonBody())
-  http://api.launchpad.dev/beta/~sabdfl/+jabberid/markshuttleworth@jabber.org
+  http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
 
 Jabber IDs are first-class objects with their own URLs and
-representations, but for now their representation contain only self_link
-as we haven't yet exported anything from IJabberID.
+representations too.
 
   >>> jabber_id = sorted(
   ...     webservice.get(jabber_ids_link).jsonBody()['entries'])[0]
   >>> sorted(jabber_id)
-  [u'self_link']
+  [u'jabberid', u'person_link', u'self_link']
+  >>> for key, value in sorted(jabber_id.items()):
+  ...     print "%s: %s" % (key, value)
+  jabberid: markshuttleworth@jabber.org
+  person_link: http://.../~sabdfl
+  self_link: http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
 
 One can only traverse to the Jabber IDs of the person already traversed
 to, obviously.
@@ -323,17 +337,22 @@ The same for IRC nicknames
 
   >>> irc_ids_link = sabdfl['irc_nicknames_collection_link']
   >>> print irc_ids_link
-  http://api.launchpad.dev/beta/~sabdfl/irc_nicknames
+  http://.../~sabdfl/irc_nicknames
   >>> print_self_link_of_entries(webservice.get(irc_ids_link).jsonBody())
-  http://api.launchpad.dev/beta/~sabdfl/+ircnick/1
+  http://.../~sabdfl/+ircnick/1
 
-IRC IDs are first-class objects with their own URLs and representations,
-but for now their representation contain only self_link as we haven't
-yet exported anything from IIrcID.
+IRC IDs are first-class objects with their own URLs and representations
+too.
 
   >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
   >>> sorted(irc_id)
-  [u'self_link']
+  [u'network', u'nickname', u'person_link', u'self_link']
+  >>> for key, value in sorted(irc_id.items()):
+  ...     print "%s: %s" % (key, value)
+  network: irc.freenode.net
+  nickname: mark
+  person_link: http://.../~sabdfl
+  self_link: http://.../~sabdfl/+ircnick/1
 
 One can only traverse to the IRC IDs of the person already traversed
 to, obviously.
