@@ -592,3 +592,29 @@ the parameters that were passed to construct_bug_notification().
     >>> print notification_email.get_payload()
     A test body.
 
+construct_bug_notification() also accepts parameters for
+rationale_header, references and msgid.
+
+    >>> notification_email = construct_bug_notification(
+    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    ...     "A test body.", "A test subject.", sending_date,
+    ...     rationale_header='Because-I-said-so',
+    ...     references=['<12345@launchpad.net>'],
+    ...     msgid='<67890@launchpad.net>')
+
+The rationale_header parameter is used to set the
+X-Launchpad-Message-Rationale header.
+
+    >>> print notification_email['X-Launchpad-Message-Rationale']
+    Because-I-said-so
+
+The references parameter sets the the References header of the email.
+
+    >>> print notification_email['References']
+    <12345@launchpad.net>
+
+And the msgid parameter is used to set the Message-Id header. It will be
+auto-generated if it is not supplied.
+
+    >>> print notification_email['Message-Id']
+    <67890@launchpad.net>
