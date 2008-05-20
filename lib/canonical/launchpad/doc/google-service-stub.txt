@@ -68,3 +68,10 @@ Accessing a specific key returns the appropriate XML file:
     True
     >>> browser.contents == default_xml
     False
+
+
+== Clean up ==
+
+Clean up the browser so it won't leave socket garbage behind.
+
+    >>> browser.mech_browser.close()
