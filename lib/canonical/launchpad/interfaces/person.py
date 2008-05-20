@@ -597,14 +597,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     "active member of."),
             value_type=Object(schema=ITeamMembership)),
         exported_as='team_memberships')
-    member_memberships = exported(
-        CollectionField(
-            title=_("Active `ITeamMembership`s for this object's members."),
-            description=_(
-                "Active TeamMemberships are the ones with the ADMIN or "
-                "APPROVED status.  The results are ordered using "
-                "Person.sortingColumns."),
-            value_type=Object(schema=ITeamMembership)))
 
     open_membership_invitations = Attribute(
         "All TeamMemberships which represent an invitation (to join a team) "
@@ -1233,6 +1225,14 @@ class IPersonViewRestricted(Interface):
     inactive_member_count = Attribute("Number of inactive members")
     invited_members = Attribute("List of members with INVITED status")
     invited_member_count = Attribute("Number of members with INVITED status")
+    member_memberships = exported(
+        CollectionField(
+            title=_("Active `ITeamMembership`s for this object's members."),
+            description=_(
+                "Active TeamMemberships are the ones with the ADMIN or "
+                "APPROVED status.  The results are ordered using "
+                "Person.sortingColumns."),
+            value_type=Object(schema=ITeamMembership)))
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     proposedmembers = Attribute("List of members with PROPOSED status")

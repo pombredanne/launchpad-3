@@ -31,6 +31,7 @@ from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFields
 from zope.schema.interfaces import ConstraintNotSatisfied, IChoice, IObject
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from canonical.lazr.enum import BaseItem
 
@@ -103,6 +104,9 @@ class HTTPResource(URLDereferencingMixin):
     # Some interesting media types.
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
+
+    # An interesting representation value
+    REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
 
     def __init__(self, context, request):
         self.context = context
@@ -401,11 +405,18 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         data = {}
         data['self_link'] = canonical_url(self.context)
         for name, field in getFields(self.entry.schema).items():
-            value = getattr(self.entry, name)
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                           IFieldMarshaller)
             repr_name = marshaller.representationName(name)
+            try:
+                value = getattr(self.entry, name)
+            except Unauthorized:
+                # The client doesn't have permission to see this field.
+                # Rather than denying them access to the resource altogether,
+                # use our special 'redacted' tag: URI for the field's value
+                data[repr_name] = self.REDACTED_VALUE
+                continue
             repr_value = marshaller.unmarshall(self.entry, name, value)
             data[repr_name] = repr_value
         return data
