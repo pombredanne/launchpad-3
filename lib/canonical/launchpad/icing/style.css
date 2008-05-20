@@ -695,7 +695,7 @@ it out of the page flow. */
   margin-top: 3px;
 }
 
-span.help-link {font-weight: normal;}
+span.help {font-weight: normal;}
 
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
