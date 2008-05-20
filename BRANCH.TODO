@@ -1,2 +1,20 @@
 # Put your TODOs for this branch here, then make sure it is empty before
-# landing. There is a test to ensure it is empty in trunk.
+# landing. There is a test to ensure it is empty in trunk. If there is
+# stuff still here when you are ready to land, the items should probably
+# be converted to bugs so they can be scheduled.
+
+- Password recovery should cope with recovering the password of a Person
+with no Account.
+
+- IPersonSet.createPersonAndEmail should *not* create an Account. This will
+stop the branchscanner and other callsites from creating unnecessary Account
+records. Dependant on password recovery workflow coping with Person records
+with no Accounts.
+
+- Person.password, Person.account_status, Person.account_status_comment,
+Person.openid_identifier should all be removed. Callsites that actually
+need to access these fields should access them directly off Account or
+AccountPassword. This will probably involve losening the security on Account
+and AccountPassword.
+
+
