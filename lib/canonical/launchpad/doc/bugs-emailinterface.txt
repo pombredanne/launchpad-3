@@ -2624,10 +2624,16 @@ XXX: Add tests for non-ascii mails.
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> now = datetime(
+    ...     2008, 4, 12, 10, 12, 12, tzinfo=pytz.timezone('UTC'))
+
+    >>> initial_bug_message = getUtility(IMessageSet).fromText(
+    ...     "A message", "The initial message for the bug.",
+    ...     no_priv, datecreated=now)
+
     >>> bug_with_watch = firefox.createBug(CreateBugParams(
-    ...     getUtility(ILaunchBag).user, 'New Bug with watch',
-    ...     comment='New bug.', datecreated=now))
+    ...     no_priv, 'New Bug with watch',
+    ...     msg=initial_bug_message, datecreated=now))
     >>> commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -2645,7 +2651,9 @@ XXX: Add tests for non-ascii mails.
     ... To: %s@malone-domain
     ... """
 
-    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> now = datetime(
+    ...     2008, 5, 19, 16, 19, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
     >>> initial_mail = """From: test@canonical.com
     ... To: %(bug_id)s@malone-domain
     ... Date: %(date)s
@@ -2664,7 +2672,9 @@ XXX: Add tests for non-ascii mails.
 
     >>> bug_message = bug_with_watch.linkMessage(message, bug_watch)
 
-    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> now = datetime(
+    ...     2008, 5, 20, 11, 24, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
     >>> reply_mail = """From: test@canonical.com
     ... To: %(bug_id)s@malone-domain
     ... Date: %(date)s
