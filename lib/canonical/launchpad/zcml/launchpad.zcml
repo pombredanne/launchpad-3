@@ -45,7 +45,7 @@
 
   <!-- RequestExpired -->
   <browser:page
-      for="canonical.database.interfaces.RequestExpired"
+      for="canonical.database.interfaces.IRequestExpired"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-requestexpired.pt"
