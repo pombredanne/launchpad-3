@@ -802,6 +802,7 @@ class BugTaskEditView(LaunchpadEditFormView):
 
     schema = IBugTask
     milestone_source = None
+    user_is_subscribed = None
     edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
 
     # The field names that we use by default. This list will be mutated
@@ -813,6 +814,13 @@ class BugTaskEditView(LaunchpadEditFormView):
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
+
+    def initialize(self):
+        super(BugTaskEditView, self).initialize()
+        # Initialize user_is_subscribed, if it hasn't already been set.
+        if self.user_is_subscribed is None:
+            self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
+
 
     @cachedproperty
     def field_names(self):
