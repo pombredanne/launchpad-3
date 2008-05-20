@@ -414,9 +414,8 @@ class TestCheckTeamParticipationScript(unittest.TestCase):
         # (without being a member) and the person is not a member of itself.
         cur.execute("""
             INSERT INTO
-                Person (id, name, displayname, openid_identifier,
-                        creation_rationale)
-                VALUES (9999, 'zzzzz', 'zzzzzz', 'zzzzzzzzzzz', 1);
+                Person (id, name, displayname, creation_rationale)
+                VALUES (9999, 'zzzzz', 'zzzzzz', 1);
             UPDATE TeamParticipation
                 SET team = (
                     SELECT id FROM Person WHERE teamowner IS NOT NULL limit 1)
