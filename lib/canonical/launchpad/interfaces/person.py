@@ -1404,6 +1404,16 @@ IPersonViewRestricted['proposedmembers'].value_type.schema = IPerson
 IPersonViewRestricted['invited_members'].value_type.schema = IPerson
 IPersonViewRestricted['deactivatedmembers'].value_type.schema = IPerson
 IPersonViewRestricted['expiredmembers'].value_type.schema = IPerson
+IPersonEditRestricted['join'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['team'].schema = IPerson
+IPersonEditRestricted['leave'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['team'].schema = IPerson
+IPersonEditRestricted['addMember'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['person'].schema = IPerson
+IPersonEditRestricted['acceptInvitationToBeMemberOf'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['team'].schema = IPerson
+IPersonEditRestricted['declineInvitationToBeMemberOf'].queryTaggedValue(
+    'lazr.webservice.exported')['params']['team'].schema = IPerson
 
 
 class INewPersonForm(IPerson):

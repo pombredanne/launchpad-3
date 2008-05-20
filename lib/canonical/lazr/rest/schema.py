@@ -9,6 +9,7 @@ __all__ = [
     'DateTimeFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
+    'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
     'TimezoneFieldMarshaller',
@@ -27,7 +28,9 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.schema import Object
 from zope.schema._field import AbstractCollection
+from zope.schema.interfaces import ValidationError
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -254,3 +257,16 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         # to the object underlying a resource, we need to strip its
         # security proxy.
         return removeSecurityProxy(resource).context
+
+
+class Reference(Object):
+    """An Object-like field which doesn't validate all fields of the schema.
+
+    Unlike Object, which does call _validate_fields(self.schema, value) to
+    validate all fields, this field will simply check that the given value
+    provides the specified schema.
+    """
+
+    def _validate(self, value):
+        if not self.schema.providedBy(value):
+            raise ValidationError("Value doesn't provide specified schema.")

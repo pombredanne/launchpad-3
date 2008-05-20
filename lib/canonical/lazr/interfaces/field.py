@@ -35,4 +35,4 @@ class IFieldMarshaller(Interface):
 
         :return: The string value to give when representing the field
                  in a JSON hash.
-"""
+        """
