@@ -97,7 +97,8 @@ check_storm: build
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) \
 	  --module canonical.launchpad.pagetests \
 	  --module canonical.database \
-	  --module canonical.librarian
+	  --module canonical.librarian \
+	  --module canonical.lp
 
 lint:
 	@bash ./utilities/lint.sh

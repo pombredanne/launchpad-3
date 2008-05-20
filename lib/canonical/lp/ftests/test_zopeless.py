@@ -9,24 +9,22 @@ import psycopg2
 from sqlobject import StringCol, IntCol
 from zope.testing.doctest import DocTestSuite
 
-from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
+from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg, cursor
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.testing import LaunchpadLayer
+from canonical.testing import LaunchpadScriptLayer
 
 
 class MoreBeer(SQLBase):
     '''Simple SQLObject class used for testing'''
     # test_sqlos defines a Beer SQLObject already, so we call this one
     # MoreBeer to avoid confusing SQLObject.
-    _columns = [
-        StringCol('name', alternateID=True, notNull=True),
-        IntCol('rating', default=None),
-        ]
+    name = StringCol(alternateID=True, notNull=True)
+    rating = IntCol(default=None)
 
 
 class TestInitZopeless(unittest.TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadScriptLayer
 
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
@@ -57,12 +55,18 @@ class TestInitZopeless(unittest.TestCase):
 
 
 class TestZopeless(unittest.TestCase):
-    layer = LaunchpadLayer
+    layer = LaunchpadScriptLayer
 
     def setUp(self):
         self.tm = initZopeless(dbname=PgTestSetup().dbname,
                                dbuser='launchpad')
-        MoreBeer.createTable()
+
+        c = cursor()
+        c.execute("CREATE TABLE morebeer ("
+                  "  id SERIAL PRIMARY KEY,"
+                  "  name text NOT NULL UNIQUE,"
+                  "  rating integer"
+                  ")")
         self.tm.commit()
 
     def tearDown(self):
@@ -144,9 +148,11 @@ class TestZopeless(unittest.TestCase):
         # We have observed if a database transaction ends badly, it is
         # not reset for future transactions. To test this, we cause
         # a database exception
-        MoreBeer(name='Victoria Bitter')
+        beer1 = MoreBeer(name='Victoria Bitter')
+        beer1.syncUpdate()
         try:
-            MoreBeer(name='Victoria Bitter')
+            beer2 = MoreBeer(name='Victoria Bitter')
+            beer2.syncUpdate()
         except psycopg2.DatabaseError:
             pass
         else:
@@ -155,7 +161,8 @@ class TestZopeless(unittest.TestCase):
 
         # Now start a new transaction and see if we can do anything
         self.tm.begin()
-        MoreBeer(name='Singa')
+        beer3 = MoreBeer(name='Singa')
+        beer3.syncUpdate()
 
     def test_externalChange(self):
         # Make a change
@@ -185,20 +192,12 @@ def test_isZopeless():
     >>> isZopeless()
     False
 
-    >>> PgTestSetup().setUp()
-    >>> isZopeless()
-    False
-
     >>> tm = initZopeless(dbname=PgTestSetup().dbname,
     ...     dbhost='', dbuser='launchpad')
     >>> isZopeless()
     True
 
     >>> tm.uninstall()
-    >>> isZopeless()
-    False
-
-    >>> PgTestSetup().tearDown()
     >>> isZopeless()
     False
 
@@ -209,10 +208,6 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TestZopeless))
     suite.addTest(unittest.makeSuite(TestInitZopeless))
     doctests = DocTestSuite()
-    doctests.layer = LaunchpadLayer
-    suite.addTests(doctests)
+    doctests.layer = LaunchpadScriptLayer
+    suite.addTest(doctests)
     return suite
-
-if __name__ == '__main__':
-    unittest.main()
-
