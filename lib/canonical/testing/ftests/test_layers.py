@@ -12,12 +12,10 @@ import unittest
 
 import psycopg2
 
-#from sqlos.interfaces import IConnectionName
-
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.component import getUtility, ComponentLookupError
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import (
@@ -103,7 +101,7 @@ class BaseTestCase(unittest.TestCase):
                     want_librarian_working,
                     'Librarian should be fully operational'
                     )
-        except AttributeError:
+        except (AttributeError, ComponentLookupError):
             self.failIf(
                     want_librarian_working,
                     'Librarian not operational as component architecture '
@@ -311,11 +309,10 @@ class LaunchpadScriptTestCase(BaseTestCase):
     def testSwitchDbConfig(self):
         # Test that we can switch database configurations, and that we
         # end up connected as the right user.
-        name = getUtility(IConnectionName).name
-        da = getUtility(IZopeDatabaseAdapter, name)
-        self.assertEqual(da.getUser(), 'launchpad')
+
+        self.assertEqual(dbconfig.dbuser, 'launchpad')
         LaunchpadScriptLayer.switchDbConfig('librarian')
-        self.assertEqual(da.getUser(), 'librarian')
+        self.assertEqual(dbconfig.dbuser, 'librarian')
 
         from canonical.database.sqlbase import cursor
         cur = cursor()
