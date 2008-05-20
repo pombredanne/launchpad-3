@@ -8,6 +8,7 @@ Let's get us a code review message and canonical_url
     >>> message = factory.makeCodeReviewMessage(
     ...     'my subject', 'my body', CodeReviewVote.APPROVE)
     >>> message_url = canonical_url(message)
+    >>> merge_proposal_url = canonical_url(message.branch_merge_proposal)
     >>> print message.message.text_contents
     my body
     >>> logout()
@@ -28,3 +29,9 @@ Now, open its home page.
     Person-name21
     >>> print_tag('comment-vote')
     Approve
+
+The comment's view page has a link that takes us back to the merge proposal.
+
+    >>> anon_browser.getLink('Back to merge proposal').click()
+    >>> bool(anon_browser.url == merge_proposal_url)
+    True
