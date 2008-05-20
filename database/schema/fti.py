@@ -231,6 +231,8 @@ def nullify(con):
         log.info("Removing full text index data from %s", table)
         cur.execute("ALTER TABLE %s DISABLE TRIGGER tsvectorupdate" % table)
         cur.execute("UPDATE %s SET fti=NULL" % table)
+        con.commit()
+        cur = con.cursor()
         cur.execute("ALTER TABLE %s ENABLE TRIGGER tsvectorupdate" % table)
     cur.execute("DELETE FROM FtiCache")
     con.commit()
