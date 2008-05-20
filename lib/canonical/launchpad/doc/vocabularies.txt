@@ -504,8 +504,7 @@ The vocabulary contains only visible milestones.
     >>> one_dot_o.visible = False
 
 We have set two milestones to be not visible, so there is only one left that
-is visible in all_milestones. Remember, all_milestones was defined earlier
-as the set of all milestones regardless of context:
+is visible in all_milestones.
 
     >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
     >>> for term in all_milestones:
