@@ -618,3 +618,22 @@ auto-generated if it is not supplied.
 
     >>> print notification_email['Message-Id']
     <67890@launchpad.net>
+
+The message subject will always have [Bug <bug_id>] prepended to it.
+
+    >>> notification_email = construct_bug_notification(
+    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    ...     "A test body.", "Yet another message", sending_date)
+
+    >>> print notification_email['Subject']
+    [Bug 4] Yet another message
+
+If the subject passed is None the email subject will be set to [Bug
+<bug_id>].
+
+    >>> notification_email = construct_bug_notification(
+    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    ...     "A test body.", None, sending_date)
+
+    >>> print notification_email['Subject']
+    [Bug 4]
