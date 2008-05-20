@@ -537,9 +537,6 @@ class LaunchpadServer(Server):
             'default_stack_on=%s\n'
             % urlutils.join(
                 config.codehosting.supermirror_root, unique_name))
-        transport.put_bytes(
-            '.bzr/branch-format',
-            'Bazaar-NG meta directory, format 1\n')
         return transport
 
     def _getBranch(self, virtual_path):
