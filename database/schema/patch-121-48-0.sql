@@ -99,7 +99,9 @@ ALTER TABLE EmailAddress
     ADD CONSTRAINT emailaddress__account__fk
         FOREIGN KEY (account) REFERENCES Account ON DELETE SET NULL,
     ADD CONSTRAINT emailaddress__account__person__fk
-        FOREIGN KEY (account, person) REFERENCES Person(account, id);
+        FOREIGN KEY (account, person) REFERENCES Person(account, id)
+        ON DELETE SET NULL
+        DEFERRABLE INITIALLY DEFERRED;
 
 -- Rebuild this index with a better name
 DROP INDEX idx_emailaddress_email;
