@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
     IBinaryPackagePublishingHistory, IBinaryPackageReleaseSet,
     IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
     ISourcePackagePublishingHistory, NotFoundError, PackagePublishingPocket,
-    PackagePublishingPriority, PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from canonical.librarian.interfaces import (
@@ -1276,8 +1276,8 @@ class LpQueryDistro(LaunchpadScript):
         Also initialise the list 'allowed_arguments'.
         """
         self.allowed_actions = [
-            'current', 'development', 'supported', 'archs', 'official_archs',
-            'nominated_arch_indep']
+            'current', 'development', 'supported', 'pending_suites', 'archs',
+            'official_archs', 'nominated_arch_indep']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
 
@@ -1462,6 +1462,24 @@ class LpQueryDistro(LaunchpadScript):
                 self.location.distribution.name)
 
         return " ".join(supported_series)
+
+    @property
+    def get_pending_suites(self):
+        """ """
+        self.checkNoSuiteDefined()
+        pending_suites = set()
+        pending_sources = self.location.archive.getPublishedSources(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_sources:
+            pending_suites.add((pub.distroseries, pub.pocket))
+
+        pending_binaries = self.location.archive.getAllPublishedBinaries(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_binaries:
+            pending_suites.add((pub.distroarchseries.distroseries, pub.pocket))
+
+        return " ".join([distroseries.name + pocketsuffix[pocket]
+                         for distroseries, pocket in pending_suites])
 
     @property
     def get_archs(self):
