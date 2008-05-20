@@ -133,7 +133,7 @@ class TestImportdTargetGetterUpgrade(ImportdTargetGetterTestCase):
         self.setUpMirror()
         # The test fixture must set up a mirror branch that needs an upgrade.
         mirror_bzrdir = BzrDir.open_unsupported(self.mirrorPath())
-        assert self.locationNeedsUpgrade(self.mirrorPath())
+        self.assertTrue(self.locationNeedsUpgrade(self.mirrorPath()))
         # Get a sync target and check that it's good in the same way as in
         # testGetTarget.
         self.importd_getter.get_target()
