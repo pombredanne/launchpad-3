@@ -22,3 +22,4 @@ sourcecode/launchpadlib/*.egg*
 sourcecode/launchpadlib/dist
 development-nohup.out
 testrunner-appserver-quiet.log
+test-appserver-layer.log

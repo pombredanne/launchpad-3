@@ -1101,7 +1101,7 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
 
-class AppServerLayer(LaunchpadZopelessLayer):
+class AppServerLayer(LaunchpadLayer):
     """Environment for starting and stopping the app server."""
 
     services = ('librarian', 'restricted-librarian')
@@ -1118,7 +1118,9 @@ class AppServerLayer(LaunchpadZopelessLayer):
             # Should never get here...
             os._exit()
         # The parent.  Wait until the app server is responsive, but not
-        # forever.
+        # forever.  Make sure the test database is set up.
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().setUp()
         until = time.time() + 60
         while time.time() < until:
             try:
@@ -1137,6 +1139,9 @@ class AppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def tearDown(cls):
+        # Force the database to reset.
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
         cls.stopAllServices()
         # Ensure that there are no child processes still running.
         try:
@@ -1151,12 +1156,12 @@ class AppServerLayer(LaunchpadZopelessLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        DatabaseLayer.force_dirty_database()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        DatabaseLayer.force_dirty_database()
 
     @classmethod
     @profiled
