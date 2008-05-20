@@ -22,7 +22,11 @@ elif canonical.lp.dbhost:
 else:
     dbhost = 'localhost'
 
-pf = portforward.ProxyFactory(dbhost, 5432)
+port = 5432
+if os.environ.get('PGPORT'):
+    port = int(os.environ.get('PGPORT'))
+
+pf = portforward.ProxyFactory(dbhost, port)
 svc = internet.TCPServer(5555, pf)
 svc.setServiceParent(application)
 
