@@ -68,3 +68,20 @@ The comment's view page has a link that takes us back to the merge proposal.
     >>> nopriv_browser.getLink('Back to merge proposal').click()
     >>> bool(nopriv_browser.url == merge_proposal_url)
     True
+
+Our comments are now listed on this page.
+
+    >>> comments = find_tags_by_class(
+    ...     nopriv_browser.contents, 'boardCommentDetails')
+    >>> print extract_text(comments[0])
+    No Privileges Person
+    vote:
+    Approve
+    my body
+    (full message)
+    >>> print extract_text(comments[1])
+    No Privileges Person
+    vote:
+    Abstain
+    I like this
+    (full message)
