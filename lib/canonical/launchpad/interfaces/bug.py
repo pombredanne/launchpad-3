@@ -24,7 +24,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, DuplicateBug, PublicPersonChoice, Title, Tag)
+    BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.launchpad import NotFoundError
@@ -161,8 +161,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     owner = exported(
         Object(IPerson, title=_("The owner's IPerson")))
     duplicateof = exported(
-        DuplicateBug(title=_('Duplicate Of'), required=False,
-                     schema=Interface), # Will be specified later.
+        DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')
     private = exported(
         Bool(title=_("This bug report should be private"), required=False,
@@ -200,7 +199,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
-            value_type=Object(schema=Interface))) # Will be specified later.
+            value_type=BugField())) # Will be specified later.
     attachments = Attribute("List of bug attachments.")
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
@@ -498,12 +497,6 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         Return None if no such bugtask is found.
         """
-
-
-# Set Object schemas that were impossible to specify during the
-# definition of IBug itself.
-IBug['duplicates'].value_type.schema =  IBug
-IBug['duplicateof'].schema = IBug
 
 
 class IBugDelta(Interface):
