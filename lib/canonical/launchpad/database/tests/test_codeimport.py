@@ -676,7 +676,7 @@ class TestNewFromProductSeries(unittest.TestCase):
         self.assertEqual(code_import.cvs_root, snapshot['cvsroot'])
         self.assertEqual(code_import.cvs_module, snapshot['cvsmodule'])
 
-        # dateLastSuccessfulFromProductSeries is carefully unit-testing in
+        # dateLastSuccessfulFromProductSeries is carefully unit-tested in
         # TestDateLastSuccessfulFromProductSeries, so we can rely on it here.
         stub_series = StubProductSeries()
         stub_series.importstatus = snapshot['importstatus']
