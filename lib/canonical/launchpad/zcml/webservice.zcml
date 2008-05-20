@@ -54,20 +54,6 @@
         factory="canonical.launchpad.rest.bugcomment_to_entry"
         />
 
-    <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
-        provides="canonical.launchpad.rest.IBugTaskEntry"
-        factory="canonical.launchpad.rest.BugTaskEntry"
-        />
-
-     <adapter
-       for="canonical.launchpad.interfaces.IBugTask
-            canonical.lazr.interfaces.rest.WebServiceLayer"
-       provides="canonical.lazr.interfaces.IResourcePOSTOperation"
-       factory="canonical.launchpad.rest.ChangeBugTaskStatusOperation"
-       name="change_status"
-       />
-
    <webservice:register module="canonical.launchpad.interfaces" />
 
 </configure>

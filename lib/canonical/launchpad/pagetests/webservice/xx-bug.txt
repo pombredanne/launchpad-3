@@ -107,7 +107,7 @@ data in a bug task is derived from the bug.
   >>> len(bug_one_bugtasks)
   3
 
-  >>> sorted(bug_one_bugtasks[0].items())
+  >>> pprint(sorted(bug_one_bugtasks[0].items()))
   [(u'assignee_link', None),
    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
@@ -118,7 +118,13 @@ data in a bug task is derived from the bug.
    (u'date_closed', None),
    (u'date_confirmed', None),
    (u'date_created', u'2004-01-04T03:49:22.790240+00:00'),
-   (u'date_inprogress', None),
+   (u'date_fix_committed', None),
+   (u'date_fix_released', None),
+   (u'date_in_progress', None),
+   (u'date_left_new', None),
+   (u'date_triaged', None),
+   (u'distribution_link', u'http://api.launchpad.dev/beta/debian'),
+   (u'id', 4),
    (u'importance', u'Low'),
    (u'is_complete', False),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
@@ -128,7 +134,10 @@ data in a bug task is derived from the bug.
     u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
    (u'status_explanation', u''),
-   (u'title', u'Bug #1 in mozilla-firefox (Debian):...')]
+   (u'target_link',
+    u'http://api.launchpad.dev/beta/debian/+source/mozilla-firefox'),
+   (u'title',
+    u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"')]
 
   >>> bugtask_path = urlsplit(bug_one_bugtasks[0]['self_link'])[2]
   >>> bugtask = webservice.get(bugtask_path).jsonBody()

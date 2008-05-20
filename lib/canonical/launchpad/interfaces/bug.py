@@ -504,6 +504,7 @@ class IBug(IMessageTarget, ICanBeMentored):
 # definition of IBug itself.
 IBug['duplicates'].value_type.schema =  IBug
 IBug['duplicateof'].schema = IBug
+IBugTask['bug'].schema = IBug
 
 
 class IBugDelta(Interface):
