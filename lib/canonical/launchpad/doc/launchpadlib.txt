@@ -4,3 +4,34 @@
     >>> connection = urlopen('http://launchpad.dev:8085')
     >>> connection.read()[:9]
     '<!DOCTYPE'
+    >>> connection.close()
+
+    >>> import base64
+    >>> auth = 'Basic ' + base64.encodestring('foo.bar@canonical.com:test')
+
+    >>> from zope.testbrowser.browser import Browser
+    >>> browser = Browser()
+    >>> from urllib2 import BaseHandler
+    >>> class JanitorHandler(BaseHandler):
+    ...     """Make sure sockets are closed on HTTP errors (e.g. 404)."""
+    ...     # This needs to be the first default error handler.
+    ...     handler_order = 0
+    ...     def http_error_default(self, req, fp, code, msg, hdrs):
+    ...         # Close the socket on HTTPErrors.
+    ...         fp.close()
+    >>> browser.mech_browser.add_handler(JanitorHandler())
+
+    >>> browser.addHeader('Authorization', auth)
+    >>> browser.open('http://launchpad.dev/~stimpy')
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 404: Not Found
+
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
+    >>> browser.getControl(name='field.name').value = 'stimpy'
+    >>> browser.getControl('Display Name').value = 'Stimpson J. Cat'
+    >>> browser.getControl('Create').click()
+    >>> browser.url
+    'http://launchpad.dev/~stimpy'
+
+    >>> browser.mech_browser.close()

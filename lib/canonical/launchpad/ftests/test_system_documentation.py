@@ -764,8 +764,11 @@ special = {
     'launchpadlib.txt': LayeredDocFileSuite(
         '../doc/launchpadlib.txt',
         layer=AppServerLayer,
-        setUp=setUp, tearDown=tearDown,
-        )
+        ),
+    'launchpadlib2.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        ),
     }
 
 
