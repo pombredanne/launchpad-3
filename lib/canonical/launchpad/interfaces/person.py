@@ -456,14 +456,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "the heading of all pages related to you. Traditionally this "
             "is a logo, a small picture or a personal mascot. It should be "
             "no bigger than 50kb in size."))
-    mugshot = MugshotImageUpload(
+    mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on your home page in Launchpad. Traditionally this is a great "
             "big picture of your grinning face. Make the most of it! It "
-            "should be no bigger than 100kb in size. "))
+            "should be no bigger than 100kb in size. ")))
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -1181,6 +1181,8 @@ class IPersonViewRestricted(Interface):
 
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
+    # activemembers.value_type.schema will be set to IPerson once
+    # IPerson is defined.
     activemembers = exported(
         CollectionField(
             title=_("List of members with ADMIN or APPROVED status"),
@@ -1395,12 +1397,13 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry()
 
 
-IPersonViewRestricted['activemembers'].schema = IPerson
-IPersonViewRestricted['adminmembers'].schema = IPerson
-IPersonViewRestricted['proposedmembers'].schema = IPerson
-IPersonViewRestricted['invited_members'].schema = IPerson
-IPersonViewRestricted['deactivatedmembers'].schema = IPerson
-IPersonViewRestricted['expiredmembers'].schema = IPerson
+IPersonViewRestricted['allmembers'].value_type.schema = IPerson
+IPersonViewRestricted['activemembers'].value_type.schema = IPerson
+IPersonViewRestricted['adminmembers'].value_type.schema = IPerson
+IPersonViewRestricted['proposedmembers'].value_type.schema = IPerson
+IPersonViewRestricted['invited_members'].value_type.schema = IPerson
+IPersonViewRestricted['deactivatedmembers'].value_type.schema = IPerson
+IPersonViewRestricted['expiredmembers'].value_type.schema = IPerson
 
 
 class INewPersonForm(IPerson):
@@ -1497,36 +1500,34 @@ class ITeam(IPerson, ITeamPublic):
     """
     export_as_webservice_entry()
 
-    # Logo and Mugshot are here so that they can have a description on a
-    # Team which is different to the description they have on a Person.
-    logo = LogoImageUpload(
-        title=_("Logo"), required=False,
-        default_image_resource='/@@/team-logo',
+    # Logo, Mugshot and displayname are here so that they can have a
+    # description on a Team which is different to the description they have on
+    # a Person.
+    logo = copy_field(
+        IPerson['logo'], default_image_resource='/@@/team-logo',
         description=_(
             "An image of exactly 64x64 pixels that will be displayed in "
             "the heading of all pages related to the team. Traditionally "
             "this is a logo, a small picture or a personal mascot. It "
             "should be no bigger than 50kb in size."))
-    mugshot = MugshotImageUpload(
-        title=_("Mugshot"), required=False,
-        default_image_resource='/@@/team-mugshot',
+
+    mugshot = copy_field(
+        IPerson['mugshot'], default_image_resource='/@@/team-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on the team page in Launchpad. It "
             "should be no bigger than 100kb in size. "))
 
-    displayname = exported(
-        StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_(
-                "This team's name as you would like it displayed throughout "
-                "Launchpad.")),
-        exported_as='display_name')
+    displayname = copy_field(
+        IPerson['displayname'],
+        description=_(
+            "This team's name as you would like it displayed throughout "
+            "Launchpad."))
 
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_as_webservice_collection()
+    export_as_webservice_collection(IPerson)
 
     title = Attribute('Title')
 

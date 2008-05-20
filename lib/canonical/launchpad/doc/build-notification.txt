@@ -392,13 +392,20 @@ send notification about current (changed) PPA build record status.
 
   >>> failed_candidate.notify()
 
-Check how many email the system have sent:
+Was this package copied?
+
+    >>> (failed_candidate.archive != 
+    ... failed_candidate.sourcepackagerelease.upload_archive)
+    True
+
+Since the package *was* copied, only the owner of the destination
+archive will get notified.
 
   >>> notifications = pop_notifications()
   >>> len(notifications)
-  2
+  1
 
-Checking the first message contents:
+Checking the message contents:
 
   >>> build_notification = notifications.pop(0)
   >>> notification_body = build_notification.get_payload()
@@ -416,11 +423,10 @@ Checking the first message contents:
    * Source: not available
   ...
 
-Checking if the second recipient:
+The notification went to the PPA owner.
 
-  >>> build_notification = notifications.pop(0)
   >>> build_notification['To']
-  'mark@hbd.com'
+  'celso.providelo@canonical.com'
 
 Checking subject and extra headers:
 

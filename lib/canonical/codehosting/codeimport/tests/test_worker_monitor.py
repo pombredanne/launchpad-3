@@ -135,8 +135,7 @@ class TestWorkerMonitorUnit(TestCase):
         """Return the `CodeImportResult`s for the `CodeImport` we created.
         """
         code_import = getUtility(ICodeImportSet).get(self.code_import_id)
-        return getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import)
+        return code_import.results
 
     def getOneResultForOurCodeImport(self):
         """Return the only `CodeImportResult` for the `CodeImport` we created.
@@ -436,9 +435,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
-        results = list(getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import))
-        self.failUnlessEqual(len(results), 1)
+        self.failUnlessEqual(len(list(code_import.results)), 1)
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
