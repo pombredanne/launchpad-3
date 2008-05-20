@@ -123,7 +123,8 @@ class BugWatchUpdater(object):
         """Set up an interaction as the Bug Watch Updater"""
         auth_utility = getUtility(IPlacelessAuthUtility)
         setupInteraction(
-            auth_utility.getPrincipalByLogin('bugwatch@bugs.launchpad.net'),
+            auth_utility.getPrincipalByLogin(
+                'bugwatch@bugs.launchpad.net', want_password=False),
             login='bugwatch@bugs.launchpad.net')
 
     def _logout(self):
