@@ -565,7 +565,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
     is_team = exported(
-        Bool(title=_('Is this object a team?')))
+        Bool(title=_('Is this object a team?'), readonly=True))
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = exported(
