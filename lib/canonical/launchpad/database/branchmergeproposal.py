@@ -64,7 +64,6 @@ VALID_TRANSITION_GRAPH = {
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
 
-
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
@@ -146,8 +145,9 @@ class BranchMergeProposal(SQLBase):
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
-
+        dont_email_me = set()
         branches = [self.source_branch, self.target_branch]
+
         if self.dependent_branch is not None:
             branches.append(self.dependent_branch)
         for branch in branches:
@@ -156,29 +156,29 @@ class BranchMergeProposal(SQLBase):
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
+                    dont_email_me.add(recipient)
                     continue
                 recipients[recipient] = (subscription, rationale)
 
         owner_recipients = NotificationRecipientSet()
         owner_recipients.add(
             self.source_branch.owner,
-            'You are the owner of %s' % self.source_branch,
             None,
-            )
+            'You are the owner of %s' % self.source_branch)
         owner_recipients.add(
             self.target_branch.owner,
-            'You are the owner of %s' % self.target_branch,
             None,
-            )
+            'You are the owner of %s' % self.target_branch)
         if self.dependent_branch is not None:
             owner_recipients.add(
                 self.dependent_branch.owner,
-                'You are the owner of %s' % self.dependent_branch,
                 None,
-                )
+                'You are the owner of %s' % self.dependent_branch)
         for recipient in owner_recipients:
-            subscription, rationale = owner_recipients.getReason(recipient)
-            recipients[recipient] = (subscription, rationale)
+            if recipient not in dont_email_me:
+                subscription, rationale = owner_recipients.getReason(recipient)
+                recipients[recipient] = (subscription, rationale)
+
         return recipients
 
     def isValidTransition(self, next_state, user=None):
