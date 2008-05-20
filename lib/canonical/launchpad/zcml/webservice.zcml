@@ -27,63 +27,6 @@
         <allow interface='canonical.lazr.interfaces.IByteStorage' />
     </class>
 
-    <!-- TALES namespaces for WADL generation -->
-    <adapter
-        for="canonical.lazr.interfaces.IHTTPResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="canonical.lazr.interfaces.IServiceRootResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlServiceRootResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="canonical.lazr.interfaces.ICollectionResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="canonical.lazr.interfaces.IEntryResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlEntryResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
-        name="wadl_entry"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
-        name="wadl_collection"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IField"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlFieldAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlOperationAPI"
-        name="wadl_operation"
-        />
-
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
         for="canonical.launchpad.interfaces.IWebServiceApplication"
