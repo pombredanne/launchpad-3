@@ -156,7 +156,10 @@ class CodeImportSourceDetails:
         # source_product_series_id attribute is to do with the new system
         # looking in legacy locations for foreign trees and can be deleted
         # when the new system has been running for a while.
-        source_product_series_id = 0
+        if code_import.source_product_series is not None:
+            source_product_series_id = code_import.source_product_series.id
+        else:
+            source_product_series_id = 0
         if code_import.rcs_type == RevisionControlSystems.SVN:
             rcstype = 'svn'
             svn_branch_url = str(code_import.svn_branch_url)

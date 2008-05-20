@@ -137,8 +137,12 @@ class CodeImport(SQLBase):
         # only necessary for the transition from the old to the new
         # code import system, and should be deleted after that process
         # is done.
-        return _ProductSeriesCodeImport.selectOneBy(
-            codeimport=self).productseries
+        pair = _ProductSeriesCodeImport.selectOneBy(
+            codeimport=self)
+        if pair is not None:
+            return pair.productseries
+        else:
+            return None
 
     def approve(self, data, user):
         """See `ICodeImport`."""
