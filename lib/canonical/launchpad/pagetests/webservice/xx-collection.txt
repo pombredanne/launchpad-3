@@ -13,7 +13,7 @@ collection.
   >>> people_collection['total_size']
   63
   >>> people_collection['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws_start=5&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
   >>> people_collection.get('prev_collection_link') is None
   True
 
@@ -29,12 +29,12 @@ collection.
 
 You can get other pages of the collection by following links:
 
-  >>> result = webservice.get("/beta/people?ws_start=5&ws_size=5")
+  >>> result = webservice.get("/beta/people?ws.start=5&ws.size=5")
   >>> second_batch = result.jsonBody()
   >>> second_batch['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws_start=10&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
   >>> second_batch['prev_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws_start=0&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws.start=0&ws.size=5'
 
   >>> people_entries = sorted(second_batch['entries'])
   >>> people_entries[0]['name']
@@ -42,13 +42,13 @@ You can get other pages of the collection by following links:
 
 You can also get a larger batch than the default:
 
-  >>> big_batch = webservice.get("/beta/people?ws_size=50").jsonBody()
+  >>> big_batch = webservice.get("/beta/people?ws.size=50").jsonBody()
   >>> len(big_batch['entries'])
   50
   >>> big_batch.get('next_collection_link')
-  u'http://api.launchpad.dev/beta/people?ws_start=50&ws_size=50'
+  u'http://api.launchpad.dev/beta/people?ws.start=50&ws.size=50'
 
-  >>> bigger_batch = webservice.get("/beta/people?ws_size=75").jsonBody()
+  >>> bigger_batch = webservice.get("/beta/people?ws.size=75").jsonBody()
   >>> len(bigger_batch['entries'])
   63
   >>> bigger_batch.get('next_collection_link') is None
@@ -57,12 +57,12 @@ You can also get a larger batch than the default:
 But requesting a batch size higher than the maximum configured value
 results in a 400 error.
 
-    >>> print webservice.get("/beta/people?ws_start=0&ws_size=1000")
+    >>> print webservice.get("/beta/people?ws.start=0&ws.size=1000")
     HTTP/1.1 400 Bad Request
     ...
     Content-Type: text/plain...
     <BLANKLINE>
-    Maximum for "ws_size" parameter is ...
+    Maximum for "ws.size" parameter is ...
 
 
 == Element lookup ==
@@ -106,12 +106,12 @@ A collection may expose custom named operations in response to GET
 requests. A named operation may do anything consistent with the nature
 of a GET request, but it's usually used to serve search results. The
 custom operation to be invoked is named in the query string's
-'ws_op' argument. Here's a custom operation on the collection of
+'ws.op' argument. Here's a custom operation on the collection of
 people, called 'people'.
 
   >>> def search_people(text, start=0):
   ...     return webservice.get(
-  ...         "/beta/people?ws_op=find&text=%s&ws_start=%s" %
+  ...         "/beta/people?ws.op=find&text=%s&ws.start=%s" %
   ...             (text, start)).jsonBody()
 
 A custom operation that returns a list of objects is paginated, just
@@ -121,7 +121,7 @@ like a collection.
   >>> s_people['total_size']
   8
   >>> s_people['next_collection_link']
-  u'http://api.launchpad.dev/beta/people?ws_op=find&text=s&ws_start=5&ws_size=5'
+  u'http://api.launchpad.dev/beta/people?ws.op=find&text=s&ws.start=5&ws.size=5'
   >>> [p['name'] for p in sorted(s_people['entries'])]
   [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
 
@@ -140,7 +140,7 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/people?ws_op=find&text=")
+  >>> print webservice.get("/beta/people?ws.op=find&text=")
   HTTP/1.1 400 Bad Request
   ...
   text: Required input is missing.
