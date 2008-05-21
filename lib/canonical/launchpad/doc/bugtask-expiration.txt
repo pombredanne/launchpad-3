@@ -31,6 +31,7 @@ findExpirableBugTasks() requires a parameter for the minimum days old
 (min_days_old) that the bugtask has been in the unattended Incomplete
 status. It also requires specifying the user that is doing the search.
 
+    >>> from storm.store import Store
     >>> from canonical.launchpad.interfaces import (
     ...     BugTaskStatus, IBugTaskSet)
     >>> bugtaskset = getUtility(IBugTaskSet)
@@ -173,7 +174,9 @@ Let's also make some bugs that almost qualify for expiration.
 
     # A bugtask that is not expirable because it has a milestone.
     >>> milestone_bugtask = create_old_bug('milestone', 61, ubuntu)
-    >>> milestone_bugtask.milestone = ubuntu.currentseries.newMilestone("0.1")
+    >>> milestone = ubuntu.currentseries.newMilestone("0.1")
+    >>> Store.of(milestone_bugtask).flush()
+    >>> milestone_bugtask.milestone = milestone
     >>> milestone_bugtask.bug.permits_expiration
     True
     >>> milestone_bugtask.bug.can_expire

@@ -86,6 +86,8 @@ class BugNotificationSet:
             bug=bug, is_comment=is_comment,
             message=message, date_emailed=None)
         store = Store.of(bug_notification)
+        # XXX jamesh 2008-05-21: these flushes are to fix ordering
+        # problems in the bugnotification-sending.txt tests.
         store.flush()
         for recipient in recipients:
             reason_body, reason_header = recipients.getReason(recipient)

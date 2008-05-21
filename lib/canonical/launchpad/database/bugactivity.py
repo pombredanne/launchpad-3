@@ -7,6 +7,7 @@ __all__ = ['BugActivity', 'BugActivitySet']
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
+from storm.store import Store
 
 from canonical.launchpad.interfaces import IBugActivity, IBugActivitySet
 
@@ -39,7 +40,9 @@ class BugActivitySet:
     def new(self, bug, datechanged, person, whatchanged,
             oldvalue=None, newvalue=None, message=None):
         """See IBugActivitySet."""
-        return BugActivity(
+        activity = BugActivity(
             bug=bug, datechanged=datechanged, person=person,
             whatchanged=whatchanged, oldvalue=oldvalue, newvalue=newvalue,
             message=message)
+        Store.of(activity).flush()
+        return activity
