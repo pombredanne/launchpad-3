@@ -64,8 +64,15 @@ class WebServiceCaller:
     """A class for making calls to Launchpad web services."""
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
-                 *args, **kwargs):
-        """Obtain the information necessary to sign OAuth requests."""
+                 handle_errors=True, *args, **kwargs):
+        """Create a WebServiceCaller.
+        :param oauth_consumer_key: The OAuth consumer key to use.
+        :param oauth_access_key: The OAuth access key to use for the request.
+        :param handle_errors: Should errors raise exception or be handled by
+            the publisher. Default is to let the publisher handle them.
+
+        Other parameters are passed to the HTTPCaller used to make the calls.
+        """
         if oauth_consumer_key is not None and oauth_access_key is not None:
             login(ANONYMOUS)
             self.consumer = getUtility(IOAuthConsumerSet).getByKey(
@@ -76,6 +83,8 @@ class WebServiceCaller:
         else:
             self.consumer = None
             self.access_token = None
+
+        self.handle_errors = handle_errors
 
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
@@ -100,7 +109,8 @@ class WebServiceCaller:
         if data:
             request_string += "\n" + data
 
-        response = self.http_caller(request_string)
+        response = self.http_caller(
+            request_string, handle_errors=self.handle_errors)
         return WebServiceResponseWrapper(response)
 
     def get(self, path, media_type='application/json', headers=None):
