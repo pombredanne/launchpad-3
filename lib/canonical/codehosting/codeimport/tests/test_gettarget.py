@@ -13,7 +13,6 @@ import shutil
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.builtins import get_format_type
 from bzrlib.bzrdir import BzrDir
 from bzrlib.repository import Repository
 from bzrlib.urlutils import local_path_to_url
