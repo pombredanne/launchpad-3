@@ -32,10 +32,12 @@ __all__ = [
 
 import simplejson
 import sys
+import traceback
 import types
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
+from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
@@ -44,6 +46,8 @@ from zope.schema import getFields
 from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 
+
+from canonical.config import config
 # XXX flacoste 2008-01-25 bug=185958:
 # canonical_url and ILaunchBag code should be moved into lazr.
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -592,8 +596,18 @@ class WebServiceExceptionView:
         response = self.request.response
         response.setStatus(self.context.__lazr_webservice_error__)
         response.setHeader('Content-Type', 'text/plain')
+        if getattr(self.request, 'oopsid', None) is not None:
+            response.setHeader('X-Lazr-OopsId', self.request.oopsid)
 
-        return str(self.context)
+        result = [str(self.context)]
+        show_tracebacks = (
+            getUtility(ILaunchBag).developer or
+            config.canonical.show_tracebacks)
+        if show_tracebacks:
+            result.append('\n\n')
+            result.append(traceback.format_exc())
+
+        return ''.join(result)
 
 
 class BaseResourceOperationAdapter(ResourceOperation):

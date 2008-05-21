@@ -800,7 +800,9 @@ user.
     >>> class FakeLaunchBag:
     ...     implements(ILaunchBag)
     ...     user = 'A user'
-    >>> provideUtility(FakeLaunchBag(), ILaunchBag)
+    ...     developer = False
+    >>> the_launchbag = FakeLaunchBag()
+    >>> provideUtility(the_launchbag, ILaunchBag)
 
     >>> class CheckedOutBookSet(object):
     ...     """Simple ICheckedOutBookSet implementation."""
@@ -1077,14 +1079,68 @@ service requests.
 That view returns the exception message as content, and sets the
 result code to the one specified using the webservice_error() directive.
 
-    >>> exception = InvalidEmail("foo@bar isn't a valid email address")
-    >>> error_view = WebServiceExceptionView(exception, FakeRequest())
-    >>> error_view()
+    >>> from canonical.config import config
+    >>> from textwrap import dedent
+
+    >>> config.push('traceback_off', dedent('''
+    ...     [canonical]
+    ...     show_tracebacks: False'''))
+
+    >>> def render_error_view(error, request):
+    ...     """Create a WebServiceExceptionView to render the exception.
+    ...
+    ...     The exception is raised, because exception view can be expected
+    ...     to be called from within an exception handler.
+    ...     """
+    ...     try:
+    ...         raise error
+    ...     except Exception, error:
+    ...         return WebServiceExceptionView(error, request)()
+
+    >>> request = FakeRequest()
+    >>> render_error_view(
+    ...     InvalidEmail("foo@bar isn't a valid email address"), request)
     "foo@bar isn't a valid email address"
-    >>> error_view.request.response.headers['Content-Type']
+    >>> request.response.headers['Content-Type']
     'text/plain'
-    >>> error_view.request.response.status
+    >>> request.response.status
     400
+
+When the request contains an OOPSID, it will be set in the X-Lazr-OopsId
+header:
+
+    >>> print request.response.headers.get('X-Lazr-OopsId')
+    None
+    >>> request = FakeRequest()
+    >>> request.oopsid = 'OOPS-001'
+    >>> ignored = render_error_view(InvalidEmail('bad email'), request)
+    >>> print request.response.headers['X-Lazr-OopsId']
+    OOPS-001
+
+A traceback dump is included in the response if the show_tracebacks
+variable is on, or if the user is a developer.
+
+    >>> the_launchbag.developer = True
+    >>> print render_error_view(InvalidEmail('bad email'), request)
+    bad email
+    <BLANKLINE>
+    Traceback (most recent call last):
+     ...
+    InvalidEmail: bad email
+
+    >>> the_launchbag.developer = False
+    >>> config.push('traceback_on', dedent('''
+    ...     [canonical]
+    ...     show_tracebacks: True'''))
+
+    >>> print render_error_view(InvalidEmail('bad email'), request)
+    bad email
+    <BLANKLINE>
+    Traceback (most recent call last):
+     ...
+    InvalidEmail: bad email
+
+    >>> ignored = config.pop('traceback_off')
 
 
 === Security ===
