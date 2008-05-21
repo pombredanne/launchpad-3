@@ -11,6 +11,12 @@ stop the branchscanner and other callsites from creating unnecessary Account
 records. Dependant on password recovery workflow coping with Person records
 with no Accounts.
 
+- The authentication system should be refactored to deal with Accounts
+rather than Persons. Aditionally, it should sanely deal with Accounts that
+are authenticated by means other than a password.
+IPlacelessLoginSource.getPrincipalByLogin should lose the temporary
+want_password argument.
+
 - Person.password, Person.account_status, Person.account_status_comment,
 Person.openid_identifier should all be removed. Callsites that actually
 need to access these fields should access them directly off Account or
