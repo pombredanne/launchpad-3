@@ -16,9 +16,12 @@ from StringIO import StringIO
 import pytz
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
+    AccountStatus,
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
@@ -156,6 +159,7 @@ class LaunchpadObjectFactory:
         # email.
         if email_address_status == EmailAddressStatus.VALIDATED:
             person.validateAndEnsurePreferredEmail(email)
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
         elif email_address_status is not None:
             email.status = email_address_status
             email.syncUpdate()
