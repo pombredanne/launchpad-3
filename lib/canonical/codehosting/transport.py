@@ -539,9 +539,10 @@ class LaunchpadServer(Server):
         # we'll stack on the SFTP branch, which the user is definitely able to
         # access.
         stack_on_url = stack_on_url.replace('http', 'sftp')
-        # XXX: JonathanLange 2008-05-20: We should use the higher-level bzrlib
-        # APIs to do this: bzrdir.get_config().set_default_stack_on(). But
-        # those APIs aren't in bzr mainline yet, so...
+        # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
+        # higher-level bzrlib APIs to do this:
+        # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in
+        # bzr mainline yet, so...
         transport.put_bytes(
             '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
         return transport
