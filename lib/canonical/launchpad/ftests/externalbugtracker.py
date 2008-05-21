@@ -792,7 +792,7 @@ class TestDebBugs(DebBugs):
     It allows you to pass in bugs to be used, instead of relying on an
     existing debbugs db.
     """
-    import_comments = False
+    sync_comments = False
 
     def __init__(self, baseurl, bugs):
         super(TestDebBugs, self).__init__(baseurl)

@@ -172,7 +172,10 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # The stacking policy lives in a bzrdir in the product directory.
         # Bazaar needs to be able to open this bzrdir.
         transport = self.getTransport().clone('~testuser/evolution')
-        found_bzrdir = BzrDir.open_containing_from_transport(transport)[0]
+        found_bzrdir = BzrDir.open_from_transport(transport)
+        # We really just want to test that the above line doesn't raise an
+        # exception. However, we'll also check that we get the bzrdir that we
+        # expected.
         expected_url = transport.clone('.bzr').base
         self.assertEqual(expected_url, found_bzrdir.transport.base)
 
