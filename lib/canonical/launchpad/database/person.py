@@ -1063,14 +1063,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         return self.is_valid_person
 
-        # An IPerson is valid if it has a preferred email address and
-        # an Account with status AccountStatus.ACTIVE. We should probably
-        # drop the concept of valid people - just users with an Account.
-        if self.account.status <> AccountStatus.ACTIVE:
-            return False
-        
-        return True
-
     @property
     def is_valid_person(self):
         """See `IPerson`."""
