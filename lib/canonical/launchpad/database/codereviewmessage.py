@@ -5,7 +5,7 @@ __all__ = ['CodeReviewMessage']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey
+from sqlobject import ForeignKey, StringCol
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
@@ -27,6 +27,7 @@ class CodeReviewMessage(SQLBase):
         notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
     vote = EnumCol(dbName='vote', notNull=True, schema=CodeReviewVote)
+    vote_tag = StringCol(default=None)
     @property
     def title(self):
         return ('Comment on proposed merge of %(source)s into %(target)s' %

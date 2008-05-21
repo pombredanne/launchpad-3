@@ -59,4 +59,7 @@ class ICodeReviewMessage(Interface):
     vote = Choice(
         title=_('Reviewer says'), required=False, vocabulary=CodeReviewVote)
 
+    vote_tag = TextLine(
+        title=_('Vote tag'), required=False)
+
     title = TextLine()

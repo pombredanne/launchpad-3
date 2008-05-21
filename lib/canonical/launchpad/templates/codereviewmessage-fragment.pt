@@ -8,6 +8,8 @@
                   id="comment-from" />
             <strong id="comment-vote" tal:content="context/vote/title"
                     tal:condition="context/vote" />
+            <strong id="comment-vote-tag" tal:content="context/vote_tag"
+                    tal:condition="context/vote_tag" />
             <strong id="comment-subject" tal:content="context/message/subject"
             />
         </div>

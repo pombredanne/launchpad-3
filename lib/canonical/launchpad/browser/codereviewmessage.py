@@ -51,6 +51,8 @@ class IEditCodeReviewMessage(Interface):
     vote = Choice(
         title=_('Vote'), required=False, vocabulary=CodeReviewVote)
 
+    vote_tag = TextLine(title=_('Tag'), required=False)
+
     subject = Title(title=_('Subject'), required=False)
 
     comment = Text(title=_('Comment'), required=False)
@@ -87,7 +89,7 @@ class CodeReviewMessageAddView(LaunchpadFormView):
         """Create the comment..."""
         message = self.branch_merge_proposal.createMessage(
             self.user, data['subject'], data['comment'], data['vote'],
-            self.reply_to)
+            data['vote_tag'], self.reply_to)
         self.next_url = canonical_url(message)
 
     @property

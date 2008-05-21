@@ -12,6 +12,7 @@ Set up required objects
     >>> nopriv_browser.open(merge_proposal_url)
     >>> nopriv_browser.getLink('Add comment').click()
     >>> nopriv_browser.getControl('Vote').displayValue = ['Approve']
+    >>> nopriv_browser.getControl('Tag').value = 'my tag'
     >>> nopriv_browser.getControl('Subject').value = 'my subject'
     >>> nopriv_browser.getControl('Comment').value = 'my body'
     >>> nopriv_browser.getControl('Add').click()
@@ -35,6 +36,8 @@ Now, open its home page.
     No Privileges Person
     >>> print_tag('comment-vote')
     Approve
+    >>> print_tag('comment-vote-tag')
+    my tag
 
 Reply link is displayed even if the user isn't logged in.
 
@@ -81,6 +84,7 @@ a period would give four.)
     >>> print extract_text(comments[0])
     No Privileges Person
     Approve
+    my tag
     my body
     (full message)
     >>> print extract_text(comments[1])

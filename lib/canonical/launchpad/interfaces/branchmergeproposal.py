@@ -350,8 +350,8 @@ class IBranchMergeProposal(Interface):
     def nominateReviewer(reviewer, registrant):
         """Create a vote for the specified person."""
 
-    def createMessage(owner, subject, content=None, vote=None, parent=None,
-                      _date_created=None):
+    def createMessage(owner, subject, content=None, vote=None, vote_tag=None,
+                      parent=None, _date_created=None):
         """Create an ICodeReviewMessage associated with this merge proposal.
 
         :param owner: The person who the message is from.

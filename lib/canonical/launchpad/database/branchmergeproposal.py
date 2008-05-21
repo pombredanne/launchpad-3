@@ -380,7 +380,7 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence')
 
     def createMessage(self, owner, subject, content=None, vote=None,
-                      parent=None, _date_created=None):
+                      vote_tag=None, parent=None, _date_created=None):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
@@ -402,4 +402,5 @@ class BranchMergeProposal(SQLBase):
                       rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         return CodeReviewMessage(
-            branch_merge_proposal=self, message=msg, vote=vote)
+            branch_merge_proposal=self, message=msg, vote=vote,
+            vote_tag=vote_tag)
