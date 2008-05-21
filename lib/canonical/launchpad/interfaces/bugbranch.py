@@ -17,7 +17,7 @@ from zope.schema import Choice, Int, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import BugField
 from canonical.launchpad.interfaces import (
-    IBug, IHasBug, IHasDateCreated, non_duplicate_branch)
+    IHasBug, IHasDateCreated, non_duplicate_branch)
 from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.person import IPerson
 
@@ -62,7 +62,7 @@ class IBugBranch(IHasDateCreated, IHasBug):
     id = Int(title=_("Bug Branch #"))
     bug = BugField(
         title=_("The bug that is linked to."),
-        required=True, readonly=True, schema=IBug)
+        required=True, readonly=True)
     branch = Choice(
         title=_("Branch"), vocabulary="Branch",
         constraint=non_duplicate_branch, required=True, readonly=True)

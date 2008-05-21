@@ -1,32 +1,18 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces pertaining to the launchpad Malone application."""
 
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
-from persistent import IPersistent
+from zope.interface import Attribute
 
-from canonical.launchpad import _
 from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-# XXX kiko 2007-02-08:
-# These import shims are actually necessary if we don't go over the
-# entire codebase and fix where the import should come from.
-from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    IOpenLaunchBag, NotFoundError, UnexpectedFormData,
-    UnsafeFormGetSubmissionError)
-
-from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    REQUEST_USER, call_with, collection_default_content,
-    export_as_webservice_collection, export_as_webservice_entry,
-    export_read_operation, exported, generate_collection_adapter,
-    operation_parameters, rename_parameters_as)
+    collection_default_content, export_as_webservice_collection,
+    export_read_operation)
 
 
 __all__ = [

@@ -67,11 +67,11 @@ from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Object, Password, Text,
-    TextLine, Tuple)
+    Bool, Bytes, Choice, Datetime, Int, Object, Password, Text, TextLine,
+    Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IInt, IObject,
-    IPassword, IText, ITextLine)
+    ConstraintNotSatisfied, IBytes, IDatetime, IInt, IObject, IPassword,
+    IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -273,6 +273,29 @@ class TimeInterval(TextLine):
 
 class BugField(Object):
     implements(IBugField)
+
+    def __init__(self, *args, **kwargs):
+        """The schema will always be `IBug`."""
+        super(BugField, self).__init__(Interface, *args, **kwargs)
+
+    def _get_schema(self):
+        """Get the schema here to avoid circular imports."""
+        from canonical.launchpad.interfaces import IBug
+        return IBug
+
+    def _set_schema(self, schema):
+        """Ignore attempts to set the schema by the superclass."""
+
+    schema = property(_get_schema, _set_schema)
+
+    def _validate(self, value):
+        """Override normal validation.
+
+        Don't recursively validate; it's not needed, and is harmful
+        here, because the value is an `IBug`.
+        """
+        if not self.schema.providedBy(value):
+            raise LaunchpadValidationError("Not a bug")
 
 
 class DuplicateBug(BugField):
