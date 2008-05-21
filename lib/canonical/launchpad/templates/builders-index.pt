@@ -18,6 +18,13 @@
     <div metal:fill-slot="main">
       <h1>Launchpad build machines</h1>
 
+    <p>
+      <tal:add_action
+        define="link context/menu:overview/add"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </p>
+
     <div id="ppa-builders" tal:define="category view/ppa_builders">
       <div metal:use-macro="template/macros/builder-category" />
     </div>
@@ -25,13 +32,6 @@
     <div id="other-builders" tal:define="category view/other_builders">
       <div metal:use-macro="template/macros/builder-category" />
     </div>
-
-    <p>
-      <tal:add_action
-        define="link context/menu:overview/add"
-        condition="link/enabled"
-        replace="structure link/render" />
-    </p>
 
     <p class="discreet">Generated at <span tal:replace="view/now"/></p>
 

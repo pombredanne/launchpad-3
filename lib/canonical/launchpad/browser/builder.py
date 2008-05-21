@@ -88,7 +88,7 @@ class BuilderSetOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def add(self):
-        text = 'Add builder'
+        text = 'Register a new build machine'
         return Link('+new', text, icon='add')
 
 
@@ -168,7 +168,7 @@ class BuilderSetView(CommonBuilderView):
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'PPA builds', virtualized=True)
+            'PPA build machines', virtualized=True)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -176,7 +176,7 @@ class BuilderSetView(CommonBuilderView):
     def other_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Official distribution builds', virtualized=False)
+            'Official distribution build machines', virtualized=False)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
