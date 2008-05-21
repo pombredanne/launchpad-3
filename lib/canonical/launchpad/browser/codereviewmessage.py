@@ -10,6 +10,7 @@ from zope.interface import Interface
 from zope.schema import Choice, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces import (
     CodeReviewVote, ICodeReviewMessage)
 from canonical.launchpad.webapp import (
@@ -50,13 +51,9 @@ class IEditCodeReviewMessage(Interface):
     vote = Choice(
         title=_('Vote'), required=False, vocabulary=CodeReviewVote)
 
-    subject = TextLine(
-        title=_('Subject'), required=False, description=_(
-        "This will be rendered as help text"))
+    subject = Title(title=_('Subject'), required=False)
 
-    comment = Text(
-        title=_('Comment'), required=False, description=_(
-        "This will be rendered as help text"))
+    comment = Text(title=_('Comment'), required=False)
 
 
 class CodeReviewMessageAddView(LaunchpadFormView):
