@@ -128,8 +128,8 @@ And setup the test_keys in order to build and upload signed packages.
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> import_public_test_keys()
 
-When the first version of 'biscuit' is uploaded no diff is requested,
-since there is no suitable ancestry.
+When the first version of 'biscuit' is uploaded, since there is no
+suitable ancentry, no diff is requested.
 
     >>> packager.buildUpstream()
     >>> packager.buildSource(signed=False)
@@ -229,9 +229,138 @@ the version found in its context.
 
 == Performing a Diff ==
 
+Now we will actually perform a package diff and look at the results.
+
+In order for the uploaded files to be flushed to the librarian we need
+to commit the transaction here.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+The auxiliary function below will facilitate the viewing of diff results.
+
+    >>> import os
+    >>> import shutil
+    >>> import subprocess
+    >>> import tempfile
+
+    >>> from canonical.librarian.utils import copy_and_close
+
+    >>> def get_diff_results(diff):
+    ...     lfa = diff.diff_content
+    ...     if lfa is None:
+    ...         return None
+    ...     lfa.open()
+    ...     jail = tempfile.mkdtemp()
+    ...     local = os.path.abspath('')
+    ...     jail = tempfile.mkdtemp()
+    ...     fhandle = open(os.path.join(jail, "the.diff.gz"), 'w')
+    ...     copy_and_close(lfa, fhandle)
+    ...     os.chdir(jail)
+    ...     p = subprocess.Popen(
+    ...          ['gunzip', "the.diff.gz"], stdout=subprocess.PIPE)
+    ...     p.communicate()
+    ...     p = subprocess.Popen(
+    ...          ['splitdiff', "-a", "-d", "-p1", "the.diff"],
+    ...          stdout=subprocess.PIPE)
+    ...     p.communicate()
+    ...     diffs = [filename for filename in sorted(os.listdir('.'))
+    ...              if filename != 'the.diff']
+    ...     ordered_diff_contents = [open(diff).read() for diff in diffs]
+    ...     os.chdir(local)
+    ...     shutil.rmtree(jail)
+    ...     return "".join(ordered_diff_contents)
+
+Let's obtain the diff that was created when package "biscuit - 1.0-8"
+was uploaded.
+
+    >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
+
+Now we can run it.
+
+    >>> diff.performDiff()
+
+Since it stores the diff results in the librarian we need to commit the
+transaction before we can access the file.
+
+    >>> transaction.commit()
+
+Now we can compare the package diff outcome to the debdiff output
+(obtained manually on the shell) for the packages in question.
+
+    >>> print get_diff_results(diff)
+    --- biscuit-1.0/contents
+    +++ biscuit-1.0/contents
+    @@ -3 +2,0 @@
+    -1.0-8
+    --- biscuit-1.0/debian/changelog
+    +++ biscuit-1.0/debian/changelog
+    @@ -1,9 +1,3 @@
+    -biscuit (1.0-8) hoary; urgency=low
+    -
+    -  * cookies
+    -
+    - -- Foo Bar <foo.bar@canonical.com> ...
+    -
+     biscuit (1.0-1) hoary; urgency=low
+    <BLANKLINE>
+       * Initial Upstream package
+    <BLANKLINE>
 
 
+== Dealing with all PackageDiff objects ==
 
-== Browsing Diffs ==
+The PackageDiffSet utility implements simple auxiliary methods to deal
+directly with PackageDiffs objects.
 
+Let's flush all the updates done.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+Those methods are useful when the callsites are not interested only in
+PackageDiffs attached to specific SourcePackageReleases.
+
+Using the utility it's possible to iterate over all PackageDiff
+stored.
+
+    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> packagediff_set = getUtility(IPackageDiffSet)
+
+    >>> for diff in packagediff_set:
+    ...     print diff.title, diff.date_fulfilled is not None
+    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2  False
+    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8 False
+    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9 False
+    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-8 to biscuit - 1.0-1  True
+    Package diff from pmount - 0.1-2 to pmount - 0.1-1    False
+
+Or only the PackageDiffs not yet fullfilled.
+
+    >>> for diff in packagediff_set.getPendingDiffs():
+    ...     print diff.title, diff.date_fulfilled is not None
+    Package diff from pmount - 0.1-2 to pmount - 0.1-1    False
+    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9 False
+    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8 False
+    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8  False
+    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2  False
+
+getPendingDiffs() results can optionally be limited.
+
+    >>> packagediff_set.getPendingDiffs().count()
+    6
+
+    >>> packagediff_set.getPendingDiffs(limit=2).count()
+    2
+
+A arbitrary PackageDiff object can be easily retrieved by database ID
+if necessary.
+
+    >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
+    >>> candidate_diff = packagediff_set.get(diff.id)
+    >>> candidate_diff == diff
+    True
 

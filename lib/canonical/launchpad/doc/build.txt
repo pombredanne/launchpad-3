@@ -898,7 +898,7 @@ expect depwait_build to be 'retried' and scored.
     NEEDSBUILD
 
     >>> depwait_build.buildqueue_record.lastscore
-    1005
+    4005
 
 The 'retryDepWaiting' task is performed periodically via cronjob by
 cronscript/buildd-retry-depwait.py. It can be run in parallel with

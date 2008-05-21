@@ -1,4 +1,4 @@
- = Launchpad's WADL documents =
+= Launchpad's WADL documents =
 
 Every resource in the web service has a WADL representation that
 describes the capabilities of the resource in a machine-readable
@@ -39,7 +39,7 @@ this point on.
 The <application> tag for a WADL representation of an entry contains a
 single <resources> tag.
 
-    >>> resources, = list(tree)
+    >>> [resources] = tree
     >>> resources.tag
     '...resources'
 
@@ -53,7 +53,7 @@ The <resources> tag contains a single <resource> tag. The WADL
 description of a person describes only one resource: the person
 itself.
 
-    >>> resource, = list(resources)
+    >>> [resource] = (resources)
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -87,7 +87,7 @@ description of an entry. It's an <application> tag that contains a
     >>> tree.tag
     '...application'
 
-    >>> resources, = list(tree)
+    >>> [resources] = tree
     >>> resources.tag
     '...resources'
     >>> resources.attrib['href']
@@ -96,7 +96,7 @@ description of an entry. It's an <application> tag that contains a
 The <resource> tag defines the capabilities of the collection resource
 by referencing another WADL document.
 
-    >>> resource, = resources
+    >>> [resource] = resources
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -108,8 +108,7 @@ by referencing another WADL document.
 == Scoped collection resources ==
 
 The WADL representation of a scoped collection is pretty similar to
-the representation of a non-scoped collection. The difference is that
-all scoped collections are of the same type: "ScopedCollection".
+the representation of a top-level collection.
 
     >>> wadl = webservice.get('/beta/~admins/members',
     ...                       'application/vd.sun.wadl+xml').getBody()
@@ -118,17 +117,73 @@ all scoped collections are of the same type: "ScopedCollection".
     >>> tree.tag
     '...application'
 
-    >>> resources, = list(tree)
+    >>> [resources] = tree
     >>> resources.tag
     '...resources'
     >>> resources.attrib['href']
     'http://api.launchpad.dev/beta/~admins/members'
 
-    >>> resource, = resources
+    >>> [resource] = resources
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#ScopedCollection'
+    'http://api.launchpad.dev/beta/#PersonEntryAdapter-scoped-collection'
+
+
+== Hosted file resources ==
+
+A hosted file resource is the web service's access point for a binary
+file hosted elsewhere. Examples of hosted files include a person's
+mugshot image and a project's icon.
+
+A hosted file resource responds to GET requests by redirecting the
+client to the externally hosted file. It responds to PUT or DELETE
+requests by updating or deleting the underlying binary file.
+
+The behavior laid out in the previous paragraph is also defined in the
+WADL documents served by the web service itself. You can use content
+negotiation to get a WADL description of any hosted file resource.
+
+The 'salgado' user starts out with no hosted mugshot, and an ordinary
+GET to the place where the mugshot would be results in a 404 error.
+
+    >>> print webservice.get('/beta/~salgado/mugshot')
+    HTTP/1.1 404 Not Found
+    ...
+
+But if the client is interested in learning how to create a mugshot at
+/beta/~salgado/mugshot, it can use content negotiation to get a WADL
+description of the resource-to-be.
+
+    >>> wadl = webservice.get(
+    ...     '/beta/~salgado/mugshot',
+    ...     'application/vd.sun.wadl+xml').getBody()
+    >>> tree = ET.fromstring(wadl)
+
+Just like with the WADL description of an entry or collection
+resource, the WADL representation of a hosted file resource is not
+much more than a reference to a big WADL file at the service root. To
+find out about the capabilities of the resource-to-be, the client
+needs to fetch the WADL representation of
+http://api.launchpad.dev/beta/ and look for the XML element with the
+ID "HostedFile".
+
+    >>> tree.tag
+    '...application'
+
+    >>> [resources] = tree
+    >>> resources.tag
+    '...resources'
+    >>> resources.attrib['href']
+    'http://api.launchpad.dev/beta/~salgado/mugshot'
+
+    >>> [resource] = resources
+    >>> resource.tag
+    '...resource'
+    >>> resource.attrib['path']
+    ''
+    >>> resource.attrib['type']
+    'http://api.launchpad.dev/beta/#HostedFile'
 
 
 == The service root ==
@@ -151,77 +206,352 @@ is rooted at an <application> tag.
     >>> tree.tag
     '...application'
 
-But that <application> tag contains all the information referenced by
-all the other WADL documents in the system. #PersonEntryAdapter is here, as
-is #PersonSetCollectionAdapter and #ScopedCollection and many other
-targets of a <resource> tag's 'type' attribute. Also located here are
-the descriptions of the JSON representations those resources serve.
+As with the WADL descriptions of collection and entry resources, this
+<application> tag describes the capabilities of the server root
+resource. But that <application> tag also contains all the information
+referenced by all the other WADL documents in the system. #PersonEntry
+is here, as is #PersonSetCollectionAdapter and #ScopedCollection and
+many other targets of a <resource> tag's 'type' attribute. Also
+located here are the descriptions of the JSON representations those
+resources serve.
+
+
+== Description of the service root itself ==
+
+Let's whittle down the complexity a little by taking a look at the
+description of the service root resource itself.
+
+    >>> children = list(tree)
+    >>> service_root_type, service_root_repr, resources = children[:3]
+    >>> # We'll deal with the rest of the children later.
+    >>> other_children = children[3:]
+
+The service root is an instance of a special resource type that
+responds only to GET.
+
+    >>> service_root_type.tag
+    '...resource_type'
+    >>> service_root_type.attrib['id']
+    'service-root'
+    >>> (doc, get) = list(service_root_type)
+    >>> get.tag
+    '...method'
+    >>> get.attrib['name']
+    'GET'
+
+A client that makes a GET request to a resource of this type can get a
+representation of type 'service-root-json', or it can get a WADL
+representation. The WADL representation is the document we're looking
+at right now.
+
+    >>> [response] = get
+    >>> json_repr, wadl_repr = list(response)
+    >>> json_repr.attrib['href']
+    '#service-root-json'
+    >>> wadl_repr.attrib['mediaType']
+    'application/vd.sun.wadl+xml'
+
+The details of the 'service-root-json' representation are given
+immediately afterwards:
+
+    >>> service_root_repr.tag
+    '...representation'
+    >>> service_root_repr.attrib['id']
+    'service-root-json'
+    >>> service_root_repr.attrib['mediaType']
+    'application/json'
+
+The JSON representation contains a link for each collection resource
+exposed at the top level. The WADL representation has a <param> tag
+for every link in the JSON representation.
+
+    >>> person_set_param = [
+    ...     param for param in service_root_repr
+    ...     if param.attrib['name'].startswith('PersonSet')][0]
+    >>> person_set_param.tag
+    '...param'
+    >>> person_set_param.attrib['path']
+    "$['PersonSetCollectionAdapter_collection_link']"
+    >>> person_set_param.attrib['name']
+    'PersonSetCollectionAdapter_collection_link'
+
+This is saying that applying the JSONPath expression
+'$['PersonSetCollectionAdapter_collection_link']' to the JSON document
+will give you something interesting: a variable we like to call
+'PersonSetCollectionAdapter_collection_link'.
+
+What's special about this variable? Well, it's a link to another
+resource. This is represented in WADL by giving the <param> tag a
+child <link> tag. The <link> tag explains what sort of resource is at
+the other end of the link.
+
+    >>> [person_set_param_link] = person_set_param
+    >>> person_set_param_link.tag
+    '...link'
+    >>> person_set_param_link.attrib['type']
+    'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
+
+A WADL client can read this and know that if it ever finds a resource
+of type "service-root", it can send a GET request to that URL and get
+back a JSON document. By applying the JSON expression
+'["PersonSetCollectionAdapter_collection_link"]' to that document, it
+will find the URL to the list of people. The list of people has the
+characteristics described (in WADL format) at
+http://api.launchpad.dev/beta/#PersonSetCollectionAdapter.
+
+But where is the WADL client going to find a resource of type
+"service-root" in the first place? The <resources> tag will explain
+everything.
+
+    >>> resources.tag
+    '...resources'
+    >>> resources.attrib['href']
+    'http://api.launchpad.dev/beta/'
+
+As with the <resources> tags shown earlier, this one contains a single
+<resource> tag.
+
+    >>> [resource] = resources
+    >>> resource.tag
+    '...resource'
+    >>> resource.attrib['path']
+    ''
+    >>> resource.attrib['type']
+    '#service-root'
+
+Aha! There's a resource of type "service-root" right there at the
+service root! Who would have thought?
+
+
+== The rest of the document ==
 
 Looking at the children of the <application> tag can be
-overwhelming. There are a huge number of <representation> and
-<resource_type> tags. I'll explain the large-scale structure of the
+overwhelming. The description of the service root resource is
+relatively simple, but then there are a huge number of
+<representation> and <resource_type> tags that don't have anything to
+do directly with the service root: they form a description of the web
+service as a whole. I'll explain the large-scale structure of the
 document and then show some examples in detail.
 
 The first few tags are <resource_type> tags which describe the
-different possible kinds of collections: person collections, bug
-collections, and so on. Then there's a <representation> tag which
-describes the JSON document you get if you send GET to a collection.
-This code stores the <representation> tag in 'collection_rep' and the
-initial <resource_type> tags in 'collection_resource_types'.
+different possible kinds of top-level collections (person collections,
+bug collections, and so on). We'll look at those tags first. Each type
+of collection resource has one tag devoted to it in the WADL document:
 
-    >>> children = list(tree)
-    >>> collection_rep = None
-    >>> for index, child in enumerate(children):
-    ...     if child.tag.endswith('representation'):
-    ...         collection_rep = child
-    ...         collection_cutoff = index
+1. A <resource_type> tag describing the HTTP requests a client can
+   make to manipulate the collection resource. It might look like this:
+
+   <resource_type id="BugCollection">
+     <doc xmlns="http://www.w3.org/1999/xhtml/">
+       A collection of bugs, as exposed through the web service.
+     </doc>
+     <method name="GET" id="BugCollection-get">
+       <response>
+         <representation href="http://api.launchpad.dev/beta/#IBugEntry-page"/>
+         <representation mediaType="application/vd.sun.wadl+xml"
+                         id="BugCollection-wadl"/>
+       </response>
+     </method>
+   </resource_type>
+
+We know we've reached the end of the collection resources when we see
+a <resource_type> tag that supports the PUT method. Collections never
+support PUT, so that must be an entry resource_type.
+
+    >>> collection_resource_types = []
+    >>> for index, child in enumerate(other_children):
+    ...     put_method = [method for method in list(child)
+    ...                   if method.tag.endswith("method")
+    ...                   and method.attrib['name'] == 'PUT']
+    ...     if len(put_method) > 0:
+    ...         first_entry_type_index = index
     ...         break
+    ...     collection_resource_types.append(child)
 
-    >>> collection_resource_types = children[0:collection_cutoff]
+When we find a <resource_type> that supports PUT, we know that we've
+come to the end of the collection resources and reached an entry
+resource, like a person or bug. Each kind of entry resource has five
+tags devoted to it in the WADL document:
 
-After that <representation> tag there's a group of three tags for
-every type of entry resource exposed through the web service. The
-first tag in a group is a <resource_type> tag that describes the
-capabilities of that resource. The second is a <representation> tag
-that describes the document sent to the client in response to GET
-requests, and expected from the client along with a PUT request. The
-third is a <representation> tag that describes the document sent to
-the client in response to PATCH requests. This code splits the tags
-into groups of three and stores the groups in
+1. A <resource_type> tag describing the HTTP requests a client can
+   make to manipulate the entry resource. It might look like this:
+
+   <resource_type id="MessageEntryAdapter">
+     <method name="GET" id="MessageEntryAdapter-get">
+       <response>
+         <representation
+          href="http://api.launchpad.dev/beta/#MessageEntryAdapter-full"/>
+         <representation mediaType="application/vd.sun.wadl+xml"
+                         id="MessageEntryAdapter-wadl"/>
+       </response>
+     </method>
+
+     <method name="PUT" id="MessageEntryAdapter-put">
+       <request>
+         <representation
+          href="http://api.launchpad.dev/beta/#MessageEntryAdapter-full"/>
+       </request>
+     </method>
+
+     <method name="PATCH" id="MessageEntryAdapter-patch">
+       <request>
+         <representation
+          href="http://api.launchpad.dev/beta/#MessageEntryAdapter-diff"/>
+       </request>
+    </method>
+   </resource_type>
+
+2. A <representation> tag describing the document sent to the client
+   in response to a GET request for the entry, and expected from the
+   client along with a PUT request. This would be the
+   "#MessageEntryAdapter-full" referenced in the above WADL example.
+
+3. A <representation> tag describing the document expected from the
+   server along with a PATCH request. This would be the
+   "#MessageEntryAdapter-diff" referenced in the above WADL example.
+
+4. A <resource_type> tag describing the capabilities of a scoped
+   collection that contains this kind of entry. Some entry types may
+   have both a top-level collection <resource_type> and a scoped
+   collection <resource_type>. They need to be declared separately
+   because top-level collections can have custom operations, and
+   scoped collections can't. It might look like this:
+
+   <resource_type id="MessageEntryAdapter-scoped-collection">
+     <method name="GET"
+             id="MessageEntryAdapter-scoped-collection-get">
+       <response>
+         <representation href="#MessageEntryAdapter-page"/>
+         <representation mediaType="application/vd.sun.wadl+xml"
+                         id="MessageEntryAdapter-scoped-collection-wadl"/>
+       </response>
+     </method>
+   </resource_type>
+
+5. A <representation> tag describing the document sent to the client
+   in response to a GET request for a collection. This includes
+   top-level collections as well as scoped collections. This would be
+   the "#MessageEntryAdapter-page" referenced in the above WADL
+   example, and the "#IBugEntry-page" referenced in the very first
+   example.
+
+(The last <resource_type> tag is a hard-coded description of a hosted
+binary file resource. Since it's hard-coded, this test doesn't deal
+with it.)
+
+This code splits the tags into 5-tuples and stores the tuples in
 'entry_resource_descriptions'.
 
-    >>> entry_resource_types = children[collection_cutoff+1:]
     >>> entry_resource_descriptions = []
-    >>> for index in range(0, len(entry_resource_types), 3):
-    ...     resource_type = entry_resource_types[index]
-    ...     full_repr = entry_resource_types[index+1]
-    ...     diff_repr = entry_resource_types[index+2]
+    >>> entry_resource_types = other_children[first_entry_type_index:-1]
+    >>> hosted_binary_resource_type = other_children[-1]
+    >>> for index in range(0, len(entry_resource_types), 5):
     ...     entry_resource_descriptions.append(
-    ...         (resource_type, full_repr, diff_repr))
+    ...         (tuple(entry_resource_types[index:index + 5])))
+
+Before looking at the descriptions of entry resources, we'll examine
+the collection resource types.
+
+
+== A collection resource type ==
+
+First let's look at the different collection resource types defined in the
+WADL file, and their representations.
+
+    >>> sorted([type.attrib['id'] for type in collection_resource_types])
+    ['BugCollection', 'PersonSetCollectionAdapter']
+
+There's one <resource_type> tag for every top-level collection on the
+site. We'll be taking a close look at the resource type for the
+site's collection of people.
+
+    >>> resource_type = [type for type in collection_resource_types
+    ...                   if type.attrib['id'] ==
+    ...                   'PersonSetCollectionAdapter'][0]
+
+    >>> resource_type.tag
+    '...resource_type'
+
+Any collection resource supports one standard HTTP method (GET) in
+addition to any custom operations.  This particular collection
+resource is the top-level list of people, and it exposes two custom
+operations: 'create_team' (POST) and 'find' (GET).
+
+    >>> methods = list(resource_type)
+    >>> [method.attrib['name'] for method in methods]
+    ['GET', 'POST', 'GET']
+
+    >>> [method.attrib['id'] for method in methods]
+    ['PersonSetCollectionAdapter-get',
+     'PersonSetCollectionAdapter-create_team',
+     'PersonSetCollectionAdapter-find']
+
+    >>> (get, create_team, find) = methods
+
+The standard GET operation is a way of getting either a page of the
+collection (see "The representation of a collection" later in this
+test) or else a short WADL description of a particular collection,
+like the one shown earlier in this test.
+
+    >>> [response] = get
+    >>> json_rep, wadl_rep = list(response)
+    >>> json_rep.attrib['href']
+    'http://api.launchpad.dev/beta/#PersonEntryAdapter-page'
+
+    >>> wadl_rep.attrib['mediaType']
+    'application/vd.sun.wadl+xml'
+    >>> wadl_rep.attrib['id']
+    'PersonSetCollectionAdapter-wadl'
+
+
+=== Operation parameters ===
+
+The <method> tag for a named operation will contain one or more
+<parameter> tags describing the parameters the operation accepts. The
+'create_team' custom operation takes a number of parameters.
+
+    >>> [param.attrib['name'] for param in list(create_team)]
+    ['ws_op', 'display_name', 'name', 'default_membership_period',
+     'team_description', 'default_renewal_period', 'subscription_policy']
+
+The 'ws_op' parameter is present for every named operation, and has a
+fixed value: the name of the operation.
+
+    >>> ws_op = create_team[0]
+    >>> ws_op.attrib['fixed']
+    'create_team'
+
+The 'find' custom operation accepts one parameter in addition to
+'ws_op'.
+
+    >>> [param.attrib['name'] for param in list(find)]
+    ['ws_op', 'text']
+
+    >>> ws_op = find[0]
+    >>> ws_op.attrib['fixed']
+    'find'
 
 
 == An entry resource type ==
 
-First let's look at how the service root WADL describes entry
+Now let's look at how the service root WADL describes entry
 resources.
 
-    # XXX leonardr 2008-04-23 bug=221037: The result here can be
-    # simplified once webservice.txt is moved out of the same layer as
-    # this test.
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    [...'BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntry']
+    ['BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntryAdapter']
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
 
     >>> bugtask_description = [entry for entry in entry_resource_descriptions
-    ...                    if entry[0].attrib['id'] == 'BugTaskEntry'][0]
+    ...                        if entry[0].attrib['id'] == 'BugTaskEntry'][0]
 
-    >>> (resource_type, full_rep, diff_rep) = bugtask_description
+    >>> (entry_type, full_rep, diff_rep,
+    ...  scoped_collection_type, collection_rep) = bugtask_description
 
 
-=== Representations ===
+== Entry representations ==
 
 The definition of a bug task is contained in a <resource_type> tag and
 two <representation> tags. First lets look at the two
@@ -244,12 +574,14 @@ documents.
     'BugTaskEntry-diff'
 
 
-=== Parameters ===
+=== Representation parameters ===
 
-Inside the <representation> tag there may be <parameter> tags that
-point clients to interesting parts of the representation. Our JSON
-representations of entries are hashes, and we've chosen to specify a
-parameter for each key of the hash.
+An earlier section showed how <method> tags could contain <param> tags
+describing the parameters to a custom operation. A <representation>
+tag may also contain <parameter> tags that point clients to
+interesting parts of the representation. Our JSON representations of
+entries are hashes, and we've chosen to specify a parameter for each
+key of the hash.
 
     >>> full_params = list(full_rep)
     >>> full_params[0].tag
@@ -259,24 +591,32 @@ parameter for each key of the hash.
     >>> full_rep_names
     ['assignee_link', 'bug_link', ... 'title']
 
-In addition to a name, each parameter has a 'path', which is what you
-have to do to the JSON data structure to get the parameter's value.
+In addition to a name, each representation parameter has a 'path', a
+JSONPath expression you can apply to the JSON data structure to get
+the parameter's value.
 
     >>> sorted([param.attrib['path'] for param in full_params])
-    ['["assignee_link"]', '["bug_link"]', ... '["title"]']
+    ["$['assignee_link']", "$['bug_link']", ... "$['title']"]
 
-So to get the assignee link out of data structure 'foo' you need the
-Python code 'foo["assignee_link"]'. This is not a standard; it's
-something we made up due to the lack of an XPath-like standard for
-JSON. If such a standard emerges we should change it.
+So to get the assignee link out of a JSON data structure you need to
+look up the element called "assignee_link".
+
+A parameter may also have human-readable documentation: an optional
+name for the parameter and an optional short description.
+
+    >>> doc = full_params[0][0]
+    >>> doc.tag
+    '...doc'
+    >>> doc.text
+    '<strong>Status</strong>'
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
 of the link.
 
-    >>> assignee_param, = [param for param in full_params
+    >>> [assignee_param] = [param for param in full_params
     ...                    if param.attrib['name'] == 'assignee_link']
-    >>> assignee_link, = list(assignee_param)
+    >>> [assignee_link] = assignee_param
     >>> assignee_link.tag
     '...link'
 
@@ -286,17 +626,19 @@ the resource at the other end of the link.
     >>> assignee_link.attrib['type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter'
 
-If the link is a link to collection, the 'type' will always be
-'ScopedCollection' (at least for now).
+If the link is a link to a collection, the 'type' will be a reference
+to the appropriate scoped collection resource type (defined
+below). For example, the list of a bug task's related tasks is a
+collection of bug tasks.
 
-    >>> related_tasks, = [
+    >>> [related_tasks] = [
     ...     param for param in full_params
     ...     if param.attrib['name'] == 'related_tasks_collection_link']
-    >>> related_tasks_link, = related_tasks.getchildren()
+    >>> (doc, related_tasks_link) = related_tasks.getchildren()
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['type']
-    'http://api.launchpad.dev/beta/#ScopedCollection'
+    'http://api.launchpad.dev/beta/#BugTaskEntry-scoped-collection'
 
 The full representation contains all fields, even read-only ones,
 because it's describing the document you receive when you make a GET
@@ -316,23 +658,25 @@ define a second representation for use with PATCH requests.
     >>> 'related_tasks_collection_link' in diff_rep_names
     False
 
-Most 'param' tags don't tell the client much beyond where to find a
+Most <param> tags don't tell the client much beyond where to find a
 certain parameter, but some of our parameters take values from a
 proscribed vocabulary. These parameters correspond to Choice fields
 who take their vocabulary from an EnumeratedValue. For these
-parameters, we provide the client with information about the possible
-values.
+parameters, the server provides the client with information about the
+possible values.
 
-    >>> status_param, = [param for param in full_params
+    >>> [status_param] = [param for param in full_params
     ...                   if param.attrib['name'] == 'status']
     >>> status_options = status_param.getchildren()
     >>> status_options[0].tag
+    '...doc'
+    >>> status_options[1].tag
     '...option'
-    >>> sorted(status.attrib['value'] for status in status_options)
+    >>> sorted(status.attrib['value'] for status in status_options[1:])
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
-=== The resource type itself ===
+=== The entry resource type itself ===
 
 The 'representation' tags tell you what representations a resource
 sends and receives. In this case the representations are for a
@@ -340,15 +684,22 @@ sends and receives. In this case the representations are for a
 pretty much the same, and so most of the information about a bug task
 is kept in the <resource_type> tag.
 
-    >>> resource_type.tag
+    >>> entry_type.tag
     '...resource_type'
+
+    >>> doc_and_methods = list(entry_type)
+    >>> doc = doc_and_methods[0]
+    >>> methods = doc_and_methods[1:]
+    >>> get, put, patch, post = methods
+
+A resource type may have some human-readable documentation:
+
+    >>> doc.text
+    'A bugtask.'
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
 operations.
-
-    >>> methods = list(resource_type)
-    >>> get, put, patch, post = methods
 
 The name of a method is always the HTTP method used to activate
 it. Different operations that use the same method are distinguished by
@@ -371,7 +722,7 @@ representations of a bug task: the JSON one described above as
 "BugTask-full", and a WADL document--the sort of document shown in the
 very first section of this test.
 
-    >>> response, = list(get)
+    >>> [response] = get
     >>> response.tag
     '...response'
     >>> full, wadl = list(response)
@@ -390,10 +741,10 @@ Similarly, the standard PUT and PATCH methods each include a 'request'
 tag, which tells the client which representation it should send along
 with a request.
 
-    >>> request, = list(put)
+    >>> [request] = put
     >>> request.tag
     '...request'
-    >>> representation, = list(request)
+    >>> [representation] = request
     >>> representation.attrib['href']
     'http://api.launchpad.dev/beta/#BugTaskEntry-full'
 
@@ -406,9 +757,16 @@ link to them instead of describing them every time.
 
 === Custom operations ===
 
+Custom operations may have human-readable documentation.
+
+    >>> post[0].tag
+    '...doc'
+    >>> post[0].text
+    "<p>An operation that modifies a bug task's status.</p>..."
+
 Custom operations define parameters, just like representations do.
 
-    >>> post_params = list(post)
+    >>> post_params = list(post[1:])
     >>> [param.attrib['name'] for param in post_params]
     ['ws_op', 'status']
 
@@ -429,125 +787,140 @@ valid values.
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
-== The collection representation ==
+== Hosted binary files ==
 
-The representation of one type of entry (say, a person) looks
+One interesting type of parameter not shown above is a link to a
+binary file managed by the web service, such as a person's mugshot.
+
+    >>> person_desc = [entry for entry in entry_resource_descriptions
+    ...                if entry[0].attrib['id'] == 'PersonEntryAdapter'][0]
+    >>> (person_entry_type, person_full_rep, person_diff_rep,
+    ...  person_scoped_collection_type, person_collection_rep) = person_desc
+    >>> mugshot_param = [param for param in person_full_rep
+    ...                  if param.attrib['name'] == 'mugshot_link'][0]
+    >>> doc, mugshot_link = mugshot_param
+    >>> mugshot_link.attrib['type']
+    'http://api.launchpad.dev/beta/#HostedFile'
+
+What can the client do to this binary file resource?
+
+    >>> get, put, delete = list(hosted_binary_resource_type)
+
+The client can send GET to the resource, and be redirected to a binary
+file hosted externally.
+
+    >>> get.tag
+    '...method'
+    >>> get.attrib['name']
+    'GET'
+    >>> [get_response] = get
+    >>> [get_representation] = get_response
+    >>> get_representation.attrib['status']
+    '303'
+    >>> [redirect_param] = get_representation
+    >>> redirect_param.tag
+    '...param'
+    >>> redirect_param.attrib['style']
+    'header'
+    >>> redirect_param.attrib['name']
+    'Location'
+
+The client can PUT a binary file:
+
+    >>> put.tag
+    '...method'
+    >>> put.attrib['name']
+    'PUT'
+
+The client can DELETE an existing file:
+
+    >>> delete.tag
+    '...method'
+    >>> delete.attrib['name']
+    'DELETE'
+
+
+== A scoped collection resource type ==
+
+We're almost done with our in-depth look at the WADL description of
+bug tasks. Now we need to consider a scoped collection of bug
+tasks. There's no top-level collection of bug tasks (only a collection
+of bugs), but any given bug will have a collection of associated bug
+tasks, and this collection will have its own URL. This <resource_type>
+describes the collection at that URL.
+
+    >>> scoped_collection_type.tag
+    '...resource_type'
+    >>> scoped_collection_type.attrib['id']
+    'BugTaskEntry-scoped-collection'
+
+The difference between a scoped collection and a top-level collection
+is that, right now, scoped collections never have custom
+operations. They only support the standard GET operation.
+
+    >>> [get] = scoped_collection_type
+    >>> get.attrib['id']
+    'BugTaskEntry-scoped-collection-get'
+
+In response to that GET operation they'll serve a WADL representation
+(not that interesting) or a JSON representation (interesting, and
+covered immediately below).
+
+    >>> [get_response] = get
+    >>> json_representation, wadl_representation = list(get_response)
+    >>> json_representation.attrib['href']
+    '#BugTaskEntry-page'
+
+
+== The representation of a collection ==
+
+The representation of one type of entry (say, a person) looks very
 different from the representation of another type (say, a bug), but
-all collections look the same, no matter what kind of entries they
-contain. That's why there's only one <representation> tag shared
-between all collection resource types.
+all collections look pretty much the same, no matter what kind of
+entries they contain. In fact, a top-level collection references the
+same <representation> tag as the corresponding scoped collection.
 
     >>> collection_rep.tag
     '...representation'
     >>> collection_rep.attrib['mediaType']
     'application/json'
-    >>> collection_rep.attrib['id']
-    'collection-page'
+
+All collection representations have the same five <param> tags.
+
     >>> params = list(collection_rep)
     >>> [param.attrib['name'] for param in params]
-    ['total_size', 'next_collection_link', 'prev_collection_link', 'entries']
-    >>> size, next, prev, entries = params
+    ['total_size', 'next_collection_link', 'prev_collection_link',
+     'entries', 'entry_links']
+    >>> size, next, prev, entries, entry_links = params
+
+So what's the difference between a collection of people and a
+collection of bug tasks? Well, the ID is different, but that's just a
+name.
+
+    >>> collection_rep.attrib['id']
+    'BugTaskEntry-page'
+
+No, the real difference is the 'entry_links' parameter. It tells the
+client that this particular collection contains links to objects of
+type BugTaskEntry.
+
+    >>> entry_links.attrib['path']
+    "$['entries'][*]['self_link']"
+    >>> [link] = entry_links
+    >>> link.attrib['type']
+    'http://api.launchpad.dev/beta/#BugTaskEntry'
+
+This tells the client that a 'collection of bug tasks' resource
+contains lots of links to 'bug task' resources.
 
 The 'next_collection_link' and 'prev_collection_link' parameters are
-links to other resources. What are these other resources? Other pages
-of the same collection!
+also links to other resources. What are these other resources? Other
+pages of the same collection!
 
-    >>> next_type, = list(next)
+    >>> [next_type] = next
     >>> next_type.attrib['type']
-    '#collection-page'
+    '#BugTaskEntry-page'
 
-    >>> prev_type, = list(prev)
+    >>> [prev_type] = prev
     >>> prev_type.attrib['type']
-    '#collection-page'
-
-
-== A collection resource type ==
-
-Let's look at the different collection resource types defined in the
-WADL file.
-
-    # XXX leonardr 2008-04-23 bug=221037: The result here can be
-    # simplified once webservice.txt is moved out of the same layer as
-    # this test.
-    >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    [...'BugCollection', ... 'ScopedCollection']
-
-There's one <resource_type> tag for scoped collections, and another
-tag for every specific kind of collection on the site. We'll be taking
-a close look at the resource type for the collection of people on the
-site.
-
-    >>> resource_type = [
-    ...     type for type in collection_resource_types
-    ...     if type.attrib['id'] == 'PersonSetCollectionAdapter'][0]
-    >>> resource_type.tag
-    '...resource_type'
-
-
-=== The resource type itself ===
-
-Any collection resource supports one standard HTTP method (GET) in
-addition to any custom operations.  This particular type of resource
-exposes two custom operations, 'create_team' (POST) and 'people'
-(GET).
-
-    >>> methods = list(resource_type)
-
-    >>> [method.attrib['name'] for method in methods]
-    ['GET', 'POST', 'GET']
-
-    >>> [method.attrib['id'] for method in methods]
-    ['PersonSetCollectionAdapter-get',
-     'PersonSetCollectionAdapter-create_team',
-     'PersonSetCollectionAdapter-find']
-
-    >>> (get, create_team, people) = methods
-
-The standard GET operation is a way of getting either the
-'collection-page' representation defined above, or else a short WADL
-description of a particular collection, like the one shown earlier.
-
-    >>> response, = list(get)
-    >>> json_rep, wadl_rep = list(response)
-    >>> json_rep.attrib['href']
-    '#collection-page'
-
-    >>> wadl_rep.attrib['mediaType']
-    'application/vd.sun.wadl+xml'
-    >>> wadl_rep.attrib['id']
-    'PersonSetCollectionAdapter-wadl'
-
-The 'create_team' custom operation takes a number of parameters.
-
-    >>> sorted(param.attrib['name'] for param in list(create_team))
-    ['default_membership_period', 'default_renewal_period', 'display_name',
-     'name', 'subscription_policy', 'team_description', 'ws_op']
-
-    >>> ws_op = create_team[0]
-    >>> ws_op.attrib['fixed']
-    'create_team'
-
-So does the 'find' custom operation.
-
-    >>> [param.attrib['name'] for param in list(people)]
-    ['ws_op', 'text']
-
-    >>> ws_op = people[0]
-    >>> ws_op.attrib['fixed']
-    'find'
-
-
-== The scoped collection resource type ==
-
-As mentioned earlier, all scoped collections have the same resource
-type: "ScopedCollection". The only difference between ScopedCollection
-and any other collection resource type is that, right now, scoped
-collections never have custom operations. They only support the
-standard GET operation.
-
-    >>> resource_type = [
-    ...     type for type in collection_resource_types
-    ...     if type.attrib['id'] == 'ScopedCollection'][0]
-    >>> get, = resource_type
-    >>> get.attrib['id']
-    'ScopedCollection-get'
+    '#BugTaskEntry-page'
