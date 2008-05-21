@@ -8,16 +8,11 @@ Such features include plural forms support and context support.
 
 == Helper imports ==
 
-    >>> from zope.app import datetimeutils
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet, IProductSet,
-    ...     TranslationFileFormat)
+    ...     IPersonSet, IProductSet, TranslationFileFormat)
     >>> from canonical.launchpad.database import (
-    ...     POTemplateSubset, SourcePackageName)
-    >>> from canonical.launchpad.scripts.po_import import (
-    ...     AutoApproveProcess, ImportProcess)
+    ...     POTemplateSubset)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
