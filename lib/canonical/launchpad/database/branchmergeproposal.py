@@ -13,6 +13,7 @@ from email.Utils import make_msgid
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.references import Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -113,13 +114,11 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def supersedes(self):
-        return BranchMergeProposal.selectOneBy(superseded_by=self)
-
     superseded_by = ForeignKey(
         dbName='superseded_by', foreignKey='BranchMergeProposal',
         notNull=False, default=None)
+
+    supersedes = Reference("<primary key>", "superseded_by", on_remote=True)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
@@ -352,7 +351,6 @@ class BranchMergeProposal(SQLBase):
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
-            self.supersedes.syncUpdate()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):

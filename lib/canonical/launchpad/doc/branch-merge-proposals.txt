@@ -211,11 +211,13 @@ author have not been approved.
     ...     from canonical.testing import LaunchpadZopelessLayer
     ...     from canonical.config import config
     ...     branch_unique_name = branch.unique_name
+    ...     launchpad_dbuser = config.launchpad.dbuser
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+    ...     branch = branch_set.getByUniqueName(branch_unique_name)
     ...     factory.makeRevisionsForBranch(branch)
     ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+    ...     LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
     ...     return branch_set.getByUniqueName(branch_unique_name)
     >>> source_branch = add_some_revisions_to_branch(
     ...     source_branch, factory, branch_set)
@@ -223,9 +225,13 @@ author have not been approved.
     >>> source_branch.revision_count
     5
 
-    >>> # Reget the sample person as we shouldn't be reusing objects across
-    >>> # transaction boundaries.
+As we've reset the database adapter, we need to reget some objects:
+
     >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> branch = branch_set.getByUniqueName(
+    ...     '~launchpad/gnome-terminal/launchpad')
+
+
     >>> tip = source_branch.getTipRevision()
     >>> proposal.approveBranch(sample_person, tip.revision_id)
     >>> print proposal.reviewer.displayname
