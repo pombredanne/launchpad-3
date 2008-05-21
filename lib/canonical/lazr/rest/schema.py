@@ -49,7 +49,8 @@ class CollectionField(AbstractCollection):
         """A generic collection field.
 
         The readonly property defaults to True since these fields are usually
-        for relationships (aka foreign keys).
+        for collections of things linked to an object, and these collections
+        are managed through a dedicated API.
         """
         kwargs.setdefault('readonly', True)
         super(CollectionField, self).__init__(*args, **kwargs)

@@ -10,7 +10,6 @@ field provides ICollectionField which is an extension of ISequence.
     >>> from canonical.lazr.interfaces.rest import ICollectionField
     >>> from canonical.lazr.rest.schema import CollectionField
 
-
     >>> int_collection = CollectionField(
     ...     title=u'A collection', value_type=Int())
 
