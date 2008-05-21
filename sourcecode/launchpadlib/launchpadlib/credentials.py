@@ -100,7 +100,8 @@ class Credentials:
         
         parser = SafeConfigParser()
         parser.add_section(CREDENTIALS_FILE_VERSION)
-        parser.set(CREDENTIALS_FILE_VERSION, 'access_token', self.access_token)
+        parser.set(CREDENTIALS_FILE_VERSION,
+                   'access_token', self.access_token)
 
         credentials_file = open(filename, 'w')
         try:
