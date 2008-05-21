@@ -3,7 +3,7 @@
 The Google stub web service is a stand-alone process that returns
 XML documents for a pre-determined set of URLs.
 
-The service available at a URL pulled from the service config:
+The service is available at a URL pulled from the service config:
 
     >>> from canonical.config import config
     >>> test_url = config.google.site
@@ -14,7 +14,6 @@ The URL-to-XML mapping is loaded from a text file.  The mapping
 determines which XML files will be returned when a specific URL is
 accessed.
 
-    # Fetch our URL-to-XML file mapping table.
     >>> from canonical.launchpad.testing.googletestservice import (
     ...     url_to_xml_map)
     >>> routes = url_to_xml_map()
@@ -62,7 +61,7 @@ Accessing a key in the URL-to-XML map that is *not* the default route
 returns the specific XML file:
 
     # Find any key that is *not* the default route.
-    >>> path = [ url for url in routes.keys() if url != '*' ].pop()
+    >>> path = [url for url in routes.keys() if url != '*'].pop()
 
     >>> xml_for_specific_path = get_xml_for_url(path)
     >>> browser.open(join(test_url, path))
