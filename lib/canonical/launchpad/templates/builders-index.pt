@@ -50,7 +50,7 @@
      <tbody>
      <tal:group repeat="builder_group category/groups">
        <tr class="highlighted">
-         <th colspan="2" style="text-align: left">
+         <th colspan="3" style="text-align: left">
 	   <tal:processor replace="builder_group/processor_name" />
            &nbsp;&nbsp;&nbsp;
            <span class="discreet">
@@ -60,15 +60,13 @@
          </th>
        </tr>
        <tr class="builder-row" tal:repeat="builder builder_group/builders">
-         <td style="text-align: left; width: 12em">
-           <tal:ok_icon condition="builder/builderok">
-             <img width="14" height="14" alt="[Running]"
-                  title="Running" src="/@@/yes" />
-           </tal:ok_icon>
-           <tal:nok_icon condition="not: builder/builderok">
+         <td class="icon left">
+           <tal:nok condition="not: builder/builderok">
              <img width="14" height="14" alt="[Disabled]"
                   title="Disabled" src="/@@/no" />
-           </tal:nok_icon>
+           </tal:nok>
+        </td>
+         <td style="text-align: left; width: 12em">
            <a tal:attributes="href builder/fmt:url"
               tal:content="builder/title/fmt:shorten/30">Bob</a>
            <tal:mode condition="builder/manual">

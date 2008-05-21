@@ -444,7 +444,7 @@ class Builder(SQLBase):
         """See IBuilder"""
         if not self.builderok:
             if self.failnotes is not None:
-                return 'Disabled due to "%s"' % self.failnotes
+                return self.failnotes
             return 'Disabled'
 
         currentjob = self.currentjob
@@ -452,11 +452,10 @@ class Builder(SQLBase):
             return 'Idle'
 
         msg = 'Building %s' % currentjob.build.title
-
-        if current_build.archive.purpose != ArchivePurpose.PPA:
+        if currentjob.build.archive.purpose != ArchivePurpose.PPA:
             return msg
 
-        return '%s [%s]' % (msg, current_build.archive.owner.name)
+        return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""
