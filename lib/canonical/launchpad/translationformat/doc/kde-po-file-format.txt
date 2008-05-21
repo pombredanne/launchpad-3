@@ -103,6 +103,17 @@ message is preceded with '_n: ' (space at the end of the string is important).
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr ""
     ...
+    ... # Legacy KDE PO files allow two messages with same singular message
+    ... # ID, but different or no plural to exist, what is otherwise not
+    ... # allowed by standard gettext support.
+    ... #, c-format
+    ... msgid "%%d foo"
+    ... msgstr ""
+    ...
+    ... #, c-format
+    ... msgid "_n: %%d foo\n%%d bars"
+    ... msgstr ""
+    ...
     ... msgid "_n: entry\nentries"
     ... msgstr ""
     ... ''' % ISO_FORMATTED_DATE
@@ -132,7 +143,8 @@ not considered plural forms messages.
 Proper format in messages is to use '_n: ' and separate singular and
 plural with a newline.
 
-    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(u'%d foo')
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d foo', plural_text=u'%d foos')
     >>> print potmsgset.singular_text
     %d foo
     >>> print potmsgset.plural_text
@@ -188,7 +200,7 @@ support.
 Non-KDE style messages get their translations in the usual way.
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'_n:bar\nbars')
+    ...     singular_text=u'_n:bar\nbars')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations
@@ -198,7 +210,7 @@ While KDE style plural form message is correctly split into three separate
 plural messages:
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'%d foo')
+    ...     singular_text=u'%d foo', plural_text=u'%d foos')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations
@@ -418,7 +430,7 @@ We can also import a translated file with message contexts:
 We can get the first translation by specifying 'Context' for the context:
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'Message', context=u'Context')
+    ...     singular_text=u'Message', context=u'Context')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations
@@ -428,7 +440,7 @@ And if we ask for a message with context 'Different Context', we get the
 other message and its translation:
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'Message', context=u'Different Context')
+    ...     singular_text=u'Message', context=u'Different Context')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations
