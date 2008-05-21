@@ -172,7 +172,7 @@ class GoogleWebService(Service):
 def stop_at_exit(process):
     """Create and register an atexit hook for killing a process.
 
-    The hook will BLOCK until the process shuts down.
+    The hook will BLOCK until the process dies.
 
     :param process: An instance of subprocess.Popen.
     """
