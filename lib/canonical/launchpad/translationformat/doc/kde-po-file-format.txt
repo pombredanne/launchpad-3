@@ -150,6 +150,16 @@ plural with a newline.
     >>> print potmsgset.plural_text
     %d foos
 
+To get a non-plural message, we can either not specify plural_text or
+set it as None:
+
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d foo', plural_text=None)
+    >>> print potmsgset.singular_text
+    %d foo
+    >>> print potmsgset.plural_text
+    None
+
 For translations, a specially formatted msgstr is used to hold all plural
 forms. They are simply newline-separated strings.
 
@@ -176,6 +186,10 @@ forms. They are simply newline-separated strings.
     ... #, c-format
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr "%%d translation\n%%d translationes\n%%d translations"
+    ...
+    ... # Legacy KDE PO files allow multiple messages with same singular msgid.
+    ... msgid "%%d foo"
+    ... msgstr "no-plural translation %%d"
     ...
     ... # This translation is incomplete, since it fails to provide
     ... # translations for the second plural form.
@@ -268,6 +282,19 @@ Template export turns it back into a KDE-style PO file:
     "%d foos"
     msgstr ""
     <BLANKLINE>
+    # Legacy KDE PO files allow two messages with same singular message
+    # ID, but different or no plural to exist, what is otherwise not
+    # allowed by standard gettext support.
+    #, c-format
+    msgid "%d foo"
+    msgstr ""
+    <BLANKLINE>
+    #, c-format
+    msgid ""
+    "_n: %d foo\n"
+    "%d bars"
+    msgstr ""
+    <BLANKLINE>
     msgid ""
     "_n: entry\n"
     "entries"
@@ -301,6 +328,19 @@ But, we can also export it as a regular gettext PO file:
     #, c-format
     msgid "%d foo"
     msgid_plural "%d foos"
+    msgstr[0] ""
+    msgstr[1] ""
+    <BLANKLINE>
+    # Legacy KDE PO files allow two messages with same singular message
+    # ID, but different or no plural to exist, what is otherwise not
+    # allowed by standard gettext support.
+    #, c-format
+    msgid "%d foo"
+    msgstr ""
+    <BLANKLINE>
+    #, c-format
+    msgid "%d foo"
+    msgid_plural "%d bars"
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
@@ -340,6 +380,18 @@ Exporting a translation is possible in a very similar way.
     "%d translation\n"
     "%d translationes\n"
     "%d translations"
+    <BLANKLINE>
+    # Legacy KDE PO files allow multiple messages with same singular msgid.
+    #, c-format
+    msgid "%d foo"
+    msgstr "no-plural translation %d"
+    <BLANKLINE>
+    #, c-format
+    msgid ""
+    "_n: %d foo\n"
+    "%d bars"
+    msgstr ""
+    <BLANKLINE>
     # This translation is incomplete, since it fails to provide
     # translations for the second plural form.
     msgid ""
