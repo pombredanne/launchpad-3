@@ -421,16 +421,7 @@ class MessageSet:
 
     @classmethod
     def threadMessages(klass, messages):
-        """Return a threaded version of supplied message list.
-
-        Return value is a recursive list structure.
-        Each parent entry in the top-level list is a tuple of
-        (parent, children), where children is a list of parents.  (Parents
-        may be childless.)
-
-        Example:
-        [(parent, [(child1, [(grandchild1, [])]), (child2, [])])]
-        """
+        """See `IMessageSet`."""
         result, roots = klass._parentToChild(messages)
         def get_children(node):
             children = []
@@ -444,7 +435,7 @@ class MessageSet:
 
     @classmethod
     def flattenThreads(klass, threaded_messages, _depth=0):
-        """See IMessageSet.flattenThreads"""
+        """See `IMessageSet`."""
         for message, children in threaded_messages:
             yield (_depth, message)
             for depth, message in klass.flattenThreads(children, _depth + 1):

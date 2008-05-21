@@ -236,7 +236,11 @@ class BranchMergeProposalNavigation(Navigation):
             id = int(id)
         except ValueError:
             return None
-        return self.context.getMessage(id)
+        message = self.context.getMessage(id)
+        if message.branch_merge_proposal == self.context:
+            return message
+        else:
+            return None
 
 
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,

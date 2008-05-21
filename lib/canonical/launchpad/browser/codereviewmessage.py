@@ -92,3 +92,7 @@ class CodeReviewMessageAddView(LaunchpadFormView):
             self.user, data['subject'], data['comment'], data['vote'],
             self.reply_to)
         self.next_url = canonical_url(message)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)

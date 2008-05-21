@@ -202,7 +202,7 @@ class IBranchMergeProposal(Interface):
         _("All messages discussing this merge proposal"))
 
     def getMessage(id):
-        pass
+        """Return the CodeReviewMessage with the specified ID."""
 
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.

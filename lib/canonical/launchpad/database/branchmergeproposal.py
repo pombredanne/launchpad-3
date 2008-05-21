@@ -138,11 +138,11 @@ class BranchMergeProposal(SQLBase):
 
     @property
     def all_messages(self):
-        """All the messages associated with this proposal."""
+        """See `IBranchMergeProposal`."""
         return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
 
     def getMessage(self, id):
-        """Return the CodeReviewMessage with the specified ID."""
+        """See `IBranchMergeProposal`."""
         return CodeReviewMessage.get(id)
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)

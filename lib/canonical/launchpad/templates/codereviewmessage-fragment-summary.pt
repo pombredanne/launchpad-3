@@ -6,9 +6,8 @@
         <div class="boardCommentDetails">
             <span tal:content="structure context/message/owner/fmt:link"
                   id="comment-from" />
-            <span tal:condition="context/vote" >vote:
-                <span id="comment-vote" tal:content="context/vote/title" />
-            </span>
+            <strong id="comment-vote" tal:content="context/vote/title"
+                    tal:condition="context/vote" />
             <span id="comment-body" tal:content="view/first_line" />
             (<a tal:attributes="href context/fmt:url" >full message</a>)
         </div>

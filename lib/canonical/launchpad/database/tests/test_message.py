@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005, 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -13,15 +13,18 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 
 
 class TestMessageSet(unittest.TestCase):
+    """Test the methods of `MessageSet`."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         unittest.TestCase.setUp(self)
+        # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
     def createTestMessages(self):
+        """Create some test messages."""
         message1 = self.factory.makeMessage()
         message2 = self.factory.makeMessage(parent=message1)
         message3 = self.factory.makeMessage(parent=message1)
@@ -29,6 +32,7 @@ class TestMessageSet(unittest.TestCase):
         return (message1, message2, message3, message4)
 
     def test_parentToChild(self):
+        """Test MessageSet._parentToChild."""
         messages = self.createTestMessages()
         message1, message2, message3, message4 = messages
         expected = {
@@ -40,6 +44,7 @@ class TestMessageSet(unittest.TestCase):
         self.assertEqual([message1], roots)
 
     def test_threadMessages(self):
+        """Test MessageSet.threadMessages."""
         messages = self.createTestMessages()
         message1, message2, message3, message4 = messages
         threads = MessageSet.threadMessages(messages)
@@ -48,6 +53,7 @@ class TestMessageSet(unittest.TestCase):
             threads)
 
     def test_flattenThreads(self):
+        """Test MessageSet.flattenThreads."""
         messages = self.createTestMessages()
         message1, message2, message3, message4 = messages
         threads = MessageSet.threadMessages(messages)

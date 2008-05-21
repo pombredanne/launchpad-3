@@ -43,6 +43,7 @@
       Whiteboard text goes here.
     </div>
   </tal:whiteboard>
+  <img src="/@@/add"/>
   <a href="#" tal:attributes="href view/comment_location">Add comment</a>
       <tal:comments repeat="row view/comments" >
       <div tal:content="structure row/comment/@@+fragment-summary"

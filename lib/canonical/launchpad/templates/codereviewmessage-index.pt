@@ -6,17 +6,17 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 <body>
-    <metal:portlets fill-slot="portlets" />
     <div metal:fill-slot="main">
       <h1>Code review comment</h1>
       <tal:content replace="structure context/@@+fragment"/>
+      <img src="/@@/add"/>
       <a href="#" tal:attributes="href view/reply_link">Reply</a>
-      <div><a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
-      proposal</a></div>
+      <p>&laquo;&nbsp;<a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
+      proposal</a></p>
     </div>
 </body>
 </html>

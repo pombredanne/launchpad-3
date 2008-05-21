@@ -36,7 +36,7 @@ Now, open its home page.
     >>> print_tag('comment-vote')
     Approve
 
-Hmm.  Probably shouldn't display this...
+Reply link is displayed even if the user isn't logged in.
 
     >>> anon_browser.getLink('Reply').click()
     Traceback (most recent call last):
@@ -80,13 +80,11 @@ a period would give four.)
     ...     nopriv_browser.contents, 'boardCommentDetails')
     >>> print extract_text(comments[0])
     No Privileges Person
-    vote:
     Approve
     my body
     (full message)
     >>> print extract_text(comments[1])
     No Privileges Person
-    vote:
     Abstain
     I like this...
     (full message)

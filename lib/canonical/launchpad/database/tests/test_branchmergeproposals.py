@@ -303,16 +303,19 @@ class TestRootMessage(TestCase):
 
 
 class TestMergeProposalAllMessages(TestCase):
+    """Tester for `BranchMergeProposal.all_messages`."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
+        # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
         self.merge_proposal = self.factory.makeBranchMergeProposal()
 
     def test_all_messages(self):
+        """Ensure all messages associated with the proposal are returned."""
         message1 = self.merge_proposal.createMessage(
             self.merge_proposal.registrant, "Subject")
         message2 = self.merge_proposal.createMessage(
