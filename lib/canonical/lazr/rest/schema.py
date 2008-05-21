@@ -120,7 +120,6 @@ class SimpleFieldMarshaller:
         "Make sure the value is a string and then call _marshall()."
         if value is None:
             return None
-        assert isinstance(value, basestring), 'Deserializing a non-string'
         return self._marshall(value)
 
     def representationName(self, field_name):

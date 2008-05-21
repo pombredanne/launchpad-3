@@ -156,3 +156,17 @@ It's possible to change the task's assignee.
 
   >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
   http://api.launchpad.dev/beta/~cprov
+
+Let's try modifying the importance of a task.
+
+  >>> body = webservice.get(bugtask_path).jsonBody()
+  >>> body['importance']
+  u'Low'
+  >>> body = {'importance': 'High'}
+  >>> from simplejson import dumps
+  >>> response = webservice.patch(
+  ...     bugtask_path, 'application/json', dumps(body))
+  >>> body = webservice.get(bugtask_path).jsonBody()
+  >>> body['importance']
+  u'High'
+
