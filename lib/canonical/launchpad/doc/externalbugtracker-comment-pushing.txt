@@ -217,6 +217,32 @@ comments being pushed because they have already been imported.
 
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
 
+If the external bugtracker's addRemoteComment() method returns an
+invalid remote comment ID, an error will be raised:
+
+    >>> class ErroringExternalBugTracker(CommentPushingExternalBugTracker):
+    ...     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+    ...         print "Pretending to add a comment to bug %s" % remote_bug
+    ...         return None
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> message_five = getUtility(IMessageSet).fromText(
+    ...     "Comment the fifth", "Body the fifth.", sample_person)
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+    >>> bugmessage_five = bug.linkMessage(message_five, bug_watch)
+
+    >>> broken_external_bugtracker = ErroringExternalBugTracker(
+    ...     'http://example.com')
+
+    >>> bugwatch_updater.pushBugComments(
+    ...     broken_external_bugtracker, bug_watch)
+    Traceback (most recent call last):
+      ...
+    AssertionError: A remote_comment_id must be specified.
+
 
 == Formatting pushed comments ==
 
