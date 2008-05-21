@@ -48,12 +48,14 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope import formlib
 from zope.interface import implements, providedBy
 from zope.schema import Choice
-from zope.schema.interfaces import IList
+from zope.schema.interfaces import IContextSourceBinder, IList
+
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
@@ -64,6 +66,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
@@ -74,9 +77,9 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
     BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
-    BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet, IBugBranchSet,
-    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
-    ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
+    BugTaskStatusSearchDisplay, BugTrackerType, IBug, IBugAttachmentSet,
+    IBugBranchSet, IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch,
+    IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson, IPersonSet,
@@ -424,6 +427,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
+
+        self.expand_reply_box = False
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -798,6 +803,9 @@ class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
     schema = IBugTask
+    milestone_source = None
+    user_is_subscribed = None
+    edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
 
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
@@ -809,19 +817,25 @@ class BugTaskEditView(LaunchpadEditFormView):
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
 
+    def initialize(self):
+        super(BugTaskEditView, self).initialize()
+        # Initialize user_is_subscribed, if it hasn't already been set.
+        if self.user_is_subscribed is None:
+            self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
+
+
     @cachedproperty
     def field_names(self):
         """Return the field names that can be edited by the user."""
-        field_names = list(self.default_field_names)
+        field_names = set(self.default_field_names)
 
         # The fields that we present to the users change based upon the
         # current context and the user's permissions, so we update field_names
         # with any fields that may need to be added.
-        for field in self.editable_field_names:
-            if field not in field_names:
-                field_names.append(field)
+        field_names.update(self.editable_field_names)
 
-        return field_names
+        # To help with caching, return an immutable object.
+        return frozenset(field_names)
 
     @cachedproperty
     def editable_field_names(self):
@@ -829,22 +843,20 @@ class BugTaskEditView(LaunchpadEditFormView):
         if self.context.target_uses_malone:
             # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
-            editable_field_names = list(self.default_field_names)
-
-            if 'bugwatch' in editable_field_names:
-                editable_field_names.remove('bugwatch')
+            editable_field_names = set(self.default_field_names)
+            editable_field_names.discard('bugwatch')
 
             # XXX, Brad Bollenbach, 2006-09-29: Permission checking
             # doesn't belong here! See https://launchpad.net/bugs/63000
-            if (not self.userCanEditMilestone() and
-                'milestone' in editable_field_names):
+            if ('milestone' in editable_field_names and
+                not self.userCanEditMilestone()):
                 editable_field_names.remove("milestone")
 
-            if (not self.userCanEditImportance() and
-                'importance' in editable_field_names):
+            if ('importance' in editable_field_names and
+                not self.userCanEditImportance()):
                 editable_field_names.remove("importance")
         else:
-            editable_field_names = ['bugwatch']
+            editable_field_names = set(('bugwatch',))
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Should be possible to edit the product as well,
@@ -852,14 +864,22 @@ class BugTaskEditView(LaunchpadEditFormView):
                 #     watches. The new product might use Launchpad
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
-                editable_field_names += ['sourcepackagename']
+                editable_field_names.add('sourcepackagename')
             if self.context.bugwatch is None:
-                editable_field_names += ['status', 'assignee']
+                editable_field_names.update(('status', 'assignee'))
                 if ('importance' in self.default_field_names
                     and self.userCanEditImportance()):
-                    editable_field_names += ["importance"]
+                    editable_field_names.add('importance')
+            else:
+                bugtracker = self.context.bugwatch.bugtracker
+                if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
+                    editable_field_names.add('status')
+                    if ('importance' in self.default_field_names
+                        and self.userCanEditImportance()):
+                        editable_field_names.add('importance')
 
-        return editable_field_names
+        # To help with caching, return an immutable object.
+        return frozenset(editable_field_names)
 
     @property
     def is_question(self):
@@ -949,6 +969,17 @@ class BugTaskEditView(LaunchpadEditFormView):
 
             self.form_fields = self.form_fields.omit('status')
             self.form_fields += formlib.form.Fields(status_field)
+
+        # If we have a milestone vocabulary already, create a new field
+        # to use it, instead of creating a new one.
+        if self.milestone_source is not None:
+            milestone_source = self.milestone_source
+            milestone_field = Choice(
+                __name__='milestone',
+                title=self.schema['milestone'].title,
+                source=milestone_source, required=False)
+            self.form_fields = self.form_fields.omit('milestone')
+            self.form_fields += formlib.form.Fields(milestone_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True
@@ -2393,20 +2424,66 @@ def _by_targetname(bugtask):
     """Normalize the bugtask.targetname, for sorting."""
     return re.sub(r"\W", "", bugtask.bugtargetdisplayname)
 
+
+class CachedMilestoneSourceFactory:
+    """A factory for milestone vocabularies.
+
+    When rendering a page with many bug tasks, this factory is useful,
+    in order to avoid the number of db queries issues. For each bug task
+    target, we cache the milestone vocabulary, so we don't have to
+    create a new one for each target.
+    """
+
+    implements(IContextSourceBinder)
+
+    def __init__(self):
+        self.vocabularies = {}
+
+    def __call__(self, context):
+        target = MilestoneVocabulary.getMilestoneTarget(context)
+        milestone_vocabulary = self.vocabularies.get(target)
+        if milestone_vocabulary is None:
+            milestone_vocabulary = MilestoneVocabulary(context)
+            self.vocabularies[target] = milestone_vocabulary
+        return milestone_vocabulary
+
+
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
 
     def __init__(self, context, request):
         """Ensure we always have a bug context."""
         LaunchpadView.__init__(self, IBug(context), request)
+        # Cache some values, so that we don't have to recalculate them
+        # for each bug task.
+        self.cached_milestone_source = CachedMilestoneSourceFactory()
+        self.user_is_subscribed = self.context.isSubscribed(self.user)
 
-    def getBugTasksAndNominations(self):
-        """Return the IBugTasks and IBugNominations associated with this bug.
+    def _getTableRowView(self, context, is_converted_to_question,
+                         is_conjoined_slave):
+        """Get the view for the context, and initialize it.
 
-        Returns a list, sorted by targetname, with upstream tasks sorted
-        before distribution tasks, and nominations sorted after
-        tasks. Approved nominations are not included in the returned
-        results.
+        The view's is_conjoined_slave and is_converted_to_question
+        attributes are set, as well as the edit view.
+        """
+        view = getMultiAdapter(
+            (context, self.request),
+            name='+bugtasks-and-nominations-table-row')
+        view.is_converted_to_question = is_converted_to_question
+        view.is_conjoined_slave = is_conjoined_slave
+        view.edit_view = getMultiAdapter(
+            (context, self.request), name='+edit-form')
+        view.edit_view.milestone_source = self.cached_milestone_source
+        view.edit_view.user_is_subscribed = self.user_is_subscribed
+        return view
+
+    def getBugTaskAndNominationViews(self):
+        """Return the IBugTasks and IBugNominations views for this bug.
+
+        Returns a list of views, sorted by the context's targetname,
+        with upstream tasks sorted before distribution tasks, and
+        nominations sorted after tasks. Approved nominations are not
+        included in the returned results.
         """
         bug = self.context
         bugtasks = helpers.shortlist(bug.bugtasks)
@@ -2424,24 +2501,35 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         all_bugtasks = upstream_tasks + distro_tasks
 
+        # Cache whether the bug was converted to a question, since
+        # bug.getQuestionCreatedFromBug issues a db query each time it
+        # is called.
+        is_converted_to_question = bug.getQuestionCreatedFromBug() is not None
         # Insert bug nominations in between the appropriate tasks.
-        bugtasks_and_nominations = []
+        bugtask_and_nomination_views = []
+        # Having getNominations() get the list of bug nominations each
+        # time it gets called in the for loop is expensive. Get the
+        # nominations here, so we can pass it to getNominations() later
+        # on.
+        nominations = list(bug.getNominations())
         for bugtask in all_bugtasks:
             conjoined_master = bugtask.getConjoinedMaster(bugtasks)
-            bugtasks_and_nominations.append(
-                {'row_context': bugtask,
-                 'is_conjoined_slave': conjoined_master is not None})
-
+            view = self._getTableRowView(
+                bugtask, is_converted_to_question,
+                conjoined_master is not None)
+            bugtask_and_nomination_views.append(view)
             target = bugtask.product or bugtask.distribution
             if not target:
                 continue
 
-            bugtasks_and_nominations += [
-                {'row_context': nomination, 'is_conjoined_slave': False}
-                for nomination in bug.getNominations(target)
-                if (nomination.status !=
-                    BugNominationStatus.APPROVED)
-                ]
+            target_nominations = bug.getNominations(
+                target, nominations=nominations)
+            bugtask_and_nomination_views.extend(
+                self._getTableRowView(
+                    nomination, is_converted_to_question, False)
+                for nomination in target_nominations
+                if nomination.status != BugNominationStatus.APPROVED
+                )
 
         # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
         # so that checking person.is_valid_person, when rendering the
@@ -2453,7 +2541,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             bugtask.owner for bugtask in all_bugtasks)
         getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
 
-        return bugtasks_and_nominations
+        return bugtask_and_nomination_views
 
     def currentBugTask(self):
         """Return the current `IBugTask`.
@@ -2472,16 +2560,7 @@ class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""
 
     is_conjoined_slave = None
-
-    def renderNonConjoinedSlave(self):
-        """Set is_conjoined_slave to False and render the page."""
-        self.is_conjoined_slave = False
-        return self.render()
-
-    def renderConjoinedSlave(self):
-        """Set is_conjoined_slave to True and render the page."""
-        self.is_conjoined_slave = True
-        return self.render()
+    is_converted_to_question = None
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
@@ -2493,10 +2572,13 @@ class BugTaskTableRowView(LaunchpadView):
         """
         assert self.is_conjoined_slave is not None, (
             'is_conjoined_slave should be set before rendering the page.')
+        assert self.is_converted_to_question is not None, (
+            'is_converted_to_question should be set before rendering the'
+            ' page.')
         return (self.displayEditForm() and
                 not self.is_conjoined_slave and
                 self.context.bug.duplicateof is None and
-                self.context.bug.getQuestionCreatedFromBug() is None)
+                not self.is_converted_to_question)
 
     def getTaskRowCSSClass(self):
         """The appropriate CSS class for the row in the Affects table.
