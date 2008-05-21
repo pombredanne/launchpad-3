@@ -15,7 +15,7 @@ from canonical.config import config
 from canonical.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
 from canonical.launchpad.mailman import runmailman
-
+from canonical.launchpad.testing import googletestservice
 
 TWISTD_SCRIPT = None
 
