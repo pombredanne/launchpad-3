@@ -63,12 +63,12 @@ capabilities.
 == Custom operations ==
 
 Some entries support custom operations through GET. The custom
-operation to be invoked is named in the query string's 'ws_op'
+operation to be invoked is named in the query string's 'ws.op'
 argument. You can get a list of a team's active members by specifying
 the 'getMembersByStatus' operation.
 
   >>> active_members = webservice.get(
-  ...     "/beta/~admins?ws_op=getMembersByStatus&status=Approved").jsonBody()
+  ...     "/beta/~admins?ws.op=getMembersByStatus&status=Approved").jsonBody()
   >>> sorted([m['name'] for m in active_members['entries']])
   [u'carlos', u'daf', u'debonzi', u'kinnison', u'spiv']
 
@@ -90,7 +90,7 @@ bug's status by invoking a custom operation.
 Custom operations may have error handling.
 
   >>> print webservice.get(
-  ...     "/beta/~admins?ws_op=getMembersByStatus&status=NoSuchStatus")
+  ...     "/beta/~admins?ws.op=getMembersByStatus&status=NoSuchStatus")
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value "NoSuchStatus". Acceptable values are: ...
@@ -110,7 +110,7 @@ Custom operations may have error handling.
 Trying to invoke a nonexistent custom operation yields an error.
 
   >>> print webservice.get(
-  ...     "/beta/~admins?ws_op=no_such_operation")
+  ...     "/beta/~admins?ws.op=no_such_operation")
   HTTP/1.1 404 Not Found
   ...
 
