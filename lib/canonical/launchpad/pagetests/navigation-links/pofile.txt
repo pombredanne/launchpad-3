@@ -24,6 +24,7 @@ The Application tabs should point to IProductSeries URLs.
 But the navigation links should point to IPOFile urls.
 
     >>> print_navigation_links(browser.contents)
+    = PO File =
     Description
     Translate: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
     Upload a file: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
@@ -50,6 +51,7 @@ The Application tabs should point to ISourcePackage URLs.
 But the navigation links should point to IPOFile urls.
 
     >>> print_navigation_links(browser.contents)
+    = PO File =
     Description
     Translate: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
     Upload a file: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
