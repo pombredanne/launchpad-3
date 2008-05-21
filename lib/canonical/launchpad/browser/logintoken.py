@@ -193,8 +193,6 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         naked_person.password = data['password']
 
         email.person.validateAndEnsurePreferredEmail(email)
-        assert person.account_status == AccountStatus.ACTIVE, (
-                'Failed to make account ACTIVE')
         self.context.consume()
         self.logInPersonByEmail(email.email)
         self.request.response.addInfoNotification(_(
