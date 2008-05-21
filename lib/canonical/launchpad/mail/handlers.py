@@ -266,7 +266,8 @@ class MaloneHandler:
                                 bug_message_set.getByBugAndMessage(
                                     bug, message.parent))
 
-                            if parent_bug_message.bugwatch:
+                            if (parent_bug_message is not None and
+                                parent_bug_message.bugwatch):
                                 bug_watch = parent_bug_message.bugwatch
                             else:
                                 bug_watch = None

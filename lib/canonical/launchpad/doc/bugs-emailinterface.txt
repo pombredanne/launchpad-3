@@ -2734,3 +2734,51 @@ was imported from.
     >>> reply_bug_message.bugwatch == bug_watch
     True
 
+If a user sends in an email which has an In-Reply-To header that points
+to an email that isn't linked to the bug, the new message will be linked
+to the bug and will not have its bugwatch field set.
+
+    >>> comment_date = datetime(
+    ...     2008, 5, 21, 11, 9, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
+    >>> initial_mail = """From: test@canonical.com
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <912876543@launchpad.net>
+    ... Subject: Bug %(bug_id)s
+    ...
+    ... Yet another mail.
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     }
+    >>> message = getUtility(IMessageSet).fromEmail(
+    ...     initial_mail, no_priv)
+
+    >>> comment_date = datetime(
+    ...     2008, 5, 21, 12, 52, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
+    >>> reply_mail = """From: test@canonical.com
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <asu90ik1234567890@launchpad.net>
+    ... Subject: Replying to your comment about being in my comments
+    ... In-Reply-To: <912876543@launchpad.net>
+    ...
+    ... Once again, a reply.
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     }
+
+    >>> process_email(reply_mail)
+    >>> commit()
+
+    >>> [reply_message] = list(bug_with_watch.messages)[-1:]
+
+    >>> reply_bug_message = getUtility(
+    ...     IBugMessageSet).getByBugAndMessage(
+    ...         bug_with_watch, reply_message)
+
+    >>> print reply_bug_message.bugwatch
+    None
