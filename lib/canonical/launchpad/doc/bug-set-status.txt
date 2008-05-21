@@ -142,6 +142,9 @@ for product tasks.
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> bug_params = CreateBugParams(
+    ...     owner=no_priv, title='Sample bug', comment='This is a sample bug.')
 
     # Set a milestone to ensure that the current db user has enough
     # privileges to access it.
