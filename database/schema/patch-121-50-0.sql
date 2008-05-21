@@ -6,4 +6,4 @@ CREATE TABLE ProductSeriesCodeImport (
     codeimport integer NOT NULL UNIQUE REFERENCES CodeImport (id)
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 50, 0);
