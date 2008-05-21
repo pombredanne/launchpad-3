@@ -9535,7 +9535,6 @@ INSERT INTO validpersonorteamcache (id) VALUES (243620);
 INSERT INTO validpersonorteamcache (id) VALUES (243621);
 INSERT INTO validpersonorteamcache (id) VALUES (243622);
 
-
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
 
 
