@@ -80,3 +80,16 @@ You also can't upload an image that's the wrong size.
     HTTP/1.1 400 Bad Request
     ...
     This image is not exactly 192x192 pixels in size.
+
+Nor can you change a person's mugshot by PUTting to that person's URI.
+
+    >>> salgado = webservice.get('/beta/~salgado').jsonBody()
+    >>> salgado['mugshot_link'] = 'http://google.com/logo.png'
+
+    >>> import simplejson
+    >>> print webservice('/beta/~salgado', 'PUT', simplejson.dumps(salgado),
+    ...                  {'Content-type': 'application/json'})
+    HTTP/1.1 400 Bad Request
+    ...
+    mugshot_link: To modify this field you need to send a PUT request to its
+    URI (http://.../~salgado/mugshot).

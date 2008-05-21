@@ -799,8 +799,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             % dict(person=self.name, team=team.name))
         return member
 
-    def isTeam(self):
+    # XXX: Before landing this branch I'll replace all uses of isTeam() with
+    # is_team in this file.  I just don't want to do it now to avoid
+    # unnecessary conflicts.  Please remind me, dear reviewer.
+    @property
+    def is_team(self):
         """See `IPerson`."""
+        return self.teamowner is not None
+
+    def isTeam(self):
+        """Deprecated. Use is_team instead."""
         return self.teamowner is not None
 
     @property
@@ -3244,12 +3252,12 @@ class WikiNameSet:
         """See `IWikiNameSet`."""
         return WikiName.selectBy(person=person)
 
-    def get(self, id, default=None):
+    def get(self, id):
         """See `IWikiNameSet`."""
-        wiki = WikiName.selectOneBy(id=id)
-        if wiki is None:
-            return default
-        return wiki
+        try:
+            return WikiName.get(id)
+        except SQLObjectNotFound:
+            return None
 
     def new(self, person, wiki, wikiname):
         """See `IWikiNameSet`."""
@@ -3277,12 +3285,9 @@ class JabberIDSet:
         """See `IJabberIDSet`"""
         return JabberID(person=person, jabberid=jabberid)
 
-    def getByJabberID(self, jabberid, default=None):
+    def getByJabberID(self, jabberid):
         """See `IJabberIDSet`"""
-        jabber = JabberID.selectOneBy(jabberid=jabberid)
-        if jabber is None:
-            return default
-        return jabber
+        return JabberID.selectOneBy(jabberid=jabberid)
 
     def getByPerson(self, person):
         """See `IJabberIDSet`"""
@@ -3290,6 +3295,7 @@ class JabberIDSet:
 
 
 class IrcID(SQLBase):
+    """See `IIrcID`"""
     implements(IIrcID)
 
     _table = 'IrcID'
@@ -3300,7 +3306,16 @@ class IrcID(SQLBase):
 
 
 class IrcIDSet:
+    """See `IIrcIDSet`"""
     implements(IIrcIDSet)
 
+    def get(self, id):
+        """See `IIrcIDSet`"""
+        try:
+            return IrcID.get(id)
+        except SQLObjectNotFound:
+            return None
+
     def new(self, person, network, nickname):
+        """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
