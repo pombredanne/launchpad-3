@@ -2632,19 +2632,22 @@ we'll create a new bug on firefox and link it to a remote bug.
 
     >>> from datetime import datetime
     >>> import pytz
-    >>> now = datetime(
+    >>> creation_date = datetime(
     ...     2008, 4, 12, 10, 12, 12, tzinfo=pytz.timezone('UTC'))
 
 We create the initial bug message separately from the bug itself so that
-we can ensure that its datecreated field is set correctly.
+we can ensure that its datecreated field is set correctly. This is
+because specifying a datecreated for the bug at creation time doesn't
+set the datecreated field of the bug's initial message (see bug
+232252).
 
     >>> initial_bug_message = getUtility(IMessageSet).fromText(
     ...     "A message", "The initial message for the bug.",
-    ...     no_priv, datecreated=now)
+    ...     no_priv, datecreated=creation_date)
 
     >>> bug_with_watch = firefox.createBug(CreateBugParams(
     ...     no_priv, 'New Bug with watch',
-    ...     msg=initial_bug_message, datecreated=now))
+    ...     msg=initial_bug_message, datecreated=creation_date))
     >>> commit()
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -2662,7 +2665,7 @@ importing machinery.
     >>> bug_with_watch = getUtility(IBugSet).get(bug_with_watch.id)
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
 
-    >>> now = datetime(
+    >>> comment_date = datetime(
     ...     2008, 5, 19, 16, 19, 12, tzinfo=pytz.timezone('Europe/Prague'))
 
     >>> initial_mail = """From: test@canonical.com
@@ -2676,7 +2679,7 @@ importing machinery.
     ... I'm in ur comments, sendin u a msej.
     ... """ % {
     ...     'bug_id': bug_with_watch.id,
-    ...     'date': now.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
     ...     }
     >>> message = getUtility(IMessageSet).fromEmail(
     ...     initial_mail, no_priv)
@@ -2686,7 +2689,7 @@ importing machinery.
 Now someone uses the email interface to respond to the comment that has
 been submitted.
 
-    >>> now = datetime(
+    >>> comment_date = datetime(
     ...     2008, 5, 20, 11, 24, 12, tzinfo=pytz.timezone('Europe/Prague'))
 
     >>> reply_mail = """From: test@canonical.com
@@ -2700,7 +2703,7 @@ been submitted.
     ... sending me any messages. Foolish cat.
     ... """ % {
     ...     'bug_id': bug_with_watch.id,
-    ...     'date': now.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
     ...     'rfc822msgid': str(message.rfc822msgid),
     ...     }
 
