@@ -1,0 +1,35 @@
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+
+"""Root Launchpad API class."""
+
+__metaclass__ = type
+__all__ = [
+    'Launchpad',
+    ]
+
+
+class Launchpad:
+    """Root Launchpad API class.
+
+    :ivar credentials: The credentials instance used to access Launchpad.
+    :type credentials: `Credentials`
+    """
+
+    def __init__(self, credentials):
+        """Root access to the Launchpad API.
+
+        :param credentials: The credentials used to access Launchpad.
+        :type credentials: `Credentials`
+        """
+        self.credentials = credentials
+
+    @property
+    def root(self):
+        """The service root
+
+        :type: string
+        """
+        if (self.credentials.consumer_key == 'launchpadlib-example' and
+            self.credentials.access_token == 'hgm2VK35vXD6rLg5pxWw'):
+            return 'ROOT'
+        return 'BADNESS'
