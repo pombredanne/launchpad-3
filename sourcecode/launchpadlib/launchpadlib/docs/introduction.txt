@@ -86,8 +86,8 @@ And now the root service can be accessed, using these credentials.
 
     >>> from launchpadlib.launchpad import Launchpad
     >>> launchpad = Launchpad(credentials=credentials)
-    >>> launchpad.root
-    'ROOT'
+    >>> sorted(launchpad.people)
+    [...]
 
 The credentials can also be stored in the file, so that the authentication
 dance can be avoided the next time the user interacts with the web service.
@@ -99,8 +99,8 @@ dance can be avoided the next time the user interacts with the web service.
     'hgm2VK35vXD6rLg5pxWw'
 
     >>> launchpad = Launchpad(credentials=credentials)
-    >>> launchpad.root
-    'ROOT'
+    >>> sorted(launchpad.people)
+    [...]
 
 If the application does not want to store the access key on the file system
 (for security purposes), it can simply always provide the access token.
@@ -108,8 +108,8 @@ If the application does not want to store the access key on the file system
     >>> credentials = Credentials(
     ...     consumer_key, access_token='hgm2VK35vXD6rLg5pxWw')
     >>> launchpad = Launchpad(credentials=credentials)
-    >>> launchpad.root
-    'ROOT'
+    >>> sorted(launchpad.people)
+    [...]
 
 It is an error to save a credentials file when no access token is available.
 
@@ -140,8 +140,9 @@ If you use the wrong access token, you also get an exception.
 
     >>> credentials = Credentials(consumer_key, access_token='bad')
     >>> launchpad = Launchpad(credentials=credentials)
-    >>> launchpad.root
-    'BADNESS'
+    Traceback (most recent call last):
+    ...
+    LaunchpadError: BADNESS
 
 
 == Clean up ==

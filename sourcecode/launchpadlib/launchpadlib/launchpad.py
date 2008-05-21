@@ -8,6 +8,9 @@ __all__ = [
     ]
 
 
+from launchpadlib.errors import LaunchpadError
+
+
 class Launchpad:
     """Root Launchpad API class.
 
@@ -22,14 +25,8 @@ class Launchpad:
         :type credentials: `Credentials`
         """
         self.credentials = credentials
-
-    @property
-    def root(self):
-        """The service root
-
-        :type: string
-        """
         if (self.credentials.consumer_key == 'launchpadlib-example' and
             self.credentials.access_token == 'hgm2VK35vXD6rLg5pxWw'):
-            return 'ROOT'
-        return 'BADNESS'
+            self.people = ['jim']
+        else:
+            raise LaunchpadError('BADNESS')
