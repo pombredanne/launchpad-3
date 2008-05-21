@@ -34,6 +34,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCanNotEditBugTaskStatus',
     'valid_remote_bug_url']
 
 from zope.component import getUtility
@@ -63,7 +64,7 @@ from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, export_operation_as,
     export_write_operation, exported, operation_parameters,
-    rename_parameters_as)
+    rename_parameters_as, webservice_error)
 from canonical.lazr.rest.schema import CollectionField
 
 
@@ -300,6 +301,10 @@ DEFAULT_SEARCH_BUGTASK_STATUSES = (
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
+
+
+class UserCanNotEditBugTaskStatus(Exception):
+    webservice_error(401)
 
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):

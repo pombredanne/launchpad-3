@@ -50,7 +50,8 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesBugTask, ILaunchpadCelebrities, INullBugTask, IProduct,
     IProductSeries, IProductSeriesBugTask, IProject, IProjectMilestone,
     ISourcePackage, IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
+    UserCanNotEditBugTaskStatus)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
@@ -669,7 +670,7 @@ class BugTask(SQLBase, BugTaskMixin):
             return
 
         if not self.canTransitionToStatus(new_status, user):
-            raise AssertionError(
+            raise UserCanNotEditBugTaskStatus(
                 "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
