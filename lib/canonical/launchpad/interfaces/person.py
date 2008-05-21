@@ -457,14 +457,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "the heading of all pages related to you. Traditionally this "
             "is a logo, a small picture or a personal mascot. It should be "
             "no bigger than 50kb in size."))
-    mugshot = MugshotImageUpload(
+    mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
         description=_(
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on your home page in Launchpad. Traditionally this is a great "
             "big picture of your grinning face. Make the most of it! It "
-            "should be no bigger than 100kb in size. "))
+            "should be no bigger than 100kb in size. ")))
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -1207,6 +1207,8 @@ class IPersonViewRestricted(Interface):
 
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
+    # activemembers.value_type.schema will be set to IPerson once
+    # IPerson is defined.
     activemembers = exported(
         CollectionField(
             title=_("List of members with ADMIN or APPROVED status"),
@@ -1377,7 +1379,7 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry()
 
 
-IPersonViewRestricted['activemembers'].schema = IPerson
+IPersonViewRestricted['activemembers'].value_type.schema = IPerson
 
 
 class INewPersonForm(IPerson):
@@ -1422,7 +1424,7 @@ class ITeam(IPerson, IHasIcon):
 
 class IPersonSet(Interface):
     """The set of Persons."""
-    export_as_webservice_collection()
+    export_as_webservice_collection(IPerson)
 
     title = Attribute('Title')
 

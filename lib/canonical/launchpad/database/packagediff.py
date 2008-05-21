@@ -213,10 +213,16 @@ class PackageDiffSet:
     implements(IPackageDiffSet)
 
     def __iter__(self):
-        """Return all `PackageDiff`s sorted by date_requested."""
-        diffset = PackageDiff.select(orderBy=['-date_requested'])
-        return iter(diffset)
+        """See `IPackageDiffSet`."""
+        return iter(PackageDiff.select(orderBy=['-id']))
 
     def get(self, diff_id):
         """See `IPackageDiffSet`."""
         return PackageDiff.get(diff_id)
+
+    def getPendingDiffs(self, limit=None):
+        query = """
+            date_fulfilled IS NULL
+        """
+        return PackageDiff.select(
+            query, limit=limit, orderBy=['id'])
