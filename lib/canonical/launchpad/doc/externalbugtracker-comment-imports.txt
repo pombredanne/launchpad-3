@@ -130,6 +130,42 @@ form which it was imported.
     four: Yet another comment.
 
 
+== Creating Person records ==
+
+In the examples above, joe.bloggs@example.com was used as the poster of
+all the comments. Since Joe didn't have a Launchpad account, it was
+created automatically for him, with the e-mail address marked as
+invalid.
+
+    >>> joe = getUtility(IPersonSet).getByEmail('joe.bloggs@example.com')
+    >>> bug.messages[-1].owner == joe
+    True
+
+    >>> joe.displayname
+    u'Joe Bloggs'
+    >>> print joe.preferredemail
+    None
+    >>> print joe.creation_rationale.name
+    BUGIMPORT
+    >>> print joe.creation_comment
+    when importing comments for Bugzilla *TESTING* #123456.
+
+If the poster's e-mail already is registered in Launchpad, the comment
+is associated with the existing account.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.preferredemail is not None
+    True
+    >>> external_bugtracker.poster_tuple = (
+    ...     'No Priv', 'no-priv@canonical.com')
+    >>> external_bugtracker.remote_comments['no-priv-comment'] = (
+    ...     "The fifth comment.")
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+    >>> bug.messages[-1].owner.name
+    u'no-priv'
+
 
 == BugWatch comment importing functionality ==
 
