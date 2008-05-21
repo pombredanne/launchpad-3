@@ -386,9 +386,9 @@ send notification about current (changed) PPA build record status.
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> naked_failed_candidate = removeSecurityProxy(failed_candidate)
-  >>> naked_failed_candidate.archive = cprov.archive
+  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> failed_candidate = cprov.archive.getBuildRecords(
+  ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
 
   >>> failed_candidate.notify()
 
@@ -411,13 +411,13 @@ Checking the message contents:
   >>> notification_body = build_notification.get_payload()
   >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
-   * Source Package: pmount
-   * Version: 0.1-1
+   * Source Package: cdrkit
+   * Version: 1.0
    * Architecture: i386
    * Archive: cprov PPA
    * Component: main
    * State: Failed to build
-   * Duration: three minutes
+   * Duration: a minute
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/+builds/bob
    * Source: not available
@@ -431,7 +431,7 @@ The notification went to the PPA owner.
 Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
-  Subject: [Build #9] i386 build of pmount 0.1-1 in ubuntu warty RELEASE (cprov PPA)
+  Subject: [Build #26] i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE (cprov PPA)
   X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   X-Launchpad-Build-Component: main
