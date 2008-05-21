@@ -150,6 +150,9 @@ It's possible to change the task's assignee.
   ...     bugtask_path, 'change_assignee', {}, assignee='http://api.launchpad.dev/beta/~cprov')
   HTTP/1.1 200 Ok
   ...
+  Content-Type: application/json
+  <BLANKLINE>
+  null
 
   >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
   http://api.launchpad.dev/beta/~cprov
