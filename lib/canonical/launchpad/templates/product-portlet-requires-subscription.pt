@@ -5,11 +5,18 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-requires-subscription"
-     tal:condition="context/requires_commercial_subscription">
+     tal:condition="context/commercial_subscription_is_due">
   <img style="padding-top: 1em; float: right" alt="" src="/@@/warning-large" />
   <h2>
-    Deadline for Purchasing a Subscription
+    Purchasing a Subscription is Required
   </h2>
+  <div tal:condition="context/commercial_subscription/date_expires | nothing">
+    <strong>Current subscription expires
+    <span 
+     tal:replace="context/commercial_subscription/date_expires/fmt:displaydate"
+    />.
+    </strong>
+  </div>
   <div>
     The licensing of your product does not qualify for free
     hosting. You have two options to continue using Launchpad

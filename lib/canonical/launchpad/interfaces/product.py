@@ -335,8 +335,12 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         An object which contains the timeframe and the voucher
         code of a subscription.""")
 
-    requires_commercial_subscription = Attribute("""
-        Whether the project's licensing requires a commercial
+    qualifies_for_free_hosting = Attribute("""
+        Whether the project's licensing qualifies it for free
+        use of launchpad.""")
+
+    commercial_subscription_is_due = Attribute("""
+        Whether the project's licensing requires a new commercial
         subscription to use launchpad.""")
 
     is_permitted = Attribute("""

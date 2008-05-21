@@ -111,7 +111,7 @@
           <div
             class="section"
             tal:content="structure context/@@+portlet-requires-subscription"
-            tal:condition="python: context.licenses and not context.is_permitted"
+            tal:condition="python: context.licenses and context.commercial_subscription_is_due"
           />
           <div
             class="section"

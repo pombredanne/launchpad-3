@@ -220,33 +220,60 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.purchaser = purchaser
 
     @property
-    def requires_commercial_subscription(self):
+    def qualifies_for_free_hosting(self):
         """See `IProduct`."""
         if self.license_approved:
             # The license was manually approved for free hosting.
-            return False
+            return True
         elif License.OTHER_PROPRIETARY in self.licenses:
             # Proprietary licenses need a subscription without
             # waiting for a review.
-            return True
+            return False
         elif (self.license_reviewed and
               (License.OTHER_OPEN_SOURCE in self.licenses or
                self.license_info not in ('', None))):
             # We only know that an unknown open source license
             # requires a subscription after we have reviewed it
             # when we have not set license_approved to True.
-            return True
+            return False
         elif len(self.licenses) == 0:
             # The owner needs to choose a license.
-            return True
+            return False
         else:
             # The project has only valid open source license(s).
-            return False
+            return True
+
+    @property
+    def commercial_subscription_is_due(self):
+        """See `IProduct`.
+
+        If True, display subscription warning to project owner.
+        """
+        if not self.is_permitted:
+            # The project does not qualify for free hosting,
+            # and it doesn't have an active subscription.
+            return True
+        elif self.commercial_subscription is None:
+            # The project doesn't have a subscription yet.
+            return True
+        else:
+            warning_date = (self.commercial_subscription.date_expires
+                            - datetime.timedelta(30))
+            now = datetime.datetime.now(pytz.timezone('UTC'))
+            if now > warning_date:
+                # The subscription is close to being expired.
+                return True
+            else:
+                # The subscription is good.
+                return False
 
     @property
     def is_permitted(self):
-        """See `IProduct`."""
-        if not self.requires_commercial_subscription:
+        """See `IProduct`.
+
+        If False, disable many tasks on this project.
+        """
+        if self.qualifies_for_free_hosting:
             # The project qualifies for free hosting.
             return True
         elif self.commercial_subscription is None:

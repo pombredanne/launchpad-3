@@ -19,14 +19,14 @@
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Admin">
   <div class="error message"
-       tal:condition="not: context/requires_commercial_subscription">
+       tal:condition="context/qualifies_for_free_hosting">
     This project does not require a commercial subscription to be purchased.
   </div>
   <div class="error message"
        tal:condition="not: has_edit">
     You do not have permission to purchase a subscription for this project.
   </div>
-  <div tal:condition="python: has_edit and context.requires_commercial_subscription">
+  <div tal:condition="python: has_edit and not context.qualifies_for_free_hosting">
     This project's licensing does not qualify for free hosting; therefore,
     a subscription needs to be purchased to continue hosting this project on
     Launchpad.
