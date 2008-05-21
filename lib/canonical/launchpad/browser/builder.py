@@ -251,12 +251,7 @@ class HiddenBuilder:
 
     @property
     def status(self):
-        if self.context.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
-        return "NOT OK: (%s)" % mode
+        return 'Building private build'
 
     # This method is required because the builder history page will have this
     # cloaked context if the builder is currently processing a private build.
