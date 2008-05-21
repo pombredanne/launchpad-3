@@ -159,7 +159,7 @@ logged saying that comments won't be imported.
     >>> from canonical.launchpad.interfaces import ISupportsCommentImport
     >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     implements(ISupportsCommentImport)
-    ...     import_comments = True
+    ...     sync_comments = True
     >>> bug_watch_updater.updateBugWatches(
     ...     CommentImportExternalBugTracker(), [], now=utc_now)
     COMMIT
