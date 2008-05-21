@@ -23,6 +23,7 @@ from sqlobject import (
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -228,7 +229,9 @@ class PackageUpload(SQLBase):
 
         debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-        pub_source.createMissingBuilds(logger=logger)
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, self.distroseries)
+        pub_source.createMissingBuilds(pas_verify=pas_verify, logger=logger)
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -244,7 +247,7 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            pub_source.createMissingBuilds(ignore_pas=True)
+            pub_source.createMissingBuilds()
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.

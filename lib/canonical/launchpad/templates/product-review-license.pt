@@ -1,0 +1,52 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div style="margin-bottom: 1em">
+    This project was registered by <a tal:attributes="href
+    context/owner/fmt:url" tal:content="context/owner/unique_displayname" />
+    <a 
+      tal:condition="context/owner/preferredemail" 
+      tal:attributes="href string:mailto:${context/owner/preferredemail/email}"
+      tal:content="string: &lt;${context/owner/preferredemail/email}&gt;" /> on
+    <span tal:replace="context/datecreated/fmt:datetime" />
+  </div>
+
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info"
+         id="portlet-license" class="portlet">
+      <table class="summary" style="width: 100%;">
+        <tr>
+          <td>
+            <h2>Licenses:</h2>
+            <ul tal:repeat="license context/licenses">
+              <li tal:content="license/title">GPL</li>
+            </ul>
+            <tal:none condition="not:context/licenses">None specified
+            </tal:none>
+          </td>
+          <td>
+            <h2>Description of additional licenses:</h2>
+            <div tal:content="structure context/license_info/fmt:text-to-html" />
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
