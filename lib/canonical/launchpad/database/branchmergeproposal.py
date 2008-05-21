@@ -64,6 +64,16 @@ VALID_TRANSITION_GRAPH = {
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
 
+class BranchNotificationReason:
+    '''A reason for being notified about a branch.'''
+
+    def __init__(self, person, branch, rationale, subscription=None):
+        self.person = person
+        self.branch = branch
+        self.rationale = rationale
+        self.subscription = subscription
+
+
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
@@ -146,6 +156,7 @@ class BranchMergeProposal(SQLBase):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
         dont_email_me = set()
+
         branches = [self.source_branch, self.target_branch]
 
         if self.dependent_branch is not None:
@@ -158,27 +169,27 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     dont_email_me.add(recipient)
                     continue
-                recipients[recipient] = (subscription, rationale)
+                recipients[recipient] = BranchNotificationReason(
+                    person=recipient,
+                    branch=subscription.branch,
+                    rationale=rationale,
+                    subscription=subscription)
 
         owner_recipients = NotificationRecipientSet()
         owner_recipients.add(
-            self.source_branch.owner,
-            None,
-            'You are the owner of %s' % self.source_branch)
+            self.source_branch.owner, self.source_branch, 'Owner')
         owner_recipients.add(
-            self.target_branch.owner,
-            None,
-            'You are the owner of %s' % self.target_branch)
+            self.target_branch.owner, self.target_branch, 'Owner')
         if self.dependent_branch is not None:
             owner_recipients.add(
-                self.dependent_branch.owner,
-                None,
-                'You are the owner of %s' % self.dependent_branch)
+                self.dependent_branch.owner, self.dependent_branch, 'Owner')
         for recipient in owner_recipients:
-            if recipient not in dont_email_me:
-                subscription, rationale = owner_recipients.getReason(recipient)
-                recipients[recipient] = (subscription, rationale)
-
+            if recipient in dont_email_me:
+                branch, rationale = owner_recipients.getReason(recipient)
+                recipients[recipient] = BranchNotificationReason(
+                    person=recipient,
+                    branch=branch,
+                    rationale=rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
