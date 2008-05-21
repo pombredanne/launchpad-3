@@ -254,7 +254,7 @@
                         name string:${view/prefix}.comment_on_change"
       ></textarea>
     </div>
-    <div tal:condition="python:not context.bug.isSubscribed(view.user)">
+    <div tal:condition="not: view/user_is_subscribed">
       <label style="font-weight: normal">
         <input type="checkbox" name="subscribe" id="subscribe"
                value="Subscribe" />
