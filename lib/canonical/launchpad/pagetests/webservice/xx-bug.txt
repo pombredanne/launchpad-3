@@ -112,8 +112,6 @@ data in a bug task is derived from the bug.
    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
    (u'bug_target_name', u'mozilla-firefox (Debian)'),
-   (u'conjoined_master_link', None),
-   (u'conjoined_slave_link', None),
    (u'date_assigned', u'2005-01-04T11:07:20.584746+00:00'),
    (u'date_closed', None),
    (u'date_confirmed', None),
@@ -123,7 +121,6 @@ data in a bug task is derived from the bug.
    (u'date_in_progress', None),
    (u'date_left_new', None),
    (u'date_triaged', None),
-   (u'distribution_link', u'http://api.launchpad.dev/beta/debian'),
    (u'id', 4),
    (u'importance', u'Low'),
    (u'is_complete', False),
@@ -134,12 +131,10 @@ data in a bug task is derived from the bug.
     u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
    (u'status_explanation', u''),
-   (u'target_link',
-    u'http://api.launchpad.dev/beta/debian/+source/mozilla-firefox'),
    (u'title',
     u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"')]
 
-  >>> bugtask_path = urlsplit(bug_one_bugtasks[0]['self_link'])[2]
+  >>> bugtask_path = str(urlsplit(bug_one_bugtasks[0]['self_link'])[2])
   >>> bugtask = webservice.get(bugtask_path).jsonBody()
   >>> bugtask == bug_one_bugtasks[0]
   True
@@ -149,3 +144,12 @@ The collection of bug tasks is not exposed as a resource:
   >>> webservice.get("/beta/bugtasks").getStatus()
   404
 
+It's possible to change the task's assignee.
+
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'change_assignee', {}, assignee='cprov')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
+  http://api.launchpad.dev/beta/~cprov

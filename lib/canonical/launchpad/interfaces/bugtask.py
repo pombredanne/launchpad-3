@@ -310,26 +310,19 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         Int(title=_("Bug Task #")))
     bug = exported(
         Object(title=_("Bug"), schema=Interface)) # Will be specified later.
-    product = exported(
-        Choice(title=_('Project'), required=False,
-               vocabulary='Product'))
-    productseries = exported(
-        Choice(title=_('Series'), required=False,
-               vocabulary='ProductSeries'),
-        exported_as='product_series')
+    product = Choice(title=_('Project'), required=False,
+               vocabulary='Product')
+    productseries = Choice(title=_('Series'), required=False,
+               vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
-    distribution = exported(
-        Choice(title=_("Distribution"), required=False,
-               vocabulary='Distribution'))
-    distroseries = exported(
-        Choice(title=_("Series"), required=False,
-               vocabulary='DistroSeries'),
-        exported_as='distribution_series')
-    milestone = exported(
-        Choice(title=_('Milestone'), required=False,
-               vocabulary='Milestone'))
+    distribution = Choice(title=_("Distribution"), required=False,
+               vocabulary='Distribution')
+    distroseries = Choice(title=_("Series"), required=False,
+               vocabulary='DistroSeries')
+    milestone = Choice(title=_('Milestone'), required=False,
+               vocabulary='Milestone')
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
@@ -406,11 +399,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                  "and now."))
     owner = exported(
         Object(title=_("The owner"), schema=IPerson))
-    target = exported(
-        Object(title=_('Target'), required=False,
-               description=_("The software in which this bug should "
-                             "be fixed."),
-               schema=IBugTarget))
+    target = Object(title=_('Target'), required=False,
+                    schema=IBugTarget,
+                    description=_("The software in which this bug should "
+                                  "be fixed."))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
@@ -518,6 +510,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @export_operation_as('change_assignee')
+    @operation_parameters(
+        assignee=copy_field(assignee))
+    @export_write_operation()
     def transitionToAssignee(assignee):
         """Perform a workflow transition to the given assignee.
 
