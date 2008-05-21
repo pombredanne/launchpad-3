@@ -19,6 +19,7 @@ __all__ = [
 import copy
 from datetime import datetime
 import simplejson
+from types import NoneType
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
@@ -324,10 +325,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
 
     def _processCustomOperationResult(self, result):
         """Process the result of a custom operation."""
-        if result is None:
-            return ""
-
-        if isinstance(result, basestring):
+        if isinstance(result, (basestring, NoneType)):
             # The operation took care of everything and just needs
             # this string served to the client.
             return result

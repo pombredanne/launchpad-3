@@ -1397,25 +1397,6 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     export_as_webservice_entry()
 
 
-IPersonViewRestricted['allmembers'].value_type.schema = IPerson
-IPersonViewRestricted['activemembers'].value_type.schema = IPerson
-IPersonViewRestricted['adminmembers'].value_type.schema = IPerson
-IPersonViewRestricted['proposedmembers'].value_type.schema = IPerson
-IPersonViewRestricted['invited_members'].value_type.schema = IPerson
-IPersonViewRestricted['deactivatedmembers'].value_type.schema = IPerson
-IPersonViewRestricted['expiredmembers'].value_type.schema = IPerson
-IPersonEditRestricted['join'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['team'].schema = IPerson
-IPersonEditRestricted['leave'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['team'].schema = IPerson
-IPersonEditRestricted['addMember'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['person'].schema = IPerson
-IPersonEditRestricted['acceptInvitationToBeMemberOf'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['team'].schema = IPerson
-IPersonEditRestricted['declineInvitationToBeMemberOf'].queryTaggedValue(
-    'lazr.webservice.exported')['params']['team'].schema = IPerson
-
-
 class INewPersonForm(IPerson):
     """Interface used to create new Launchpad accounts.
 
@@ -1940,12 +1921,29 @@ class NameAlreadyTaken(Exception):
     webservice_error(409)
 
 
-# Can't import IPerson in interfaces/teammembership.py, so we need to do this
-# here.
-ITeamMembership['team'].schema = IPerson
-ITeamMembership['person'].schema = IPerson
-ITeamMembership['last_changed_by'].schema = IPerson
+# Fix value_type.schema of IPersonViewRestricted attributes.
+for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
+             'invited_members', 'deactivatedmembers', 'expiredmembers']:
+    IPersonViewRestricted[name].value_type.schema = IPerson
 
+# Fix schema of operation parameters. We need zope.deferredimport!
+params_to_fix = [
+    (IPersonEditRestricted['join'], 'team'), 
+    (IPersonEditRestricted['leave'], 'team'),
+    (IPersonEditRestricted['addMember'], 'person'),
+    (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
+    (IPersonEditRestricted['declineInvitationToBeMemberOf'], 'team'),
+    ]
+for method, name in params_to_fix:
+    method.queryTaggedValue(
+        'lazr.webservice.exported')['params'][name].schema = IPerson
+
+# Fix schema of ITeamMembership fields.  Has to be done here because of
+# circular dependencies.
+for name in ['team', 'person', 'last_changed_by']:
+    ITeamMembership[name].schema = IPerson
+
+# Thank circular dependencies once again.
 IIrcID['person'].schema = IPerson
 IJabberID['person'].schema = IPerson
 IWikiName['person'].schema = IPerson
