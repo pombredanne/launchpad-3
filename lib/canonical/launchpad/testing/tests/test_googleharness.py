@@ -7,5 +7,3 @@ def test_suite():
             'canonical.launchpad.testing.tests.googleserviceharness',
             optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
             )
-
-

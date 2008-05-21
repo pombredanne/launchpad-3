@@ -18,9 +18,6 @@ import logging
 
 # Set up basic logging.
 log = logging.getLogger(__name__)
-filelog = logging.FileHandler(config.google_test_service.log)
-log.addHandler(filelog)
-log.setLevel(logging.DEBUG)
 
 
 class GoogleRequestHandler(BaseHTTPRequestHandler):
@@ -151,6 +148,13 @@ def start_as_process():
 
 def main():
     """Run the HTTP server."""
+    # Redirect our service output.  If we don't put it here, then the
+    # Zope testrunner will complain about us not cleaning up the file
+    # log handler.
+    filelog = logging.FileHandler(config.google_test_service.log)
+    log.addHandler(filelog)
+    log.setLevel(logging.DEBUG)
+
     host, port = get_service_endpoint()
     server = HTTPServer((host, port), GoogleRequestHandler)
 

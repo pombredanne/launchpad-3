@@ -43,6 +43,8 @@ class GoogleServiceTestSetup:
     Tidy up.
 
     >>> GoogleServiceTestSetup().tearDown()
+    >>> assert not service_is_available()
+
     """
 
     service = None  # A reference to our running service.
@@ -67,5 +69,5 @@ class GoogleServiceTestSetup:
         if cls.service:
             pid = cls.service.pid
             os.kill(pid, signal.SIGTERM)
-            os.waitpid(pid, 1)
+            os.waitpid(pid, 0)
         cls.service = None
