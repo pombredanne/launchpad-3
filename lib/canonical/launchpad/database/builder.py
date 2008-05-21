@@ -446,7 +446,8 @@ class Builder(SQLBase):
             if self.failnotes is not None:
                 return self.failnotes
             return 'Disabled'
-
+        # Cache the 'currentjob', so we don't have to hit the database
+        # more than once.
         currentjob = self.currentjob
         if currentjob is None:
             return 'Idle'
