@@ -107,6 +107,18 @@
         </ul>
       </tal:has-external-links>
       <div class="left">
+        <tal:warning-for-owner condition="context/required:launchpad.Edit">
+          <div
+            class="section"
+            tal:content="structure context/@@+portlet-requires-subscription"
+            tal:condition="python: context.licenses and not context.is_permitted"
+          />
+          <div
+            class="section"
+            tal:content="structure context/@@+portlet-license-missing"
+            tal:condition="not: context/licenses"
+          />
+        </tal:warning-for-owner>
         <div
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"

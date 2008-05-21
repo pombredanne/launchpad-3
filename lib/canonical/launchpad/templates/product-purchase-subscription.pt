@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn" 
   i18n:domain="launchpad"
 >
 
@@ -28,12 +28,14 @@
   </div>
   <div tal:condition="python: has_edit and context.requires_commercial_subscription">
     This project's licensing does not qualify for free hosting; therefore,
-    a subscription needs to be purchased to continue using Launchpad.
+    a subscription needs to be purchased to continue hosting this project on
+    Launchpad.
     <div>
       Here are the steps to obtain a commercial subscription:
       <ol>
         <li>Purchase a Launchpad subscription in the 
-          <a href="https://shop.canonical.com/product_info.php?products_id=134">
+          <a tal:define="config modules/canonical.config/config"
+             tal:attributes="href config/commercial/purchase_subscription_url">
           Canonical Shop</a>.
         </li>
         <li>You will receive an email that your order has been processed.</li>
@@ -43,6 +45,8 @@
         </li>
       </ol>
     </div>
+
+    Please review our <a href="/legal">Terms of Use</a>.
   </div>
 </div>
 </body>

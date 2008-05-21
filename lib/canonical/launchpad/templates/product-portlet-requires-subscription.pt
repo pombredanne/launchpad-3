@@ -1,0 +1,25 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-requires-subscription"
+     tal:condition="context/requires_commercial_subscription">
+  <img style="padding-top: 1em; float: right" alt="" src="/@@/warning-large" />
+  <h2>
+    Deadline for Purchasing a Subscription
+  </h2>
+  <div>
+    The licensing of your product does not qualify for free
+    hosting. You have two options to continue using Launchpad
+    for this project.
+    <ul>
+      <li><a href="+purchase-subscription">Purchase a subscription</a></li>
+      <li><a href="mailto:feedback@launchpad.net">Contact us</a>
+          about changing your license.
+      </li>
+    </ul>
+  </div>
+</div>
+</tal:root>

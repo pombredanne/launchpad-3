@@ -222,18 +222,26 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def requires_commercial_subscription(self):
         """See `IProduct`."""
-        other_licenses = (License.OTHER_PROPRIETARY,
-                          License.OTHER_OPEN_SOURCE)
         if self.license_approved:
             # The license was manually approved for free hosting.
             return False
-        elif (len(self.licenses) > 0 and
-              self.license_info in ('', None) and
-              len(set(self.licenses).intersection(other_licenses)) == 0):
+        elif License.OTHER_PROPRIETARY in self.licenses:
+            # Proprietary licenses need a subscription without
+            # waiting for a review.
+            return True
+        elif (self.license_reviewed and
+              (License.OTHER_OPEN_SOURCE in self.licenses or
+               self.license_info not in ('', None))):
+            # We only know that an unknown open source license
+            # requires a subscription after we have reviewed it
+            # when we have not set license_approved to True.
+            return True
+        elif len(self.licenses) == 0:
+            # The owner needs to choose a license.
+            return True
+        else:
             # The project has only valid open source license(s).
             return False
-        else:
-            return True
 
     @property
     def is_permitted(self):

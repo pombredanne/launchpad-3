@@ -285,6 +285,16 @@
       template="../templates/product-details.pt"
       />
     <browser:page
+      name="+portlet-requires-subscription"
+      facet="overview"
+      template="../templates/product-portlet-requires-subscription.pt"
+      />
+    <browser:page
+      name="+portlet-license-missing"
+      facet="overview"
+      template="../templates/product-portlet-license-missing.pt"
+      />
+    <browser:page
       name="+portlet-lifecycle"
       facet="overview"
       template="../templates/product-portlet-lifecycle.pt"
