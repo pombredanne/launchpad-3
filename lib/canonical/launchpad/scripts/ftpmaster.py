@@ -1798,7 +1798,7 @@ class UnembargoSecurityPackage(PackageCopier):
             files = pub_record.sourcepackagerelease.files
             # Re-upload the changes file if necessary.
             sourcepackagerelease = pub_record.sourcepackagerelease
-            queue_record = sourcepackagerelease.queue_record(
+            queue_record = sourcepackagerelease.getQueueRecord(
                 distroseries=pub_record.distroseries)
             if queue_record is not None:
                 changesfile = queue_record.changesfile
@@ -1832,7 +1832,7 @@ class UnembargoSecurityPackage(PackageCopier):
         # Make a temporary file to hold the download.  It's annoying
         # having to download to a temp file but there are no guarantees
         # how large the files are, so using StringIO would be dangerous.
-        filepath = tempfile.mktemp()
+        fd, filepath = tempfile.mkstemp()
         temp_file = open(filepath, "w")
 
         # Read the old library file into the temp file.

@@ -497,13 +497,13 @@ class SourcePackageRelease(SQLBase):
     @property
     def upload_changesfile(self):
         """See `ISourcePackageRelease`."""
-        queue_record = self.queue_record()
+        queue_record = self.getQueueRecord()
         if not queue_record:
             return None
 
         return queue_record.changesfile
 
-    def queue_record(self, distroseries=None):
+    def getQueueRecord(self, distroseries=None):
         """See `ISourcepackageRelease`."""
         if distroseries is None:
             distroseries = self.upload_distroseries

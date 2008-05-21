@@ -511,7 +511,7 @@ class TestCopyPackage(unittest.TestCase):
 
         # Also make the changes files restricted.
         for published in sources:
-            queue = published.sourcepackagerelease.queue_record(
+            queue = published.sourcepackagerelease.getQueueRecord(
                 distroseries=published.distroseries)
             self.layer.txn.commit()
             self.layer.switchDbUser('librariangc')
@@ -562,7 +562,7 @@ class TestCopyPackage(unittest.TestCase):
                 self.assertFalse(published_file.libraryfilealias.restricted)
             # Also check the sources' changesfiles.
             if ISourcePackagePublishingHistory.providedBy(published):
-                queue = published.sourcepackagerelease.queue_record(
+                queue = published.sourcepackagerelease.getQueueRecord(
                     distroseries=published.distroseries)
                 self.assertFalse(queue.changesfile.restricted)
 
