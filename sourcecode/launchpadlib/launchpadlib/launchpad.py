@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 
-from launchpadlib.errors import LaunchpadError
+from launchpadlib.errors import NotAuthenticatedError
 
 
 class Launchpad:
@@ -29,4 +29,4 @@ class Launchpad:
             self.credentials.access_token == 'hgm2VK35vXD6rLg5pxWw'):
             self.people = ['jim']
         else:
-            raise LaunchpadError('BADNESS')
+            raise NotAuthenticatedError('BADNESS')
