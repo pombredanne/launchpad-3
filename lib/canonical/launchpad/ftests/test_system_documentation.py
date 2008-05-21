@@ -570,6 +570,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-bugzilla-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla-lp-plugin.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla-oddities.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla-oddities.txt',

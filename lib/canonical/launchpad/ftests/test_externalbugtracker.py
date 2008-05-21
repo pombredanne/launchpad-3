@@ -6,15 +6,20 @@ __metaclass__ = type
 
 __all__ = []
 
+import unittest
+
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 
 
 def test_suite():
-    return LayeredDocFileSuite(
+    suite = unittest.TestSuite()
+    suite.addTest(LayeredDocFileSuite(
         'bugzilla-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer)
-    return LayeredDocFileSuite(
+        layer=LaunchpadFunctionalLayer))
+    suite.addTest(LayeredDocFileSuite(
         'trac-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer)
+        layer=LaunchpadFunctionalLayer))
+
+    return suite
