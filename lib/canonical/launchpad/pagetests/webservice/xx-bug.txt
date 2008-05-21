@@ -22,6 +22,7 @@ At the top level we provide a collection of bugs.
    (u'date_made_private', None),
    (u'datecreated', u'2004-01-10T19:42:21.890299+00:00'),
    (u'description', u'test bug'),
+   (u'duplicate_of_link', None),
    (u'duplicates_collection_link',
     u'http://api.launchpad.dev/beta/bugs/10/duplicates'),
    (u'followup_subject', u'Re: another test bug'),
@@ -36,7 +37,8 @@ At the top level we provide a collection of bugs.
    (u'security_related', False),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/10'),
    (u'tags', [u'crash']),
-   (u'title', u'another test bug')]
+   (u'title', u'another test bug'),
+   (u'who_made_private_link', None)]
 
 Bugs are indexed by number beneath the top-level collection.
 
@@ -70,6 +72,7 @@ Each bug has a collection of messages.
       u'All ways of downloading firefox should provide...'),
    (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
+   (u'parent_link', None),
    (u'self_link', u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0'),
    (u'subject', u'Firefox install instructions should be complete')]
 
@@ -105,9 +108,12 @@ data in a bug task is derived from the bug.
   3
 
   >>> sorted(bug_one_bugtasks[0].items())
-  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+  [(u'assignee_link', None),
+   (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
    (u'bug_target_name', u'mozilla-firefox (Debian)'),
+   (u'conjoined_master_link', None),
+   (u'conjoined_slave_link', None),
    (u'date_assigned', u'2005-01-04T11:07:20.584746+00:00'),
    (u'date_closed', None),
    (u'date_confirmed', None),

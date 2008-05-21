@@ -443,12 +443,18 @@ class BugTask(SQLBase, BugTaskMixin):
     def getConjoinedMaster(self, bugtasks):
         """See `IBugTask`."""
         conjoined_master = None
-        if (IDistroBugTask.providedBy(self) and
-            self.distribution.currentseries is not None):
+        if IDistroBugTask.providedBy(self):
+            possible_masters = [
+                bugtask for bugtask in bugtasks
+                if (bugtask.distroseries is not None and
+                    bugtask.sourcepackagename == self.sourcepackagename)]
+            # Return early, so that we don't have to get currentseries,
+            # which is expensive.
+            if len(possible_masters) == 0:
+                return None
             current_series = self.distribution.currentseries
-            for bugtask in bugtasks:
-                if (bugtask.distroseries == current_series and
-                    bugtask.sourcepackagename == self.sourcepackagename):
+            for bugtask in possible_masters:
+                if bugtask.distroseries == current_series:
                     conjoined_master = bugtask
                     break
         elif IUpstreamBugTask.providedBy(self):
