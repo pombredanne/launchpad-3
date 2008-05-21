@@ -519,6 +519,10 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
+    # XXX: want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense. -- StuartBishop 20080521
     def getPrincipalByLogin(login, want_password=True):
         """Return a principal based on his login name.
         
