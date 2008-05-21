@@ -29,7 +29,8 @@ from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus, IBranchMergeProposal,
     ILaunchpadCelebrities,
-    UserNotBranchReviewer)
+    UserNotBranchReviewer,
+    WrongBranchMergeProposal,)
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -143,7 +144,10 @@ class BranchMergeProposal(SQLBase):
 
     def getMessage(self, id):
         """See `IBranchMergeProposal`."""
-        return CodeReviewMessage.get(id)
+        message = CodeReviewMessage.get(id)
+        if message.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        return message
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 

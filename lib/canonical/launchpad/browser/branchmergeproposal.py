@@ -42,7 +42,8 @@ from canonical.launchpad.interfaces import (
     BranchType,
     IBranchMergeProposal,
     IMessageSet,
-    IStructuralObjectPresentation)
+    IStructuralObjectPresentation,
+    WrongBranchMergeProposal)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
@@ -236,10 +237,9 @@ class BranchMergeProposalNavigation(Navigation):
             id = int(id)
         except ValueError:
             return None
-        message = self.context.getMessage(id)
-        if message.branch_merge_proposal == self.context:
-            return message
-        else:
+        try:
+            return self.context.getMessage(id)
+        except WrongBranchMergeProposal:
             return None
 
 

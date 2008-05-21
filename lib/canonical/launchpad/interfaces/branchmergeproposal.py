@@ -11,6 +11,7 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
+    'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
@@ -39,6 +40,10 @@ class UserNotBranchReviewer(Exception):
 
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
+
+
+class WrongBranchMergeProposal(Exception):
+    """The message requested is not associated with this merge proposal."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):

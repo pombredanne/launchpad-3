@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
@@ -325,6 +326,32 @@ class TestMergeProposalAllMessages(TestCase):
         self.assertEqual(
             set([message1, message2, message3]),
             set(self.merge_proposal.all_messages))
+
+
+class TestMergeProposalGetMessage(TestCase):
+    """Tester for `BranchMergeProposal.getMessage`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        # Testing behavior, not permissions here.
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal2 = self.factory.makeBranchMergeProposal()
+        self.message = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+
+    def test_getMessage(self):
+        """Tests that we can get a message."""
+        self.assertEqual(
+            self.message, self.merge_proposal.getMessage(self.message.id))
+
+    def test_getMessageWrongBranchMergeProposal(self):
+        """Tests that we can get a message."""
+        self.assertRaises(WrongBranchMergeProposal,
+                          self.merge_proposal2.getMessage, self.message.id)
 
 
 class TestMergeProposalNotification(TestCase):
