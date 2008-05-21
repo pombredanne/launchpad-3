@@ -108,11 +108,7 @@ class TacFile(Service):
         #    raise RuntimeError(
         #        "%s did not start: %d"
         #        % (self.name, process.returncode))
-        def stop_process():
-            if process.poll() is None:
-                os.kill(process.pid, signal.SIGTERM)
-                process.wait()
-        atexit.register(stop_process)
+        stop_at_exit(process)
 
 
 class RestrictedLibrarianService(TacFile):
@@ -158,12 +154,28 @@ class CodebrowseService(Service):
             ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
             stdin=subprocess.PIPE)
         process.stdin.close()
-        def stop_process():
-            if process.poll() is None:
-                os.kill(process.pid, signal.SIGTERM)
-                process.wait()
-        atexit.register(stop_process)
+        stop_at_exit(process)
 
+class GoogleWebService(Service):
+    @property
+    def should_launch(self):
+        return config.google_test_service.launch
+
+    def launch(self):
+        process = googletestservice.start_as_process()
+        stop_at_exit(process)
+
+
+def stop_at_exit(process):
+    """Create and register an atexit hook for killing a process.
+
+    `process' is an instance of subprocess.Popen.
+    """
+    def stop_process():
+        if process.poll() is None:
+            os.kill(process.pid, signal.SIGTERM)
+            process.wait()
+    atexit.register(stop_process)
 
 def prepare_for_librarian():
     if not os.path.isdir(config.librarian_server.root):
@@ -182,6 +194,7 @@ SERVICES = {
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
+    'google-webservice': GoogleWebService(),
     }
 
 
