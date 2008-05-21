@@ -22,7 +22,8 @@ import simplejson
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
-from zope.component import adapts, getAdapters, getMultiAdapter, getUtility
+from zope.component import (
+    adapts, getAdapters, getMultiAdapter, getUtility)
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 from zope.interface.interfaces import IInterface
@@ -38,8 +39,10 @@ from canonical.lazr.enum import BaseItem
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url and BatchNavigator code should be moved into lazr.
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    IAuthorization, ICanonicalUrlData)
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
@@ -259,8 +262,12 @@ class BatchingResourceMixin:
         'start' contains the starting index of this batch
         """
         navigator = WebServiceBatchNavigator(entries, request)
+
+        # Import here is necessary to avoid circular import.
+        from canonical.launchpad.interfaces.person import IPerson
         resources = [EntryResource(entry, request)
-                     for entry in navigator.batch]
+                     for entry in navigator.batch
+                     if check_permission('launchpad.View', entry)]
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }

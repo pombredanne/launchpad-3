@@ -22,7 +22,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> __metaclass__ = type
 
     >>> from zope.interface import Interface, Attribute
-    >>> from zope.schema import Bytes, Int, Text, TextLine, Object
+    >>> from zope.schema import Bool, Bytes, Int, Text, TextLine, Object
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
@@ -51,6 +51,27 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     cookbook = Object(schema=ICookbook)
     ...     instructions = Text(title=u"How to prepare the recipe.",
     ...         required=True)
+    ...     private = Bool(title=u"Whether the public can see this recipe.",
+    ...                    default=False)
+
+Here's an authorization class that lets unauthenticated users see
+only public recipes.
+
+    >>> from canonical.launchpad.security import AuthorizationBase
+    >>> class PublicToAllOrPrivateToAuthenticated(AuthorizationBase):
+    ...     permission = 'launchpad.View'
+    ...     usedFor = IRecipe
+    ...     def checkAuthenticated(self, user):
+    ...         """Authenticated users can see all recipes."""
+    ...         return True
+    ...
+    ...     def checkUnauthenticated(self):
+    ...         """Unauthenticated users can only see public recipes."""
+    ...         return not self.obj.bug.private
+    >>> from zope.component import provideAdapter
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> provideAdapter(PublicToAllOrPrivateToAuthenticated, [IRecipe],
+    ...     IAuthorization, 'launchpad.View')
 
 Here's the interface for the 'set' objects that manage the authors,
 cookbooks, and dishes. The inconsistent naming is intentional.
@@ -121,7 +142,8 @@ and IRecipe.
 
     >>> class Recipe:
     ...     implements(IRecipe)
-    ...     def __init__(self, id, cookbook, dish, instructions):
+    ...     def __init__(self, id, cookbook, dish, instructions,
+    ...         private=False):
     ...         self.id = id
     ...         self.cookbook = cookbook
     ...         self.cookbook.recipes.append(self)
@@ -129,6 +151,7 @@ and IRecipe.
     ...         self.dish.recipes.append(self)
     ...         self.instructions = instructions
     ...         self.comments = []
+    ...         self.private = private
     >>> protect_schema(Recipe, IRecipe, write_permission=CheckerPublic)
 
 Here are the "model objects" themselves:
@@ -145,12 +168,13 @@ Here are the "model objects" themselves:
 
     >>> D1 = Dish("Roast chicken")
     >>> C1_D1 = Recipe(1, C1, D1, u"You can always judge...")
-    >>> C2_D1 = Recipe(2, C2, D1, u"Draw, singe, stuff, and truss...")
+    >>> C2_D1 = Recipe(2, C2, D1, u"Draw, singe, stuff, and truss...",
+    ...                True)
     >>> C3_D1 = Recipe(3, C3, D1, u"A perfectly roasted chicken is...")
 
     >>> D2 = Dish("Baked beans")
     >>> C2_D2 = Recipe(4, C2, D2, "Preheat oven to...")
-    >>> C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...")
+    >>> C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...", True)
 
     >>> D3 = Dish("Foies de voilaille en aspic")
     >>> C1_D3 = Recipe(6, C1, D3, "Chicken livers sauteed in butter...")
@@ -251,7 +275,6 @@ The navigation for these components:
     >>> from urllib import unquote
     >>> from canonical.launchpad.webapp.publisher import (
     ...     Navigation, stepthrough)
-    >>> from zope.component import provideAdapter
     >>> from zope.publisher.interfaces.browser import (
     ...     IBrowserPublisher, IDefaultBrowserLayer)
 
