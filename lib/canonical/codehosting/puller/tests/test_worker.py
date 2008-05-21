@@ -17,12 +17,13 @@ import urllib2
 
 import bzrlib.branch
 from bzrlib import bzrdir
-from bzrlib.branch import BranchReferenceFormat
+from bzrlib.branch import BzrBranchFormat7, BranchReferenceFormat
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
+from bzrlib.urlutils import local_path_to_url
 from bzrlib.weave import Weave
 from bzrlib.errors import (
     BzrError, UnsupportedFormatError, UnknownFormatError, ParamikoNotPresent,
@@ -240,7 +241,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
         repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch(
             'src-branch', bzrdir_format, repository_format)
-        self._mirror('src-branch')
+        self._mirror(local_path_to_url('src-branch'))
 
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
@@ -250,7 +251,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
             'src-branch', bzrdir_format, repository_format)
 
         # Mirror again.  The mirrored branch should now be in knit format.
-        mirrored_branch = self._mirror('src-branch')
+        mirrored_branch = self._mirror(local_path_to_url('src-branch'))
         self.assertEqual(
             repository_format.get_format_description(),
             mirrored_branch.repository._format.get_format_description())
@@ -268,14 +269,31 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
         tree.commit('Added foo', rev_id='rev1')
         return tree
 
+    def _makeStackedBranch(self):
+        """Make and return a stacked branch."""
+        format = bzrdir.BzrDirMetaFormat1()
+        format.set_branch_format(BzrBranchFormat7())
+        format.repository_format = \
+            bzrlib.repofmt.pack_repo.RepositoryFormatPackDevelopment1()
+        tree = self._createSourceBranch(
+            'base-branch', format, format.repository_format)
+        revision_id = tree.branch.last_revision()
+        stacked_bzrdir = tree.bzrdir.sprout(
+            local_path_to_url('stacked-branch'), revision_id, shallow=True)
+        return stacked_bzrdir.open_branch()
+
     def test_stackedBranch(self):
         # When we mirror a stacked branch for the first time, the mirrored
         # branch has the same stacked-on branch.
-        pass
+        stacked_branch = self._makeStackedBranch()
+        mirrored_branch = self._mirror(stacked_branch.base)
+        self.assertEqual(
+            stacked_branch.last_revision(), mirrored_branch.last_revision())
+        self.assertEqual(
+            stacked_branch.get_stacked_on(), mirrored_branch.get_stacked_on())
 
-    def _mirror(self, source_path):
+    def _mirror(self, source_url):
         # Mirror src-branch to dest-branch
-        source_url = os.path.abspath(source_path)
         to_mirror = self.makePullerWorker(src_dir=source_url)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
@@ -285,7 +303,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
         tree = self._createSourceBranch(
             'src-branch', bzrdir_format, repository_format)
 
-        mirrored_branch = self._mirror('src-branch')
+        mirrored_branch = self._mirror(local_path_to_url('src-branch'))
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
 
