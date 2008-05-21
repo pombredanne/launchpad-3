@@ -29,7 +29,7 @@ Bruce = Principal('bruce', 'bruce', 'Bruce', 'bruce', 'bruce!')
 class DummyPlacelessLoginSource(object):
     implements(IPlacelessLoginSource)
 
-    def getPrincipalByLogin(self, id):
+    def getPrincipalByLogin(self, id, want_password=True):
         return Bruce
 
     getPrincipal = getPrincipalByLogin
