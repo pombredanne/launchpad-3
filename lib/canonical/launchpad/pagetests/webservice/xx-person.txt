@@ -353,12 +353,18 @@ Joining and leaving teams:
   ...     team=quote(ubuntu_team['self_link']))
   HTTP/1.1 200 Ok
   ...
+  >>> webservice.get(
+  ...     "/beta/~ubuntu-team/+member/salgado").jsonBody()['status']
+  u'Proposed'
 
   >>> print webservice.named_post(
   ...     salgado['self_link'], 'leave', {},
   ...     team=quote(landscape_developers['self_link']))
   HTTP/1.1 200 Ok
   ...
+  >>> webservice.get(
+  ...     "/beta/~landscape-developers/+member/salgado").jsonBody()['status']
+  u'Deactivated'
 
 Adding an arbitrary member to a team:
 
@@ -368,6 +374,9 @@ Adding an arbitrary member to a team:
   ...     comment='Just a test')
   HTTP/1.1 200 Ok
   ...
+  >>> webservice.get("/beta/~ubuntu-team/+member/landscape-developers"
+  ...     ).jsonBody()['status']
+  u'Invited'
 
 Accepting or declining a membership invitation:
 
@@ -376,9 +385,14 @@ Accepting or declining a membership invitation:
   ...     {}, team=quote(ubuntu_team['self_link']), comment='Just a test')
   HTTP/1.1 200 Ok
   ...
+  >>> webservice.get("/beta/~ubuntu-team/+member/landscape-developers"
+  ...     ).jsonBody()['status']
+  u'Approved'
 
   >>> print webservice.named_post(
   ...     '/beta/~name20', 'declineInvitationToBeMemberOf', {},
   ...     team=quote(ubuntu_team['self_link']), comment='Just a test')
   HTTP/1.1 200 Ok
   ...
+  >>> webservice.get("/beta/~ubuntu-team/+member/name20").jsonBody()['status']
+  u'Invitation declined'

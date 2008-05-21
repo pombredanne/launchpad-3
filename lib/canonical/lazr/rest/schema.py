@@ -28,9 +28,9 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
-from zope.schema import Object
+from zope.schema import Field, Object
 from zope.schema._field import AbstractCollection
-from zope.schema.interfaces import ValidationError
+from zope.schema.interfaces import SchemaNotProvided
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -263,10 +263,12 @@ class Reference(Object):
     """An Object-like field which doesn't validate all fields of the schema.
 
     Unlike Object, which does call _validate_fields(self.schema, value) to
-    validate all fields, this field will simply check that the given value
-    provides the specified schema.
+    validate all fields, this field will simply call the _validate() method of
+    the Field class and then check that the given value provides the specified
+    schema.
     """
 
     def _validate(self, value):
+        Field._validate(self, value)
         if not self.schema.providedBy(value):
-            raise ValidationError("Value doesn't provide specified schema.")
+            raise SchemaNotProvided()
