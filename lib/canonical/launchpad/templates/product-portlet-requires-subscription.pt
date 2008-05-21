@@ -18,7 +18,7 @@
     </strong>
   </div>
   <div>
-    The licensing of your product does not qualify for free
+    The licensing of your project does not qualify for free
     hosting. You have two options to continue using Launchpad
     for this project.
     <ul>
@@ -27,6 +27,25 @@
           about changing your license.
       </li>
     </ul>
+    To qualify for free hosting, the project's licensing must meet the
+    following requirements:
+    <ul>
+      <li>Must include source code.</li>
+      <li>Must allow modification and distribution of modified copies under
+          the same license.</li>
+      <li>Must allow redistribution.</li>
+      <li>Must not require royalty payments or any other fee for
+          redistribution or modification.</li>
+      <li>Must allow these rights to be passed on along with the software.</li>
+      <li>Must not discriminate against persons, groups or against fields
+          of endeavour.</li>
+      <li>Must not be distributed under a license specific to Ubuntu.</li>
+      <li>Must not contaminate other software licenses.</li>
+    </ul>
+
+    <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
+      View Licensing Policies
+    </a>
   </div>
 </div>
 </tal:root>
