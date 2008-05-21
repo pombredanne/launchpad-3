@@ -35,6 +35,32 @@ from canonical.testing import (
 
 here = os.path.dirname(os.path.realpath(__file__))
 
+def lobotomizeSteveA():
+    """
+    Set SteveA's email address' status to NEW.
+
+    Call this method first in a tests setUp where needed.
+
+    SteveA's account erroneously appeared in the old ValidPersonOrTeamCache
+    materialized view. The code being tested didn't use this view,
+    and correctly determined that the account was invalid. Now SteveA is
+    valid again so we adjust the data to keep the test valid.
+    This also exposed a bug in bug notifications, where invalid users
+    where happily being emailed.
+    """
+    from canonical.launchpad.database import EmailAddress
+    from canonical.launchpad.interfaces import EmailAddressStatus
+    stevea_emailaddress = EmailAddress.byEmail(
+            'steve.alexander@ubuntulinux.com')
+    stevea_emailaddress.status = EmailAddressStatus.NEW
+    commit()
+
+
+def lobotomizeSteveASetUp(test):
+    """Call lobotomizeSteveA() and standard setUp"""
+    lobotomizeSteveA()
+    setUp(test)
+
 
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
@@ -97,6 +123,7 @@ def branchStatusTearDown(test):
     test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
+    lobotomizeSteveA()
     LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
     setUp(test)
 
@@ -127,6 +154,7 @@ def distroseriesqueueTearDown(test):
     tearDown(test)
 
 def uploadQueueSetUp(test):
+    lobotomizeSteveA()
     test_dbuser = config.uploadqueue.dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
@@ -139,6 +167,7 @@ def uploaderBugsSetUp(test):
     In order to test that these functions work as expected from the uploader,
     we run them using the same db user used by the uploader.
     """
+    lobotomizeSteveA()
     test_dbuser = config.uploader.dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
@@ -392,11 +421,21 @@ special = {
             tearDown=uploaderBugsTearDown,
             layer=LaunchpadZopelessLayer
             ),
-     'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
+    'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
             '../doc/bugnotificationrecipients.txt',
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
             layer=LaunchpadZopelessLayer
+            ),
+    'bugnotificationrecipients.txt': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'bugnotification-threading.txt': LayeredDocFileSuite(
+            '../doc/bugnotification-threading.txt',
+            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
             ),
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
