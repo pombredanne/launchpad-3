@@ -938,7 +938,6 @@ is an example of a template and view classes for the FacetMenu and
 NavigationMenus used in the previous TALES section.
 
     >>> import operator
-    >>> import os
     >>> import tempfile
     >>> from zope.app.pagetemplate.viewpagetemplatefile import (
     ...     ViewPageTemplateFile)
