@@ -34,10 +34,20 @@ Unauthorized...
 An Account has an encrypted password and an OpenID identifier used to generate
 the OpenID identity URL
 
->>> account.password
-u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
 >>> account.openid_identifier
 u'no-priv_oid'
+
+>>> account.password
+u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+
+Ensure the password changes are sticky, as this is a property hiding the
+AccountPassword table.
+
+>>> account.password = None
+>>> account.password
+>>> account.password = u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+>>> account.password
+u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
 
 
 And other account metadata

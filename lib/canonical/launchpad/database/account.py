@@ -56,12 +56,15 @@ class Account(SQLBase):
         if value is not None and password is None:
             # There is currently no AccountPassword record and we need one.
             AccountPassword(account=self, password=value)
-        elif password is None:
+        elif value is None and password is not None:
             # There is an AccountPassword record that needs removing.
             AccountPassword.delete(password.id)
         elif value is not None:
             # There is an AccountPassword record that needs updating.
             password.password = value
+        elif value is None and password is None:
+            # Nothing to do
+            pass
 
     password = property(_get_password, _set_password)
 
@@ -95,12 +98,6 @@ class AccountSet:
             AND lower(EmailAddress.email) = %s
             ''' % sqlvalues(email.strip().lower()),
             clauseTables=['EmailAddress'])
-
-    def getByPerson(self, person):
-        """See IAccountSet."""
-        if person.isTeam():
-            return None
-        return Account.selectOneBy(person=person)
 
 
 class AccountPassword(SQLBase):
