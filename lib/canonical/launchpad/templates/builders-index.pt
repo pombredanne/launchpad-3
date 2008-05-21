@@ -51,18 +51,32 @@
      <tal:group repeat="builder_group category/groups">
        <tr class="highlighted">
          <th colspan="2" style="text-align: left">
-             <tal:processor replace="builder_group/processor_name" />
-             (<tal:queue-size replace="builder_group/queue_size"
-               >2</tal:queue-size> waiting in queue)
+	   <tal:processor replace="builder_group/processor_name" />
+           &nbsp;&nbsp;&nbsp;
+           <span class="discreet">
+             <tal:queue-size replace="builder_group/queue_size"
+               >2</tal:queue-size> builds waiting in queue
+           </span>
          </th>
        </tr>
        <tr class="builder-row" tal:repeat="builder builder_group/builders">
-         <td style="text-align: left; width: 10em">
+         <td style="text-align: left; width: 12em">
+           <tal:ok_icon condition="builder/builderok">
+             <img width="14" height="14" alt="[Running]"
+                  title="Running" src="/@@/yes" />
+           </tal:ok_icon>
+           <tal:nok_icon condition="not: builder/builderok">
+             <img width="14" height="14" alt="[Disabled]"
+                  title="Disabled" src="/@@/no" />
+           </tal:nok_icon>
            <a tal:attributes="href builder/fmt:url"
               tal:content="builder/title/fmt:shorten/30">Bob</a>
+           <tal:mode condition="builder/manual">
+             (manual)
+           </tal:mode>
          </td>
          <td style="text-align: left">
-           <tal:status replace="builder/status">OK</tal:status>
+           <tal:status replace="builder/status">Disabled</tal:status>
          </td>
        </tr>
        <tr tal:condition="repeat/builder_group/end" class="note">

@@ -442,22 +442,21 @@ class Builder(SQLBase):
     @property
     def status(self):
         """See IBuilder"""
-        if self.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
         if not self.builderok:
-            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
+            if self.failnotes is not None:
+                return 'Disabled due to "%s"' % self.failnotes
+            return 'Disabled'
 
-        if self.currentjob:
-            current_build = self.currentjob.build
-            msg = 'BUILDING %s' % current_build.title
-            if current_build.archive.purpose == ArchivePurpose.PPA:
-                archive_name = current_build.archive.owner.name
-                return '%s [%s] (%s)' % (msg, archive_name, mode)
-            return '%s (%s)' % (msg, mode)
-        return 'IDLE (%s)' % mode
+        currentjob = self.currentjob
+        if currentjob is None:
+            return 'Idle'
+
+        msg = 'Building %s' % currentjob.build.title
+
+        if current_build.archive.purpose != ArchivePurpose.PPA:
+            return msg
+
+        return '%s [%s]' % (msg, current_build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""
