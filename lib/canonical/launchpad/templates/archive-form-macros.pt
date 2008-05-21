@@ -10,11 +10,13 @@
     IArchiveSelectableSourceView.
   </tal:comment>
 
-  <tal:search define="name_widget nocall:view/widgets/name_filter">
+  <tal:search define="name_widget nocall:view/widgets/name_filter;
+                      status_widget nocall:view/widgets/status_filter">
      <label tal:attributes="for name_widget/name">
        Show only sources with name matching:
      </label>
-     <input tal:replace="structure name_widget"/>
+     <input tal:replace="structure name_widget" />
+     <input tal:replace="structure status_widget" />
      <input
        tal:replace="structure view/actions/field.actions.update/render" />
   </tal:search>

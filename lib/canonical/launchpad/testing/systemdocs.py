@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import reset_logging
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -112,6 +113,7 @@ def LayeredDocFileSuite(*args, **kw):
         def tearDown(test):
             if kw_tearDown is not None:
                 kw_tearDown(test)
+            reset_logging()
             test._stdout_logger.uninstall()
         kw['tearDown'] = tearDown
 
