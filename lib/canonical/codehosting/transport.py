@@ -522,6 +522,15 @@ class LaunchpadServer(Server):
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
+    def _getStackOnURL(self, unique_name):
+        stack_on_url = urlutils.join(
+            config.codehosting.supermirror_root, unique_name)
+        # XXX: JonathanLange 2008-05-20: We can't serve stacked branches over
+        # HTTP until the puller understands stacked branches. Until then,
+        # we'll stack on the SFTP branch, which the user is definitely able to
+        # access.
+        return stack_on_url.replace('http', 'sftp')
+
     def _buildControlDirectory(self, unique_name):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
         memory_server = MemoryServer()
@@ -532,13 +541,7 @@ class LaunchpadServer(Server):
 
         format = BzrDirFormat.get_default_format()
         format.initialize_on_transport(transport)
-        stack_on_url = urlutils.join(
-            config.codehosting.supermirror_root, unique_name)
-        # XXX: JonathanLange 2008-05-20: We can't serve stacked branches over
-        # HTTP until the puller understands stacked branches. Until then,
-        # we'll stack on the SFTP branch, which the user is definitely able to
-        # access.
-        stack_on_url = stack_on_url.replace('http', 'sftp')
+        stack_on_url = self._getStackOnURL(unique_name)
         # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
         # higher-level bzrlib APIs to do this:
         # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in

@@ -188,8 +188,8 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             '~testuser/evolution/.bzr/control.conf')
         def check_control_file((transport, path)):
             self.assertEqual(
-                'default_stack_on=%s~vcs-imports/evolution/main\n'
-                % config.codehosting.supermirror_root.replace('http', 'sftp'),
+                'default_stack_on=%s\n'
+                % self.server._getStackOnURL('~vcs-imports/evolution/main'),
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
@@ -200,9 +200,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         branch = '~user/product/branch'
         transport = self.server._buildControlDirectory(branch)
         self.assertEqual(
-            'default_stack_on=%s%s\n' % (
-                config.codehosting.supermirror_root.replace('http', 'sftp'),
-                branch),
+            'default_stack_on=%s\n' % self.server._getStackOnURL(branch),
             transport.get_bytes('.bzr/control.conf'))
 
     def test_buildControlDirectory_no_branch(self):
