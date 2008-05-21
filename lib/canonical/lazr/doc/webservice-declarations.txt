@@ -916,10 +916,11 @@ The call() method calls the underlying method and return its result.
     >>> print read_method_adapter.call(text='')
     []
 
-When the method returns a string, it is encoded using JSON and the
-content-type is set to application/json. (That is done because the API
-framework expects that when a string is returned, it's the actual result
-and that the caller took care of setting the content type.)
+When the method returns one of the basic python scalar type, it is
+encoded using JSON and the content-type is set to application/json.
+(That is done because the API framework expects either a string where
+it means that the response was properly encoded, an object adaptable to
+IEntry or a list of such objects.)
 
     >>> read_method_adapter.context.result = "A string."
     >>> print read_method_adapter.call(text='')
@@ -928,6 +929,29 @@ and that the caller took care of setting the content type.)
     200
     >>> print request.response.headers['Content-Type']
     application/json
+
+    >>> read_method_adapter.context.result = True
+    >>> read_method_adapter.call(text='')
+    'true'
+
+    >>> read_method_adapter.context.result = 10
+    >>> read_method_adapter.call(text='')
+    '10'
+
+    >>> read_method_adapter.context.result = None
+    >>> read_method_adapter.call(text='')
+    'null'
+
+    >>> read_method_adapter.context.result = 1.3
+    >>> read_method_adapter.call(text='')
+    '1.3'
+
+Other results are passed untransformed.
+
+    >>> read_method_adapter.context.result = [object()]
+    >>> print read_method_adapter.call(text='')
+    [<object...>]
+
 
 Methods exported as a write operations generates an adapter providing
 IResourcePOSTOperation.
@@ -968,6 +992,7 @@ REQUEST_USER specification is replaced by the current user.
 
     >>> write_method_adapter.call()
     A user did a normal check out of 'The Doors of Perception'.
+    'null'
 
 Methods exported as a factory also generate an adapter providing
 IResourcePOSTOperation.
