@@ -32,6 +32,7 @@ __all__ = [
 
 import simplejson
 import sys
+from types import NoneType
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
@@ -631,7 +632,7 @@ class BaseResourceOperationAdapter(ResourceOperation):
         # The webservice assumes that the request is complete when the
         # operation returns a string. So we take care of marshalling the
         # result to json.
-        if isinstance(result, basestring):
+        if isinstance(result, (basestring, NoneType)):
             response = self.request.response
             response.setHeader('Content-Type', 'application/json')
             return simplejson.dumps(result)
