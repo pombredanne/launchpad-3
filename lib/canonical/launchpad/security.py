@@ -11,13 +11,14 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportResult,
-    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportSet,
+    IDistribution, IDistributionMirror,
     IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
     IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
     ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
     IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson,
+    IPillar, IPoll,
     IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
@@ -62,6 +63,33 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class AdminByCommercialTeamOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Commercial'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.admin))
+
+
+class ViewPillar(AuthorizationBase):
+    usedfor = IPillar
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        return self.obj.active
+
+    def checkAuthenticated(self, user):
+        """The Admins & Commercial Admins can see inactive pillars."""
+        if self.obj.active:
+            return True
+        else:
+            celebrities = getUtility(ILaunchpadCelebrities)
+            return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.admin))
 
 
 class EditAccount(AuthorizationBase):
@@ -931,27 +959,6 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
-
-
-class SeeCodeImportResultSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImportResult listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportResultSet
-
-
-class SeeCodeImportResult(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportResult.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImportResult
 
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):

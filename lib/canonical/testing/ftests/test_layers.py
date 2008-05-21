@@ -183,6 +183,9 @@ class LibrarianNoResetTestCase(unittest.TestCase):
                 )
         # Restore this - keeping state is our responsibility
         LibrarianLayer._reset_between_tests = True
+        # The database was committed to, but not by this process, so we need
+        # to ensure that it is fully torn down and recreated.
+        DatabaseLayer.force_dirty_database()
 
     def testNoReset3(self):
         # The file added by testNoReset1 should be gone
@@ -201,6 +204,9 @@ class LibrarianHideTestCase(unittest.TestCase):
         data = 'foo'
         client.remoteAddFile(
             'foo', len(data), StringIO(data), 'text/plain')
+        # The database was committed to, but not by this process, so we need
+        # to ensure that it is fully torn down and recreated.
+        DatabaseLayer.force_dirty_database()
 
         # Hide the librarian, and show that the upload fails:
         LibrarianLayer.hide()

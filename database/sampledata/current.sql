@@ -656,6 +656,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, status_comment, displayname, openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', NULL, 'Mark Shuttleworth', 'sabdfl_oid');
@@ -7456,6 +7459,13 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
+
+
+ALTER TABLE productseriescodeimport DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE productseriescodeimport ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productsvnmodule DISABLE TRIGGER ALL;
