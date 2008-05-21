@@ -216,65 +216,76 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is
         # in knit format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = \
-            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
-        self._testMirrorFormat()
+        self._testMirrorFormat(
+            bzrdir.BzrDirMetaFormat1(),
+            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1())
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the
         # mirror is in metaweave format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
-        self._testMirrorFormat()
+        self._testMirrorFormat(
+            bzrdir.BzrDirMetaFormat1(),
+            bzrlib.repofmt.weaverepo.RepositoryFormat7())
 
     def testMirrorWeaveAsWeave(self):
         # Create a source branch in weave format, and check that the mirror is
         # in weave format.
-        self.bzrdir_format = bzrdir.BzrDirFormat6()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
-        self._testMirrorFormat()
+        self._testMirrorFormat(
+            bzrdir.BzrDirFormat6(),
+            bzrlib.repofmt.weaverepo.RepositoryFormat6())
 
     def testSourceFormatChange(self):
         # Create and mirror a branch in weave format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
-        self._createSourceBranch()
-        self._mirror()
+        bzrdir_format = bzrdir.BzrDirMetaFormat1()
+        repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
+        self._createSourceBranch(
+            'src-branch', bzrdir_format, repository_format)
+        self._mirror('src-branch')
 
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
-        self.repository_format = \
+        repository_format = \
             bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
-        self._createSourceBranch()
+        self._createSourceBranch(
+            'src-branch', bzrdir_format, repository_format)
 
         # Mirror again.  The mirrored branch should now be in knit format.
-        mirrored_branch = self._mirror()
+        mirrored_branch = self._mirror('src-branch')
         self.assertEqual(
-            self.repository_format.get_format_description(),
+            repository_format.get_format_description(),
             mirrored_branch.repository._format.get_format_description())
 
-    def _createSourceBranch(self):
-        os.mkdir('src-branch')
-        tree = self.make_branch_and_tree('src-branch')
+    def _createSourceBranch(self, branch_path, bzrdir_format,
+                            repository_format):
+        os.mkdir(branch_path)
+        # We set these to get make_branch_and_tree to do the right thing.
+        self.bzrdir_format = bzrdir_format
+        self.repository_format = repository_format
+        tree = self.make_branch_and_tree(branch_path)
         self.local_branch = tree.branch
-        self.build_tree(['foo'], transport=get_transport('./src-branch'))
+        self.build_tree(['foo'], transport=get_transport('./' + branch_path))
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
         return tree
 
-    def _mirror(self):
+    def test_stackedBranch(self):
+        # When we mirror a stacked branch for the first time, the mirrored
+        # branch has the same stacked-on branch.
+        pass
+
+    def _mirror(self, source_path):
         # Mirror src-branch to dest-branch
-        source_url = os.path.abspath('src-branch')
+        source_url = os.path.abspath(source_path)
         to_mirror = self.makePullerWorker(src_dir=source_url)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
 
-    def _testMirrorFormat(self):
-        tree = self._createSourceBranch()
+    def _testMirrorFormat(self, bzrdir_format, repository_format):
+        tree = self._createSourceBranch(
+            'src-branch', bzrdir_format, repository_format)
 
-        mirrored_branch = self._mirror()
+        mirrored_branch = self._mirror('src-branch')
         self.assertEqual(tree.last_revision(),
                          mirrored_branch.last_revision())
 
@@ -282,10 +293,10 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
         # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
         # See bug 45277.
         self.assertEqual(
-            self.repository_format.get_format_description(),
+            repository_format.get_format_description(),
             mirrored_branch.repository._format.get_format_description())
         self.assertEqual(
-            self.bzrdir_format.get_format_description(),
+            bzrdir_format.get_format_description(),
             mirrored_branch.bzrdir._format.get_format_description())
 
 
