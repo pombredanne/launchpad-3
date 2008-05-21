@@ -8,9 +8,9 @@ __metaclass__ = type
 __all__ = ['GoogleServiceTestSetup']
 
 
-import subprocess
 import os
 import signal
+from canonical.launchpad.testing import googletestservice
 
 
 class GoogleServiceTestSetup:
@@ -59,15 +59,21 @@ class GoogleServiceTestSetup:
     def startService(cls):
         """Start the webservice."""
         assert not cls.service  # Sanity check.
-        from canonical.launchpad.testing import googletestservice
         cls.service = googletestservice.start_as_process()
         assert cls.service, "The Search service process did not start."
+        try:
+            googletestservice.wait_for_service()
+        except RuntimeError:
+            # The service didn't start itself soon enough.  We must
+            # make sure to kill any errant processes that may be
+            # hanging around.
+            cls.stopService()
+            raise
 
     @classmethod
     def stopService(cls):
         """Shut down the webservice instance."""
         if cls.service:
-            pid = cls.service.pid
-            os.kill(pid, signal.SIGTERM)
-            os.waitpid(pid, 0)
+            os.kill(cls.service.pid, signal.SIGTERM)
+            cls.service.wait()
         cls.service = None

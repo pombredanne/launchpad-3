@@ -74,11 +74,13 @@ def url_to_xml_map():
 
     return mapping
 
+
 def get_service_endpoint():
     """Return the host and port that the service is running on."""
     return hostpair(config.google.site)
 
-def service_is_available(timeout=10.0):
+
+def service_is_available(timeout=2.0):
     """Return True if the service is up and running.
 
     BLOCK execution for at most `timeout' seconds before returning False.
@@ -96,19 +98,21 @@ def service_is_available(timeout=10.0):
     finally:
         sock.close() # Clean up.
 
-def wait_for_service(host, port, timeout=2.0):
+
+def wait_for_service(timeout=10.0):
     """Poll the service and BLOCK until we can connect to it.
 
     The socket has a default `timeout', in seconds.  Refer to the
     socket module documentation in the Standard Library for possible
     timeout values.
     """
+    host, port = get_service_endpoint()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout) # Block for at most X seconds.
 
     start = time.time()  # Record when we started polling.
     try:
-        while 1:
+        while True:
             try:
                 sock.connect((host, port))
             except socket.error, err:
@@ -120,12 +124,14 @@ def wait_for_service(host, port, timeout=2.0):
     finally:
         sock.close()  # Clean up.
 
+
 def hostpair(url):
     """Parse the host and port number out of a URL string."""
     parts  = urlsplit(url)
     host, port = parts[1].split(':')
     port = int(port)
     return (host, port)
+
 
 def start_as_process():
     """Run this file as a stand-alone Python script.
@@ -138,19 +144,14 @@ def start_as_process():
         # Make sure we run the .py file, not the .pyc.
         head, _ = os.path.splitext(script)
         script = head + '.py'
-    proc = subprocess.Popen(script)
+    return subprocess.Popen(script)
 
-    # Wait for our new service to become available, using a safe
-    # technique to do so.
-    host, port = get_service_endpoint()
-    wait_for_service(host, port)
-    return proc
 
 def main():
     """Run the HTTP server."""
-    # Redirect our service output.  If we don't put it here, then the
-    # Zope testrunner will complain about us not cleaning up the file
-    # log handler.
+    # Redirect our service output to a log file.
+    # pylint: disable-msg=W0602
+    global log
     filelog = logging.FileHandler(config.google_test_service.log)
     log.addHandler(filelog)
     log.setLevel(logging.DEBUG)
