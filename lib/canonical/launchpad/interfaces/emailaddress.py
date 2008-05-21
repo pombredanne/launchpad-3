@@ -11,12 +11,13 @@ __all__ = [
     'IEmailAddressSet',
     'InvalidEmailAddress']
 
-from zope.schema import Choice, Int, Object, TextLine
+from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
 
@@ -81,12 +82,13 @@ class IEmailAddress(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     email = exported(
-        TextLine(title=_('Email Address'), required=True))
+        TextLine(title=_('Email Address'), required=True, readonly=True))
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
     person = exported(
-        Object(title=_('Person'), required=True, schema=Interface))
+        Reference(title=_('Person'), required=True, readonly=True,
+                  schema=Interface))
     personID = Int(title=_('PersonID'), required=True, readonly=True)
 
     def destroySelf():

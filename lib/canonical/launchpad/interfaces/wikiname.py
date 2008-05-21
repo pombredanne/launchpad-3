@@ -7,11 +7,12 @@ __all__ = [
     'IWikiNameSet',
     ]
 
-from zope.schema import Int, Object, TextLine
+from zope.schema import Int, TextLine
 from zope.interface import Interface
 
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
 
@@ -26,13 +27,14 @@ class IWikiName(Interface):
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.
     person = exported(
-        Object(title=_("Owner"), schema=Interface, required=True))
+        Reference(
+            title=_("Owner"), schema=Interface, required=True, readonly=True))
     wiki = exported(
         TextLine(title=_("Wiki host"), required=True))
     wikiname = exported(
         TextLine(title=_("Wikiname"), required=True))
     url = exported(
-        TextLine(title=_("The URL for this wiki home page.")))
+        TextLine(title=_("The URL for this wiki home page."), readonly=True))
 
     def destroySelf():
         """Remove this WikiName from the database."""

@@ -10,11 +10,12 @@ __all__ = [
     'IIrcIDSet',
     ]
 
-from zope.schema import Int, Object, TextLine
+from zope.schema import Int, TextLine
 from zope.interface import Interface
 
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
 
@@ -26,7 +27,8 @@ class IIrcID(Interface):
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.
     person = exported(
-        Object(title=_("Owner"), required=True, schema=Interface))
+        Reference(
+            title=_("Owner"), required=True, schema=Interface, readonly=True))
     network = exported(
         TextLine(title=_("IRC network"), required=True))
     nickname = exported(
