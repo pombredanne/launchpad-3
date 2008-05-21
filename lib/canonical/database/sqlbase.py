@@ -15,6 +15,7 @@ from sqlobject import connectionForURI, SQLObjectNotFound
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
 
+import transaction
 from zope.interface import implements
 
 from canonical.database.interfaces import ISQLBase
@@ -698,7 +699,10 @@ def rollback():
     ZopelessTransactionManager._installed.abort()
 
 def commit():
-    ZopelessTransactionManager._installed.commit()
+    if ZopelessTransactionManager._installed is None:
+        transaction.commit()
+    else:
+        ZopelessTransactionManager._installed.commit()
 
 def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connecction to the database.
