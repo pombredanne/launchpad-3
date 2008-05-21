@@ -21,7 +21,6 @@ log = logging.getLogger(__name__)
 
 
 class GoogleRequestHandler(BaseHTTPRequestHandler):
-
     """Return an XML file depending on the requested URL."""
 
     default_content_type = 'text/xml; charset=UTF-8'
@@ -36,10 +35,10 @@ class GoogleRequestHandler(BaseHTTPRequestHandler):
             self.return_file(urlmap['*'])
 
     def return_file(self, filename):
-        """Return a HTTP response with `filename' for content.
+        """Return a HTTP response with 'filename' for content.
 
-        `filename' is searched for in the default canned-data storage
-        location, specified in the service configuration.
+        :param filename: The file name to find in the canned-data
+            storage location.
         """
         self.send_response(200)
         self.send_header('Content-Type', self.default_content_type)
@@ -83,10 +82,11 @@ def get_service_endpoint():
 def service_is_available(timeout=2.0):
     """Return True if the service is up and running.
 
-    BLOCK execution for at most `timeout' seconds before returning False.
+    :param timeout: BLOCK execution for at most 'timeout' seconds
+        before returning False.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(timeout) # Block for `timeout' seconds.
+    sock.settimeout(timeout) # Block for 'timeout' seconds.
     host, port = get_service_endpoint()
     try:
         try:
@@ -102,9 +102,9 @@ def service_is_available(timeout=2.0):
 def wait_for_service(timeout=10.0):
     """Poll the service and BLOCK until we can connect to it.
 
-    The socket has a default `timeout', in seconds.  Refer to the
-    socket module documentation in the Standard Library for possible
-    timeout values.
+    :param timeout: The socket should timeout after this many seconds.
+        Refer to the socket module documentation in the Standard Library
+        for possible timeout values.
     """
     host, port = get_service_endpoint()
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
