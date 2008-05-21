@@ -24,7 +24,8 @@ class EmailAddress(SQLBase):
     _table = 'EmailAddress'
     _defaultOrder = ['email']
 
-    email = StringCol(dbName='email', notNull=True, unique=True)
+    email = StringCol(
+            dbName='email', notNull=True, unique=True, alternateID=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
