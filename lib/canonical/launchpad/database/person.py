@@ -1879,7 +1879,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self._setPreferredEmail(email)
+            self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
             getUtility(IHWSubmissionSet).setOwnership(email)
@@ -1909,8 +1909,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # XXX: This is a hack! In the future we won't have this
             # association between accounts and confirmed addresses, but this
             # will do for now. -- Guilherme Salgado, 2007-07-03
-            self.account_status = AccountStatus.ACTIVE
-            self.account_status_comment = None
+            self.account.status = AccountStatus.ACTIVE
+            self.account.status_comment = None
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2253,8 +2253,7 @@ class PersonSet:
 
         account = getUtility(IAccountSet).new(
                 account_rationale, displayname, email,
-                plaintext_password=password,
-                encrypted_password=passwordEncrypted)
+                password=password, password_is_encrypted=passwordEncrypted)
 
         person.account = account
         email.account = account

@@ -73,7 +73,7 @@ class AccountSet:
     implements(IAccountSet)
 
     def new(self, rationale, displayname, emailaddress,
-            plaintext_password=None, encrypted_password=None):
+            password=None, password_is_encrypted=False):
         """See IAccountSet."""
 
         account = Account(
@@ -83,11 +83,10 @@ class AccountSet:
         emailaddress.account = account
 
         # Create the password record
-        if encrypted_password is None and password is not None:
-            encrypted_password = getUtility(IPasswordEncryptor).encrypt(
-                    password)
-        if encrypted_password is not None:
-            AccountPassword(account=account, password=encrypted_password)
+        if not password_is_encrypted and password is not None:
+            password = getUtility(IPasswordEncryptor).encrypt(password)
+        if password is not None:
+            AccountPassword(account=account, password=password)
 
         return account
 

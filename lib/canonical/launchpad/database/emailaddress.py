@@ -27,7 +27,10 @@ class EmailAddress(SQLBase):
     email = StringCol(
             dbName='email', notNull=True, unique=True, alternateID=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=False)
+    account = ForeignKey(
+            dbName='account', foreignKey='Account', notNull=False,
+            default=None)
 
     @property
     def statusname(self):

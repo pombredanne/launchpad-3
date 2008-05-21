@@ -82,8 +82,9 @@ class IEmailAddress(Interface):
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
     account = Object(title=_('Account'), schema=IAccount, required=False)
-    person = Int(title=_('Person'), required=True, readonly=False)
-    personID = Int(title=_('PersonID'), required=True, readonly=True)
+    accountID = Int(title=_('AccountID'), required=False, readonly=True)
+    person = Int(title=_('Person'), required=False, readonly=False)
+    personID = Int(title=_('PersonID'), required=False, readonly=True)
     statusname = Attribute("StatusName")
 
     def destroySelf():

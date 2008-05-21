@@ -28,6 +28,7 @@ from zope.interface import alsoProvides, directlyProvides, Interface
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import AccountStatus
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
@@ -192,6 +193,8 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         naked_person.password = data['password']
 
         email.person.validateAndEnsurePreferredEmail(email)
+        assert person.account_status == AccountStatus.ACTIVE, (
+                'Failed to make account ACTIVE')
         self.context.consume()
         self.logInPersonByEmail(email.email)
         self.request.response.addInfoNotification(_(

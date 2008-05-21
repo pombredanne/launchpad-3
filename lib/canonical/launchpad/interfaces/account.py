@@ -221,14 +221,15 @@ class IAccountSet(Interface):
 
     def new(
             rationale, displayname, emailaddress,
-            plaintext_password=None, encrypted_password=None):
+            password=None, password_is_encrypted=False):
         """Create a new IAccount.
        
         :param rationale: An AccountStatus value.
         :param emailaddress: An IEmailAddress.
-        :param password: A plaintext password.
-        :param encrypted_password: A password encrypted using the
-            IPasswordEncryptor utility.
+        :param password: A password.
+        :param password_is_encrypted: If True, the password parameter has
+            already been encrypted using the IPasswordEncryptor utility.
+            If False, the password will be encrypted automatically.
 
         :return: The newly created IAccount provider.
         """

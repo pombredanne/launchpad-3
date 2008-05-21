@@ -139,4 +139,12 @@ CREATE VIEW ValidPersonOrTeamCache AS
     UNION ALL
     SELECT id FROM Person WHERE teamowner IS NOT NULL;
 
+-- Person.account_status has not been maintained :-( Fix the data, as we
+-- now need this to be correct.
+UPDATE Account SET status=20
+FROM EmailAddress, AccountPassword
+WHERE EmailAddress.account = Account.id
+    AND AccountPassword.account = Account.id
+    AND Account.status=10 AND EmailAddress.status=4;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 48, 0);
