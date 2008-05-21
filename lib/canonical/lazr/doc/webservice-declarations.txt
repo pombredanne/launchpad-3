@@ -1074,7 +1074,7 @@ IMethod marked for export:
 There is a generic view class that can handle exceptions during web
 service requests.
 
-    >>> from canonical.lazr.rest.declarations import WebServiceExceptionView
+    >>> from canonical.lazr.rest.error import WebServiceExceptionView
 
 That view returns the exception message as content, and sets the
 result code to the one specified using the webservice_error() directive.

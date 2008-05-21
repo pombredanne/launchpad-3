@@ -167,4 +167,44 @@
         factory="canonical.lazr.rest.CollectionFieldMarshaller"
         />
 
+    <!-- System Errors -->
+    <view
+        for="zope.interface.common.interfaces.IException"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.SystemErrorView"
+        name="index.html"
+        />
+
+    <!-- Unauthorized -->
+    <view
+        for="zope.exceptions.IUnauthorized"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.UnauthorizedView"
+        name="index.html"
+        />
+
+    <!-- NotFound -->
+    <view
+        for="zope.publisher.interfaces.NotFound"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.NotFoundView"
+        name="index.html"
+        />
+
+    <!-- RequestExpired -->
+    <view
+        for="canonical.database.interfaces.IRequestExpired"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.RequestExpiredView"
+        name="index.html"
+        />
+
+    <!-- TimeoutError -->
+    <view
+        for="canonical.lazr.timeout.TimeoutError"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.RequestExpiredView"
+        name="index.html"
+        />
+
 </configure>

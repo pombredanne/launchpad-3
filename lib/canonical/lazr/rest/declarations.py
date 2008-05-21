@@ -27,17 +27,14 @@ __all__ = [
     'operation_parameters',
     'rename_parameters_as',
     'webservice_error',
-    'WebServiceExceptionView',
     ]
 
 import simplejson
 import sys
-import traceback
 import types
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
-from zope.exceptions.exceptionformatter import format_exception
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
@@ -47,7 +44,6 @@ from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 
 
-from canonical.config import config
 # XXX flacoste 2008-01-25 bug=185958:
 # canonical_url and ILaunchBag code should be moved into lazr.
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -582,32 +578,6 @@ def generate_collection_adapter(interface):
 
     protect_schema(factory, ICollection)
     return factory
-
-
-class WebServiceExceptionView:
-    """Generic view handling exceptions on the web service."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Generate the HTTP response describing the exception."""
-        response = self.request.response
-        response.setStatus(self.context.__lazr_webservice_error__)
-        response.setHeader('Content-Type', 'text/plain')
-        if getattr(self.request, 'oopsid', None) is not None:
-            response.setHeader('X-Lazr-OopsId', self.request.oopsid)
-
-        result = [str(self.context)]
-        show_tracebacks = (
-            getUtility(ILaunchBag).developer or
-            config.canonical.show_tracebacks)
-        if show_tracebacks:
-            result.append('\n\n')
-            result.append(traceback.format_exc())
-
-        return ''.join(result)
 
 
 class BaseResourceOperationAdapter(ResourceOperation):
