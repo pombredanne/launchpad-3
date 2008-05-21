@@ -26,6 +26,9 @@ dish. Users may comment on cookbooks and on individual recipes.
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
+    ...     # favorite_recipe.schema will be set to IRecipe once
+    ...     # IRecipe is defined.
+    ...     favorite_recipe = Object(schema=Interface)
 
     >>> class ICommentTarget(Interface):
     ...     comments = Attribute('List of comments about this object.')
@@ -54,24 +57,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     private = Bool(title=u"Whether the public can see this recipe.",
     ...                    default=False)
 
-Here's an authorization class that lets unauthenticated users see
-only public recipes.
-
-    >>> from canonical.launchpad.security import AuthorizationBase
-    >>> class PublicToAllOrPrivateToAuthenticated(AuthorizationBase):
-    ...     permission = 'launchpad.View'
-    ...     usedFor = IRecipe
-    ...     def checkAuthenticated(self, user):
-    ...         """Authenticated users can see all recipes."""
-    ...         return True
-    ...
-    ...     def checkUnauthenticated(self):
-    ...         """Unauthenticated users can only see public recipes."""
-    ...         return not self.obj.bug.private
-    >>> from zope.component import provideAdapter
-    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
-    >>> provideAdapter(PublicToAllOrPrivateToAuthenticated, [IRecipe],
-    ...     IAuthorization, 'launchpad.View')
+    >>> IAuthor['favorite_recipe'].schema = IRecipe
 
 Here's the interface for the 'set' objects that manage the authors,
 cookbooks, and dishes. The inconsistent naming is intentional.
@@ -104,14 +90,15 @@ cookbooks, and dishes. The inconsistent naming is intentional.
 Here are simple implementations of IAuthor, IComment, ICookbook, IDish,
 and IRecipe.
 
-    >>> from zope.interface import implements
     >>> from zope.security.checker import CheckerPublic
+    >>> from zope.interface import implements
     >>> from canonical.lazr.security import protect_schema
 
     >>> class Author:
     ...     implements(IAuthor)
     ...     def __init__(self, name):
     ...         self.name = name
+    ...         self.favorite_recipe = None
     >>> protect_schema(Author, IAuthor, write_permission=CheckerPublic)
 
     >>> class Comment(object):
@@ -181,6 +168,10 @@ Here are the "model objects" themselves:
 
     >>> COM1 = Comment(C2_D1, "Clear and concise.")
     >>> COM2 = Comment(C2, "A kitchen staple.")
+
+    >>> A1.favorite_recipe = C1_D1
+    >>> A2.favorite_recipe = C2_D2
+    >>> A3.favorite_recipe = C3_D2
 
 Here's a simple CookbookSet with a predefined list of cookbooks.
 
@@ -264,6 +255,56 @@ Finally, a simple DishSet with predefined dishes.
     ...         return None
     >>> protect_schema(DishSet, IDishSet)
     >>> provideUtility(DishSet(), IDishSet)
+
+
+== Security ==
+
+Here's an IAuthorization implementation for our business objects. Its
+lenient policy makes it possible, in general, for users to see the
+objects.
+
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> from zope.component import provideAdapter
+    >>> class OpenAuthorization:
+    ...     implements(IAuthorization)
+    ...     def __init__(self, context):
+    ...         pass
+    ...
+    ...     def checkUnauthenticated(self):
+    ...         return True
+    ...
+    ...     def checkAuthenticated(self, user):
+    ...         return True
+    >>> provideAdapter(OpenAuthorization, [IAuthor],
+    ...                IAuthorization, name='launchpad.View')
+    >>> provideAdapter(OpenAuthorization, [IComment],
+    ...                IAuthorization, name='launchpad.View')
+    >>> provideAdapter(OpenAuthorization, [ICookbook],
+    ...                IAuthorization, name='launchpad.View')
+    >>> provideAdapter(OpenAuthorization, [IDish],
+    ...                IAuthorization, name='launchpad.View')
+    >>> provideAdapter(OpenAuthorization, [IRecipe],
+    ...                IAuthorization, name='launchpad.View')
+
+Here's an IObjectPrivacy implementation for IRecipe. This will prevent
+unauthenticated users from seeing private recipes.
+
+    >>> from canonical.lazr.interfaces import IObjectPrivacy
+    >>> class RecipePrivacyAdapter:
+    ...    """Provides `IObjectPrivacy` for `IRecipe`."""
+    ...    implements(IObjectPrivacy)
+    ...
+    ...    def __init__(self, recipe):
+    ...        self.recipe = recipe
+    ...
+    ...    @property
+    ...    def is_private(self):
+    ...        """Return True if the recipe is private, otherwise False."""
+    ...        return self.recipe.private
+    >>> provideAdapter(RecipePrivacyAdapter, [IRecipe], IObjectPrivacy)
+
+
+== Navigation ==
 
 The web service uses the standard Navigation components to map URLs to
 components to publish (see navigation.txt) and the standard
