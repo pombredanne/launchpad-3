@@ -824,7 +824,8 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
-        email.person = requester.id
+        email.person = requester
+        email.account = requester.account
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make
