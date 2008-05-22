@@ -30,8 +30,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    AppServerLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+    AppServerLayer, DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -762,6 +762,7 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
+<<<<<<< TREE
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
@@ -774,6 +775,12 @@ special = {
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,
         ),
+=======
+    'google-service-stub.txt': LayeredDocFileSuite(
+            '../doc/google-service-stub.txt',
+            layer=GoogleServiceLayer,
+            ),
+>>>>>>> MERGE-SOURCE
     }
 
 
