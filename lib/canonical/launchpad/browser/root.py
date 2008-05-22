@@ -18,6 +18,7 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces import (
     IPillarNameSet, IBugSet, ILaunchpadSearch, IPersonSet, IQuestionSet,
     ISearchService)
+from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -60,19 +61,24 @@ class LaunchpadSearchView(LaunchpadFormView):
         self._pillar = None
         self._pages = None
         self.search_params = self._getDefaultSearchParams()
-        self._updateBatchParams()
         # The Search Action should always run.
         self.request.form['field.actions.search'] = 'Search'
 
     def _getDefaultSearchParams(self):
         """Return a dict of the search param set to their default state."""
         return {
-            'search_text' : None,
-            'start' : 0,
+            'search_text': None,
+            'start': 0,
             }
 
-    def _updateBatchParams(self):
-        """Update the search_params with the BatchNavigator params."""
+    def _updateSearchParams(self):
+        """Sanitize the search_params and add the BatchNavigator params."""
+        if self.search_params['search_text'] is not None:
+            search_text = self.search_params['search_text'].strip()
+            if search_text == '':
+                self.search_params['search_text'] = None
+            else:
+                self.search_params['search_text'] = search_text
         request_start = self.request.get('start', self.search_params['start'])
         try:
             start = int(request_start)
@@ -109,7 +115,7 @@ class LaunchpadSearchView(LaunchpadFormView):
     def has_matches(self):
         """Return True if something matched the search terms, or False."""
         kinds = (self.bug, self.question, self.pillar,
-                   self.person_or_team, self.pages)
+                 self.person_or_team, self.pages)
         for kind in kinds:
             if kind is not None:
                 return True
@@ -124,52 +130,42 @@ class LaunchpadSearchView(LaunchpadFormView):
         attribute.
         """
         self.search_params.update(**data)
-        if self.search_params['search_text'] == None:
+        self._updateSearchParams()
+        search_text = self.search_params['search_text']
+        if search_tex is None:
             return
 
-        numeric_token = self._getNumericToken()
+        numeric_token = self._getNumericToken(search_text)
         if numeric_token is not None:
-            self._bug = self._getBug(numeric_token)
-            self._question = self._getQuestion(numeric_token)
-        name_token = self._getNameToken()
-        if name_token is not None:
-            self._person_or_team = self._getPersonOrTeam(name_token)
-            self._pillar = self._getDistributionOrProductOrProject(name_token)
-        query_terms = self._getQueryTerms()
-        if query_terms is not None:
-            start = self.search_params['start']
-            self._pages = self.searchPages(query_terms, start=start)
+            self._bug = getUtility(IBugSet).get(numeric_token)
+            self._question = getUtility(IQuestionSet).get(numeric_token)
 
-    def _getNumericToken(self):
+        name_token = self._getNameToken(search_text)
+        if name_token is not None:
+            self._person_or_team = getUtility(IPersonSet).getByName(
+                name_token)
+            self._pillar = self._getDistributionOrProductOrProject(name_token)
+
+        start = self.search_params['start']
+        self._pages = self.searchPages(search_text, start=start)
+
+    def _getNumericToken(self, search_text):
         """Return the first group of numbers in the search text, or None."""
         numeric_pattern = re.compile(r'(\d+)')
-        match = numeric_pattern.search(self.search_params['search_text'])
+        match = numeric_pattern.search(search_text)
         if match is None:
             return None
         return match.group(1)
 
-    def _getBug(self, bug_id):
-        """Return the matching bug or None."""
-        return getUtility(IBugSet).get(bug_id)
-
-    def _getQuestion(self, question_id):
-        """Return the matching bug or None."""
-        return getUtility(IQuestionSet).get(question_id)
-
-    def _getNameToken(self):
+    def _getNameToken(self, search_text):
         """Return the search text as a Launchpad name.
 
-        Launchpad names may contain [0-9a-z-].
+        Launchpad names may contain ^[a-z0-9][a-z0-9\+\.\-]+$.
+        See `valid_name_pattern`.
         """
-        clean_pattern = re.compile(r'[^0-9a-z-]')
-        search_text = self.search_params['search_text']
-        clean_text = clean_pattern.sub(' ', search_text.lower())
-        name_parts = clean_text.strip().split()
-        return '-'.join(name_parts)
-
-    def _getPersonOrTeam(self, name):
-        """Return the matching person or team, or None."""
-        return getUtility(IPersonSet).getByName(name)
+        hypen_pattern = re.compile(r'[ _]')
+        name = hypen_pattern.sub('-', search_text.strip().lower())
+        return sanitize_name(name)
 
     def _getDistributionOrProductOrProject(self, name):
         """Return the matching distribution, product or project, or None."""
@@ -181,24 +177,14 @@ class LaunchpadSearchView(LaunchpadFormView):
         except LookupError:
             return None
 
-    def _getQueryTerms(self):
-        """Return the search text for Google, or None."""
-        search_text = self.search_params['search_text']
-        if search_text is None:
-            return None
-        query_terms = search_text.strip()
-        if query_terms == '':
-            return None
-        return query_terms
-
     def searchPages(self, query_terms, start=0):
-        """Return the 1-20 pages that match the query_terms.
+        """Return the up to 20 pages that match the query_terms, or None.
 
         :param query_terms: The unescaped terms to query Google.
-        :param start: The index of the page that starts the set of pages
-        :return: A GooglBatchNavigator or None
+        :param start: The index of the page that starts the set of pages.
+        :return: A GooglBatchNavigator or None.
         """
-        if query_terms in [None ,  '']:
+        if query_terms in [None , '']:
             return None
         google_search = getUtility(ISearchService)
         page_matches = google_search.search(terms=query_terms, start=start)
@@ -208,14 +194,14 @@ class LaunchpadSearchView(LaunchpadFormView):
 
 
 class WindowedList:
-    """A list that contains a subset of items (a window) of a virual list."""
+    """A list that contains a subset of items (a window) of a virtual list."""
 
     def __init__(self, window, start, total):
         """Create a WindowedList from a smaller list.
 
         :param window: The list with real items.
         :param start: An int, the list's starting index in the virtual list.
-        :param total: An inr, the total number of items in the virtual list.
+        :param total: An int, the total number of items in the virtual list.
         """
         self._window = window
         self._start = start
@@ -227,7 +213,7 @@ class WindowedList:
         return self._total
 
     def __getitem__(self, key):
-        """Return the key item or None if key belongs to the virual list."""
+        """Return the key item or None if key belongs to the virtual list."""
         # When the key is a slice, return a list of items.
         if isinstance(key, (tuple, slice)):
             if isinstance(key, (slice)):
@@ -235,7 +221,7 @@ class WindowedList:
             else:
                 indices = key
             return [self[index] for index in range(*indices)]
-        # If the index belongs the the window return a real item.
+        # If the index belongs to the window return a real item.
         if key >= self._start and key < self._end:
             window_index = key - self._start
             return self._window[window_index]

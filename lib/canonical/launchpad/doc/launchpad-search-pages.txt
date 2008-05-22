@@ -18,9 +18,9 @@ LaunchpadSearchView.
 
 == No matches ==
 
-There were no search text submitted the current request, there are no
+There was no search text submitted in the current request, there are no
 matches. Search text is required to perform a search. Note that
-field.actions.search is not a require param to call the Search Action.
+field.actions.search is not a required param to call the Search Action.
 The form always calls the search action.
 
     >>> print search_view.search_params['search_text']
@@ -42,8 +42,8 @@ matched by their id.
     ...     return search_view
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : '5'})
-    >>> search_view._getNumericToken()
+    ...     form={'field.search_text': '5'})
+    >>> search_view._getNumericToken(search_view.search_params['search_text'])
     u'5'
     >>> search_view.has_matches
     True
@@ -57,8 +57,8 @@ extracted may only match one kind of object. For example, there are
 more bugs than questions.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : '15'})
-    >>> search_view._getNumericToken()
+    ...     form={'field.search_text': '15'})
+    >>> search_view._getNumericToken(search_view.search_params['search_text'])
     u'15'
     >>> search_view.has_matches
     True
@@ -71,11 +71,11 @@ The text and punctuation in the search text is ignored, and only the
 first group of numbers is matched. For example a user searches for three
 questions by number ('Question #15, #7, and 5.'). Only the first number
 is used, and it matches a bug, not a question. The second and third
-numbers do match questions, but they are note used.
+numbers do match questions, but they are not used.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : 'Question #15, #7, and 5.'})
-    >>> search_view._getNumericToken()
+    ...     form={'field.search_text': 'Question #15, #7, and 5.'})
+    >>> search_view._getNumericToken(search_view.search_params['search_text'])
     u'15'
     >>> search_view.has_matches
     True
@@ -87,8 +87,9 @@ numbers do match questions, but they are note used.
 There is no error if a number cannot be extracted from the search text.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : 'fifteen'})
-    >>> print search_view._getNumericToken()
+    ...     form={'field.search_text': 'fifteen'})
+    >>> print search_view._getNumericToken(
+    ...     search_view.search_params['search_text'])
     None
     >>> search_view.has_matches
     False
@@ -105,8 +106,8 @@ to match the name to a pillar or person. a pillar is a distribution,
 product, or project. A person is a person or a team.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : 'launchpad'})
-    >>> search_view._getNameToken()
+    ...     form={'field.search_text': 'launchpad'})
+    >>> search_view._getNameToken(search_view.search_params['search_text'])
     u'launchpad'
     >>> search_view.has_matches
     True
@@ -116,12 +117,12 @@ product, or project. A person is a person or a team.
     u'Launchpad Developers'
 
 A launchpad name is constructed from the search text. The letters are
-are converted to lowercase. groups of spaces and punctuation are
-replaced with a hyphen.
+converted to lowercase. groups of spaces and punctuation are replaced
+with a hyphen.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : 'Gnome Terminal'})
-    >>> search_view._getNameToken()
+    ...     form={'field.search_text': 'Gnome Terminal'})
+    >>> search_view._getNameToken(search_view.search_params['search_text'])
     u'gnome-terminal'
     >>> search_view.has_matches
     True
@@ -135,9 +136,9 @@ the name of a pillar will none-the-less be tried. See the `Page searches`
 section for how this kind of search can return matches.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : "YAHOO! webservice's Python API."})
-    >>> search_view._getNameToken()
-    u'yahoo-webservice-s-python-api'
+    ...     form={'field.search_text': "YAHOO! webservice's Python API."})
+    >>> search_view._getNameToken(search_view.search_params['search_text'])
+    u'yahoo-webservices-python-api.'
     >>> search_view.has_matches
     False
     >>> print search_view.pillar
@@ -148,8 +149,8 @@ section for how this kind of search can return matches.
 Leading and trailing punctuation and whitespace are stripped.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : "~name12."})
-    >>> search_view._getNameToken()
+    ...     form={'field.search_text': "~name12"})
+    >>> search_view._getNameToken(search_view.search_params['search_text'])
     u'name12'
     >>> search_view.has_matches
     True
@@ -165,8 +166,8 @@ The view uses the GoogleSearchService to locate pages that match the
 search terms.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : " bug"})
-    >>> search_view._getQueryTerms()
+    ...     form={'field.search_text': " bug"})
+    >>> search_view.search_params['search_text']
     u'bug'
     >>> search_view.has_matches
     True
@@ -206,9 +207,9 @@ The second batch has only five matches in it, even though the batch size
 is 20. That is because there were only 25 matching pages.
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : "bug",
-    ...           'start' : '20'})
-    >>> search_view._getQueryTerms()
+    ...     form={'field.search_text': "bug",
+    ...           'start': '20'})
+    >>> search_view.search_params['search_text']
     u'bug'
     >>> search_view.has_matches
     True
@@ -292,9 +293,9 @@ or on the navigator object.
     'batch'
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text' : "bug",
-    ...           'start' : '0',
-    ...           'batch' : '100',})
+    ...     form={'field.search_text': "bug",
+    ...           'start': '0',
+    ...           'batch': '100',})
 
     >>> navigator = search_view.pages
     >>> navigator.currentBatch().size
