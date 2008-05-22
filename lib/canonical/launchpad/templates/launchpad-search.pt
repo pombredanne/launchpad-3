@@ -19,7 +19,7 @@
         method="get"
         enctype="multipart/form-data"
         accept-charset="UTF-8">
-    <label for="field.search_text">Search Launchpad:</label>
+    <label for="field.search_text">Search Launchpad.net:</label>
     <input
        id="field.search_text"
        class="textType"
@@ -27,6 +27,10 @@
        size="36"
        name="field.search_text"
        tal:attributes="value view/search_params/search_text"/>
+        <script type="text/javascript"
+                tal:define="script view/focusedElementScript"
+                tal:condition="script"
+                tal:content="structure script" />
     <input
        id="field.actions.search"
        name="field.actions.search"
@@ -35,52 +39,49 @@
        value="Search" />
   </form>
 
-  <tal:wants-results
-     condition="view/search_params/search_text">
+  <tal:wants-results condition="view/search_params/search_text">
 
     <div id="search-results"
 	 tal:condition="view/has_matches">
-      <ul class="exact-matches"
-	   tal:condition="python: view.pages.start > 0">
+      <ul class="exact-matches">
 	<!-- We on the first results page, so show the pillars. -->
 	<li
 	   class="bug"
 	   tal:condition="view/bug">
-	  The matching bug goes here.
+	  <tal:link replace="structure view/bug/fmt:link" />
 	</li>
 	<li
 	   class="question"
 	   tal:condition="view/question">
-	  The matching question goes here.
+	  <tal:link replace="structure view/question/fmt:link" />
 	</li>
 	<li
-	   class="pillar"
+	   class="project"
 	   tal:condition="view/pillar">
-	  The matching project goes here.
+	  <tal:link replace="structure view/pillar/fmt:link" />
 	</li>
 	<li
-	   class="person_or_team"
+	   class="person"
 	   tal:condition="view/person_or_team">
-	  The matching person or team goes here.
+	  <tal:link replace="structure view/person_or_team/fmt:link" />
 	</li>
       </ul>
 
-      <ul>
+      <ul class="site-matches" tal:condition="view/pages">
 	<li
 	   class="pagematch"
-	   tal:repeat="page view/pages">
+	   tal:repeat="page view/pages/batch">
 	  <a
 	     tal:attributes="href page/url"
-	     tal:content="page/title">A search result link</a>
-	  <p tal:content="structure page/summary">
+	     tal:content="structure page/title">A search result link</a>
+	  <p tal:content="structure page/summary" class="">
 	    A snippet of search result summary text.
 	  </p>
 	</li>
       </ul>
     </div>
 
-    <p class="no-results"
-       condition="not: view/has_matches">
+    <p class="no-results" tal:condition="not:view/has_matches">
       Your search did not return any results.
     </p>
 
