@@ -112,7 +112,7 @@ from canonical.launchpad.interfaces import (
     BranchPersonSearchContext, BranchPersonSearchRestriction,
     BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, ICountry, IEmailAddress,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
     IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
     IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
@@ -659,21 +659,20 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
     def all_related(self):
-        text = 'All related'
-        return Link(canonical_url(self.context, rootsite='code'),
-                    text, icon='branch')
+        text = 'related'
+        return Link(canonical_url(self.context, rootsite='code'), text)
 
     def owned(self):
-        text = 'Owned'
-        return Link('+ownedbranches', text, icon='branch')
+        text = 'owned'
+        return Link('+ownedbranches', text)
 
     def registered(self):
-        text = 'Registered'
-        return Link('+registeredbranches', text, icon='branch')
+        text = 'registered'
+        return Link('+registeredbranches', text)
 
     def subscribed(self):
-        text = 'Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
+        text = 'subscribed'
+        return Link('+subscribedbranches', text)
 
     def addbranch(self):
         if self.user is None:
@@ -3762,14 +3761,109 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchesView(BranchListingView):
+class PersonBranchCountMixin:
+    """A mixin class to return branch counts."""
+
+    @cachedproperty
+    def total_branch_count(self):
+        """Return the number of branches related to the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            self.context, visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def registered_branch_count(self):
+        """Return the number of branches registered by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.REGISTERED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def owned_branch_count(self):
+        """Return the number of branches owned by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.OWNED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def subscribed_branch_count(self):
+        """Return the number of branches subscribed to by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
+
+    @property
+    def user_is_the_context(self):
+        return self.user == self.context
+
+    def _getPluralText(self, count, singular, plural):
+        if count == 1:
+            return singular
+        else:
+            return plural
+
+    @property
+    def user_name_text(self):
+        if self.context == self.user:
+            return 'You have'
+        else:
+            return '%s has' % self.context.displayname
+
+    @property
+    def total_branch_text(self):
+        return self._getPluralText(
+            self.total_branch_count, _('branch'), _('branches'))
+
+    @property
+    def registered_branch_text(self):
+        return self._getPluralText(
+            self.registered_branch_count, _('has'), _('have'))
+
+    @property
+    def owned_branch_text(self):
+        return self._getPluralText(
+            self.owned_branch_count, _('is'), _('are'))
+
+    @property
+    def subscribed_branch_text(self):
+        return self._getPluralText(
+            self.subscribed_branch_count, _('branch'), _('branches'))
+
+    @property
+    def context_pronoun(self):
+        if self.context == self.user:
+            return 'you'
+        else:
+            return 'them'
+
+    @property
+    def context_pronoun2(self):
+        if self.context == self.user:
+            return 'you'
+        else:
+            return 'they'
+
+
+class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person."""
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
 
-class PersonRegisteredBranchesView(BranchListingView):
+class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
@@ -3782,7 +3876,7 @@ class PersonRegisteredBranchesView(BranchListingView):
             self.context, BranchPersonSearchRestriction.REGISTERED)
 
 
-class PersonOwnedBranchesView(BranchListingView):
+class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
@@ -3795,7 +3889,7 @@ class PersonOwnedBranchesView(BranchListingView):
             self.context, BranchPersonSearchRestriction.OWNED)
 
 
-class PersonSubscribedBranchesView(BranchListingView):
+class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
