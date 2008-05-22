@@ -187,7 +187,8 @@ class IBug(IMessageTarget, ICanBeMentored):
         CollectionField(
             title=_('BugTasks on this bug, sorted upstream, then '
                     'ubuntu, then other distroseriess.'),
-            value_type=Object(schema=IBugTask)))
+            value_type=Object(schema=IBugTask),
+            readonly=True))
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
@@ -199,7 +200,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
-            value_type=BugField())) # Will be specified later.
+            value_type=BugField()))
     attachments = Attribute("List of bug attachments.")
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
