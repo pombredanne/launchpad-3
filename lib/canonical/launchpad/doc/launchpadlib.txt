@@ -4,16 +4,16 @@ Just to show that we're actually talking to the appserver, first check to see
 if a specific user exists...
 
     >>> browser = Browser('foo.bar@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~stimpy')
+    >>> browser.open('http://launchpad.dev:8085/~stimpy')
     Traceback (most recent call last):
     ...
     HTTPError: HTTP Error 404: Not Found
 
 ...and when he doesn't, create him.
 
-    >>> browser.open('http://launchpad.dev/people/+newteam')
+    >>> browser.open('http://launchpad.dev:8085/people/+newteam')
     >>> browser.getControl(name='field.name').value = 'stimpy'
     >>> browser.getControl('Display Name').value = 'Stimpson J. Cat'
     >>> browser.getControl('Create').click()
     >>> browser.url
-    'http://launchpad.dev/~stimpy'
+    'http://launchpad.dev:8085/~stimpy'
