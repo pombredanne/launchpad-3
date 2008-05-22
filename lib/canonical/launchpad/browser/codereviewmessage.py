@@ -48,14 +48,14 @@ class CodeReviewMessageView(LaunchpadView):
 class IEditCodeReviewMessage(Interface):
     """Interface for use as a schema for CodeReviewMessage forms."""
 
+    subject = Title(title=_('Subject'), required=False)
+
+    comment = Text(title=_('Comment'), required=False)
+
     vote = Choice(
         title=_('Vote'), required=False, vocabulary=CodeReviewVote)
 
     vote_tag = TextLine(title=_('Tag'), required=False)
-
-    subject = Title(title=_('Subject'), required=False)
-
-    comment = Text(title=_('Comment'), required=False)
 
 
 class CodeReviewMessageAddView(LaunchpadFormView):
