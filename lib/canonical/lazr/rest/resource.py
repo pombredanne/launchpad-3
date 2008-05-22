@@ -108,7 +108,8 @@ class HTTPResource(URLDereferencingMixin):
     WADL_TYPE = 'application/vd.sun.wadl+xml'
     JSON_TYPE = 'application/json'
 
-    # An interesting representation value
+    # The representation value used when the client doesn't have
+    # authorization to see the real value.
     REDACTED_VALUE = 'tag:launchpad.net:2008:redacted'
 
     def __init__(self, context, request):
@@ -418,13 +419,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             repr_name = marshaller.representationName(name)
             try:
                 value = getattr(self.entry, name)
+                repr_value = marshaller.unmarshall(self.entry, name, value)
             except Unauthorized:
-                # The client doesn't have permission to see this field.
-                # Rather than denying them access to the resource altogether,
-                # use our special 'redacted' tag: URI for the field's value
-                data[repr_name] = self.REDACTED_VALUE
-                continue
-            repr_value = marshaller.unmarshall(self.entry, name, value)
+                # Either the client doesn't have permission to see
+                # this field, or it doesn't have permission to read
+                # its current value. Rather than denying the client
+                # access to the resource altogether, use our special
+                # 'redacted' tag: URI for the field's value.
+                repr_value = self.REDACTED_VALUE
             data[repr_name] = repr_value
         return data
 
@@ -566,11 +568,30 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # The client didn't try to set a value for this field.
                 continue
 
+            # Obtain the current value of the field, as it would be
+            # shown in an outgoing representation. This gives us an easy
+            # way to see if the client changed the value.
+            try:
+                current_value = marshaller.unmarshall(
+                    self.entry, name, getattr(self.entry, name))
+            except Unauthorized:
+                # The client doesn't have permission to see the old
+                # value. That doesn't necessarily mean they can't set
+                # it to a new value, but it does mean we have to
+                # assume they're changing it rather than see for sure
+                # by comparing the old value to the new.
+                current_value = self.REDACTED_VALUE
+
             # The client tried to set a value for this field. Marshall
-            # it, validate it, and move it from the client changeset
-            # to the validated changeset.
+            # it, validate it, and (if it's different from the current
+            # value) move it from the client changeset to the
+            # validated changeset.
             original_value = changeset[repr_name]
             del(changeset[repr_name])
+            if original_value == current_value == self.REDACTED_VALUE:
+                # The client can't see the field's current value, and
+                # isn't trying to change it. Skip to the next field.
+                continue
             try:
                 value = marshaller.marshall(original_value)
             except (ValueError, ValidationError), e:
@@ -590,12 +611,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
                     continue
-
-            # Obtain the current value of the field, as it would be
-            # shown in an outgoing representation. This gives us an easy
-            # way to see if the client changed the value.
-            current_value = marshaller.unmarshall(
-                self.entry, name, getattr(self.entry, name))
 
             change_this_field = True
             # Read-only attributes and collection links can't be
