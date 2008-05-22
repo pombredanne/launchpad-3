@@ -70,18 +70,18 @@ results in a 400 error.
 == Visibility ==
 
 A user without permission to see items in a collection will, of
-course, not see those items. The admin user can see all bugs on the
+course, not see those items. The 'salgado' user can see all bugs on the
 site.
 
-  >>> admin_output = webservice.get("/beta/bugs?ws_size=50").jsonBody()
-  >>> admin_output['total_size']
+  >>> salgado_output = webservice.get("/beta/bugs?ws_size=50").jsonBody()
+  >>> salgado_output['total_size']
   15
-  >>> len(admin_output['entries'])
+  >>> len(salgado_output['entries'])
   15
 
 But the 'no-priv' user can't see bug number 14, which is private.
 
-  >>> nopriv_output = user_webservice.get(
+  >>> nopriv_output = nopriv_full_rw_webservice.get(
   ...     "/beta/bugs?ws_size=100").jsonBody()
   >>> nopriv_output['total_size']
   14
@@ -92,7 +92,7 @@ Things are a little different for a user who has permission to see
 private data, but is using an OAuth key that restricts the client to
 operating on public data.
 
-  >>> public_output = public_readonly_webservice.get(
+  >>> public_output = salgado_public_rw_webservice.get(
   ...     "/beta/bugs?ws_size=50").jsonBody()
   >>> public_output['total_size']
   15

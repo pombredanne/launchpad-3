@@ -58,10 +58,16 @@ class AuthorizationBase:
 
 
 class ViewByLoggedInUser(AuthorizationBase):
+    """The default ruleset for the launchpad.View permission.
+
+    By default, any logged-in user can see anything. More restrictive
+    rulesets are defined in other IAuthorization implementations.
+    """
     permission = 'launchpad.View'
     usedfor = Interface
 
     def checkAuthenticated(self, user):
+        """Any authenticated user can see this object."""
         return True
 
 

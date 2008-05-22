@@ -1167,10 +1167,10 @@ unauthenticated users. For demonstration purposes, the recipe for
 private. An unauthorized attempt to GET this resource will result in
 an error.
 
-    >>> recipe_url = quote(
+    >>> private_recipe_url = quote(
     ...     "/beta/cookbooks/James Beard's American Cookery/recipes/"
     ...     "Baked beans")
-    >>> get_request = create_web_service_request(recipe_url)
+    >>> get_request = create_web_service_request(private_recipe_url)
     >>> recipe_resource = get_request.traverse(app)
     Traceback (most recent call last):
     ...
@@ -1251,7 +1251,7 @@ Finally, you can't set an attribute to a value that you wouldn't have
 permission to see:
 
     >>> author['favorite_recipe_link'] = (
-    ...     'http://api.launchpad.dev' + recipe_url)
+    ...     'http://api.launchpad.dev' + private_recipe_url)
     >>> body = simplejson.dumps(author)
     >>> put_request = create_web_service_request(
     ...     beard_url, body=body, environ=headers, method='PUT')
