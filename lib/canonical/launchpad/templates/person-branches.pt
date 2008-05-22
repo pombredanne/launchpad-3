@@ -28,52 +28,36 @@
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
   <div id="no-branch-message" tal:condition="not: view/total_branch_count">
-
-    <p tal:condition="not: view/user_is_the_context">
+    <p>
       There are no branches related to
       <tal:user replace="context/displayname"/> today.
     </p>
-
-    <p tal:condition="view/user_is_the_context">
-      You have no related branches today.
-    </p>
-
   </div>
 
   <tal:has-branches condition="view/total_branch_count">
 
-    <div id="application-summary">
+    <div id="page-summary">
       <p>
-        <tal:user replace="view/user_name_text"/>
-        <strong tal:content="view/total_branch_count">100</strong>
         <tal:link
             define="link context/menu:branches/all_related"
             replace="structure link/render"
-            />
-        <tal:branch-text replace="view/total_branch_text">
-          branches</tal:branch-text>, of which
-        <strong tal:content="view/registered_branch_count">100</strong>
-        <tal:branch-text replace="view/registered_branch_text">
-        have</tal:branch-text> been
+            />:
+        <strong class="count" tal:content="view/total_branch_count">100</strong>
+        (<strong class="count" tal:content="view/registered_branch_count">100</strong>
         <tal:link
             define="link context/menu:branches/registered"
             replace="structure link/render"
-            /> by <tal:user replace="view/context_pronoun">them</tal:user>,
-        <strong tal:content="view/owned_branch_count">100</strong>
-        <tal:branch-text replace="view/owned_branch_text">
-          are</tal:branch-text>
+            />,
+        <strong class="count" tal:content="view/owned_branch_count">100</strong>
         <tal:link
             define="link context/menu:branches/owned"
             replace="structure link/render"
-            /> by <tal:user replace="view/context_pronoun">them</tal:user>,
-        and <tal:user replace="view/context_pronoun2">they</tal:user> have
+            />,
+        <strong class="count" tal:content="view/subscribed_branch_count">100</strong>
         <tal:link
             define="link context/menu:branches/subscribed"
             replace="structure link/render"
-            /> to
-        <strong tal:content="view/subscribed_branch_count">100</strong>
-        <tal:branch-text replace="view/subscribed_branch_text">
-        branches</tal:branch-text>.
+            />)
       </p>
     </div>
 

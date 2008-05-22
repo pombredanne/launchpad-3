@@ -659,7 +659,8 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
     def all_related(self):
-        return Link(canonical_url(self.context, rootsite='code'), 'related')
+        return Link(canonical_url(self.context, rootsite='code'),
+                    'Related branches')
 
     def owned(self):
         return Link('+ownedbranches', 'owned')
@@ -3758,7 +3759,7 @@ class PersonAnswersMenu(ApplicationMenu):
 
 
 class PersonBranchCountMixin:
-    """A mixin class to return branch counts and related text."""
+    """A mixin class for person branch listings."""
 
     @cachedproperty
     def total_branch_count(self):
@@ -3799,57 +3800,6 @@ class PersonBranchCountMixin:
         if self.user is None:
             return False
         return self.user.inTeam(self.context)
-
-    @property
-    def user_is_the_context(self):
-        return self.user == self.context
-
-    def _getPluralText(self, count, singular, plural):
-        if count == 1:
-            return singular
-        else:
-            return plural
-
-    @property
-    def user_name_text(self):
-        if self.user_is_the_context:
-            return 'You have'
-        else:
-            return '%s has' % self.context.displayname
-
-    @property
-    def total_branch_text(self):
-        return self._getPluralText(
-            self.total_branch_count, _('branch'), _('branches'))
-
-    @property
-    def registered_branch_text(self):
-        return self._getPluralText(
-            self.registered_branch_count, _('has'), _('have'))
-
-    @property
-    def owned_branch_text(self):
-        return self._getPluralText(
-            self.owned_branch_count, _('is'), _('are'))
-
-    @property
-    def subscribed_branch_text(self):
-        return self._getPluralText(
-            self.subscribed_branch_count, _('branch'), _('branches'))
-
-    @property
-    def context_pronoun(self):
-        if self.user_is_the_context:
-            return 'you'
-        else:
-            return 'them'
-
-    @property
-    def context_pronoun2(self):
-        if self.user_is_the_context:
-            return 'you'
-        else:
-            return 'they'
 
 
 class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
