@@ -871,32 +871,6 @@ parameters accepted by the operation.
 
 The call() method calls the underlying method and return its result.
 
-    >>> class FakeResponse(object):
-    ...     """Simple response wrapper object."""
-    ...     def __init__(self):
-    ...         self.status = 200
-    ...         self.headers = {}
-    ...
-    ...     def setStatus(self, new_status):
-    ...         self.status = new_status
-    ...
-    ...     def setHeader(self, name, value):
-    ...         self.headers[name] = value
-
-    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> class FakeRequest(object):
-    ...     """Simple request object for testing purpose."""
-    ...     # This makes us eligible for get_current_browser_request()
-    ...     implements(IHTTPApplicationRequest)
-    ...
-    ...     def __init__(self):
-    ...         self.response = FakeResponse()
-    ...         self.principal = None
-    ...         self.interaction = None
-    ...
-    ...     def getApplicationURL(self):
-    ...         return "http://api.example.org"
-
     >>> class BookSetOnSteroids(BookSet):
     ...     implements(IBookSetOnSteroids)
     ...
@@ -908,6 +882,7 @@ The call() method calls the underlying method and return its result.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
 
+    >>> from canonical.lazr.testing.webservice import FakeRequest
     >>> request = FakeRequest()
     >>> read_method_adapter = read_method_adapter_factory(
     ...     BookSetOnSteroids(), request)
