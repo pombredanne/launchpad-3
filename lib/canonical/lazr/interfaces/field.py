@@ -20,14 +20,14 @@ class IFieldMarshaller(Interface):
 
         :param field_name: The name of the field within the entry.
         :return: The name to give this field when representing it in a
-                 JSON hash.
+            JSON hash.
         """
 
     def marshall_from_json_data(value):
         """Transform the given data value into an object.
 
         :param value: A value obtained by deserializing a string into
-        a JSON data structure.
+            a JSON data structure.
         """
 
     def marshall_from_string(value):
@@ -40,6 +40,5 @@ class IFieldMarshaller(Interface):
         :param field_name: The name of the field within the entry.
         :value: The object value of the field.
 
-        :return: The value to give when representing the field
-                 in a JSON hash.
-"""
+        :return: The value to give when representing the field in a JSON hash.
+        """
