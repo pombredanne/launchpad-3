@@ -373,9 +373,8 @@ available for deletion because it contains a PUBLISHED binary.
       foo-bin_i386.deb (18 bytes)
       foo.dsc (28 bytes)
 
-Although the list of 'deletable' sources can be filtered by
-status. The default filter is 'Any Status', but the user can modify it
-anytime.
+The list of 'deletable' sources can be filtered by status. The default
+filter is 'Any Status', but the user can choose another.
 
     >>> print user_browser.getControl(name='field.status_filter').value
     ['any']
