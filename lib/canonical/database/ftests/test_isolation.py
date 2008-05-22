@@ -95,7 +95,8 @@ class TestIsolation(unittest.TestCase):
     def test_script(self):
         # Ensure that things work in stand alone scripts too, in case out
         # test infrustructure is faking something.
-        script = os.path.join(os.path.dirname(__file__), 'script_isolation.py')
+        script = os.path.join(
+                os.path.dirname(__file__), 'script_isolation.py')
         cmd = [sys.executable, script]
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
