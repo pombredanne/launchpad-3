@@ -130,7 +130,6 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    title = 'PO File'
     links = ('description', 'translate', 'upload', 'download')
 
 

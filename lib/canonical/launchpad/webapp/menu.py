@@ -391,11 +391,6 @@ class NavigationMenu(MenuBase):
 
     title = None
 
-    def initialize(self):
-        if self.title is None:
-            raise AssertionError(
-                'NavigationMenu subclasses must define a title.')
-
     def _get_link(self, name):
         return IFacetLink(
             super(NavigationMenu, self)._get_link(name))

@@ -396,7 +396,8 @@ def print_navigation_links(content):
         print "No navigation links"
         return
     title = navigation_links.find('label')
-    print '= %s =' % title.string
+    if title is not None:
+        print '= %s =' % title.string
     entries = navigation_links.findAll('li')
     for entry in entries:
         if entry.a:

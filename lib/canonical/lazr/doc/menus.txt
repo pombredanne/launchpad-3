@@ -349,7 +349,7 @@ implementations. It cannot be used directly.
     ...     pass
     Traceback (most recent call last):
     ...
-    AssertionError: NavigationMenu subclasses must define a title.
+    AssertionError: Subclasses of NavigationMenu must provide self.links
 
 We will use three subclasses to demonstrate how navigation menus are
 associated with content objects. Each menu defines a 'usedfor'
@@ -392,7 +392,6 @@ menu though one of its links.
     >>> class RecipeMenu(NavigationMenu):
     ...     usedfor = IRecipe
     ...     facet = 'cookery'
-    ...     title = 'Recipe'
     ...     links = ('summary', 'journal')
     ...
     ...     def summary(self):
@@ -410,7 +409,6 @@ menu though one of its links.
     >>> class RecipeQuestionsMenu(NavigationMenu):
     ...     usedfor = IRecipe
     ...     facet = 'questions'
-    ...     title = 'Recipe questions'
     ...     links = ('all_questions', 'answered')
     ...
     ...     def all_questions(self):
@@ -503,21 +501,15 @@ content object and it has all facet links enabled.
 All menus descend from MenuBase which impose a number of requirements
 upon its descendants.
 
-A menu must define a title and a tuple of links that it manages. When
-the title or links is not defined, or links is not of the right type,
-an error is raised.
+The menu title is optional, but a good idea when used for tabs related
+to a view that will be displayed in addition to the tabs related to the
+context.
+
+A menu must define a tuple of links that it manages. When the links are
+not defined, or links is not of the right type, an error is raised.
 
     >>> class BogusMenu(NavigationMenu):
     ...     usedfor = IRecipe
-
-    >>> summarise_links(BogusMenu(recipe))
-    Traceback (most recent call last):
-     ...
-    AssertionError: NavigationMenu subclasses must define a title.
-
-    >>> class BogusMenu(NavigationMenu):
-    ...     usedfor = IRecipe
-    ...     title = 'Bogus menu'
 
     >>> summarise_links(BogusMenu(recipe))
     Traceback (most recent call last):
@@ -971,23 +963,20 @@ NavigationMenus used in the previous TALES section.
     ...     def initialize(self):
     ...         requested_view = get_current_view(self.request)
     ...         facet = get_facet(requested_view)
-    ...         menu = queryAdapter(self.context, IFacetMenu)
+    ...         menu = self.getMenu(facet)
     ...         menu.request = self.request
     ...         self.links = sorted(
     ...             [link for link in menu.iterlinks() if link.enabled],
     ...             key=operator.attrgetter('sort_key'))
+    ...
+    ...     def getMenu(self, facet=None):
+    ...         return queryAdapter(self.context, IFacetMenu)
 
-    >>> class NavigationMenuView(LaunchpadView):
-    ...     template = ViewPageTemplateFile(template_file.name)
-    ...     def initialize(self):
-    ...         requested_view = get_current_view(self.request)
-    ...         facet = get_facet(requested_view)
+    >>> class NavigationMenuView(FacetMenuView):
+    ...     def getMenu(self, facet=None):
     ...         menu = queryAdapter(self.context, INavigationMenu, name=facet)
     ...         self.title = menu.title
-    ...         menu.request = self.request
-    ...         self.links = sorted(
-    ...             [link for link in menu.iterlinks() if link.enabled],
-    ...             key=operator.attrgetter('sort_key'))
+    ...         return menu
 
     # NavigationMenuView is normally registered as an IPathAdapter in ZCML.
     # This approximates what is done by the code:
@@ -1024,7 +1013,6 @@ available (as can be seen in the next example).
     >>> recipe_menu_view.initialize()
     >>> print recipe_menu_view()
     <div>
-      <label>Recipe</label>
       <ul>
         <li>
           <a href=".../joy-of-cooking/fried-spam/+index"
