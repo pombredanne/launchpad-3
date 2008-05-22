@@ -45,7 +45,7 @@ CREATE TABLE AccountPassword (
 
 INSERT INTO AccountPassword(id, account, password)
 SELECT id, id, password FROM Person
-WHERE password IS NOT NULL AND account_status <> 10; -- Not 'No account'
+WHERE password IS NOT NULL AND teamowner IS NULL;
 
 
 -- We just inserted a load of records without using the primary key
