@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, IAccountSet,
-    AccountCreationRationale)
+    AccountCreationRationale, InvalidEmailAddress)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -105,6 +105,7 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import (
     public_person_validator, visibility_validator)
@@ -2231,6 +2232,14 @@ class PersonSet:
             displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
+
+        # This check is also done in EmailAddressSet.new() and also
+        # generate_nick(). We repeat it here as some call sites want
+        # InvalidEmailAddress rather than NicknameGenerationError that
+        # generate_nick() will raise.
+        if not valid_email(email):
+            raise InvalidEmailAddress(
+                "%s is not a valid email address." % email)
 
         if name is None:
             name = nickname.generate_nick(email)
