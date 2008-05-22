@@ -29,4 +29,4 @@ class Launchpad:
             self.credentials.access_token == 'hgm2VK35vXD6rLg5pxWw'):
             self.people = ['jim']
         else:
-            raise NotAuthenticatedError('BADNESS')
+            raise NotAuthenticatedError

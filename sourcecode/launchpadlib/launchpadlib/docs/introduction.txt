@@ -142,7 +142,7 @@ If you use the wrong access token, you also get an exception.
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...
-    NotAuthenticatedError: BADNESS
+    NotAuthenticatedError
 
 
 == Clean up ==
