@@ -8,7 +8,7 @@
      tal:condition="context/commercial_subscription_is_due">
   <img style="padding-top: 1em; float: right" alt="" src="/@@/warning-large" />
   <h2>
-    Purchasing a Subscription is Required
+    Purchasing a subscription is required
   </h2>
   <div tal:condition="context/commercial_subscription/date_expires | nothing">
     <strong>Current subscription expires
@@ -22,7 +22,7 @@
     hosting. You have two options to continue using Launchpad
     for this project.
     <ul>
-      <li><a href="+purchase-subscription">Purchase a subscription</a></li>
+      <li><a href="+purchase-subscription">Purchase a subscription.</a></li>
       <li><a href="mailto:feedback@launchpad.net">Contact us</a>
           about changing your license.
       </li>
@@ -30,7 +30,7 @@
     To qualify for free hosting, the project's licensing must meet the
     following requirements:
     <ul>
-      <li>Must include source code.</li>
+      <li>Must make the source code freely available.</li>
       <li>Must allow modification and distribution of modified copies under
           the same license.</li>
       <li>Must allow redistribution.</li>
@@ -43,8 +43,9 @@
       <li>Must not contaminate other software licenses.</li>
     </ul>
 
-    <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
-      View Licensing Policies
+    <a tal:define="config modules/canonical.config/config"
+       tal:attributes="href config/commercial/licensing_policy_url">
+      View licensing policies
     </a>
   </div>
 </div>

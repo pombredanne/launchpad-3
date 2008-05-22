@@ -4,15 +4,15 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-requires-subscription"
+<div class="portlet" id="portlet-missing-license"
      tal:condition="not: context/licenses">
   <img style="padding-top: 1em; float: right" alt="" src="/@@/warning-large" />
   <h2>
-    Missing License Information
+    Missing license information
   </h2>
   <div>
     This project needs to have its licensing information entered.
-    You can do this by clicking on the &ldquo;Change Details&rdquo; link
+    You can do this by clicking on the &ldquo;Change details&rdquo; link
     and selecting the appropriate license checkboxes.
   </div>
 </div>

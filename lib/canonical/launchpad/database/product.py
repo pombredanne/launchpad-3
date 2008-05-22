@@ -249,12 +249,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         If True, display subscription warning to project owner.
         """
-        if not self.is_permitted:
-            # The project does not qualify for free hosting,
-            # and it doesn't have an active subscription.
-            return True
-        elif self.commercial_subscription is None:
-            # The project doesn't have a subscription yet.
+        if self.qualifies_for_free_hosting:
+            return False
+        elif (self.commercial_subscription is None
+              or not self.commercial_subscription.is_active):
+            # The project doesn't have an active subscription.
             return True
         else:
             warning_date = (self.commercial_subscription.date_expires
@@ -297,6 +296,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         old_licenses = set(self.licenses)
         if licenses == old_licenses:
             return
+        # Clear the license_reviewed flag if the license changes.
+        self.license_reviewed = False
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute
@@ -315,6 +316,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductLicense(product=self, license=license)
 
     licenses = property(_getLicenses, _setLicenses)
+
+    def _set_license_info(self, value):
+        if not self._SO_creating and value != self.license_info:
+            # Clear the license_reviewed flag if the license changes.
+            self.license_reviewed = False
+        self._SO_set_license_info(value)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""

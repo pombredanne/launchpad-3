@@ -119,3 +119,63 @@ the homepage:
     >>> user_browser.getLink('Subscribe to bug mail').click()
     >>> print user_browser.url
     http://launchpad.dev/firefox/+subscribe
+
+= Licensing alerts =
+
+If the project doesn't have a license, a portlet is displayed
+to direct the owner to set a license.
+
+    >>> from canonical.launchpad.interfaces import License
+    >>> firefox = Product.selectOneBy(name="firefox")
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'portlet-requires-subscription')
+    None
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'portlet-missing-license')
+    <div...Missing license information...</div>
+
+A non-owner does not see the warning that the project
+is missing licensing information.
+
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(user_browser.contents,
+    ...                      'portlet-missing-license')
+    None
+
+If the project doesn't qualify for free hosting, or if it doesn't
+have much time left on its commercial subscription, a portlet
+is displayed to direct the owner to purchase a subscription.
+
+    >>> firefox.licenses = [License.OTHER_PROPRIETARY]
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'portlet-requires-subscription')
+    <div...Purchasing a subscription is required...</div>
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'portlet-missing-license')
+    None
+
+A non-owner does not see that a commercial subscription is due.
+
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(user_browser.contents,
+    ...                      'portlet-requires-subscription')
+    None
+
+If the project qualifies for free hosting, neither portlet
+is displayed.
+
+    >>> firefox.licenses = [License.GNU_GPL_V2]
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'portlet-requires-subscription')
+    None
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'portlet-missing-license')
+    None
