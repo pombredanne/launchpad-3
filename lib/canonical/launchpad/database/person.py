@@ -62,11 +62,11 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, IGPGKeySet, IHWSubmissionSet, IHasIcon, IHasLogo,
     IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
     ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
-    IMailingListSet, INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress,
-    InvalidName, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
-    IProduct, IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    IMailingListSet, INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson,
+    IPersonSet, IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
+    ISalesforceVoucherProxy, ISignedCodeOfConductSet, ISourcePackageNameSet,
+    ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet, InvalidEmailAddress,
+    InvalidName, JoinNotAllowed, LoginTokenType,
     MailingListAutoSubscribePolicy, NameAlreadyTaken, PackagePublishingStatus,
     PersonCreationRationale, PersonVisibility, PersonalStanding,
     PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
@@ -248,6 +248,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    commercial_vouchers = None
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -746,7 +748,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
-        # import here to work around a circular import problem
+        # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
 
         if product_name is None or product_name == '+junk':
@@ -941,6 +943,34 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             quoted_names, prejoins=['distribution', 'project', 'product'],
             orderBy=['PillarName.distribution', 'PillarName.project',
                      'PillarName.product'])
+
+    def getOwnedProjects(self):
+        """See `IPerson`."""
+        # Import here to work around a circular import problem.
+        from canonical.launchpad.database import Product
+        query = """
+            SELECT DISTINCT Product.id
+            FROM product, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND owner = teamparticipation.team
+            """ % sqlvalues(person=self)
+        results = Product.select("""id IN (%s)""" % query,
+                                 orderBy=['displayname'])
+        return results
+
+    def getCommercialSubscriptionVouchers(self):
+        if self.commercial_vouchers is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
+            self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
+            self.unredeemed_commercial_vouchers = []
+            self.redeemed_commercial_vouchers = []
+            for voucher in self.commercial_vouchers:
+                if voucher.status == 'UNREDEEMED':
+                    self.unredeemed_commercial_vouchers.append(voucher)
+                else:
+                    self.redeemed_commercial_vouchers.append(voucher)
+        return (self.unredeemed_commercial_vouchers,
+                self.redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName

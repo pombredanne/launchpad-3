@@ -63,3 +63,14 @@ class ICommercialSubscription(Interface):
     is_active = Bool(
         title=_('Active'),
         description=_("Whether this subscription is active."))
+
+
+#class ICommercialSubscriptionList(Interface):
+#    """The controls for a voucher listing."""
+#    sourcepackagename = Choice(
+#        title=_("Source Package Name"), required=False,
+#        description=_("The source package in which the bug occurs. "
+#        "Leave blank if you are not sure."),
+#        vocabulary='SourcePackageName')
+#    distribution = Choice(
+#        title=_("Distribution"), required=False, vocabulary='Distribution')

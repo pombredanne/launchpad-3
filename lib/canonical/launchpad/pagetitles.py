@@ -952,6 +952,9 @@ person_translations = ContextDisplayName('Translations made by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
+person_vouchers = ContextDisplayName(
+    'Commercial subscription vouchers for %s')
+
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))

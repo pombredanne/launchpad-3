@@ -283,6 +283,14 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    name="+vouchers"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonVouchersView"
+    template="../templates/person-vouchers.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+table-specworkload"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonSpecWorkLoadView"

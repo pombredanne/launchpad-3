@@ -57,6 +57,7 @@ __all__ = [
     'PersonTeamBranchesView',
     'PersonTranslationView',
     'PersonView',
+    'PersonVouchersView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'RestrictedMembershipsPersonView',
@@ -83,7 +84,6 @@ import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 import pytz
-import subprocess
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
@@ -108,25 +108,21 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort,
-    BranchPersonSearchContext, BranchPersonSearchRestriction,
-    BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
-    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
-    IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
-    IPOTemplateSet, IPasswordEncryptor, IPerson,
-    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
+    AccountStatus, BranchListingSort, BranchPersonSearchContext,
+    BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
+    CannotUnsubscribe, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    EmailAddressStatus, GPGKeyNotFoundError, ICountry, IEmailAddress,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
+    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
+    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
+    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership,
-    ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, MailingListAutoSubscribePolicy,
-    NotFoundError, PersonCreationRationale,
-    PersonVisibility, QuestionParticipation, SSHKeyType,
-    SpecificationFilter, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType,
+    MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
+    PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -1783,6 +1779,64 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+commentedbugs"
 
 
+class PersonVouchersView(LaunchpadFormView):
+    """Form for displaying and redeeming commercial subscription vouchers."""
+
+    custom_widget('vouchers', LaunchpadRadioWidget,
+                  orientation='vertical')
+    custom_widget('projects', LaunchpadRadioWidget,
+                  orientation='vertical')
+
+    def setUpFields(self):
+        self.form_fields = (self.createVoucherField() +
+                            self.createProjectField())
+
+    def createVoucherField(self):
+        unredeemed, redeemed = (
+            self.context.getCommercialSubscriptionVouchers())
+        terms = []
+        for voucher in unredeemed:
+            text = "%s (%d months)" % (voucher.id, voucher.term)
+            terms.append(SimpleTerm(voucher, voucher.id, text))
+        voucher_vocabulary = SimpleVocabulary(terms)
+        field = FormFields(Choice(__name__='vouchers',
+                                  title=_('Unredeemed vouchers'),
+                                  vocabulary=voucher_vocabulary,
+                                  required=True),
+                           custom_widget=self.custom_widgets['vouchers'],
+                           render_context=self.render_context)
+        return field
+
+    def createProjectField(self):
+        terms = []
+        for project in self.owned_commercial_projects:
+            text = '<a href="%s">%s</a>' % (
+                canonical_url(project), project.displayname)
+            terms.append(SimpleTerm(project, project.name, text))
+        project_vocabulary = SimpleVocabulary(terms)
+        field = FormFields(
+            Choice(__name__='projects',
+                   title=_('Commercial projects owned by %s' %
+                           self.context.displayname),
+                   vocabulary=project_vocabulary,
+                   required=True),
+            custom_widget=self.custom_widgets['projects'],
+            render_context=self.render_context)
+        return field
+
+    @property
+    def xinitial_values(self):
+        return dict(projects=self.owned_commercial_projects[0],
+                    vouchers='V456')
+
+    @cachedproperty
+    def owned_commercial_projects(self):
+        commercial_projects = []
+        for project in self.context.getOwnedProjects():
+            if project.requires_commercial_subscription:
+                commercial_projects.append(project)
+        return commercial_projects
+
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
@@ -2466,20 +2520,6 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         if not (kind and keytext and comment):
             self.error_message = 'Invalid public key'
-            return
-
-        process = subprocess.Popen(
-            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey)
-        if 'compromised' in out.lower():
-            self.error_message = (
-                'This key is known to be compromised due to a security flaw '
-                'in the software used to generate it, so it will not be '
-                'accepted by Launchpad. See the full '
-                '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
-                'Notice</a> for further information and instructions on how '
-                'to generate another key.')
             return
 
         if kind == 'ssh-rsa':
@@ -3765,7 +3805,6 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
-    no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
 
@@ -3773,7 +3812,7 @@ class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
+    no_sort_by = (BranchListingSort.REGISTRANT,)
 
     @property
     def branch_search_context(self):
@@ -3786,7 +3825,7 @@ class PersonOwnedBranchesView(BranchListingView):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
+    no_sort_by = (BranchListingSort.REGISTRANT,)
 
     @property
     def branch_search_context(self):
@@ -3799,7 +3838,6 @@ class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT,)
 
     @property
     def branch_search_context(self):
