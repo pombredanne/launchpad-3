@@ -864,7 +864,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     def convert_action(self, action, data):
         getUtility(ICodeImportSet).newFromProductSeries(self.context)
         self.request.response.addInfoNotification(
-            'Nyaa nyaa.')
+            'Import converted to new style.')
 
     @property
     def next_url(self):

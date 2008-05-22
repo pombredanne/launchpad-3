@@ -79,7 +79,7 @@
 <tal:block tal:condition="context/rcstype">
 
   <tal:converted condition="context/new_style_import">
-    <p>
+    <p id="new-style-import-message">
       The details of the import associated with this series can now be
       seen on the <a tal:attributes="href context/new_style_import/branch/fmt:url">
 	branch page</a>.
