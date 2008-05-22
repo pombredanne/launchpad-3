@@ -68,7 +68,7 @@ class URLDereferencingMixin:
         traversal code to dereference a URL into a published object.
 
         :param url: The URL to a resource.
-        :raise NotFoundError: If the URL does not designate a
+        :raise NotFound: If the URL does not designate a
             published object.
         """
         (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
@@ -99,7 +99,10 @@ class URLDereferencingMixin:
 
 
 class SimpleFieldMarshaller:
-    """A marshaller that returns the same value it's served."""
+    """A marshaller that returns the same value it's served.
+
+    This implementation is meant to be subclassed.
+    """
     implements(IFieldMarshaller)
 
     def __init__(self, field, request):
@@ -107,11 +110,19 @@ class SimpleFieldMarshaller:
         self.request = request
 
     def marshall_from_json_data(self, value):
-        "Do nothing to the value."
+        """See `IFieldMarshaller`.
+
+        This method returns the value unchanged. It will only work for
+        basic python types handled by simplejson.
+        """
         return value
 
     def marshall_from_string(self, value):
-        "Make sure the value is a string and then call a hook method."
+        """See `IFieldMarshaller`.
+
+        Make sure the value is a string and then _marshall_from_string_method
+        hook method.
+        """
         if value is None:
             return None
         assert isinstance(value, basestring), 'Marshalling a non-string'
@@ -124,11 +135,17 @@ class SimpleFieldMarshaller:
         return value
 
     def representationName(self, field_name):
-        "Return the field name as is."
+        """See `IFieldMarshaller`.
+
+        Return the field name as is.
+        """
         return field_name
 
     def unmarshall(self, entry, field_name, value):
-        "Return the value as is."
+        """See `IFieldMarshaller`.
+
+        Return the value as is.
+        """
         return value
 
 
@@ -136,7 +153,10 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into a datetime object."""
 
     def marshall_from_json_data(self, value):
-        """The JSON value is a string that needs to be parsed."""
+        """See `IFieldMarshaller`.
+
+        The JSON value is a string that needs to be parsed.
+        """
         return self.marshall_from_string(value)
 
     def _marshall_from_string(self, value):
@@ -159,16 +179,26 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
 
     def representationName(self, field_name):
-        "Make it clear that the value is a link to a collection."
+        """See `IFieldMarshaller`.
+
+        Make it clear that the value is a link to a collection.
+        """
         return field_name + '_collection_link'
 
     def marshall_from_json_data(self, value):
-        """The JSON value is a string that needs to be dereferenced."""
+        """See `IFieldMarshaller`.
+
+        The JSON value is a string that needs to be dereferenced.
+        """
         if value is None:
             return None
         return self._marshall_from_string(value)
 
     def unmarshall(self, entry, field_name, value):
+        """See `IFieldMarshaller`.
+
+        This returns a link to the scoped collection.
+        """
         return "%s/%s" % (canonical_url(entry.context), field_name)
 
 
@@ -217,24 +247,36 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
             field, request, vocabulary)
 
     def representationName(self, field_name):
-        "Make it clear that the value is a link to an object, not an object."
+        """See `IFieldMarshaller`.
+
+        Make it clear that the value is a link to an object, not an object.
+        """
         return field_name + '_link'
 
     def unmarshall(self, entry, field_name, value):
-        "Represent an object as the URL to that object"
+        """See `IFieldMarshaller`.
+
+        Represent an object as the URL to that object
+        """
         repr_value = None
         if value is not None:
             repr_value = canonical_url(value)
         return repr_value
 
     def marshall_from_json_data(self, value):
-        """The JSON value is a string that needs to be dereferenced."""
+        """See `IFieldMarshaller`.
+
+        The JSON value is a string that needs to be dereferenced.
+        """
         if value is None:
             return None
         return self._marshall_from_string(value)
 
     def _marshall_from_string(self, value):
-        """Look up the data model object by URL."""
+        """See `IFieldMarshaller`.
+
+        Look up the data model object by URL.
+        """
         try:
             resource = self.dereference_url(value)
         except NotFound:
