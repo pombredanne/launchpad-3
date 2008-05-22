@@ -17,7 +17,7 @@ result code to the one specified using the webservice_error() directive.
 
     >>> from canonical.lazr.rest.declarations import webservice_error
     >>> class InvalidInput(Exception):
-    ...     """Client provided by input."""
+    ...     """Client provided invalid input."""
     ...     webservice_error(400)
 
 It also prints a traceback of the exception based on a configuration
@@ -52,8 +52,8 @@ variable or if the logged in user is a developer.
     ...         return WebServiceExceptionView(error, request)()
 
 In the simple case where the user is not a developer and tracebacks are
-off, the view simpy return the exception message and set the status code
-to the one related to the exception.
+off, the view simply returns the exception message and sets the status
+code to the one related to the exception.
 
     >>> request = FakeRequest()
     >>> render_error_view(

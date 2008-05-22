@@ -190,7 +190,11 @@
         name="index.html"
         />
 
-    <!-- RequestExpired -->
+    <!-- RequestExpired 
+
+    XXX flacoste 2008-05-22 bug=185958 This interface should 
+    be moved to LAZR.
+    -->
     <view
         for="canonical.database.interfaces.IRequestExpired"
         type="canonical.lazr.interfaces.rest.WebServiceLayer"
