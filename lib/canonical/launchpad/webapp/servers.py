@@ -220,7 +220,7 @@ class VirtualHostRequestPublicationFactory:
         # or, as is the case with the test suite, it's on the
         # HTTP_HOST variable after a colon.
         # Check the former first.
-        host = environment.get('HTTP_HOST')
+        host = environment.get('HTTP_HOST', '')
         port = environment.get('SERVER_PORT')
         if ":" in host:
             assert len(host.split(':')) == 2, (
@@ -275,7 +275,7 @@ class VirtualHostRequestPublicationFactory:
             publication_factory = self.publication_factory
 
 
-        host = environment.get('HTTP_HOST').split(':')[0]
+        host = environment.get('HTTP_HOST', '').split(':')[0]
         if host in ['', 'localhost']:
             # Sometimes requests come in to the default or local host.
             # If we set the application server for these requests,
