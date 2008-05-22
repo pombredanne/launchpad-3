@@ -43,8 +43,8 @@
 
     <div id="search-results"
 	 tal:condition="view/has_matches">
-      <ul class="exact-matches">
-	<!-- We on the first results page, so show the pillars. -->
+      <ul class="exact-matches"
+	  tal:condition="python: view.bug or view.question or view.pillar or view.person_or_team">
 	<li
 	   class="bug"
 	   tal:condition="view/bug">
@@ -67,18 +67,30 @@
 	</li>
       </ul>
 
-      <ul class="site-matches" tal:condition="view/pages">
-	<li
-	   class="pagematch"
-	   tal:repeat="page view/pages/batch">
-	  <a
-	     tal:attributes="href page/url"
-	     tal:content="structure page/title">A search result link</a>
-	  <p tal:content="structure page/summary" class="">
-	    A snippet of search result summary text.
-	  </p>
-	</li>
-      </ul>
+      <tal:batch
+	 condition="view/pages"
+	 define="batch view/pages/currentBatch|nothing">
+
+	<tal:navigation
+	   replace="structure view/pages/@@+navigation-links-upper" />
+
+	<ul class="site-matches" tal:condition="batch">
+	  <li
+	     class="pagematch"
+	     tal:repeat="page batch">
+	    <a
+	       tal:attributes="href page/url"
+	       tal:content="structure page/title">A search result link</a>
+	    <p tal:content="structure page/summary" class="">
+	      A snippet of search result summary text.
+	    </p>
+	  </li>
+	</ul>
+
+	<tal:navigation
+	   replace="structure view/pages/@@+navigation-links-lower" />
+
+      </tal:batch>
     </div>
 
     <p class="no-results" tal:condition="not:view/has_matches">
