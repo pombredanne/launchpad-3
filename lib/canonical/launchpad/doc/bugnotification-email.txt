@@ -548,3 +548,92 @@ of the bug itself.
     >>> lp_janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> get_bugmail_from_address(lp_janitor, bug_four)
     'Launchpad Bug Tracker <4@bugs.launchpad.net>'
+
+
+== Construction of bug notification emails ==
+
+mailnotification.py contains a function, construct_bug_notification(),
+which is used to construct bug notification emails.
+
+    >>> from canonical.launchpad.mailnotification import (
+    ...     construct_bug_notification)
+
+The method accepts a number of parameters and returns an instance of
+email.MIMEText. The most basic invokation of this method requires a bug,
+a from address, a to address, a body, a subject and a sending date for
+the mail.
+
+    >>> from datetime import datetime
+    >>> import pytz
+
+    >>> from_address = get_bugmail_from_address(lp_janitor, bug_four)
+    >>> sending_date = datetime(
+    ...     2008, 5, 20, 10, 5, 47, tzinfo=pytz.timezone('Europe/Prague'))
+
+    >>> notification_email = construct_bug_notification(
+    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    ...     "A test body.", "A test subject.", sending_date)
+
+The fields of the generated notification email will be set according to
+the parameters that were passed to construct_bug_notification().
+
+    >>> print notification_email['From']
+    Launchpad Bug Tracker <4@bugs.launchpad.net>
+
+    >>> print notification_email['To']
+    foo.bar@canonical.com
+
+    >>> print notification_email['Subject']
+    [Bug 4] A test subject.
+
+    >>> print notification_email['Date']
+    Tue, 20 May 2008 09:05:47 -0000
+
+    >>> print notification_email.get_payload()
+    A test body.
+
+construct_bug_notification() also accepts parameters for
+rationale_header, references and msgid.
+
+    >>> notification_email = construct_bug_notification(
+    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    ...     "A test body.", "A test subject.", sending_date,
+    ...     rationale_header='Because-I-said-so',
+    ...     references=['<12345@launchpad.net>'],
+    ...     msgid='<67890@launchpad.net>')
+
+The rationale_header parameter is used to set the
+X-Launchpad-Message-Rationale header.
+
+    >>> print notification_email['X-Launchpad-Message-Rationale']
+    Because-I-said-so
+
+The references parameter sets the the References header of the email.
+
+    >>> print notification_email['References']
+    <12345@launchpad.net>
+
+And the msgid parameter is used to set the Message-Id header. It will be
+auto-generated if it is not supplied.
+
+    >>> print notification_email['Message-Id']
+    <67890@launchpad.net>
+
+The message subject will always have [Bug <bug_id>] prepended to it.
+
+    >>> notification_email = construct_bug_notification(
+    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    ...     "A test body.", "Yet another message", sending_date)
+
+    >>> print notification_email['Subject']
+    [Bug 4] Yet another message
+
+If the subject passed is None the email subject will be set to [Bug
+<bug_id>].
+
+    >>> notification_email = construct_bug_notification(
+    ...     bug_four, from_address, 'foo.bar@canonical.com',
+    ...     "A test body.", None, sending_date)
+
+    >>> print notification_email['Subject']
+    [Bug 4]

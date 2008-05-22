@@ -1,0 +1,260 @@
+= Timing-out on external resources =
+
+When making a request to an external resource (web service, external
+process), we want to make sure that this request is interrupted if it
+takes too long to complete.
+
+The canonical.lazr.timeout module provides a @with_timeout decorator
+that makes implementing that kind of behaviour easy.
+
+The time to wait can be passed using the timeout parameter to the
+decorator.
+
+    >>> from select import select
+    >>> from canonical.lazr.timeout import with_timeout
+
+    >>> @with_timeout(timeout=0.5)
+    ... def wait_for(time):
+    ...     """Function that wait for a number of seconds."""
+    ...     select((), (), (), time)
+    ...     return "Succeeded."
+
+    >>> wait_for(0.1)
+    'Succeeded.'
+
+If the operation cannot be completed in the allotted time, a TimeoutError
+is raised.
+
+    >>> wait_for(1)
+    Traceback (most recent call last):
+    ...
+    TimeoutError: timeout exceeded.
+
+Other exceptions are reported correctly to the caller though:
+
+    >>> @with_timeout(timeout=0.5)
+    ... def call_with_error():
+    ...     raise Exception("This exception will be raised in the caller.")
+    >>> call_with_error()
+    Traceback (most recent call last):
+      ...
+    Exception: This exception will be raised in the caller.
+
+
+== Cleaning up timed out operation ==
+
+Since we want to time out operations involving an external resource
+(subprocess, remote site), we need a way to clean-up these resources
+once they time out. To this end, the with_timeout decorator accepts a
+callable parameter (named 'cleanup') that will be invoked if the
+operation times out.
+
+    >>> import socket
+
+    # Make sure that potential failures on this test don't cause it to
+    # hang forever.
+    >>> old_timeout = socket.getdefaulttimeout()
+    >>> socket.setdefaulttimeout(5)
+
+    >>> sockets = socket.socketpair()
+    >>> closed = False
+    >>> def close_socket():
+    ...     global closed
+    ...     closed = True
+    ...     sockets[0].shutdown(socket.SHUT_RDWR)
+
+    >>> @with_timeout(cleanup=close_socket, timeout=0.5)
+    ... def block():
+    ...     """This will block indefinitely."""
+    ...     sockets[0].recv(1024)
+
+    >>> block()
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+    >>> print closed
+    True
+
+The cleanup parameter can also be a string in which case it will be
+interpreted as the name of an instance method.
+
+    >>> class expirable_socket(object):
+    ...     def __init__(self):
+    ...         self.closed = False
+    ...         self.sockets = socket.socketpair()
+    ...
+    ...     @with_timeout(cleanup="shutdown", timeout=0.5)
+    ...     def block(self):
+    ...         self.sockets[0].recv(1024)
+    ...
+    ...     def shutdown(self):
+    ...         self.closed = True
+    ...         self.sockets[0].shutdown(socket.SHUT_RDWR)
+
+    >>> a_socket = expirable_socket()
+    >>> a_socket.block()
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+    >>> a_socket.closed
+    True
+
+It's an error to use a string cleanup when the function isn't a method.
+
+    >>> @with_timeout(cleanup='not_a_method', timeout=0.5)
+    ... def a_function(): pass
+    Traceback (most recent call last):
+      ...
+    TypeError: when not wrapping a method, cleanup must be a callable.
+
+
+== Default time out ==
+
+If the timeout parameter isn't provided, it will default to the value
+returned by the function installed as "default_timeout_function". A
+function is used because it's useful for the timeout value to be
+determined dynamically. For example, if you want to limit the
+overall processing to 30s and you already did 14s, you want that timeout
+to be 16s.
+
+By default, there is no default_timeout_function.
+
+    >>> from canonical.lazr.timeout import (get_default_timeout_function,
+    ...     set_default_timeout_function)
+
+    >>> print get_default_timeout_function()
+    None
+
+When there is no default timeout function, it's an error not to provide
+a default timeout argument.
+
+    >>> @with_timeout()
+    ... def no_default_timeout(): pass
+
+    >>> no_default_timeout()
+    Traceback (most recent call last):
+      ...
+    AssertionError: no timeout set and there is no default timeout
+    function.
+
+The set_default_timeout_function() takes a function that should return
+the number of seconds to wait.
+
+    >>> def my_default_timeout():
+    ...     print "Will use default timeout."
+    ...     return 1
+    >>> set_default_timeout_function(my_default_timeout)
+    >>> no_default_timeout()
+    Will use default timeout.
+
+
+=== urlfetch() ===
+
+One common use case for timing out is when making an HTTP request to an
+external site to fetch content. To this end, the timeout module has a
+urlfetch() function that retrieve a URL using custom urllib2 handlers
+that will timeout using the default timeout function and clean-up the
+socket properly.
+
+    # Create a socket bounded to a random port.
+    >>> sock = socket.socket()
+    >>> sock.settimeout(2)
+    >>> sock.bind(('127.0.0.1', 0))
+
+    >>> from canonical.lazr.timeout import urlfetch
+
+    # Use 1s as default timeout.
+    >>> set_default_timeout_function(lambda: 1)
+
+Normal urllib2 exceptions are raised:
+
+    >>> http_server_url = 'http://%s:%d/' % sock.getsockname()
+    >>> urlfetch(http_server_url)
+    Traceback (most recent call last):
+      ...
+    URLError: ...'Connection refused'...
+
+After the listen() is called, connections will hang until accept() is
+called, so a TimeoutError will be raised.
+
+    >>> sock.listen(1)
+    >>> urlfetch(http_server_url)
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+
+The client socket was closed properly, as we can see by calling recv()
+twice on the connected socket. The first recv() returns the request data
+sent by the client, the second one will block until the client closes
+its end of the connection. If the client closes its socket, '' is
+received, otherwise a socket timeout will occur.
+
+    >>> client_sock, client_addr = sock.accept()
+    >>> print client_sock.recv(1024)
+    GET / HTTP/1.1...
+    >>> client_sock.recv(1024)
+    ''
+
+The function also times out if the server replies very slowly.
+(Do the server part in a separate thread.)
+
+    >>> import threading
+    >>> import time
+    >>> from textwrap import dedent
+
+    >>> def slow_reply():
+    ...     (client_sock, client_addr) = sock.accept()
+    ...     content = 'You are veeeeryyy patient!'
+    ...     client_sock.sendall(dedent('''\
+    ...         HTTP/1.0 200 Ok
+    ...         Content-Type: text/plain
+    ...         Content-Length: %d\n\n''' % len(content)))
+    ...
+    ...     # Send the body of the reply very slowly, so that
+    ...     # it times out in read() and not urlopen.
+    ...     for c in content:
+    ...         client_sock.send(c)
+    ...         time.sleep(0.2)
+    ...     client_sock.close()
+    >>> threading.Thread(target=slow_reply).start()
+    >>> print urlfetch(http_server_url)
+    Traceback (most recent call last):
+      ...
+    TimeoutError: timeout exceeded.
+
+When the request succeeds, the result content is returned.
+
+    >>> def success_result():
+    ...     (client_sock, client_addr) = sock.accept()
+    ...     client_sock.sendall(dedent('''\
+    ...         HTTP/1.0 200 Ok
+    ...         Content-Type: text/plain
+    ...         Content-Length: 8
+    ...
+    ...         Success.'''))
+    ...     client_sock.close()
+    >>> threading.Thread(target=success_result).start()
+    >>> print urlfetch(http_server_url)
+    Success.
+
+urlfetch() only supports http urls:
+
+    >>> urlfetch('ftp://localhost')
+    Traceback (most recent call last):
+      ...
+    AssertionError: only http is supported.
+
+
+== Cleanup ==
+
+    # Reap threads that may still hang around.
+    >>> import threading
+    >>> for thread in threading.enumerate():
+    ...     if thread is not threading.currentThread():
+    ...         thread.join()
+
+    # Reset default socket timeout.
+    >>> socket.setdefaulttimeout(old_timeout)
+
+    # Reset the default timeout function.
+    >>> set_default_timeout_function(None)

@@ -101,7 +101,7 @@ class Builder(SQLBase):
     failnotes = StringCol(dbName='failnotes', default=None)
     virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
-    manual = BoolCol(dbName='manual', default=False)
+    manual = BoolCol(dbName='manual', default=True)
     vm_host = StringCol(dbName='vm_host', default=None)
     active = BoolCol(dbName='active', default=True)
 

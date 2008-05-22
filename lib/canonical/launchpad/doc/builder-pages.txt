@@ -313,6 +313,12 @@ architectures.
     ...     title="The Prosciuto Builder", description="Uhmmm", owner=cprov,
     ...     virtualized=False)
 
+Newly created builders will be in manual mode because we don't want
+them going straight into the build farm until tested.
+
+    >>> a_builder.manual
+    True
+
 The 'Other' builder category is a `BuilderCategory` class, which
 contains the following attributes:
 

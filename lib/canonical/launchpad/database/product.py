@@ -145,7 +145,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
-    reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    license_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
@@ -163,6 +163,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     license_info = StringCol(dbName='license_info', default=None)
     license_approved = BoolCol(dbName='license_approved',
                                notNull=True, default=False)
+
+    @property
+    def default_stacked_on_branch(self):
+        """See `IProduct`."""
+        return self.development_focus.series_branch
 
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
@@ -806,7 +811,7 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, mugshot=None, logo=None,
+                      license_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
         """See `IProductSet`."""
         product = Product(
@@ -816,7 +821,8 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang, reviewed=reviewed,
+            programminglang=programminglang,
+            license_reviewed=license_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
         if len(licenses) > 0:
