@@ -6,8 +6,11 @@ First, we need to set the password to something I know
     >>> import transaction
     >>> from canonical.database.sqlbase import cursor
     >>> cursor().execute("""
-    ...     UPDATE Person SET password='K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
-    ...     WHERE name='martin-pitt'
+    ...     UPDATE AccountPassword
+    ...         SET password='K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+    ...     FROM Person, Account
+    ...     WHERE name='martin-pitt' AND Person.account = Account.id
+    ...         AND Account.id = AccountPassword.account
     ...     """)
     >>> transaction.commit()
     >>> import time
