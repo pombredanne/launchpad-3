@@ -26,10 +26,12 @@ __all__ = [
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
     'FunctionalLayer',
+    'GoogleServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
     'LaunchpadZopelessLayer',
+    'LayerConsistencyError',
     'LayerIsolationError',
     'LibrarianLayer',
     'PageTestLayer',
@@ -71,6 +73,8 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
 from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.testing.tests.googleserviceharness import (
+    GoogleServiceTestSetup)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
 from canonical.lp import initZopeless
@@ -825,7 +829,32 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._restore_signals()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
+class GoogleServiceLayer(BaseLayer):
+    """Tests for Google web service integration."""
+
+    @classmethod
+    def setUp(cls):
+        GoogleServiceTestSetup().setUp()
+
+    @classmethod
+    def tearDown(cls):
+        GoogleServiceTestSetup().tearDown()
+
+    @classmethod
+    def testSetUp(self):
+        # We need to override BaseLayer.testSetUp(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+    @classmethod
+    def testTearDown(self):
+        # We need to override BaseLayer.testTearDown(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
+                               GoogleServiceLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     @profiled
