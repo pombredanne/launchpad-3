@@ -100,3 +100,65 @@ variable is on, or if the user is a developer.
 
     >>> ignored = config.pop('traceback_off')
 
+
+== Default exceptions ==
+
+Standard exceptions have a view registered for them by default.
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope">
+    ...   <include package="zope.app.component" file="meta.zcml"/>
+    ...   <include package="canonical.lazr.rest" />
+    ... </configure>
+    ... """)
+
+    >>> from zope.component import getMultiAdapter
+    >>> def render_using_default_view(error):
+    ...     """Render an exception using its default 'index.html' view.
+    ...     :return: response, result tuple. (The response object and
+    ...         the content).
+    ...     """
+    ...     try:
+    ...         raise error
+    ...     except Exception, error:
+    ...         request = FakeRequest()
+    ...         view = getMultiAdapter((error, request), name="index.html")
+    ...         result = view()
+    ...         return request.response, result
+
+
+NotFound exceptions have a 404 status code.
+
+    >>> from zope.publisher.interfaces import NotFound
+    >>> response, result = render_using_default_view(
+    ...     NotFound(object(), 'name'))
+    >>> response.status
+    404
+
+Unauthorized exceptions have a 401 status code.
+
+    >>> from zope.security.interfaces import Unauthorized
+    >>> response, result = render_using_default_view(Unauthorized())
+    >>> response.status
+    401
+
+IRequestExpired exceptions have a 503 status code.
+
+    >>> from canonical.launchpad.webapp.adapter import RequestExpired
+    >>> response, result = render_using_default_view(RequestExpired())
+    >>> response.status
+    503
+
+So have TimeoutError.
+
+    >>> from canonical.lazr.timeout import TimeoutError
+    >>> response, result = render_using_default_view(TimeoutError())
+    >>> response.status
+    503
+
+Other exceptions have the 500 status code.
+
+    >>> response, result = render_using_default_view(Exception())
+    >>> response.status
+    500
