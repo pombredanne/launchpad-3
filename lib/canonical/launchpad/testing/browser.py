@@ -1,11 +1,17 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Create a real, socket connecting browser.
+"""A real, socket connecting browser.
 
-Unlike `zope.testbrowser.testing.Browser`, this browser performs actual socket
-connections to a real HTTP server.  This is used in tests which utilize the
-AppServerLayer to run the app server in a child process.  The Zope testing
-browser fakes its connections in-process, so that's not good enough.
+This browser performs actual socket connections to a real HTTP server.  This
+is used in tests which utilize the AppServerLayer to run the app server in a
+child process.  The Zope testing browser fakes its connections in-process, so
+that's not good enough.
+
+The browser provided here extends `zope.testbrowser.testing.Browser` by
+providing a close() method that delegates to the underlying mechanize browser,
+and it tracks all Browser instances to ensure that they are closed.  This
+latter prevents open socket leaks even when the doctest doesn't explicitly
+close or delete the browser instance.
 """
 
 __metaclass__ = type
