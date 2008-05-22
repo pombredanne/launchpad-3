@@ -120,6 +120,8 @@ class AdminMergeBaseView(LaunchpadFormView):
             # people but not when merging teams.
             # -- Guilherme Salgado, 2007-10-15
             email.status = EmailAddressStatus.NEW
+            # EmailAddress.person is a readonly field, so we need to remove
+            # the security proxy here.
             removeSecurityProxy(email).person = self.target_person
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)

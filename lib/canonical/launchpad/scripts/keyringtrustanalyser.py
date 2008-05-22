@@ -130,6 +130,8 @@ def _mergeOrAddEmails(personset, emailset, cluster, logger):
         from zope.security.proxy import removeSecurityProxy
         for otherperson in people:
             for email in emailset.getByPerson(otherperson):
+                # EmailAddress.person is a readonly field, so we need to
+                # remove the security proxy here.
                 removeSecurityProxy(email).person = person
 
         # merge people
