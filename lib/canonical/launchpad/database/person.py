@@ -2245,6 +2245,17 @@ class PersonSet:
             registrant=registrant)
         return person
 
+    def ensurePersonWithoutEmail(
+        self, name, displayname, rationale, comment=None, registrant=None):
+        """See `IPersonSet`."""
+        person = self.getByName(name)
+        if person:
+            return person
+
+        return self.createPersonWithoutEmail(
+            name, rationale, comment=comment, displayname=displayname,
+            registrant=registrant)
+
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""
         query = (Person.q.name == name)

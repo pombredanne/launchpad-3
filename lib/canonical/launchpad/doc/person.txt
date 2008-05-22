@@ -1207,3 +1207,28 @@ takes no parameters regarding to emails or passwords.
 
     >>> print new_person.registrant.name
     name16
+
+There is a related method, ensurePersonWithoutEmail(), which will
+either return an existing user or create one if one doesn't already
+exist.
+
+    >>> ford_prefect = person_set.ensurePersonWithoutEmail(
+    ...     'ix', "Ford Prefect", PersonCreationRationale.BUGIMPORT)
+
+    >>> print ford_prefect.name
+    ix
+
+    >>> zaphod = person_set.ensurePersonWithoutEmail(
+    ...     'zaphod', 'Zaphod Beeblebrox',
+    ...     PersonCreationRationale.BUGIMPORT,
+    ...     comment="when testing ensurePersonWithoutEmail()",
+    ...     registrant=foo_bar)
+
+    >>> print zaphod.name
+    zaphod
+
+    >>> print zaphod.displayname
+    Zaphod Beeblebrox
+
+    >>> print zaphod.preferredemail
+    None
