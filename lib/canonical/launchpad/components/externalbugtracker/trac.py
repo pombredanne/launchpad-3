@@ -399,10 +399,19 @@ class TracLPPlugin(Trac):
 
         display_name, email = parseaddr(comment['user'])
 
+        # We return different things depending on what we get back from
+        # parseaddr().
+
+        # If the email isn't valid, return the email address as the
+        # display name (a Launchapd Person will be created with this
+        # name).
         if not valid_email(email):
             return email, None
+        # If the display name is empty, set it to None so that it's
+        # useable by IPersonSet.ensurePerson().
         elif display_name == '':
             return None, email
+        # If both displayname and email are valid, return both.
         else:
             return display_name, email
 
