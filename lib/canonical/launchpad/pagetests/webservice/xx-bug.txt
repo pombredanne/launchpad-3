@@ -121,7 +121,6 @@ data in a bug task is derived from the bug.
    (u'date_in_progress', None),
    (u'date_left_new', None),
    (u'date_triaged', None),
-   (u'id', 4),
    (u'importance', u'Low'),
    (u'is_complete', False),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
@@ -130,7 +129,6 @@ data in a bug task is derived from the bug.
    (u'self_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
-   (u'status_explanation', u''),
    (u'title',
     u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"')]
 

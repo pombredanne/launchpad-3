@@ -670,7 +670,7 @@ class BugTask(SQLBase, BugTaskMixin):
             return
 
         if not self.canTransitionToStatus(new_status, user):
-            raise UserCanNotEditBugTaskStatus(
+            raise UserCannotEditBugTaskStatus(
                 "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
