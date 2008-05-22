@@ -1,0 +1,16 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:mail="http://namespaces.zope.org/mail"
+    i18n_domain="zope">
+
+    <!--
+    <mail:queuedDelivery permission="zope.SendMail"
+        queuePath="/var/tmp/launchpad_mailqueue" mailer="smtp" />
+    -->
+
+    <!-- Using direct delivery until someone works out why queued
+        was failing on production
+        -->
+    <mail:directDelivery permission="zope.SendMail" mailer="smtp" />
+
+</configure>
