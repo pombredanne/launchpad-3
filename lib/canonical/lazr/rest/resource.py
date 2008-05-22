@@ -667,14 +667,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                             error = e.args[0]
                         else:
                             error = "Constraint not satisfied."
-                            errors.append("%s: %s" % (repr_name, error))
-                            continue
+                        errors.append("%s: %s" % (repr_name, error))
+                        continue
                     except (ValueError, ValidationError), e:
                         error = str(e)
                         if error == "":
                             error = "Validation error"
-                            errors.append("%s: %s" % (repr_name, error))
-                            continue
+                        errors.append("%s: %s" % (repr_name, error))
+                        continue
                 validated_changeset[name] = value
         # If there are any fields left in the changeset, they're
         # fields that don't correspond to some field in the
