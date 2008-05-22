@@ -1232,3 +1232,43 @@ exist.
 
     >>> print zaphod.preferredemail
     None
+
+
+== The _newPerson() method ==
+
+The PersonSet database class has a method _newPerson(), which is used to
+create new Person objects. This isn't exposed in the interface, so to
+test it we need to instantiate PersonSet directly.
+
+    >>> from canonical.launchpad.database.person import PersonSet
+    >>> person_set = PersonSet()
+
+_newPerson() accepts parameters for name displayname and rationale. It
+also takes the parameters hide_email_addresses, comment, password and
+registrant.
+
+    >>> person_set._newPerson(
+    ...     'new-name', 'New Person', True,
+    ...     PersonCreationRationale.BUGIMPORT, "testing _newPerson().",
+    ...     'passw0rd', foo_bar)
+    <Person at ...>
+
+If the name passed to _newPerson() is already taken, a NameAlreadyTaken
+error will be raised.
+
+    >>> person_set._newPerson(
+    ...     'new-name', 'New Person', True,
+    ...     PersonCreationRationale.BUGIMPORT)
+    Traceback (most recent call last):
+      ...
+    NameAlreadyTaken: The name 'new-name' is already taken.
+
+If the name passed to _newPerson() isn't valid an InvalidName error will
+be raised.
+
+    >>> person_set._newPerson(
+    ...     "ThisIsn'tValid", 'New Person', True,
+    ...     PersonCreationRationale.BUGIMPORT)
+    Traceback (most recent call last):
+      ...
+    InvalidName: ThisIsn'tValid is not a valid name for a person.
