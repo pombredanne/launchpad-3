@@ -659,20 +659,16 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
     def all_related(self):
-        text = 'related'
-        return Link(canonical_url(self.context, rootsite='code'), text)
+        return Link(canonical_url(self.context, rootsite='code'), 'related')
 
     def owned(self):
-        text = 'owned'
-        return Link('+ownedbranches', text)
+        return Link('+ownedbranches', 'owned')
 
     def registered(self):
-        text = 'registered'
-        return Link('+registeredbranches', text)
+        return Link('+registeredbranches', 'registered')
 
     def subscribed(self):
-        text = 'subscribed'
-        return Link('+subscribedbranches', text)
+        return Link('+subscribedbranches', 'subscribed')
 
     def addbranch(self):
         if self.user is None:
@@ -3762,7 +3758,7 @@ class PersonAnswersMenu(ApplicationMenu):
 
 
 class PersonBranchCountMixin:
-    """A mixin class to return branch counts."""
+    """A mixin class to return branch counts and related text."""
 
     @cachedproperty
     def total_branch_count(self):
@@ -3816,7 +3812,7 @@ class PersonBranchCountMixin:
 
     @property
     def user_name_text(self):
-        if self.context == self.user:
+        if self.user_is_the_context:
             return 'You have'
         else:
             return '%s has' % self.context.displayname
@@ -3843,14 +3839,14 @@ class PersonBranchCountMixin:
 
     @property
     def context_pronoun(self):
-        if self.context == self.user:
+        if self.user_is_the_context:
             return 'you'
         else:
             return 'them'
 
     @property
     def context_pronoun2(self):
-        if self.context == self.user:
+        if self.user_is_the_context:
             return 'you'
         else:
             return 'they'

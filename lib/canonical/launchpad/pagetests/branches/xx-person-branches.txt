@@ -90,7 +90,7 @@ branches.
 
 == Person branch summary ==
 
-Each of the person branch listing pages now has a brief summary at the
+Each of the person branch listing pages has a brief summary at the
 top of the page with some branch counts.  These also contain the links
 to the registered, owned and subscribed listing pages for a person.
 
