@@ -237,7 +237,7 @@ setQuiescing method must fail.
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setOnline()
-    >>> quiescing_machine.state.name
+    >>> print quiescing_machine.state.name
     ONLINE
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
