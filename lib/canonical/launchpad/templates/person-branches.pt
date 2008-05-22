@@ -12,18 +12,24 @@
 
 <body>
 
-<metal:rightportlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-teambranches" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1 tal:content="view/heading">Bazaar branches</h1>
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 
+  <div style="float:right" id="floating-buttons">
+    <div>
+      <a href="+addbranch" id="register-branch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
+    </div>
+  </div>
+
+  <h1 tal:content="view/heading">Bazaar branches</h1>
+
   <tal:branchlisting content="structure branches/@@+branch-listing" />
+
+
+  <div tal:replace="structure context/@@+portlet-teambranches" />
 
 </div>
 
