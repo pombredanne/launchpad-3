@@ -142,7 +142,7 @@ class DistroSeriesSourcePackageRelease:
     @property
     def changesfile(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        queue_record = self.sourcepackagerelease.queue_record(
+        queue_record = self.sourcepackagerelease.getQueueRecord(
             distroseries=self.distroseries)
         if not queue_record:
             return None
