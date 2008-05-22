@@ -4,30 +4,35 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_bugwatcherrortype_for_error',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
     'BugWatchUpdateWarning',
     'ExternalBugTracker',
     'InvalidBugId',
+    'LookupNode',
+    'LookupTree',
     'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteStatusError',
     'UnparseableBugData',
     'UnparseableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
+    'get_bugwatcherrortype_for_error',
     ]
 
 import socket
 import urllib
 import urllib2
 
+from itertools import chain
+
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BugWatchErrorType, IExternalBugTracker)
+from canonical.launchpad.components import treelookup
 
 
 # The user agent we send in our requests
@@ -250,3 +255,31 @@ class ExternalBugTracker:
         page_contents = url.read()
         return page_contents
 
+
+class LookupTree(treelookup.LookupTree):
+    """A `LookupTree` customised for documenting external bug trackers."""
+
+    def moinmoin_table(self, titles=None):
+        """Return lines of a MoinMoin table documenting a `LookupTree`."""
+        max_depth = self.max_depth
+
+        def line(columns):
+            return '|| %s ||' % ' || '.join(columns)
+
+        if titles is not None:
+            if len(titles) != (max_depth + 1):
+                raise ValueError(
+                    "Table of %d columns needs %d titles, but %d given." % (
+                        (max_depth + 1), (max_depth + 1), len(titles)))
+            yield line("'''%s'''" % (title,) for title in titles)
+
+        for elems in self.walker:
+            path, key = elems[:-1], elems[-1]
+            yield line(
+                chain((" '''or''' ".join(keys) for keys in path),
+                      ('*' * (max_depth - len(path))),
+                      (key.name,)))
+
+
+# Convenience for sub-modules.
+LookupNode = treelookup.LookupNode
