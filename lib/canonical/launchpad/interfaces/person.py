@@ -1467,6 +1467,22 @@ class IPersonSet(Interface):
             generate a nickname from the given email address.
         """
 
+    def createPersonWithoutEmail(
+        name, rationale, comment=None, displayname=None, registrant=None):
+        """Create and return an `IPerson` without using an email address.
+
+        :param name: The person's name.
+        :param comment: A comment explaining why the person record was
+            created (usually used by scripts which create them automatically).
+            Must be of the following form: "when %(action_details)s"
+            (e.g. "when the foo package was imported into Ubuntu Breezy").
+        :param displayname: The person's displayname.
+        :param registrant: The user who created this person, if any.
+        :raises InvalidName: When the passed name isn't valid.
+        :raises NameAlreadyTaken: When the passed name has already been
+            used.
+        """
+
     def ensurePerson(email, displayname, rationale, comment=None,
                      registrant=None):
         """Make sure that there is a person in the database with the given

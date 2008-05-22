@@ -2181,7 +2181,36 @@ class PersonSet:
 
         if name is None:
             name = nickname.generate_nick(email)
-        elif not valid_name(name):
+
+        if not passwordEncrypted and password is not None:
+            password = getUtility(IPasswordEncryptor).encrypt(password)
+
+        person = self._newPerson(
+            name, displayname, hide_email_addresses, rationale=rationale,
+            comment=comment, password=password, registrant=registrant)
+
+        email = getUtility(IEmailAddressSet).new(email, person)
+        return person, email
+
+    def createPersonWithoutEmail(
+        self, name, rationale, comment=None, displayname=None,
+        registrant=None):
+        """Create and return a new Person without using an email address.
+
+        See `IPersonSet`.
+        """
+        return self._newPerson(
+            name, displayname, hide_email_addresses=True, rationale=rationale,
+            comment=comment, password=None, registrant=registrant)
+
+    def _newPerson(self, name, displayname, hide_email_addresses,
+                   rationale, comment=None, password=None, registrant=None):
+        """Create and return a new Person with the given attributes.
+
+        Also generate a wikiname for this person that's not yet used in the
+        Ubuntu wiki.
+        """
+        if not valid_name(name):
             raise InvalidName(
                 "%s is not a valid name for a person." % name)
         else:
@@ -2191,26 +2220,9 @@ class PersonSet:
             raise NameAlreadyTaken(
                 "The name '%s' is already taken." % name)
 
-        if not passwordEncrypted and password is not None:
-            password = getUtility(IPasswordEncryptor).encrypt(password)
-
         if not displayname:
             displayname = name.capitalize()
-        person = self._newPerson(
-            name, displayname, hide_email_addresses, rationale=rationale,
-            comment=comment, password=password, registrant=registrant)
 
-        email = getUtility(IEmailAddressSet).new(email, person)
-        return person, email
-
-    def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, password=None, registrant=None):
-        """Create and return a new Person with the given attributes.
-
-        Also generate a wikiname for this person that's not yet used in the
-        Ubuntu wiki.
-        """
-        assert self.getByName(name, ignore_merged=False) is None
         person = Person(
             name=name, displayname=displayname, password=password,
             creation_rationale=rationale, creation_comment=comment,

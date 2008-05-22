@@ -1171,3 +1171,39 @@ But not in other contexts.
     >>> cprov.isBugContributorInTarget(user=foobar,
     ...     target=getUtility(IProductSet).getByName('jokosher'))
     False
+
+
+== Creating a Person without an email address ==
+
+Although createPersonAndEmail() is the usual method to use when creating
+a new Person, there is also a method that can be used when a Person
+needs to be created without an email address, for example when the
+Person is being created as the result of an import from an external
+bugtracker.
+
+The method createPersonWithoutEmail() is used in these situations. This
+takes some parameters similar to those taken by createPersonAndEmail()
+but, since an emailless Person cannot be considered to be valid, it
+takes no parameters regarding to emails or passwords.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> person_set = getUtility(IPersonSet)
+    >>> new_person = person_set.createPersonWithoutEmail(
+    ...     'ix', PersonCreationRationale.BUGIMPORT,
+    ...     comment="when importing bugs", displayname="Ford Prefect",
+    ...     registrant=foo_bar)
+
+    >>> print new_person.name
+    ix
+
+    >>> print new_person.displayname
+    Ford Prefect
+
+    >>> print new_person.preferredemail
+    None
+
+    >>> print new_person.creation_rationale.name
+    BUGIMPORT
+
+    >>> print new_person.registrant.name
+    name16
