@@ -547,8 +547,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # The client tried to set a value for this field. Marshall
             # it, validate it, and move it from the client changeset
             # to the validated changeset.
-            original_value = changeset[repr_name]
-            del(changeset[repr_name])
+            original_value = changeset.pop(repr_name)
             try:
                 value = marshaller.marshall_from_json_data(original_value)
             except (ValueError, ValidationError), e:
