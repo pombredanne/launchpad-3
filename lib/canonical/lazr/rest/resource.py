@@ -41,8 +41,7 @@ from canonical.lazr.enum import BaseItem
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    IAuthorization, ICanonicalUrlData)
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
@@ -264,8 +263,6 @@ class BatchingResourceMixin:
         """
         navigator = WebServiceBatchNavigator(entries, request)
 
-        # Import here is necessary to avoid circular import.
-        from canonical.launchpad.interfaces.person import IPerson
         resources = [EntryResource(entry, request)
                      for entry in navigator.batch
                      if check_permission('launchpad.View', entry)]
