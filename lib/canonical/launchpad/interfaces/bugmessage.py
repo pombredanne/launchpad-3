@@ -71,7 +71,7 @@ class IBugMessageSet(Interface):
 class IBugMessageAddForm(Interface):
     """Schema used to build the add form for bug comment/attachment."""
 
-    subject = Title(title=u"Subject", required=False)
+    subject = Title(title=u"Subject", required=True)
     comment = Text(title=u"Comment", required=False)
     filecontent = Bytes(
         title=u"Attachment", required=False,
