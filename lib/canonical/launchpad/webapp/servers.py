@@ -1052,7 +1052,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
         # Once we launch the web service this code will be removed.
         people = getUtility(IPersonSet)
-        webservice_beta_team_name = config.webservice.beta_test_team
+        webservice_beta_team_name = config.vhost.api.beta_test_team
         if webservice_beta_team_name is not None:
             webservice_beta_team = people.getByName(
                 webservice_beta_team_name)

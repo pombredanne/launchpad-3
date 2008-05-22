@@ -24,12 +24,12 @@ configures that team so that web service clients must be authorized as
 a member of the 'admins' team.
 
   >>> from canonical.config import config
-  >>> print config.webservice.beta_test_team
+  >>> print config.vhost.api.beta_test_team
   None
 
   >>> from textwrap import dedent
   >>> test_data = dedent("""
-  ...     [webservice]
+  ...     [vhost.api]
   ...     beta_test_team: admins
   ...     """)
   >>> config.push('test', test_data)
@@ -55,7 +55,7 @@ access to the web service will be cut off altogether.
   >>> test_config = config.pop('test')
   >>> from textwrap import dedent
   >>> test_data = dedent("""
-  ...     [webservice]
+  ...     [vhost.api]
   ...     beta_test_team: nosuchteam
   ...     """)
   >>> config.push('test', test_data)
