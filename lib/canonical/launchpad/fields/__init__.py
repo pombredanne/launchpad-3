@@ -67,7 +67,7 @@ from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Object, Password, Text, TextLine,
+    Bool, Bytes, Choice, Datetime, Int, Password, Text, TextLine,
     Tuple)
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IDatetime, IInt, IObject, IPassword,
@@ -80,6 +80,7 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
+from canonical.lazr.rest.schema import Reference
 from canonical.foaf import nickname
 
 
@@ -271,7 +272,7 @@ class TimeInterval(TextLine):
         return 1
 
 
-class BugField(Object):
+class BugField(Reference):
     implements(IBugField)
 
     def __init__(self, *args, **kwargs):
@@ -287,15 +288,6 @@ class BugField(Object):
         """Ignore attempts to set the schema by the superclass."""
 
     schema = property(_get_schema, _set_schema)
-
-    def _validate(self, value):
-        """Override normal validation.
-
-        Don't recursively validate; it's not needed, and is harmful
-        here, because the value is an `IBug`.
-        """
-        if not self.schema.providedBy(value):
-            raise LaunchpadValidationError("Not a bug")
 
 
 class DuplicateBug(BugField):
