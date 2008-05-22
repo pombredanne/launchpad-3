@@ -127,9 +127,10 @@ def _mergeOrAddEmails(personset, emailset, cluster, logger):
             person = people.pop()
 
         # assign email addresses
+        from zope.security.proxy import removeSecurityProxy
         for otherperson in people:
             for email in emailset.getByPerson(otherperson):
-                email.person = person
+                removeSecurityProxy(email).person = person
 
         # merge people
         for otherperson in people:
