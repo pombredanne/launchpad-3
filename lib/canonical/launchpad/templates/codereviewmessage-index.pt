@@ -13,8 +13,8 @@
     <div metal:fill-slot="main">
       <h1>Code review comment</h1>
       <tal:content replace="structure context/@@+fragment"/>
-      <img src="/@@/add"/>
-      <a href="#" tal:attributes="href view/reply_link">Reply</a>
+      <a href="#" tal:attributes="href view/reply_link"
+         ><img src="/@@/add"/>Reply</a>
       <p>&laquo;&nbsp;<a href="#" tal:attributes="href context/branch_merge_proposal/fmt:url">Back to merge
       proposal</a></p>
     </div>
