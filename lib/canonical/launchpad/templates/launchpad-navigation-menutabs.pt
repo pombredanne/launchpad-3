@@ -5,9 +5,8 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   >
-  <label tal:condition="view/title|nothing">
-    <tal:title content="view/title">Menu title</tal:title>:
-  </label>
+  <label tal:condition="view/title|nothing"
+         tal:content="string:${view/title}:">Menu title</label>
   <ul>
     <li tal:repeat="link view/links">
       <tal:link-content replace="structure link/@@+link">
