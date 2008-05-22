@@ -590,8 +590,9 @@ class BugWatchUpdater(object):
                     comment='when importing comments for %s.' %
                         bug_watch.title)
             else:
-                poster = getUtility(IPersonSet).createPersonWithoutEmail(
-                    displayname, PersonCreationRationale.BUGIMPORT,
+                poster = getUtility(IPersonSet).ensurePersonWithoutEmail(
+                    displayname.lower(), displayname,
+                    PersonCreationRationale.BUGIMPORT,
                     comment='when importing comments for %s.' %
                         bug_watch.title)
 

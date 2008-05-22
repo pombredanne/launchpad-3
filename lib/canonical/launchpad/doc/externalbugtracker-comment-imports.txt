@@ -172,7 +172,7 @@ address. In those cases, the ExternalBugTracker's getPosterForComment()
 method will return a tuple of (displayname, None), which can then be
 used to create a Person based on the displayname alone.
 
-    >>> external_bugtracker.poster_tuple = ('oiqefh0q3', None)
+    >>> external_bugtracker.poster_tuple = ('noemail', None)
     >>> external_bugtracker.remote_comments['no-email-comment'] = (
     ...     "Yet another comment.")
 
