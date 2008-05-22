@@ -62,6 +62,8 @@ GLOBAL_NAMES = set([
     'setupBrowser',
     'user_browser',
     'webservice',
+    'public_readonly_webservice',
+    'user_webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
     # For buildd tests
