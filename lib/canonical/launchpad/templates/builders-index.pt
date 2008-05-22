@@ -51,7 +51,7 @@
      <tal:group repeat="builder_group category/groups">
        <tr class="highlighted">
          <th colspan="3" style="text-align: left">
-	   <tal:processor replace="builder_group/processor_name" />
+          <tal:processor replace="builder_group/processor_name" />
            &nbsp;&nbsp;&nbsp;
            <span class="discreet">
              <tal:queue-size replace="builder_group/queue_size"
