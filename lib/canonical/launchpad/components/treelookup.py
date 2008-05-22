@@ -30,7 +30,7 @@ class LookupTree:
             if key in node:
                 if node.is_leaf:
                     return node.next
-                elif len(next) >= 1:
+                elif len(more) >= 1:
                     try:
                         return node.next.search(*more)
                     except KeyError, ex:
