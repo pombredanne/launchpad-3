@@ -612,7 +612,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                         errors.append(
                             "%s: To modify this field you need to send a PUT "
                             "request to its URI (%s)."
-                            % (repr_name, current_unmarshalled_value))
+                            % (repr_name, current_value))
                 continue
 
             # If the new value is an object, make sure it provides the correct

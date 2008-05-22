@@ -75,8 +75,7 @@ representation is omitted from the team.
    >>> authorized_view['member_memberships_collection_link']
    u'http://api.launchpad.dev/beta/~myteam/member_memberships'
 
-   >>> unauthorized_view = nopriv_full_rw_webservice.get(
-   ...     '/beta/~myteam').jsonBody()
+   >>> unauthorized_view = user_webservice.get('/beta/~myteam').jsonBody()
    >>> unauthorized_view['members_collection_link']
    u'tag:launchpad.net:2008:redacted'
    >>> unauthorized_view['member_memberships_collection_link']

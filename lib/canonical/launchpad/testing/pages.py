@@ -534,9 +534,9 @@ def setUpGlobs(test):
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
-    test.globs['salgado_public_rw_webservice'] = WebServiceCaller(
+    test.globs['public_webservice'] = WebServiceCaller(
         'foobar123451432', 'qQ7dw1fXCR5hhJRN7ztj', port=9000)
-    test.globs['nopriv_full_rw_webservice'] = WebServiceCaller(
+    test.globs['user_webservice'] = WebServiceCaller(
         'launchpad-library', '3SdVlTlVKcgXSJHbsSSk', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
