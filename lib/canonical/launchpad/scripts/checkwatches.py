@@ -581,9 +581,19 @@ class BugWatchUpdater(object):
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
-            poster = getUtility(IPersonSet).ensurePerson(
-                email, displayname, PersonCreationRationale.BUGIMPORT,
-                comment='when importing comments for %s.' % bug_watch.title)
+            # We only try to create a person with an EmailAddress if
+            # the remote bugtracker has returned an email address for us
+            # to use.
+            if email is not None:
+                poster = getUtility(IPersonSet).ensurePerson(
+                    email, displayname, PersonCreationRationale.BUGIMPORT,
+                    comment='when importing comments for %s.' %
+                        bug_watch.title)
+            else:
+                poster = getUtility(IPersonSet).createPersonWithoutEmail(
+                    displayname, PersonCreationRationale.BUGIMPORT,
+                    comment='when importing comments for %s.' %
+                        bug_watch.title)
 
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)

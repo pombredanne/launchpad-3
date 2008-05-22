@@ -166,6 +166,25 @@ is associated with the existing account.
     >>> bug.messages[-1].owner.name
     u'no-priv'
 
+It's also possible for Launchpad to create Persons from remote
+bugtracker users when the remote bugtracker doesn't specify an email
+address. In those cases, the ExternalBugTracker's getPosterForComment()
+method will return a tuple of (displayname, None), which can then be
+used to create a Person based on the displayname alone.
+
+    >>> external_bugtracker.poster_tuple = ('oiqefh0q3', None)
+    >>> external_bugtracker.remote_comments['no-email-comment'] = (
+    ...     "Yet another comment.")
+
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+    >>> bug.messages[-1].owner.name
+    u'noemail'
+
+    >>> print bug.messages[-1].owner.preferredemail
+    None
+
 
 == BugWatch comment importing functionality ==
 
