@@ -7,10 +7,11 @@ the updateBugTrackers() method.
 We'll update all bugtrackers so that the test doesn't try to make any
 external connections.
 
-    >>> from canonical.database.sqlbase import cursor
+    >>> from canonical.database.sqlbase import cursor, sqlvalues
     >>> from canonical.database.constants import UTC_NOW
     >>> cur = cursor()
-    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" % UTC_NOW)
+    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" %
+    ...     sqlvalues(UTC_NOW))
     >>> import transaction
     >>> transaction.commit()
 
