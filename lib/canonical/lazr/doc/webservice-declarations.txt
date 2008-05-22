@@ -1255,7 +1255,5 @@ InvalidEmail exception.
 
 (Clean-up.)
 
-    >>> from zope.testing.cleanup import cleanUp
-    >>> cleanUp()
     >>> del bookexample
     >>> del sys.modules['canonical.lazr.bookexample']
