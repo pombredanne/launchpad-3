@@ -352,6 +352,14 @@ COMMENT ON COLUMN CommercialSubscription.purchaser IS 'The person who purchased 
 COMMENT ON COLUMN CommercialSubscription.whiteboard IS 'A place for administrators to store comments related to this subscription.';
 COMMENT ON COLUMN CommercialSubscription.sales_system_id IS 'A reference in the external sales system (e.g. Salesforce) that can be used to identify this subscription.';
 
+-- CustomLanguageCode
+COMMENT ON TABLE CustomLanguageCode IS 'Overrides translation importer''s interpretation of language codes where needed.';
+COMMENT ON COLUMN CustomLanguageCode.product IS 'Product for which this custom language code applies (alternative to distribution + source package name).';
+COMMENT ON COLUMN CustomLanguageCode.distribution IS 'Distribution in which this custom language code applies (if not a product).';
+COMMENT ON COLUMN CustomLanguageCode.sourcepackagename IS 'Source package name to which this custom language code applies; goes with distribution.';
+COMMENT ON COLUMN CustomLanguageCode.language_code IS 'Custom language code; need not be for a real language, and typically not for a "useful" language.';
+COMMENT ON COLUMN CustomLanguageCode.language IS 'Language to which code really refers in this context, or NULL if files with this code are to be rejected.';
+
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';

@@ -25,9 +25,10 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
-    IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
-    ISourcePackage, ITranslationImporter, ITranslationImportQueue,
+    ICustomLanguageCode, IDistribution, IDistroSeries,
+    IHasTranslationImports, ILanguageSet, IPerson, IPOFileSet,
+    IPOTemplateSet, IProduct, IProductSeries, ISourcePackage,
+    ITranslationImporter, ITranslationImportQueue,
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
     TranslationFileFormat)
 from canonical.launchpad.translationformat.gettext_po_importer import (
@@ -184,16 +185,32 @@ class TranslationImportQueueEntry(SQLBase):
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
-    @property
-    def guessed_language(self):
+    def _findCustomLanguageCode(self, language_code):
+        """Find applicable custom language code, if any."""
+        if self.distroseries is not None:
+            return self.distroseries.distribution.getCustomLanguageCode(
+                self.sourcepackagename, language_code)
+        else:
+            return self.productseries.product.getCustomLanguageCode(
+                language_code)
+
+    def _guessLanguage(self):
         """See ITranslationImportQueueEntry."""
         importer = getUtility(ITranslationImporter)
         if not importer.isTranslationName(self.path):
             # This does not look like the name of a translation file.
             return None
         filename = os.path.basename(self.path)
-        guessed_language, file_ext = os.path.splitext(filename)
-        return guessed_language
+        language_code, file_ext = os.path.splitext(filename)
+
+        custom_language_code = self._findCustomLanguageCode(language_code)
+        if custom_language_code:
+            if custom_language_code.language is None:
+                language_code = None
+            else:
+                language_code = custom_language_code.language.code
+
+        return language_code
 
     @property
     def import_into(self):
@@ -329,18 +346,21 @@ class TranslationImportQueueEntry(SQLBase):
         # We know the IPOTemplate associated with this entry so we can try to
         # detect the right IPOFile.
         # Let's try to guess the language.
-        if not importer.isTranslationName(self.path):
+        guessed_language = self._guessLanguage()
+        if guessed_language is None:
+            # Custom language code says to ignore imports with this language
+            # code.
+            self.status = RosettaImportStatus.DELETED
+            return None
+        elif guessed_language == '':
             # We don't recognize this as a translation file with a name
             # consisting of language code and format extension.  Look for an
             # existing translation file based on path match.
             return self._guessed_pofile_from_path
-
-        filename = os.path.basename(self.path)
-        guessed_language, file_ext = os.path.splitext(filename)
-
-        return self._get_pofile_from_language(guessed_language,
-            self.potemplate.translation_domain,
-            sourcepackagename=self.potemplate.sourcepackagename)
+        else:
+            return self._get_pofile_from_language(guessed_language,
+                self.potemplate.translation_domain,
+                sourcepackagename=self.potemplate.sourcepackagename)
 
     def _guess_multiple_directories_with_pofile(self):
         """Return `IPOFile` that we think is related to this entry, or None.

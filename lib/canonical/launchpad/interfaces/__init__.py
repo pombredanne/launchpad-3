@@ -61,6 +61,7 @@ from canonical.launchpad.interfaces.codereviewvote import *
 from canonical.launchpad.interfaces.commercialsubscription import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
+from canonical.launchpad.interfaces.customlanguagecode import *
 from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *

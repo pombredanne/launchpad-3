@@ -31,6 +31,7 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
+from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
@@ -727,6 +728,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
+
+    def getCustomLanguageCode(self, language_code):
+        """See `IProduct`."""
+        return CustomLanguageCode.selectOneBy(
+            product=self, language_code=language_code)
 
 
 class ProductSet:

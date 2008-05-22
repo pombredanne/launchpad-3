@@ -385,6 +385,13 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         """Ensure that the bounty is linked to this product. Return None.
         """
 
+    def getCustomLanguageCode(language_code):
+        """Look up `ICustomLanguageCode` for `language_code`, if any.
+
+        Products may override language code definitions for translation
+        import purposes.
+        """
+
 
 class IProductSet(Interface):
     """The collection of products."""

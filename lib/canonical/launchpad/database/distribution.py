@@ -29,6 +29,7 @@ from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
@@ -1221,6 +1222,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 (dsp, product, total_bugs, bugs_triaged,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
+
+    def getCustomLanguageCode(self, sourcepackagename, language_code):
+        """See `IDistribution`."""
+        return CustomLanguageCode.selectOneBy(
+            distribution=self, sourcepackagename=sourcepackagename,
+            language_code=language_code)
 
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""

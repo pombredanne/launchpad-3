@@ -349,6 +349,13 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
               bug watches or to products that use_malone.
         """
 
+    def getCustomLanguageCode(sourcepackagename, language_code):
+        """Look up `ICustomLanguageCode`.
+
+        A `SourcePackageName` in a Distribution may override some
+        language codes for translation import purposes.
+        """
+
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

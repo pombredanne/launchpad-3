@@ -49,6 +49,7 @@
     <include file="codereviewmessage.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
+    <include file="customlanguagecode.zcml" />
     <include file="cve.zcml" />
     <include file="cve-events.zcml" />
     <include file="cvereference.zcml" />
