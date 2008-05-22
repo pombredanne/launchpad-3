@@ -980,7 +980,7 @@ def notify_bug_subscripiton_added(bug_subscription, event):
             msg = construct_bug_notification(
                 bug=bug_subscription.bug,
                 from_address=from_address,
-                address=address, # TODO
+                address=address,
                 body=body,
                 subject='You have been subscribed',
                 email_date=datetime.datetime.now(),
