@@ -1912,7 +1912,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # will do for now. -- Guilherme Salgado, 2007-07-03
             self.account.status = AccountStatus.ACTIVE
             self.account.status_comment = None
-            self.account.sync() # sync so the validpersoncache view is updated.
+            self.account.sync() # sync so validpersoncache updates.
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):

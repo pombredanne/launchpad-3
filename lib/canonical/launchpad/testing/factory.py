@@ -552,7 +552,6 @@ class LaunchpadObjectFactory:
             person, name, brazil, city, addressline, phone)
         # We don't want to login() as the person used to create the request,
         # so we remove the security proxy for changing the status.
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
         template = getUtility(IStandardShipItRequestSet).getByFlavour(
             flavour)[0]

@@ -13,7 +13,6 @@ First, we need to set the password to something I know
     ...         AND Account.id = AccountPassword.account
     ...     """)
     >>> transaction.commit()
-    >>> import time
 
 'martin-pitt' doesn't have a preferred email address.
 He can't login without first validating his email address.

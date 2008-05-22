@@ -15,8 +15,8 @@ __all__ = [
         ]
 
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, Object, Text, TextLine
+from zope.interface import Interface
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, PasswordField
