@@ -6,6 +6,11 @@ if [ -z $LPCONFIG ]; then
     echo LPCONFIG must be set to run this script.
     exit 1
 fi
+SECURITY_PUBLISHER="no"
+if [ "$1" = "security" ]; then
+    # we're running a security publisher run, which skips some steps
+    SECURITY_PUBLISHER="yes"
+fi
 
 set -x
 set -e
@@ -42,7 +47,7 @@ MD5LIST=$INDICES/md5sums.gz
 
 # Manipulate the environment
 export GNUPGHOME
-PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing
+PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing:$LAUNCHPADROOT/scripts/ftpmaster-tools
 
 # claim the lock
 
@@ -72,6 +77,9 @@ cleanup () {
       mv ${DISTSROOT_PARTNER}.new ${DISTSCOPYROOT_PARTNER}/dists
     fi
   fi
+  if [ "$SECURITY_PUBLISHER" = "yes" ]; then
+    exec $0
+  fi
 }
 
 trap cleanup EXIT
@@ -80,6 +88,30 @@ trap cleanup EXIT
 
 # Process the accepted queue into the publishing records.
 process-accepted.py -v -v -v $DISTRONAME
+
+# If doing a security run, find out which suites are pending publication
+SUITEOPTS=""
+if [ "$SECURITY_PUBLISHER" = "yes" ]; then
+    SUITES=$(lp-query-distro.py pending_suites)
+    SECURITY_SUITES="no"
+    if [ -n "$SUITES" ]; then
+        SUITEOPTS=""
+        for SUITE in $SUITES; do
+            case $SUITE in
+                *-security)
+                    SECURITY_SUITES="yes"
+                    SUITEOPTS="$SUITEOPTS -s $SUITE"
+                    ;;
+                *)
+                    ;;
+            esac
+        done
+    fi
+    if [ "$SECURITY_SUITES" != "yes" ]; then
+        echo "Nothing to do for security publisher; exiting."
+        exit 0
+    fi
+fi
 
 # Copy the dists tree ready for publishing into so that we don't get
 # an inconsistent dists tree at any point during the publishing cycle.
@@ -102,7 +134,7 @@ rsync -aH --delete ${DISTSROOT_PARTNER}/ ${ARCHIVEROOT_PARTNER}/dists.new
 # Publish the results for all archives (except PPA).
 # (The -R only affects the primary and the partner archive.)
 publish-distro.py -v -v --partner -d $DISTRONAME -R ${DISTSROOT_PARTNER}.new
-publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
+publish-distro.py -v -v -d $DISTRONAME $SUITEOPTS -R ${DISTSROOT}.new
 
 set +x
 # Find all the Release files for which the Release.GPG is missing/too-old
@@ -166,6 +198,9 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     done
 fi
 
+# Skip long-running processes when doing a quick security run:
+if [ "$SECURITY_PUBLISHER" != "yes" ]; then
+
 # Make the lslr because we all love those
 LSLR=ls-lR.gz
 ( cd $ARCHIVEROOT ; \
@@ -190,6 +225,9 @@ find $ARCHIVEROOT_PARTNER -type d -empty | xargs -r rmdir
 
 # invoke cron.germinate to fill ubuntu tasks
 cron.germinate
+
+# End of block skipped by security publishing:
+fi
 
 # Trigger master mirrors
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
