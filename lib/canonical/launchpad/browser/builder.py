@@ -245,13 +245,10 @@ class HiddenBuilder:
     failnotes = None
     currentjob = None
     builderok = False
+    status = 'Building private build'
 
     def __init__(self, context):
         self.context = context
-
-    @property
-    def status(self):
-        return 'Building private build'
 
     # This method is required because the builder history page will have this
     # cloaked context if the builder is currently processing a private build.
