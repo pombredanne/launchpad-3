@@ -15,10 +15,11 @@ from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
-    IBugEmailCommand, IBugTaskEditEmailCommand, IBugTaskEmailCommand,
-    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
-    IWeaklyAuthenticatedPrincipal, QuestionStatus)
+    IBugEmailCommand, IBugMessageSet, IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand, IDistroBugTask, IDistroSeriesBugTask,
+    ILaunchBag, IMailHandler, IMessageSet, IQuestionSet,
+    ISpecificationSet, IUpstreamBugTask, IWeaklyAuthenticatedPrincipal,
+    QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -256,7 +257,24 @@ class MaloneHandler:
                                 filealias=filealias,
                                 parsed_message=signed_msg,
                                 fallback_parent=bug.initial_message)
-                            bugmessage = bug.linkMessage(message)
+
+                            # If the new message's parent is linked to
+                            # a bug watch we also link this message to
+                            # that bug watch.
+                            bug_message_set = getUtility(IBugMessageSet)
+                            parent_bug_message = (
+                                bug_message_set.getByBugAndMessage(
+                                    bug, message.parent))
+
+                            if (parent_bug_message is not None and
+                                parent_bug_message.bugwatch):
+                                bug_watch = parent_bug_message.bugwatch
+                            else:
+                                bug_watch = None
+
+                            bugmessage = bug.linkMessage(
+                                message, bug_watch)
+
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
                         else:

@@ -13,7 +13,6 @@ import shutil
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.builtins import get_format_type
 from bzrlib.bzrdir import BzrDir
 from bzrlib.repository import Repository
 from bzrlib.urlutils import local_path_to_url
@@ -115,21 +114,13 @@ class TestImportdTargetGetterUpgrade(ImportdTargetGetterTestCase):
     """Test upgrade functionality of ImportdTargetGetter."""
 
     def setUpMirror(self):
-        self.setUpOneCommit()
+        self.setUpOneCommit(format='weave')
         self.importd_publisher.publish()
         # The publisher will creates a branch using the default format, so we
         # need to copy our old-format branch in place.
         shutil.rmtree(self.mirrorPath())
         os.rename(self.bzrworking, self.mirrorPath())
         assert self.locationNeedsUpgrade(self.mirrorPath())
-
-    def setUpOneCommit(self):
-        weave_format = get_format_type('weave')
-        os.mkdir(self.bzrworking)
-        branch = BzrDir.create_branch_convenience(
-            self.bzrworking, format=weave_format)
-        workingtree = branch.bzrdir.open_workingtree()
-        workingtree.commit('first commit')
 
     def locationNeedsUpgrade(self, location):
         """Does the branch at the provided location need a format upgrade?"""
@@ -141,7 +132,7 @@ class TestImportdTargetGetterUpgrade(ImportdTargetGetterTestCase):
         self.setUpMirror()
         # The test fixture must set up a mirror branch that needs an upgrade.
         mirror_bzrdir = BzrDir.open_unsupported(self.mirrorPath())
-        assert self.locationNeedsUpgrade(self.mirrorPath())
+        self.assertTrue(self.locationNeedsUpgrade(self.mirrorPath()))
         # Get a sync target and check that it's good in the same way as in
         # testGetTarget.
         self.importd_getter.get_target()
