@@ -4,7 +4,7 @@
    omit-tag="">
     <div class="boardCommentSummary">
         <div class="boardCommentDetails">
-            <tal:owner tal:replace="structure context/message/owner/fmt:link"
+            <tal:owner tal:replace="structure context/message/owner/fmt:link:mainsite"
                   />
             <tal:voted tal:condition="context/vote"> voted
               <strong tal:content="context/vote/title"

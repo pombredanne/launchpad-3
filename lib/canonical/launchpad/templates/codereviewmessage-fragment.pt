@@ -4,7 +4,7 @@
    omit-tag="">
     <div class="boardComment">
         <div class="boardCommentDetails">
-            <span tal:content="structure context/message/owner/fmt:link"
+            <span tal:content="structure context/message/owner/fmt:link:mainsite"
                   id="comment-from" />
             <span tal:condition="context/vote" id="voted-block">
               voted

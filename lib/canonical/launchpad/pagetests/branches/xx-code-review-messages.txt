@@ -32,6 +32,8 @@ Now, open its home page.
     my body
     >>> print_tag('comment-from')
     No Privileges Person
+    >>> print anon_browser.getLink('No Privileges Person').url
+    http://launchpad.dev/~no-priv
     >>> print_tag('wrote-block', nopriv_browser)
     wrote
     >>> find_tag_by_id(nopriv_browser.contents, 'voted-block') is None
