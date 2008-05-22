@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
     PersonVisibility)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -58,10 +59,16 @@ class AuthorizationBase:
 
 
 class ViewByLoggedInUser(AuthorizationBase):
+    """The default ruleset for the launchpad.View permission.
+
+    By default, any logged-in user can see anything. More restrictive
+    rulesets are defined in other IAuthorization implementations.
+    """
     permission = 'launchpad.View'
     usedfor = Interface
 
     def checkAuthenticated(self, user):
+        """Any authenticated user can see this object."""
         return True
 
 
@@ -1596,3 +1603,20 @@ class MailingListApprovalByExperts(AuthorizationBase):
     def checkAuthenticated(self, user):
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
         return user.inTeam(experts)
+
+
+class ViewEmailAddress(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IEmailAddress
+
+    def checkAuthenticated(self, user):
+        """Can the user see the details of this email address?
+
+        If the email address' owner doesn't want his email addresses to be
+        hidden, anyone can see them.  Otherwise only the owner himself or
+        admins can see them.
+        """
+        if not self.obj.person.hide_email_addresses:
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user == self.obj.person or user.inTeam(admins)

@@ -19,6 +19,7 @@ __all__ = [
 import copy
 from datetime import datetime
 import simplejson
+from types import NoneType
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
@@ -31,7 +32,8 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError, getFields
-from zope.schema.interfaces import ConstraintNotSatisfied, IChoice, IObject
+from zope.schema.interfaces import (
+    ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from canonical.lazr.enum import BaseItem
@@ -332,7 +334,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
 
     def _processCustomOperationResult(self, result):
         """Process the result of a custom operation."""
-        if isinstance(result, basestring):
+        if isinstance(result, (basestring, NoneType)):
             # The operation took care of everything and just needs
             # this string served to the client.
             return result
@@ -582,16 +584,40 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # The client can't see the field's current value, and
                 # isn't trying to change it. Skip to the next field.
                 continue
+
             try:
                 value = marshaller.marshall(original_value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
 
-            # If the new value is the URL to an object, make sure it points
-            # to the right kind of object.
-            if (IObject.providedBy(field)
-                and not ICollectionField.providedBy(field)):
+            if ICollectionField.providedBy(field):
+                # This is a collection field, so the most we can do is set an
+                # error message if the new value is not identical to the
+                # current one.
+                if value != current_value:
+                    errors.append("%s: You tried to modify a collection "
+                                  "attribute." % repr_name)
+                continue
+
+            if IBytes.providedBy(field):
+                # We don't modify Bytes fields from the Entry that contains
+                # them, but we may tell users how to do so if they attempt to
+                # change them.
+                if value != current_value:
+                    if field.readonly:
+                        errors.append("%s: You tried to modify a read-only "
+                                      "attribute." % repr_name)
+                    else:
+                        errors.append(
+                            "%s: To modify this field you need to send a PUT "
+                            "request to its URI (%s)."
+                            % (repr_name, current_value))
+                continue
+
+            # If the new value is an object, make sure it provides the correct
+            # interface.
+            if value is not None and IObject.providedBy(field):
                 # XXX leonardr 2008-15-04 blueprint=api-wadl-description:
                 # This should be moved into the
                 # ObjectLookupFieldMarshaller, once we make it
@@ -602,19 +628,15 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                                   "wrong kind of object" % repr_name)
                     continue
 
-            change_this_field = True
-            # Read-only attributes and collection links can't be
-            # modified. It's okay to specify a value for an attribute
-            # that can't be modified, but the new value must be the
-            # same as the current value.  This makes it possible to
-            # GET a document, modify one field, and send it back.
-            if ICollectionField.providedBy(field):
-                change_this_field = False
-                if value != current_value:
-                    errors.append("%s: You tried to modify a collection "
-                                  "attribute." % repr_name)
-                    continue
+            # Obtain the current value of the field.  This gives us an easy
+            # way to see if the client changed the value.
+            current_value = getattr(self.entry, name)
 
+            change_this_field = True
+            # Read-only attributes can't be modified. It's okay to specify a
+            # value for an attribute that can't be modified, but the new value
+            # must be the same as the current value.  This makes it possible
+            # to GET a document, modify one field, and send it back.
             if field.readonly:
                 change_this_field = False
                 if value != current_value:
@@ -624,6 +646,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
             if change_this_field is True and value != current_value:
                 if not IObject.providedBy(field):
+                    # We don't validate IObject values because that
+                    # can lead to infinite recursion. We don't _need_
+                    # to validate IObject values because a client
+                    # isn't changing anything about the IObject; it's
+                    # just associating one IObject or another with an
+                    # entry. We're already checking the type of the
+                    # new IObject, and that's the only error the
+                    # client can cause.
                     try:
                         # Do any field-specific validation.
                         field.validate(value)

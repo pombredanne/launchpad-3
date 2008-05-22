@@ -111,7 +111,7 @@ resource yields a 405 error.
 
   >>> print webservice.delete("/beta/~salgado")
   HTTP/1.1 405 Method Not Allowed
-  Allow: GET PUT PATCH
+  Allow: GET POST PUT PATCH
   ...
 
   >>> print webservice.delete("/beta/debian/+source/mozilla-firefox/+bug/1")
