@@ -57,6 +57,14 @@ class AuthorizationBase:
         return False
 
 
+class ViewByLoggedInUser(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        return True
+
+
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = Interface

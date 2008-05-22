@@ -74,17 +74,16 @@ course, not see those items. The admin user can see all bugs on the
 site.
 
   >>> admin_output = webservice.get("/beta/bugs?ws_size=50").jsonBody()
-  >>> admin_output
-  >>> admin_output(['total_size'])
+  >>> admin_output['total_size']
   15
-  >>> len(full_output['entries'])
+  >>> len(admin_output['entries'])
   15
 
 But the 'no-priv' user can't see bug number 14, which is private.
 
   >>> nopriv_output = user_webservice.get(
   ...     "/beta/bugs?ws_size=100").jsonBody()
-  >>> nopriv_output(['total_size'])
+  >>> nopriv_output['total_size']
   14
   >>> len(nopriv_output['entries'])
   14
@@ -95,7 +94,7 @@ operating on public data.
 
   >>> public_output = public_readonly_webservice.get(
   ...     "/beta/bugs?ws_size=50").jsonBody()
-  >>> public_output(['total_size'])
+  >>> public_output['total_size']
   15
   >>> len(public_output['entries'])
   14
