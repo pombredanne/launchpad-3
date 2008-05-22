@@ -101,8 +101,11 @@ class IEmailAddress(Interface):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, person=None, status=EmailAddressStatus.NEW):
-        """Create a new EmailAddress with the given email, pointing to person.
+    def new(email, person=None, status=EmailAddressStatus.NEW, account=None):
+        """Create a new EmailAddress with the given email.
+        
+        The newly created EmailAddress will point to the person
+        and/or account.
 
         The given status must be an item of EmailAddressStatus.
 

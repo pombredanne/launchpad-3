@@ -161,7 +161,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         We can't do this in a DB trigger as soon the Account table will
         in a seperate database to the Person table.
         """
-        if self.account is not None:
+        if self.account is not None and self.account.displayname != value:
             self.account.displayname = value
         self._SO_set_displayname(value)
 
@@ -2242,36 +2242,32 @@ class PersonSet:
         if not displayname:
             displayname = name.capitalize()
 
-        person = self._newPerson(
-            name, displayname, hide_email_addresses, rationale=rationale,
-            comment=comment, registrant=registrant)
-
-        email = getUtility(IEmailAddressSet).new(email, person)
-
         # Convert the PersonCreationRationale to an AccountCreationRationale
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
         account = getUtility(IAccountSet).new(
-                account_rationale, displayname, email,
+                account_rationale, displayname,
                 password=password, password_is_encrypted=passwordEncrypted)
 
-        person.account = account
-        email.account = account
+        person = self._newPerson(
+            name, displayname, hide_email_addresses, rationale=rationale,
+            comment=comment, registrant=registrant, account=account)
+
+        email = getUtility(IEmailAddressSet).new(
+                email, person, account=account)
 
         return person, email
 
     def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, registrant=None):
+                   rationale, comment=None, registrant=None, account=None):
         """Create and return a new Person with the given attributes.
 
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
-
-        Also generates an Account, but this will change!
         """
         assert self.getByName(name, ignore_merged=False) is None
         person = Person(
-            name=name, displayname=displayname,
+            name=name, displayname=displayname, account=account,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
 

@@ -72,15 +72,12 @@ class Account(SQLBase):
 class AccountSet:
     implements(IAccountSet)
 
-    def new(self, rationale, displayname, emailaddress,
+    def new(self, rationale, displayname,
             password=None, password_is_encrypted=False):
         """See IAccountSet."""
 
         account = Account(
                 displayname=displayname, creation_rationale=rationale)
-
-        # Link the EmailAddress to the Account.
-        emailaddress.account = account
 
         # Create the password record
         if not password_is_encrypted and password is not None:

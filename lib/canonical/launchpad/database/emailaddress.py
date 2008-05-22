@@ -56,7 +56,9 @@ class EmailAddressSet:
         return EmailAddress.selectOne(
             "lower(email) = %s" % quote(email.strip().lower()))
 
-    def new(self, email, person=None, status=EmailAddressStatus.NEW):
+    def new(
+            self, email, person=None, status=EmailAddressStatus.NEW,
+            account=None):
         """See IEmailAddressSet."""
         email = email.strip()
 
@@ -68,5 +70,7 @@ class EmailAddressSet:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
-        return EmailAddress(email=email, status=status, person=person)
+        return EmailAddress(
+                email=email, status=status, person=person, account=account)
+
 
