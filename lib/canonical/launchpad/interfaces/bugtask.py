@@ -34,7 +34,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
-    'UserCanNotEditBugTaskStatus',
+    'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
 from zope.component import getUtility
@@ -47,8 +47,8 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ProductNameField, PublicPersonChoice,
-    StrippedTextLine, Summary, Tag)
+    BugField, ProductNameField, PublicPersonChoice, StrippedTextLine, Summary,
+    Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -303,18 +303,22 @@ class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
 
 
-class UserCanNotEditBugTaskStatus(Exception):
-    webservice_error(401)
+class UserCannotEditBugTaskStatus(Exception):
+    """User not permitted to change status.
+
+    Raised when a user tries to transition to a new status who doesn't
+    have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
 
 
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
 
-    id = exported(
-        Int(title=_("Bug Task #")))
+    id = Int(title=_("Bug Task #"))
     bug = exported(
-        Object(title=_("Bug"), schema=Interface)) # Will be specified later.
+        BugField(title=_("Bug")))
     product = Choice(title=_('Project'), required=False,
                vocabulary='Product')
     productseries = Choice(title=_('Series'), required=False,
@@ -322,12 +326,13 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
-    distribution = Choice(title=_("Distribution"), required=False,
-               vocabulary='Distribution')
-    distroseries = Choice(title=_("Series"), required=False,
-               vocabulary='DistroSeries')
-    milestone = Choice(title=_('Milestone'), required=False,
-               vocabulary='Milestone')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
+    distroseries = Choice(
+        title=_("Series"), required=False,
+        vocabulary='DistroSeries')
+    milestone = Choice(
+        title=_('Milestone'), required=False, vocabulary='Milestone')
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
@@ -340,12 +345,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
                default=BugTaskImportance.UNDECIDED))
-    statusexplanation = exported(
-        Text(title=_("Status notes (optional)"), required=False),
-        exported_as='status_explanation')
+    statusexplanation = Text(
+        title=_("Status notes (optional)"), required=False)
     assignee = exported(
         PublicPersonChoice(title=_('Assigned to'), required=False,
-                           vocabulary='ValidAssignee'))
+                           vocabulary='ValidAssignee',
+                           readonly=True))
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -364,40 +369,49 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     date_assigned = exported(
         Datetime(title=_("Date Assigned"),
                  description=_("The date on which this task was assigned "
-                               "to someone.")))
+                               "to someone."),
+                 readonly=True))
     datecreated = exported(
         Datetime(title=_("Date Created"),
-                 description=_("The date on which this task was created.")),
+                 description=_("The date on which this task was created."),
+                 readonly=True),
         exported_as='date_created')
     date_confirmed = exported(
         Datetime(title=_("Date Confirmed"),
                  description=_("The date on which this task was marked "
-                               "Confirmed.")))
+                               "Confirmed."),
+                 readonly=True))
     date_inprogress = exported(
         Datetime(title=_("Date In Progress"),
                  description=_("The date on which this task was marked "
-                               "In Progress.")),
+                               "In Progress."),
+                 readonly=True),
         exported_as='date_in_progress')
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
-                               "either Fix Committed or Fix Released.")))
+                               "either Fix Committed or Fix Released."),
+                 readonly=True))
     date_left_new = exported(
         Datetime(title=_("Date left new"),
                  description=_("The date on which this task was marked "
-                               "with a status higher than New.")))
+                               "with a status higher than New."),
+                 readonly=True))
     date_triaged = exported(
         Datetime(title=_("Date Triaged"),
                  description=_("The date on which this task was marked "
-                               "Triaged.")))
+                               "Triaged."),
+                 readonly=True))
     date_fix_committed = exported(
         Datetime(title=_("Date Fix Committed"),
                  description=_("The date on which this task was marked "
-                               "Fix Committed.")))
+                               "Fix Committed."),
+                 readonly=True))
     date_fix_released = exported(
         Datetime(title=_("Date Fix Relesaed"),
                  description=_("The date on which this task was marked "
-                               "Fix Released.")))
+                               "Fix Released."),
+                 readonly=True))
     age = Datetime(title=_("Age"),
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
@@ -418,7 +432,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
             description=_(
                 "IBugTasks related to this one, namely other "
                 "IBugTasks on the same IBug."),
-            value_type=Object(schema=Interface))) # Will be specified later.
+            value_type=Object(schema=Interface),
+            readonly=True)) # Will be specified later.
     pillar = Choice(
         title=_('Pillar'),
         description=_("The LP pillar (product or distribution) "
@@ -447,7 +462,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     is_complete = exported(
         Bool(description=_(
                 "True or False depending on whether or not there is more "
-                " work required on this bug task.")))
+                " work required on this bug task."),
+             readonly=True))
 
     def getConjoinedMaster(bugtasks):
         """Return the conjoined master in the given bugtasks, if any.

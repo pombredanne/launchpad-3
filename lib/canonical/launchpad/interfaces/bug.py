@@ -500,11 +500,6 @@ class IBug(IMessageTarget, ICanBeMentored):
         """
 
 
-# Set Object schemas that were impossible to specify during the
-# definition of IBug itself.
-IBugTask['bug'].schema = IBug
-
-
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
 
