@@ -73,10 +73,12 @@
         <div class="three column middle">
           <h2>What&#8217;s new here?</h2>
           <ul>
-            <li class="news">
-              <strong>Site-wide search improvements</strong><br />
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=80">
+                <strong>Site-wide search improvements</strong><br />
                 We have significantly enhanced our site-wide search feature to
                 provide better results. Give it a try!
+              </a>
            </li>
             <li class="news">
               <a href="http://news.launchpad.net/category/podcast">
