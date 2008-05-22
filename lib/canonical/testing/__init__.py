@@ -53,5 +53,6 @@ def reset_logging():
 
 # Imported here to avoid circular import issues
 # pylint: disable-msg=W0401
+from canonical.testing.layers import *
 from canonical.testing.layers import __all__ as layers_all
 __all__.extend(layers_all)
