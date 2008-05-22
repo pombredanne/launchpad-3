@@ -522,6 +522,11 @@ class LaunchpadServer(Server):
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
+    def _getStackOnURL(self, unique_name):
+        stack_on_url = urlutils.join(
+            config.codehosting.supermirror_root, unique_name)
+        return stack_on_url
+
     def _buildControlDirectory(self, unique_name):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
         memory_server = MemoryServer()
@@ -532,11 +537,11 @@ class LaunchpadServer(Server):
 
         format = BzrDirFormat.get_default_format()
         format.initialize_on_transport(transport)
-        stack_on_url = urlutils.join(
-            config.codehosting.supermirror_root, unique_name)
-        # XXX: JonathanLange 2008-05-20: We should use the higher-level bzrlib
-        # APIs to do this: bzrdir.get_config().set_default_stack_on(). But
-        # those APIs aren't in bzr mainline yet, so...
+        stack_on_url = self._getStackOnURL(unique_name)
+        # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
+        # higher-level bzrlib APIs to do this:
+        # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in
+        # bzr mainline yet, so...
         transport.put_bytes(
             '.bzr/control.conf', 'default_stack_on=%s\n' % stack_on_url)
         return transport
