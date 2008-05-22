@@ -4,6 +4,10 @@ Just to show that we're actually talking to the appserver, first check to see
 if a specific user exists...
 
     >>> browser = Browser('foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev:8085/')
+    >>> browser.url
+    'http://launchpad.dev:8085/'
+
     >>> browser.open('http://launchpad.dev:8085/~stimpy')
     Traceback (most recent call last):
     ...
