@@ -2,28 +2,21 @@
 
 There are several views of the branches related to a person.
 
-Branch lists for people also include branches that are owned by
-teams that the person is participating in.
-
-    >>> from canonical.launchpad.ftests.branch_helper import (
-    ...     reset_all_branch_last_modified)
-    >>> reset_all_branch_last_modified()
-
 
 == Related Branches ==
 
 First, check that the condensed branch listing page works:
 
-  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-  >>> browser.open('http://code.launchpad.dev/~name12')
-  >>> print browser.title
-  Bazaar branches related to Sample Person
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> print browser.title
+    Bazaar branches related to Sample Person
 
 The heading in the main content is the same as the page title text.
 
-  >>> main = find_main_content(browser.contents)
-  >>> print extract_text(main.h1)
-  Bazaar branches related to Sample Person
+    >>> main = find_main_content(browser.contents)
+    >>> print extract_text(main.h1)
+    Bazaar branches related to Sample Person
 
 
 == Default view for a person on code root site ==
@@ -34,12 +27,10 @@ listing view for that person.
 If a person does not have any related branches, we print an informative
 message.
 
-  >>> browser.open('http://code.launchpad.dev/~kinnison')
-  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There are no branches related to Daniel Silverstone in Launchpad today.
-  You can use Launchpad as a registry for Bazaar branches, and encourage
-  broader community participation in your project using
-  distributed version control.
+    >>> browser.open('http://code.launchpad.dev/~kinnison')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'no-branch-message'))
+    There are no branches related to Daniel Silverstone today.
 
 
 == Owned Branches ==
@@ -48,7 +39,7 @@ There is a link in the branch context menu for person which points to
 the owned branches page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Owned').click()
+    >>> browser.getLink('owned').click()
     >>> print browser.title
     Bazaar branches owned by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -67,7 +58,7 @@ the owned branches page.
 There is also a link which points to the registered branches page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Registered').click()
+    >>> browser.getLink('registered').click()
     >>> print browser.title
     Bazaar branches registered by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
@@ -87,7 +78,7 @@ From the persons main listing page, there is also a link to subscribed
 branches.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Subscribed').click()
+    >>> browser.getLink('subscribed').click()
     >>> print browser.title
     Bazaar branches subscribed to by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
