@@ -86,3 +86,11 @@ branches.
     ...     print extract_text(row)
     lp://dev/~launchpad/gnome-terminal/launchpad  New           ...
     lp://dev/~name12/+junk/junk.dev               Experimental  ...
+
+
+== Person branch summary ==
+
+Each of the person branch listing pages now has a brief summary at the
+top of the page with some branch counts.  These also contain the links
+to the registered, owned and subscribed listing pages for a person.
+
