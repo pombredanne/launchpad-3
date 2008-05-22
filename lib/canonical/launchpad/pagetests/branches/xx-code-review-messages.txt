@@ -11,8 +11,6 @@ Set up required objects
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> nopriv_browser.open(merge_proposal_url)
     >>> nopriv_browser.getLink('Add comment').click()
-    >>> nopriv_browser.getControl('Vote').displayValue = ['Approve']
-    >>> nopriv_browser.getControl('Tag').value = 'my tag'
     >>> nopriv_browser.getControl('Subject').value = 'my subject'
     >>> nopriv_browser.getControl('Comment').value = 'my body'
     >>> nopriv_browser.getControl('Add').click()
@@ -34,10 +32,10 @@ Now, open its home page.
     my body
     >>> print_tag('comment-from')
     No Privileges Person
-    >>> print_tag('comment-vote')
-    Approve
-    >>> print_tag('comment-vote-tag')
-    my tag
+    >>> print_tag('wrote-block', nopriv_browser)
+    wrote
+    >>> find_tag_by_id(nopriv_browser.contents, 'voted-block') is None
+    True
 
 Reply link is displayed even if the user isn't logged in.
 
@@ -56,6 +54,7 @@ We can reply to a comment.
     >>> nopriv_browser.getControl('Comment').value = ('I like this.\n'
     ... 'I wish I had time to review it properly')
     >>> nopriv_browser.getControl('Vote').displayValue = ['Abstain']
+    >>> nopriv_browser.getControl('Tag').value = 'timeless'
     >>> nopriv_browser.getControl('Add').click()
 
 After this, we are taken to the view page for that comment.
@@ -65,8 +64,18 @@ After this, we are taken to the view page for that comment.
     >>> print_tag('comment-body', nopriv_browser)
     I like this.
     I wish I had time to review it properly
-    >>> print_tag('comment-vote', nopriv_browser)
+    >>> print_tag('voted-block', nopriv_browser)
+    voted
     Abstain
+    timeless
+    >>> find_tag_by_id(nopriv_browser.contents, 'wrote-block') is None
+    True
+
+We can't validate the date string since that would lead to timing bugs, but
+we can establish that it exists.
+
+    >>> find_tag_by_id(nopriv_browser.contents, 'comment-date') is not None
+    True
 
 The comment's view page has a link that takes us back to the merge proposal.
 
@@ -83,12 +92,15 @@ a period would give four.)
     ...     nopriv_browser.contents, 'boardCommentDetails')
     >>> print extract_text(comments[0])
     No Privileges Person
-    Approve
-    my tag
+    wrote
+    ...:
     my body
     (full message)
     >>> print extract_text(comments[1])
     No Privileges Person
+    voted
     Abstain
+    timeless
+    ...:
     I like this...
     (full message)

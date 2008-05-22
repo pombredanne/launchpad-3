@@ -4,13 +4,20 @@
    omit-tag="">
     <div class="boardCommentSummary">
         <div class="boardCommentDetails">
-            <span tal:content="structure context/message/owner/fmt:link"
-                  id="comment-from" />
-            <strong id="comment-vote" tal:content="context/vote/title"
-                    tal:condition="context/vote" />
-            <strong id="comment-vote-tag" tal:content="context/vote_tag"
-                    tal:condition="context/vote_tag" />
-            <span id="comment-body" tal:content="view/first_line" />
+            <tal:owner tal:replace="structure context/message/owner/fmt:link"
+                  />
+            <tal:voted tal:condition="context/vote"> voted
+              <strong tal:content="context/vote/title"
+                      tal:condition="context/vote" />
+              <strong tal:content="context/vote_tag"
+                      tal:condition="context/vote_tag" />
+            </tal:voted>
+            <tal:wrote tal:condition="not:context/vote">
+              wrote
+            </tal:wrote>
+            <tal:date
+             tal:content="context/message/datecreated/fmt:displaydate" />:
+            <tal:first_line tal:content="view/first_line" />
             (<a tal:attributes="href context/fmt:url" >full message</a>)
         </div>
     </div>
