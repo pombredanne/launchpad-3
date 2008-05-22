@@ -541,7 +541,7 @@ This will be the common case for default links.
     >>> facets = BlankTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ True
+    http://launchpad.dev/sesamestreet True
     http://launchpad.dev/sesamestreet/+bar False
     http://launchpad.dev/sesamestreet/+baz True
 
@@ -604,7 +604,7 @@ earlier in this doctest.
     >>> facets = AbsoluteUrlTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ False
+    http://launchpad.dev/sesamestreet False
     ftp://barlink.example.com/barbarbar True
     http://launchpad.dev/sesamestreet/+baz True
     http://launchpad.dev/sesamestreet/+spoo True
@@ -890,7 +890,7 @@ The request is also set as the menu's 'request' attribute.
     ...     print link.url, link.selected, link.linked, link.summary
     http://launchpad.dev/sesamestreet/+foo False True None
     http://launchpad.dev/sesamestreet/+bar True False More explanation about Bar of sesamestreet
-    http://launchpad.dev/sesamestreet/ False True GET
+    http://launchpad.dev/sesamestreet False True GET
 
 So, the first link '+foo' is linked, but the second '+bar' is not.  This
 is because the URL of '+bar' is the same as the request in the CONTEXTS.
@@ -907,7 +907,7 @@ Let's try again, this time with a request from the participation.
     ...     print link.url, link.selected, link.linked
     http://launchpad.dev/sesamestreet/+foo False True
     http://launchpad.dev/sesamestreet/+bar False False
-    http://launchpad.dev/sesamestreet/ False True
+    http://launchpad.dev/sesamestreet False True
 
 Note that '+bar' is not selected.  This is because we're adapting 'context'
 and not 'CONTEXTS', so the menus system has no way of knowing what the
@@ -942,7 +942,7 @@ actually calculates a shortened URL for this case.
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar True
-    http://launchpad.dev/sesamestreet/ False
+    http://launchpad.dev/sesamestreet False
 
 
 The result of `house/menu:application` will be empty at the moment, because
