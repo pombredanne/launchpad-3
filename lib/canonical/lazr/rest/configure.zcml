@@ -109,13 +109,6 @@
         />
 
     <adapter
-        for="zope.schema.interfaces.IInt
-             canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.IntFieldMarshaller"
-        />
-
-    <adapter
         for="zope.schema.interfaces.IDatetime
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"

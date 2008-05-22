@@ -323,6 +323,9 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
 
     def _processCustomOperationResult(self, result):
         """Process the result of a custom operation."""
+        if result is None:
+            return result
+
         if isinstance(result, basestring):
             # The operation took care of everything and just needs
             # this string served to the client.
@@ -547,7 +550,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             original_value = changeset[repr_name]
             del(changeset[repr_name])
             try:
-                value = marshaller.marshall(original_value)
+                value = marshaller.marshall_from_json_data(original_value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
@@ -561,7 +564,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # ObjectLookupFieldMarshaller, once we make it
                 # possible for Vocabulary fields to specify a schema
                 # class the way IObject fields can.
-                if not field.schema.providedBy(value):
+                if value != None and not field.schema.providedBy(value):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
                     continue

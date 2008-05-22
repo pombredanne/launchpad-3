@@ -23,16 +23,23 @@ class IFieldMarshaller(Interface):
                  JSON hash.
         """
 
-    def marshall(value):
-        """Transform the given value into an object."""
+    def marshall_from_json_data(value):
+        """Transform the given data value into an object.
+
+        :param value: A value obtained by deserializing a string into
+        a JSON data structure.
+        """
+
+    def marshall_from_string(value):
+        """Transform the given string value into an object."""
 
     def unmarshall(entry, field_name, value):
-        """Transform an object value into a string value.
+        """Transform an object value into a value suitable for JSON.
 
         :param entry: The entry whose field this is.
         :param field_name: The name of the field within the entry.
         :value: The object value of the field.
 
-        :return: The string value to give when representing the field
+        :return: The value to give when representing the field
                  in a JSON hash.
 """
