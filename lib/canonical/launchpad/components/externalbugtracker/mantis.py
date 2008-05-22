@@ -16,8 +16,8 @@ from urlparse import urlunparse
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugWatchUpdateError, BugWatchUpdateWarning,
-    ExternalBugTracker, InvalidBugId, UnknownRemoteStatusError,
-    UnparseableBugData)
+    ExternalBugTracker, InvalidBugId, LookupNode, LookupTree,
+    UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -92,6 +92,26 @@ class Mantis(ExternalBugTracker):
     For a list of tested Mantis instances and their behaviour when
     exported from, see http://launchpad.canonical.com/MantisBugtrackers.
     """
+
+    _status_lookup = (
+        LookupTree(
+            LookupNode('assigned', BugTaskStatus.INPROGRESS),
+            LookupNode('feedback', BugTaskStatus.INCOMPLETE),
+            LookupNode('new', BugTaskStatus.NEW),
+            LookupNode('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
+            LookupNode(
+                'resolved', 'closed',
+                LookupTree(
+                    LookupNode('reopened', BugTaskStatus.NEW),
+                    LookupNode(
+                        'fixed', 'open', 'no change required',
+                        BugTaskStatus.FIXRELEASED),
+                    LookupNode(
+                        'unable to reproduce', 'not fixable', 'suspended',
+                        'duplicate', BugTaskStatus.INVALID),
+                    LookupNode("won't fix", BugTaskStatus.WONTFIX))),
+            )
+        )
 
     # Custom opener that automatically sends anonymous credentials to
     # Mantis if (and only if) needed.
@@ -461,34 +481,8 @@ class Mantis(ExternalBugTracker):
         return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, status_and_resolution):
-        remote_status, remote_resolution = status_and_resolution.split(
-            ": ", 1)
-
-        if remote_status == 'assigned':
-            return BugTaskStatus.INPROGRESS
-        if remote_status == 'feedback':
-            return BugTaskStatus.INCOMPLETE
-        if remote_status in ['new']:
-            return BugTaskStatus.NEW
-        if remote_status in ['confirmed', 'acknowledged']:
-            return BugTaskStatus.CONFIRMED
-        if remote_status in ['resolved', 'closed']:
-            if remote_resolution == 'fixed':
-                return BugTaskStatus.FIXRELEASED
-            if remote_resolution == 'reopened':
-                return BugTaskStatus.NEW
-            if remote_resolution in ["unable to reproduce", "not fixable",
-                                     'suspended']:
-                return BugTaskStatus.INVALID
-            if remote_resolution == "won't fix":
-                return BugTaskStatus.WONTFIX
-            if remote_resolution == 'duplicate':
-                # XXX: kiko 2007-07-05: Follow duplicates
-                return BugTaskStatus.INVALID
-            if remote_resolution in ['open', 'no change required']:
-                # XXX: kiko 2007-07-05: Pretty inconsistently used
-                return BugTaskStatus.FIXRELEASED
-
-        raise UnknownRemoteStatusError(status_and_resolution)
-
-
+        status, importance = status_and_resolution.split(": ", 1)
+        try:
+            return self._status_lookup.search(status, importance)
+        except KeyError:
+            raise UnknownRemoteStatusError(status_and_resolution)
