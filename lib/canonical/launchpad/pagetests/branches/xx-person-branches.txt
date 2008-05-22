@@ -94,3 +94,71 @@ Each of the person branch listing pages now has a brief summary at the
 top of the page with some branch counts.  These also contain the links
 to the registered, owned and subscribed listing pages for a person.
 
+Firstly lets set up two new people with no branches.
+
+    >>> login(ANONYMOUS)
+    >>> eric = factory.makePerson(
+    ...     name="eric", password="test", email="eric@example.com",
+    ...     displayname="Eric the Viking")
+    >>> nero = factory.makePerson(
+    ...     name="nero", displayname="Emperor Nero")
+    >>> #from canonical.database.sqlbase import flush_database_updates
+    >>> #flush_database_updates()
+    >>> logout()
+
+The text shown initially depends on whether or not you are looking
+at your code page, or someone elses.
+
+    >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
+
+    >>> def print_tag(who, tag):
+    ...     eric_browser.open('http://code.launchpad.dev/~' + who)
+    ...     print extract_text(find_tag_by_id(eric_browser.contents, tag))
+    >>> print_tag('eric', 'no-branch-message')
+    You have no related branches today.
+
+    >>> print_tag('nero', 'no-branch-message')
+    There are no branches related to Emperor Nero today.
+
+Let's add a branch to each of them.
+
+    >>> login(ANONYMOUS)
+    >>> b1 = factory.makeBranch(owner=eric)
+    >>> b2 = factory.makeBranch(owner=nero)
+    >>> logout()
+
+The summary is now shown.
+
+    >>> print_tag('eric', 'application-summary')
+    You have 1 related branch, of which 1 has been registered by you,
+    1 is owned by you, and you have subscribed to 0 branches.
+
+    >>> print_tag('nero', 'application-summary')
+    Emperor Nero has 1 related branch, of which 1 has been registered by them,
+    1 is owned by them, and they have subscribed to 0 branches.
+
+Now we'll create another branch for each, and subscribe to them.
+
+    >>> login(ANONYMOUS)
+    >>> b3 = factory.makeBranch(owner=eric)
+    >>> b4 = factory.makeBranch(owner=nero)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    >>> ignored = b3.subscribe(
+    ...     eric, BranchSubscriptionNotificationLevel.NOEMAIL,
+    ...     None, CodeReviewNotificationLevel.NOEMAIL)
+    >>> ignored = b4.subscribe(
+    ...     nero, BranchSubscriptionNotificationLevel.NOEMAIL,
+    ...     None, CodeReviewNotificationLevel.NOEMAIL)
+    >>> logout()
+
+The summary is nice about singular/plural forms.
+
+    >>> print_tag('eric', 'application-summary')
+    You have 2 related branches, of which 2 have been registered by you, 2 are
+    owned by you, and you have subscribed to 1 branch.
+
+    >>> print_tag('nero', 'application-summary')
+    Emperor Nero has 2 related branches, of which 2 have been registered by
+    them, 2 are owned by them, and they have subscribed to 1 branch.
+
