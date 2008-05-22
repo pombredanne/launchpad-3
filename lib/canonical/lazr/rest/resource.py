@@ -129,7 +129,7 @@ class HTTPResource(URLDereferencingMixin):
                                IResourcePOSTOperation)
         return len(adapters) > 0
 
-    def toWADL(self, template_name):
+    def toWADL(self, template_name="wadl-resource.pt"):
         """Represent this resource as a WADL application.
 
         The WADL document describes the capabilities of this resource.
@@ -524,13 +524,6 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return error
         return self._applyChanges(changeset)
 
-    def toWADL(self):
-        """Represent this resource as a WADL application.
-
-        The WADL document describes the capabilities of this resource.
-        """
-        return super(EntryResource, self).toWADL('wadl-entry.pt')
-
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
 
@@ -717,13 +710,6 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
 
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
-
-    def toWADL(self):
-        """Represent this resource as a WADL application.
-
-        The WADL document describes the capabilities of this resource.
-        """
-        return super(CollectionResource, self).toWADL('wadl-collection.pt')
 
 
 class ServiceRootResource(HTTPResource):

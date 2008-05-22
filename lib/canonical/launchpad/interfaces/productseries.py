@@ -417,6 +417,13 @@ class IProductSeriesSourceAdmin(Interface):
         timestamps and other ancillary data.
         """
 
+    def markStopped():
+        """Mark this import as STOPPED.
+
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
+        """
+
     def deleteImport():
         """Do our best to forget that this series ever had an import
         associated with it.

@@ -3,8 +3,11 @@ from unittest import TestLoader
 from canonical.launchpad.interfaces import ICodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing import LaunchpadZopelessLayer
 
 class TestCodeReviewVote(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
 
     def test_create_vote(self):
         """CodeReviewVotes can be created"""

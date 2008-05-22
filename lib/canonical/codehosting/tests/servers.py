@@ -18,7 +18,7 @@ import threading
 
 from zope.component import getUtility
 
-from bzrlib.transport import get_transport, sftp, ssh, Server
+from bzrlib.transport import get_transport, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
@@ -90,7 +90,6 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
             while self._sftp_clients:
                 client = self._sftp_clients.pop()
                 client.close()
-            sftp.clear_connection_cache()
             gc.collect()
         while self._ssh_transports:
             connection = self._ssh_transports.pop()
