@@ -7,9 +7,7 @@ suite.
 """
 
 __metaclass__ = type
-__all__ = [
-    'FakePackager',
-    ]
+__all__ = ['FakePackager']
 
 import atexit
 import os
@@ -391,7 +389,7 @@ class FakePackager:
 
         If 'auto_accept' is true, accept the upload if necessary and return
         the corresponding `ISourcePackagePublishingHistory` record. Otherwise
-        return the corresponding `IPackageUpload`.
+        return the corresponding `NascentUpload` object.
         """
         policy = findPolicyByName(policy)
 
