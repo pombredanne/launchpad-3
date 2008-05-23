@@ -56,7 +56,7 @@ were chosen, and their subscription
     >>> naked_recipients = removeSecurityProxy(recipients)
     >>> [notification_reason] = naked_recipients.values()
     >>> (target_subscription, 'Subscriber') == \
-    ...   (notification_reason.subscription, notification_reason.rationale)
+    ...     (notification_reason.subscription, notification_reason.rationale)
     True
 
 
