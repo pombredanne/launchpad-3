@@ -690,7 +690,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
     """Formatter for image:badges for BugTaskListingItem.
 
-    The BugTaskListingItem has some attributes to decice whether a badge
+    The BugTaskListingItem has some attributes to decide whether a badge
     should be displayed, which don't require a DB query when they are
     accessed.
     """
