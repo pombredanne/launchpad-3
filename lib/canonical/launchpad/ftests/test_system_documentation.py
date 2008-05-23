@@ -521,7 +521,7 @@ special = {
             ),
     'bugtracker-person.txt': LayeredDocFileSuite(
             '../doc/bugtracker-person.txt',
-            setUp=setUp,
+            setUp=checkwatchesSetUp,
             tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
