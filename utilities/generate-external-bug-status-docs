@@ -10,6 +10,8 @@
 
 import _pythonpath
 
+from datetime import datetime
+
 from canonical.launchpad.components.externalbugtracker import (
     BUG_TRACKER_CLASSES)
 
@@ -17,6 +19,15 @@ from canonical.launchpad.components.externalbugtracker import (
 if __name__ == '__main__':
     classes = sorted(BUG_TRACKER_CLASSES.iteritems(),
                      key=lambda (typ, cls): typ.title)
+
+    # Print out a header.
+    print '[[Anchor(StatusTables)]]'
+    print '== Status mapping tables =='
+    print
+    print 'Last generated: %s.' % (
+        datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC'),)
+    print
+    print
 
     for typ, cls in classes:
         # Attempt to find a lookup instance.
@@ -32,9 +43,9 @@ if __name__ == '__main__':
             titles = list(titles)
         titles.append('Launchpad status')
 
-        # Print it out.
+        # Print the tables.
         print '[[Anchor(%s)]]' % (typ.name,)
-        print '== %s ==' % (typ.title,)
+        print '=== %s ===' % (typ.title,)
         print
         for line in lookup.moinmoin_table(titles):
             print line
