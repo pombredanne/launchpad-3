@@ -365,6 +365,21 @@ URL validation should check that the entered URL is not from Launchpad.
     For Launchpad to mirror a branch, the original branch cannot be on
     launchpad.dev.
 
+As well as checking against the root site set in the config, a check
+is also done against the value stored as a database constraint.
+
+    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.getLink(id="register-branch").click()
+    >>> user_browser.getControl('Branch URL').value = (
+    ...     'http://bazaar.launchpad.net/foo/bar/')
+    >>> user_browser.getControl('Name').value = 'unique-name'
+    >>> user_browser.getControl('Register Branch').click()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be on
+    http://bazaar.launchpad.net.
+
 
 == Attempting to create a branch in a forbidden project ==
 
