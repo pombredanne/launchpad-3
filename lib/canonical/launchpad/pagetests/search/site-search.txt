@@ -6,28 +6,25 @@ teams, etc.).
 
     # Our very helpful function for printing all the page results.
     >>> def print_search_results():
-    ...     tag = find_tag_by_id('search-results')
-    ...     print extract_text(tag)
+    ...     tag = find_tag_by_id(browser.contents, 'search-results')
+    ...     if tag:
+    ...         print extract_text(tag)
 
     # Another helper to make searching convenient
     >>> def search_for(terms):
-    ...     search_text = browser.getControl(name='search_text')
+    ...     search_text = browser.getControl(name='field.search_text')
     ...     search_text.value = terms
-    ...     browser.getControl('Search').click()
+    ...     browser.getControl(name='field.actions.search').click()
 
 The search is accessible via the root +search url:
 
     >>> browser.open('http://launchpad.dev/+search')
-    >>> browser.title
-    Launchpad Search
-
-    >>> find_main_content()
-    Foo
+    >>> print browser.title
+    Search projects in Launchpad
 
 No search results are shown on the basic page:
 
     >>> print_search_results()
-    Foo
 
 A search for a specific item, such as a project name, will return a
 result for that exact match in Launchpad.
