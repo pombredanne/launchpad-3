@@ -676,6 +676,11 @@ All fields tagged were copied to the new interface:
     price: Float
     title: TextLine
 
+The field __name__ attribute contains the exported name:
+
+    >>> print entry_interface['price'].__name__
+    price
+
 It's an error to use generate_entry_interface() on an interface that
 wasn't marked for export:
 
