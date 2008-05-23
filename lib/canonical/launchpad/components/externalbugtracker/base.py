@@ -272,9 +272,15 @@ class Lookup(treelookup.Lookup):
                         (max_depth + 1), (max_depth + 1), len(titles)))
             yield line("'''%s'''" % (title,) for title in titles)
 
-        for elems in self.walker:
+        for elems in self.flattened:
             path, key = elems[:-1], elems[-1]
-            yield line(
-                chain((" '''or''' ".join(keys) for keys in path),
-                      ('*' * (max_depth - len(path))),
-                      (key.name,)))
+            columns = []
+            for keys in path:
+                if len(keys) == 0: # Default
+                    columns.append('*')
+                else:
+                    columns.append(
+                        " '''or''' ".join(str(key) for key in keys))
+            columns.extend('-' * (max_depth - len(path)))
+            columns.append(key.name)
+            yield line(columns)
