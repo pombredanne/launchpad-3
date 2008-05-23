@@ -33,6 +33,8 @@ result for that exact match in Launchpad.
     >>> print_search_results()
     Mozilla Firefox
     The Mozilla Firefox web browser
+    Registered by Sample Person
+    on 2004-09-24
 
 Searching for an integer will return the matching bug number as well
 as the matching question number, if one exists.
