@@ -87,6 +87,29 @@ class LaunchpadSearchView(LaunchpadFormView):
         self.search_params['start'] = start
 
     @property
+    def search_text(self):
+        """Return the search_text or None."""
+        return self.search_params['search_text']
+
+    @property
+    def start(self):
+        """Return the start index of the batch."""
+        return self.search_params['start']
+
+    @property
+    def page_title(self):
+        """Page title."""
+        return self.page_heading
+
+    @property
+    def page_heading(self):
+        """Heading to display above the search results."""
+        if self.search_text is None:
+            return 'Search Launchpad'
+        else:
+            return 'Pages matching "%s" in Launchpad' % self.search_text
+
+    @property
     def bug(self):
         """Return the bug that matched the terms, or None."""
         return self._bug
@@ -131,23 +154,23 @@ class LaunchpadSearchView(LaunchpadFormView):
         """
         self.search_params.update(**data)
         self._updateSearchParams()
-        search_text = self.search_params['search_text']
-        if search_text is None:
+        if self.search_text is None:
             return
 
-        numeric_token = self._getNumericToken(search_text)
-        if numeric_token is not None:
-            self._bug = getUtility(IBugSet).get(numeric_token)
-            self._question = getUtility(IQuestionSet).get(numeric_token)
+        if self.start == 0:
+            numeric_token = self._getNumericToken(self.search_text)
+            if numeric_token is not None:
+                self._bug = getUtility(IBugSet).get(numeric_token)
+                self._question = getUtility(IQuestionSet).get(numeric_token)
 
-        name_token = self._getNameToken(search_text)
-        if name_token is not None:
-            self._person_or_team = getUtility(IPersonSet).getByName(
-                name_token)
-            self._pillar = self._getDistributionOrProductOrProject(name_token)
+            name_token = self._getNameToken(self.search_text)
+            if name_token is not None:
+                self._person_or_team = getUtility(IPersonSet).getByName(
+                    name_token)
+                self._pillar = self._getDistributionOrProductOrProject(
+                    name_token)
 
-        start = self.search_params['start']
-        self._pages = self.searchPages(search_text, start=start)
+        self._pages = self.searchPages(self.search_text, start=self.start)
 
     def _getNumericToken(self, search_text):
         """Return the first group of numbers in the search text, or None."""
