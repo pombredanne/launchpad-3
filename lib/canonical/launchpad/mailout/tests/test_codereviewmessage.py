@@ -22,12 +22,16 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         """Prepare test fixtures."""
         TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
 
-    def makeMessageAndSubscriber(self, notification_level=None):
+    def makeMessageAndSubscriber(self, notification_level=None,
+                                 as_reply=False):
         """Return a message and a subscriber."""
         sender = self.factory.makePerson(
             displayname='Foo Bar', email='foo.bar@example.com',
             email_address_status=EmailAddressStatus.VALIDATED)
         code_message = self.factory.makeCodeReviewMessage(sender)
+        if as_reply:
+            code_message = self.factory.makeCodeReviewMessage(sender,
+                                                              code_message)
         subscriber = self.factory.makePerson(
             displayname='Baz Qux', email='baz.qux@example.com',
             email_address_status=EmailAddressStatus.VALIDATED)
@@ -38,9 +42,10 @@ class TestCodeReviewMessage(TestCaseWithFactory):
             notification_level)
         return code_message, subscriber
 
-    def makeMailer(self):
+    def makeMailer(self, as_reply=False):
         """Return a CodeReviewMessageMailer and the sole subscriber."""
-        code_message, subscriber = self.makeMessageAndSubscriber()
+        code_message, subscriber = self.makeMessageAndSubscriber(
+            as_reply=as_reply)
         return CodeReviewMessageMailer.forCreation(code_message), subscriber
 
     def test_forCreation(self):
@@ -80,7 +85,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
 
     def test_generateEmail(self):
         """Ensure mailer's generateEmail method prduces expected values."""
-        mailer, subscriber = self.makeMailer()
+        mailer, subscriber = self.makeMailer(as_reply=True)
         headers, subject, body = mailer.generateEmail(subscriber)
         message = mailer.code_review_message.message
         self.assertEqual(subject, message.subject)
@@ -94,7 +99,8 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
                     'Message-Id': message.rfc822msgid,
-                    'Reply-To': mailer._getReplyToAddress()}
+                    'Reply-To': mailer._getReplyToAddress(),
+                    'In-Reply-To': message.parent.rfc822msgid}
         for header, value in expected.items():
             self.assertEqual(headers[header], value)
         self.assertEqual(expected, headers)
