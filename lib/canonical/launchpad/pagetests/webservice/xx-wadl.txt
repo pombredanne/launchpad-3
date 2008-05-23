@@ -778,7 +778,7 @@ required, and fixed to a particular value.
 
     >>> ws_op, status = post_params
     >>> ws_op.attrib['required']
-    'True'
+    'true'
     >>> ws_op.attrib['fixed']
     'change_status'
 

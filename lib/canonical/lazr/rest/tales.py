@@ -318,6 +318,14 @@ class WadlFieldAPI(WadlAPI):
         self.field = field
 
     @property
+    def required(self):
+        """An xsd:bool value for whether or not this field is required."""
+        if self.field.required:
+            return 'true'
+        else:
+            return 'false'
+
+    @property
     def name(self):
         """The name of this field."""
         # It would be nice to farm this out to IFieldMarshaller, but

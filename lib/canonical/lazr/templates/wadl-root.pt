@@ -71,13 +71,13 @@
           Human-readable documentation for the method.
         </doc>
         <request>
-          <param style="query" name="ws_op" required="True"
+          <param style="query" name="ws_op" required="true"
                  tal:attributes="fixed operation/name">
             <doc>The name of the operation being invoked.</doc>
           </param>
           <param style="query" tal:repeat="field operation/op/params"
                  tal:attributes="name field/__name__;
-                                 required field/required">
+                                 required field/wadl:required">
             <doc tal:content="field/wadl:doc"
                  tal:condition="field/wadl:doc"
                  xmlns="http://www.w3.org/1999/xhtml/">
@@ -139,11 +139,11 @@
              xmlns="http://www.w3.org/1999/xhtml/">
         </doc>
         <request>
-          <param style="query" name="ws_op" required="True"
+          <param style="query" name="ws_op" required="true"
                  tal:attributes="fixed operation/name" />
           <param tal:repeat="field operation/op/params"
                  tal:attributes="name field/__name__;
-                                 required field/required">
+                                 required field/wadl:required">
             <doc tal:content="field/wadl:doc"
                  tal:condition="field/wadl:doc"
                  xmlns="http://www.w3.org/1999/xhtml/">
@@ -162,7 +162,7 @@
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-full">
       <param style="plain"
-             tal:repeat="field context/wadl_entry:all_fields" required="True"
+             tal:repeat="field context/wadl_entry:all_fields" required="true"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
         <doc tal:content="field/wadl:doc"
@@ -180,7 +180,7 @@
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-diff">
       <param tal:repeat="field context/wadl_entry:all_writable_fields"
-             style="plain" required="False"
+             style="plain" required="false"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
         <doc tal:content="field/wadl:doc"
@@ -217,7 +217,7 @@
        tal:attributes="id
          string:${context/wadl_entry:entry_page_representation_id}">
       <param style="plain" name="total_size" path="$['total_size']"
-             required="True" />
+             required="true" />
 
       <param style="plain" name="next_collection_link"
              path="$['next_collection_link']">
@@ -232,7 +232,7 @@
       </param>
 
       <param style="plain" name="entries" path="$['entries']"
-             required="True" />
+             required="true" />
 
       <param style="plain" name="entry_links"
              path="$['entries'][*]['self_link']">
