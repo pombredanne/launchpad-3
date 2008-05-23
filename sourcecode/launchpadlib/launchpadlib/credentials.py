@@ -29,7 +29,7 @@ class Credentials:
     :type access_token: `AccessToken`
     """
 
-    def __init__(self, consumer, access_token):
+    def __init__(self, consumer=None, access_token=None):
         """The user's Launchpad API credentials.
 
         :param consumer: The consumer (application)
@@ -40,59 +40,47 @@ class Credentials:
         self.consumer = consumer
         self.access_token = access_token
 
+    def load(self, readable_file):
+        """Load credentials from a file-like object.
 
-class StorableCredentials(Credentials):
-    """Credentials which can be stored and retrieved from the file system.
+        This overrides any consumer and access token given in the constructor
+        and replaces them with the values read from the file.  If either the
+        consumer or access token information is missing from the file, the
+        current values will be replaced with None.
 
-    :ivar filename: The file name that the access information is to be
-        in or retrieved from.
-    :type filename: string
-    """
-
-    def __init__(self, filename):
-        """The user's stored Launchpad API credentials.
-
-        If the given file exists and contains Launchpad API credentials, they
-        are loaded and used.  Otherwise, after instantiating this class, just
-        set the `consumer` and `access_token` instance variables and call
-        `save()`.
-
-        :param filename: The file name that the access information is to be
-            in or retrieved from.
-        :type filename: string
+        :param readable_file: A file-like object containing stored credentials
+        :type readable_file: Any object supporting the file-like `read()`
+            method
         """
         # Attempt to load the access token from the file.
-        super(StorableCredentials, self).__init__(None, None)
-        self.filename = filename
-        try:
-            credentials_file = open(self.filename, 'r')
-        except IOError, error:
-            if error.errno != errno.ENOENT:
-                raise
-            # The file didn't exist so there are no credentials to load.
-            # That's okay, the application may provide the credentials later.
-        else:
-            try:
-                parser = SafeConfigParser()
-                parser.readfp(credentials_file)
-            finally:
-                credentials_file.close()
-            # Check the version number and extract the access token and
-            # secret.  Then convert these to the appropriate instances.
-            consumer_key = parser.get(
-                CREDENTIALS_FILE_VERSION, 'consumer_key')
-            consumer_secret = parser.get(
-                CREDENTIALS_FILE_VERSION, 'consumer_secret')
-            self.consumer = Consumer(consumer_key, consumer_secret)
-            access_token = parser.get(
-                CREDENTIALS_FILE_VERSION, 'access_token')
-            access_secret = parser.get(
-                CREDENTIALS_FILE_VERSION, 'access_secret')
-            self.access_token = AccessToken(access_token, access_secret)
+        parser = SafeConfigParser()
+        parser.readfp(readable_file)
+        # Check the version number and extract the access token and
+        # secret.  Then convert these to the appropriate instances.
+        if not parser.has_section(CREDENTIALS_FILE_VERSION):
+            self.consumer = None
+            self.access_token = None
+            return
+        consumer_key = parser.get(
+            CREDENTIALS_FILE_VERSION, 'consumer_key')
+        consumer_secret = parser.get(
+            CREDENTIALS_FILE_VERSION, 'consumer_secret')
+        self.consumer = Consumer(consumer_key, consumer_secret)
+        access_token = parser.get(
+            CREDENTIALS_FILE_VERSION, 'access_token')
+        access_secret = parser.get(
+            CREDENTIALS_FILE_VERSION, 'access_secret')
+        self.access_token = AccessToken(access_token, access_secret)
 
-    def save(self):
-        """Save the credentials on the file system."""
-        # Version 1 credentials files.
+    def save(self, writable_file):
+        """Write the credentials to the file-like object.
+
+        :param readable_file: A file-like object containing stored credentials
+        :type readable_file: Any object supporting the file-like `read()`
+            method
+        :raise CredentialsFileError: when there is either no consumer or not
+            access token
+        """
         if self.consumer is None:
             raise CredentialsFileError('No consumer')
         if self.access_token is None:
@@ -108,12 +96,7 @@ class StorableCredentials(Credentials):
                    'access_token', self.access_token.key)
         parser.set(CREDENTIALS_FILE_VERSION,
                    'access_secret', self.access_token.secret)
-
-        credentials_file = open(self.filename, 'w')
-        try:
-            parser.write(credentials_file)
-        finally:
-            credentials_file.close()
+        parser.write(writable_file)
 
 
 class Consumer(OAuthConsumer):

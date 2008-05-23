@@ -40,10 +40,6 @@ Anonymous users cannot even access the beta service.
 
 == OAuth authentication ==
 
-XXX REMOVE ME
- * 'qQ7dw1fXCR5hhJRN7ztj' is salgado with public read access only
- * '3SdVlTlVKcgXSJHbsSSk' is no-priv with public read access only
-
 The Launchpad API requires user authentication via OAuth, and launchpadlib
 provides a high level interface to OAuth for the most common use cases.
 Several pieces of information are necessary to complete the OAuth request:
@@ -105,43 +101,34 @@ And now the root service can be accessed, using these credentials.
 
 It can be convenient to store the credentials on the file system, so that the
 next time the user interacts with the application, he won't have to go through
-the whole OAuth request dance.  This isn't secure (since it stores the token
-and secret in plain text on the file system), but it's convenient.
-Applications are, of course, welcome to subclass Credentials to provide more
-secure storage.
+the whole OAuth request dance.  Security of the stored credentials information
+is controlled by the file-like object that's passed to the save() and load()
+methods of the Credentials class.
 
     >>> import os
     >>> import tempfile
-    >>> tempdir = tempfile.mkdtemp()
-    >>> credentials_file = os.path.join(tempdir, '.credentials')
-    >>> os.path.exists(credentials_file)
-    False
+    >>> fd, path = tempfile.mkstemp('.credentials')
+    >>> os.close(fd)
+    >>> credentials_file = open(path)
 
-Because the credentials file does not yet exist, there will be no credentials
-available.
+If the credentials file is empty, no credentials will be loaded from it.
 
-    >>> from launchpadlib.credentials import StorableCredentials
-    >>> credentials = StorableCredentials(credentials_file)
+    >>> credentials = Credentials()
+    >>> credentials.load(credentials_file)
+    >>> credentials_file.close()
     >>> print credentials.consumer
     None
     >>> print credentials.access_token
     None
-    >>> os.path.splitext(credentials.filename)[1]
-    '.credentials'
-    >>> os.path.exists(credentials.filename)
-    False
 
-To use this the first time, just set the appropriate instance variables and
-use the save() method.
+Once Salgado's credentials are obtained for the first time, just set the
+appropriate instance variables and use the save() method.
 
     >>> credentials.consumer = consumer
     >>> credentials.access_token = access_token
-    >>> credentials.save()
-
-First, the credentials file now exists.
-
-    >>> os.path.exists(credentials_file)
-    True
+    >>> credentials_file = open(path, 'w')
+    >>> credentials.save(credentials_file)
+    >>> credentials_file.close()
 
 And the credentials are perfectly valid for accessing Launchpad.
 
@@ -154,7 +141,10 @@ And the credentials are perfectly valid for accessing Launchpad.
 The credentials can also be retrieved from the file, so that the OAuth request
 dance can be avoided.
 
-    >>> credentials = StorableCredentials(credentials_file)
+    >>> credentials = Credentials()
+    >>> credentials_file = open(path)
+    >>> credentials.load(credentials_file)
+    >>> credentials_file.close()
     >>> credentials.consumer.key
     'launchpad-library'
     >>> credentials.consumer.secret
@@ -175,25 +165,26 @@ These credentials too, are perfectly usable to access Launchpad.
 It is an error to save a credentials file when no consumer or access token is
 available.
 
-    >>> credentials = StorableCredentials(credentials_file)
+    >>> credentials_file = open(path, 'w')
     >>> credentials.consumer = None
-    >>> credentials.save()
+    >>> credentials.save(credentials_file)
     Traceback (most recent call last):
     ...
     CredentialsFileError: No consumer
 
-    >>> credentials = StorableCredentials(credentials_file)
     >>> credentials.consumer = consumer
     >>> credentials.access_token = None
-    >>> credentials.save()
+    >>> credentials.save(credentials_file)
     Traceback (most recent call last):
     ...
     CredentialsFileError: No access token
 
+    >>> credentials_file.close()
+
 
 == Bad credentials ==
 
-If you use the wrong access token, you also get an exception.
+The application is not allowed to access Launchpad with a bad access token.
 
     >>> access_token = AccessToken('bad', 'no-secret')
     >>> credentials = Credentials(consumer, access_token)
@@ -202,7 +193,7 @@ If you use the wrong access token, you also get an exception.
     ...
     HTTPError: HTTP Error 403: Forbidden
 
-Also, if you use the wrong access secret, you get an exception.
+The application is not allowed to access Launchpad with a bad access secret.
 
     >>> access_token = AccessToken('hgm2VK35vXD6rLg5pxWw', 'bad-secret')
     >>> credentials = Credentials(consumer, access_token)
@@ -214,5 +205,4 @@ Also, if you use the wrong access secret, you get an exception.
 
 == Clean up ==
 
-    >>> import shutil
-    >>> shutil.rmtree(tempdir)
+    >>> os.remove(path)
