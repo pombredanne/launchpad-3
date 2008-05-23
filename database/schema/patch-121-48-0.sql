@@ -1,6 +1,3 @@
---\pset pager off
---ABORT; BEGIN;
-
 SET client_min_messages=ERROR;
 
 --
@@ -14,16 +11,16 @@ CREATE TABLE Account (
     status integer NOT NULL,
     date_status_set timestamp WITHOUT TIME ZONE
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    status_comment text,
     displayname text NOT NULL,
     openid_identifier text UNIQUE NOT NULL
-        DEFAULT (generate_openid_identifier())
+        DEFAULT (generate_openid_identifier()),
+    status_comment text
     );
 
 INSERT INTO Account(
     id, date_created, creation_rationale, status, date_status_set,
     status_comment, openid_identifier, displayname)
-SELECT id, datecreated, COALESCE(creation_rationale, 0),
+SELECT id, datecreated, COALESCE(creation_rationale, 1),
     account_status, datecreated, account_status_comment,
     openid_identifier, displayname
     FROM Person

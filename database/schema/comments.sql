@@ -1054,7 +1054,7 @@ COMMENT ON COLUMN AccountPassword.password IS 'SSHA digest encrypted password.';
 
 
 -- Person
-COMMENT ON TABLE Person IS 'A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON TABLE Person IS 'A row represents a person if teamowner is NULL, and represents a team if teamowner is set.';
 COMMENT ON COLUMN Person.account IS 'The Account linked to this Person, if there is one.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
