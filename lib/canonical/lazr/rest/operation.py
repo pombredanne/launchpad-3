@@ -61,7 +61,7 @@ class ResourceOperation:
                 except ValueError, e:
                     errors.append("%s: %s" % (name, e))
                     continue
-            field.bind(self.context)
+            field = field.bind(self.context)
             try:
                 field.validate(value)
             except RequiredMissing:

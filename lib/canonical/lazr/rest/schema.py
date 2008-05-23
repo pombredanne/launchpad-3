@@ -8,8 +8,10 @@ __all__ = [
     'CollectionFieldMarshaller',
     'DateTimeFieldMarshaller',
     'ObjectLookupFieldMarshaller',
+    'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
+    'TimezoneFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
     ]
@@ -25,7 +27,9 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.schema import Field, Object
 from zope.schema._field import AbstractCollection
+from zope.schema.interfaces import SchemaNotProvided
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -123,15 +127,14 @@ class SimpleFieldMarshaller:
         Make sure the value is a string and then _marshall_from_string_method
         hook method.
         """
-        if value is None:
+        assert isinstance(value, basestring), (
+            'Marshalling a non-string: %r' % value)
+        if value == "":
             return None
-        assert isinstance(value, basestring), 'Marshalling a non-string'
         return self._marshall_from_string(value)
 
     def _marshall_from_string(self, value):
         """If the value is empty, return None. Otherwise return the value."""
-        if value == "":
-            return None
         return value
 
     def representationName(self, field_name):
@@ -147,6 +150,12 @@ class SimpleFieldMarshaller:
         Return the value as is.
         """
         return value
+
+
+class TimezoneFieldMarshaller(SimpleFieldMarshaller):
+
+    def __init__(self, field, request, vocabulary):
+        super(TimezoneFieldMarshaller, self).__init__(field, request)
 
 
 class DateTimeFieldMarshaller(SimpleFieldMarshaller):
@@ -233,8 +242,13 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             'Invalid value "%s". Acceptable values are: %s' %
             (value, ', '.join(valid_titles)))
 
+    def unmarshall(self, entry, field_name, value):
+        if value is None:
+            return None
+        return value.title
 
-class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
+
+class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
                                   URLDereferencingMixin):
     """A marshaller that turns URLs into data model objects.
 
@@ -243,8 +257,8 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
     """
 
     def __init__(self, field, request, vocabulary=None):
-        super(ObjectLookupFieldMarshaller, self).__init__(
-            field, request, vocabulary)
+        super(ObjectLookupFieldMarshaller, self).__init__(field, request)
+        self.vocabulary = vocabulary
 
     def representationName(self, field_name):
         """See `IFieldMarshaller`.
@@ -289,3 +303,18 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
         # to the object underlying a resource, we need to strip its
         # security proxy.
         return removeSecurityProxy(resource).context
+
+
+class Reference(Object):
+    """An Object-like field which doesn't validate all fields of the schema.
+
+    Unlike Object, which does call _validate_fields(self.schema, value) to
+    validate all fields, this field will simply call the _validate() method of
+    the Field class and then check that the given value provides the specified
+    schema.
+    """
+
+    def _validate(self, value):
+        Field._validate(self, value)
+        if not self.schema.providedBy(value):
+            raise SchemaNotProvided()

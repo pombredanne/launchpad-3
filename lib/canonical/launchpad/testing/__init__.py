@@ -4,7 +4,6 @@
 from unittest import TestCase
 
 from canonical.database.sqlbase import cursor
-from canonical.testing import LaunchpadZopelessLayer
 import zope.event
 
 from canonical.launchpad.ftests import login
@@ -12,8 +11,6 @@ from canonical.launchpad.testing.factory import *
 
 
 class TestCaseWithFactory(TestCase):
-
-    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         login('test@canonical.com')

@@ -40,5 +40,6 @@ class IFieldMarshaller(Interface):
         :param field_name: The name of the field within the entry.
         :value: The object value of the field.
 
-        :return: The value to give when representing the field in a JSON hash.
+        :return: The string value to give when representing the field
+                 in a JSON hash.
         """

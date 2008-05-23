@@ -140,6 +140,14 @@
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
+             canonical.lazr.interfaces.timezone.ITimezoneNameVocabulary"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.TimezoneFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
         factory="canonical.lazr.rest.ObjectLookupFieldMarshaller"

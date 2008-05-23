@@ -40,18 +40,6 @@ At the top level we provide a collection of bugs.
    (u'title', u'another test bug'),
    (u'who_made_private_link', None)]
 
-Let's try modifying a bug.
-
-  >>> body = webservice.get('/beta/bugs/10').jsonBody()
-  >>> body['tags']
-  [u'crash']
-  >>> body['tags'].append(u'bang')
-  >>> print body
-  >>> from simplejson import dumps
-  >>> response = webservice.put(
-  ...     '/beta/bugs/10', 'application/json', dumps(body))
-  >>> print response.getBody()
-
 Bugs are indexed by number beneath the top-level collection.
 
   >>> bug_one = webservice.get("/beta/bugs/1").jsonBody()
