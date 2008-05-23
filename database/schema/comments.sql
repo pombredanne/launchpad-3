@@ -1745,6 +1745,17 @@ COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the pe
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
 
+-- ArchiveRebuild
+
+COMMENT ON TABLE ArchiveRebuild IS 'ArchiveRebuild: A link table that ties a "rebuild archive" to a DistroSeries and that captures the rebild life cycle data.';
+COMMENT ON COLUMN ArchiveRebuild.archive IS 'The archive to be used for the rebuild.';
+COMMENT ON COLUMN ArchiveRebuild.distroseries IS 'The DistroSeries in question.';
+COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started the rebuild.';
+COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
+COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
+COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+
+
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';
