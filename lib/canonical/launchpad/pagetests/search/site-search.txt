@@ -93,7 +93,7 @@ Searches that don't return any results display a kind message to the user.
 
     >>> search_for('fnord')
     >>> print extract_text(find_main_content(browser.contents))
-    Search Launchpad.net:
+    Search Launchpad:
     ...
     Your search, &ldquo;fnord&rdquo;, did not return any results.
 

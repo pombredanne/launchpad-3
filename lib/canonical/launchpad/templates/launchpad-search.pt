@@ -18,7 +18,7 @@
         name="sitesearch"
         method="get"
         accept-charset="UTF-8">
-    <label for="field.search_text">Search Launchpad.net:</label>
+    <label for="field.search_text">Search Launchpad:</label>
     <input
        id="field.search_text"
        class="textType"
