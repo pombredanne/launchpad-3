@@ -18,8 +18,8 @@ class TestCodeReviewMessage(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
         self.bmp = self.factory.makeBranchMergeProposal()
-        self.submitter = self.factory.makePerson()
-        self.reviewer = self.factory.makePerson()
+        self.submitter = self.factory.makePerson(password='password')
+        self.reviewer = self.factory.makePerson(password='password')
         self.bmp2 = self.factory.makeBranchMergeProposal()
 
     def test_createRootMessage(self):
