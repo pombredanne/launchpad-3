@@ -14,10 +14,12 @@ __all__ = [
     'ScopedCollection',
     'ServiceRootResource',
     'URLDereferencingMixin',
+    'WADL_SCHEMA_FILE',
     ]
 
 import copy
 from datetime import datetime
+import os
 import simplejson
 from types import NoneType
 
@@ -50,6 +52,9 @@ from canonical.lazr.interfaces import (
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 from canonical.lazr.rest.schema import URLDereferencingMixin
 
+# The path to the WADL XML Schema definition.
+WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
+                                'wadl20061109.xsd')
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
     "A page template class for generating web service-related documents."

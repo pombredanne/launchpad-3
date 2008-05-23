@@ -25,10 +25,18 @@ It's an XML document.
     ...
     </wadl:application>
 
-Let's parse it.
+Let's parse it and make sure it validates against the WADL schema
 
-    >>> import cElementTree as ET
-    >>> tree = ET.fromstring(wadl)
+    >>> from StringIO import StringIO
+    >>> from lxml import etree
+    >>> from canonical.lazr.rest.resource import WADL_SCHEMA_FILE
+    >>> wadl_schema = etree.XMLSchema(file=WADL_SCHEMA_FILE)
+
+    >>> tree = etree.fromstring(wadl)
+    >>> wadl_schema.validate(tree)
+    1
+    >>> wadl_schema.error_log
+    <BLANKLINE>
 
 The root tag of any WADL document is called 'application'. Note the
 namespaced tag name; this test will be ignoring the namespace from
@@ -84,7 +92,12 @@ description of an entry. It's an <application> tag that contains a
 
     >>> wadl = webservice.get('/beta/people',
     ...                       'application/vd.sun.wadl+xml').getBody()
-    >>> tree = ET.fromstring(wadl)
+    >>> tree = etree.fromstring(wadl)
+    >>> wadl_schema.validate(tree)
+    1
+    >>> wadl_schema.error_log
+    <BLANKLINE>
+
     >>> tree.tag
     '...application'
 
@@ -113,8 +126,12 @@ the representation of a top-level collection.
 
     >>> wadl = webservice.get('/beta/~admins/members',
     ...                       'application/vd.sun.wadl+xml').getBody()
+    >>> tree = etree.fromstring(wadl)
+    >>> wadl_schema.validate(tree)
+    1
+    >>> wadl_schema.error_log
+    <BLANKLINE>
 
-    >>> tree = ET.fromstring(wadl)
     >>> tree.tag
     '...application'
 
@@ -159,7 +176,11 @@ description of the resource-to-be.
     >>> wadl = webservice.get(
     ...     '/beta/~salgado/mugshot',
     ...     'application/vd.sun.wadl+xml').getBody()
-    >>> tree = ET.fromstring(wadl)
+    >>> tree = etree.fromstring(wadl)
+    >>> wadl_schema.validate(tree)
+    1
+    >>> wadl_schema.error_log
+    <BLANKLINE>
 
 Just like with the WADL description of an entry or collection
 resource, the WADL representation of a hosted file resource is not
@@ -199,8 +220,11 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> tree = ET.fromstring(wadl)
-    >>> open("/home/leonardr/programming/wadl/wadl.xml", "w").write(wadl)
+    >>> tree = etree.fromstring(wadl)
+    >>> wadl_schema.validate(tree)
+    1
+    >>> wadl_schema.error_log
+    <BLANKLINE>
 
 Like all WADL documents, the WADL representation of the service root
 is rooted at an <application> tag.
@@ -223,7 +247,9 @@ resources serve.
 Let's whittle down the complexity a little by taking a look at the
 description of the service root resource itself.
 
-    >>> children = list(tree)
+    >>> from lxml.etree import _Comment
+    >>> children = [child for child in tree
+    ...             if not isinstance(child, _Comment)]
     >>> resources, service_root_type, service_root_repr = children[:3]
     >>> # We'll deal with the rest of the children later.
     >>> other_children = children[3:]
