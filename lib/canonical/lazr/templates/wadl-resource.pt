@@ -5,9 +5,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
-  <resources tal:attributes="href context/wadl:url">
+  <resources tal:attributes="base context/wadl:url">
     <resource path=""
-              tal:attributes="resource_type context/wadl:type_link" />
+              tal:attributes="type context/wadl:type_link" />
   </resources>
 </application>
 

@@ -46,7 +46,7 @@ single <resources> tag.
 The <resources> tag describes a set of resources rooted at the
 person's URL.
 
-    >>> resources.attrib['href']
+    >>> resources.attrib['base']
     'http://api.launchpad.dev/beta/~salgado'
 
 The <resources> tag contains a single <resource> tag. The WADL
@@ -61,7 +61,7 @@ itself.
 
 What are the capabilities of this resource?
 
-    >>> resource.attrib['resource_type']
+    >>> resource.attrib['type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter'
 
 Since all person resources work the same way, the capabilities of any
@@ -90,7 +90,7 @@ description of an entry. It's an <application> tag that contains a
     >>> [resources] = tree
     >>> resources.tag
     '...resources'
-    >>> resources.attrib['href']
+    >>> resources.attrib['base']
     'http://api.launchpad.dev/beta/people'
 
 The <resource> tag defines the capabilities of the collection resource
@@ -101,7 +101,7 @@ by referencing another WADL document.
     '...resource'
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['resource_type']
+    >>> resource.attrib['type']
     'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
 
 
@@ -120,13 +120,13 @@ the representation of a top-level collection.
     >>> [resources] = tree
     >>> resources.tag
     '...resources'
-    >>> resources.attrib['href']
+    >>> resources.attrib['base']
     'http://api.launchpad.dev/beta/~admins/members'
 
     >>> [resource] = resources
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['resource_type']
+    >>> resource.attrib['type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter-scoped-collection'
 
 
@@ -174,7 +174,7 @@ ID "HostedFile".
     >>> [resources] = tree
     >>> resources.tag
     '...resources'
-    >>> resources.attrib['href']
+    >>> resources.attrib['base']
     'http://api.launchpad.dev/beta/~salgado/mugshot'
 
     >>> [resource] = resources
@@ -182,7 +182,7 @@ ID "HostedFile".
     '...resource'
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['resource_type']
+    >>> resource.attrib['type']
     'http://api.launchpad.dev/beta/#HostedFile'
 
 
@@ -306,7 +306,7 @@ everything.
 
     >>> resources.tag
     '...resources'
-    >>> resources.attrib['href']
+    >>> resources.attrib['base']
     'http://api.launchpad.dev/beta/'
 
 As with the <resources> tags shown earlier, this one contains a single
@@ -317,7 +317,7 @@ As with the <resources> tags shown earlier, this one contains a single
     '...resource'
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['resource_type']
+    >>> resource.attrib['type']
     '#service-root'
 
 Aha! There's a resource of type "service-root" right there at the

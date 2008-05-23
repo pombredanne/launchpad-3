@@ -9,8 +9,8 @@
   <!--There is one "service root" resource, located (as you'd expect)
       at the service root. This very document is the WADL
       representation of the "service root" resource.-->
-  <resources tal:attributes="href context/wadl:url">
-    <resource path="" resource_type="#service-root" />
+  <resources tal:attributes="base context/wadl:url">
+    <resource path="" type="#service-root" />
   </resources>
 
   <!--A "service root" resource responds to GET.-->
