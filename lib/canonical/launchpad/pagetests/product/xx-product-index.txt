@@ -186,7 +186,12 @@ then the owner will not get a warning that the subscription is due.
 # Remove this config when the feature is launched.
 
     >>> from canonical.config import config
-    >>> config.commercial.is_subscription_feature_active = False
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [commercial]
+    ...     is_subscription_feature_active: False
+    ...     """)
+    >>> config.push('test_data', test_data)
     >>> firefox.licenses = [License.OTHER_PROPRIETARY]
     >>> flush_database_updates()
     >>> transaction.commit()
@@ -194,3 +199,4 @@ then the owner will not get a warning that the subscription is due.
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-requires-subscription')
     None
+    >>> test_config_data = config.pop('test_data')

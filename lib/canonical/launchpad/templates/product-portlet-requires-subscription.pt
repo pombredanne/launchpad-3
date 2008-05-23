@@ -12,7 +12,7 @@
   </h2>
   <div tal:condition="context/commercial_subscription/date_expires | nothing">
     <strong>Current subscription expires
-    <span 
+    <tal:date_expire
      tal:replace="context/commercial_subscription/date_expires/fmt:displaydate"
     />.
     </strong>

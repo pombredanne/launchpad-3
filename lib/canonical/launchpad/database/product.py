@@ -303,7 +303,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return
         # Clear the license_reviewed flag if the license changes.
         # ProductSet.createProduct() passes in reset_license_reviewed=False
-        # to avoid changing the value when a Launchpad Admin sets 
+        # to avoid changing the value when a Launchpad Admin sets
         # license_reviewed & licenses at the same time.
         if reset_license_reviewed:
             self.license_reviewed = False
