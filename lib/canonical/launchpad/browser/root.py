@@ -264,6 +264,10 @@ class WindowedList:
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
+    # Searches generally don't show the 'Last' link when there is a
+    # good chance of getting over 100,000 results.
+    show_last_link=False
+
     def __init__(self, results, request, start=0, size=20, callback=None):
         """See `BatchNavigator`.
 
