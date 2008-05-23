@@ -7,6 +7,7 @@ __all__ = [
     'CollectionField',
     'CollectionFieldMarshaller',
     'DateTimeFieldMarshaller',
+    'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
     'Reference',
     'SimpleFieldMarshaller',
@@ -151,6 +152,14 @@ class SimpleFieldMarshaller:
         Return the value as is.
         """
         return value
+
+
+class IntFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into an integer."""
+
+    def _marshall_from_string(self, value):
+        """Try to convert the value into an integer."""
+        return int(value)
 
 
 class TimezoneFieldMarshaller(SimpleFieldMarshaller):

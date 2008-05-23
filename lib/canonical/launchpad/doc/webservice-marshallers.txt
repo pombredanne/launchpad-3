@@ -29,15 +29,15 @@ that the empty string is marshalled as None.
     >>> from zope.component import getMultiAdapter
     >>> from canonical.lazr.interfaces import IFieldMarshaller
     >>> from zope.schema import TextLine
-    >>> field = TextLine()
+    >>> field = TextLine(__name__='field_name')
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
-    >>> marshaller.marshall("foo")
+    >>> marshaller.marshall_from_string("foo")
     'foo'
-    >>> marshaller.marshall("4")
+    >>> marshaller.marshall_from_string("4")
     '4'
-    >>> marshaller.marshall(u"unicode\u2122")
+    >>> marshaller.marshall_from_string(u"unicode\u2122")
     u'unicode\u2122'
-    >>> print marshaller.marshall("")
+    >>> print marshaller.marshall_from_string("")
     None
 
 When asked to convert a field value to a representation value, this
@@ -48,7 +48,7 @@ marshaller returns the string as-is:
 
 The representation name for a TextLine field is the name of the field.
 
-    >>> marshaller.representationName('field_name')
+    >>> marshaller.representation_name
     'field_name'
 
 The marshaller for an Int field tries to convert the given string
@@ -57,25 +57,25 @@ into an int.
     >>> from zope.schema import Int
     >>> field = Int()
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
-    >>> marshaller.marshall("4")
+    >>> marshaller.marshall_from_string("4")
     4
-    >>> marshaller.marshall(u"4")
+    >>> marshaller.marshall_from_string(u"4")
     4
 
-    >>> marshaller.marshall("foo")
+    >>> marshaller.marshall_from_string("foo")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int(): foo
 
-    >>> marshaller.marshall("4.62")
+    >>> marshaller.marshall_from_string("4.62")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int(): 4.62
 
-    >>> marshaller.marshall("")
-    Traceback (most recent call last):
-    ...
-    ValueError: invalid literal for int():
+The empty string still marshalls to None.
+
+    >>> print marshaller.marshall_from_string("")
+    None
 
 The marshaller for a Choice is chosen based on the Choice's
 vocabulary. First, let's look at a Choice whose vocabulary is a
@@ -91,23 +91,23 @@ values. A string that corresponds to one of the values is marshalled
 to the appropriate value. A string that doesn't correspond to any
 enumerated value results in a helpful ValueError.
 
-    >>> marshaller.marshall("Triaged")
+    >>> marshaller.marshall_from_string("Triaged")
     <DBItem BugTaskStatus.TRIAGED...>
 
-    >>> marshaller.marshall("NoSuchStatus")
+    >>> marshaller.marshall_from_string("NoSuchStatus")
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "NoSuchStatus". Acceptable values are: ...
 
-    >>> marshaller.marshall("triaged")
+    >>> marshaller.marshall_from_string("triaged")
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "triaged". Acceptable values are: ...
 
-    >>> marshaller.marshall("")
-    Traceback (most recent call last):
-    ...
-    ValueError: Invalid value "". Acceptable values are: ...
+The empty string marshalls to None.
+
+    >>> print marshaller.marshall_from_string("")
+    None
 
 
 == Object marshallers ==
@@ -118,7 +118,8 @@ published as a resource in Launchpad's web service.
 
     >>> from canonical.launchpad.vocabularies import (
     ...     ValidPersonOrTeamVocabulary)
-    >>> field = Choice(vocabulary=ValidPersonOrTeamVocabulary())
+    >>> field = Choice(
+    ...     __name__='some_person', vocabulary=ValidPersonOrTeamVocabulary())
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
 
 Here, the client is expected to designate a vocabulary item by its
@@ -127,20 +128,20 @@ vocabulary item, the marshaller returns that item. Otherwise it
 raises a ValueError.
 
     >>> from canonical.launchpad.interfaces import IPerson
-    >>> person = marshaller.marshall(
+    >>> person = marshaller.marshall_from_string(
     ...     "http://api.launchpad.dev/beta/~salgado")
     >>> IPerson.providedBy(person)
     True
     >>> person.name
     u'salgado'
 
-    >>> marshaller.marshall(
+    >>> marshaller.marshall_from_string(
     ...     "http://api.launchpad.dev/beta/~nosuchperson")
     Traceback (most recent call last):
     ...
     ValueError: No such object "http://api.launchpad.dev/beta/~nosuchperson".
 
-    >>> marshaller.marshall("salgado")
+    >>> marshaller.marshall_from_string("salgado")
     Traceback (most recent call last):
     ...
     ValueError: No such object "salgado".
@@ -159,7 +160,7 @@ This marshaller also appends '_link' to the representation name of
 this field, so that clients can know this is a link to another
 resource and not a random string.
 
-    >>> marshaller.representationName('some_person')
+    >>> marshaller.representation_name
     'some_person_link'
 
 
@@ -173,7 +174,8 @@ membership, or something like that.)
 
     >>> from zope.schema import Object
     >>> from canonical.lazr.rest.schema import CollectionField
-    >>> field = CollectionField(value_type=Object(schema=IPerson))
+    >>> field = CollectionField(
+    ...     __name__='person_memberships', value_type=Object(schema=IPerson))
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
 
 Instead of serving the actual collection, collection marshallers serve
@@ -186,5 +188,5 @@ a URL to that collection.
 They also annotate the representation name of the field, so that
 clients know this is a link to a collection-type resource.
 
-    >>> marshaller.representationName('person_memberships')
+    >>> marshaller.representation_name
     'person_memberships_collection_link'
