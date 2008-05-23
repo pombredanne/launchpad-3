@@ -160,6 +160,9 @@ attributes are changed.
     >>> bzr.license_reviewed = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (False, True)
+
+Manually approve the license.
+
     >>> bzr.license_approved = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)

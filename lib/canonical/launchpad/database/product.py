@@ -287,7 +287,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             for product_license
                 in ProductLicense.selectBy(product=self, orderBy='license'))
 
-    def _setLicenses(self, licenses):
+    def _setLicenses(self, licenses, reset_license_reviewed=True):
         """Set the licenses from a tuple of license enums.
 
         The licenses parameter must not be an empty tuple.
@@ -297,7 +297,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if licenses == old_licenses:
             return
         # Clear the license_reviewed flag if the license changes.
-        self.license_reviewed = False
+        # ProductSet.createProduct() passes in reset_license_reviewed=False
+        # to avoid changing the value when a Launchpad Admin sets 
+        # license_reviewed & licenses at the same time.
+        if reset_license_reviewed:
+            self.license_reviewed = False
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute
@@ -863,7 +867,7 @@ class ProductSet:
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
         if len(licenses) > 0:
-            product.licenses = licenses
+            product._setLicenses(licenses, reset_license_reviewed=False)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(
