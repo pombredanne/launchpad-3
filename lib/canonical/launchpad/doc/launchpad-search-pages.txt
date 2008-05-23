@@ -262,7 +262,7 @@ maximum number of results that can be returned per request.
     'Launchpad Bugs'
     'Bugs in Ubuntu Linux'
     'Bugs related to Sample Person'
-    u'<b>Bug< #1 in Mozilla Firefox: \u201cFirefox does not support SVG\u201d'
+    u'<b>Bug</b> #1 in Mozilla Firefox: ...Firefox does not support SVG...'
     'Bugs in Source Package "thunderbird" in Ubuntu Linux'
 
 The batch navigator provides access to the other batches. There are two
@@ -297,11 +297,11 @@ is 20. That is because there were only 25 matching pages.
     5
     >>> for page in pages:
     ...     page.title
-    u'<b>Bug< #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
-    u'<b>Bug< #2 in mozilla-firefox (Debian): \u201cBlackhole Trash folder\u201d'
-    u'<b>Bug< #3 in mozilla-firefox (Debian): \u201cBug Title Test\u201d'
-    '<b>Bug< trackers registered in Launchpad'
-    u'<b>Bug< tracker \u201cDebian Bug tracker\u201d'
+    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    u'<b>Bug</b> #2 in mozilla-firefox (Debian): ...Blackhole Trash folder...'
+    u'<b>Bug</b> #3 in mozilla-firefox (Debian): \u201cBug Title Test\u201d'
+    '<b>Bug</b> trackers registered in Launchpad'
+    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
 
     >>> search_view.pages.nextBatchURL()
     ''
@@ -316,7 +316,7 @@ showing the matching terms in context of the page text.
     >>> page
     <...PageMatch ...>
     >>> page.title
-    u'<b>Bug< #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
     >>> page.url
     'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2'
     >>> page.summary
@@ -354,7 +354,7 @@ the first 20 items are None. Only the last 5 items are PageMatches.
     >>> print results[0]
     None
     >>> results[24].title
-    u'<b>Bug< tracker \u201cDebian Bug tracker\u201d'
+    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
     >>> results[18, 22]
     [None, None, <...PageMatch ...>, <...PageMatch ...>]
 
