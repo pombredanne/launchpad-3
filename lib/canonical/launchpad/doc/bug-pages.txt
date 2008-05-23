@@ -706,7 +706,12 @@ However, if we set the show_imported_comments config option to True, the
 imported comments for bug 4 will be displayable.
 
     >>> from canonical.config import config
-    >>> config.malone.show_imported_comments = True
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [malone]
+    ...     show_imported_comments: True
+    ...     """)
+    >>> config.push('test_data', test_data)
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> for comment in view.getBugCommentsForDisplay():
     ...     comment.can_be_shown
@@ -717,3 +722,4 @@ imported comments for bug 4 will be displayable.
     True
     True
 
+    >>> test_config_data = config.pop('test_data')
