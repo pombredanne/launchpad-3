@@ -122,6 +122,11 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
+    def makeCodeReviewMessage(self, sender):
+        merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        return merge_proposal.createMessage(sender,
+            self.getUniqueString('subject'), self.getUniqueString('content'))
+
     def makePerson(self, email=None, name=None, password=None,
                    email_address_status=None, displayname=None):
         """Create and return a new, arbitrary Person.
