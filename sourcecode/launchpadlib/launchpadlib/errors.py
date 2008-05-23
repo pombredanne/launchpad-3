@@ -7,7 +7,6 @@ __all__ = [
     'CredentialsError',
     'CredentialsFileError',
     'LaunchpadError',
-    'NotAuthenticatedError',
     ]
 
 
@@ -21,7 +20,3 @@ class CredentialsError(LaunchpadError):
 
 class CredentialsFileError(CredentialsError):
     """Error in credentials file."""
-
-
-class NotAuthenticatedError(CredentialsError):
-    """The access token did not authenticate the user."""

@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'AccessToken',
+    'Consumer',
     'Credentials',
     ]
 
@@ -12,6 +14,7 @@ import errno
 
 from ConfigParser import SafeConfigParser
 from launchpadlib.errors import CredentialsFileError
+from launchpadlib.oauth.oauth import OAuthConsumer, OAuthToken
 
 
 CREDENTIALS_FILE_VERSION = '1'
@@ -30,15 +33,15 @@ class Credentials:
     :type filename: string or None.
     """
 
-    consumer_key = None
+    consumer = None
     access_token = None
     filename = None
 
-    def __init__(self, consumer_key, access_token=None, filename=None):
+    def __init__(self, consumer, access_token=None, filename=None):
         """The user's Launchpad API credentials.
 
         There are several ways to use this class.  You must provide the
-        consumer key.
+        consumer.
 
         If you provide only the filename, this class will attempt to retrieve
         the access token from the file.  If the file is found and it contains
@@ -50,8 +53,8 @@ class Credentials:
         used, but the `save()` method can be used to store the access token
         for later (in plain text).
 
-        :param consumer_key: The application consumer key.
-        :type consumer_key: string
+        :param consumer: The consumer (application).
+        :type consumer: `Consumer`
         :param access_token: The authenticated user access token.
         :type access_token: string
         :param filename: The path to the file to store and/or retrieve the
@@ -59,7 +62,7 @@ class Credentials:
             in plain text.
         :type filename: string
         """
-        self.consumer_key = consumer_key
+        self.consumer = consumer
         self.access_token = access_token
         self.filename = filename
 
@@ -79,9 +82,13 @@ class Credentials:
                     parser.readfp(credentials_file)
                 finally:
                     credentials_file.close()
-                # Check the version number and extract the access token.
-                self.access_token = parser.get(
+                # Check the version number and extract the access token and
+                # secret.  Then convert these to the appropriate instances.
+                access_token = parser.get(
                     CREDENTIALS_FILE_VERSION, 'access_token')
+                access_secret = parser.get(
+                    CREDENTIALS_FILE_VERSION, 'access_secret')
+                self.access_token = AccessToken(access_token, access_secret)
 
     def save(self, filename=None):
         """Save the credentials in the named file.
@@ -101,10 +108,26 @@ class Credentials:
         parser = SafeConfigParser()
         parser.add_section(CREDENTIALS_FILE_VERSION)
         parser.set(CREDENTIALS_FILE_VERSION,
-                   'access_token', self.access_token)
+                   'access_token', self.access_token.key)
+        parser.set(CREDENTIALS_FILE_VERSION,
+                   'access_secret', self.access_token.secret)
 
         credentials_file = open(filename, 'w')
         try:
             parser.write(credentials_file)
         finally:
             credentials_file.close()
+
+
+class Consumer(OAuthConsumer):
+    """An OAuth consumer (application)."""
+
+    def __init__(self, key, secret=''):
+        super(Consumer, self).__init__(key, secret)
+
+
+class AccessToken(OAuthToken):
+    """An OAuth access key."""
+
+    def __init__(self, key, secret=''):
+        super(AccessToken, self).__init__(key, secret)

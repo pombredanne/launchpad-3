@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 
-from launchpadlib.errors import NotAuthenticatedError
+from launchpadlib._browser import Browser
 
 
 class Launchpad:
@@ -25,8 +25,9 @@ class Launchpad:
         :type credentials: `Credentials`
         """
         self.credentials = credentials
-        if (self.credentials.consumer_key == 'launchpadlib-example' and
-            self.credentials.access_token == 'hgm2VK35vXD6rLg5pxWw'):
-            self.people = ['jim']
-        else:
-            raise NotAuthenticatedError
+
+    @property
+    def people(self):
+        # Get the root resource.
+        browser = Browser(self.credentials)
+        return browser.get('http://api.launchpad.dev:8085/beta')
