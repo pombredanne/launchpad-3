@@ -10,8 +10,6 @@ __all__ = [
     ]
 
 
-import errno
-
 from ConfigParser import SafeConfigParser
 from launchpadlib.errors import CredentialsFileError
 from launchpadlib.oauth.oauth import OAuthConsumer, OAuthToken
@@ -43,10 +41,8 @@ class Credentials:
     def load(self, readable_file):
         """Load credentials from a file-like object.
 
-        This overrides any consumer and access token given in the constructor
-        and replaces them with the values read from the file.  If either the
-        consumer or access token information is missing from the file, the
-        current values will be replaced with None.
+        This overrides the consumer and access token given in the constructor
+        and replaces them with the values read from the file.
 
         :param readable_file: A file-like object containing stored credentials
         :type readable_file: Any object supporting the file-like `read()`
@@ -98,6 +94,10 @@ class Credentials:
                    'access_secret', self.access_token.secret)
         parser.write(writable_file)
 
+
+# These two classes are provided for convenience (so applications don't need
+# to import from launchpadlib.oauth.oauth), and to provide a default argument
+# for secret.
 
 class Consumer(OAuthConsumer):
     """An OAuth consumer (application)."""

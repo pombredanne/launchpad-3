@@ -30,7 +30,6 @@ class Browser:
 
     def get(self, url):
         """Get the resource at the requested url."""
-        # There is no secret.
         oauth_request = OAuthRequest.from_consumer_and_token(
             self.credentials.consumer,
             self.credentials.access_token,
@@ -40,7 +39,7 @@ class Browser:
             self.credentials.consumer,
             self.credentials.access_token)
         # Calculate the headers for the request.
-        (scheme, netloc, path, query, fragment) = urlparse.urlsplit(url)
+        scheme, netloc, path, query, fragment = urlparse.urlsplit(url)
         if ':' in netloc:
             hostname, port = netloc.split(':', 1)
         else:
