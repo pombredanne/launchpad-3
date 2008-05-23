@@ -59,7 +59,8 @@ An arbitrary search returns a list of Google search results.
 The search can only return twenty results per-page.  Additional
 matches are shown on subsequent pages.
 
-    >>> first_page_results = find_tags_by_class(browser.contents, 'pagematch')
+    >>> first_page_results = list(
+    ...     find_tags_by_class(browser.contents, 'pagematch'))
     >>> len(first_page_results)
     20
 
@@ -67,11 +68,15 @@ As per the standard batch navigator, clicking on the 'Next' link
 takes you to the next page of results.
 
     >>> browser.getLink('Next').click()
-    >>> second_page_results = find_tags_by_class(browser.contents, 'pagematch')
+    >>> second_page_results = list(
+    ...     find_tags_by_class(browser.contents, 'pagematch'))
     >>> len(second_page_results)
     5
-    >>> set(first_page_results).intersect(set(second_page_results))
-    None
+
+    >>> in_both = [m for m in second_page_results
+    ...            if m in first_page_results]
+    >>> in_both
+    []
 
 
 == Searches with no results ==
