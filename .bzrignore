@@ -20,4 +20,4 @@ lint.txt
 sourcecode/launchpadlib/build
 sourcecode/launchpadlib/*.egg*
 sourcecode/launchpadlib/dist
-./google-stub.log
+google-stub.log

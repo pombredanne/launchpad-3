@@ -50,6 +50,7 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadSearch',
     'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
@@ -441,6 +442,12 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProject')
+
+
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
 
 
 class UnknownRecipientError(KeyError):
