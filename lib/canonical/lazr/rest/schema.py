@@ -137,12 +137,13 @@ class SimpleFieldMarshaller:
         """If the value is empty, return None. Otherwise return the value."""
         return value
 
-    def representationName(self, field_name):
+    @property
+    def representation_name(self):
         """See `IFieldMarshaller`.
 
         Return the field name as is.
         """
-        return field_name
+        return self.field.__name__
 
     def unmarshall(self, entry, field_name, value):
         """See `IFieldMarshaller`.
@@ -186,13 +187,15 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
 
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller for collection fields."""
 
-    def representationName(self, field_name):
+    @property
+    def representation_name(self):
         """See `IFieldMarshaller`.
 
         Make it clear that the value is a link to a collection.
         """
-        return field_name + '_collection_link'
+        return "%s_collection_link" % self.field.__name__
 
     def marshall_from_json_data(self, value):
         """See `IFieldMarshaller`.
@@ -231,6 +234,13 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             field, request)
         self.vocabulary = vocabulary
 
+    def marshall_from_json_data(self, value):
+        """See `IFieldMarshaller`.
+
+        The JSON value is the title of a vocabulary item.
+        """
+        return self.marshall_from_string(value)
+
     def _marshall_from_string(self, value):
         """Find an item in the vocabulary by title."""
         valid_titles = []
@@ -260,12 +270,13 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         super(ObjectLookupFieldMarshaller, self).__init__(field, request)
         self.vocabulary = vocabulary
 
-    def representationName(self, field_name):
+    @property
+    def representation_name(self):
         """See `IFieldMarshaller`.
 
         Make it clear that the value is a link to an object, not an object.
         """
-        return field_name + '_link'
+        return "%s_link" % self.field.__name__
 
     def unmarshall(self, entry, field_name, value):
         """See `IFieldMarshaller`.

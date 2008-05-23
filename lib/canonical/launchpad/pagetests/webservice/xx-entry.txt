@@ -177,7 +177,6 @@ less work than constructing a new document and sending it with PATCH.
   u'GUILHERME SALGADO'
 
   >>> salgado['display_name'] = 'Guilherme Salgado'
-  >>> import pdb; pdb.set_trace()
   >>> print modify_person('salgado', salgado, 'PUT')
   HTTP/1.1 200 Ok
   ...

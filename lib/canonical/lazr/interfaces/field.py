@@ -9,29 +9,32 @@ __all__ = [
     'IFieldMarshaller',
     ]
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 
 
 class IFieldMarshaller(Interface):
-    """A mapper between schema fields and representation fields"""
+    """A mapper between schema fields and their representation on the wire."""
 
-    def representationName(field_name):
-        """Transform a field name into a name used in a representation.
+    represention_name = Attribute(
+        'The name to use for this field within the representation.')
 
-        :param field_name: The name of the field within the entry.
-        :return: The name to give this field when representing it in a
-            JSON hash.
-        """
-
-    def marshall_from_json_data(value):
+    def marshall_from_json(value):
         """Transform the given data value into an object.
+
+        This is used in PATCH/PUT requests when modifying the field, to get
+        the actual value to use from the data submitted via JSON.
 
         :param value: A value obtained by deserializing a string into
             a JSON data structure.
         """
 
-    def marshall_from_string(value):
-        """Transform the given string value into an object."""
+    def marshall_from_request(value):
+        """Return the value to use based on the request submitted value.
+
+        This is used by operation where the data comes from either the
+        query string or the POST data.
+        :param value: The value submitted as part of the request.
+        """
 
     def unmarshall(entry, field_name, value):
         """Transform an object value into a value suitable for JSON.

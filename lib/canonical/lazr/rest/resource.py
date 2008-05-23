@@ -407,7 +407,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                           IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             repr_value = marshaller.unmarshall(self.entry, name, value)
             data[repr_name] = repr_value
         return data
@@ -490,7 +490,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             if (changeset.get(repr_name) is None
                 and getattr(self.entry, name) is not None):
                 # This entry has a value for the attribute, but the
@@ -538,7 +538,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             if not repr_name in changeset:
                 # The client didn't try to set a value for this field.
                 continue
