@@ -115,6 +115,8 @@ class with_timeout:
                         getattr(args[0], self.cleanup)()
                     else:
                         self.cleanup()
+                    # Collect cleaned-up worker thread.
+                    t.join()
                 raise TimeoutError("timeout exceeded.")
             if getattr(t, 'exc_info', None) is not None:
                 exc_info = t.exc_info
