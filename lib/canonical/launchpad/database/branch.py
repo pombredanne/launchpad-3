@@ -686,7 +686,6 @@ class BranchWithSortKeys(Branch):
 LISTING_SORT_TO_COLUMN = {
     BranchListingSort.PRODUCT: 'product_name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NAME: 'name',
     BranchListingSort.REGISTRANT: 'owner_name',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',

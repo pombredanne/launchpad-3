@@ -1431,6 +1431,7 @@ Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.name, upload.version
+    iceweasel 1.0
     mozilla-firefox 0.9
 
 Also, empty results (caused obviously by lack of sample data or very
