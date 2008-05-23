@@ -240,18 +240,19 @@ class POFileMixIn(RosettaStats):
                         JOIN TranslationMessage
                           ON TranslationMessage.potmsgset=POTMsgSet.id
                         WHERE
-                          TranslationMessage.pofile=%s AND
-                          TranslationMessage.msgstr%d IN (
+                          TranslationMessage.pofile=%(pofile)s AND
+                          TranslationMessage.msgstr%(plural_form)d IN (
                             SELECT POTranslation.id FROM POTranslation WHERE
                               POTranslation.id IN (
-                                SELECT DISTINCT(msgstr%d)
+                                SELECT DISTINCT(msgstr%(plural_form)d)
                                   FROM TranslationMessage
-                                  WHERE TranslationMessage.pofile=%s
+                                  WHERE TranslationMessage.pofile=%(pofile)s
                               ) AND
                               POTranslation.translation
-                                ILIKE '%%' || %s || '%%')
-                              ))""" % (quote(self), plural_form, plural_form,
-                                       quote(self), quote_like(text))
+                                ILIKE '%%' || %(text)s || '%%')
+                              ))""" % dict(pofile=quote(self),
+                                           plural_form=plural_form,
+                                           text=quote_like(text))
                     search_clauses.append(translation_match)
 
                 clauses.append("(" + " OR ".join(search_clauses) + ")")
