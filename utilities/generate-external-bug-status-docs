@@ -1,4 +1,12 @@
 #!/usr/bin/python2.4
+#
+# Generates documentation of mapping from remote bug tracker statuses
+# to local, Launchpad statuses. Typically, this should be used to
+# update the online documentation each time the status mappings are
+# updated.
+#
+# See https://help.launchpad.net/BugStatuses
+#
 
 import _pythonpath
 
