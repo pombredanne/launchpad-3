@@ -120,6 +120,7 @@ class BMPMailer:
         return (headers, subject, self._getBody(recipient))
 
     def _getHeaders(self, recipient):
+        """Return the mail headers to use."""
         subscription, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
         return {'X-Launchpad-Branch': subscription.branch.unique_name,

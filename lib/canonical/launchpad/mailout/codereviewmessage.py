@@ -13,7 +13,6 @@ from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 
 
 class CodeReviewMessageMailer(BMPMailer):
-
     """Send email about creation of a CodeReviewMessage."""
 
     def __init__(self, code_review_message, recipients):
@@ -42,10 +41,12 @@ class CodeReviewMessageMailer(BMPMailer):
             self.message.text_contents, self.getReason(recipient))
 
     def _getReplyToAddress(self):
+        """Return the address to use for the reply-to header."""
         merge_proposal = self.code_review_message.branch_merge_proposal
         return 'mp+%d@%s' % (merge_proposal.id, config.vhost.code.hostname)
 
     def _getHeaders(self, recipient):
+        """Return the mail headers to use."""
         headers = BMPMailer._getHeaders(self, recipient)
         headers['Message-Id'] = self.message.rfc822msgid
         if self.message.parent is not None:
