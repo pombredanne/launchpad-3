@@ -122,19 +122,19 @@ class SimpleFieldMarshaller:
         """
         return value
 
-    def marshall_from_string(self, value):
+    def marshall_from_request(self, value):
         """See `IFieldMarshaller`.
 
-        Make sure the value is a string and then _marshall_from_string_method
-        hook method.
+        Make sure the value is a string and then call the
+        _marshall_from_request() hook method.
         """
         assert isinstance(value, basestring), (
             'Marshalling a non-string: %r' % value)
         if value == "":
             return None
-        return self._marshall_from_string(value)
+        return self._marshall_from_request(value)
 
-    def _marshall_from_string(self, value):
+    def _marshall_from_request(self, value):
         """If the value is empty, return None. Otherwise return the value."""
         return value
 
@@ -157,7 +157,7 @@ class SimpleFieldMarshaller:
 class IntFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
 
-    def _marshall_from_string(self, value):
+    def _marshall_from_request(self, value):
         """Try to convert the value into an integer."""
         return int(value)
 
@@ -176,9 +176,9 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
 
         The JSON value is a string that needs to be parsed.
         """
-        return self.marshall_from_string(value)
+        return self.marshall_from_request(value)
 
-    def _marshall_from_string(self, value):
+    def _marshall_from_request(self, value):
         """Parse the value as a datetime object."""
         try:
             value = DateTimeParser().parse(value)
@@ -213,7 +213,7 @@ class CollectionFieldMarshaller(SimpleFieldMarshaller):
         """
         if value is None:
             return None
-        return self._marshall_from_string(value)
+        return self._marshall_from_request(value)
 
     def unmarshall(self, entry, field_name, value):
         """See `IFieldMarshaller`.
@@ -248,9 +248,9 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
 
         The JSON value is the title of a vocabulary item.
         """
-        return self.marshall_from_string(value)
+        return self.marshall_from_request(value)
 
-    def _marshall_from_string(self, value):
+    def _marshall_from_request(self, value):
         """Find an item in the vocabulary by title."""
         valid_titles = []
         for item in self.field.vocabulary.items:
@@ -304,9 +304,9 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         """
         if value is None:
             return None
-        return self._marshall_from_string(value)
+        return self._marshall_from_request(value)
 
-    def _marshall_from_string(self, value):
+    def _marshall_from_request(self, value):
         """See `IFieldMarshaller`.
 
         Look up the data model object by URL.

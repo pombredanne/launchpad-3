@@ -31,13 +31,13 @@ that the empty string is marshalled as None.
     >>> from zope.schema import TextLine
     >>> field = TextLine(__name__='field_name')
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
-    >>> marshaller.marshall_from_string("foo")
+    >>> marshaller.marshall_from_request("foo")
     'foo'
-    >>> marshaller.marshall_from_string("4")
+    >>> marshaller.marshall_from_request("4")
     '4'
-    >>> marshaller.marshall_from_string(u"unicode\u2122")
+    >>> marshaller.marshall_from_request(u"unicode\u2122")
     u'unicode\u2122'
-    >>> print marshaller.marshall_from_string("")
+    >>> print marshaller.marshall_from_request("")
     None
 
 When asked to convert a field value to a representation value, this
@@ -57,24 +57,24 @@ into an int.
     >>> from zope.schema import Int
     >>> field = Int()
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
-    >>> marshaller.marshall_from_string("4")
+    >>> marshaller.marshall_from_request("4")
     4
-    >>> marshaller.marshall_from_string(u"4")
+    >>> marshaller.marshall_from_request(u"4")
     4
 
-    >>> marshaller.marshall_from_string("foo")
+    >>> marshaller.marshall_from_request("foo")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int(): foo
 
-    >>> marshaller.marshall_from_string("4.62")
+    >>> marshaller.marshall_from_request("4.62")
     Traceback (most recent call last):
     ...
     ValueError: invalid literal for int(): 4.62
 
 The empty string still marshalls to None.
 
-    >>> print marshaller.marshall_from_string("")
+    >>> print marshaller.marshall_from_request("")
     None
 
 The marshaller for a Choice is chosen based on the Choice's
@@ -91,22 +91,22 @@ values. A string that corresponds to one of the values is marshalled
 to the appropriate value. A string that doesn't correspond to any
 enumerated value results in a helpful ValueError.
 
-    >>> marshaller.marshall_from_string("Triaged")
+    >>> marshaller.marshall_from_request("Triaged")
     <DBItem BugTaskStatus.TRIAGED...>
 
-    >>> marshaller.marshall_from_string("NoSuchStatus")
+    >>> marshaller.marshall_from_request("NoSuchStatus")
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "NoSuchStatus". Acceptable values are: ...
 
-    >>> marshaller.marshall_from_string("triaged")
+    >>> marshaller.marshall_from_request("triaged")
     Traceback (most recent call last):
     ...
     ValueError: Invalid value "triaged". Acceptable values are: ...
 
 The empty string marshalls to None.
 
-    >>> print marshaller.marshall_from_string("")
+    >>> print marshaller.marshall_from_request("")
     None
 
 
@@ -128,20 +128,20 @@ vocabulary item, the marshaller returns that item. Otherwise it
 raises a ValueError.
 
     >>> from canonical.launchpad.interfaces import IPerson
-    >>> person = marshaller.marshall_from_string(
+    >>> person = marshaller.marshall_from_request(
     ...     "http://api.launchpad.dev/beta/~salgado")
     >>> IPerson.providedBy(person)
     True
     >>> person.name
     u'salgado'
 
-    >>> marshaller.marshall_from_string(
+    >>> marshaller.marshall_from_request(
     ...     "http://api.launchpad.dev/beta/~nosuchperson")
     Traceback (most recent call last):
     ...
     ValueError: No such object "http://api.launchpad.dev/beta/~nosuchperson".
 
-    >>> marshaller.marshall_from_string("salgado")
+    >>> marshaller.marshall_from_request("salgado")
     Traceback (most recent call last):
     ...
     ValueError: No such object "salgado".
