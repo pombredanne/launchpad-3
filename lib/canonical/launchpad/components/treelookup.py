@@ -9,11 +9,19 @@ __all__ = [
     ]
 
 
-class LookupTree:
+class LookupTree(tuple):
     """A searchable tree."""
 
+    def __new__(cls, *nodes):
+        def conv(node):
+            if isinstance(node, LookupNode):
+                return node
+            else:
+                return LookupNode(*node)
+        return super(LookupTree, cls).__new__(
+            cls, (conv(node) for node in nodes))
+
     def __init__(self, *nodes):
-        self.nodes = nodes
         self.verify()
 
     def search(self, key, *more):
@@ -26,8 +34,8 @@ class LookupTree:
 
         Raises `KeyError` if a result is not found.
         """
-        for node in self.nodes:
-            if key in node:
+        for node in self:
+            if key in node or node.is_default:
                 if node.is_leaf:
                     return node.next
                 elif len(more) >= 1:
@@ -49,12 +57,12 @@ class LookupTree:
         This can be useful for generating documentation, because it is
         a compact, flat representation of the tree.
         """
-        for node in self.nodes:
+        for node in self:
             if node.is_leaf:
-                yield node.keys, node.next
+                yield node, node.next
             else:
                 for path in node.next.walker:
-                    yield (node.keys,) + path
+                    yield (node,) + path
 
     @property
     def min_depth(self):
@@ -70,32 +78,33 @@ class LookupTree:
         """Check the validity of the tree."""
         keys = set()
         default = False
-        for node in self.nodes:
+        for node in self:
             if default:
                 raise TypeError('Default node must be last')
             default = node.is_default
             if not isinstance(node, LookupNode):
                 raise TypeError('Not a LookupNode: %r' % (node,))
-            seen = keys.intersection(node.keys)
+            seen = keys.intersection(node)
             if len(seen) > 0:
                 raise TypeError('Key(s) already seen: %r' % (seen,))
 
+    def __repr__(self, level=1):
+        indent = '    ' * level
+        format = indent + '%s'
+        return 'lookup(\n%s\n%s)' % (
+            '\n'.join(format % node.__repr__(level + 1) for node in self),
+            indent)
 
-class LookupNode:
+
+class LookupNode(tuple):
     """A node point during a lookup, containing keys and a next step."""
+
+    def __new__(cls, *args):
+        return super(LookupNode, cls).__new__(cls, args[:-1])
 
     def __init__(self, *args):
         """All but the last argument are keys; the last is the next step."""
-        self.keys = args[:-1]
         self.next = args[-1]
-
-    def __contains__(self, key):
-        """True if the key is in the keys on this node.
-
-        Also True if there are no keys specified. In other words, a
-        default.
-        """
-        return (key in self.keys) or self.is_default
 
     @property
     def is_leaf(self):
@@ -104,4 +113,12 @@ class LookupNode:
 
     @property
     def is_default(self):
-        return len(self.keys) == 0
+        return len(self) == 0
+
+    def __repr__(self, level=1):
+        format = 'node(%s => %%s)' % (
+            ', '.join(str(node) for node in self))
+        if isinstance(self.next, LookupTree):
+            return format % self.next.__repr__(level)
+        else:
+            return format % repr(self.next)
