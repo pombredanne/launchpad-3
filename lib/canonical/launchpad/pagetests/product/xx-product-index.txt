@@ -179,3 +179,18 @@ is displayed.
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-missing-license')
     None
+
+If the is_subscription_feature_active config variable is false,
+then the owner will not get a warning that the subscription is due.
+# XXX EdwinGrubbs 2008-05-22 bug=234070
+# Remove this config when the feature is launched.
+
+    >>> from canonical.config import config
+    >>> config.commercial.is_subscription_feature_active = False
+    >>> firefox.licenses = [License.OTHER_PROPRIETARY]
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> print find_tag_by_id(owner_browser.contents,
+    ...                      'portlet-requires-subscription')
+    None
