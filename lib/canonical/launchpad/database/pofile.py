@@ -228,33 +228,34 @@ class POFileMixIn(RosettaStats):
 
             # Do not look for translations in a DummyPOFile.
             if self.id is not None:
-                # XXX 2008-04-21 DaniloSegan: bug #221353.
-                # We are currently searching only through the first form of
-                # translation.  This needs to be fixed, however, the query
-                # would need some prettyfying before that can happen, and
-                # some performance testing as well (though, I expect it to
-                # be ok, I decided to do initial phase with only one form).
-                translation_match = """
-                -- Step 2: find POTMsgSets with translations containing `text`.
-                -- Like above, to avoid seqscans on POTranslation table,
-                -- we do ILIKE comparison on them in a subselect which is
-                -- first filtered by the POFile.
-                (POTMsgSet.id IN (
-                   SELECT POTMsgSet.id FROM POTMsgSet
-                     JOIN TranslationMessage
-                       ON TranslationMessage.potmsgset=POTMsgSet.id
-                     WHERE
-                       TranslationMessage.pofile=%s AND
-                       TranslationMessage.msgstr0 IN (
-                         SELECT POTranslation.id FROM POTranslation WHERE
-                           POTranslation.id IN (
-                             SELECT DISTINCT(msgstr0) FROM TranslationMessage
-                               WHERE TranslationMessage.pofile=%s
-                           ) AND
-                           POTranslation.translation ILIKE '%%' || %s || '%%')
-                   ))""" % (quote(self), quote(self), quote_like(text))
-                clauses.append("(%s OR %s)" % (english_match,
-                                               translation_match))
+                search_clauses = [english_match]
+                for plural_form in range(self.plural_forms):
+                    translation_match = """
+                    -- Step 2: find translations containing `text`.
+                    -- Like above, to avoid seqscans on POTranslation table,
+                    -- we do ILIKE comparison on them in a subselect which is
+                    -- first filtered by the POFile.
+                    (POTMsgSet.id IN (
+                      SELECT POTMsgSet.id FROM POTMsgSet
+                        JOIN TranslationMessage
+                          ON TranslationMessage.potmsgset=POTMsgSet.id
+                        WHERE
+                          TranslationMessage.pofile=%(pofile)s AND
+                          TranslationMessage.msgstr%(plural_form)d IN (
+                            SELECT POTranslation.id FROM POTranslation WHERE
+                              POTranslation.id IN (
+                                SELECT DISTINCT(msgstr%(plural_form)d)
+                                  FROM TranslationMessage
+                                  WHERE TranslationMessage.pofile=%(pofile)s
+                              ) AND
+                              POTranslation.translation
+                                ILIKE '%%' || %(text)s || '%%')
+                              ))""" % dict(pofile=quote(self),
+                                           plural_form=plural_form,
+                                           text=quote_like(text))
+                    search_clauses.append(translation_match)
+
+                clauses.append("(" + " OR ".join(search_clauses) + ")")
             else:
                 clauses.append(english_match)
 
