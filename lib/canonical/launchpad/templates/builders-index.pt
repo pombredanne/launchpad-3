@@ -61,10 +61,10 @@
        </tr>
        <tr class="builder-row" tal:repeat="builder builder_group/builders">
          <td class="icon left">
-           <tal:nok condition="not: builder/builderok">
+           <tal:not-ok condition="not: builder/builderok">
              <img width="14" height="14" alt="[Disabled]"
                   title="Disabled" src="/@@/no" />
-           </tal:nok>
+           </tal:not-ok>
         </td>
          <td style="text-align: left; width: 12em">
            <a tal:attributes="href builder/fmt:url"
