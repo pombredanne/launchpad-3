@@ -56,6 +56,7 @@ __all__ = [
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'PersonTranslationView',
+    'PersonTranslationRelicensingView',
     'PersonView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
@@ -2557,6 +2558,67 @@ class PersonTranslationView(LaunchpadView):
             return True
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
+
+
+class PersonTranslationRelicensingView(LaunchpadFormView):
+    """View for Person's translation relicensing page."""
+    label = "Relicense your translations?"
+    schema = ITranslationRelicensingAgreement
+    field_names = ['allow_relicensing']
+
+    @property
+    def has_already_answered(self):
+        """Return whether person has already answered about relicensing."""
+        return (self.context.translation_relicensing_agreement is not None)
+
+    @property
+    def next_url(self):
+        request = self.request
+        referrer = request.getHeader('referer')
+        if referrer and referrer.startswith(request.getApplicationURL()):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @action(_("Update my decision"), name="submit")
+    def submit_action(self, action, data):
+        allow_relicensing = data['allow_relicensing']
+        self.context.translation_relicensing_agreement = allow_relicensing
+        if allow_relicensing:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Thank you for deciding to relicense your translations."))
+        else:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Your translations will be removed once we completely "
+                "switch to BSD license for translations."))
+
+
+class PersonChangePasswordView(LaunchpadFormView):
+
+    label = "Change your password"
+    schema = IPersonChangePassword
+    field_names = ['currentpassword', 'password']
+    custom_widget('password', PasswordChangeWidget)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    def validate(self, form_values):
+        currentpassword = form_values.get('currentpassword')
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(currentpassword, self.context.password):
+            self.setFieldError('currentpassword', _(
+                "The provided password doesn't match your current password."))
+
+    @action(_("Change Password"), name="submit")
+    def submit_action(self, action, data):
+        password = data['password']
+        self.context.password = password
+        self.request.response.addInfoNotification(_(
+            "Password changed successfully"))
 
 
 class PersonGPGView(LaunchpadView):
