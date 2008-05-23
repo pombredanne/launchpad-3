@@ -21,24 +21,6 @@ from canonical.launchpad.interfaces import (
 class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
-    _status_lookup = Lookup(
-        ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
-         BugTaskStatus.INPROGRESS),
-        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
-         BugTaskStatus.INCOMPLETE),
-        ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
-         BugTaskStatus.FIXCOMMITTED),
-        ('REJECTED', BugTaskStatus.INVALID),
-        ('RESOLVED', 'VERIFIED', 'CLOSED', Lookup(
-                ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
-                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
-                 BugTaskStatus.FIXRELEASED),
-                ('WONTFIX', BugTaskStatus.WONTFIX),
-                (BugTaskStatus.INVALID))),
-        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
-        ('UNCONFIRMED', BugTaskStatus.NEW),
-        )
-
     batch_query_threshold = 0 # Always use the batch method.
 
     def __init__(self, baseurl, version=None):
@@ -123,19 +105,39 @@ class Bugzilla(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
-    def convertRemoteStatus(self, status):
+    _status_lookup = Lookup(
+        ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
+         BugTaskStatus.INPROGRESS),
+        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+         BugTaskStatus.INCOMPLETE),
+        ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
+         BugTaskStatus.FIXCOMMITTED),
+        ('REJECTED', BugTaskStatus.INVALID),
+        ('RESOLVED', 'VERIFIED', 'CLOSED', Lookup(
+                ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 BugTaskStatus.FIXRELEASED),
+                ('WONTFIX', BugTaskStatus.WONTFIX),
+                (BugTaskStatus.INVALID))),
+        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
+        ('UNCONFIRMED', BugTaskStatus.NEW),
+        )
+
+    def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
         try:
-            if ' ' in status:
-                return self._status_lookup.search(*status.split(' ', 1))
+            if ' ' in remote_status:
+                return self._status_lookup.search(
+                    *remote_status.split(' ', 1))
             else:
-                return self._status_lookup.search(status)
+                return self._status_lookup.search(
+                    remote_status)
         except KeyError:
-            raise UnknownRemoteStatusError(status)
+            raise UnknownRemoteStatusError(remote_status)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.

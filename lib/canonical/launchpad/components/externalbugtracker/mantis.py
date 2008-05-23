@@ -93,22 +93,6 @@ class Mantis(ExternalBugTracker):
     exported from, see http://launchpad.canonical.com/MantisBugtrackers.
     """
 
-    _status_lookup = (
-        Lookup(
-            ('assigned', BugTaskStatus.INPROGRESS),
-            ('feedback', BugTaskStatus.INCOMPLETE),
-            ('new', BugTaskStatus.NEW),
-            ('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
-            ('resolved', 'closed', Lookup(
-                    ('reopened', BugTaskStatus.NEW),
-                    ('fixed', 'open', 'no change required',
-                     BugTaskStatus.FIXRELEASED),
-                    ('unable to reproduce', 'not fixable', 'suspended',
-                     'duplicate', BugTaskStatus.INVALID),
-                    ("won't fix", BugTaskStatus.WONTFIX))),
-            )
-        )
-
     # Custom opener that automatically sends anonymous credentials to
     # Mantis if (and only if) needed.
     _opener = ClientCookie.build_opener(MantisLoginHandler)
@@ -475,6 +459,22 @@ class Mantis(ExternalBugTracker):
         BugTaskImportance.UNKNOWN will always be returned.
         """
         return BugTaskImportance.UNKNOWN
+
+    _status_lookup = (
+        Lookup(
+            ('assigned', BugTaskStatus.INPROGRESS),
+            ('feedback', BugTaskStatus.INCOMPLETE),
+            ('new', BugTaskStatus.NEW),
+            ('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
+            ('resolved', 'closed', Lookup(
+                    ('reopened', BugTaskStatus.NEW),
+                    ('fixed', 'open', 'no change required',
+                     BugTaskStatus.FIXRELEASED),
+                    ('unable to reproduce', 'not fixable', 'suspended',
+                     'duplicate', BugTaskStatus.INVALID),
+                    ("won't fix", BugTaskStatus.WONTFIX))),
+            )
+        )
 
     def convertRemoteStatus(self, status_and_resolution):
         status, importance = status_and_resolution.split(": ", 1)
