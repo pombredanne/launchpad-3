@@ -55,7 +55,8 @@ a notification is produced when the message is created.
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from canonical.launchpad.tests.mail_helpers import (
+    ...     pop_notifications, print_emails)
     >>> source_subscriber = factory.makePerson(email='foo@bar.com',
     ...     password='baz')
     >>> _unused = merge_proposal.source_branch.subscribe(source_subscriber,
@@ -65,8 +66,25 @@ a notification is produced when the message is created.
     >>> _unused = pop_notifications()
     >>> message = merge_proposal.createMessage(
     ...     person, 'Please merge', 'This patch is very nice.')
-    >>> len(pop_notifications())
-    1
+    >>> notifications = pop_notifications()
+    >>> print_emails(include_reply_to=True, notifications=notifications)
+    From: Person-name... <...>
+    To: Person-name... <...>
+    Reply-To: mp+1@code.launchpad.dev
+    Subject: Please merge
+    This patch is very nice.
+    --
+    You are subscribed to branch ~person-name.../product-name.../branch....
+    ----------------------------------------
+    >>> print notifications[0]['X-Launchpad-Branch']
+    ~person-name.../product-name.../branch...
+    >>> print notifications[0]['X-Launchpad-Message-Rationale']
+    Subscriber
+    >>> notifications[0]['Message-Id'] == message.message.rfc822msgid
+    True
+    >>> (notifications[0]['In-Reply-To'] ==
+    ...  merge_proposal.root_message.message.rfc822msgid)
+    True
 
 
 == Interfaces ==
