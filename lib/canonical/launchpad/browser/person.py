@@ -94,7 +94,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice, List, Text, TextLine
+from zope.schema import Bool, Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -128,6 +128,9 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+
+from canonical.launchpad.interfaces.translationrelicensingagreement import (
+    ITranslationRelicensingAgreement)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -795,11 +798,15 @@ class PersonTranslationsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ['imports']
+    links = ['imports', 'relicensing']
 
     def imports(self):
         text = 'See import queue'
         return Link('+imports', text)
+
+    def relicensing(self):
+        text = 'Relicense translations'
+        return Link('+relicensing', text)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -2567,9 +2574,16 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     field_names = ['allow_relicensing']
 
     @property
+    def initial_values(self):
+        default = self.context.translations_relicensing_agreement
+        if default is None:
+            default = True
+        return { "allow_relicensing" : default }
+
+    @property
     def has_already_answered(self):
         """Return whether person has already answered about relicensing."""
-        return (self.context.translation_relicensing_agreement is not None)
+        return (self.context.translations_relicensing_agreement is not None)
 
     @property
     def next_url(self):
@@ -2583,7 +2597,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     @action(_("Update my decision"), name="submit")
     def submit_action(self, action, data):
         allow_relicensing = data['allow_relicensing']
-        self.context.translation_relicensing_agreement = allow_relicensing
+        self.context.translations_relicensing_agreement = allow_relicensing
         if allow_relicensing:
             self.request.response.addInfoNotification(_(
                 "Your choice has been saved. "

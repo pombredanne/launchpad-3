@@ -12,6 +12,18 @@
 
   <body>
     <div metal:fill-slot="main">
+      <p>We are planning to relicense all translations submitted
+        through Launchpad under BSD license.  This should finally
+        clarify licensing used for translations in Launchpad:
+        for further explanations, please see
+        <a href="http://help.launchpad.net/Translations/RelicensingFAQ">
+        Relicensing FAQ</a>.</p>
+
+      <p>You can choose not to relicense your translations,
+        and they will be <strong>removed</strong> when we migrate to
+        BSD licensed translations completely.  You will be able to change
+        your opinion at least until end of June.</p>
+
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>
   </body>
