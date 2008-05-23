@@ -37,8 +37,7 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackageUploadStatus,
     NonBuildableSourceUploadError)
 from canonical.launchpad.mail import stub
-from canonical.launchpad.testing.fakepackager import (
-    FakePackager, FakePackagerRejectedUploadError)
+from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -848,8 +847,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
         packager.buildUpstream(suite=self.breezy.name, arch="m68k")
         packager.buildSource()
-        queue_record = packager.uploadSourceVersion(
+        upload = packager.uploadSourceVersion(
             '1.0-1', auto_accept=False)
+        upload.do_accept(notify=False)
 
         # Let's commit because acceptFromQueue needs to access the
         # just-uploaded changesfile from librarian.
@@ -857,7 +857,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         error = self.assertRaisesAndReturnError(
             NonBuildableSourceUploadError,
-            queue_record.acceptFromQueue, 'announce@ubuntu.com')
+            upload.queue_root.acceptFromQueue, 'announce@ubuntu.com')
         self.assertEqual(
             str(error),
             "Cannot build any of the architectures requested: m68k")
@@ -873,12 +873,13 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # uploader will receive a rejection email).
         packager.buildVersion('1.0-3', suite=self.breezy.name, arch="m68k")
         packager.buildSource()
+        upload = packager.uploadSourceVersion('1.0-3', auto_accept=False)
+
         error = self.assertRaisesAndReturnError(
-            FakePackagerRejectedUploadError,
-            packager.uploadSourceVersion, '1.0-3')
+            NonBuildableSourceUploadError,
+            upload.storeObjectsInDatabase)
         self.assertEqual(
             str(error),
-            "Upload was rejected: "
             "Cannot build any of the architectures requested: m68k")
 
 

@@ -9,7 +9,6 @@ suite.
 __metaclass__ = type
 __all__ = [
     'FakePackager',
-    'FakePackagerRejectedUploadError',
     ]
 
 import atexit
@@ -75,10 +74,6 @@ clean:
 
 binary: binary-arch
 """
-
-
-class FakePackagerRejectedUploadError(Exception):
-    """Raised when a package uploaded via FakePackager is rejected."""
 
 
 class FakePackager:
@@ -269,7 +264,7 @@ class FakePackager:
         Build a upload policy with the given name and override it with
         archive, distribution_name and suite if passed.
 
-        Return the corresponding `IPackageUpload`.
+        Return the corresponding `NascentUpload` object.
         """
         changesfile_path = self._getChangefilePathForVersion(version, type)
         assert changesfile_path is not None, (
@@ -285,17 +280,9 @@ class FakePackager:
             policy.setDistroSeriesAndPocket(suite)
 
         upload = NascentUpload(changesfile_path, policy, logger)
-
         upload.process()
 
-        if not upload.is_rejected:
-            upload.do_accept(notify=notify)
-
-        if upload.is_rejected:
-            raise FakePackagerRejectedUploadError(
-                "Upload was rejected: %s" % upload.rejection_message)
-
-        return upload.queue_root
+        return upload
 
     def buildUpstream(self, suite='hoary', section=None, arch=None,
                       build_orig=True):
@@ -411,13 +398,20 @@ class FakePackager:
         if logger is None:
             logger = QuietFakeLogger()
 
-        queue_record = self._doUpload(
+        upload = self._doUpload(
             'source', version, policy, archive, distribution_name, suite,
             logger, notify)
 
         if not auto_accept:
-            return queue_record
+            return upload
 
+        if not upload.is_rejected:
+            upload.do_accept(notify=notify)
+
+        assert not upload.is_rejected, (
+            "Upload was rejected: %s" % upload.rejection_message)
+
+        queue_record = upload.queue_root
         needs_acceptance_statuses = (
             PackageUploadStatus.NEW,
             PackageUploadStatus.UNAPPROVED,
