@@ -1727,6 +1727,12 @@ COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached 
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
 COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
+COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
+COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
+COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were built sucessfully?';
+COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
+COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 
 
 -- ArchiveDependency
