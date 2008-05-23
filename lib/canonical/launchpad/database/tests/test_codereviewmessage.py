@@ -4,19 +4,19 @@
 
 import unittest
 
-from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.ftests import login
-from canonical.launchpad.testing import LaunchpadObjectFactory
 
-class TestCodeReviewMessage(unittest.TestCase):
+from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.ftests import login
+from canonical.launchpad.interfaces import CodeReviewVote
+from canonical.launchpad.testing import TestCaseWithFactory
+
+class TestCodeReviewMessage(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        unittest.TestCase.setUp(self)
-        login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
+        TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
         self.bmp = self.factory.makeBranchMergeProposal()
         self.submitter = self.factory.makePerson()
         self.reviewer = self.factory.makePerson()
@@ -59,6 +59,12 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.assertRaises(AssertionError, self.bmp2.createMessage,
                           self.reviewer, 'Reply subject', 'Reply content',
                           CodeReviewVote.ABSTAIN, message)
+
+    def test_createNotifies(self):
+        """Creating a CodeReviewMessage should trigger a notification."""
+        result, event = self.assertNotifies(SQLObjectCreatedEvent,
+            self.bmp.createMessage, self.submitter, 'Message subject',
+            'Message content')
 
 
 def test_suite():

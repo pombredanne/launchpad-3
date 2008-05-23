@@ -11,6 +11,7 @@ __all__ = [
 from email.Utils import make_msgid
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
@@ -24,6 +25,7 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -388,5 +390,8 @@ class BranchMergeProposal(SQLBase):
         msg = Message(parent=parent_message, owner=owner,
                       rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        return CodeReviewMessage(
+
+        code_review_message = CodeReviewMessage(
             branch_merge_proposal=self, message=msg, vote=vote)
+        notify(SQLObjectCreatedEvent(code_review_message))
+        return code_review_message

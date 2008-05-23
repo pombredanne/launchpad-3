@@ -54,8 +54,8 @@ class TestCase(unittest.TestCase):
 
 class TestCaseWithFactory(TestCase):
 
-    def setUp(self):
-        login('test@canonical.com')
+    def setUp(self, user='test@canonical.com'):
+        login(user)
         self.factory = LaunchpadObjectFactory()
 
 
