@@ -1,5 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
+"""Test CodeReviewMessage emailing functionality."""
+
 from unittest import TestLoader
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -17,9 +19,11 @@ class TestCodeReviewMessage(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        """Prepare test fixtures."""
         TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
 
     def makeMessageAndSubscriber(self):
+        """Return a message and a subscriber."""
         sender = self.factory.makePerson(
             displayname='Foo Bar', email='foo.bar@example.com',
             email_address_status=EmailAddressStatus.VALIDATED)
@@ -33,10 +37,12 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         return code_message, subscriber
 
     def makeMailer(self):
+        """Return a CodeReviewMessageMailer and the sole subscriber."""
         code_message, subscriber = self.makeMessageAndSubscriber()
         return CodeReviewMessageMailer.forCreation(code_message), subscriber
 
     def test_forCreation(self):
+        """Ensure that forCreation produces a mailer with expected values."""
         code_message, subscriber = self.makeMessageAndSubscriber()
         mailer = CodeReviewMessageMailer.forCreation(code_message)
         self.assertEqual(code_message.message.subject,
@@ -49,6 +55,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         self.assertEqual(code_message, mailer.code_review_message)
 
     def test_generateEmail(self):
+        """Ensure mailer's generateEmail method prduces expected values."""
         mailer, subscriber = self.makeMailer()
         headers, subject, body = mailer.generateEmail(subscriber)
         message = mailer.code_review_message.message
