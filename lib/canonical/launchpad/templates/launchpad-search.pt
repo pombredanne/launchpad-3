@@ -17,7 +17,6 @@
   <form action=""
         name="sitesearch"
         method="get"
-        enctype="multipart/form-data"
         accept-charset="UTF-8">
     <label for="field.search_text">Search Launchpad.net:</label>
     <input
