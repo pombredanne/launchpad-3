@@ -27,21 +27,21 @@ implements IExternalBugTracker.
 The basic Roundup bug statuses (i.e. those available by default in new Roundup instances) map to Launchpad bug statuses. Roundup.convertRemoteStatus() handles the conversion.
 
     >>> roundup = Roundup('http://example.com/')
-    >>> roundup.convertRemoteStatus(1).title
+    >>> roundup.convertRemoteStatus('1').title
     'New'
-    >>> roundup.convertRemoteStatus(2).title
+    >>> roundup.convertRemoteStatus('2').title
     'Confirmed'
-    >>> roundup.convertRemoteStatus(3).title
+    >>> roundup.convertRemoteStatus('3').title
     'Incomplete'
-    >>> roundup.convertRemoteStatus(4).title
+    >>> roundup.convertRemoteStatus('4').title
     'Incomplete'
-    >>> roundup.convertRemoteStatus(5).title
+    >>> roundup.convertRemoteStatus('5').title
     'In Progress'
-    >>> roundup.convertRemoteStatus(6).title
+    >>> roundup.convertRemoteStatus('6').title
     'In Progress'
-    >>> roundup.convertRemoteStatus(7).title
+    >>> roundup.convertRemoteStatus('7').title
     'Fix Committed'
-    >>> roundup.convertRemoteStatus(8).title
+    >>> roundup.convertRemoteStatus('8').title
     'Fix Released'
 
 If the status isn't something that our Roundup ExternalBugTracker can
