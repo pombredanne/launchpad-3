@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces.bugsupervisor import *
 from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.bugtarget import *
 from canonical.launchpad.interfaces.bugtracker import *
+from canonical.launchpad.interfaces.bugtrackerperson import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
