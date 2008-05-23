@@ -1,7 +1,7 @@
 SET client_min_messages=ERROR;
 
 -- This (new) link table ties a "rebuild archive" to a DistroSeries,
--- captures the rebild life cycle data and statistics.
+-- and captures the rebild life cycle data.
 CREATE TABLE archiverebuild (
     id serial PRIMARY KEY,
     -- This is the archive to be used for the rebuild.
