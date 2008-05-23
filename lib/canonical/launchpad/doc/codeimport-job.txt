@@ -373,8 +373,7 @@ this run, containing details such as the import worked on, the dates
 the import started and finished and the final status of the run.
 
     >>> from canonical.launchpad.interfaces import ICodeImportResultSet
-    >>> results = list(getUtility(ICodeImportResultSet).getResultsForImport(
-    ...     code_import))
+    >>> results = list(code_import.results)
     >>> len(results)
     1
     >>> [result] = results

@@ -165,7 +165,7 @@ version, component, section and priority.
 
   >>> [filelist] = find_tags_by_class(anon_browser.contents, 'queue-pmount-2')
   >>> print extract_text(filelist)
-  pmount_1.9-1_all.deb (3 bytes) NEW 0.1-1 main base important
+  pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 main base important
 
 XXX cprov 20070726: we should extend the test when we are able to
 probe javascripts events.
@@ -189,14 +189,30 @@ First, we need to add fake librarian files so that email notifications work:
   ...     insertFakeChangesFileForAllPackageUploads)
   >>> insertFakeChangesFileForAllPackageUploads()
 
+And store a chroot for ubuntu breezy-autotest/i386 architectures, so
+the builds can be created.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, ILibraryFileAliasSet)
+  >>> from canonical.launchpad.ftests import syncUpdate
+
+  >>> login('foo.bar@canonical.com')
+
+  >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+  >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+  >>> new_chroot = breezy_autotest["i386"].addOrUpdateChroot(fake_chroot)
+  >>> syncUpdate(new_chroot)
+
 Upload a new "bar" source so we can accept it later.  We need to login to
 upload.
 
-  >>> from canonical.launchpad.ftests import login, logout
-  >>> login('foo.bar@canonical.com')
   >>> from canonical.launchpad.scripts.ftests.test_queue import (
   ...     upload_bar_source)
   >>> bar_src = upload_bar_source()
+
   >>> import transaction
   >>> transaction.commit()
   >>> logout()
@@ -372,7 +388,7 @@ values:
   ...     anon_browser.contents, 'queue-pmount-2')
   >>> for row in filelist:
   ...     print extract_text(row)
-  pmount_1.9-1_all.deb (3 bytes) NEW 0.1-1 restricted admin extra
+  pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 restricted admin extra
 
 'netapplet' has gone straight to the 'done' queue because it's a single
 source upload, and we can see its overridden values there:

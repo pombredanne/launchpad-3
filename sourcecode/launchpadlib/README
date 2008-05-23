@@ -1,0 +1,26 @@
+Copyright (C) 2008 Canonical Ltd.  All rights reserved.
+
+launchpadlib is a standalone Python library for scripting Launchpad through
+its web services interface.  It is the officially supported bindings to the
+Launchpad web service, but there may be third party bindings that provide
+scriptability for other languages.
+
+For information on Launchpad itself, see
+
+    https://help.launchpad.net
+
+Launchpad is available at
+
+    https://launchpad.net
+
+More information on the Launchpad web service is available at
+
+    https://help.launchpad.net/API
+
+API documentation for launchpadlib, users guides and more is available at
+
+    https://help.launchpad.net/API/launchpadlib
+
+Please submit bug reports to
+
+    https://bugs.launchpad.net/launchpadlib

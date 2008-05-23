@@ -47,7 +47,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=False)
+        validator=public_person_validator, notNull=True)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 
@@ -243,8 +243,10 @@ class Archive(SQLBase):
             orderBy.insert(1, desc_version_order)
 
         if status is not None:
-            if not isinstance(status, list):
-                status = [status]
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
             clauses.append("""
                 SourcePackagePublishingHistory.status IN %s
             """ % sqlvalues(status))
@@ -267,7 +269,7 @@ class Archive(SQLBase):
 
         return sources
 
-    def getSourcesForDeletion(self, name=None):
+    def getSourcesForDeletion(self, name=None, status=None):
         """See `IArchive`."""
         clauses = ["""
             SourcePackagePublishingHistory.archive = %s AND
@@ -289,11 +291,23 @@ class Archive(SQLBase):
                 Build.sourcepackagerelease = SourcePackageRelease.id)
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
 
+        source_deletable_states = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            )
         clauses.append("""
-           (%s OR SourcePackagePublishingHistory.status = %s)
+           (%s OR SourcePackagePublishingHistory.status IN %s)
         """ % (has_published_binaries_clause,
-               quote(PackagePublishingStatus.PUBLISHED)))
+               quote(source_deletable_states)))
 
+        if status is not None:
+            try:
+                status = tuple(status)
+            except TypeError:
+                status = (status,)
+            clauses.append("""
+                SourcePackagePublishingHistory.status IN %s
+            """ % sqlvalues(status))
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
