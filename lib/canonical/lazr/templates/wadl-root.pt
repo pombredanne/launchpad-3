@@ -24,7 +24,7 @@
     <tal:root_params tal:repeat="param context/wadl:top_level_resources">
       <param style="plain" tal:attributes="name param/name;
                              path param/path">
-        <link tal:attributes="type param/resource/wadl:type_link" />
+        <link tal:attributes="resource_type param/resource/wadl:type_link" />
       </param>
     </tal:root_params>
   </representation>
@@ -33,7 +33,7 @@
       at the service root. This very document is the WADL
       representation of the "service root" resource.-->
   <resources tal:attributes="href context/wadl:url">
-    <resource path="" type="#service-root" />
+    <resource path="" resource_type="#service-root" />
   </resources>
 
   <!--But that's not all. This document also describes all the types
@@ -84,7 +84,7 @@
               Field title: field description
             </doc>
             <link tal:condition="field/wadl:is_link"
-                  tal:attributes="type field/wadl:type_link" />
+                  tal:attributes="resource_type field/wadl:type_link" />
             <option tal:repeat="option field/wadl:options"
                     tal:attributes="value option/title" />
           </param>
@@ -150,7 +150,7 @@
               Field title: field description
             </doc>
             <link tal:condition="field/wadl:is_link"
-                  tal:attributes="type field/wadl:type_link" />
+                  tal:attributes="resource_type field/wadl:type_link" />
             <option tal:repeat="option field/wadl:options"
                     tal:attributes="value option/title" />
           </param>
@@ -171,7 +171,7 @@
           Field title: field description
         </doc>
         <link tal:condition="field/wadl:is_link"
-              tal:attributes="type field/wadl:type_link" />
+              tal:attributes="resource_type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />
       </param>
@@ -189,7 +189,7 @@
           Field title: field description
         </doc>
         <link tal:condition="field/wadl:is_link"
-              tal:attributes="type field/wadl:type_link" />
+              tal:attributes="resource_type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />
       </param>
@@ -221,13 +221,13 @@
 
       <param style="plain" name="next_collection_link"
              path="$['next_collection_link']">
-        <link tal:attributes="type
+        <link tal:attributes="resource_type
           string:#${context/wadl_entry:entry_page_representation_id}" />
       </param>
 
       <param style="plain" name="prev_collection_link"
              path="$['prev_collection_link']">
-        <link tal:attributes="type
+        <link tal:attributes="resource_type
           string:#${context/wadl_entry:entry_page_representation_id}" />
       </param>
 
@@ -236,7 +236,7 @@
 
       <param style="plain" name="entry_links"
              path="$['entries'][*]['self_link']">
-        <link tal:attributes="type context/wadl_entry:type_link" />
+        <link tal:attributes="resource_type context/wadl_entry:type_link" />
       </param>
   </representation>
 

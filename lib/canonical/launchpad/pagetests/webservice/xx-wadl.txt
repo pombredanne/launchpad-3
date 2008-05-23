@@ -61,7 +61,7 @@ itself.
 
 What are the capabilities of this resource?
 
-    >>> resource.attrib['type']
+    >>> resource.attrib['resource_type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter'
 
 Since all person resources work the same way, the capabilities of any
@@ -101,7 +101,7 @@ by referencing another WADL document.
     '...resource'
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['type']
+    >>> resource.attrib['resource_type']
     'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
 
 
@@ -126,7 +126,7 @@ the representation of a top-level collection.
     >>> [resource] = resources
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['type']
+    >>> resource.attrib['resource_type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter-scoped-collection'
 
 
@@ -182,7 +182,7 @@ ID "HostedFile".
     '...resource'
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['type']
+    >>> resource.attrib['resource_type']
     'http://api.launchpad.dev/beta/#HostedFile'
 
 
@@ -211,7 +211,7 @@ As with the WADL descriptions of collection and entry resources, this
 resource. But that <application> tag also contains all the information
 referenced by all the other WADL documents in the system. #PersonEntry
 is here, as is #PersonSetCollectionAdapter and #ScopedCollection and
-many other targets of a <resource> tag's 'type' attribute. Also
+many other targets of a <resource> tag's 'resource_type' attribute. Also
 located here are the descriptions of the JSON representations those
 resources serve.
 
@@ -288,7 +288,7 @@ the other end of the link.
     >>> [person_set_param_link] = person_set_param
     >>> person_set_param_link.tag
     '...link'
-    >>> person_set_param_link.attrib['type']
+    >>> person_set_param_link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
 
 A WADL client can read this and know that if it ever finds a resource
@@ -316,7 +316,7 @@ As with the <resources> tags shown earlier, this one contains a single
     '...resource'
     >>> resource.attrib['path']
     ''
-    >>> resource.attrib['type']
+    >>> resource.attrib['resource_type']
     '#service-root'
 
 Aha! There's a resource of type "service-root" right there at the
@@ -622,13 +622,13 @@ of the link.
     >>> assignee_link.tag
     '...link'
 
-The link's 'type' attribute tells the client about the capabilities of
+The link's 'resource_type' attribute tells the client about the capabilities of
 the resource at the other end of the link.
 
-    >>> assignee_link.attrib['type']
+    >>> assignee_link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter'
 
-If the link is a link to a collection, the 'type' will be a reference
+If the link is a link to a collection, the 'resource_type' will be a reference
 to the appropriate scoped collection resource type (defined
 below). For example, the list of a bug task's related tasks is a
 collection of bug tasks.
@@ -639,7 +639,7 @@ collection of bug tasks.
     >>> (doc, related_tasks_link) = related_tasks.getchildren()
     >>> related_tasks_link.tag
     '...link'
-    >>> related_tasks_link.attrib['type']
+    >>> related_tasks_link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#BugTaskEntry-scoped-collection'
 
 The full representation contains all fields, even read-only ones,
@@ -801,7 +801,7 @@ binary file managed by the web service, such as a person's mugshot.
     >>> mugshot_param = [param for param in person_full_rep
     ...                  if param.attrib['name'] == 'mugshot_link'][0]
     >>> doc, mugshot_link = mugshot_param
-    >>> mugshot_link.attrib['type']
+    >>> mugshot_link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#HostedFile'
 
 What can the client do to this binary file resource?
@@ -909,7 +909,7 @@ type BugTaskEntry.
     >>> entry_links.attrib['path']
     "$['entries'][*]['self_link']"
     >>> [link] = entry_links
-    >>> link.attrib['type']
+    >>> link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#BugTaskEntry'
 
 This tells the client that a 'collection of bug tasks' resource
@@ -920,9 +920,9 @@ also links to other resources. What are these other resources? Other
 pages of the same collection!
 
     >>> [next_type] = next
-    >>> next_type.attrib['type']
+    >>> next_type.attrib['resource_type']
     '#BugTaskEntry-page'
 
     >>> [prev_type] = prev
-    >>> prev_type.attrib['type']
+    >>> prev_type.attrib['resource_type']
     '#BugTaskEntry-page'
