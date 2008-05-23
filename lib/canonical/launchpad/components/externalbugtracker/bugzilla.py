@@ -105,6 +105,7 @@ class Bugzilla(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
     _status_lookup = Lookup(
         ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
          BugTaskStatus.INPROGRESS),

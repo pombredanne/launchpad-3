@@ -232,6 +232,7 @@ class Trac(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Trac status',
     _status_lookup = Lookup(
         # XXX, 2007-08-06 Graham Binns:
         #      We should follow dupes if possible.

@@ -300,6 +300,8 @@ class Roundup(ExternalBugTracker):
         )
 
     # Combine custom mappings with the standard mappings.
+    _status_lookup_titles = (
+        'Remote host', 'Roundup status', 'Roundup resolution')
     _status_lookup = Lookup(
         (PYTHON_BUGS_HOSTNAME, _status_lookup_python),
         (_status_lookup_standard,), # Default

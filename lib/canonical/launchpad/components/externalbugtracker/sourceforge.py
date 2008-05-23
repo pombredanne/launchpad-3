@@ -168,6 +168,7 @@ class SourceForge(ExternalBugTracker):
         ('Wont Fix', BugTaskStatus.WONTFIX),
         ('Works For Me', BugTaskStatus.INVALID),
         )
+    _status_lookup_titles = 'SourceForge status', 'SourceForge resolution'
     _status_lookup = Lookup(
         ('Open', _status_lookup_open),
         ('Closed', Lookup(

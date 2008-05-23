@@ -460,6 +460,7 @@ class Mantis(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Mantis status', 'Mantis resolution'
     _status_lookup = (
         Lookup(
             ('assigned', BugTaskStatus.INPROGRESS),

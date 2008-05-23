@@ -272,6 +272,18 @@ class Lookup(treelookup.Lookup):
                         (max_depth + 1), (max_depth + 1), len(titles)))
             yield line("'''%s'''" % (title,) for title in titles)
 
+        def diff(last, now):
+            all = False
+            for last, now in zip(last, now):
+                if all:
+                    yield now
+                elif last == now:
+                    yield ''
+                else:
+                    all = True
+                    yield now
+
+        last_columns = None
         for elems in self.flattened:
             path, key = elems[:-1], elems[-1]
             columns = []
@@ -283,4 +295,8 @@ class Lookup(treelookup.Lookup):
                         " '''or''' ".join(str(key) for key in keys))
             columns.extend('-' * (max_depth - len(path)))
             columns.append(key.name)
-            yield line(columns)
+            if last_columns is None:
+                yield line(columns)
+            else:
+                yield line(list(diff(last_columns, columns)))
+            last_columns = columns

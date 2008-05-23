@@ -198,6 +198,7 @@ class RequestTracker(ExternalBugTracker):
         """See `IExternalBugTracker`."""
         return UNKNOWN_REMOTE_IMPORTANCE
 
+    _status_lookup_titles = 'RT status',
     _status_lookup = Lookup(
         ('new', BugTaskStatus.NEW),
         ('open', BugTaskStatus.CONFIRMED),
