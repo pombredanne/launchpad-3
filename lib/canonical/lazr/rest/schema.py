@@ -117,10 +117,12 @@ class SimpleFieldMarshaller:
     def marshall_from_json_data(self, value):
         """See `IFieldMarshaller`.
 
-        This method returns the value unchanged. It will only work for
-        basic python types handled by simplejson.
+        When value is None, return None, otherwise call
+        _marshall_from_json_data().
         """
-        return value
+        if value is None:
+            return None
+        return self._marshall_from_json_data(value)
 
     def marshall_from_request(self, value):
         """See `IFieldMarshaller`.
@@ -135,7 +137,17 @@ class SimpleFieldMarshaller:
         return self._marshall_from_request(value)
 
     def _marshall_from_request(self, value):
-        """If the value is empty, return None. Otherwise return the value."""
+        """Hook method to marshall a non-null value.
+
+        Default is to return the value unchanged.
+        """
+        return value
+
+    def _marshall_from_json_data(self, value):
+        """Hook method to marshall a no-null value.
+
+        Default is to return the value unchanged.
+        """
         return value
 
     @property
@@ -160,6 +172,12 @@ class IntFieldMarshaller(SimpleFieldMarshaller):
     def _marshall_from_request(self, value):
         """Try to convert the value into an integer."""
         return int(value)
+
+    def _marshall_from_json_data(self, value):
+        """Make sure the value is an integer"""
+        if not isinstance(value, int):
+            raise ValueError("not an integer: %r" % value)
+        return value
 
 
 class TimezoneFieldMarshaller(SimpleFieldMarshaller):

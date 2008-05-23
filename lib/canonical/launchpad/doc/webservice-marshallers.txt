@@ -1,9 +1,8 @@
 = LAZR's field marshallers =
 
-LAZR defines an interface for converting between the string values
-that come in on an HTTP request, and the object values appropriate for
-schema fields. This is similar to Zope's widget interface, but much
-smaller.
+LAZR defines an interface for converting between the values that
+come in on an HTTP request, and the object values appropriate for schema
+fields. This is similar to Zope's widget interface, but much smaller.
 
 To test the various marshallers we create a dummy request and
 application root.
@@ -21,16 +20,50 @@ application root.
     >>> getUtility(IOpenLaunchBag).add(root)
 
 
-== Basic data structure marshallers ==
+== IFieldMarshaller and SimpleFieldMarshaller ==
 
-The marshaller for a TextLine field returns a string as-is, except
-that the empty string is marshalled as None.
+There is a SimpleFieldMarshaller class that provides a good base to
+implement that interface.
 
-    >>> from zope.component import getMultiAdapter
+    >>> from zope.interface.verify import verifyObject
     >>> from canonical.lazr.interfaces import IFieldMarshaller
-    >>> from zope.schema import TextLine
-    >>> field = TextLine(__name__='field_name')
-    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> from canonical.lazr.rest import SimpleFieldMarshaller
+    >>> from zope.schema import Text
+
+    >>> field = Text(__name__='field_name')
+    >>> marshaller = SimpleFieldMarshaller(field, request)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
+The representation_name attribute is used to retrieve the name under
+which the field should be stored in the JSON representation. In the
+simple case, it's the same name than the field.
+
+    >>> marshaller.representation_name
+    'field_name'
+
+The marshall_from_json_data() method is used during PUT and PATCH
+requests to transform the value provided in the JSON representation to
+a value the underlying schema field. In the simple case, the value is
+returned unchanged.
+
+    >>> marshaller.marshall_from_json_data("foo")
+    'foo'
+    >>> marshaller.marshall_from_json_data(4)
+    4
+    >>> marshaller.marshall_from_json_data(u"unicode\u2122")
+    u'unicode\u2122'
+    >>> marshaller.marshall_from_json_data("")
+    ''
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+The marshall_from_request() method is used during operatio invocation to
+transform a value submitted via the query string or form-encoded POST
+data into a value the will be accepted by the underlying schema field.
+In the simple case, that's the same value than provided in the request,
+except that the empty string is converted to None.
+
     >>> marshaller.marshall_from_request("foo")
     'foo'
     >>> marshaller.marshall_from_request("4")
@@ -40,27 +73,37 @@ that the empty string is marshalled as None.
     >>> print marshaller.marshall_from_request("")
     None
 
-When asked to convert a field value to a representation value, this
-marshaller returns the string as-is:
+The unmarshall() method is used to convert the field's value to a value
+that can be serialized to JSON as part of an entry representation.  The
+first parameter is the entry that the value is part of (for fields that
+will transform the value into a URL for example), the second on is the
+value to convert.  In the simple case, the value is returned unchanged.
 
     >>> marshaller.unmarshall(None, 'foo')
     'foo'
+    >>> print marshaller.unmarshall(None, None)
+    None
 
-The representation name for a TextLine field is the name of the field.
+== Basic types marshallers ==
 
-    >>> marshaller.representation_name
-    'field_name'
+=== Int ===
 
 The marshaller for an Int field tries to convert the given string
 into an int.
 
+    >>> from zope.component import getMultiAdapter
     >>> from zope.schema import Int
     >>> field = Int()
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
     >>> marshaller.marshall_from_request("4")
     4
     >>> marshaller.marshall_from_request(u"4")
     4
+
+It raises a ValueError if the value cannot be converted to an integer.
 
     >>> marshaller.marshall_from_request("foo")
     Traceback (most recent call last):
@@ -77,6 +120,24 @@ The empty string still marshalls to None.
     >>> print marshaller.marshall_from_request("")
     None
 
+If the value from the JSON representation isn't an integer, a ValueError
+is raised.
+
+    >>> marshaller.marshall_from_json_data(-10)
+    -10
+    >>> marshaller.marshall_from_json_data("-10")
+    Traceback (most recent call last):
+      ...
+    ValueError: not an integer: '-10'
+
+None is passed through though.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+
+=== Choice ===
+
 The marshaller for a Choice is chosen based on the Choice's
 vocabulary. First, let's look at a Choice whose vocabulary is a
 relatively short list of enumerated values.
@@ -85,6 +146,8 @@ relatively short list of enumerated values.
     >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> field = Choice(vocabulary=BugTaskStatus)
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
 
 The client is expected to provide the title of one of the enumerated
 values. A string that corresponds to one of the values is marshalled
@@ -108,6 +171,10 @@ The empty string marshalls to None.
 
     >>> print marshaller.marshall_from_request("")
     None
+
+The string coming from the JSON representation is interpreted exactly
+the same, with the exception that the empty strings becomes a
+ValueError.
 
 
 == Object marshallers ==
