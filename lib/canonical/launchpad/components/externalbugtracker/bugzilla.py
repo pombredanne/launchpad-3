@@ -12,7 +12,7 @@ from xml.dom import minidom
 from canonical import encoding
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
-    LookupNode, LookupTree, UnknownRemoteStatusError, UnparseableBugData,
+    Lookup, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -21,30 +21,22 @@ from canonical.launchpad.interfaces import (
 class Bugzilla(ExternalBugTracker):
     """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
-    _status_lookup = (
-        LookupTree(
-            LookupNode('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
-                       BugTaskStatus.INPROGRESS),
-            LookupNode('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING',
-                       'SUSPENDED', BugTaskStatus.INCOMPLETE),
-            LookupNode('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING',
-                       'ON_QA', BugTaskStatus.FIXCOMMITTED),
-            LookupNode('REJECTED', BugTaskStatus.INVALID),
-            LookupNode(
-                'RESOLVED', 'VERIFIED', 'CLOSED',
-                LookupTree(
-                    LookupNode('CODE_FIX', 'CURRENTRELEASE', 'ERRATA',
-                               'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
-                               'NEXTRELEASE', BugTaskStatus.FIXRELEASED),
-                    LookupNode('WONTFIX', BugTaskStatus.WONTFIX),
-                    LookupNode(BugTaskStatus.INVALID),
-                    ),
-            ),
-            LookupNode(
-                'REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED',
-                BugTaskStatus.CONFIRMED),
-            LookupNode('UNCONFIRMED', BugTaskStatus.NEW),
-            )
+    _status_lookup = Lookup(
+        ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
+         BugTaskStatus.INPROGRESS),
+        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+         BugTaskStatus.INCOMPLETE),
+        ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
+         BugTaskStatus.FIXCOMMITTED),
+        ('REJECTED', BugTaskStatus.INVALID),
+        ('RESOLVED', 'VERIFIED', 'CLOSED', Lookup(
+                ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 BugTaskStatus.FIXRELEASED),
+                ('WONTFIX', BugTaskStatus.WONTFIX),
+                (BugTaskStatus.INVALID))),
+        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
+        ('UNCONFIRMED', BugTaskStatus.NEW),
         )
 
     batch_query_threshold = 0 # Always use the batch method.

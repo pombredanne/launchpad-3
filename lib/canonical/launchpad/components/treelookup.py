@@ -4,21 +4,22 @@
 
 __metaclass__ = type
 __all__ = [
-    'LookupTree',
-    'LookupNode',
+    'Lookup',
     ]
 
 
-class LookupTree(tuple):
+class Lookup(tuple):
     """A searchable tree."""
 
     def __new__(cls, *nodes):
         def conv(node):
-            if isinstance(node, LookupNode):
+            if isinstance(node, Node):
                 return node
+            elif isinstance(node, (list, tuple)):
+                return Node(*node)
             else:
-                return LookupNode(*node)
-        return super(LookupTree, cls).__new__(
+                return Node(node)
+        return super(Lookup, cls).__new__(
             cls, (conv(node) for node in nodes))
 
     def __init__(self, *nodes):
@@ -82,8 +83,8 @@ class LookupTree(tuple):
             if default:
                 raise TypeError('Default node must be last')
             default = node.is_default
-            if not isinstance(node, LookupNode):
-                raise TypeError('Not a LookupNode: %r' % (node,))
+            if not isinstance(node, Node):
+                raise TypeError('Not a Node: %r' % (node,))
             seen = keys.intersection(node)
             if len(seen) > 0:
                 raise TypeError('Key(s) already seen: %r' % (seen,))
@@ -96,11 +97,11 @@ class LookupTree(tuple):
             indent)
 
 
-class LookupNode(tuple):
+class Node(tuple):
     """A node point during a lookup, containing keys and a next step."""
 
     def __new__(cls, *args):
-        return super(LookupNode, cls).__new__(cls, args[:-1])
+        return super(Node, cls).__new__(cls, args[:-1])
 
     def __init__(self, *args):
         """All but the last argument are keys; the last is the next step."""
@@ -108,8 +109,8 @@ class LookupNode(tuple):
 
     @property
     def is_leaf(self):
-        """If the next step is not a `LookupTree`, this is a leaf."""
-        return not isinstance(self.next, LookupTree)
+        """If the next step is not a `Lookup`, this is a leaf."""
+        return not isinstance(self.next, Lookup)
 
     @property
     def is_default(self):
@@ -118,7 +119,7 @@ class LookupNode(tuple):
     def __repr__(self, level=1):
         format = 'node(%s => %%s)' % (
             ', '.join(str(node) for node in self))
-        if isinstance(self.next, LookupTree):
+        if isinstance(self.next, Lookup):
             return format % self.next.__repr__(level)
         else:
             return format % repr(self.next)

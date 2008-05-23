@@ -16,8 +16,8 @@ from urlparse import urlunparse
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugWatchUpdateError, BugWatchUpdateWarning,
-    ExternalBugTracker, InvalidBugId, LookupNode, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData)
+    ExternalBugTracker, InvalidBugId, Lookup, UnknownRemoteStatusError,
+    UnparseableBugData)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -94,22 +94,18 @@ class Mantis(ExternalBugTracker):
     """
 
     _status_lookup = (
-        LookupTree(
-            LookupNode('assigned', BugTaskStatus.INPROGRESS),
-            LookupNode('feedback', BugTaskStatus.INCOMPLETE),
-            LookupNode('new', BugTaskStatus.NEW),
-            LookupNode('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
-            LookupNode(
-                'resolved', 'closed',
-                LookupTree(
-                    LookupNode('reopened', BugTaskStatus.NEW),
-                    LookupNode(
-                        'fixed', 'open', 'no change required',
-                        BugTaskStatus.FIXRELEASED),
-                    LookupNode(
-                        'unable to reproduce', 'not fixable', 'suspended',
-                        'duplicate', BugTaskStatus.INVALID),
-                    LookupNode("won't fix", BugTaskStatus.WONTFIX))),
+        Lookup(
+            ('assigned', BugTaskStatus.INPROGRESS),
+            ('feedback', BugTaskStatus.INCOMPLETE),
+            ('new', BugTaskStatus.NEW),
+            ('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
+            ('resolved', 'closed', Lookup(
+                    ('reopened', BugTaskStatus.NEW),
+                    ('fixed', 'open', 'no change required',
+                     BugTaskStatus.FIXRELEASED),
+                    ('unable to reproduce', 'not fixable', 'suspended',
+                     'duplicate', BugTaskStatus.INVALID),
+                    ("won't fix", BugTaskStatus.WONTFIX))),
             )
         )
 

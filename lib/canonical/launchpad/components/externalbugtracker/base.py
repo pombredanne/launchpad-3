@@ -10,8 +10,7 @@ __all__ = [
     'BugWatchUpdateWarning',
     'ExternalBugTracker',
     'InvalidBugId',
-    'LookupNode',
-    'LookupTree',
+    'Lookup',
     'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteStatusError',
@@ -256,11 +255,11 @@ class ExternalBugTracker:
         return page_contents
 
 
-class LookupTree(treelookup.LookupTree):
-    """A `LookupTree` customised for documenting external bug trackers."""
+class Lookup(treelookup.Lookup):
+    """A `Lookup` customised for documenting external bug trackers."""
 
     def moinmoin_table(self, titles=None):
-        """Return lines of a MoinMoin table documenting a `LookupTree`."""
+        """Return lines of a MoinMoin table documenting a `Lookup`."""
         max_depth = self.max_depth
 
         def line(columns):
@@ -279,7 +278,3 @@ class LookupTree(treelookup.LookupTree):
                 chain((" '''or''' ".join(keys) for keys in path),
                       ('*' * (max_depth - len(path))),
                       (key.name,)))
-
-
-# Convenience for sub-modules.
-LookupNode = treelookup.LookupNode
