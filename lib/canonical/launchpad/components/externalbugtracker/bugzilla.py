@@ -3,7 +3,10 @@
 """Bugzilla ExternalBugTracker utility."""
 
 __metaclass__ = type
-__all__ = ['Bugzilla', 'BugzillaLPPlugin']
+__all__ = [
+    'Bugzilla',
+    'BugzillaLPPlugin',
+    ]
 
 import pytz
 import time
@@ -312,8 +315,9 @@ class BugzillaLPPlugin(Bugzilla):
 
         if xmlrpc_transport is None:
             xmlrpc_transport = BugzillaXMLRPCTransport()
+        else:
+            self.xmlrpc_transport = xmlrpc_transport
 
-        self.xmlrpc_transport = xmlrpc_transport
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
 
     def getCurrentDBTime(self):

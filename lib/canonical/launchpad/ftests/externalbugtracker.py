@@ -354,7 +354,8 @@ class TestBugzillaXMLRPCTransport:
         """Return a dict of the local time, UTC time and the timezone."""
         seconds_since_epoch = self.seconds_since_epoch
         if seconds_since_epoch is None:
-            seconds_since_epoch = time.time()
+            remote_datetime = datetime(2008, 5, 1, 1, 1, 1)
+            seconds_since_epoch = time.mktime(remote_datetime.timetuple())
 
         # We return xmlrpc dateTimes rather than doubles since that's
         # what BugZilla will return.

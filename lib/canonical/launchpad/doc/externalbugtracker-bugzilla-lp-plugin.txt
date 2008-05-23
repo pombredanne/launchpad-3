@@ -35,4 +35,3 @@ current time on the remote server.
     >>> test_transport.seconds_since_epoch = 1210956800.0
     >>> bugzilla.getCurrentDBTime()
     datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
-

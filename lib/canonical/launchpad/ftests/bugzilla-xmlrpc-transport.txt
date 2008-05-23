@@ -21,11 +21,9 @@ current UTC time.
     >>> time_dict = server.Launchpad.time()
     >>> for key in sorted(time_dict):
     ...     print "%s: %s" % (key, time_dict[key])
-    local_time: ...
+    local_time: 20080501T01:01:01
     tz_name: UTC
-    utc_time: ...
-
-    >>> time_dict['utc_time']
+    utc_time: 20080501T01:01:01
 
 We can set the local time value on the remote server to make testing
 more useful.
@@ -45,4 +43,3 @@ more useful.
     local_time: 20080515T16:19:53
     tz_name: US/Central
     utc_time: 20080515T22:19:53
-
