@@ -338,6 +338,10 @@ class TracLPPlugin(Trac):
         # Return the UTC time, so we don't have to care about the time
         # zone for now.
         trac_time = datetime.utcfromtimestamp(utc_time)
+
+        # XXX 2008-05-23 gmb bug 234276:
+        #     We should be returning the local time of the remote server
+        #     here, not the UTC time.
         return trac_time.replace(tzinfo=pytz.timezone('UTC'))
 
     @needs_authentication

@@ -333,6 +333,9 @@ class BugzillaLPPlugin(Bugzilla):
             time.strptime(
                 str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S'))
 
+        # XXX 2008-05-23 gmb bug 234276:
+        #     We should be returning the local time of the remote server
+        #     here, not the UTC time.
         server_utc_time = datetime.utcfromtimestamp(server_timestamp)
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
