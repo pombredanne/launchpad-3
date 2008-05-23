@@ -18,14 +18,14 @@ import pytz
 from zope.component import getUtility
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.errors import NoSuchRevision
+from bzrlib.errors import NoSuchRevision, UnstackableBranchFormat
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
-    IBranchRevisionSet, IBugBranchSet, IBugSet,
+    IBranchSet, IBranchRevisionSet, IBugBranchSet, IBugSet,
     IRevisionSet, NotFoundError)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
@@ -400,6 +400,8 @@ class BzrSync:
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
+        self.db_branch.stacked_on_branch = self._getStackedOnBranch(
+            bzr_branch)
         self.updateBranchStatus()
         self.trans_manager.commit()
 
@@ -626,6 +628,15 @@ class BzrSync:
                     continue
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
+
+    def _getStackedOnBranch(self, bzr_branch):
+        """Return the branch that the branch being scanned is stacked on."""
+        try:
+            branch_url = bzr_branch.get_stacked_on()
+        except UnstackableBranchFormat:
+            return None
+        else:
+            return getUtility(IBranchSet).getByUrl(branch_url.rstrip('/'))
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""

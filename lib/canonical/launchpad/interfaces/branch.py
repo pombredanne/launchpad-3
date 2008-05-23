@@ -428,10 +428,7 @@ class IBranch(IHasOwner):
         description=_("The number of revisions in the branch")
         )
 
-    stacked_on_branch = Attribute(
-        title=_('Stacked-on branch'),
-        description=_('The branch that this branch is stacked on.')
-        )
+    stacked_on_branch = Attribute('Stacked-on branch')
 
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "

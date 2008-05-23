@@ -13,8 +13,11 @@ import unittest
 
 from bzrlib.osutils import relpath
 from bzrlib.revision import NULL_REVISION
+from bzrlib.transport import register_transport, unregister_transport
+from bzrlib.transport.local import LocalTransport
 from bzrlib.uncommit import uncommit
-from bzrlib.urlutils import local_path_from_url, local_path_to_url
+from bzrlib.urlutils import (
+    local_path_from_url, local_path_to_url, join as urljoin)
 from bzrlib.tests import TestCaseWithTransport
 import pytz
 from zope.component import getUtility
@@ -25,8 +28,10 @@ from canonical.launchpad.database import (
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IBranchSet, IPersonSet, IRevisionSet)
+    BranchType, CodeReviewNotificationLevel, IBranchSet, IPersonSet,
+    IRevisionSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.webapp.uri import URI
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError, get_diff, get_revision_message)
 from canonical.codehosting.codeimport.tests.helpers import (
@@ -68,11 +73,11 @@ class BzrSyncTestCase(TestCaseWithTransport):
         syncer = self.makeBzrSync(db_branch)
         syncer.syncBranchAndClose(bzr_branch)
 
-    def makeBzrBranchAndTree(self, db_branch):
+    def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
         path = relpath(os.getcwd(),
                        local_path_from_url(db_branch.warehouse_url))
-        return self.make_branch_and_tree(path)
+        return self.make_branch_and_tree(path, format=format)
 
     def makeDatabaseBranch(self):
         """Make an arbitrary branch in the database."""
@@ -433,6 +438,45 @@ class TestBzrSync(BzrSyncTestCase):
         self.syncBazaarBranchToDatabase(branch_tree.branch, db_branch)
         self.assertNotInMainline('trunk', db_branch)
         self.assertInMainline('branch', db_branch)
+
+    def test_stacked_branch(self):
+        # We record branch stacking information when we scan a stacked branch.
+        stacked_format = 'development'
+
+        class HttpAsLocalTransport(LocalTransport):
+
+            def __init__(self, http_url):
+                file_url = URI(
+                    scheme='file', host='', path=URI(http_url).path)
+                return super(HttpAsLocalTransport, self).__init__(
+                    str(file_url))
+
+
+        # Make the stacked-on branch.
+        db_base_branch = self.makeDatabaseBranch()
+        bzr_base_tree = self.makeBzrBranchAndTree(
+            db_base_branch, format=stacked_format)
+
+        register_transport('http://', HttpAsLocalTransport)
+        self.addCleanup(
+            lambda: unregister_transport('http://', HttpAsLocalTransport))
+        self.txn.begin()
+        db_base_branch.branch_type = BranchType.MIRRORED
+        db_base_branch.url = urljoin(
+            'http://localhost',
+            os.path.abspath(local_path_from_url(bzr_base_tree.branch.base)))
+        self.txn.commit()
+
+        # Make the stacked branch.
+        db_stacked_branch = self.makeDatabaseBranch()
+        bzr_stacked_tree = self.makeBzrBranchAndTree(
+            db_stacked_branch, format=stacked_format)
+
+        bzr_stacked_tree.branch.set_stacked_on(db_base_branch.url)
+
+        self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
+        self.assertEqual(
+            db_stacked_branch.stacked_on_branch.id, db_base_branch.id)
 
     def test_sync_merging_to_merged(self):
         # When replacing a branch by one of the branches it merged, the
