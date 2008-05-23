@@ -93,7 +93,7 @@
     </div>
 
     <p class="no-results" tal:condition="not:view/has_matches">
-      Your search, &ldquo;view/search_params/search_text&rdquo;, did not return any results.
+      Your search, &ldquo;<span class="search_text" tal:content="view/search_params/search_text">some text</span>&rdquo;, did not return any results.
     </p>
 
   </tal:wants-results>
