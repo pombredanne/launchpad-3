@@ -1058,7 +1058,7 @@ including the *main_archives*:
     >>> main_archives = 0
     >>> ppas = 0
     >>> for archive in archive_set:
-    ...     if archive.owner is None:
+    ...     if not archive.is_ppa:
     ...         main_archives += 1
     ...     else:
     ...         ppas += 1
