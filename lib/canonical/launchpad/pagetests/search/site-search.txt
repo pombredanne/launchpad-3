@@ -1,0 +1,95 @@
+= Site-wide Search =
+
+Launchpad features a site-wide search that combines Google's
+site-specific search with our own searches for specific items (bugs,
+teams, etc.).
+
+    # Our very helpful function for printing all the page results.
+    >>> def print_search_results():
+    ...     tag = find_tag_by_id('search-results')
+    ...     print extract_text(tag)
+
+    # Another helper to make searching convenient
+    >>> def search_for(terms):
+    ...     search_text = browser.getControl(name='search_text')
+    ...     search_text.value = terms
+    ...     browser.getControl('Search').click()
+
+The search is accessible via the root +search url:
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> browser.title
+    Launchpad Search
+
+    >>> find_main_content()
+    Foo
+
+No search results are shown on the basic page:
+
+    >>> print_search_results()
+    Foo
+
+A search for a specific item, such as a project name, will return a
+result for that exact match in Launchpad.
+
+    >>> search_for('firefox')
+    >>> print_search_results()
+    Firefox
+
+Searching for an integer will return the matching bug number as well
+as the matching question number, if one exists.
+
+    >>> search_for('3')
+    >>> print_search_results()
+    Bug #3
+    <BLANKLINE>
+    Question #3
+
+An arbitrary search returns a list of Google search results.
+
+    # Use our pre-defined search results for the 'bug' search.
+    >>> search_for('bug')
+    >>> print_search_results()
+    Bugs bugs bugs
+
+The search can only return twenty results per-page.  Additional
+matches are shown on subsequent pages.
+
+    >>> '1 → 20  of 25 results' in browser.contents
+    True
+    >>> first_page_results = find_tags_by_class('pagematch')
+    >>> len(first_page_results)
+    20
+
+As per the standard batch navigator, clicking on the 'Next' link
+takes you to the next page of results.
+
+    >>> browser.getLink('Next').click()
+    >>> '21 → 25  of 25 results' in browser.contents
+    True
+    >>> second_page_results = find_tags_by_class('pagematch')
+    >>> len(second_page_results)
+    5
+    >>> set(first_page_results).intersect(set(second_page_results))
+    ()
+
+
+== Searches with no results ==
+
+Searches that don't return any results display a kind message to the user.
+
+    >>> search_for('fnord')
+    >>> find_main_content()
+    Your search, "fnord", did not return any matches.
+
+
+== Searches for the empty string ==
+
+Leaving the search field empty returns the original search
+ page, with
+no results, as if the user had not yet performed a search.
+
+    >>> search_for('')
+    >>> find_main_content()
+    Foo
+
