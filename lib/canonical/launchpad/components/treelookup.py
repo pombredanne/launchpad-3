@@ -23,7 +23,21 @@ class Lookup(tuple):
             cls, (conv(node) for node in nodes))
 
     def __init__(self, *nodes):
-        self.verify()
+        self._verify()
+
+    def _verify(self):
+        """Check the validity of the tree."""
+        keys = set()
+        default = False
+        for node in self:
+            if not isinstance(node, Node):
+                raise TypeError('Not a Node: %r' % (node,))
+            if default:
+                raise TypeError('Default node must be last')
+            default = node.is_default
+            seen = keys.intersection(node)
+            if len(seen) > 0:
+                raise TypeError('Key(s) already seen: %r' % (seen,))
 
     def search(self, key, *more):
         """Search this tree.
@@ -49,7 +63,7 @@ class Lookup(tuple):
         raise KeyError(key)
 
     @property
-    def walker(self):
+    def flattened(self):
         """Generates a flat representation of this tree by walking the tree.
 
         Generates tuples. The last element in the tuple is the
@@ -62,32 +76,18 @@ class Lookup(tuple):
             if node.is_leaf:
                 yield node, node.next
             else:
-                for path in node.next.walker:
+                for path in node.next.flattened:
                     yield (node,) + path
 
     @property
     def min_depth(self):
         """The minimum distance to a leaf node."""
-        return min(len(path) for path in self.walker) - 1
+        return min(len(path) for path in self.flattened) - 1
 
     @property
     def max_depth(self):
         """The maximum distance to a leaf node."""
-        return max(len(path) for path in self.walker) - 1
-
-    def verify(self):
-        """Check the validity of the tree."""
-        keys = set()
-        default = False
-        for node in self:
-            if default:
-                raise TypeError('Default node must be last')
-            default = node.is_default
-            if not isinstance(node, Node):
-                raise TypeError('Not a Node: %r' % (node,))
-            seen = keys.intersection(node)
-            if len(seen) > 0:
-                raise TypeError('Key(s) already seen: %r' % (seen,))
+        return max(len(path) for path in self.flattened) - 1
 
     def __repr__(self, level=1):
         indent = '    ' * level
