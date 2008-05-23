@@ -278,6 +278,10 @@ IProduct.developmentfocus. The following attributes are synched:
     * date_inprogress
     * date_assigned
     * date_closed
+    * date_left_new
+    * date_triaged
+    * date_fix_committed
+    * date_fix_released
 
 We'll open a bug on just the distribution, and also a bug on a specific
 package.
@@ -467,6 +471,24 @@ require extra privileges.)
     >>> current_series_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
+    >>> generic_netapplet_task.date_left_new
+    datetime.datetime...
+    >>> generic_netapplet_task.date_left_new == (
+    ...     current_series_netapplet_task.date_left_new)
+    True
+
+    >>> generic_netapplet_task.date_triaged
+    datetime.datetime...
+    >>> generic_netapplet_task.date_triaged == (
+    ...     current_series_netapplet_task.date_triaged)
+    True
+
+    >>> generic_netapplet_task.date_fix_committed
+    datetime.datetime...
+    >>> generic_netapplet_task.date_fix_committed == (
+    ...     current_series_netapplet_task.date_fix_committed)
+    True
+
     >>> print generic_netapplet_task.status.title
     Fix Released
     >>> print current_series_netapplet_task.status.title
@@ -476,6 +498,12 @@ require extra privileges.)
     datetime.datetime...
     >>> generic_netapplet_task.date_closed == (
     ...     current_series_netapplet_task.date_closed)
+    True
+
+    >>> generic_netapplet_task.date_fix_released
+    datetime.datetime...
+    >>> generic_netapplet_task.date_fix_released == (
+    ...     current_series_netapplet_task.date_fix_released)
     True
 
 2. Assignee
