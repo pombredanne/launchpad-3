@@ -270,7 +270,6 @@ by product name (which is of course called "project name" in the UI).
     ...     print option
     by project name
     by lifecycle status
-    by author name
     by branch name
     by registrant name
     most recently changed first
@@ -294,7 +293,6 @@ options that can be selected.
     ...     print option
     by most interesting
     by lifecycle status
-    by author name
     by branch name
     by registrant name
     most recently changed first
@@ -303,7 +301,7 @@ options that can be selected.
     oldest first
 
 If you filter by a specific lifecycle status then ordering by
-lifecycle ceases to be relevant, and the default is to sort by author.
+lifecycle ceases to be relevant, and the default is to sort by registrant.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> status_control = browser.getControl(name='field.lifecycle')
@@ -333,16 +331,16 @@ Finally, sorting by a particular criterion has the desired effect.
     lp://dev/~vcs-imports/gnome-terminal/import    New          ...
     lp://dev/~name12/gnome-terminal/mirrored       New          ...
 
-    >>> browser.getControl(name='field.sort_by').value = ['by author name']
+    >>> browser.getControl(name='field.sort_by').value = ['by branch name']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    lp://dev/~launchpad/gnome-terminal/launchpad    New             ...
-    lp://dev/~name12/gnome-terminal/klingon         Experimental    ...
     lp://dev/~name12/gnome-terminal/2.6             Mature          ...
-    lp://dev/~name12/gnome-terminal/main            Development     ...
     lp://dev/~vcs-imports/gnome-terminal/import     New             ...
+    lp://dev/~name12/gnome-terminal/klingon         Experimental    ...
+    lp://dev/~launchpad/gnome-terminal/launchpad    New             ...
+    lp://dev/~name12/gnome-terminal/main            Development     ...
     lp://dev/~name12/gnome-terminal/mirrored        New             ...
 
 
