@@ -42,6 +42,7 @@ COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be remov
 COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
 COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
+COMMENT ON COLUMN Branch.stacked_on_branch IS 'The Launchpad branch that this branch is stacked on (if any).';
 
 -- BranchMergeProposal
 
