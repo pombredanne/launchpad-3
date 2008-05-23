@@ -452,6 +452,26 @@ name is returned.
     >>> add_task_view.getTarget().displayname
     u'Debian'
 
+
+The form also accept binary package names to be entered. The binary
+package will be converted to the corresponding source package.
+
+    >>> form = {
+    ...     'field.distribution': u'ubuntu',
+    ...     'field.actions.continue': '1',
+    ...     'field.sourcepackagename': u'mozilla-firefox-data'}
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+distrotask', form)
+    SQLObjectCreatedEvent: <BugTask at ...>
+    >>> add_task_view.errors
+    []
+
+    >>> for bugtask in bug_four.bugtasks:
+    ...     print bugtask.bugtargetdisplayname
+    alsa-utils
+    ...
+    mozilla-firefox (Ubuntu)
+
     >>> on_created_listener.unregister()
 
 

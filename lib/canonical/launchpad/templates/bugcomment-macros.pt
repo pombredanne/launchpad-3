@@ -104,6 +104,8 @@
                     accept-charset="UTF-8">
                 <input type="hidden" name="field.bugwatch_id"
                        tal:attributes="value comment/bugwatch/id" />
+                <input type="hidden" name="field.subject"
+                       tal:attributes="value comment/bugtask/bug/followup_subject" />
                 <textarea id="field.comment" name="field.comment" rows="10" cols="60"></textarea>
                 <br />
                 <div class="actions">

@@ -822,8 +822,11 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # dupe account, so we can assign it to him.
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
+        # EmailAddress.person is a readonly field, so we need to remove the
+        # security proxy here.
+        from zope.security.proxy import removeSecurityProxy
         email = emailset.getByEmail(self.context.email)
-        email.person = requester.id
+        removeSecurityProxy(email).person = requester.id
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make

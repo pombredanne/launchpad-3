@@ -35,7 +35,7 @@ from canonical.codehosting.codeimport.tests.test_worker import (
 from canonical.launchpad.database import CodeImport, CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportResultSet, ICodeImportSet)
+    ICodeImportJobWorkflow, ICodeImportSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
@@ -193,6 +193,32 @@ class TestWorkerMonitorUnit(TestCase):
                 details.cvs_module, job.code_import.cvs_module)
         return self.worker_monitor.getSourceDetails().addCallback(
             check_source_details)
+
+    def associateCodeImportWithSeries(self, code_import_id):
+        """Pretend the given code import was created from some ProductSeries.
+        """
+        self.layer.switchDbUser('launchpad')
+        code_import = getUtility(ICodeImportSet).get(code_import_id)
+        series = self.factory.makeSeries()
+        from canonical.launchpad.database.codeimport import (
+            _ProductSeriesCodeImport)
+        _ProductSeriesCodeImport(
+            codeimport=code_import, productseries=series)
+        series_id = series.id
+        self.layer.txn.commit()
+        self.layer.switchDbUser('codeimportworker')
+        return series_id
+
+    def test_getSourceDetailsForImportWithSourceSeries(self):
+        # getSourceDetails extracts the details from the CodeImport database
+        # object.
+        series_id = self.associateCodeImportWithSeries(self.code_import_id)
+        @read_only_transaction
+        def check_source_productseries_id(details):
+            self.assertEquals(
+                details.source_product_series_id, series_id)
+        return self.worker_monitor.getSourceDetails().addCallback(
+            check_source_productseries_id)
 
     def test_updateHeartbeat(self):
         # The worker monitor's updateHeartbeat method calls the
