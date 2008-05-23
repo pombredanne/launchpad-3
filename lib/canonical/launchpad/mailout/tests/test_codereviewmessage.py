@@ -32,7 +32,11 @@ class TestCodeReviewMessage(TestCaseWithFactory):
             CodeReviewNotificationLevel.FULL)
         return code_message, subscriber
 
-    def test_for_creation(self):
+    def makeMailer(self):
+        code_message, subscriber = self.makeMessageAndSubscriber()
+        return CodeReviewMessageMailer.forCreation(code_message), subscriber
+
+    def test_forCreation(self):
         code_message, subscriber = self.makeMessageAndSubscriber()
         mailer = CodeReviewMessageMailer.forCreation(code_message)
         self.assertEqual(code_message.message.subject,
@@ -43,6 +47,22 @@ class TestCodeReviewMessage(TestCaseWithFactory):
             code_message.branch_merge_proposal, mailer.merge_proposal)
         self.assertEqual('Foo Bar <foo.bar@example.com>', mailer.from_address)
         self.assertEqual(code_message, mailer.code_review_message)
+
+    def test_generateEmail(self):
+        mailer, subscriber = self.makeMailer()
+        headers, subject, body = mailer.generateEmail(subscriber)
+        message = mailer.code_review_message.message
+        self.assertEqual(subject, message.subject)
+        self.assertEqual(body.splitlines()[:-2],
+                         message.text_contents.splitlines())
+        source_branch = mailer.merge_proposal.source_branch
+        branch_name = source_branch.displayname
+        self.assertEqual(body.splitlines()[-2:],
+            ['--', 'You are subscribed to branch %s.' % branch_name])
+        rationale = mailer._recipients.getReason('baz.qux@example.com')[1]
+        expected = {'X-Launchpad-Branch': source_branch.unique_name,
+                    'X-Launchpad-Message-Rationale': rationale}
+        self.assertEqual(expected, headers)
 
 
 def test_suite():

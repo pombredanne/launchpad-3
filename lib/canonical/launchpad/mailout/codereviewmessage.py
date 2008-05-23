@@ -28,3 +28,7 @@ class CodeReviewMessageMailer(BMPMailer):
         recipients = merge_proposal.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         return klass(code_review_message, recipients)
+
+    def _getBody(self, recipient):
+        return '%s\n--\n%s' % (self.code_review_message.message.text_contents,
+            self.getReason(recipient))

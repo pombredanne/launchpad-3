@@ -119,7 +119,11 @@ class BMPMailer:
             recipient.preferredemail.email)
         headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
                    'X-Launchpad-Message-Rationale': rationale}
-        template = get_email_template(self._template_name)
+        subject = self._subject_template % self._getParams(recipient)
+        return (headers, subject, self._getBody(recipient))
+
+    def _getTemplateParams(self, recipient):
+        """Return a dict of values to use in the body and subject."""
         reason = self.getReason(recipient)
         params = {
             'proposal_registrant': self.merge_proposal.registrant.displayname,
@@ -131,9 +135,12 @@ class BMPMailer:
             }
         if self.delta is not None:
             params['delta'] = self.textDelta()
-        subject = self._subject_template % params
-        body = template % params
-        return (headers, subject, body)
+        return params
+
+    def _getBody(self, recipient):
+        """Return the complete body to use for this email"""
+        template = get_email_template(self._template_name)
+        return template % self._getParams(recipient)
 
     def sendAll(self):
         """Send notifications to all recipients."""
