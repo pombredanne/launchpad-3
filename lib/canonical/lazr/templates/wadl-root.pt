@@ -22,7 +22,7 @@
       number of links to collection-type resources.-->
   <representation mediaType="application/json" id="service-root-json">
     <tal:root_params tal:repeat="param context/wadl:top_level_resources">
-      <param tal:attributes="name param/name;
+      <param style="plain" tal:attributes="name param/name;
                              path param/path">
         <link tal:attributes="type param/resource/wadl:type_link" />
       </param>
@@ -70,23 +70,25 @@
              xmlns="http://www.w3.org/1999/xhtml/">
           Human-readable documentation for the method.
         </doc>
-        <param name="ws_op" required="True"
-               tal:attributes="fixed operation/name">
-          <doc>The name of the operation being invoked.</doc>
-        </param>
-        <param tal:repeat="field operation/op/params"
-               tal:attributes="name field/__name__;
-                               required field/required">
-          <doc tal:content="field/wadl:doc"
-               tal:condition="field/wadl:doc"
-               xmlns="http://www.w3.org/1999/xhtml/">
-            Field title: field description
-          </doc>
-          <link tal:condition="field/wadl:is_link"
-                tal:attributes="type field/wadl:type_link" />
-          <option tal:repeat="option field/wadl:options"
-                  tal:attributes="value option/title" />
-        </param>
+        <request>
+          <param style="query" name="ws_op" required="True"
+                 tal:attributes="fixed operation/name">
+            <doc>The name of the operation being invoked.</doc>
+          </param>
+          <param style="query" tal:repeat="field operation/op/params"
+                 tal:attributes="name field/__name__;
+                                 required field/required">
+            <doc tal:content="field/wadl:doc"
+                 tal:condition="field/wadl:doc"
+                 xmlns="http://www.w3.org/1999/xhtml/">
+              Field title: field description
+            </doc>
+            <link tal:condition="field/wadl:is_link"
+                  tal:attributes="type field/wadl:type_link" />
+            <option tal:repeat="option field/wadl:options"
+                    tal:attributes="value option/title" />
+          </param>
+        </request>
       </method>
     </resource_type>
 
@@ -136,28 +138,31 @@
              tal:condition="operation/op/wadl_operation:doc"
              xmlns="http://www.w3.org/1999/xhtml/">
         </doc>
-        <param name="ws_op" required="True"
-               tal:attributes="fixed operation/name" />
-        <param tal:repeat="field operation/op/params"
-               tal:attributes="name field/__name__;
-                               required field/required">
-          <doc tal:content="field/wadl:doc"
-               tal:condition="field/wadl:doc"
-               xmlns="http://www.w3.org/1999/xhtml/">
-            Field title: field description
-          </doc>
-          <link tal:condition="field/wadl:is_link"
-                tal:attributes="type field/wadl:type_link" />
-          <option tal:repeat="option field/wadl:options"
-                  tal:attributes="value option/title" />
-        </param>
+        <request>
+          <param style="query" name="ws_op" required="True"
+                 tal:attributes="fixed operation/name" />
+          <param tal:repeat="field operation/op/params"
+                 tal:attributes="name field/__name__;
+                                 required field/required">
+            <doc tal:content="field/wadl:doc"
+                 tal:condition="field/wadl:doc"
+                 xmlns="http://www.w3.org/1999/xhtml/">
+              Field title: field description
+            </doc>
+            <link tal:condition="field/wadl:is_link"
+                  tal:attributes="type field/wadl:type_link" />
+            <option tal:repeat="option field/wadl:options"
+                    tal:attributes="value option/title" />
+          </param>
+        </request>
       </method>
     </resource_type>
 
 
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-full">
-      <param tal:repeat="field context/wadl_entry:all_fields" required="True"
+      <param style="plain"
+             tal:repeat="field context/wadl_entry:all_fields" required="True"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
         <doc tal:content="field/wadl:doc"
@@ -175,7 +180,7 @@
     <representation mediaType="application/json"
        tal:attributes="id string:${context/wadl_entry:singular_type}-diff">
       <param tal:repeat="field context/wadl_entry:all_writable_fields"
-             required="False"
+             style="plain" required="False"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
         <doc tal:content="field/wadl:doc"
@@ -211,23 +216,26 @@
     <representation mediaType="application/json"
        tal:attributes="id
          string:${context/wadl_entry:entry_page_representation_id}">
-      <param name="total_size" path="$['total_size']" required="True" />
+      <param style="plain" name="total_size" path="$['total_size']"
+             required="True" />
 
-      <param name="next_collection_link"
+      <param style="plain" name="next_collection_link"
              path="$['next_collection_link']">
         <link tal:attributes="type
           string:#${context/wadl_entry:entry_page_representation_id}" />
       </param>
 
-      <param name="prev_collection_link"
+      <param style="plain" name="prev_collection_link"
              path="$['prev_collection_link']">
         <link tal:attributes="type
           string:#${context/wadl_entry:entry_page_representation_id}" />
       </param>
 
-      <param name="entries" path="$['entries']" required="True" />
+      <param style="plain" name="entries" path="$['entries']"
+             required="True" />
 
-      <param name="entry_links" path="$['entries'][*]['self_link']">
+      <param style="plain" name="entry_links"
+             path="$['entries'][*]['self_link']">
         <link tal:attributes="type context/wadl_entry:type_link" />
       </param>
   </representation>

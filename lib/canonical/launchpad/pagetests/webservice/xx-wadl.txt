@@ -510,24 +510,26 @@ The <method> tag for a named operation will contain one or more
 <parameter> tags describing the parameters the operation accepts. The
 'create_team' custom operation takes a number of parameters.
 
-    >>> [param.attrib['name'] for param in list(create_team)]
+    >>> [create_team_request] = create_team
+    >>> [param.attrib['name'] for param in create_team_request]
     ['ws_op', 'display_name', 'name', 'default_membership_period',
      'team_description', 'default_renewal_period', 'subscription_policy']
 
 The 'ws_op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
 
-    >>> ws_op = create_team[0]
+    >>> ws_op = create_team_request[0]
     >>> ws_op.attrib['fixed']
     'create_team'
 
 The 'find' custom operation accepts one parameter in addition to
 'ws_op'.
 
-    >>> [param.attrib['name'] for param in list(find)]
+    >>> [find_request] = find
+    >>> [param.attrib['name'] for param in find_request]
     ['ws_op', 'text']
 
-    >>> ws_op = find[0]
+    >>> ws_op = find_request[0]
     >>> ws_op.attrib['fixed']
     'find'
 
@@ -766,7 +768,7 @@ Custom operations may have human-readable documentation.
 
 Custom operations define parameters, just like representations do.
 
-    >>> post_params = list(post[1:])
+    >>> post_params = post[1]
     >>> [param.attrib['name'] for param in post_params]
     ['ws_op', 'status']
 
