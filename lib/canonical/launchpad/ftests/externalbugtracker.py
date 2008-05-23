@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
-from canonical.launchpad.scripts import checkwatches, debbugs
+from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -129,35 +129,6 @@ def set_bugwatch_error_type(bug_watch, error_type):
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     logout()
-
-
-class OOPSHook:
-    def install(self):
-        self.reset()
-        self.original_report_oops = checkwatches.report_oops
-        checkwatches.report_oops = self.reportOOPS
-
-    def uninstall(self):
-        checkwatches.report_oops = self.original_report_oops
-        del self.original_report_oops
-
-    def reportOOPS(self, message=None, properties=None, info=None):
-        self.oops_info = self.original_report_oops(
-            message=message, properties=properties, info=info)
-        return self.oops_info
-
-    def reset(self):
-        if hasattr(self, 'oops_info'):
-            del self.oops_info
-
-    @property
-    def formatted_oops_info(self):
-        properties_string = '\n'.join(
-            '%s=%r' % (name, value) for name, value
-            in sorted(self.oops_info._data))
-        return '%s\n%s' % (self.oops_info.oopsid, properties_string)
-
-oops_hook = OOPSHook()
 
 
 class TestExternalBugTracker(ExternalBugTracker):
@@ -821,7 +792,7 @@ class TestDebBugs(DebBugs):
     It allows you to pass in bugs to be used, instead of relying on an
     existing debbugs db.
     """
-    import_comments = False
+    sync_comments = False
 
     def __init__(self, baseurl, bugs):
         super(TestDebBugs, self).__init__(baseurl)

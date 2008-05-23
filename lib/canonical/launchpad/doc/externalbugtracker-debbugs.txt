@@ -87,7 +87,7 @@ tested later.
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(txn)
-    >>> external_debbugs.import_comments = False
+    >>> external_debbugs.sync_comments = False
     >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
     >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches on http://...
@@ -241,7 +241,7 @@ be raised.
     >>> print external_debbugs.convertRemoteStatus('open')
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: open
 
 
 == Importing bugs ==
@@ -384,6 +384,55 @@ owner, so we'll turn Teun Vink into a Person.
     Things happen.
 
 
+=== Pushing comments to DebBugs ===
+
+The DebBugs ExternalBugTracker implements the ISupportsCommentPushing
+interface, which allows checkwatches to use it to push Launchpad
+comments back to the remote DebBugs instance.
+
+    >>> from canonical.launchpad.interfaces import ISupportsCommentPushing
+    >>> ISupportsCommentPushing.providedBy(external_debbugs)
+    True
+
+Since DebBugs manages bugs through email interchanges, pushing a comment
+to a remote DebBugs instance is merely a case of sending an email to the
+correct bug thread.
+
+    >>> test_debian_bug = TestDebianBug(
+    ...     summary="Example bug 1234", package='evolution', id=1234,)
+    >>> external_debbugs = TestDebBugs(
+    ...     'http://example.com/', {'1234': test_debian_bug})
+
+The addRemoteCommentMethod() takes three parameters: The remote bug to
+which we want to push the comment, the body of the comment that we wish
+to push and the rfc822msgid of the comment that we're pushing. It
+returns the ID of the comment on the remote bugtracker, which in this
+case will be the rfc822msgid that gets passed as a parameter.
+
+    >>> external_debbugs.addRemoteComment(
+    ...     '1234', 'A little fermented curd will do the trick!',
+    ...     '<123456@launchpad.net>')
+    '<123456@launchpad.net>'
+
+We can look in the test_emails list for the mail that would have been
+sent.
+
+    >>> from canonical.launchpad.mail import stub
+    >>> recipent, to_addrs, comment_email = stub.test_emails.pop()
+    >>> print to_addrs
+    ['1234@example.com']
+
+    >>> print comment_email
+    Content-Type...
+    Message-Id: <123456@launchpad.net>
+    To: 1234@example.com
+    From: debbugs@bugs.launchpad.net
+    Subject: Re: Example bug 1234
+    Date...
+    <BLANKLINE>
+    A little fermented curd will do the trick!
+
+
 === Script for importing Debian bugs, linking them to Ubutu ===
 
 There's a script called `import-debian-bugs.py`, which accepts a list of
@@ -413,6 +462,7 @@ tracker.
     INFO    Imported debbugs #237001 as Launchpad bug #...
     INFO    Imported debbugs #322535 as Launchpad bug #...
     INFO    Committing the transaction.
+    <BLANKLINE>
 
     >>> commit()
     >>> debbugs = getUtility(ILaunchpadCelebrities).debbugs

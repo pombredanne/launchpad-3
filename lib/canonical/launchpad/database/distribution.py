@@ -9,7 +9,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
@@ -68,14 +68,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBugSupervisor,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
-    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
-    PackagePublishingStatus, PackageUploadStatus, PackagingType,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchivePermissionSet,
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
+    ISourcePackageName, IStructuralSubscriptionTarget, MirrorContent,
+    MirrorStatus, NotFoundError, PackagePublishingStatus, PackageUploadStatus,
+    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
@@ -137,21 +138,27 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    upload_sender = StringCol(
-        dbName='upload_sender', notNull=False, default=None)
-    upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person',
-        validator=public_person_validator, default=None,
-        notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    uploaders = SQLMultipleJoin('DistroComponentUploader',
-        joinColumn='distribution', prejoins=["uploader", "component"])
     official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
+    active = True # Required by IPillar interface.
+
+    @property
+    def uploaders(self):
+        """See `IDistribution`."""
+        # Get all the distribution archives and find out the uploaders
+        # for each.
+        distro_uploaders = []
+        permission_set = getUtility(IArchivePermissionSet)
+        for archive in self.all_distro_archives:
+            uploaders = permission_set.uploadersForComponent(archive)
+            distro_uploaders.extend(uploaders)
+
+        return distro_uploaders
 
     @property
     def official_codehosting(self):
@@ -1281,6 +1288,6 @@ class DistributionSet:
             logo=logo,
             icon=icon)
         archive = getUtility(IArchiveSet).new(distribution=distro,
-            purpose=ArchivePurpose.PRIMARY)
+            owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
 

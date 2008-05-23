@@ -23,6 +23,7 @@ from sqlobject import (
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -240,9 +241,10 @@ class PackageUpload(SQLBase):
 
         debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-        builds = pub_source.createMissingBuilds(logger=logger)
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, self.distroseries)
+        pub_source.createMissingBuilds(pas_verify=pas_verify, logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
-
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -258,7 +260,7 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            builds = pub_source.createMissingBuilds(ignore_pas=True)
+            pub_source.createMissingBuilds()
             self._validateBuildsForSource(
                 pub_source.sourcepackagerelease, builds)
 
@@ -876,7 +878,21 @@ class PackageUpload(SQLBase):
                 extra_headers
             )
 
-    def overrideSource(self, new_component, new_section):
+    @property
+    def components(self):
+        """See `IPackageUpload`."""
+        existing_components = set()
+        if self.contains_source:
+            existing_components.add(self.sourcepackagerelease.component)
+        else:
+            # For builds we need to iterate through all its binaries
+            # and collect each component.
+            for build in self.builds:
+                for binary in build.build.binarypackages:
+                    existing_components.add(binary.component)
+        return existing_components
+
+    def overrideSource(self, new_component, new_section, allowed_components):
         """See `IPackageUpload`."""
         if not self.contains_source:
             return False
@@ -886,12 +902,22 @@ class PackageUpload(SQLBase):
             return False
 
         for source in self.sources:
+            if (new_component not in allowed_components or
+                source.sourcepackagerelease.component not in
+                    allowed_components):
+                # The old or the new component is not in the list of
+                # allowed components to override.
+                raise QueueInconsistentStateError(
+                    "No rights to override from %s to %s" % (
+                        source.sourcepackagerelease.component.name,
+                        new_component.name))
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
 
         return self.sources.count() > 0
 
-    def overrideBinaries(self, new_component, new_section, new_priority):
+    def overrideBinaries(self, new_component, new_section, new_priority,
+                         allowed_components):
         """See `IPackageUpload`."""
         if not self.contains_build:
             return False
@@ -903,6 +929,14 @@ class PackageUpload(SQLBase):
 
         for build in self.builds:
             for binarypackage in build.build.binarypackages:
+                if (new_component not in allowed_components or
+                    binarypackage.component not in allowed_components):
+                    # The old or the new component is not in the list of
+                    # allowed components to override.
+                    raise QueueInconsistentStateError(
+                        "No rights to override from %s to %s" % (
+                            binarypackage.component.name,
+                            new_component.name))
                 binarypackage.override(
                     component=new_component,
                     section=new_section,
