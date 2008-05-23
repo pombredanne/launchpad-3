@@ -243,7 +243,8 @@ class PackageUpload(SQLBase):
         [pub_source] = self.realiseUpload()
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, self.distroseries)
-        pub_source.createMissingBuilds(pas_verify=pas_verify, logger=logger)
+        builds = pub_source.createMissingBuilds(
+            pas_verify=pas_verify, logger=logger)
         self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
 
@@ -260,7 +261,7 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            pub_source.createMissingBuilds()
+            builds = pub_source.createMissingBuilds()
             self._validateBuildsForSource(
                 pub_source.sourcepackagerelease, builds)
 
