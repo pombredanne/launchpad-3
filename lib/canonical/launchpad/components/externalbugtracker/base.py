@@ -289,11 +289,11 @@ class Lookup(treelookup.Lookup):
             columns = []
             for keys in path:
                 if len(keys) == 0: # Default
-                    columns.append('*')
+                    columns.append("* (''any'')")
                 else:
                     columns.append(
                         " '''or''' ".join(str(key) for key in keys))
-            columns.extend('-' * (max_depth - len(path)))
+            columns.extend(["- (''ignored'')"] * (max_depth - len(path)))
             columns.append(key.name)
             if last_columns is None:
                 yield line(columns)
