@@ -116,6 +116,19 @@ numbers do match questions, but they are not used.
     >>> print search_view.question
     None
 
+It is not an error to search for a non-existant bug or question.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.search_text': '55555'})
+    >>> search_view._getNumericToken(search_view.search_text)
+    u'55555'
+    >>> search_view.has_matches
+    False
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
+
 There is no error if a number cannot be extracted from the search text.
 
     >>> search_view = getSearchView(

@@ -22,6 +22,7 @@ from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.z3batching.batch import _Batch
 
 
@@ -160,7 +161,10 @@ class LaunchpadSearchView(LaunchpadFormView):
         if self.start == 0:
             numeric_token = self._getNumericToken(self.search_text)
             if numeric_token is not None:
-                self._bug = getUtility(IBugSet).get(numeric_token)
+                try:
+                    self._bug = getUtility(IBugSet).get(numeric_token)
+                except NotFoundError:
+                    self._bug = None
                 self._question = getUtility(IQuestionSet).get(numeric_token)
 
             name_token = self._getNameToken(self.search_text)
