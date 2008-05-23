@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
-from unittest import TestCase
+import unittest
 
 from canonical.database.sqlbase import cursor
 import zope.event
@@ -10,11 +10,30 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.factory import *
 
 
-class TestCaseWithFactory(TestCase):
+class TestCase(unittest.TestCase):
+    """Provide Launchpad-specific test facilities."""
 
-    def setUp(self):
-        login('test@canonical.com')
-        self.factory = LaunchpadObjectFactory()
+    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
+        """Assert that a callable performs a given notification.
+
+        :param event_type: The type of event that notification is expected
+            for.
+        :param callable_obj: The callable to call.
+        :param *args: The arguments to pass to the callable.
+        :param **kwargs: The keyword arguments to pass to the callable.
+        :return: (result, event), where result was the return value of the
+            callable, and event is the event emitted by the callable.
+        """
+        result, events = capture_events(callable_obj, *args, **kwargs)
+        if len(events) == 0:
+            raise AssertionError('No notification was performed.')
+        elif len(events) > 1:
+            raise AssertionError('Too many (%d) notifications performed.'
+                % len(events))
+        elif not isinstance(events[0], event_type):
+            raise AssertionError('Wrong event type: %r (expected %r).' %
+                (events[0], event_type))
+        return result, events[0]
 
     def assertIsDBNow(self, value):
         """Assert supplied value equals database time.
@@ -31,6 +50,13 @@ class TestCaseWithFactory(TestCase):
         [database_now] = cur.fetchone()
         self.assertEqual(
             database_now.utctimetuple(), value.utctimetuple())
+
+
+class TestCaseWithFactory(TestCase):
+
+    def setUp(self):
+        login('test@canonical.com')
+        self.factory = LaunchpadObjectFactory()
 
 
 def capture_events(callable_obj, *args, **kwargs):
