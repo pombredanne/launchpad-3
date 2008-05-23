@@ -89,8 +89,8 @@ does not qualify for free hosting and the commercial subscription
 is inactive or about to expire.  The is_permitted attribute is
 true if the project either has a qualifying license or has an active
 commercial subscription. The qualifies_for_free_hosting attribute is
-true, if automatically qualifying licenses are the only ones selected, or if
-the license has been reviewed and been manually approved.
+true, if automatically qualifying licenses are the only ones selected,
+or if the license has been reviewed and been manually approved.
 
 The commercial subscription is about to expire here.
 
@@ -149,7 +149,7 @@ attributes are changed, the license_reviewed attribute is reset to
 false. However, qualifies_for_free_hosting remains true until
 it has been reviewed (license_reviewed is set to true). The
 OTHER_PROPRIETARY license does not need to be reviewed as do the
-OTHER_OPEN_SOURCE license or an unknwown license in license_info.
+OTHER_OPEN_SOURCE license or an unknown license in license_info.
 
     >>> bzr.license_approved
     False

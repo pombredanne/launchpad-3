@@ -788,6 +788,11 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
         return (len(self.context.licenses) > 0
                 and self.context.commercial_subscription_is_due)
 
+    @property
+    def can_purchase_subscription(self):
+        return (check_permission('launchpad.Admin', self.context)
+                and not context.qualifies_for_free_hosting)
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
