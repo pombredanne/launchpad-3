@@ -31,30 +31,35 @@ result for that exact match in Launchpad.
 
     >>> search_for('firefox')
     >>> print_search_results()
-    Firefox
+    Mozilla Firefox
+    The Mozilla Firefox web browser
 
 Searching for an integer will return the matching bug number as well
 as the matching question number, if one exists.
 
     >>> search_for('3')
     >>> print_search_results()
-    Bug #3
-    <BLANKLINE>
-    Question #3
+    #3 Bug Title Test
+    ...
+    Firefox is slow and consumes too much RAM
+    ...
 
 An arbitrary search returns a list of Google search results.
 
     # Use our pre-defined search results for the 'bug' search.
     >>> search_for('bug')
     >>> print_search_results()
-    Bugs bugs bugs
+    1 &rarr; 20 of 25 results...
+    Launchpad Bugs...
+    Bugs in Ubuntu Linux...
+    Bugs related to Sample Person...
+    bug #1 in Mozilla Firefox: ...Firefox does not support SVG...
+    ...
 
 The search can only return twenty results per-page.  Additional
 matches are shown on subsequent pages.
 
-    >>> '1 → 20  of 25 results' in browser.contents
-    True
-    >>> first_page_results = find_tags_by_class('pagematch')
+    >>> first_page_results = find_tags_by_class(browser.contents, 'pagematch')
     >>> len(first_page_results)
     20
 
@@ -62,13 +67,11 @@ As per the standard batch navigator, clicking on the 'Next' link
 takes you to the next page of results.
 
     >>> browser.getLink('Next').click()
-    >>> '21 → 25  of 25 results' in browser.contents
-    True
-    >>> second_page_results = find_tags_by_class('pagematch')
+    >>> second_page_results = find_tags_by_class(browser.contents, 'pagematch')
     >>> len(second_page_results)
     5
     >>> set(first_page_results).intersect(set(second_page_results))
-    ()
+    None
 
 
 == Searches with no results ==
@@ -76,8 +79,10 @@ takes you to the next page of results.
 Searches that don't return any results display a kind message to the user.
 
     >>> search_for('fnord')
-    >>> find_main_content()
-    Your search, "fnord", did not return any matches.
+    >>> print extract_text(find_main_content(browser.contents))
+    Search Launchpad.net:
+    ...
+    Your search, &ldquo;fnord&rdquo;, did not return any results.
 
 
 == Searches for the empty string ==
@@ -87,6 +92,4 @@ Leaving the search field empty returns the original search
 no results, as if the user had not yet performed a search.
 
     >>> search_for('')
-    >>> find_main_content()
-    Foo
-
+    >>> print_search_results()
