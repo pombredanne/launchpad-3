@@ -1,0 +1,28 @@
+= The BugTrackerPerson interface =
+
+The IBugTrackerPerson interfaces allows Launchpad to link Persons to
+bugtrackers. BugTrackerPersons are created using the linkPerson() method
+of IBugTracker.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IPersonSet)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+
+    >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
+
+    >>> name = 'some-name-i-made-up'
+    >>> bugtracker_person = bugtracker.linkPerson(name, sample_person)
+
+    >>> print bugtracker_person.name
+    'some-name-i-made-up'
+
+    >>> bugtracker_person.person == sample_person
+    True
+
+    >>> bugtracker_person.bugtracker == bugtracker
+    True
