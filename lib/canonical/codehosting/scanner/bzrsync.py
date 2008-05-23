@@ -400,8 +400,7 @@ class BzrSync:
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
         self.trans_manager.begin()
-        self.db_branch.stacked_on_branch = self._getStackedOnBranch(
-            bzr_branch)
+        self.db_branch.stacked_on = self._getStackedOnBranch(bzr_branch)
         self.updateBranchStatus()
         self.trans_manager.commit()
 

@@ -475,8 +475,7 @@ class TestBzrSync(BzrSyncTestCase):
         bzr_stacked_tree.branch.set_stacked_on(db_base_branch.url)
 
         self.makeBzrSync(db_stacked_branch).syncBranchAndClose()
-        self.assertEqual(
-            db_stacked_branch.stacked_on_branch.id, db_base_branch.id)
+        self.assertEqual(db_stacked_branch.stacked_on.id, db_base_branch.id)
 
     def test_sync_merging_to_merged(self):
         # When replacing a branch by one of the branches it merged, the
