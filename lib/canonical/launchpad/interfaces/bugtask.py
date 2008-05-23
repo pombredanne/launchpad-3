@@ -898,7 +898,10 @@ class IBugTaskSet(Interface):
         """
 
     def getBugTaskBadgeProperties(bugtasks):
-        """Return whether the bugtasks should have badges."""
+        """Return whether the bugtasks should have badges.
+
+        Return a mapping from a bug task, to a dict of badge properties.
+        """
 
     def getMultiple(task_ids):
         """Retrieve a dictionary of bug tasks for the given sequence of IDs.
