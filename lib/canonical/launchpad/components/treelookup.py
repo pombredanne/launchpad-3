@@ -49,7 +49,7 @@ class Lookup(tuple):
                 raise TypeError('Default node must be last')
             default = node.is_default
 
-    def search(self, key, *more):
+    def __call__(self, key, *more):
         """Search this tree.
 
         It searches for a match in the tree for `key`. If the match is
@@ -65,7 +65,7 @@ class Lookup(tuple):
                     return node.next
                 elif len(more) >= 1:
                     try:
-                        return node.next.search(*more)
+                        return node.next(*more)
                     except KeyError, ex:
                         raise KeyError((key,) + ex.args)
                 else:
