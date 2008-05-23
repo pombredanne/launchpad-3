@@ -13,7 +13,7 @@
       attributes="id date_created branch registrant owner assignee
                   product series review_status
                   rcs_type cvs_root cvs_module svn_branch_url
-                  date_last_successful
+                  date_last_successful source_product_series
                   update_interval effective_update_interval
                   import_job results" />
     <require

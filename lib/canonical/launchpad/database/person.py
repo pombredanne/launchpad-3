@@ -2075,7 +2075,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(owner=self)
+        return Archive.selectOneBy(owner=self, purpose=ArchivePurpose.PPA)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

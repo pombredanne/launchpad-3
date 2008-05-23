@@ -22,9 +22,10 @@ from zope.app.form.utility import setUpWidget
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces import (
-    IBugWatchSet, ILaunchBag, NoBugTrackerFound, NotFoundError,
-    UnrecognizedBugTrackerURL)
+    IBugWatchSet, IDistributionSet, ILaunchBag, NoBugTrackerFound,
+    NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
@@ -419,10 +420,11 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
     It accepts both binary and source package names.
     """
 
-    def _toFieldValue(self, input):
-        if not input:
-            return self.context.missing_value
+    def getDistribution(self):
+        """Get the distribution used for package validation.
 
+        The package name has be to published in the returned distribution.
+        """
         field = self.context
         distribution = field.context.distribution
         if distribution is None and field.context.distroseries is not None:
@@ -430,6 +432,13 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
         assert distribution is not None, (
             "BugTaskSourcePackageNameWidget should be used only for"
             " bugtasks on distributions or on distribution series.")
+        return distribution
+
+    def _toFieldValue(self, input):
+        if not input:
+            return self.context.missing_value
+
+        distribution = self.getDistribution()
 
         try:
             source, binary = distribution.guessPackageNames(input)
@@ -441,6 +450,28 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
                     "Launchpad doesn't know of any source package named"
                     " '%s' in %s." % (input, distribution.displayname))
         return source
+
+
+class BugTaskAlsoAffectsSourcePackageNameWidget(
+    BugTaskSourcePackageNameWidget):
+    """Package widget for +distrotask.
+
+    This widgets works the same as `BugTaskSourcePackageNameWidget`,
+    except that it gets the distribution from the request.
+    """
+
+    def getDistribution(self):
+        """See `BugTaskSourcePackageNameWidget`"""
+        distribution_name = self.request.form.get('field.distribution')
+        if distribution_name is None:
+            raise UnexpectedFormData(
+                "field.distribution wasn't in the request")
+        distribution = getUtility(IDistributionSet).getByName(
+            distribution_name)
+        if distribution is None:
+            raise UnexpectedFormData(
+                "No such distribution: %s" % distribution_name)
+        return distribution
 
 
 class AssigneeDisplayWidget(BrowserWidget):

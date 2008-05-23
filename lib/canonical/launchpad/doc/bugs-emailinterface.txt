@@ -2609,3 +2609,176 @@ is properly detected and thus no bug attchement created.
 
 XXX: Add tests for non-ascii mails.
      -- Bjorn Tillenius, 2005-05-20
+
+
+== Reply to a comment on a remote bug ==
+
+If someone uses the email interface to reply to a comment which was
+imported into Launchpad from a remote bugtracker their reply will be
+linked to the remote bug (and eventually pushed to the remote server if
+possible).
+
+To demonstrate this we need to set up some example objects. Firstly,
+we'll create a new bug on firefox and link it to a remote bug.
+
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugWatchSet, IProductSet)
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> creation_date = datetime(
+    ...     2008, 4, 12, 10, 12, 12, tzinfo=pytz.timezone('UTC'))
+
+We create the initial bug message separately from the bug itself so that
+we can ensure that its datecreated field is set correctly. This is
+because specifying a datecreated for the bug at creation time doesn't
+set the datecreated field of the bug's initial message (see bug
+232252).
+
+    >>> initial_bug_message = getUtility(IMessageSet).fromText(
+    ...     "A message", "The initial message for the bug.",
+    ...     no_priv, datecreated=creation_date)
+
+    >>> bug_with_watch = firefox.createBug(CreateBugParams(
+    ...     no_priv, 'New Bug with watch',
+    ...     msg=initial_bug_message, datecreated=creation_date))
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+    >>> bug_watch = bug_with_watch.addWatch(bug_tracker, '12345', no_priv)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
+Someone comments on the remote bug and that bug is imported into
+Launchpad. We'll simulate this locally rather than using the bug
+importing machinery.
+
+    >>> bug_with_watch = getUtility(IBugSet).get(bug_with_watch.id)
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+
+    >>> comment_date = datetime(
+    ...     2008, 5, 19, 16, 19, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
+    >>> initial_mail = """From: test@canonical.com
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <76543@launchpad.net>
+    ... Subject: Bug %(bug_id)s
+    ...
+    ... Oh, hai!
+    ...
+    ... I'm in ur comments, sendin u a msej.
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     }
+    >>> message = getUtility(IMessageSet).fromEmail(
+    ...     initial_mail, no_priv)
+
+    >>> bug_message = bug_with_watch.linkMessage(message, bug_watch)
+
+Now someone uses the email interface to respond to the comment that has
+been submitted.
+
+    >>> comment_date = datetime(
+    ...     2008, 5, 20, 11, 24, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
+    >>> reply_mail = """From: test@canonical.com
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <1234567890@launchpad.net>
+    ... Subject: Replying to your comment about being in my comments
+    ... In-Reply-To: %(rfc822msgid)s
+    ...
+    ... You are not in my comments and I deny categorically that you are
+    ... sending me any messages. Foolish cat.
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     'rfc822msgid': str(message.rfc822msgid),
+    ...     }
+
+    >>> process_email(reply_mail)
+    >>> commit()
+
+    >>> [reply_message] = list(bug_with_watch.messages)[-1:]
+    >>> print reply_message.rfc822msgid
+    <1234567890@launchpad.net>
+
+The parent of the new comment is set to the message which was imported
+from the remote bugtracker.
+
+    >>> print reply_message.parent.rfc822msgid
+    <76543@launchpad.net>
+
+The BugMessage instance which links the emailed comment to the bug also
+links it to the remote bug via the BugWatch that the original comment
+was imported from.
+
+    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+
+    >>> reply_bug_message = getUtility(
+    ...     IBugMessageSet).getByBugAndMessage(
+    ...         bug_with_watch, reply_message)
+
+    >>> reply_bug_message.bugwatch == bug_watch
+    True
+
+If a user sends in an email which has an In-Reply-To header that points
+to an email that isn't linked to the bug, the new message will be linked
+to the bug and will not have its bugwatch field set.
+
+    >>> comment_date = datetime(
+    ...     2008, 5, 21, 11, 9, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
+    >>> initial_mail = """From: test@canonical.com
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <912876543@launchpad.net>
+    ... Subject: Bug %(bug_id)s
+    ...
+    ... Yet another mail.
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     }
+    >>> message = getUtility(IMessageSet).fromEmail(
+    ...     initial_mail, no_priv)
+
+    >>> comment_date = datetime(
+    ...     2008, 5, 21, 12, 52, 12, tzinfo=pytz.timezone('Europe/Prague'))
+
+    >>> reply_mail = """From: test@canonical.com
+    ... To: %(bug_id)s@malone-domain
+    ... Date: %(date)s
+    ... Message-Id: <asu90ik1234567890@launchpad.net>
+    ... Subject: Replying to your comment about being in my comments
+    ... In-Reply-To: <912876543@launchpad.net>
+    ...
+    ... Once again, a reply.
+    ... """ % {
+    ...     'bug_id': bug_with_watch.id,
+    ...     'date': comment_date.strftime('%a %b %d %H:%M:%S %Z %Y'),
+    ...     }
+
+    >>> process_email(reply_mail)
+    >>> commit()
+
+    >>> [reply_message] = list(bug_with_watch.messages)[-1:]
+
+    >>> reply_bug_message = getUtility(
+    ...     IBugMessageSet).getByBugAndMessage(
+    ...         bug_with_watch, reply_message)
+
+    >>> print reply_bug_message.bugwatch
+    None

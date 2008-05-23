@@ -283,6 +283,23 @@ class XMLRPCHostedBranchStorage(XMLRPCAuthServerTestCase):
         self.assertEqual(25, branch_id)
         self.assertEqual(WRITABLE, permissions)
 
+    def test_getDefaultStackedOnBranch(self):
+        # We can get the default stacked-on branch of a project, given a
+        # project name.
+        #
+        # The 'evolution' project has a default stacked branch in the sample
+        # data.
+        branch = self.server.getDefaultStackedOnBranch('evolution')
+        self.assertEqual('~vcs-imports/evolution/main', branch)
+
+    def test_getDefaultStackedOnBranchWhenEmpty(self):
+        # If there is no default stacked-on branch, we'll get an empty string.
+        branch = self.server.getDefaultStackedOnBranch('+junk')
+        self.assertEqual('', branch)
+        # The 'gnome-terminal' project has no default stacked branch.
+        branch = self.server.getDefaultStackedOnBranch('gnome-terminal')
+        self.assertEqual('', branch)
+
 
 class BranchAPITestCase(XMLRPCAuthServerTestCase):
     """Tests for the branch details API."""

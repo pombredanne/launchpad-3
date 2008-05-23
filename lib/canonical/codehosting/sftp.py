@@ -297,12 +297,12 @@ class TransportSFTPServer:
         deferred = self.transport.stat(path)
         def translate_stat(stat_val):
             return {
-                'size': stat_val.st_size,
-                'uid': stat_val.st_uid,
-                'gid': stat_val.st_gid,
-                'permissions': stat_val.st_mode,
-                'atime': stat_val.st_atime,
-                'mtime': stat_val.st_mtime,
+                'size': getattr(stat_val, 'st_size', 0),
+                'uid': getattr(stat_val, 'st_uid', 0),
+                'gid': getattr(stat_val, 'st_gid', 0),
+                'permissions': getattr(stat_val, 'st_mode', 0),
+                'atime': getattr(stat_val, 'st_atime', 0),
+                'mtime': getattr(stat_val, 'st_mtime', 0),
             }
         return deferred.addCallback(translate_stat)
 
