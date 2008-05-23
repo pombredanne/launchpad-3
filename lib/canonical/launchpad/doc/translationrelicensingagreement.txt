@@ -1,0 +1,46 @@
+= Translation Relicensing Agreement =
+
+Translators who have previously submitted any translations through Launchpad
+can decide whether they want their translations relicensed under BSD or not.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.database.translationrelicensingagreement \
+    ...     import TranslationRelicensingAgreement
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.translationrelicensingagreement \
+    ...     import ITranslationRelicensingAgreement
+    >>> person_set = getUtility(IPersonSet)
+    >>> login('carlos@canonical.com')
+    >>> person = person_set.getByName('carlos')
+
+When Carlos has not made his selection yet, it is marked as None.
+
+    >>> print person.translations_relicensing_agreement
+    None
+    >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
+    >>> print choice
+    None
+
+Setting a value will create a new TranslationRelicensingAgreement object.
+
+    >>> person.translations_relicensing_agreement = True
+    >>> print person.translations_relicensing_agreement
+    True
+    >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
+    >>> print choice.allow_relicensing
+    True
+
+A `choice` implements ITranslationRelicensingAgreement interface:
+
+    >>> verifyObject(ITranslationRelicensingAgreement, choice)
+    True
+
+A translator can also change their mind later.
+
+    >>> person.translations_relicensing_agreement = False
+    >>> print person.translations_relicensing_agreement
+    False
+    >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
+    >>> print choice.allow_relicensing
+    False
