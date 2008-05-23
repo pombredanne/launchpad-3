@@ -129,7 +129,7 @@ It also works for plural form messages.
     %d file
     >>> print potmsgset.context
     First message
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file',
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file', u'%d files',
     ...                                                context=u'Second message')
     >>> print potmsgset.singular_text
     %d file
@@ -213,7 +213,7 @@ Importing this file succeeds.
 If we don't pass context to POFile.getPOMsgSet method, we get the translation
 for the message without a context.
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'bar')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar')
     >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
     >>> print current.translations
     [u'bar with no context']
@@ -221,7 +221,7 @@ for the message without a context.
 If we pass the context parameter to getPOMsgSet, we get the translation for
 a message with context.
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'bar',
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'bar',
     ...                                                context=u'context')
     >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
     >>> print current.translations
@@ -229,13 +229,13 @@ a message with context.
 
 If message has a context, you cannot get it without specifying the context:
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'%file')
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%file')
     >>> print potmsgset
     None
 
 If you specify context, it actually works.
 
-    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(key=u'%d file',
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(u'%d file',
     ...                                                context=u'First message')
     >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
     >>> print current.translations
@@ -244,7 +244,7 @@ If you specify context, it actually works.
 And for messages with plural forms, it gets all the translations.
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'%d file', context=u'Second message')
+    ...     u'%d file', u'%d files', context=u'Second message')
     >>> current = potmsgset.getCurrentTranslationMessage(pofile.language)
     >>> print current.translations
     [u'%d translation', u'%d translationes', u'%d translations']

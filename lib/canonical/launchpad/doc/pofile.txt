@@ -666,7 +666,7 @@ So for a concrete export, we have a message like:
 When it changes...
 
     >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d foo')
+    ...     u'%d foo', u'%d bars')
 
     # It has plural forms.
     >>> print potmsgset.plural_text
@@ -723,15 +723,18 @@ Let's get the IPOFile we are going to use for this test.
 And the msgid we are looking for.
 
     >>> msgid = u'Found %i invalid file.'
+    >>> msgid_plural = u'Found %i invalid files.'
 
 Now, just to be sure that this entry doesn't exist yet:
 
-    >>> pofile_sr.getCurrentTranslationMessage(msgid).translations
-    [None, None, None]
+    >>> potmsgset = pofile_sr.potemplate.getPOTMsgSetByMsgIDText(
+    ...     singular_text=msgid, plural_text=msgid_plural)
+    >>> print potmsgset.getCurrentTranslationMessage(
+    ...     pofile_sr.language, pofile_sr.variant)
+    None
 
 Is time to create it.
 
-    >>> potmsgset = pofile_sr.potemplate.getPOTMsgSetByMsgIDText(msgid)
     >>> translations = {0: u''}
     >>> is_fuzzy = False
     >>> is_imported = False
