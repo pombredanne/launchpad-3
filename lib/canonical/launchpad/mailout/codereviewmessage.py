@@ -3,6 +3,9 @@
 __metaclass__ = type
 
 
+from canonical.config import config
+
+
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mail import format_address
@@ -15,15 +18,15 @@ class CodeReviewMessageMailer(BMPMailer):
 
     def __init__(self, code_review_message, recipients):
         """Constructor."""
-        message = code_review_message.message
-        from_person = message.owner
+        self.code_review_message = code_review_message
+        self.message = code_review_message.message
+        from_person = self.message.owner
         from_address = format_address(
             from_person.displayname, from_person.preferredemail.email)
         merge_proposal = code_review_message.branch_merge_proposal
         BMPMailer.__init__(
-            self, message.subject, None, recipients, merge_proposal,
+            self, self.message.subject, None, recipients, merge_proposal,
             from_address)
-        self.code_review_message = code_review_message
 
     @classmethod
     def forCreation(klass, code_review_message):
@@ -35,5 +38,15 @@ class CodeReviewMessageMailer(BMPMailer):
 
     def _getBody(self, recipient):
         """Return the complete body to use for this email"""
-        return '%s\n--\n%s' % (self.code_review_message.message.text_contents,
-            self.getReason(recipient))
+        return '%s\n--\n%s' % (
+            self.message.text_contents, self.getReason(recipient))
+
+    def _getReplyToAddress(self):
+        merge_proposal = self.code_review_message.branch_merge_proposal
+        return 'mp+%d@%s' % (merge_proposal.id, config.vhost.code.hostname)
+
+    def _getHeaders(self, recipient):
+        headers = BMPMailer._getHeaders(self, recipient)
+        headers['Message-Id'] = self.message.rfc822msgid
+        headers['Reply-To'] = self._getReplyToAddress()
+        return headers

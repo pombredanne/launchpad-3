@@ -115,12 +115,15 @@ class BMPMailer:
 
         :return: (headers, subject, body) of the email.
         """
-        subscription, rationale = self._recipients.getReason(
-            recipient.preferredemail.email)
-        headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
-                   'X-Launchpad-Message-Rationale': rationale}
+        headers = self._getHeaders(recipient)
         subject = self._subject_template % self._getTemplateParams(recipient)
         return (headers, subject, self._getBody(recipient))
+
+    def _getHeaders(self, recipient):
+        subscription, rationale = self._recipients.getReason(
+            recipient.preferredemail.email)
+        return {'X-Launchpad-Branch': subscription.branch.unique_name,
+                'X-Launchpad-Message-Rationale': rationale}
 
     def _getTemplateParams(self, recipient):
         """Return a dict of values to use in the body and subject."""
