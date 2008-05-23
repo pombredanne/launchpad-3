@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'Lookup',
+    'Node',
     ]
 
 import string
