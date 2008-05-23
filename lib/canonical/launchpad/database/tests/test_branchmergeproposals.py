@@ -281,7 +281,9 @@ class TestRootMessage(TestCase):
         TestCase.setUp(self)
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        registrant = self.factory.makePerson(password='password')
+        self.merge_proposal = self.factory.makeBranchMergeProposal(
+            registrant=registrant)
 
     def test_orderedByDateNotInsertion(self):
         """Root is determined by create date, not insert order"""
