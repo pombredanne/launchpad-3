@@ -2504,6 +2504,7 @@ class PageMacroDispatcher:
                 portlets=True),
         'search':
             LayoutElements(
+                actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=False,
