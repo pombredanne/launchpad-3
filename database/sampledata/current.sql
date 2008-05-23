@@ -4102,6 +4102,7 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (7, 13, 36, '2007-08-09 21:25:37.832976');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (8, 11, 35, '2006-10-16 18:31:43.832976');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
