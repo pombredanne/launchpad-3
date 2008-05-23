@@ -12,8 +12,8 @@ import urllib2
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    InvalidBugId, UnknownRemoteStatusError)
+    BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
+    Lookup, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlparse
@@ -198,18 +198,17 @@ class RequestTracker(ExternalBugTracker):
         """See `IExternalBugTracker`."""
         return UNKNOWN_REMOTE_IMPORTANCE
 
+    _status_lookup = Lookup(
+        ('new', BugTaskStatus.NEW),
+        ('open', BugTaskStatus.CONFIRMED),
+        ('stalled', BugTaskStatus.CONFIRMED),
+        ('rejected', BugTaskStatus.INVALID),
+        ('resolved', BugTaskStatus.FIXRELEASED),
+        )
+
     def convertRemoteStatus(self, remote_status):
         """Convert an RT status into a Launchpad BugTaskStatus."""
-        status_map = {
-            'new': BugTaskStatus.NEW,
-            'open': BugTaskStatus.CONFIRMED,
-            'stalled': BugTaskStatus.CONFIRMED,
-            'rejected': BugTaskStatus.INVALID,
-            'resolved': BugTaskStatus.FIXRELEASED,}
-
         try:
-            remote_status = remote_status.lower()
-            return status_map[remote_status]
+            return self._status_lookup.search(remote_status.lower())
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
-
