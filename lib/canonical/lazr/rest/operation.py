@@ -57,7 +57,7 @@ class ResourceOperation:
                     (field, self.request), IFieldMarshaller)
                 try:
                     value = marshaller.marshall_from_request(
-                        self.request.get(name))
+                        self.request.form.get(name))
                 except ValueError, e:
                     errors.append("%s: %s" % (name, e))
                     continue
