@@ -11,10 +11,10 @@ can decide whether they want their translations relicensed under BSD or not.
     >>> from canonical.launchpad.interfaces.translationrelicensingagreement \
     ...     import ITranslationRelicensingAgreement
     >>> person_set = getUtility(IPersonSet)
-    >>> login('carlos@canonical.com')
-    >>> person = person_set.getByName('carlos')
+    >>> login('karl@canonical.com')
+    >>> person = person_set.getByName('karl')
 
-When Carlos has not made his selection yet, it is marked as None.
+When Karl has not made his selection yet, it is marked as None.
 
     >>> print person.translations_relicensing_agreement
     None
