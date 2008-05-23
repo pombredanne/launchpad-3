@@ -17,15 +17,17 @@ collection.
   >>> people_collection.get('prev_collection_link') is None
   True
 
-  >>> people_entries = sorted(people_collection['entries'])
+  >>> from operator import itemgetter
+  >>> people_entries = sorted(
+  ...     people_collection['entries'], key=itemgetter('name'))
   >>> len(people_entries)
   5
   >>> people_entries[0]['name']
-  u'spiv'
+  u'andrelop'
   >>> people_entries[0]['self_link']
-  u'http://api.launchpad.dev/beta/~spiv'
+  u'http://api.launchpad.dev/beta/~andrelop'
   >>> people_entries[-1]['name']
-  u'bug-importer'
+  u'spiv'
 
 You can get other pages of the collection by following links:
 
@@ -36,9 +38,10 @@ You can get other pages of the collection by following links:
   >>> second_batch['prev_collection_link']
   u'http://api.launchpad.dev/beta/people?ws.start=0&ws.size=5'
 
-  >>> people_entries = sorted(second_batch['entries'])
+  >>> people_entries = sorted(
+  ...     second_batch['entries'], key=itemgetter('name'))
   >>> people_entries[0]['name']
-  u'valyag'
+  u'bug-watch-updater'
 
 You can also get a larger batch than the default:
 
@@ -70,30 +73,61 @@ results in a 400 error.
 The elements of a collection can be looked up by unique identifier:
 
   >>> admins_team = webservice.get("/beta/~admins").jsonBody()
-  >>> sorted(admins_team.items())
-  [(u'date_created', u'2005-06-06T08:59:51.571899+00:00'),
-   (u'display_name', u'Launchpad Administrators'),
-   (u'member_memberships_collection_link',
-    u'http://api.launchpad.dev/beta/~admins/member_memberships'),
-   (u'members_collection_link',
-      u'http://api.launchpad.dev/beta/~admins/members'),
-   (u'mugshot_link', u'http://api.launchpad.dev/beta/~admins/mugshot'),
-   (u'name', u'admins'),
-   (u'self_link', u'http://api.launchpad.dev/beta/~admins'),
-   (u'team_memberships_collection_link',
-    u'http://api.launchpad.dev/beta/~admins/team_memberships'),
-   (u'team_owner_link', u'http://api.launchpad.dev/beta/~sabdfl')]
+  >>> for key, value in sorted(admins_team.items()):
+  ...     print "%s: %s" % (key, value)
+  admins_collection_link: http://.../~admins/admins
+  confirmed_email_addresses_collection_link:
+      http://.../~admins/confirmed_email_addresses
+  date_created: 2005-06-06T08:59:51.571899+00:00
+  deactivated_members_collection_link: http://.../~admins/deactivated_members
+  default_membership_period: None
+  default_renewal_period: None
+  display_name: Launchpad Administrators
+  expired_members_collection_link: http://.../~admins/expired_members
+  hide_email_addresses: False
+  homepage_content: None
+  invited_members_collection_link: http://.../~admins/invited_members
+  irc_nicknames_collection_link: http://.../~admins/irc_nicknames
+  is_team: True
+  is_valid: True
+  jabber_ids_collection_link: http://.../~admins/jabber_ids
+  karma: 0
+  languages_collection_link: http://.../~admins/languages
+  mailing_list_auto_subscribe_policy: Ask me when I join a team
+  member_memberships_collection_link: http://.../~admins/member_memberships
+  members_collection_link: http://.../~admins/members
+  mugshot_link: http://.../~admins/mugshot
+  name: admins
+  open_membership_invitations_collection_link:
+      http://.../~admins/open_membership_invitations
+  participants_collection_link: http://.../~admins/participants
+  preferred_email_address_link: None
+  proposed_members_collection_link: http://.../~admins/proposed_members
+  renewal_policy: invite them to apply for renewal
+  self_link: http://.../~admins
+  subscription_policy: Moderated Team
+  team_description: Launchpad Administrators
+  team_memberships_collection_link: http://.../~admins/team_memberships
+  team_owner_link: http://.../~sabdfl
+  teams_indirectly_participated_in_collection_link:
+      http://.../~admins/teams_indirectly_participated_in
+  teams_participated_in_collection_link:
+      http://.../~admins/teams_participated_in
+  timezone: None
+  visibility: Public
+  wiki_names_collection_link: http://.../~admins/wiki_names
 
 A collection may be scoped to an element:
 
   >>> result = webservice.get("/beta/~admins/members")
-  >>> team_members = sorted(result.jsonBody()['entries'])
+  >>> team_members = sorted(
+  ...     result.jsonBody()['entries'], key=itemgetter('name'))
   >>> len(team_members)
   5
   >>> team_members[0]['name']
-  u'spiv'
+  u'carlos'
   >>> team_members[-1]['name']
-  u'kinnison'
+  u'spiv'
 
   >>> result = webservice.get("/beta/~spiv/members")
   >>> list(result.jsonBody()['entries'])
@@ -122,11 +156,11 @@ like a collection.
   8
   >>> s_people['next_collection_link']
   u'http://api.launchpad.dev/beta/people?ws.op=find&text=s&ws.start=5&ws.size=5'
-  >>> [p['name'] for p in sorted(s_people['entries'])]
-  [u'salgado', u'stevea', u'keybuk', u'sigurd-ubuntu', u'sjoerd']
+  >>> sorted(p['name'] for p in s_people['entries'])
+  [u'keybuk', u'salgado', u'sigurd-ubuntu', u'sjoerd', u'stevea']
 
   >>> s_people_batch_2 = search_people("s", 5)
-  >>> [p['name'] for p in sorted(s_people_batch_2['entries'])]
+  >>> sorted(p['name'] for p in s_people_batch_2['entries'])
   [u'skacel', u'stub', u'ubuntu-team']
 
 Just as a collection may be empty, a custom operation may return an

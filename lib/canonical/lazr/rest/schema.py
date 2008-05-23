@@ -9,8 +9,10 @@ __all__ = [
     'DateTimeFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
+    'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
+    'TimezoneFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
     ]
@@ -26,7 +28,9 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.schema import Field, Object
 from zope.schema._field import AbstractCollection
+from zope.schema.interfaces import SchemaNotProvided
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -112,10 +116,8 @@ class SimpleFieldMarshaller:
         self.request = request
 
     def marshall(self, value):
-        "Make sure the value is a string and then call _marshall()."
         if value is None:
             return None
-        assert isinstance(value, basestring), 'Deserializing a non-string'
         return self._marshall(value)
 
     def representationName(self, field_name):
@@ -141,8 +143,14 @@ class IntFieldMarshaller(SimpleFieldMarshaller):
         return int(value)
 
 
+class TimezoneFieldMarshaller(SimpleFieldMarshaller):
+
+    def __init__(self, field, request, vocabulary):
+        super(TimezoneFieldMarshaller, self).__init__(field, request)
+
+
 class DateTimeFieldMarshaller(SimpleFieldMarshaller):
-    """A marshaller that transforms its value into an integer."""
+    """A marshaller that transforms its value into datetime object."""
 
     def _marshall(self, value):
         try:
@@ -201,8 +209,13 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             'Invalid value "%s". Acceptable values are: %s' %
             (value, ', '.join(valid_titles)))
 
+    def unmarshall(self, entry, field_name, value):
+        if value is None:
+            return None
+        return value.title
 
-class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
+
+class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
                                   URLDereferencingMixin):
     """A marshaller that turns URLs into data model objects.
 
@@ -211,8 +224,8 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
     """
 
     def __init__(self, field, request, vocabulary=None):
-        super(ObjectLookupFieldMarshaller, self).__init__(
-            field, request, vocabulary)
+        super(ObjectLookupFieldMarshaller, self).__init__(field, request)
+        self.vocabulary = vocabulary
 
     def representationName(self, field_name):
         "Make it clear that the value is a link to an object, not an object."
@@ -239,3 +252,18 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
         # to the object underlying a resource, we need to strip its
         # security proxy.
         return removeSecurityProxy(resource).context
+
+
+class Reference(Object):
+    """An Object-like field which doesn't validate all fields of the schema.
+
+    Unlike Object, which does call _validate_fields(self.schema, value) to
+    validate all fields, this field will simply call the _validate() method of
+    the Field class and then check that the given value provides the specified
+    schema.
+    """
+
+    def _validate(self, value):
+        Field._validate(self, value)
+        if not self.schema.providedBy(value):
+            raise SchemaNotProvided()

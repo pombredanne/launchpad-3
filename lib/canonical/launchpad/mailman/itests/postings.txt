@@ -56,7 +56,7 @@ equivalent to making it unvalidated.
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
     >>> commit()
-    >>> print alternative_email.email, alternative_email.statusname
+    >>> print alternative_email.email, alternative_email.status.title
     aperson@example.org New Email Address
 
     >>> vette_watcher.resync()
@@ -83,7 +83,7 @@ that address.  However, because she has not yet joined the team or subscribed
 to its mailing list, her messages gets held for moderation by the team's
 administrator.
 
-    >>> print anne.preferredemail.email, anne.preferredemail.statusname
+    >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\
@@ -357,7 +357,7 @@ to the mailing list.
     >>> commit()
     >>> serial_watcher.wait()
 
-    >>> print anne.preferredemail.email, anne.preferredemail.statusname
+    >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
     >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
     >>> inject('itest-one', """\
