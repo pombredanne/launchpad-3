@@ -94,7 +94,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Bool, Choice, List, Text, TextLine
+from zope.schema import Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -2601,32 +2601,6 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
                 "Your choice has been saved. "
                 "Your translations will be removed once we completely "
                 "switch to BSD license for translations."))
-
-
-class PersonChangePasswordView(LaunchpadFormView):
-
-    label = "Change your password"
-    schema = IPersonChangePassword
-    field_names = ['currentpassword', 'password']
-    custom_widget('password', PasswordChangeWidget)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    def validate(self, form_values):
-        currentpassword = form_values.get('currentpassword')
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(currentpassword, self.context.password):
-            self.setFieldError('currentpassword', _(
-                "The provided password doesn't match your current password."))
-
-    @action(_("Change Password"), name="submit")
-    def submit_action(self, action, data):
-        password = data['password']
-        self.context.password = password
-        self.request.response.addInfoNotification(_(
-            "Password changed successfully"))
 
 
 class PersonGPGView(LaunchpadView):
