@@ -10,8 +10,8 @@ import re
 from BeautifulSoup import BeautifulSoup
 
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, PrivateRemoteBug,
-    UnknownRemoteStatusError, UnparseableBugData,)
+    BugNotFound, ExternalBugTracker, InvalidBugId, Lookup, PrivateRemoteBug,
+    UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 
@@ -147,66 +147,55 @@ class SourceForge(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    # SourceForge statuses come in two parts: status and
+    # resolution. Both of these are strings.  We use the open status
+    # as a fallback when we can't find an exact mapping for the other
+    # statuses.
+    _status_lookup_open = Lookup(
+        (None, BugTaskStatus.NEW),
+        ('Accepted', BugTaskStatus.CONFIRMED),
+        ('Duplicate', BugTaskStatus.CONFIRMED),
+        ('Fixed', BugTaskStatus.FIXCOMMITTED),
+        ('Invalid', BugTaskStatus.INVALID),
+        ('Later', BugTaskStatus.CONFIRMED),
+        ('Out of Date', BugTaskStatus.INVALID),
+        ('Postponed', BugTaskStatus.CONFIRMED),
+        ('Rejected', BugTaskStatus.WONTFIX),
+        ('Remind', BugTaskStatus.CONFIRMED),
+        # Some custom SourceForge trackers misspell this, so we
+        # deal with the syntactically incorrect version, too.
+        ("Won't Fix", BugTaskStatus.WONTFIX),
+        ('Wont Fix', BugTaskStatus.WONTFIX),
+        ('Works For Me', BugTaskStatus.INVALID),
+        )
+    _status_lookup = Lookup(
+        ('Open', _status_lookup_open),
+        ('Closed', Lookup(
+                (None, BugTaskStatus.FIXRELEASED),
+                ('Accepted', BugTaskStatus.FIXCOMMITTED),
+                ('Fixed', BugTaskStatus.FIXRELEASED),
+                ('Postponed', BugTaskStatus.WONTFIX),
+                _status_lookup_open)),
+        ('Pending', Lookup(
+                (None, BugTaskStatus.INCOMPLETE),
+                ('Postponed', BugTaskStatus.WONTFIX),
+                _status_lookup_open)),
+        )
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
-        # SourceForge statuses come in two parts: status and
-        # resolution. Both of these are strings. We can look
-        # them up in the form status_map[status][resolution]
-        status_map = {
-            # We use the open status as a fallback when we can't find an
-            # exact mapping for the other statuses.
-            'Open' : {
-                None: BugTaskStatus.NEW,
-                'Accepted': BugTaskStatus.CONFIRMED,
-                'Duplicate': BugTaskStatus.CONFIRMED,
-                'Fixed': BugTaskStatus.FIXCOMMITTED,
-                'Invalid': BugTaskStatus.INVALID,
-                'Later': BugTaskStatus.CONFIRMED,
-                'Out of Date': BugTaskStatus.INVALID,
-                'Postponed': BugTaskStatus.CONFIRMED,
-                'Rejected': BugTaskStatus.WONTFIX,
-                'Remind': BugTaskStatus.CONFIRMED,
-
-                # Some custom SourceForge trackers misspell this, so we
-                # deal with the syntactically incorrect version, too.
-                "Won't Fix": BugTaskStatus.WONTFIX,
-                'Wont Fix': BugTaskStatus.WONTFIX,
-                'Works For Me': BugTaskStatus.INVALID,
-            },
-
-            'Closed': {
-                None: BugTaskStatus.FIXRELEASED,
-                'Accepted': BugTaskStatus.FIXCOMMITTED,
-                'Fixed': BugTaskStatus.FIXRELEASED,
-                'Postponed': BugTaskStatus.WONTFIX,
-            },
-
-            'Pending': {
-                None: BugTaskStatus.INCOMPLETE,
-                'Postponed': BugTaskStatus.WONTFIX,
-            },
-        }
-
         # We have to deal with situations where we can't get a
-        # resolution to go with the status, so we define both even if we
-        # can't get both from SourceForge.
+        # resolution to go with the status, so we define both even if
+        # we can't get both from SourceForge.
         if ':' in remote_status:
             status, resolution = remote_status.split(':')
-
             if resolution == 'None':
                 resolution = None
         else:
             status = remote_status
             resolution = None
 
-        if status not in status_map:
+        try:
+            return self._status_lookup(status, resolution)
+        except KeyError:
             raise UnknownRemoteStatusError(remote_status)
-
-        local_status = status_map[status].get(
-            resolution, status_map['Open'].get(resolution))
-        if local_status is None:
-            raise UnknownRemoteStatusError(remote_status)
-        else:
-            return local_status
-
-
