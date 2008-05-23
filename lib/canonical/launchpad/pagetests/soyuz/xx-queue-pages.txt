@@ -165,7 +165,7 @@ version, component, section and priority.
 
   >>> [filelist] = find_tags_by_class(anon_browser.contents, 'queue-pmount-2')
   >>> print extract_text(filelist)
-  pmount_1.9-1_all.deb (3 bytes) NEW 0.1-1 main base important
+  pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 main base important
 
 XXX cprov 20070726: we should extend the test when we are able to
 probe javascripts events.
@@ -388,7 +388,7 @@ values:
   ...     anon_browser.contents, 'queue-pmount-2')
   >>> for row in filelist:
   ...     print extract_text(row)
-  pmount_1.9-1_all.deb (3 bytes) NEW 0.1-1 restricted admin extra
+  pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 restricted admin extra
 
 'netapplet' has gone straight to the 'done' queue because it's a single
 source upload, and we can see its overridden values there:

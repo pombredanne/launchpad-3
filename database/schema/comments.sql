@@ -1725,6 +1725,8 @@ COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
+COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
+COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
 
 
 -- ArchiveDependency

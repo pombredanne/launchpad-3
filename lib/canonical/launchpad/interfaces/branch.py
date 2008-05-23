@@ -970,12 +970,6 @@ class BranchListingSort(EnumeratedType):
         Sort branches by the lifecycle status.
         """)
 
-    AUTHOR = Item("""
-        by author name
-
-        Sort branches by the display name of the author.
-        """)
-
     NAME = Item("""
         by branch name
 

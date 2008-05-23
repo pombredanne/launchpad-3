@@ -139,12 +139,8 @@ are replaced by a single space.
     >>> attachments_text = text_bug[text_bug.find('attachments:'):]
     >>> attachment_2 = attachments_text.split('\n')[2]
     >>> attachment_2
-    ' http://localhost:58000/91/file%20with%20space.txt text/plain; 
+    ' http://localhost:58000/.../file%20with%20space.txt text/plain;
     name="file with space.txt"'
-    >>> attachment_2 == (' http://localhost:58000/91/'
-    ...                  'file%20with%20space.txt text/plain; '
-    ...                  'name="file with space.txt"')
-    True
 
 
 == Text Pages from a Bug Task Context ==
