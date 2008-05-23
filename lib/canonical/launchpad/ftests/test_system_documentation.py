@@ -519,12 +519,6 @@ special = {
             tearDown=tearDown,
             layer=LaunchpadZopelessLayer
             ),
-    'bugtracker-person.txt': LayeredDocFileSuite(
-            '../doc/bugtracker-person.txt',
-            setUp=checkwatchesSetUp,
-            tearDown=uploaderTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
