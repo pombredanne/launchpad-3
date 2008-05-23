@@ -20,7 +20,7 @@ The search is accessible via the root +search url:
 
     >>> browser.open('http://launchpad.dev/+search')
     >>> print browser.title
-    Search projects in Launchpad
+    Search Launchpad
 
 No search results are shown on the basic page:
 
@@ -30,6 +30,8 @@ A search for a specific item, such as a project name, will return a
 result for that exact match in Launchpad.
 
     >>> search_for('firefox')
+    >>> print browser.title
+    Pages matching "firefox" in Launchpad
     >>> print_search_results()
     Mozilla Firefox
     The Mozilla Firefox web browser
@@ -40,6 +42,8 @@ Searching for an integer will return the matching bug number as well
 as the matching question number, if one exists.
 
     >>> search_for('3')
+    >>> print browser.title
+    Pages matching "3" in Launchpad
     >>> print_search_results()
     #3 Bug Title Test
     ...
@@ -50,6 +54,8 @@ An arbitrary search returns a list of Google search results.
 
     # Use our pre-defined search results for the 'bug' search.
     >>> search_for('bug')
+    >>> print browser.title
+    Pages matching "bug" in Launchpad
     >>> print_search_results()
     1 &rarr; 20 of 25 results...
     Launchpad Bugs...
@@ -99,4 +105,6 @@ Leaving the search field empty returns the original search
 no results, as if the user had not yet performed a search.
 
     >>> search_for('')
+    >>> print browser.title
+    Search Launchpad
     >>> print_search_results()
