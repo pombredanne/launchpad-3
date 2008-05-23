@@ -408,7 +408,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             marshaller = getMultiAdapter((field, self.request),
                                           IFieldMarshaller)
             repr_name = marshaller.representation_name
-            repr_value = marshaller.unmarshall(self.entry, name, value)
+            repr_value = marshaller.unmarshall(self.entry, value)
             data[repr_name] = repr_value
         return data
 
@@ -553,7 +553,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # error message if the new value is not identical to the
                 # current one.
                 current_unmarshalled_value = marshaller.unmarshall(
-                    self.entry, name, getattr(self.entry, name))
+                    self.entry, getattr(self.entry, name))
                 if value != current_unmarshalled_value:
                     errors.append("%s: You tried to modify a collection "
                                   "attribute." % repr_name)
@@ -564,7 +564,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # them, but we may tell users how to do so if they attempt to
                 # change them.
                 current_unmarshalled_value = marshaller.unmarshall(
-                    self.entry, name, getattr(self.entry, name))
+                    self.entry, getattr(self.entry, name))
                 if value != current_unmarshalled_value:
                     if field.readonly:
                         errors.append("%s: You tried to modify a read-only "

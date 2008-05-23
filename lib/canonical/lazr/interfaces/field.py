@@ -40,7 +40,6 @@ class IFieldMarshaller(Interface):
         """Transform an object value into a value suitable for JSON.
 
         :param entry: The entry whose field this is.
-        :param field_name: The name of the field within the entry.
         :value: The object value of the field.
 
         :return: The string value to give when representing the field

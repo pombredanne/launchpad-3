@@ -43,7 +43,7 @@ that the empty string is marshalled as None.
 When asked to convert a field value to a representation value, this
 marshaller returns the string as-is:
 
-    >>> marshaller.unmarshall(None, field.__name__, 'foo')
+    >>> marshaller.unmarshall(None, 'foo')
     'foo'
 
 The representation name for a TextLine field is the name of the field.
@@ -153,7 +153,7 @@ the URL to that object.
     >>> from canonical.lazr.rest import EntryResource
     >>> person_resource = EntryResource(person, request)
 
-    >>> marshaller.unmarshall(person_resource, 'some_person', person)
+    >>> marshaller.unmarshall(person_resource, person)
     u'http://.../~salgado'
 
 This marshaller also appends '_link' to the representation name of
@@ -181,8 +181,7 @@ membership, or something like that.)
 Instead of serving the actual collection, collection marshallers serve
 a URL to that collection.
 
-    >>> marshaller.unmarshall(person_resource, 'person_memberships',
-    ...                       ["member 1", "member 2"])
+    >>> marshaller.unmarshall(person_resource, ["member 1", "member 2"])
     u'http://.../~salgado/person_memberships'
 
 They also annotate the representation name of the field, so that

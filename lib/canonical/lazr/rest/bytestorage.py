@@ -74,9 +74,9 @@ class ByteStorageMarshaller(SimpleFieldMarshaller):
         Represent as a link to another resource."""
         return "%s_link" % self.field.__name__
 
-    def unmarshall(self, entry, field_name, bytestorage):
+    def unmarshall(self, entry, bytestorage):
         """See `canonical.lazr.rest.schema.IFieldMarshaller`.
 
         Marshall as a link to the byte storage resource."""
-        return "%s/%s" % (canonical_url(entry.context), field_name)
+        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
 

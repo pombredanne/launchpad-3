@@ -146,7 +146,7 @@ class SimpleFieldMarshaller:
         """
         return self.field.__name__
 
-    def unmarshall(self, entry, field_name, value):
+    def unmarshall(self, entry, value):
         """See `IFieldMarshaller`.
 
         Return the value as is.
@@ -215,12 +215,12 @@ class CollectionFieldMarshaller(SimpleFieldMarshaller):
             return None
         return self._marshall_from_request(value)
 
-    def unmarshall(self, entry, field_name, value):
+    def unmarshall(self, entry, value):
         """See `IFieldMarshaller`.
 
         This returns a link to the scoped collection.
         """
-        return "%s/%s" % (canonical_url(entry.context), field_name)
+        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
 
 
 def VocabularyLookupFieldMarshaller(field, request):
@@ -261,7 +261,7 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             'Invalid value "%s". Acceptable values are: %s' %
             (value, ', '.join(valid_titles)))
 
-    def unmarshall(self, entry, field_name, value):
+    def unmarshall(self, entry, value):
         if value is None:
             return None
         return value.title
@@ -287,7 +287,7 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         """
         return "%s_link" % self.field.__name__
 
-    def unmarshall(self, entry, field_name, value):
+    def unmarshall(self, entry, value):
         """See `IFieldMarshaller`.
 
         Represent an object as the URL to that object
