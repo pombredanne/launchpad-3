@@ -10,7 +10,6 @@ First, we need to set the password to something I know
     ...     WHERE name='martin-pitt'
     ...     """)
     >>> transaction.commit()
-    >>> import time
 
 'martin-pitt' doesn't have a preferred email address.
 He can't login without first validating his email address.
@@ -72,6 +71,6 @@ He can't login without first validating his email address.
   >>> from canonical.launchpad.database import EmailAddressSet
   >>> [to_addr] = to_addrs
   >>> e = EmailAddressSet().getByEmail(to_addr)
-  >>> e.statusname
+  >>> e.status.title
   'Preferred Email Address'
 
