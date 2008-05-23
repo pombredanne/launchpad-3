@@ -385,15 +385,22 @@ class BugWatchUpdater(object):
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
         non_modified_bugs = set(remote_ids).difference(remote_ids_to_check)
+
+        # Whether we can import and / or push comments is determined on
+        # a per-bugtracker-type level.
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
-            remotesystem.import_comments)
-        can_push_comments = ISupportsCommentPushing.providedBy(remotesystem)
+            remotesystem.sync_comments)
+        can_push_comments = (
+            ISupportsCommentPushing.providedBy(remotesystem) and
+            remotesystem.sync_comments)
+
         if can_import_comments and server_time is None:
             can_import_comments = False
             self.warning(
                 "Comment importing supported, but server time can't be"
                 " trusted. No comments will be imported.")
+
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:
@@ -631,10 +638,14 @@ class BugWatchUpdater(object):
                 formatted_comment = self._formatRemoteComment(
                     external_bugtracker, bug_watch, message)
 
-                bug_message.remote_comment_id = (
+                remote_comment_id = (
                     external_bugtracker.addRemoteComment(
                         bug_watch.remotebug, formatted_comment,
                         message.rfc822msgid))
+
+                assert remote_comment_id is not None, (
+                    "A remote_comment_id must be specified.")
+                bug_message.remote_comment_id = remote_comment_id
 
                 pushed_comments += 1
 
@@ -655,7 +666,7 @@ class BugWatchUpdater(object):
         """
         return [('batch_size', remotesystem.batch_size),
                 ('batch_query_threshold', remotesystem.batch_query_threshold),
-                ('import_comments', remotesystem.import_comments),
+                ('sync_comments', remotesystem.sync_comments),
                 ('externalbugtracker', remotesystem.__class__.__name__),
                 ('baseurl', remotesystem.baseurl)]
 

@@ -48,12 +48,14 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope import formlib
 from zope.interface import implements, providedBy
 from zope.schema import Choice
-from zope.schema.interfaces import IList
+from zope.schema.interfaces import IContextSourceBinder, IList
+
 from zope.schema.vocabulary import (
     getVocabularyRegistry, SimpleVocabulary, SimpleTerm)
 from zope.security.proxy import (
@@ -64,6 +66,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
@@ -800,6 +803,9 @@ class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
     schema = IBugTask
+    milestone_source = None
+    user_is_subscribed = None
+    edit_form = ViewPageTemplateFile('../templates/bugtask-edit-form.pt')
 
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
@@ -810,6 +816,13 @@ class BugTaskEditView(LaunchpadEditFormView):
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
+
+    def initialize(self):
+        super(BugTaskEditView, self).initialize()
+        # Initialize user_is_subscribed, if it hasn't already been set.
+        if self.user_is_subscribed is None:
+            self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
+
 
     @cachedproperty
     def field_names(self):
@@ -956,6 +969,17 @@ class BugTaskEditView(LaunchpadEditFormView):
 
             self.form_fields = self.form_fields.omit('status')
             self.form_fields += formlib.form.Fields(status_field)
+
+        # If we have a milestone vocabulary already, create a new field
+        # to use it, instead of creating a new one.
+        if self.milestone_source is not None:
+            milestone_source = self.milestone_source
+            milestone_field = Choice(
+                __name__='milestone',
+                title=self.schema['milestone'].title,
+                source=milestone_source, required=False)
+            self.form_fields = self.form_fields.omit('milestone')
+            self.form_fields += formlib.form.Fields(milestone_field)
 
         for field in read_only_field_names:
             self.form_fields[field].for_display = True
@@ -2399,25 +2423,57 @@ def _by_targetname(bugtask):
     """Normalize the bugtask.targetname, for sorting."""
     return re.sub(r"\W", "", bugtask.bugtargetdisplayname)
 
+
+class CachedMilestoneSourceFactory:
+    """A factory for milestone vocabularies.
+
+    When rendering a page with many bug tasks, this factory is useful,
+    in order to avoid the number of db queries issues. For each bug task
+    target, we cache the milestone vocabulary, so we don't have to
+    create a new one for each target.
+    """
+
+    implements(IContextSourceBinder)
+
+    def __init__(self):
+        self.vocabularies = {}
+
+    def __call__(self, context):
+        target = MilestoneVocabulary.getMilestoneTarget(context)
+        milestone_vocabulary = self.vocabularies.get(target)
+        if milestone_vocabulary is None:
+            milestone_vocabulary = MilestoneVocabulary(context)
+            self.vocabularies[target] = milestone_vocabulary
+        return milestone_vocabulary
+
+
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
 
     def __init__(self, context, request):
         """Ensure we always have a bug context."""
         LaunchpadView.__init__(self, IBug(context), request)
+        # Cache some values, so that we don't have to recalculate them
+        # for each bug task.
+        self.cached_milestone_source = CachedMilestoneSourceFactory()
+        self.user_is_subscribed = self.context.isSubscribed(self.user)
 
     def _getTableRowView(self, context, is_converted_to_question,
                          is_conjoined_slave):
         """Get the view for the context, and initialize it.
 
         The view's is_conjoined_slave and is_converted_to_question
-        attributes are set.
+        attributes are set, as well as the edit view.
         """
         view = getMultiAdapter(
             (context, self.request),
             name='+bugtasks-and-nominations-table-row')
         view.is_converted_to_question = is_converted_to_question
         view.is_conjoined_slave = is_conjoined_slave
+        view.edit_view = getMultiAdapter(
+            (context, self.request), name='+edit-form')
+        view.edit_view.milestone_source = self.cached_milestone_source
+        view.edit_view.user_is_subscribed = self.user_is_subscribed
         return view
 
     def getBugTaskAndNominationViews(self):

@@ -6,13 +6,56 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
 
+  <!--A "service root" resource responds to GET.-->
+  <resource_type id="service-root">
+    <doc>The root of the web service.</doc>
+    <method name="GET" id="service-root-get">
+      <response>
+        <representation href="#service-root-json" />
+        <representation mediaType="application/vd.sun.wadl+xml"
+                        id="service-root-wadl" />
+        </response>
+      </method>
+  </resource_type>
+
+  <!--The JSON representation of a "service root" resource contains a
+      number of links to collection-type resources.-->
+  <representation mediaType="application/json" id="service-root-json">
+    <tal:root_params tal:repeat="param context/wadl:top_level_resources">
+      <param tal:attributes="name param/name;
+                             path param/path">
+        <link tal:attributes="type param/resource/wadl:type_link" />
+      </param>
+    </tal:root_params>
+  </representation>
+
+  <!--There is one "service root" resource, located (as you'd expect)
+      at the service root. This very document is the WADL
+      representation of the "service root" resource.-->
+  <resources tal:attributes="href context/wadl:url">
+    <resource path="" type="#service-root" />
+  </resources>
+
+  <!--But that's not all. This document also describes all the types
+      of resources you might encounter as you browse this web
+      service.-->
+
   <!--Begin resource_type definitions for collection resources.-->
   <tal:collection_classes tal:repeat="context collections">
-    <resource_type tal:attributes="id context/wadl_collection:collection_type">
+    <resource_type tal:attributes="id context/wadl_collection:collection_type"
+      tal:define="entry_schema nocall:context/wadl_collection:entry_schema">
+      <doc tal:content="context/wadl_collection:doc"
+           tal:condition="context/wadl_collection:doc"
+           xmlns="http://www.w3.org/1999/xhtml/">
+        Human-readable description of the resource type, in XHTML format.
+      </doc>
       <method name="GET"
-              tal:attributes="id string:${context/wadl_collection:collection_type}-get">
+        tal:attributes="id string:${context/wadl_collection:collection_type}-get">
         <response>
-          <representation href="#collection-page" />
+          <representation
+             tal:attributes="
+               href entry_schema/wadl_entry:entry_page_representation_link"
+             />
           <representation mediaType="application/vd.sun.wadl+xml"
             tal:attributes="id string:${context/wadl_collection:collection_type}-wadl" />
         </response>
@@ -22,11 +65,23 @@
         tal:attributes="id
                         string:${context/wadl_collection:collection_type}-${operation/name};
                         name operation/op/wadl_operation:http_method">
+        <doc tal:replace="operation/op/wadl_operation:doc"
+             tal:condition="operation/op/wadl_operation:doc"
+             xmlns="http://www.w3.org/1999/xhtml/">
+          Human-readable documentation for the method.
+        </doc>
         <param name="ws_op" required="True"
-               tal:attributes="fixed operation/name" />
+               tal:attributes="fixed operation/name">
+          <doc>The name of the operation being invoked.</doc>
+        </param>
         <param tal:repeat="field operation/op/params"
                tal:attributes="name field/__name__;
                                required field/required">
+          <doc tal:content="field/wadl:doc"
+               tal:condition="field/wadl:doc"
+               xmlns="http://www.w3.org/1999/xhtml/">
+            Field title: field description
+          </doc>
           <link tal:condition="field/wadl:is_link"
                 tal:attributes="type field/wadl:type_link" />
           <option tal:repeat="option field/wadl:options"
@@ -34,31 +89,19 @@
         </param>
       </method>
     </resource_type>
+
   </tal:collection_classes>
   <!--End resource_type definitions for collection resources.-->
 
-  <!--All collection resources serve the same kind of representation. -->
-  <representation mediaType="application/json" id="collection-page">
-    <param name="total_size" path="[&quot;total_size&quot;]"
-           required="True" />
-
-    <param name="next_collection_link"
-           path="[&quot;next_collection_link&quot;]">
-      <link type="#collection-page"/>
-    </param>
-
-    <param name="prev_collection_link"
-           path="[&quot;prev_collection_link&quot;]">
-      <link type="#collection-page"/>
-    </param>
-
-    <param name="entries" path="[&quot;entries&quot;]" required="True" />
-  </representation>
-
   <!--Begin representation and resource_type definitions for entry
-      resources. -->
+      resources and scoped collections that contain them. -->
   <tal:entry_classes tal:repeat="context entries">
     <resource_type tal:attributes="id context/wadl_entry:singular_type">
+      <doc tal:content="context/wadl_entry:doc"
+           tal:condition="context/wadl_entry:doc"
+           xmlns="http://www.w3.org/1999/xhtml/">
+        Human-readable description of the resource type, in XHTML format.
+      </doc>
       <method name="GET"
               tal:attributes="id string:${context/wadl_entry:singular_type}-get">
         <response>
@@ -89,11 +132,20 @@
               tal:attributes="
                 id string:${context/wadl_entry:singular_type}-${operation/name};
                 name operation/op/wadl_operation:http_method">
+        <doc tal:content="operation/op/wadl_operation:doc"
+             tal:condition="operation/op/wadl_operation:doc"
+             xmlns="http://www.w3.org/1999/xhtml/">
+        </doc>
         <param name="ws_op" required="True"
                tal:attributes="fixed operation/name" />
         <param tal:repeat="field operation/op/params"
                tal:attributes="name field/__name__;
                                required field/required">
+          <doc tal:content="field/wadl:doc"
+               tal:condition="field/wadl:doc"
+               xmlns="http://www.w3.org/1999/xhtml/">
+            Field title: field description
+          </doc>
           <link tal:condition="field/wadl:is_link"
                 tal:attributes="type field/wadl:type_link" />
           <option tal:repeat="option field/wadl:options"
@@ -108,6 +160,11 @@
       <param tal:repeat="field context/wadl_entry:all_fields" required="True"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
+        <doc tal:content="field/wadl:doc"
+             tal:condition="field/wadl:doc"
+             xmlns="http://www.w3.org/1999/xhtml/">
+          Field title: field description
+        </doc>
         <link tal:condition="field/wadl:is_link"
               tal:attributes="type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
@@ -121,13 +178,74 @@
              required="False"
              tal:attributes="name field/wadl:name;
                              path field/wadl:path">
+        <doc tal:content="field/wadl:doc"
+             tal:condition="field/wadl:doc"
+             xmlns="http://www.w3.org/1999/xhtml/">
+          Field title: field description
+        </doc>
         <link tal:condition="field/wadl:is_link"
               tal:attributes="type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />
       </param>
     </representation>
+
+    <!--Scoped collection for this type of entry-->
+    <resource_type
+      tal:attributes="id context/wadl_entry:scoped_collection_type">
+      <method name="GET"
+        tal:attributes="id
+          string:${context/wadl_entry:scoped_collection_type}-get">
+        <response>
+          <representation
+             tal:attributes="href
+             string:#${context/wadl_entry:entry_page_representation_id}"
+             />
+          <representation mediaType="application/vd.sun.wadl+xml"
+            tal:attributes="id
+              string:${context/wadl_entry:scoped_collection_type}-wadl" />
+        </response>
+      </method>
+    </resource_type>
+
+    <representation mediaType="application/json"
+       tal:attributes="id
+         string:${context/wadl_entry:entry_page_representation_id}">
+      <param name="total_size" path="$['total_size']" required="True" />
+
+      <param name="next_collection_link"
+             path="$['next_collection_link']">
+        <link tal:attributes="type
+          string:#${context/wadl_entry:entry_page_representation_id}" />
+      </param>
+
+      <param name="prev_collection_link"
+             path="$['prev_collection_link']">
+        <link tal:attributes="type
+          string:#${context/wadl_entry:entry_page_representation_id}" />
+      </param>
+
+      <param name="entries" path="$['entries']" required="True" />
+
+      <param name="entry_links" path="$['entries'][*]['self_link']">
+        <link tal:attributes="type context/wadl_entry:type_link" />
+      </param>
+  </representation>
+
   </tal:entry_classes>
   <!--End representation and resource_type definitions for entry
       resources. -->
+
+  <!--Finally, describe the 'hosted binary file' type.-->
+  <resource_type id="HostedFile">
+    <method name="GET" id="HostedFile-get">
+      <response>
+        <representation status="303">
+          <param style="header" name="Location" />
+        </representation>
+      </response>
+    </method>
+    <method name="PUT" id="HostedFile-put" />
+    <method name="DELETE" id="HostedFile-put" />
+  </resource_type>
 </application>

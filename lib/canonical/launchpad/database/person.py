@@ -259,8 +259,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     personal_standing_reason = StringCol(default=None)
 
-    archive = Reference("<primary key>", Archive.ownerID, on_remote=True)
-
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
         SQLBase._init(self, *args, **kw)
@@ -2085,6 +2083,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
+
+    @property
+    def archive(self):
+        """See `IPerson`."""
+        return Archive.selectOneBy(owner=self, purpose=ArchivePurpose.PPA)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

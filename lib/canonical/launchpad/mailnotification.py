@@ -199,8 +199,12 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     msg['Date'] = format_rfc2822_date(email_date)
     if msgid is not None:
         msg['Message-Id'] = msgid
+
     subject_prefix = "[Bug %d]" % bug.id
-    if subject_prefix in subject:
+
+    if subject is None:
+        msg['Subject'] = subject_prefix
+    elif subject_prefix in subject:
         msg['Subject'] = subject
     else:
         msg['Subject'] = "%s %s" % (subject_prefix, subject)

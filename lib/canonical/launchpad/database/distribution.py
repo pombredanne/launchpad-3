@@ -1288,6 +1288,6 @@ class DistributionSet:
             logo=logo,
             icon=icon)
         archive = getUtility(IArchiveSet).new(distribution=distro,
-            purpose=ArchivePurpose.PRIMARY)
+            owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
 

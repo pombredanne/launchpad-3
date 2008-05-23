@@ -164,6 +164,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     license_approved = BoolCol(dbName='license_approved',
                                notNull=True, default=False)
 
+    @property
+    def default_stacked_on_branch(self):
+        """See `IProduct`."""
+        return self.development_focus.series_branch
+
     @cachedproperty('_commercial_subscription_cached')
     def commercial_subscription(self):
         return CommercialSubscription.selectOneBy(product=self)

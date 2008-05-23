@@ -588,6 +588,11 @@ COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
 series, as set by the user.  If this is not set, then import_branch is
 considered to be the product series branch';
 
+-- ProductSeriesCodeImport
+
+COMMENT ON TABLE ProductSeriesCodeImport IS 'A record of which ProductSeries'' import data a CodeImport was constructed from.';
+COMMENT ON COLUMN ProductSeriesCodeImport.productseries IS 'The source ProductSeries.';
+COMMENT ON COLUMN ProductSeriesCodeImport.codeimport IS 'The CodeImport that was constructed from the ProductSeries.';
 
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
@@ -1720,6 +1725,8 @@ COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
+COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
+COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
 
 
 -- ArchiveDependency
