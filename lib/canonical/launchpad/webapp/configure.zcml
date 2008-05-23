@@ -147,6 +147,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.browser.BugTaskListingItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"

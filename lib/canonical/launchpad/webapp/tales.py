@@ -644,6 +644,17 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
         return self.icon_template % (alt, title, src)
 
+    def _hasMentoringOffer(self):
+        """Return whether the bug has a mentoring offer."""
+        return self._context.bug.mentoring_offers.count() > 0
+
+    def _hasBugBranch(self):
+        """Return whether the bug has a branch linked to it."""
+        return self._context.bug.bug_branches.count() > 0
+
+    def _hasSpecification(self):
+        """Return whether the bug is linked to a specification."""
+        return self._context.bug.specifications.count() > 0
 
     def badges(self):
 
@@ -652,15 +663,15 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             badges.append(self.icon_template % (
                 "private", "Private","/@@/private"))
 
-        if self._context.bug.mentoring_offers.count() > 0:
+        if self._hasMentoringOffer():
             badges.append(self.icon_template % (
                 "mentoring", "Mentoring offered", "/@@/mentoring"))
 
-        if self._context.bug.bug_branches.count() > 0:
+        if self._hasBugBranch():
             badges.append(self.icon_template % (
                 "branch", "Branch exists", "/@@/branch"))
 
-        if self._context.bug.specifications.count() > 0:
+        if self._hasSpecification():
             badges.append(self.icon_template % (
                 "blueprint", "Related to a blueprint", "/@@/blueprint"))
 
@@ -674,6 +685,27 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
         return " ".join(badges)
+
+
+class BugTaskListingItemImageDisplayAPI(BugTaskImageDisplayAPI):
+    """Formatter for image:badges for BugTaskListingItem.
+
+    The BugTaskListingItem has some attributes to decice whether a badge
+    should be displayed, which don't require a DB query when they are
+    accessed.
+    """
+
+    def _hasMentoringOffer(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_mentoring_offer
+
+    def _hasBugBranch(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_bug_branch
+
+    def _hasSpecification(self):
+        """See `BugTaskImageDisplayAPI`"""
+        return self._context.has_specification
 
 
 class QuestionImageDisplayAPI(ObjectImageDisplayAPI):

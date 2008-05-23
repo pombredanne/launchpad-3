@@ -897,6 +897,9 @@ class IBugTaskSet(Interface):
         if the user doesn't have the permission to view this bug.
         """
 
+    def getBugTaskBadgeProperties(bugtasks):
+        """Return whether the bugtasks should have badges."""
+
     def getMultiple(task_ids):
         """Retrieve a dictionary of bug tasks for the given sequence of IDs.
 

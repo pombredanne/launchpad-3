@@ -15,6 +15,7 @@ __all__ = [
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
+    'BugTaskListingItem',
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
@@ -1501,10 +1502,14 @@ class BugTaskListingItem:
     """
     decorates(IBugTask, 'bugtask')
 
-    def __init__(self, bugtask, bugbranches):
+    def __init__(self, bugtask, bugbranches, has_mentoring_offer,
+                 has_bug_branch, has_specification):
         self.bugtask = bugtask
         self.bugbranches = bugbranches
         self.review_action_widget = None
+        self.has_mentoring_offer = has_mentoring_offer
+        self.has_bug_branch = has_bug_branch
+        self.has_specification = has_specification
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -1515,7 +1520,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
     @cachedproperty
-    def bug_id_mapping(self):
+    def bug_branches_mapping(self):
         # Now load the bug-branch links for this batch
         bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
             self.currentBatch())
@@ -1527,10 +1532,19 @@ class BugListingBatchNavigator(TableBatchNavigator):
                     bugbranch.bug.id, []).append(bugbranch)
         return bug_id_mapping
 
+    @cachedproperty
+    def bug_badge_properties(self):
+        return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+            self.currentBatch())
+
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
+        badge_property = self.bug_badge_properties[bugtask]
         return BugTaskListingItem(
-            bugtask, self.bug_id_mapping.get(bugtask.bug.id, None))
+            bugtask, self.bug_branches_mapping.get(bugtask.bug.id, None),
+            badge_property['has_mentoring_offer'],
+            badge_property['has_branch'],
+            badge_property['has_specification'])
 
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
