@@ -2581,15 +2581,9 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         return { "allow_relicensing" : default }
 
     @property
-    def has_already_answered(self):
-        """Return whether person has already answered about relicensing."""
-        return (self.context.translations_relicensing_agreement is not None)
-
-    @property
     def next_url(self):
-        request = self.request
-        referrer = request.getHeader('referer')
-        if referrer and referrer.startswith(request.getApplicationURL()):
+        referrer = self.request.getHeader('referer')
+        if referrer and referrer.startswith(self.request.getApplicationURL()):
             return referrer
         else:
             return canonical_url(self.context)

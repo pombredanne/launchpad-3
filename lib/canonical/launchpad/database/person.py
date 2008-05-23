@@ -306,7 +306,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def get_translations_relicensing_agreement(self):
         relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            "person=%s" % sqlvalues(self))
+            person=self)
         if relicensing_agreement is None:
             return None
         else:
@@ -314,7 +314,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def set_translations_relicensing_agreement(self, value):
         relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
-            "person=%s" % sqlvalues(self))
+            person=self)
         if relicensing_agreement is None:
             relicensing_agreement = TranslationRelicensingAgreement(
                 person=self,

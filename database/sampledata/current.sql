@@ -9477,7 +9477,6 @@ INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (212, 243616, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (213, 243617, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (214, 243622, true, '2008-05-23 16:29:22.319166');
-INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (215, 63, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (216, 65, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (217, 66, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (218, 67, true, '2008-05-23 16:29:22.319166');
@@ -9490,6 +9489,7 @@ INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (225, 46, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (226, 1, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (227, 2, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (215, 3, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (229, 4, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (230, 5, true, '2008-05-23 16:29:22.319166');
 INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (231, 6, true, '2008-05-23 16:29:22.319166');
