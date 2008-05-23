@@ -69,7 +69,11 @@ class LookupTree:
     def verify(self):
         """Check the validity of the tree."""
         keys = set()
+        default = False
         for node in self.nodes:
+            if default:
+                raise TypeError('Default node must be last')
+            default = node.is_default
             if not isinstance(node, LookupNode):
                 raise TypeError('Not a LookupNode: %r' % (node,))
             seen = keys.intersection(node.keys)
@@ -86,10 +90,18 @@ class LookupNode:
         self.next = args[-1]
 
     def __contains__(self, key):
-        """True if the key is in the keys on this node."""
-        return key in self.keys
+        """True if the key is in the keys on this node.
+
+        Also True if there are no keys specified. In other words, a
+        default.
+        """
+        return (key in self.keys) or self.is_default
 
     @property
     def is_leaf(self):
         """If the next step is not a `LookupTree`, this is a leaf."""
         return not isinstance(self.next, LookupTree)
+
+    @property
+    def is_default(self):
+        return len(self.keys) == 0
