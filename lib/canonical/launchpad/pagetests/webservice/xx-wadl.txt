@@ -18,11 +18,12 @@ It's an XML document.
 
     >>> print wadl
     <?xml version="1.0"?>
-    <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    <wadl:application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xmlns="http://research.sun.com/wadl/2006/10"
+        xmlns:wadl="http://research.sun.com/wadl/2006/10"
         xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
     ...
-    </application>
+    </wadl:application>
 
 Let's parse it.
 
@@ -343,9 +344,9 @@ of collection resource has one tag devoted to it in the WADL document:
    make to manipulate the collection resource. It might look like this:
 
    <resource_type id="BugCollection">
-     <doc xmlns="http://www.w3.org/1999/xhtml/">
+     <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">
        A collection of bugs, as exposed through the web service.
-     </doc>
+     </wadl:doc>
      <method name="GET" id="BugCollection-get">
        <response>
          <representation href="http://api.launchpad.dev/beta/#IBugEntry-page"/>
