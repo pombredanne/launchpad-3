@@ -25,7 +25,7 @@
        type="text"
        size="36"
        name="field.search_text"
-       tal:attributes="value view/search_params/search_text"/>
+       tal:attributes="value view/search_text"/>
         <script type="text/javascript"
                 tal:define="script view/focusedElementScript"
                 tal:condition="script"
@@ -38,15 +38,13 @@
        value="Search" />
   </form>
 
-  <tal:wants-results condition="view/search_params/search_text">
+  <tal:wants-results condition="view/search_text">
 
     <div id="search-results"
 	 tal:condition="view/has_matches">
-      <ul class="exact-matches"
-	  tal:condition="python: view.bug or view.question or view.pillar or view.person_or_team">
+      <ul class="exact-matches">
 	<li
-	   class="bug"
-	   tal:condition="view/bug">
+	   class="bug" tal:condition="view/bug">
 	  <tal:link replace="structure view/bug/@@+listing-detailed" />
 	</li>
 	<li
@@ -93,7 +91,7 @@
     </div>
 
     <p class="no-results" tal:condition="not:view/has_matches">
-      Your search, &ldquo;<span class="search_text" tal:content="view/search_params/search_text">some text</span>&rdquo;, did not return any results.
+      Your search, &ldquo;<span class="search_text" tal:content="view/search_text">some text</span>&rdquo;, did not return any results.
     </p>
 
   </tal:wants-results>
