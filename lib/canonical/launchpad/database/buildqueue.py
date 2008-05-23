@@ -93,16 +93,6 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         return self.build.is_virtualized
 
-    @property
-    def is_last_version(self):
-        """See `IBuildQueue`."""
-        spr = self.build.sourcepackagerelease
-        if (spr.publishings and spr.publishings[0].status >
-            PackagePublishingStatus.PUBLISHED):
-            return False
-
-        return True
-
     def score(self):
         """See `IBuildQueue`."""
         # Grab any logger instance available.

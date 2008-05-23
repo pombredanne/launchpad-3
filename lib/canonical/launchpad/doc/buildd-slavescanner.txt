@@ -804,8 +804,8 @@ permissive database user.
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = old_candidate.build.sourcepackagerelease
-    >>> current_pub = spr.publishings[0]
-    >>> secure_pub = SecureSourcePackagePublishingHistory.get(current_pub.id)
+    >>> secure_pub = removeSecurityProxy(
+    ...     old_candidate).build.getCurrentPublication().secure_record
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED

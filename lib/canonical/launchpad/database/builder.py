@@ -604,15 +604,22 @@ class Builder(SQLBase):
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
                 candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
-            elif candidate.is_last_version:
-                return candidate
-            else:
+                candidate.destroySelf()
+                candidate = self._findBuildCandidate()
+                continue
+
+            pub = candidate.build.getCurrentPublication()
+
+            if pub is None:
                 logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
                 candidate.build.buildstate = BuildStatus.SUPERSEDED
-            candidate.destroySelf()
-            candidate = self._findBuildCandidate()
+                candidate.destroySelf()
+                candidate = self._findBuildCandidate()
+                continue
+
+            return candidate
 
         # No candidate was found
         return None
