@@ -7,27 +7,40 @@ __all__ = [
     'Lookup',
     ]
 
+import string
+
+
+_repr_key_chars = set(string.letters + string.digits + '-_+=*')
+
+def _repr_key(key):
+    """Return a pretty representation of simple keys, otherwise `repr`."""
+    as_string = str(key)
+    if _repr_key_chars.issuperset(as_string):
+        return as_string
+    else:
+        return repr(key)
+
 
 class Lookup(tuple):
     """A searchable tree."""
 
-    def __new__(cls, *nodes):
-        def conv(node):
-            if isinstance(node, Node):
-                return node
-            elif isinstance(node, (list, tuple)):
-                return Node(*node)
+    def __new__(cls, *args):
+        nodes = []
+        for arg in args:
+            if isinstance(arg, Lookup):
+                nodes.extend(arg)
+            elif isinstance(arg, Node):
+                nodes.append(arg)
             else:
-                return Node(node)
-        return super(Lookup, cls).__new__(
-            cls, (conv(node) for node in nodes))
+                nodes.append(Node(*arg))
+        return super(Lookup, cls).__new__(cls, nodes)
 
     def __init__(self, *nodes):
+        super(Lookup, self).__init__()
         self._verify()
 
     def _verify(self):
         """Check the validity of the tree."""
-        keys = set()
         default = False
         for node in self:
             if not isinstance(node, Node):
@@ -35,9 +48,6 @@ class Lookup(tuple):
             if default:
                 raise TypeError('Default node must be last')
             default = node.is_default
-            seen = keys.intersection(node)
-            if len(seen) > 0:
-                raise TypeError('Key(s) already seen: %r' % (seen,))
 
     def search(self, key, *more):
         """Search this tree.
@@ -105,6 +115,7 @@ class Node(tuple):
 
     def __init__(self, *args):
         """All but the last argument are keys; the last is the next step."""
+        super(Node, self).__init__()
         self.next = args[-1]
 
     @property
@@ -117,8 +128,11 @@ class Node(tuple):
         return len(self) == 0
 
     def __repr__(self, level=1):
-        format = 'node(%s => %%s)' % (
-            ', '.join(str(node) for node in self))
+        format = 'node(%s => %%s)'
+        if self.is_default:
+            format = format % '*'
+        else:
+            format = format % ', '.join(_repr_key(node) for node in self)
         if isinstance(self.next, Lookup):
             return format % self.next.__repr__(level)
         else:
