@@ -614,6 +614,36 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
 
+    def test_getDefaultStackedOnBranch_junk(self):
+        # getDefaultStackedOnBranch returns the empty string for '+junk'.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch = store._getDefaultStackedOnBranchInteraction('+junk')
+        self.assertEqual('', branch)
+
+    def test_getDefaultStackedOnBranch_none_set(self):
+        # getDefaultStackedOnBranch returns the empty string when there is no
+        # branch set.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch = store._getDefaultStackedOnBranchInteraction('firefox')
+        self.assertEqual('', branch)
+
+    def test_getDefaultStackedOnBranch_no_product(self):
+        # getDefaultStackedOnBranch raises a Fault if there is no such
+        # product.
+        store = DatabaseUserDetailsStorageV2(None)
+        product = 'no-such-product'
+        self.assertRaisesFault(
+            NOT_FOUND_FAULT_CODE,
+            'Project %r does not exist.' % (product,),
+            store._getDefaultStackedOnBranchInteraction, product)
+
+    def test_getDefaultStackedOnBranch(self):
+        # getDefaultStackedOnBranch returns the empty string when there is no
+        # branch set.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch = store._getDefaultStackedOnBranchInteraction('evolution')
+        self.assertEqual('~vcs-imports/evolution/main', branch)
+
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
         # should be None.

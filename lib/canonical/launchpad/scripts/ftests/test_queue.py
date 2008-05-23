@@ -972,20 +972,20 @@ class TestQueueToolInJail(TestQueueBase):
         FAKE_CHANGESFILE_CONTENT = "Fake Changesfile"
         FAKE_DEB_CONTENT = "Fake DEB"
         fillLibrarianFile(1, FAKE_CHANGESFILE_CONTENT)
-        fillLibrarianFile(37, FAKE_DEB_CONTENT)
+        fillLibrarianFile(90, FAKE_DEB_CONTENT)
         queue_action = self.execute_command('fetch pmount')
 
         # Check the files' names.
         files = sorted(self._listfiles())
         self.assertEqual(
-            ['netapplet-1.0.0.tar.gz', 'pmount_1.9-1_all.deb'],
+            ['netapplet-1.0.0.tar.gz', 'pmount_1.0-1_all.deb'],
             files)
 
         # Check the files' contents.
         changes_file = open('netapplet-1.0.0.tar.gz')
         self.assertEqual(changes_file.read(), FAKE_CHANGESFILE_CONTENT)
         changes_file.close()
-        debfile = open('pmount_1.9-1_all.deb')
+        debfile = open('pmount_1.0-1_all.deb')
         self.assertEqual(debfile.read(), FAKE_DEB_CONTENT)
         debfile.close()
 

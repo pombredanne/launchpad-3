@@ -399,6 +399,25 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branch.requestMirror()
         return True
 
+    def getDefaultStackedOnBranch(self, project_name):
+        return deferToThread(
+            self._getDefaultStackedOnBranchInteraction, project_name)
+
+    @read_only_transaction
+    def _getDefaultStackedOnBranchInteraction(self, project_name):
+        if project_name == '+junk':
+            return ''
+        product = getUtility(IProductSet).getByName(project_name)
+        if product is None:
+            raise Fault(
+                NOT_FOUND_FAULT_CODE,
+                "Project %r does not exist." % project_name)
+        branch = product.default_stacked_on_branch
+        if branch is None:
+            return ''
+        else:
+            return branch.unique_name
+
     def getBranchInformation(self, loginID, userName, productName,
                              branchName):
         """See `IHostedBranchStorage`."""
