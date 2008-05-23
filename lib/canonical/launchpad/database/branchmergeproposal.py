@@ -64,6 +64,7 @@ VALID_TRANSITION_GRAPH = {
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
 
+
 class BranchNotificationReason:
     '''A reason for being notified about a branch.'''
 

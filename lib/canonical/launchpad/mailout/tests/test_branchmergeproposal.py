@@ -54,7 +54,6 @@ Baz Qux has proposed merging foo into bar.
 
 --
 %s
-
 %s
 """ % (canonical_url(bmp), mailer.getReason(subscriber)), body)
         self.assertEqual('Merge of foo into bar proposed', subject)
@@ -86,7 +85,6 @@ Baz Qux has proposed merging foo into bar.
             mailer.getReason(team_member))
         mailer._recipients._emailToPerson[
             subscriber.preferredemail.email] = team
-        print mailer.getReason(subscriber)
         self.assertEqual(u'Your team Qux is subscribed to branch foo.',
             mailer.getReason(subscriber))
 
@@ -138,7 +136,6 @@ Commit Message changed to:
 new commit message
 --
 %s
-
 %s
 """ % (url, reason), body)
 

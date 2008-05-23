@@ -14,7 +14,6 @@ notification they would like to receive.
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> factory = LaunchpadObjectFactory()
     >>> login('test@canonical.com')
     >>> bmp = factory.makeBranchMergeProposal()
@@ -53,6 +52,7 @@ Only subscribers whose level is >= the minimum level are selected.
 The value assigned to the recipient is a machine-readable explanation why they
 were chosen, and their subscription
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_recipients = removeSecurityProxy(recipients)
     >>> [notification_reason] = naked_recipients.values()
     >>> (target_subscription, 'Subscriber') == \

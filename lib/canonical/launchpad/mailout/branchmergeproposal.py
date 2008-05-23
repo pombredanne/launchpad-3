@@ -122,9 +122,10 @@ class BMPMailer:
         """
         notification_reason, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
-        headers = {'X-Launchpad-Message-Rationale': rationale,
-                   'X-Launchpad-Branch':
-                        notification_reason.branch.unique_name}
+        headers = {
+            'X-Launchpad-Message-Rationale': rationale,
+            'X-Launchpad-Branch': notification_reason.branch.unique_name
+            }
         template = get_email_template(self._template_name)
         reason = self.getReason(recipient)
         params = {
