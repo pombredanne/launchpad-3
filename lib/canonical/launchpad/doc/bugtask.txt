@@ -1033,6 +1033,73 @@ target uses Malone as its official bugtracker.
     mozilla-firefox (Debian)       False
 
 
+== BugTask badges ==
+
+A bug can have certain properties, which results in a badge being
+displayed in bug listings. BugTaskSet has a method,
+getBugTaskBadgeProperties(), which calculates these properties for
+multiple bug tasks in one go.
+
+    >>> from operator import attrgetter
+    >>> def print_badge_properties(badge_properties):
+    ...     bugtasks = sorted(badge_properties.keys(), key=attrgetter('id'))
+    ...     for bugtask in bugtasks:
+    ...         print "Properties for bug %s:" % (bugtask.bug.id)
+    ...         for key, value in sorted(badge_properties[bugtask].items()):
+    ...             print " %s: %s" % (key, value)
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> some_bugtask = bug_two.bugtasks[0]
+    >>> another_bugtask = bug_three.bugtasks[0]
+    >>> badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+    ...     [some_bugtask, another_bugtask])
+    >>> print_badge_properties(badge_properties)
+    Properties for bug 2:
+     has_branch: False
+     has_mentoring_offer: False
+     has_specification: False
+    Properties for bug 3:
+     has_branch: False
+     has_mentoring_offer: False
+     has_specification: False
+
+If a mentoring offer gets made...
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> bug_two.offerMentoring(no_priv, ubuntu_team)
+    <MentoringOffer at ...>
+
+..., a specification gets linked...
+
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> spec = getUtility(ISpecificationSet).all_specifications[0]
+    >>> spec.linkBug(bug_two)
+    <SpecificationBug at ...>
+
+... or a branch gets linked to the bug...
+
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> branch = list(getUtility(IBranchSet))[0]
+    >>> bug_three.addBranch(branch, no_priv)
+    <BugBranch at ...>
+
+... the properties for the bugtasks reflect this.
+
+    >>> badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+    ...     [some_bugtask, another_bugtask])
+    >>> print_badge_properties(badge_properties)
+    Properties for bug 2:
+     has_branch: False
+     has_mentoring_offer: True
+     has_specification: True
+    Properties for bug 3:
+     has_branch: True
+     has_mentoring_offer: False
+     has_specification: False
+
+
 == Handling IntegrityError and ProgrammingError ==
 
 # XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError
