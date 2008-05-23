@@ -118,7 +118,7 @@ class Bugzilla(ExternalBugTracker):
                  'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
                  BugTaskStatus.FIXRELEASED),
                 ('WONTFIX', BugTaskStatus.WONTFIX),
-                (BugTaskStatus.INVALID))),
+                (BugTaskStatus.INVALID,))),
         ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
         ('UNCONFIRMED', BugTaskStatus.NEW),
         )
@@ -130,12 +130,7 @@ class Bugzilla(ExternalBugTracker):
         the last part is the resolution. The resolution is optional.
         """
         try:
-            if ' ' in remote_status:
-                return self._status_lookup.search(
-                    *remote_status.split(' ', 1))
-            else:
-                return self._status_lookup.search(
-                    remote_status)
+            return self._status_lookup(*remote_status.split())
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
 

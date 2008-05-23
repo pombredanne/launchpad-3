@@ -209,6 +209,6 @@ class RequestTracker(ExternalBugTracker):
     def convertRemoteStatus(self, remote_status):
         """Convert an RT status into a Launchpad BugTaskStatus."""
         try:
-            return self._status_lookup.search(remote_status.lower())
+            return self._status_lookup(remote_status.lower())
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
