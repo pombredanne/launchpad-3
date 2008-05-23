@@ -57,7 +57,7 @@
 	<li
 	   class="project"
 	   tal:condition="view/pillar">
-	  <tal:link replace="structure view/pillar/@@+listing-detailed" />
+	  <tal:link replace="structure view/pillar/@@+listing-simple" />
 	</li>
 	<li
 	   class="person"
