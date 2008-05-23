@@ -1,0 +1,34 @@
+#!/usr/bin/python2.4
+
+import _pythonpath
+
+from canonical.launchpad.components.externalbugtracker import (
+    BUG_TRACKER_CLASSES)
+
+
+if __name__ == '__main__':
+    classes = sorted(BUG_TRACKER_CLASSES.iteritems(),
+                     key=lambda (typ, cls): typ.title)
+
+    for typ, cls in classes:
+        # Attempt to find a lookup instance.
+        lookup = getattr(cls, '_status_lookup', None)
+        if lookup is None:
+            continue
+
+        # Find or fabricate titles.
+        titles = getattr(cls, '_status_lookup_titles', None)
+        if titles is None:
+            titles = ['Key %d' % (i + 1) for i in range(lookup.max_depth)]
+        else:
+            titles = list(titles)
+        titles.append('Launchpad status')
+
+        # Print it out.
+        print '[[Anchor(%s)]]' % (typ.name,)
+        print '== %s ==' % (typ.title,)
+        print
+        for line in lookup.moinmoin_table(titles):
+            print line
+        print
+        print
