@@ -1297,8 +1297,8 @@ At this point it exists:
     >>> file_resource()
     >>> get_request.response.getStatus()
     303
-    >>> get_request.response.getHeader('Location')
-    'http://localhost:58000/90/cover'
+    >>> print get_request.response.getHeader('Location')
+    http://localhost:58000/.../cover
 
 The cover can be deleted with DELETE.
 
