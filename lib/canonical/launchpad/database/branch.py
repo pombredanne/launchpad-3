@@ -650,7 +650,6 @@ class Branch(SQLBase):
 LISTING_SORT_TO_COLUMN = {
     BranchListingSort.PRODUCT: 'product.name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.AUTHOR: 'author.name',
     BranchListingSort.NAME: 'branch.name',
     BranchListingSort.REGISTRANT: 'owner.name',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',

@@ -20,6 +20,10 @@ CREATE UNIQUE INDEX archive__distribution__purpose__key
 ALTER TABLE archive ADD COLUMN name Text NOT NULL Default 'default';
 ALTER TABLE archive ADD CONSTRAINT valid_name CHECK (valid_name(name));
 
+UPDATE archive SET name='primary' WHERE purpose=1;
+UPDATE archive SET name='embargoed' WHERE purpose=3;
+UPDATE archive SET name='partner' WHERE purpose=4;
+UPDATE archive SET name='obsolete' WHERE purpose=5;
 CREATE UNIQUE INDEX archive__owner__key ON Archive (owner, distribution, name);
 
 -- A user may or may not be interested in publishing the (rebuild) archive.
