@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BadBranchSearchContext',
     'branch_name_validator',
     'BranchCreationException',
     'BranchCreationForbidden',
@@ -15,6 +16,8 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
+    'BranchPersonSearchContext',
+    'BranchPersonSearchRestriction',
     'BranchType',
     'BranchTypeError',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
@@ -25,6 +28,7 @@ __all__ = [
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchListingFilter',
+    'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
     'UICreatableBranchType',
@@ -34,7 +38,7 @@ __all__ = [
 from cgi import escape
 from datetime import timedelta
 import re
-from zope.interface import Interface, Attribute
+from zope.interface import implements, Interface, Attribute
 
 from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
@@ -212,6 +216,10 @@ class BranchTypeError(Exception):
     BranchTypeError exception is raised if one of these operations is called
     with a branch of the wrong type.
     """
+
+
+class BadBranchSearchContext(Exception):
+    """The context is not valid for a branch search."""
 
 
 class BranchURIField(URIField):
@@ -515,22 +523,12 @@ class IBranch(IHasOwner):
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
 
-    def getBzrUploadURL(person=None):
-        """Return the URL for this person to push to the branch.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
-
-    def getBzrDownloadURL(person=None):
-        """Return the URL for this person to branch the branch.
-
-        If the branch is public, the anonymous http location is used,
-        otherwise the url uses the smartserver.
-
-        If user is None a placeholder is used for the username if
-        one is required.
-        """
+    bzr_identity = Attribute(
+        "The shortest lp spec URL for this branch. "
+        "If the branch is associated with a product as the primary "
+        "development focus, then the result should be lp:product.  If "
+        "the branch is related to a series, then lp:product/series. "
+        "Otherwise the result is lp:~user/product/branch-name.")
 
     def canBeDeleted():
         """Can this branch be deleted in its current state.
@@ -819,142 +817,24 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getBranchesForPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
-        """Branches associated with person with appropriate lifecycle.
+    def getBranchesForContext(
+        context=None,
+        lifecycle_statuses=None,
+        visible_by_user=None,
+        sort_by=None):
+        """Branches associated with the context.
 
-        XXX: thumper 2007-03-23:
-        The intent here is to just show interesting branches for the
-        person.
-        Following a chat with lifeless we'd like this to be listed and
-        ordered by interest and last activity where activity is defined
-        as linking a bug or spec, changing the status of said link,
-        updating ui attributes of the branch, committing code to the
-        branch.
-        Branches of most interest to a person are their subscribed
-        branches, and the branches that they have registered or own.
-
-        All branches that are either registered or owned by person
-        are shown, as well as their subscribed branches.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        """
-
-    def getBranchesOwnedByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
-        """Branches owned by person with appropriate lifecycle.
-
-        Only branches that are owned by the person are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        """
-
-    def getBranchesRegisteredByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
-        """Branches registered by person with appropriate lifecycle.
-
-        Only branches registered by the person are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        """
-
-    def getBranchesSubscribedByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
-        """Branches subscribed by person with appropriate lifecycle.
-
-        All branches where the person has subscribed to the branch
-        are returned.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        """
-
-    def getBranchesForProduct(
-        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
-        """Branches associated with product with appropriate lifecycle.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
-        :param visible_by_user: If a person is not supplied, only public
-            branches are returned.  If a person is supplied both public
-            branches, and the private branches that the person is entitled to
-            see are returned.  Private branches are only visible to the owner
-            and subscribers of the branch, and to LP admins.
-        :type visible_by_user: `IPerson` or None
-        :param sort_by: What to sort the returned branches by.
-        :type sort_by: A value from the `BranchListingSort` enumeration or
-            None.
-        """
-
-    def getBranchesForProject(
-        project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
-        """Branches associated with project with appropriate lifecycle.
-
-        If lifecycle_statuses evaluates to False then branches
-        of any lifecycle_status are returned, otherwise only branches
-        with a lifecycle_status of one of the lifecycle_statuses
-        are returned.
-
+        :param context: If None, all possible branches are returned, otherwise
+            the results will be appropriately filtered by the type of the
+            context.
+        :type context: Something that implements IProject, IProduct, or
+            IPerson.
+        :param lifecycle_statuses: If lifecycle_statuses evaluates to False
+            then branches of any lifecycle_status are returned, otherwise
+            only branches with a lifecycle_status of one of the
+            lifecycle_statuses are returned.
+        :type lifecycle_statuses: One or more values from the
+            BranchLifecycleStatus enumeration.
         :param visible_by_user: If a person is not supplied, only public
             branches are returned.  If a person is supplied both public
             branches, and the private branches that the person is entitled to
@@ -1070,6 +950,12 @@ class BranchListingSort(EnumeratedType):
     # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
     # that are not visible in the listing!
 
+    DEFAULT = Item("""
+        by most interesting
+
+        Sort branches by the default ordering for the view.
+        """)
+
     PRODUCT = Item("""
         by project name
 
@@ -1080,12 +966,6 @@ class BranchListingSort(EnumeratedType):
         by lifecycle status
 
         Sort branches by the lifecycle status.
-        """)
-
-    AUTHOR = Item("""
-        by author name
-
-        Sort branches by the display name of the author.
         """)
 
     NAME = Item("""
@@ -1147,3 +1027,54 @@ class IBranchListingFilter(Interface):
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
 
+
+class BranchPersonSearchRestriction(EnumeratedType):
+    """How to further restrict the query for a branch search for people."""
+
+    ALL = Item("""
+        All related branches
+
+        All branches owned, registered or subscribed to by the person.
+        """)
+
+    REGISTERED = Item("""
+        Registered branches
+
+        Only return the branches registered by the person.
+        """)
+
+    OWNED = Item("""
+        Owned branches
+
+        Only return the branches owned by the person.
+        """)
+
+    SUBSCRIBED = Item("""
+        Subscribed branches
+
+        Only return the branches subscribed to by the person.
+        """)
+
+
+class IBranchPersonSearchContext(Interface):
+    """A `Person` with a search restriction."""
+
+    person = PublicPersonChoice(
+        title=_('Person'), required=True,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person to restrict the branch search to."))
+
+    restriction = Choice(
+        title=_("Search restriction"), required=True,
+        vocabulary=BranchPersonSearchRestriction)
+
+
+class BranchPersonSearchContext:
+    """The simple implementation for the person search context."""
+    implements(IBranchPersonSearchContext)
+
+    def __init__(self, person, restriction=None):
+        self.person = person
+        if restriction is None:
+            restriction = BranchPersonSearchRestriction.ALL
+        self.restriction = restriction

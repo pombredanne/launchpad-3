@@ -138,7 +138,7 @@ returns all of the collection items must be tagged with
     ...     REQUEST_USER)
     >>> class IBookSet(Interface):
     ...     """Set of all the books in the system."""
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IBook)
     ...
     ...     @collection_default_content()
     ...     def getAllBooks():
@@ -151,7 +151,7 @@ parameter should contain the logged in user.
 
     >>> class ICheckedOutBookSet(Interface):
     ...     """Give access to the checked out books."""
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IBook)
     ...
     ...     @collection_default_content(user=REQUEST_USER, title='')
     ...     def getByTitle(title, user):
@@ -167,19 +167,39 @@ tagged value.
     >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
     collection_default_content_params: {}
+    collection_entry_schema: <InterfaceClass __builtin__.IBook>
     type: 'collection'
 
     >>> print_export_tag(ICheckedOutBookSet)
     collection_default_content: 'getByTitle'
-    collection_default_content_params: {'user': <object...>,
-    'title': ''}
+    collection_default_content_params: {'user': <object...>, 'title': ''}
+    collection_entry_schema: <InterfaceClass __builtin__.IBook>
     type: 'collection'
+
+The entry schema for a collection must be provided and must be an
+interface:
+
+    >>> class MissingEntrySchema(Interface):
+    ...     export_as_webservice_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_as_webservice_collection() takes exactly 1
+    argument (0 given)
+
+    >>> class InvalidEntrySchema(Interface):
+    ...     export_as_webservice_collection("not an interface")
+    Traceback (most recent call last):
+      ...
+    TypeError: entry_schema must be an interface.
 
 It's an error to try to export a collection without marking a method as
 exporting the default content.
 
+    >>> class IDummyInterface(Interface):
+    ...     pass
+
     >>> class MissingDefaultContent(Interface):
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_as_webservice_collection() is missing a method
@@ -188,7 +208,7 @@ exporting the default content.
 As it is an error, to mark more than one methods:
 
     >>> class TwoDefaultContent(Interface):
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IDummyInterface)
     ...     @collection_default_content()
     ...     def getAll1():
     ...         """A first getAll()."""
@@ -203,7 +223,7 @@ As it is an error, to mark more than one methods:
 export_as_webservice_collection() can only be used on Interface.
 
     >>> class NotAnInterface(object):
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_as_webservice_collection() can only be used on an
@@ -211,7 +231,7 @@ export_as_webservice_collection() can only be used on Interface.
 
 And from within a class declaration.
 
-    >>> export_as_webservice_collection()
+    >>> export_as_webservice_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_as_webservice_collection() can only be used from
@@ -279,7 +299,7 @@ decorator, which takes normal IField instances.
     >>> from canonical.lazr.interface import copy_field
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IBook)
     ...
     ...     @collection_default_content()
     ...     @operation_parameters(
@@ -1059,7 +1079,7 @@ the underlying content security checker will still apply.)
 
     >>> print debug_proxy(ProxyFactory(collection_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: find
+        public: entry_schema, find
 
     >>> print debug_proxy(ProxyFactory(read_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
@@ -1143,13 +1163,13 @@ are also available for IBookSetOnSteroids and IBookOnSteroids.
     ...     'checkout')
     <class '...POST_IBookOnSteroids_checkout'>
 
-There is also a +index view on the WebServiceLayer registered for the
+There is also a 'index.html' view on the WebServiceLayer registered for the
 InvalidEmail exception.
 
     >>> from zope.interface import implementedBy
     >>> adapter_registry.lookup(
     ...     (implementedBy(InvalidEmail), WebServiceLayer), Interface,
-    ...         '+index')
+    ...         'index.html')
     <class '...WebServiceExceptionView'>
 
 (Clean-up.)

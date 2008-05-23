@@ -14,55 +14,18 @@
         <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
 
-    <!-- TALES namespaces for WADL generation -->
+    <!-- Registration for the class that manages an entry's byte
+         storage fields. -->
     <adapter
-        for="canonical.lazr.interfaces.IHTTPResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlResourceAPI"
-        name="wadl"
+        for="canonical.lazr.interfaces.IEntry
+             zope.schema.interfaces.IField"
+        provides="canonical.lazr.interfaces.IByteStorage"
+        factory="canonical.launchpad.rest.LibraryBackedByteStorage"
         />
 
-    <adapter
-        for="canonical.lazr.interfaces.ICollectionResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="canonical.lazr.interfaces.IEntryResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlEntryResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="tuple"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
-        name="wadl_entry"
-        />
-
-    <adapter
-        for="tuple"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
-        name="wadl_collection"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IField"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlFieldAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlOperationAPI"
-        name="wadl_operation"
-        />
+    <class class="canonical.launchpad.rest.LibraryBackedByteStorage">
+        <allow interface='canonical.lazr.interfaces.IByteStorage' />
+    </class>
 
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
@@ -70,6 +33,19 @@
         type="canonical.launchpad.layers.WebServiceLayer"
         factory="canonical.launchpad.browser.LaunchpadRootNavigation"
         provides="zope.publisher.interfaces.browser.IBrowserPublisher"
+        />
+
+    <!--
+    XXX flacoste 2008/05/09 bug=185958:
+    Ideally, we would use webservice_error() to register the view,
+    but cyclic imports prevents us from doing so. This should be fixed once we
+    move webapp stuff into LAZR.
+    -->
+    <view
+        for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
+        type="canonical.launchpad.layers.WebServiceLayer"
+        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        name="index.html"
         />
 
     <adapter
@@ -82,42 +58,6 @@
         for="canonical.launchpad.interfaces.IMaloneApplication"
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.BugCollection"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.rest.IPersonEntry"
-        factory="canonical.launchpad.rest.PersonEntry"
-        />
-
-    <adapter
-       for="canonical.launchpad.interfaces.IPerson
-            canonical.lazr.interfaces.rest.WebServiceLayer"
-       provides="canonical.lazr.interfaces.IResourceGETOperation"
-       factory="canonical.launchpad.rest.GetMembersByStatusOperation"
-       name="members_by_status"
-       />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IResourceGETOperation"
-        factory="canonical.launchpad.rest.GetPeopleOperation"
-        name="people"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IPersonSet
-             canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IResourcePOSTOperation"
-        factory="canonical.launchpad.rest.PersonFactoryOperation"
-        name="create_person"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.ITeamMembership"
-        provides="canonical.launchpad.rest.ITeamMembershipEntry"
-        factory="canonical.launchpad.rest.TeamMembershipEntry"
         />
 
     <adapter

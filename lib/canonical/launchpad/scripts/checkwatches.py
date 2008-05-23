@@ -21,6 +21,7 @@ from canonical.launchpad.components.externalbugtracker import (
     get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
     UnknownRemoteStatusError)
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
@@ -88,8 +89,7 @@ def report_warning(message, properties=None, info=None):
     """Create and report a warning as an OOPS.
 
     If no exception info is passed in this will create a generic
-    `BugWatchUpdateWarning` to record. The reason is that the stack
-    trace may be useful for later diagnosis.
+    `BugWatchUpdateWarning` to record.
 
     :param message: See `report_oops`.
     :param properties: See `report_oops`.
@@ -97,9 +97,9 @@ def report_warning(message, properties=None, info=None):
     """
     if info is None:
         # Raise and catch the exception so that sys.exc_info will
-        # return our warning and stack trace.
+        # return our warning.
         try:
-            raise BugWatchUpdateWarning
+            raise BugWatchUpdateWarning(message)
         except BugWatchUpdateWarning:
             return report_oops(message, properties)
     else:
@@ -385,15 +385,22 @@ class BugWatchUpdater(object):
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
         non_modified_bugs = set(remote_ids).difference(remote_ids_to_check)
+
+        # Whether we can import and / or push comments is determined on
+        # a per-bugtracker-type level.
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
-            remotesystem.import_comments)
-        can_push_comments = ISupportsCommentPushing.providedBy(remotesystem)
+            remotesystem.sync_comments)
+        can_push_comments = (
+            ISupportsCommentPushing.providedBy(remotesystem) and
+            remotesystem.sync_comments)
+
         if can_import_comments and server_time is None:
             can_import_comments = False
             self.warning(
                 "Comment importing supported, but server time can't be"
                 " trusted. No comments will be imported.")
+
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:
@@ -593,6 +600,17 @@ class BugWatchUpdater(object):
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
 
+    def _formatRemoteComment(self, external_bugtracker, bug_watch, message):
+        """Format a comment for a remote bugtracker and return it."""
+        comment_template = get_email_template(
+            external_bugtracker.comment_template)
+
+        return comment_template % {
+            'launchpad_bug': bug_watch.bug.id,
+            'comment_author': message.owner.displayname,
+            'comment_body': message.text_contents,
+            }
+
     def pushBugComments(self, external_bugtracker, bug_watch):
         """Push Launchpad comments to the remote bug.
 
@@ -615,9 +633,19 @@ class BugWatchUpdater(object):
             # the bug watch.
             if (bug_message.remote_comment_id is None and
                 bug_message.bugwatch == bug_watch):
-                bug_message.remote_comment_id = (
+                # Format the comment so that it includes information
+                # about the Launchpad bug.
+                formatted_comment = self._formatRemoteComment(
+                    external_bugtracker, bug_watch, message)
+
+                remote_comment_id = (
                     external_bugtracker.addRemoteComment(
-                        bug_watch.remotebug, message))
+                        bug_watch.remotebug, formatted_comment,
+                        message.rfc822msgid))
+
+                assert remote_comment_id is not None, (
+                    "A remote_comment_id must be specified.")
+                bug_message.remote_comment_id = remote_comment_id
 
                 pushed_comments += 1
 
@@ -638,7 +666,7 @@ class BugWatchUpdater(object):
         """
         return [('batch_size', remotesystem.batch_size),
                 ('batch_query_threshold', remotesystem.batch_query_threshold),
-                ('import_comments', remotesystem.import_comments),
+                ('sync_comments', remotesystem.sync_comments),
                 ('externalbugtracker', remotesystem.__class__.__name__),
                 ('baseurl', remotesystem.baseurl)]
 

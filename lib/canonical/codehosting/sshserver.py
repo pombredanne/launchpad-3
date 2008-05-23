@@ -23,9 +23,9 @@ from twisted.internet.protocol import connectionDone
 from twisted.python import components, failure
 
 from twisted.vfs.pathutils import FileSystem
-from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
+from canonical.codehosting import sftp
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.config import config
 
@@ -153,19 +153,10 @@ class LaunchpadAvatar(avatar.ConchUser):
         return FileSystem(SFTPServerRoot(self))
 
 
-# XXX Andrew Bennetts 2007-01-26: This is nasty.  We want a filesystem per
-# SFTP session, not per avatar, so we let the standard adapter grab a per
-# avatar object, and immediately override with the one we want it to use.
-class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
-    def __init__(self, avatar):
-        sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
-        self.filesystem = avatar.makeFileSystem()
-
-
-components.registerAdapter(AdaptFileSystemUserToISFTP, LaunchpadAvatar,
-                           filetransfer.ISFTPServer)
-
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
+
+components.registerAdapter(
+    sftp.avatar_to_sftp_server, LaunchpadAvatar, filetransfer.ISFTPServer)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
@@ -201,7 +192,7 @@ class Realm:
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
             avatar = self.avatarFactory(avatarId, self.homeDirsRoot, userDict,
-                                        self.authserver)
+                                        self.authserver.proxy)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 

@@ -1,4 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0104
 
 # TODO:
 #  - exercise a bit more of the authUser interface
@@ -9,15 +10,20 @@ import xmlrpclib
 
 import pytz
 
-from twisted.application import strports
+from twisted.application import internet, strports
+from twisted.trial.unittest import TestCase as TrialTestCase
+from twisted.web import resource, server, xmlrpc
 
 from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
+from canonical.authserver.xmlrpc import LoggingResource
 from canonical.config import config
 from canonical.functional import XMLRPCTestTransport
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.testing import LaunchpadLayer, LaunchpadFunctionalLayer
+from canonical.testing import (
+    LaunchpadLayer, LaunchpadFunctionalLayer, TwistedLayer)
+from canonical.twistedsupport import suppress_stderr
 
 
 UTC = pytz.timezone('UTC')
@@ -70,6 +76,83 @@ class SSHKeysTestMixin:
         self.assertEqual('DSA', keytype)
 
 
+class TestLoggingResource(TrialTestCase):
+
+    layer = TwistedLayer
+
+    class TestResource(LoggingResource):
+        """An XMLRPC resource that has a method that raises an error."""
+
+        def xmlrpc_good(self, x):
+            """Just here to test the XML-RPC fixture."""
+            return x
+
+        def xmlrpc_divide_by_zero(self):
+            """Deliberately raise an error."""
+            1/0
+
+    def setUp(self):
+        root = resource.Resource()
+        root.putChild('test-resource', self.TestResource())
+        site = server.Site(root)
+        web_server = internet.TCPServer(0, site)
+        web_server.startService()
+        self.addCleanup(web_server.stopService)
+        host = web_server._port.getHost()
+        self.url = 'http://%s:%s/test-resource' % (host.host, host.port)
+
+    def test_tracebackOptionSetForTestRunner(self):
+        # For the test runner, include_traceback_in_fault is enabled by
+        # default.
+        self.assertEqual(True, config.authserver.include_traceback_in_fault)
+
+    def test_fixture(self):
+        # Confirm that the fixture is all good.
+        client = xmlrpc.Proxy(self.url)
+        deferred = client.callRemote('good', 42)
+        deferred.addCallback(self.assertEqual, 42)
+        return deferred
+
+    def _flushLogs(self, pass_through):
+        self.flushLoggedErrors(ZeroDivisionError)
+        return pass_through
+
+    @suppress_stderr
+    def getFaultString(self, method, *arguments):
+        """Call 'method' on the XML-RPC server and fire the fault string it
+        makes.
+        """
+        client = xmlrpc.Proxy(self.url)
+        deferred = client.callRemote('divide_by_zero')
+        deferred.addBoth(self._flushLogs)
+        deferred = self.assertFailure(deferred, xmlrpc.Fault)
+        return deferred.addCallback(lambda fault: fault.faultString)
+
+    def test_tracebackInFault(self):
+        # The original traceback is stored in the fault string.
+        def check_fault_string(fault_string):
+            self.assertIn('Original traceback', fault_string)
+
+        deferred = self.getFaultString('divide_by_zero')
+        return deferred.addCallback(check_fault_string)
+
+    def test_tracebackNotInFault(self):
+        # The original traceback is not in the fault string if the config
+        # option is disabled.
+        config.push(
+            "test", '[authserver]\ninclude_traceback_in_fault: False\n')
+        config.authserver.include_traceback_in_fault = False
+
+        def check_fault_string(fault_string):
+            self.assertNotIn('Original traceback', fault_string)
+
+        def restore_config(pass_through):
+            config.pop("test")
+            return pass_through
+
+        deferred = self.getFaultString('divide_by_zero')
+        deferred.addCallback(check_fault_string)
+        return deferred.addBoth(restore_config)
 
 class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
 
@@ -199,6 +282,23 @@ class XMLRPCHostedBranchStorage(XMLRPCAuthServerTestCase):
             12, 'name12', 'gnome-terminal', 'pushed')
         self.assertEqual(25, branch_id)
         self.assertEqual(WRITABLE, permissions)
+
+    def test_getDefaultStackedOnBranch(self):
+        # We can get the default stacked-on branch of a project, given a
+        # project name.
+        #
+        # The 'evolution' project has a default stacked branch in the sample
+        # data.
+        branch = self.server.getDefaultStackedOnBranch('evolution')
+        self.assertEqual('~vcs-imports/evolution/main', branch)
+
+    def test_getDefaultStackedOnBranchWhenEmpty(self):
+        # If there is no default stacked-on branch, we'll get an empty string.
+        branch = self.server.getDefaultStackedOnBranch('+junk')
+        self.assertEqual('', branch)
+        # The 'gnome-terminal' project has no default stacked branch.
+        branch = self.server.getDefaultStackedOnBranch('gnome-terminal')
+        self.assertEqual('', branch)
 
 
 class BranchAPITestCase(XMLRPCAuthServerTestCase):

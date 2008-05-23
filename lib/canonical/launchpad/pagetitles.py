@@ -505,8 +505,6 @@ distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
 
-distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
-
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
@@ -670,6 +668,8 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 # The general form is a fallback form; I'm not sure why it is
 # needed, nor why it needs a pagetitle, but I can't debug this today.
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
+
+launchpad_invalidbatchsize = "Invalid Batch Size"
 
 launchpad_legal = 'Launchpad legalese'
 
@@ -1025,6 +1025,8 @@ product_new = 'Register a project in Launchpad'
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_files = ContextDisplayName('%s project files')
+
+product_review_license = ContextTitle('Review licensing for %s')
 
 product_series = ContextDisplayName('%s timeline')
 

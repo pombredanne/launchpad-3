@@ -58,9 +58,8 @@ ISupportsCommentPushing interface.
     ...     next_comment_id = 1
     ...     remote_comments = {}
     ...
-    ...     def addRemoteComment(self, remote_bug, message):
+    ...     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
     ...         remote_comment_id = str(self.next_comment_id)
-    ...         comment_body = message.text_contents
     ...         self.remote_comments[remote_comment_id] = comment_body
     ...
     ...         print "Comment added as remote comment %s" % (
@@ -218,3 +217,98 @@ comments being pushed because they have already been imported.
 
     >>> bugwatch_updater.pushBugComments(external_bugtracker, bug_watch)
 
+If the external bugtracker's addRemoteComment() method returns an
+invalid remote comment ID, an error will be raised:
+
+    >>> class ErroringExternalBugTracker(CommentPushingExternalBugTracker):
+    ...     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+    ...         print "Pretending to add a comment to bug %s" % remote_bug
+    ...         return None
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> message_five = getUtility(IMessageSet).fromText(
+    ...     "Comment the fifth", "Body the fifth.", sample_person)
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+    >>> bugmessage_five = bug.linkMessage(message_five, bug_watch)
+
+    >>> broken_external_bugtracker = ErroringExternalBugTracker(
+    ...     'http://example.com')
+
+    >>> bugwatch_updater.pushBugComments(
+    ...     broken_external_bugtracker, bug_watch)
+    Traceback (most recent call last):
+      ...
+    AssertionError: A remote_comment_id must be specified.
+
+
+== Formatting pushed comments ==
+
+The comments that have been pushed to the remote bugtracker have been
+formatted to include data about the comment in Launchpad.
+
+    >>> remote_comments = external_bugtracker.remote_comments
+    >>> for remote_comment_id in sorted(remote_comments.keys()):
+    ...     print remote_comments[remote_comment_id]
+    ...     print "--------------------"
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Pushing, for the purpose of.
+    <BLANKLINE>
+    --
+    http://launchpad.net/bugs/...
+    <BLANKLINE>
+    --------------------
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Body the second.
+    <BLANKLINE>
+    --
+    http://launchpad.net/bugs/...
+    <BLANKLINE>
+    --------------------
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Body the third.
+    <BLANKLINE>
+    --
+    http://launchpad.net/bugs/...
+    <BLANKLINE>
+    --------------------
+
+The BugWatchUpdater class has a method, _formatRemoteComment() which
+will take a Launchpad comment and format it ready for uploading to the
+remote server. This allows us to include salient information, such as
+the comment author, with the pushed comment.
+
+    >>> formatted_message = bugwatch_updater._formatRemoteComment(
+    ...     external_bugtracker, bug_watch, message)
+    >>> print formatted_message
+    Sample Person added the following comment to Launchpad bug #...:
+    <BLANKLINE>
+    Pushing, for the purpose of.
+    <BLANKLINE>
+    -- 
+    http://launchpad.net/bugs/...
+    <BLANKLINE>
+
+The template used to format the comments can be changed by altering the
+external bugtracker's comment_template attribute.
+
+    >>> original_comment_template = external_bugtracker.comment_template
+    >>> comment_template = '../ftests/testfiles/test_comment_template.txt'
+    >>> external_bugtracker.comment_template = comment_template
+
+    >>> formatted_message = bugwatch_updater._formatRemoteComment(
+    ...     external_bugtracker, bug_watch, message)
+    >>> print formatted_message
+    Egg and bacon
+    Egg, sausage and bacon
+    Egg, bacon and bug #...
+    Egg, bacon, sausage and Sample Person
+    Pushing, for the purpose of.
+    <BLANKLINE>
+
+    >>> external_bugtracker.comment_template = original_comment_template

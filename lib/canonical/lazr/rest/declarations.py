@@ -33,6 +33,7 @@ __all__ = [
 import simplejson
 import sys
 
+from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
 from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
@@ -138,7 +139,7 @@ def exported(field, exported_as=None):
     return field
 
 
-def export_as_webservice_collection():
+def export_as_webservice_collection(entry_schema):
     """Mark the interface as exported on the web service as a collection.
 
     :raises TypeError: if the interface doesn't have a method decorated with
@@ -146,10 +147,14 @@ def export_as_webservice_collection():
     """
     _check_called_from_interface_def('export_as_webservice_collection()')
 
-    # Set the tag at this point, so that future declarations can
+    if not IInterface.providedBy(entry_schema):
+        raise TypeError("entry_schema must be an interface.")
+
+    # Set the tags at this point, so that future declarations can
     # check it.
     tags = _get_interface_tags()
-    tags[LAZR_WEBSERVICE_EXPORTED] = dict(type=COLLECTION_TYPE)
+    tags[LAZR_WEBSERVICE_EXPORTED] = dict(
+        type=COLLECTION_TYPE, collection_entry_schema=entry_schema)
 
     def mark_collection(interface):
         """Class advisor that tags the interface once it is created."""
@@ -209,6 +214,10 @@ def webservice_error(status):
 
     That status code will be used by the view used to handle that kind of
     exceptions on the web service.
+
+    This is only effective when the exception is raised from within a
+    published method.  For example, if the exception is raised by the field's
+    validation its specified status won't propagate to the response.
     """
     frame = sys._getframe(1)
     f_locals = frame.f_locals
@@ -514,6 +523,25 @@ def generate_entry_adapter(content_interface, webservice_interface):
     return factory
 
 
+class CollectionEntrySchema:
+    """A descriptor for converting a model schema into an entry schema.
+
+    The entry schema class for a resource may not have been defined at
+    the time the collection adapter is generated, but the data model
+    class certainly will have been. This descriptor performs the lookup
+    as needed, at runtime.
+    """
+
+    def __init__(self, model_schema):
+        """Initialize with a model schema."""
+        self.model_schema = model_schema
+
+    def __get__(self, instance, owner):
+        """Look up the entry schema that adapts the model schema."""
+        return getGlobalSiteManager().adapters.lookup1(
+            self.model_schema, IEntry)
+
+
 class BaseCollectionAdapter(Collection):
     """Base for generated ICollection adapter."""
 
@@ -537,7 +565,10 @@ def generate_collection_adapter(interface):
     _check_tagged_interface(interface, 'collection')
 
     tag = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    method_name = tag['collection_default_content']
+    entry_schema = tag['collection_entry_schema']
     class_dict = {
+        'entry_schema' : CollectionEntrySchema(entry_schema),
         'method_name': tag['collection_default_content'],
         'params': tag['collection_default_content_params'],
         }

@@ -8,6 +8,7 @@ import unittest
 import stat
 
 from bzrlib import errors
+from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting import branch_id_to_path
@@ -15,7 +16,7 @@ from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-
+from canonical.config import config
 from canonical.testing import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
 
@@ -155,6 +156,30 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/+junk/banana'))
 
     @defer_to_thread
+    def test_get_stacking_policy(self):
+        # A stacking policy control file is served underneath product
+        # directories for products that have a default stacked-on branch.
+        transport = self.getTransport()
+        control_file = transport.get_bytes(
+            '~testuser/evolution/.bzr/control.conf')
+        self.assertEqual(
+            'default_stack_on=%s~vcs-imports/evolution/main'
+            % config.codehosting.supermirror_root.replace('http', 'sftp'),
+            control_file.strip())
+
+    @defer_to_thread
+    def test_can_open_product_control_dir(self):
+        # The stacking policy lives in a bzrdir in the product directory.
+        # Bazaar needs to be able to open this bzrdir.
+        transport = self.getTransport().clone('~testuser/evolution')
+        found_bzrdir = BzrDir.open_from_transport(transport)
+        # We really just want to test that the above line doesn't raise an
+        # exception. However, we'll also check that we get the bzrdir that we
+        # expected.
+        expected_url = transport.clone('.bzr').base
+        self.assertEqual(expected_url, found_bzrdir.transport.base)
+
+    @defer_to_thread
     @wait_for_disconnect
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an
@@ -277,55 +302,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             errors.FileExists, transport.mkdir, 'branch/.bzr/dir1')
 
 
-class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
-
-    layer = TwistedLaunchpadZopelessLayer
-
-    def installServer(self, server):
-        self.server = server
-
-    def getDefaultServer(self):
-        return make_sftp_server()
-
-    @defer_to_thread
-    def test_make_toplevel_directory_error(self):
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.PermissionDenied, transport.mkdir, 'directory')
-        self.assertIn(
-            "Branches must be inside a person or team directory.", str(e))
-
-    @defer_to_thread
-    def test_remove_branch_error(self):
-        transport = self.getTransport()
-        transport.mkdir('~testuser/+junk/foo')
-        e = self.assertRaises(
-            errors.PermissionDenied, transport.rmdir, '~testuser/+junk/foo')
-        self.assertIn(
-            "removing branch directory 'foo' is not allowed.", str(e))
-
-    @defer_to_thread
-    def test_make_product_directory_for_nonexistent_product_error(self):
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.PermissionDenied,
-            transport.mkdir, '~testuser/no-such-product/new-branch')
-        self.assertIn(
-            "Directories directly under a user directory must be named after "
-            "a project name registered in Launchpad",
-            str(e))
-
-    @defer_to_thread
-    def test_mkdir_not_team_member_error(self):
-        # You can't make a branch under the directory of a team that you don't
-        # belong to.
-        transport = self.getTransport()
-        e = self.assertRaises(
-            errors.NoSuchFile,
-            transport.mkdir, '~not-my-team/firefox/new-branch')
-        self.assertIn("~not-my-team", str(e))
-
-
 def test_suite():
     # Parametrize the tests so they run against the SFTP server and a Bazaar
     # smart server. This ensures that both services provide the same
@@ -334,6 +310,4 @@ def test_suite():
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()
     filesystem_suite = loader.loadTestsFromTestCase(TestFilesystem)
-    error_suite = loader.loadTestsFromTestCase(TestErrorMessages)
-    return unittest.TestSuite(
-        [adapt_suite(adapter, filesystem_suite), error_suite])
+    return adapt_suite(adapter, filesystem_suite)
