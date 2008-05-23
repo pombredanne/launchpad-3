@@ -1,0 +1,65 @@
+= Translations Relicensing =
+
+When users visit +translate page for the first time, they are sent
+to a form to indicate whether they want their translations to be
+relicensed under BSD license.
+
+    >>> browser = setupBrowser(auth='Basic karl@canonical.com:test')
+    >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/'
+    ...              '+pots/alsa-utils/es/+translate')
+    >>> browser.url
+    'http://translations.launchpad.dev/~karl/+relicensing'
+
+On relicensing page, they are presented with a text explaining what is
+this all about.
+
+    >>> print find_main_content(browser.contents)
+    <div...
+    <p>We are planning to relicense...
+    ...
+
+And, you can choose whether you want your translations relicensed or not.
+
+    >>> radiobutton = browser.getControl(name='field.allow_relicensing')
+
+Default value is to be set.
+
+    >>> print radiobutton.value
+    True
+
+    >>> radiobutton.value = False
+    >>> browser.getControl("Update my decision").click()
+
+We get a notice how value has been updated.
+
+    >>> get_feedback_messages(browser.contents)
+    [u'Your choice has been saved. Your translations will be removed once we completely switch to BSD license for translations.']
+
+We can still change it when we go to Karl's translations page.
+
+    >>> browser.open('http://translations.launchpad.dev/~karl/')
+    >>> browser.getLink('Relicense translations').click()
+    >>> browser.url
+    'http://translations.launchpad.dev/~karl/+relicensing'
+
+Current value is reflected in the radio button:
+
+    >>> radiobutton = browser.getControl(name='field.allow_relicensing')
+    >>> print radiobutton.value
+    False
+
+And we can change it again.
+
+    >>> radiobutton.value = True
+    >>> browser.getControl("Update my decision").click()
+
+    >>> get_feedback_messages(browser.contents)
+    [u'Your choice has been saved. Thank you for deciding to relicense your translations.']
+
+Also note how Karl can now browse to a +translate page without being
+forwarded.
+
+    >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/'
+    ...              '+pots/alsa-utils/es/+translate')
+    >>> browser.url
+    'http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/+translate'
