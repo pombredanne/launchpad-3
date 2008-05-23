@@ -9,4 +9,8 @@
         <allow interface="canonical.launchpad.interfaces.ICodeReviewMessage"
         />
     </content>
+    <subscriber
+      for="canonical.launchpad.interfaces.ICodeReviewMessage
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.mailout.codereviewmessage.send" />
 </configure>

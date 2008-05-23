@@ -21,7 +21,7 @@ CodeReviewMessages are created from their BranchMergeProposals:
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> merge_proposal = factory.makeBranchMergeProposal()
-    >>> person = factory.makePerson()
+    >>> person = factory.makePerson(password='password')
     >>> message = merge_proposal.createMessage(
     ...     person, 'Please merge', 'This patch is very nice.')
 
@@ -48,6 +48,25 @@ Messages can be marked as replies to particular messages.
     ...     parent=message2)
     >>> message3.message.parent == message2.message
     True
+
+If there is a subscriber to any of the branches involved in the merge,
+a notification is produced when the message is created.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    ...     CodeReviewNotificationLevel)
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> source_subscriber = factory.makePerson(email='foo@bar.com',
+    ...     password='baz')
+    >>> _unused = merge_proposal.source_branch.subscribe(source_subscriber,
+    ...     BranchSubscriptionNotificationLevel.NOEMAIL,
+    ...     BranchSubscriptionDiffSize.NODIFF,
+    ...     CodeReviewNotificationLevel.FULL)
+    >>> _unused = pop_notifications()
+    >>> message = merge_proposal.createMessage(
+    ...     person, 'Please merge', 'This patch is very nice.')
+    >>> len(pop_notifications())
+    1
 
 
 == Interfaces ==

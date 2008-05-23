@@ -12,6 +12,11 @@ from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 
 
+def send(code_review_message, event):
+    """Send a copy of the code review message to branch subscribers."""
+    CodeReviewMessageMailer.forCreation(code_review_message).sendAll()
+
+
 class CodeReviewMessageMailer(BMPMailer):
     """Send email about creation of a CodeReviewMessage."""
 
