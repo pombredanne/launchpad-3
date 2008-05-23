@@ -142,7 +142,7 @@
         <request>
           <param style="query" name="ws_op" required="true"
                  tal:attributes="fixed operation/name" />
-          <param tal:repeat="field operation/op/params"
+          <param style="query" tal:repeat="field operation/op/params"
                  tal:attributes="name field/__name__;
                                  required field/wadl:required">
             <wadl:doc tal:content="field/wadl:doc"
