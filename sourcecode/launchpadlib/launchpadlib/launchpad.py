@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 
+import simplejson
 from launchpadlib._browser import Browser
 
 
@@ -18,6 +19,8 @@ class Launchpad:
     :type credentials: `Credentials`
     """
 
+    SERVICE_ROOT = 'http://api.launchpad.net/beta'
+
     def __init__(self, credentials):
         """Root access to the Launchpad API.
 
@@ -25,9 +28,24 @@ class Launchpad:
         :type credentials: `Credentials`
         """
         self.credentials = credentials
+        # Get the root resource.
+        browser = Browser(self.credentials)
+        response = simplejson.loads(browser.get(self.SERVICE_ROOT))
+        self._person_set_link = response.get(
+            'PersonSetCollectionAdapter_collection_link')
+        self._bug_set_link = response.get(
+            'BugCollection_collection_link')
 
     @property
     def people(self):
-        # Get the root resource.
-        browser = Browser(self.credentials)
-        return browser.get('http://api.launchpad.dev:8085/beta')
+        # XXX Temporary
+        if self._person_set_link is None:
+            return None
+        return []
+
+    @property
+    def bugs(self):
+        # XXX Temporary
+        if self._bug_set_link is None:
+            return None
+        return []

@@ -23,96 +23,93 @@ CREDENTIALS_FILE_VERSION = '1'
 class Credentials:
     """Standard credentials storage and usage class.
 
-    :ivar consumer_key: The consumer key
-    :type consumer_key: string
-    :ivar access_token: The access token, or None if no access token can be
-        found or was given.
-    :type access_token: string or None
-    :ivar filename: The file name that the access token was stored in or
-        retrieved from, or None if not available.
-    :type filename: string or None.
+    :ivar consumer: The consumer (application)
+    :type consumer: `Consumer`
+    :ivar access_token: Access information on behalf of the user
+    :type access_token: `AccessToken`
     """
 
-    consumer = None
-    access_token = None
-    filename = None
-
-    def __init__(self, consumer, access_token=None, filename=None):
+    def __init__(self, consumer, access_token):
         """The user's Launchpad API credentials.
 
-        There are several ways to use this class.  You must provide the
-        consumer.
-
-        If you provide only the filename, this class will attempt to retrieve
-        the access token from the file.  If the file is found and it contains
-        an access token, it will be used.
-
-        If you provide the access token explicitly, it will be used in lieu of
-        any access token found in the credentials file.  If you provide both
-        the filename and the access token, the explicit access token will be
-        used, but the `save()` method can be used to store the access token
-        for later (in plain text).
-
-        :param consumer: The consumer (application).
+        :param consumer: The consumer (application)
         :type consumer: `Consumer`
-        :param access_token: The authenticated user access token.
-        :type access_token: string
-        :param filename: The path to the file to store and/or retrieve the
-            user's credentials in.  Note that the credentials will be stored
-            in plain text.
-        :type filename: string
+        :param access_token: The authenticated user access token
+        :type access_token: `AccessToken`
         """
         self.consumer = consumer
         self.access_token = access_token
-        self.filename = filename
 
-        if self.access_token is None and self.filename is not None:
-            # Attempt to load the access token from the file.
-            try:
-                credentials_file = open(self.filename, 'r')
-            except IOError, error:
-                if error.errno != errno.ENOENT:
-                    raise
-                # The file didn't exist so there are no credentials to load.
-                # That's okay, the application may provide the access token
-                # later.
-            else:
-                try:
-                    parser = SafeConfigParser()
-                    parser.readfp(credentials_file)
-                finally:
-                    credentials_file.close()
-                # Check the version number and extract the access token and
-                # secret.  Then convert these to the appropriate instances.
-                access_token = parser.get(
-                    CREDENTIALS_FILE_VERSION, 'access_token')
-                access_secret = parser.get(
-                    CREDENTIALS_FILE_VERSION, 'access_secret')
-                self.access_token = AccessToken(access_token, access_secret)
 
-    def save(self, filename=None):
-        """Save the credentials in the named file.
+class StorableCredentials(Credentials):
+    """Credentials which can be stored and retrieved from the file system.
 
-        :param filename: If given, overrides the file to save the credentials
-            in.  Otherwise the previously given filename is used.
+    :ivar filename: The file name that the access information is to be
+        in or retrieved from.
+    :type filename: string
+    """
+
+    def __init__(self, filename):
+        """The user's stored Launchpad API credentials.
+
+        If the given file exists and contains Launchpad API credentials, they
+        are loaded and used.  Otherwise, after instantiating this class, just
+        set the `consumer` and `access_token` instance variables and call
+        `save()`.
+
+        :param filename: The file name that the access information is to be
+            in or retrieved from.
         :type filename: string
         """
+        # Attempt to load the access token from the file.
+        super(StorableCredentials, self).__init__(None, None)
+        self.filename = filename
+        try:
+            credentials_file = open(self.filename, 'r')
+        except IOError, error:
+            if error.errno != errno.ENOENT:
+                raise
+            # The file didn't exist so there are no credentials to load.
+            # That's okay, the application may provide the credentials later.
+        else:
+            try:
+                parser = SafeConfigParser()
+                parser.readfp(credentials_file)
+            finally:
+                credentials_file.close()
+            # Check the version number and extract the access token and
+            # secret.  Then convert these to the appropriate instances.
+            consumer_key = parser.get(
+                CREDENTIALS_FILE_VERSION, 'consumer_key')
+            consumer_secret = parser.get(
+                CREDENTIALS_FILE_VERSION, 'consumer_secret')
+            self.consumer = Consumer(consumer_key, consumer_secret)
+            access_token = parser.get(
+                CREDENTIALS_FILE_VERSION, 'access_token')
+            access_secret = parser.get(
+                CREDENTIALS_FILE_VERSION, 'access_secret')
+            self.access_token = AccessToken(access_token, access_secret)
+
+    def save(self):
+        """Save the credentials on the file system."""
         # Version 1 credentials files.
-        if filename is None:
-            filename = self.filename
-        if filename is None:
-            raise CredentialsFileError('No credentials file given')
+        if self.consumer is None:
+            raise CredentialsFileError('No consumer')
         if self.access_token is None:
-            raise CredentialsFileError('No access token to save')
+            raise CredentialsFileError('No access token')
         
         parser = SafeConfigParser()
         parser.add_section(CREDENTIALS_FILE_VERSION)
+        parser.set(CREDENTIALS_FILE_VERSION,
+                   'consumer_key', self.consumer.key)
+        parser.set(CREDENTIALS_FILE_VERSION,
+                   'consumer_secret', self.consumer.secret)
         parser.set(CREDENTIALS_FILE_VERSION,
                    'access_token', self.access_token.key)
         parser.set(CREDENTIALS_FILE_VERSION,
                    'access_secret', self.access_token.secret)
 
-        credentials_file = open(filename, 'w')
+        credentials_file = open(self.filename, 'w')
         try:
             parser.write(credentials_file)
         finally:
