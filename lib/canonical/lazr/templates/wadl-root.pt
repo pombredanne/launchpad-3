@@ -6,6 +6,13 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
 
+  <!--There is one "service root" resource, located (as you'd expect)
+      at the service root. This very document is the WADL
+      representation of the "service root" resource.-->
+  <resources tal:attributes="href context/wadl:url">
+    <resource path="" resource_type="#service-root" />
+  </resources>
+
   <!--A "service root" resource responds to GET.-->
   <resource_type id="service-root">
     <doc>The root of the web service.</doc>
@@ -29,15 +36,8 @@
     </tal:root_params>
   </representation>
 
-  <!--There is one "service root" resource, located (as you'd expect)
-      at the service root. This very document is the WADL
-      representation of the "service root" resource.-->
-  <resources tal:attributes="href context/wadl:url">
-    <resource path="" resource_type="#service-root" />
-  </resources>
-
-  <!--But that's not all. This document also describes all the types
-      of resources you might encounter as you browse this web
+  <!--In addition to the service root, this document describes all the
+      types of resources you might encounter as you browse this web
       service.-->
 
   <!--Begin resource_type definitions for collection resources.-->

@@ -199,6 +199,7 @@ resources. It's a big document.
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
     >>> tree = ET.fromstring(wadl)
+    >>> open("/home/leonardr/programming/wadl/wadl.xml", "w").write(wadl)
 
 Like all WADL documents, the WADL representation of the service root
 is rooted at an <application> tag.
@@ -222,7 +223,7 @@ Let's whittle down the complexity a little by taking a look at the
 description of the service root resource itself.
 
     >>> children = list(tree)
-    >>> service_root_type, service_root_repr, resources = children[:3]
+    >>> resources, service_root_type, service_root_repr = children[:3]
     >>> # We'll deal with the rest of the children later.
     >>> other_children = children[3:]
 
