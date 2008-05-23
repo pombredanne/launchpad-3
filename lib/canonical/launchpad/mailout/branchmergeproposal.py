@@ -119,7 +119,7 @@ class BMPMailer:
             recipient.preferredemail.email)
         headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
                    'X-Launchpad-Message-Rationale': rationale}
-        subject = self._subject_template % self._getParams(recipient)
+        subject = self._subject_template % self._getTemplateParams(recipient)
         return (headers, subject, self._getBody(recipient))
 
     def _getTemplateParams(self, recipient):
@@ -140,7 +140,7 @@ class BMPMailer:
     def _getBody(self, recipient):
         """Return the complete body to use for this email"""
         template = get_email_template(self._template_name)
-        return template % self._getParams(recipient)
+        return template % self._getTemplateParams(recipient)
 
     def sendAll(self):
         """Send notifications to all recipients."""
