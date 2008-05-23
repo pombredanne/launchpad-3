@@ -25,8 +25,8 @@ class TranslationRelicensingAgreement(SQLBase):
         foreignKey='Person',
         validator=public_person_validator, dbName='person', notNull=True)
 
-    allow_relicensing = BoolCol(dbName='allow_relicensing',
-                                notNull=True, default=True)
+    allow_relicensing = BoolCol(
+        dbName='allow_relicensing', notNull=True, default=True)
 
     date_decided = UtcDateTimeCol(
         dbName='date_decided', notNull=True, default=UTC_NOW)

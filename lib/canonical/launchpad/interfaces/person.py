@@ -766,7 +766,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Warning that a private team may leak membership info.")
 
     translations_relicensing_agreement = Bool(
-        title=_("Whether person has agreed to relicense their translations."),
+        title=_("Whether person agrees to relicense their translations"),
         readonly=False)
 
 

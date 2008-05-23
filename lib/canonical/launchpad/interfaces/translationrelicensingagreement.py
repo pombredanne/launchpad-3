@@ -6,20 +6,22 @@ from zope.schema import Bool, Datetime, Int, Object
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 
+
 __metaclass__ = type
 __all__ = [
     'ITranslationRelicensingAgreement',
     ]
 
+
 class ITranslationRelicensingAgreement(Interface):
-    """An agreement from users about relicensing their translations."""
+    """An agreement to relicensing a person's translations."""
 
     id = Int(
         title=_("The ID for this relicensing answer"),
         readonly=True, required=True)
 
     person = Object(
-        title=_("Person who has responded to relicensing question"),
+        title=_("The person who responded to the relicensing question"),
         readonly=False, required=True, schema=IPerson)
 
     allow_relicensing = Bool(

@@ -2575,6 +2575,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
 
     @property
     def initial_values(self):
+        """Set the user's current relicensing preference or a True default."""
         default = self.context.translations_relicensing_agreement
         if default is None:
             default = True
@@ -2582,6 +2583,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
 
     @property
     def next_url(self):
+        """Successful form submission should send to this URL."""
         referrer = self.request.getHeader('referer')
         if referrer and referrer.startswith(self.request.getApplicationURL()):
             return referrer
@@ -2590,6 +2592,12 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
 
     @action(_("Update my decision"), name="submit")
     def submit_action(self, action, data):
+        """Store person's decision about translations relicensing.
+
+        Decision is stored through
+        `IPerson.translations_relicensing_agreement`
+        which uses TranslationRelicensingAgreement table.
+        """
         allow_relicensing = data['allow_relicensing']
         self.context.translations_relicensing_agreement = allow_relicensing
         if allow_relicensing:

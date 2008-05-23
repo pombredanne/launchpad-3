@@ -1,7 +1,8 @@
 = Translation Relicensing Agreement =
 
-Translators who have previously submitted any translations through Launchpad
-can decide whether they want their translations relicensed under BSD or not.
+Translators who have previously submitted any translations through
+Launchpad can decide whether they want their translations relicensed
+under BSD or not.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
@@ -22,7 +23,8 @@ When Karl has not made his selection yet, it is marked as None.
     >>> print choice
     None
 
-Setting a value will create a new TranslationRelicensingAgreement object.
+Setting a value will create a new TranslationRelicensingAgreement
+object.
 
     >>> person.translations_relicensing_agreement = True
     >>> print person.translations_relicensing_agreement
