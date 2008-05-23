@@ -1502,10 +1502,9 @@ class BugTaskListingItem:
     """
     decorates(IBugTask, 'bugtask')
 
-    def __init__(self, bugtask, bugbranches, has_mentoring_offer,
-                 has_bug_branch, has_specification):
+    def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
+                 has_specification):
         self.bugtask = bugtask
-        self.bugbranches = bugbranches
         self.review_action_widget = None
         self.has_mentoring_offer = has_mentoring_offer
         self.has_bug_branch = has_bug_branch
@@ -1520,19 +1519,6 @@ class BugListingBatchNavigator(TableBatchNavigator):
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
     @cachedproperty
-    def bug_branches_mapping(self):
-        # Now load the bug-branch links for this batch
-        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
-            self.currentBatch())
-        # Create a map from the bug id to the branches.
-        bug_id_mapping = {}
-        for bugbranch in bugbranches:
-            if check_permission('launchpad.View', bugbranch.branch):
-                bug_id_mapping.setdefault(
-                    bugbranch.bug.id, []).append(bugbranch)
-        return bug_id_mapping
-
-    @cachedproperty
     def bug_badge_properties(self):
         return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
@@ -1541,7 +1527,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
         """Return a decorated bugtask for the bug listing."""
         badge_property = self.bug_badge_properties[bugtask]
         return BugTaskListingItem(
-            bugtask, self.bug_branches_mapping.get(bugtask.bug.id, None),
+            bugtask,
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
             badge_property['has_specification'])
