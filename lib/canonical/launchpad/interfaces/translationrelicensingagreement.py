@@ -24,11 +24,12 @@ class ITranslationRelicensingAgreement(Interface):
         title=_("The person who responded to the relicensing question"),
         readonly=False, required=True, schema=IPerson)
 
+    # Title of this field appears in the web form, thus it's
+    # oriented more towards being a useful UI than being a docstring.
     allow_relicensing = Bool(
-        title=_("Whether you want your translations relicensed "
-                "under BSD license"),
+        title=_("Relicense my translations under BSD license"),
         readonly=False, default=True, required=True)
 
     date_decided = Datetime(
-        title=_("The date person has made a decision"),
+        title=_("The date person made her decision"),
         readonly=True, required=True)

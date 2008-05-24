@@ -45,8 +45,8 @@ Karl changes his mind. He returns to the relicensing page.
     >>> browser.getLink('Relicense translations').click()
     >>> browser.url
     'http://translations.launchpad.dev/~karl/+relicensing'
-    >>> browser.title
-    Relicence your translations
+    >>> print browser.title
+    Relicense your translations
 
 Karl sees that the current value is 'no', which he set before.
 
