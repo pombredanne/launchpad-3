@@ -225,10 +225,12 @@ search, when the start param is 0.
     ...     form={'field.search_text': 'launchpad',
     ...           'start': '20'})
     >>> search_view.has_matches
-    False
+    True
     >>> print search_view.bug
     None
     >>> print search_view.question
+    None
+    >>> print search_view.pillar
     None
 
 
