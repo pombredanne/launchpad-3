@@ -137,6 +137,7 @@ An IDistributionSourcePackage.
     >>> canonical_url(ubuntu_firefox)
     u'http://launchpad.dev/ubuntu/+source/mozilla-firefox'
 
+
 == Projects and products ==
 
     >>> from canonical.launchpad.interfaces import IProjectSet, IProductSet
@@ -174,6 +175,7 @@ An IProductRelease.
     >>> evolution_release = evolution_trunk_series.getRelease('2.1.6')
     >>> canonical_url(evolution_release)
     u'http://launchpad.dev/evolution/trunk/2.1.6'
+
 
 == Bugs and bugtasks ==
 
@@ -288,6 +290,7 @@ An IBugNomination.
     >>> canonical_url(bug_nomination)
     u'http://launchpad.dev/bugs/1/nominations/1'
 
+
 == Remote Bug Trackers and Remote Bugs ==
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
@@ -311,6 +314,7 @@ A bug from a remote bug tracker.
     >>> canonical_url(remote_bug)
     u'http://launchpad.dev/bugs/bugtrackers/mozilla.org/42'
 
+
 == Branches ==
 
 An IBranch.
@@ -330,6 +334,33 @@ An IBugBranch.
 
     >>> canonical_url(bug_branch)
     u'http://launchpad.dev/~sabdfl/firefox/release-0.9.2/+bug/1'
+
+
+== BranchMergeProposals ==
+
+Set up example Branch Merge Proposal
+
+    >>> mainline = getUtility(IBranchSet).get(15)
+    >>> release26 = getUtility(IBranchSet).get(16)
+    >>> merge_proposal = mainline.addLandingTarget(mainline.owner, release26)
+
+Branch merge proposals should have a canonical URL.  (Based on their source
+branch.)
+
+    >>> print canonical_url(merge_proposal)
+    http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/...
+
+Create example CodeReviewMessage.
+
+    >>> message = merge_proposal.createMessage(
+    ...     release26.owner, 'My subject', 'My content')
+
+CodeReviewMessage should have a canonical URL.  (It should extend the URL of
+the merge proposal)
+
+    >>> print canonical_url(message)
+    http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../comments/...
+
 
 == POTemplates and so on ==
 
@@ -417,6 +448,7 @@ Rosetta also has translation groups.
 
     >>> canonical_url(getUtility(ITranslationGroupSet))
     u'http://launchpad.dev/+groups'
+
 
 == Specifications ==
 
