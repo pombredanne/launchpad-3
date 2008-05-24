@@ -152,7 +152,7 @@ configuration may set a testing site.
     >>> config.google.site == google_search.site
     True
     >>> google_search.site
-    'http://launchpad.dev:8091/cse'
+    'http://launchpad.dev.../cse'
 
 The client_id is the client-id issued by Google for the
 GoogleSearchService to connect to the Custom Search Engine service.
@@ -210,7 +210,7 @@ argument to the method. The argument is url encoded and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
-    'http://launchpad.dev:8091/cse?as_sitesearch=launchpad.net
+    'http://launchpad.dev.../cse?as_sitesearch=launchpad.net
     client=google-csbe
     cx=011948274177882366108%3Aixpjdn21yfg
     ie=utf8
@@ -223,12 +223,12 @@ value for the 'q' (query) parameter.
 Unicode characters are escaped correctly in the google request URL.
 
     >>> google_search.create_search_url(terms=u'Carlos Perell\xf3 Mar\xedn')
-    'http://launchpad.dev:8091/...q=Carlos+Perell%C3%B3+Mar%C3%ADn&start=0'
+    'http://launchpad.dev.../...q=Carlos+Perell%C3%B3+Mar%C3%ADn&start=0'
 
 The start parameter can be changed by passing a start int argument.
 
     >>> google_search.create_search_url(terms='svg +bugs', start=20)
-    'http://launchpad.dev:8091/...q=svg+%2Bbugs&start=20'
+    'http://launchpad.dev.../...q=svg+%2Bbugs&start=20'
 
 
 == Google Search Protocol parsing ==
