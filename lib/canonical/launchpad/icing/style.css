@@ -1773,3 +1773,11 @@ div.popupTitle {
   margin-top: 1.5em;
   border-top: 1px solid #d2d2d2;
 }
+
+#no-results {
+  margin-top: 2em;
+}
+
+#no-results span.search_text {
+  font-weight: bold;
+}
