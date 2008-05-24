@@ -111,7 +111,7 @@ the product code facet page.
 
     >>> user_browser.getLink('Code').click()
     >>> print user_browser.url
-    http://code.launchpad.dev/applets/
+    http://code.launchpad.dev/applets
 
 Let's make sure we can load the branch creation form on a product.
 
