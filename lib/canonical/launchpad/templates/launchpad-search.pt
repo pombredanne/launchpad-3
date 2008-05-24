@@ -43,6 +43,7 @@
 
         <div id="search-results" tal:condition="view/has_matches">
           <tal:has_exact_matches condition="view/has_exact_matches">
+	    <h2>Most relavent matches</h2>
 
             <ul class="exact-matches">
               <li tal:condition="view/bug">
@@ -134,6 +135,7 @@
           <tal:batch
             condition="view/pages"
             define="batch view/pages/currentBatch|nothing">
+	    <h2>Matching pages</h2>
 
 	    <div class="upper-batch-nav">
               <tal:navigation
