@@ -142,7 +142,12 @@ class CleanableHTTPHandler(urllib2.HTTPHandler):
 
     def reset_connection(self):
         """Reset the underlying HTTP connection."""
-        self.__conn.sock.shutdown(socket.SHUT_RDWR)
+        try:
+            self.__conn.sock.shutdown(socket.SHUT_RDWR)
+        except AttributeError:
+            # It's possible that the other thread closed the socket
+            # beforehand.
+            pass
         self.__conn.close()
 
 
