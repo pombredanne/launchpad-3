@@ -2508,7 +2508,7 @@ class PersonEditSSHKeysView(LaunchpadView):
         process = subprocess.Popen(
             '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey)
+        (out, err) = process.communicate(sshkey.encode('utf-8'))
         if 'compromised' in out.lower():
             self.error_message = (
                 'This key is known to be compromised due to a security flaw '
