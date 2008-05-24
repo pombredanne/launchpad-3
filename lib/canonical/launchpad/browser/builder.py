@@ -88,7 +88,7 @@ class BuilderSetOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def add(self):
-        text = 'Add builder'
+        text = 'Register a new build machine'
         return Link('+new', text, icon='add')
 
 
@@ -168,7 +168,7 @@ class BuilderSetView(CommonBuilderView):
     def ppa_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Building PPA packages', virtualized=True)
+            'PPA build machines', virtualized=True)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -176,7 +176,7 @@ class BuilderSetView(CommonBuilderView):
     def other_builders(self):
         """Return a BuilderCategory object for PPA builders."""
         builder_category = BuilderCategory(
-            'Building other packages', virtualized=False)
+            'Official distribution build machines', virtualized=False)
         builder_category.groupBuilders(self.builders)
         return builder_category
 
@@ -245,18 +245,10 @@ class HiddenBuilder:
     failnotes = None
     currentjob = None
     builderok = False
+    status = 'Building private build'
 
     def __init__(self, context):
         self.context = context
-
-    @property
-    def status(self):
-        if self.context.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
-        return "NOT OK: (%s)" % mode
 
     # This method is required because the builder history page will have this
     # cloaked context if the builder is currently processing a private build.

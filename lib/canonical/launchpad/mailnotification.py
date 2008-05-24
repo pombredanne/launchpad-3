@@ -1723,7 +1723,8 @@ def notify_mailinglist_activated(mailinglist, event):
         to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,
-            'team': team.displayname,
+            'team_displayname': team.displayname,
+            'team_name': team.name,
             'team_url': canonical_url(team),
             'subscribe_url': editemails_url % canonical_url(person),
             }

@@ -717,18 +717,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (1, 17, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (2, 1, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (3, 1, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (4, 1, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (5, 1, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (7, 4, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (8, 17, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 3, 3, NULL, NULL, true, NULL);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, 1, 1, NULL, NULL, true, NULL);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 0, 0, NULL, NULL, true, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (12, 17, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, false, NULL, 'partnerarchive');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (13, 17, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL, false, NULL, 'partnerarchive');
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -773,7 +773,7 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 45, 3, 3);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
-INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 37, 1, 8);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 90, 1, 8);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (21, 56, 1, 6);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (22, 40, 1, 7);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (25, 70, 1, 9);
@@ -3237,6 +3237,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (87, 87, 'alsa-1.0.8.tgz', 'application/x-tar', NULL, '2008-03-17 15:37:36.701686', '2008-03-17 15:37:36.701686', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (88, 88, 'README.txt', 'text/plain', NULL, '2008-03-17 15:37:48.465157', '2008-03-17 15:37:48.465157', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (89, 89, 'alsa-1.0.9a.tgz', 'application/x-tar', NULL, '2008-03-17 15:38:16.866444', '2008-03-17 15:38:16.866444', false);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (90, 90, 'pmount_1.0-1_all.deb', 'application/x-debian-package', NULL, '2008-05-08 10:15:32.440132', '2008-05-08 10:10:27.899028', false);
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3328,6 +3329,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (87, '2008-03-17 15:37:36.701686', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (88, '2008-03-17 15:37:48.465157', NULL, 3, '55ca6286e3e4f4fba5d0448333fa99fc5a404a73', false, '764efa883dda1e11db47671c4a3bbd9e');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (89, '2008-03-17 15:38:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (90, '2008-05-08 10:10:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4caa', false, '8a8a67b8dbc5f203ae8712092c68c7aa');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3970,7 +3972,7 @@ ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'qQ7dw1fXCR5hhJRN7ztj', '2nWXXdVfpV1G761xDhqNp3WR0Pqvc5WD78V1n7RJFwStQV8v5cqMLqqpp9jq5VLbDHgKC6csPm2ZVBv5');
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'hgm2VK35vXD6rLg5pxWw', 'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz');
-
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, '3SdVlTlVKcgXSJHbsSSk', 'HMfdL8JH6fzdHCvDqtHb37LDKdQCvD7DBp8bBb5Dq937LCgH968flSm7CqKRQP7s3qZcXW6fwz5KCGkH');
 
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
@@ -4100,6 +4102,7 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (7, 13, 36, '2007-08-09 21:25:37.832976');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (8, 11, 35, '2006-10-16 18:31:43.832976');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
@@ -9534,7 +9537,6 @@ INSERT INTO validpersonorteamcache (id) VALUES (243618);
 INSERT INTO validpersonorteamcache (id) VALUES (243620);
 INSERT INTO validpersonorteamcache (id) VALUES (243621);
 INSERT INTO validpersonorteamcache (id) VALUES (243622);
-
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
 

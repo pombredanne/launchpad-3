@@ -290,7 +290,6 @@ methods can access `self.context`.
     >>> defineChecker(FacetLink, InterfaceChecker(IFacetLink))
     >>> defineChecker(URI, NamesChecker(dir(URI)))
 
-
     >>> def summarise_links(menu, url=None, facet=None):
     ...     """List the links and their attributes."""
     ...     if url is not None:
@@ -345,6 +344,7 @@ implementations. It cannot be used directly.
     >>> from canonical.launchpad.webapp import NavigationMenu
 
     >>> bad_idea_menu = NavigationMenu(object())
+
     >>> for link in bad_idea_menu.iterlinks():
     ...     pass
     Traceback (most recent call last):
@@ -360,7 +360,7 @@ menu though one of its links.
     >>> class RecipeEditMenu(NavigationMenu):
     ...     usedfor = IRecipeEditMenuMarker
     ...     facet = 'cookery'
-    ...
+    ...     title = 'Edit'
     ...     links = ('edit_instructions', 'edit_ingredients')
     ...
     ...     def edit_instructions(self):
@@ -376,7 +376,7 @@ menu though one of its links.
     >>> class RecipeJournalMenu(NavigationMenu):
     ...     usedfor = IRecipeJournalMenuMarker
     ...     facet = 'cookery'
-    ...
+    ...     title = 'Journal'
     ...     links = ('read_journal', 'write_entry')
     ...
     ...     def read_journal(self):
@@ -392,7 +392,6 @@ menu though one of its links.
     >>> class RecipeMenu(NavigationMenu):
     ...     usedfor = IRecipe
     ...     facet = 'cookery'
-    ...
     ...     links = ('summary', 'journal')
     ...
     ...     def summary(self):
@@ -410,7 +409,6 @@ menu though one of its links.
     >>> class RecipeQuestionsMenu(NavigationMenu):
     ...     usedfor = IRecipe
     ...     facet = 'questions'
-    ...
     ...     links = ('all_questions', 'answered')
     ...
     ...     def all_questions(self):
@@ -503,8 +501,12 @@ content object and it has all facet links enabled.
 All menus descend from MenuBase which impose a number of requirements
 upon its descendants.
 
-A menu must define a tuple of links that it manages. When links is
-not defined, or defined is not of the right type, an error is raised.
+The menu title is optional, but a good idea when used for tabs related
+to a view that will be displayed in addition to the tabs related to the
+context.
+
+A menu must define a tuple of links that it manages. When the links are
+not defined, or links is not of the right type, an error is raised.
 
     >>> class BogusMenu(NavigationMenu):
     ...     usedfor = IRecipe
@@ -516,6 +518,7 @@ not defined, or defined is not of the right type, an error is raised.
 
     >>> class BogusMenu(NavigationMenu):
     ...     usedfor = IRecipe
+    ...     title = 'Bogus menu'
     ...     links = 'not a tuple'
 
     >>> summarise_links(BogusMenu(recipe))
@@ -912,6 +915,142 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         menu: None
         selected: False
         linked: True
+
+
+== Rendering the menu in a template ==
+
+Menus are often rendered with a view controller class to ensure
+that only enabled links are rendered. The TALES expression might call
+the view using:
+
+    tal:content view/menu:navigation@@+navigationmenu
+
+The view and template are usually registered in ZCML. The following
+is an example of a template and view classes for the FacetMenu and
+NavigationMenus used in the previous TALES section.
+
+    >>> import operator
+    >>> import tempfile
+    >>> from zope.app.pagetemplate.viewpagetemplatefile import (
+    ...     ViewPageTemplateFile)
+    >>> from canonical.launchpad.webapp.menu import (
+    ...     get_facet, get_current_view)
+
+    >>> menu_fragement = """\
+    ...  <div>
+    ...    <label
+    ...      tal:condition="view/title|nothing"
+    ...      tal:content="view/title">Menu title</label>
+    ...    <ul>
+    ...      <li tal:repeat="link view/links">
+    ...        <a
+    ...          tal:condition="link/linked"
+    ...          tal:attributes="href link/url;
+    ...                          class string:selected-${link/selected}"
+    ...          tal:content="structure link/escapedtext">link text</a>
+    ...        <strong
+    ...          tal:condition="not: link/linked"
+    ...          tal:content="structure link/escapedtext">text</strong>
+    ...      </li>
+    ...    </ul>
+    ...  </div>"""
+    >>> template_file = tempfile.NamedTemporaryFile()
+    >>> template_file.write(menu_fragement)
+    >>> template_file.flush()
+
+    >>> class FacetMenuView(LaunchpadView):
+    ...     template = ViewPageTemplateFile(template_file.name)
+    ...     def initialize(self):
+    ...         requested_view = get_current_view(self.request)
+    ...         facet = get_facet(requested_view)
+    ...         menu = self.getMenu(facet)
+    ...         menu.request = self.request
+    ...         self.links = sorted(
+    ...             [link for link in menu.iterlinks() if link.enabled],
+    ...             key=operator.attrgetter('sort_key'))
+    ...
+    ...     def getMenu(self, facet=None):
+    ...         return queryAdapter(self.context, IFacetMenu)
+
+    >>> class NavigationMenuView(FacetMenuView):
+    ...     def getMenu(self, facet=None):
+    ...         menu = queryAdapter(self.context, INavigationMenu, name=facet)
+    ...         self.title = menu.title
+    ...         return menu
+
+    # NavigationMenuView is normally registered as an IPathAdapter in ZCML.
+    # This approximates what is done by the code:
+    >>> classImplements(FacetMenuView, IPathAdapter)
+    >>> classImplements(NavigationMenuView, IPathAdapter)
+
+The Summary in the facet menu is selected because the current facet
+is 'cookery'.
+
+    >>> recipe_facet_menu_view = FacetMenuView(recipe, request)
+    >>> recipe_facet_menu_view.initialize()
+    >>> print recipe_facet_menu_view()
+    <div>
+      <ul>
+        <li>
+          <a href=".../joy-of-cooking/fried-spam/+index"
+             class="selected-True">Summary</a>
+        </li>
+        <li>
+          <a href=".../joy-of-cooking/fried-spam/+questions"
+             class="selected-False">Questions</a>
+        </li>
+        <li>
+          <a href=".../joy-of-cooking/fried-spam/+variations"
+             class="selected-False">Variations</a>
+        </li>
+      </ul>
+    </div>
+
+The Journal link is selected because the Journal sub menu is also
+available (as can be seen in the next example).
+
+    >>> recipe_menu_view = NavigationMenuView(recipe, request)
+    >>> recipe_menu_view.initialize()
+    >>> print recipe_menu_view()
+    <div>
+      <ul>
+        <li>
+          <a href=".../joy-of-cooking/fried-spam/+index"
+             class="selected-False">Summary</a>
+        </li>
+        <li>
+          <a href=".../joy-of-cooking/fried-spam/+journal"
+             class="selected-True">Journal</a>
+        </li>
+      </ul>
+    </div>
+
+The Read Journal entries link is selected because that is the current
+URL.
+
+    >>> request.getURL()
+    'http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal'
+
+    >>> recipe_view_menu_view = NavigationMenuView(
+    ...     recipe_journal_view, request)
+    >>> recipe_view_menu_view.initialize()
+    >>> print recipe_view_menu_view()
+    <div>
+      <label>Journal</label>
+      <ul>
+        <li>
+          <strong>Read Journal entries</strong>
+        </li>
+        <li>
+          <a href=".../joy-of-cooking/fried-spam/+write-entry"
+             class="selected-False">Write
+            a journal entry</a>
+        </li>
+      </ul>
+    </div>
+
+    # Remove the temporary file.
+    >>> template_file.close()
 
 
 == tearDown ==
