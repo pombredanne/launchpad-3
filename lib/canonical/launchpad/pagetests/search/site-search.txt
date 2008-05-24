@@ -87,6 +87,34 @@ takes you to the next page of results.
     []
 
 
+== Specific searches ==
+
+Searches for specific launchpad items such as bugs, people, questions,
+teams, or projects, will return their respective matching item.
+
+    # A project.
+    >>> search_for('firefox')
+    >>> print_search_results()
+    Mozilla Firefox
+    The Mozilla Firefox web browser
+    Registered by Sample Person on 2004-09-24
+
+    # A bug and a question.
+    >>> search_for('1')
+    >>> print_search_results()
+    #1...Firefox does not support SVG...
+    Firefox cannot render Bank Site...
+
+    # A team.
+    >>> search_for('rosetta-admins')
+    >>> print_search_results()
+    Rosetta Administrators
+
+    # A person
+    >>> search_for('sabdfl')
+    >>> print_search_results()
+
+
 == Searches with no results ==
 
 Searches that don't return any results display a kind message to the user.
