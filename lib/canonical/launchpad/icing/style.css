@@ -1745,10 +1745,31 @@ div.popupTitle {
 }
 
 #search-results ul li {
-  margin-bottom: .5em;
+  margin-bottom: 1em;
 }
 
 #search-results ul li div.summary {
   margin-left: 17px;
   font-weight: normal;
+}
+
+#search-results ul.exact-matches {
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+#search-results ul li.pillar,
+#search-results ul.exact-matches div.summary {
+  width: 40em;
+}
+
+#search-results div.upper-batch-nav {
+  border-top: 1px solid #d2d2d2;
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+
+#search-results div.lower-batch-nav {
+  margin-top: 1.5em;
+  border-top: 1px solid #d2d2d2;
 }
