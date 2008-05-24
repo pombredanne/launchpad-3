@@ -136,14 +136,24 @@ class LaunchpadSearchView(LaunchpadFormView):
         return self._pages
 
     @property
+    def has_exact_matches(self):
+        """Return True if something exactly matched the search terms."""
+        kinds = (self.bug, self.question, self.pillar, self.person_or_team)
+        return self.containsMatchingKind(kinds)
+
+    @property
     def has_matches(self):
         """Return True if something matched the search terms, or False."""
         kinds = (self.bug, self.question, self.pillar,
                  self.person_or_team, self.pages)
+        return self.containsMatchingKind(kinds)
+
+
+    def containsMatchingKind(self, kinds):
+        """Return True if one of the items in kinds is not None, or False."""
         for kind in kinds:
             if kind is not None:
                 return True
-        return False
 
     @safe_action
     @action(u'Search', name='search')
@@ -266,7 +276,7 @@ class GoogleBatchNavigator(BatchNavigator):
 
     # Searches generally don't show the 'Last' link when there is a
     # good chance of getting over 100,000 results.
-    show_last_link=False
+    show_last_link = False
 
     def __init__(self, results, request, start=0, size=20, callback=None):
         """See `BatchNavigator`.
