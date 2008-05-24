@@ -2502,7 +2502,17 @@ class PageMacroDispatcher:
                 heading=True,
                 pageheading=False,
                 portlets=True),
-        'freeform':
+        'search':
+            LayoutElements(
+                actionsmenu=False,
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=False,
+                heading=False,
+                pageheading=True,
+                portlets=False,
+                structuralheaderobject=False),
+       'freeform':
             LayoutElements(),
         }
 

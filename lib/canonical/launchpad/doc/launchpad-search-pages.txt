@@ -16,14 +16,52 @@ LaunchpadSearchView.
     <....SimpleViewClass from .../templates/launchpad-search.pt ...>
 
 
+== Page title and heading ==
+
+The page title and heading suggest to the user to search launchpad
+when there is no search text.
+
+    >>> print search_view.search_text
+    None
+    >>> search_view.page_title
+    'Search Launchpad'
+    >>> search_view.page_heading
+    'Search Launchpad'
+
+When search_text is not None, the title indicates what was searched.
+
+    >>> def getSearchView(form):
+    ...     request = LaunchpadTestRequest(form=form)
+    ...     search_view = getMultiAdapter((root, request), name="+search")
+    ...     search_view.initialize()
+    ...     return search_view
+
+    >>> search_view = getSearchView(
+    ...     form={'field.search_text': 'albatros'})
+
+    >>> search_view.search_text
+    u'albatros'
+    >>> search_view.page_title
+    u'Pages matching "albatros" in Launchpad'
+    >>> search_view.page_heading
+    u'Pages matching "albatros" in Launchpad'
+
+
 == No matches ==
 
-There was no search text submitted in the current request, there are no
-matches. Search text is required to perform a search. Note that
-field.actions.search is not a required param to call the Search Action.
-The form always calls the search action.
+There were no matches for 'albatros'.
 
-    >>> print search_view.search_params['search_text']
+    >>> search_view.has_matches
+    False
+
+When search text is not submitted there are no matches. Search text is
+required to perform a search. Note that field.actions.search is not a
+required param to call the Search Action. The view always calls the
+search action.
+
+    >>> search_view = getSearchView(form={})
+
+    >>> print search_view.search_text
     None
     >>> search_view.has_matches
     False
@@ -35,15 +73,9 @@ When a numeric token can be extracted from the submitted search text,
 the view tries to match a bug and question. Bugs and questions are
 matched by their id.
 
-    >>> def getSearchView(form):
-    ...     request = LaunchpadTestRequest(form=form)
-    ...     search_view = getMultiAdapter((root, request), name="+search")
-    ...     search_view.initialize()
-    ...     return search_view
-
     >>> search_view = getSearchView(
     ...     form={'field.search_text': '5'})
-    >>> search_view._getNumericToken(search_view.search_params['search_text'])
+    >>> search_view._getNumericToken(search_view.search_text)
     u'5'
     >>> search_view.has_matches
     True
@@ -58,7 +90,7 @@ more bugs than questions.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': '15'})
-    >>> search_view._getNumericToken(search_view.search_params['search_text'])
+    >>> search_view._getNumericToken(search_view.search_text)
     u'15'
     >>> search_view.has_matches
     True
@@ -75,7 +107,7 @@ numbers do match questions, but they are not used.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': 'Question #15, #7, and 5.'})
-    >>> search_view._getNumericToken(search_view.search_params['search_text'])
+    >>> search_view._getNumericToken(search_view.search_text)
     u'15'
     >>> search_view.has_matches
     True
@@ -84,12 +116,25 @@ numbers do match questions, but they are not used.
     >>> print search_view.question
     None
 
+It is not an error to search for a non-existant bug or question.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.search_text': '55555'})
+    >>> search_view._getNumericToken(search_view.search_text)
+    u'55555'
+    >>> search_view.has_matches
+    False
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
+
 There is no error if a number cannot be extracted from the search text.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': 'fifteen'})
     >>> print search_view._getNumericToken(
-    ...     search_view.search_params['search_text'])
+    ...     search_view.search_text)
     None
     >>> search_view.has_matches
     False
@@ -97,6 +142,20 @@ There is no error if a number cannot be extracted from the search text.
     None
     >>> print search_view.question
     None
+
+Bugs and questions are only returned for the first page of search,
+when the start param is 0.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.search_text': '5',
+    ...           'start': '20'})
+    >>> search_view.has_matches
+    False
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
+
 
 
 == Projects and Persons and Teams searches ==
@@ -107,7 +166,7 @@ product, or project. A person is a person or a team.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': 'launchpad'})
-    >>> search_view._getNameToken(search_view.search_params['search_text'])
+    >>> search_view._getNameToken(search_view.search_text)
     u'launchpad'
     >>> search_view.has_matches
     True
@@ -122,7 +181,7 @@ with a hyphen.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': 'Gnome Terminal'})
-    >>> search_view._getNameToken(search_view.search_params['search_text'])
+    >>> search_view._getNameToken(search_view.search_text)
     u'gnome-terminal'
     >>> search_view.has_matches
     True
@@ -137,7 +196,7 @@ section for how this kind of search can return matches.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': "YAHOO! webservice's Python API."})
-    >>> search_view._getNameToken(search_view.search_params['search_text'])
+    >>> search_view._getNameToken(search_view.search_text)
     u'yahoo-webservices-python-api.'
     >>> search_view.has_matches
     False
@@ -150,7 +209,7 @@ Leading and trailing punctuation and whitespace are stripped.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': "~name12"})
-    >>> search_view._getNameToken(search_view.search_params['search_text'])
+    >>> search_view._getNameToken(search_view.search_text)
     u'name12'
     >>> search_view.has_matches
     True
@@ -158,6 +217,19 @@ Leading and trailing punctuation and whitespace are stripped.
     None
     >>> search_view.person_or_team.displayname
     u'Sample Person'
+
+Pillars, persons and teams are only returned for the first page of
+search, when the start param is 0.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.search_text': 'launchpad',
+    ...           'start': '20'})
+    >>> search_view.has_matches
+    False
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
 
 
 == Page searches ==
@@ -167,7 +239,7 @@ search terms.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': " bug"})
-    >>> search_view.search_params['search_text']
+    >>> search_view.search_text
     u'bug'
     >>> search_view.has_matches
     True
@@ -178,6 +250,8 @@ The GoogleBatchNavigator behaves like most BatchNavigators, except that
 its batch size is always 20. The size restriction conforms to Google's
 maximum number of results that can be returned per request.
 
+    >>> search_view.start
+    0
     >>> search_view.pages.currentBatch().size
     20
     >>> pages = list(search_view.pages.currentBatch())
@@ -188,7 +262,7 @@ maximum number of results that can be returned per request.
     'Launchpad Bugs'
     'Bugs in Ubuntu Linux'
     'Bugs related to Sample Person'
-    u'<b>Bug< #1 in Mozilla Firefox: \u201cFirefox does not support SVG\u201d'
+    u'<b>Bug</b> #1 in Mozilla Firefox: ...Firefox does not support SVG...'
     'Bugs in Source Package "thunderbird" in Ubuntu Linux'
 
 The batch navigator provides access to the other batches. There are two
@@ -209,7 +283,9 @@ is 20. That is because there were only 25 matching pages.
     >>> search_view = getSearchView(
     ...     form={'field.search_text': "bug",
     ...           'start': '20'})
-    >>> search_view.search_params['search_text']
+    >>> search_view.start
+    20
+    >>> search_view.search_text
     u'bug'
     >>> search_view.has_matches
     True
@@ -221,11 +297,11 @@ is 20. That is because there were only 25 matching pages.
     5
     >>> for page in pages:
     ...     page.title
-    u'<b>Bug< #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
-    u'<b>Bug< #2 in mozilla-firefox (Debian): \u201cBlackhole Trash folder\u201d'
-    u'<b>Bug< #3 in mozilla-firefox (Debian): \u201cBug Title Test\u201d'
-    '<b>Bug< trackers registered in Launchpad'
-    u'<b>Bug< tracker \u201cDebian Bug tracker\u201d'
+    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    u'<b>Bug</b> #2 in mozilla-firefox (Debian): ...Blackhole Trash folder...'
+    u'<b>Bug</b> #3 in mozilla-firefox (Debian): \u201cBug Title Test\u201d'
+    '<b>Bug</b> trackers registered in Launchpad'
+    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
 
     >>> search_view.pages.nextBatchURL()
     ''
@@ -240,7 +316,7 @@ showing the matching terms in context of the page text.
     >>> page
     <...PageMatch ...>
     >>> page.title
-    u'<b>Bug< #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
     >>> page.url
     'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2'
     >>> page.summary
@@ -278,7 +354,7 @@ the first 20 items are None. Only the last 5 items are PageMatches.
     >>> print results[0]
     None
     >>> results[24].title
-    u'<b>Bug< tracker \u201cDebian Bug tracker\u201d'
+    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
     >>> results[18, 22]
     [None, None, <...PageMatch ...>, <...PageMatch ...>]
 

@@ -162,7 +162,7 @@
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch" xml:lang="en" lang="en" dir="ltr"
-        action="/projects/"
+        action="/+search"
         method="get"
         accept-charset="UTF-8"
       >
@@ -170,13 +170,14 @@
           <input
             type="text"
             id="text"
-            name="text"
+            name="field.search_text"
             value="Search"
             onfocus="if(this.value=='Search'){this.value='';};"
           />
           <input
             type="image"
             id="searchbutton"
+	    name="field.actions.search"
             src="/+icing/but_search.gif"
             title="Search"
           />

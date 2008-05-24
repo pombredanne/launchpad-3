@@ -683,7 +683,9 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 
 launchpad_requestexpired = 'Error: Timeout'
 
-launchpad_search = 'Search projects in Launchpad'
+def launchpad_search(context, view):
+    """Return the page title corresponding to the user's search."""
+    return view.page_title
 
 launchpad_translationunavailable = 'Translation page is not available'
 

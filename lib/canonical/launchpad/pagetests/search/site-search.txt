@@ -1,0 +1,138 @@
+= Site-wide Search =
+
+Launchpad features a site-wide search that combines Google's
+site-specific search with our own searches for specific items (bugs,
+teams, etc.).
+
+    # Our very helpful function for printing all the page results.
+    >>> def print_search_results():
+    ...     tag = find_tag_by_id(browser.contents, 'search-results')
+    ...     if tag:
+    ...         print extract_text(tag)
+
+    # Another helper to make searching convenient
+    >>> def search_for(terms):
+    ...     search_text = browser.getControl(name='field.search_text')
+    ...     search_text.value = terms
+    ...     browser.getControl(name='field.actions.search').click()
+
+The search is accessible via the root +search url:
+
+    >>> browser.open('http://launchpad.dev/+search')
+    >>> print browser.title
+    Search Launchpad
+
+No search results are shown on the basic page:
+
+    >>> print_search_results()
+
+A search for a specific item, such as a project name, will return a
+result for that exact match in Launchpad.
+
+    >>> search_for('firefox')
+    >>> print browser.title
+    Pages matching "firefox" in Launchpad
+    >>> print_search_results()
+    Mozilla Firefox
+    The Mozilla Firefox web browser
+    Registered by Sample Person
+    on 2004-09-24
+
+Searching for an integer will return the matching bug number as well
+as the matching question number, if one exists.
+
+    >>> search_for('3')
+    >>> print browser.title
+    Pages matching "3" in Launchpad
+    >>> print_search_results()
+    #3 Bug Title Test
+    ...
+    Firefox is slow and consumes too much RAM
+    ...
+
+An arbitrary search returns a list of Google search results.
+
+    # Use our pre-defined search results for the 'bug' search.
+    >>> search_for('bug')
+    >>> print browser.title
+    Pages matching "bug" in Launchpad
+    >>> print_search_results()
+    1 &rarr; 20 of 25 results...
+    Launchpad Bugs...
+    Bugs in Ubuntu Linux...
+    Bugs related to Sample Person...
+    Bug #1 in Mozilla Firefox: ...Firefox does not support SVG...
+    ...
+
+The search can only return twenty results per-page.  Additional
+matches are shown on subsequent pages.
+
+    >>> first_page_results = list(
+    ...     find_tags_by_class(browser.contents, 'pagematch'))
+    >>> len(first_page_results)
+    20
+
+As per the standard batch navigator, clicking on the 'Next' link
+takes you to the next page of results.
+
+    >>> browser.getLink('Next').click()
+    >>> second_page_results = list(
+    ...     find_tags_by_class(browser.contents, 'pagematch'))
+    >>> len(second_page_results)
+    5
+
+    >>> in_both = [m for m in second_page_results
+    ...            if m in first_page_results]
+    >>> in_both
+    []
+
+
+== Specific searches ==
+
+Searches for specific launchpad items such as bugs, people, questions,
+teams, or projects, will return their respective matching item.
+
+    # A project.
+    >>> search_for('firefox')
+    >>> print_search_results()
+    Mozilla Firefox
+    The Mozilla Firefox web browser
+    Registered by Sample Person on 2004-09-24
+
+    # A bug and a question.
+    >>> search_for('1')
+    >>> print_search_results()
+    #1...Firefox does not support SVG...
+    Firefox cannot render Bank Site...
+
+    # A team.
+    >>> search_for('rosetta-admins')
+    >>> print_search_results()
+    Rosetta Administrators
+
+    # A person
+    >>> search_for('sabdfl')
+    >>> print_search_results()
+
+
+== Searches with no results ==
+
+Searches that don't return any results display a kind message to the user.
+
+    >>> search_for('fnord')
+    >>> print extract_text(find_main_content(browser.contents))
+    Search Launchpad:
+    ...
+    Your search, &ldquo;fnord&rdquo;, did not return any results.
+
+
+== Searches for the empty string ==
+
+Leaving the search field empty returns the original search
+ page, with
+no results, as if the user had not yet performed a search.
+
+    >>> search_for('')
+    >>> print browser.title
+    Search Launchpad
+    >>> print_search_results()
