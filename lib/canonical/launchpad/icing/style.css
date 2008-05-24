@@ -1209,7 +1209,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   background-color: #d18b39;
 }
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong {
+.tab-branches #application-footer strong, .tab-branches #application-summary strong, .tab-branches #page-summary strong.count {
   background: none;
   color: #d18b39;
 }
@@ -1525,7 +1525,7 @@ div#applications {padding: 1em 0; text-align: center;}
   color: #303030;
   font-size: 1.2em;
 }
-#application-summary, #application-footer {
+#application-summary, #application-footer, #page-summary {
   font-size: 1.2em;
   line-height: 1.4em;
   margin-top: 0;

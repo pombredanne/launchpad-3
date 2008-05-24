@@ -6,24 +6,66 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:rightportlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-teambranches" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1 tal:content="view/heading">Bazaar branches</h1>
-</metal:heading>
-
 <div metal:fill-slot="main"
      tal:define="branches view/branches">
 
-  <tal:branchlisting content="structure branches/@@+branch-listing" />
+  <div style="float:right" id="floating-buttons"
+       tal:condition="view/user_in_context_team">
+    <div>
+      <a href="+addbranch" id="register-branch">
+        <img alt="Register a branch"
+             src="/+icing/but-lrg-registerabranch.gif"/>
+      </a>
+    </div>
+  </div>
+
+  <h1 tal:content="view/heading">Bazaar branches</h1>
+
+  <div id="no-branch-message" tal:condition="not: view/total_branch_count">
+    <p>
+      There are no branches related to
+      <tal:user replace="context/displayname"/> today.
+    </p>
+  </div>
+
+  <tal:has-branches condition="view/total_branch_count">
+
+    <div id="page-summary">
+      <p>
+        <tal:link
+            define="link context/menu:branches/all_related"
+            replace="structure link/render"
+            />:
+        <strong class="count" tal:content="view/total_branch_count">100</strong>
+        (<strong class="count" tal:content="view/registered_branch_count">100</strong>
+        <tal:link
+            define="link context/menu:branches/registered"
+            replace="structure link/render"
+            />,
+        <strong class="count" tal:content="view/owned_branch_count">100</strong>
+        <tal:link
+            define="link context/menu:branches/owned"
+            replace="structure link/render"
+            />,
+        <strong class="count" tal:content="view/subscribed_branch_count">100</strong>
+        <tal:link
+            define="link context/menu:branches/subscribed"
+            replace="structure link/render"
+            />)
+      </p>
+    </div>
+
+    <tal:branchlisting
+        content="structure branches/@@+branch-listing" />
+  </tal:has-branches>
+
+  <div tal:replace="structure context/@@+portlet-teambranches" />
 
 </div>
 
