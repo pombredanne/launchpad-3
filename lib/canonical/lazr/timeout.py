@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 import httplib
+import socket
 import sys
 from threading import Thread
 import urllib2
@@ -141,6 +142,7 @@ class CleanableHTTPHandler(urllib2.HTTPHandler):
 
     def reset_connection(self):
         """Reset the underlying HTTP connection."""
+        self.__conn.sock.shutdown(socket.SHUT_RDWR)
         self.__conn.close()
 
 
