@@ -57,7 +57,7 @@
           tal:condition="not:next_page_url"
           class="unavailable"
         >&mdash; Next</span>
-	<tal:last_link condition="context/show_last_link|default">
+        <tal:last_link condition="context/show_last_link|default">
           <tal:last condition="last_page_url">
             &mdash;
             <a tal:attributes="href last_page_url" rel="last"
@@ -67,7 +67,7 @@
              tal:condition="not:last_page_url"
              class="unavailable"
              >&mdash; Last&nbsp;&raquo;</span>
-	</tal:last_link>
+        </tal:last_link>
       </td>
     </tr>
   </tbody>

@@ -44,7 +44,7 @@ class BatchNavigator:
     # We want subclasses to be able to hide the 'Last' link from
     # users.  They may want to do this for really large result sets;
     # for example, batches with over a hundred thousand items.
-    show_last_link=True
+    show_last_link = True
 
     def __init__(self, results, request, start=0, size=None, callback=None):
         """Constructs a BatchNavigator instance.

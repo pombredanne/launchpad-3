@@ -37,19 +37,19 @@ When search_text is not None, the title indicates what was searched.
     ...     return search_view
 
     >>> search_view = getSearchView(
-    ...     form={'field.search_text': 'albatros'})
+    ...     form={'field.search_text': 'albatross'})
 
     >>> search_view.search_text
-    u'albatros'
+    u'albatross'
     >>> search_view.page_title
-    u'Pages matching "albatros" in Launchpad'
+    u'Pages matching "albatross" in Launchpad'
     >>> search_view.page_heading
-    u'Pages matching "albatros" in Launchpad'
+    u'Pages matching "albatross" in Launchpad'
 
 
 == No matches ==
 
-There were no matches for 'albatros'.
+There were no matches for 'albatross'.
 
     >>> search_view.has_matches
     False
@@ -116,7 +116,7 @@ numbers do match questions, but they are not used.
     >>> print search_view.question
     None
 
-It is not an error to search for a non-existant bug or question.
+It is not an error to search for a non-existent bug or question.
 
     >>> search_view = getSearchView(
     ...     form={'field.search_text': '55555'})

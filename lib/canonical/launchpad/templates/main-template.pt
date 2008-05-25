@@ -177,7 +177,7 @@
           <input
             type="image"
             id="searchbutton"
-	    name="field.actions.search"
+            name="field.actions.search"
             src="/+icing/but_search.gif"
             title="Search"
           />

@@ -2520,7 +2520,7 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=False,
                 heading=False,
-                pageheading=True,
+                pageheading=False,
                 portlets=False,
                 structuralheaderobject=False),
        'freeform':

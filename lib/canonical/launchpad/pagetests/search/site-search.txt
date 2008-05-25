@@ -1,62 +1,71 @@
 = Site-wide Search =
 
 Launchpad features a site-wide search that combines Google's
-site-specific search with our own searches for specific items (bugs,
-teams, etc.).
+site-specific search with Launchpad's prominent objects (projects,
+bugs, teams, etc.).
 
     # Our very helpful function for printing all the page results.
     >>> def print_search_results():
-    ...     tag = find_tag_by_id(browser.contents, 'search-results')
+    ...     tag = find_tag_by_id(anon_browser.contents, 'search-results')
     ...     if tag:
     ...         print extract_text(tag)
 
     # Another helper to make searching convenient
     >>> def search_for(terms):
-    ...     search_text = browser.getControl(name='field.search_text')
+    ...     search_text = anon_browser.getControl(name='field.search_text')
     ...     search_text.value = terms
-    ...     browser.getControl(name='field.actions.search').click()
+    ...     anon_browser.getControl(name='field.actions.search').click()
 
-The search is accessible via the root +search url:
+Search is accessible to any user via the root +search url:
 
-    >>> browser.open('http://launchpad.dev/+search')
-    >>> print browser.title
+    >>> anon_browser.open('http://launchpad.dev/+search')
+    >>> print anon_browser.title
     Search Launchpad
 
-No search results are shown on the basic page:
+The user does not see any search results on the page without submitting
+search text. An explanation of search is included in the page when the
+search field is empty.
 
     >>> print_search_results()
 
-A search for a specific item, such as a project name, will return a
-result for that exact match in Launchpad.
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'no-search'))
+    Enter a term or many terms to find matching pages...
+
+When the user searches for specific item, such as a project name, he
+sees a result for that exact match in Launchpad.
 
     >>> search_for('firefox')
-    >>> print browser.title
+    >>> print anon_browser.title
     Pages matching "firefox" in Launchpad
     >>> print_search_results()
-    Most relavent matches
+    Most relevant matches
     Mozilla Firefox
     The Mozilla Firefox web browser
     Registered by Sample Person
     on 2004-09-24
 
-Searching for an integer will return the matching bug number as well
-as the matching question number, if one exists.
+Searching for an integer returns the matching bug number as well as
+the matching question number, if one exists. Searching for "3", the
+user sees that a bug matched.
 
     >>> search_for('3')
-    >>> print browser.title
+    >>> print anon_browser.title
     Pages matching "3" in Launchpad
     >>> print_search_results()
-    Most relavent matches
+    Most relevant matches
     Bug #3: Bug Title Test
     ...
     3: Firefox is slow and consumes too much RAM
     ...
 
-An arbitrary search returns a list of Google search results.
+An arbitrary search returns a list of Google search results. The
+user searches for "bug" and sees a listing of matching pages. The
+navigation states that the page is showing 1 through 20 of 25 total
+results.
 
     # Use our pre-defined search results for the 'bug' search.
     >>> search_for('bug')
-    >>> print browser.title
+    >>> print anon_browser.title
     Pages matching "bug" in Launchpad
     >>> print_search_results()
     Matching pages
@@ -67,25 +76,24 @@ An arbitrary search returns a list of Google search results.
     Bug #1 in Mozilla Firefox: ...Firefox does not support SVG...
     ...
 
-The search can only return twenty results per-page.  Additional
-matches are shown on subsequent pages.
+He can see there really are only twenty matches in the page.
 
     >>> first_page_results = list(
-    ...     find_tags_by_class(browser.contents, 'pagematch'))
+    ...     find_tags_by_class(anon_browser.contents, 'pagematch'))
     >>> len(first_page_results)
     20
 
-As per the standard batch navigator, clicking on the 'Next' link
-takes you to the next page of results.
+The user sees the 'Next' link, and uses it to view the next page. It
+has 5 page matches.
 
-    >>> browser.getLink('Next').click()
+    >>> anon_browser.getLink('Next').click()
     >>> second_page_results = list(
-    ...     find_tags_by_class(browser.contents, 'pagematch'))
+    ...     find_tags_by_class(anon_browser.contents, 'pagematch'))
     >>> len(second_page_results)
     5
 
-    >>> in_both = [m for m in second_page_results
-    ...            if m in first_page_results]
+    >>> in_both = [match for match in second_page_results
+    ...            if match in first_page_results]
     >>> in_both
     []
 
@@ -95,61 +103,68 @@ takes you to the next page of results.
 Searches for specific launchpad items such as bugs, people, questions,
 teams, or projects, will return their respective matching item.
 
-    # A project.
+
+The user searches for 'firefox' and sees Mozilla Firefox as the
+most relevant match.
+
     >>> search_for('firefox')
     >>> print_search_results()
-    Most relavent matches
+    Most relevant matches
     Mozilla Firefox
     The Mozilla Firefox web browser
     Registered by Sample Person
     on 2004-09-24
 
-    # A bug and a question.
+The user enters the number 1, and he sees a bug and a question in the
+"Most relevant matches" section.
+
     >>> search_for('1')
     >>> print_search_results()
-    Most relavent matches
-    Bug #1: Firefox does not support SVG...
-    Firefox cannot render Bank Site...
+    Most relevant matches
+    Bug #1: Firefox does not support SVG
+    in Mozilla Firefox, Ubuntu, Debian, reported on ...
+    1: Firefox cannot render Bank Site
+    posted on ... by Steve Alexander in Mozilla Firefox
 
-    # A team.
-    >>> search_for('rosetta-admins')
+
+The user searches for the rosetta admins team and it is listed.
+
+    >>> search_for('rosetta admins')
     >>> print_search_results()
-    Most relavent matches
+    Most relevant matches
+    Rosetta Administrators (rosetta-admins)
     Rosetta Administrators
-    (rosetta-admins)
-    Rosetta Administrators
-    Created
-    on 2005-06-06
+    Created on 2005-06-06
 
-    # A person
+Search for a user's launchpad name, a user will find the user in the
+"Most relevant matches" section.
+
     >>> search_for('sabdfl')
     >>> print_search_results()
-    Most relavent matches
-    Mark Shuttleworth
-    (sabdfl)
-    Joined
-    on 2005-06-06,
-    with 130 karma
+    Most relevant matches
+    Mark Shuttleworth (sabdfl)
+    joined on 2005-06-06, with 130 karma
 
 
 == Searches with no results ==
 
-Searches that don't return any results display a kind message to the user.
+Searches that don't return any results display a kind message to the
+user.
 
     >>> search_for('fnord')
-    >>> print extract_text(find_main_content(browser.contents))
-    Search Launchpad:
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Pages matching "fnord" in Launchpad
     ...
-    Your search, &ldquo;fnord&rdquo;, did not return any results.
+    Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
 == Searches for the empty string ==
 
-Leaving the search field empty returns the original search
- page, with
-no results, as if the user had not yet performed a search.
+If the user submits the form without entering a term in the search
+field, the page does not contain any results. The user can see that
+the page is identical to the page visited without performing a search.
 
     >>> search_for('')
-    >>> print browser.title
+    >>> print anon_browser.title
     Search Launchpad
     >>> print_search_results()
