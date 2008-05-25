@@ -182,8 +182,8 @@ class POFileMixIn(RosettaStats):
                 "Can't index with type %s. (Must be unicode.)"
                 % type(msgid_text))
 
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(key=msgid_text,
-                                                            context=context)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+            singular_text=msgid_text, context=context)
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
 
