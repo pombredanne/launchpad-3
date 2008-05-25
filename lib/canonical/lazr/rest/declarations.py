@@ -32,6 +32,7 @@ __all__ = [
 
 import simplejson
 import sys
+import types
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
@@ -628,10 +629,11 @@ class BaseResourceOperationAdapter(ResourceOperation):
         params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
 
-        # The webservice assumes that the request is complete when the
-        # operation returns a string. So we take care of marshalling the
-        # result to json.
-        if isinstance(result, basestring):
+        # The webservice passes string results straight to the client.
+        # Otherwise, it will try to convert iterable to collection, and other
+        # objects to entries. We want to marshall simple values using json.
+        basic_types = (basestring, bool, int, float, types.NoneType)
+        if isinstance(result, basic_types):
             response = self.request.response
             response.setHeader('Content-Type', 'application/json')
             return simplejson.dumps(result)

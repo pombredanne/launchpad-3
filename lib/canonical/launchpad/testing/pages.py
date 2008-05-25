@@ -135,7 +135,7 @@ class WebServiceCaller:
             path, 'POST', media_type, data, headers)
 
     def named_post(self, path, operation_name, headers, **kwargs):
-        kwargs['ws_op'] = operation_name
+        kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, value)
                          for key, value in kwargs.items()])
         return self.post(path, 'application/x-www-form-urlencoded', data,

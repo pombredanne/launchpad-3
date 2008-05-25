@@ -236,14 +236,14 @@ class WebServiceBatchNavigator(BatchNavigator):
 
     This batch navigator differs from others in the names of the query
     variables it expects. This class expects the starting point to be
-    contained in the query variable "ws_start" and the size of the
-    batch to be contained in the query variable ""ws_size". When this
+    contained in the query variable "ws.start" and the size of the
+    batch to be contained in the query variable ""ws.size". When this
     navigator serves links, it includes query variables by those
     names.
     """
 
-    start_variable_name = "ws_start"
-    batch_variable_name = "ws_size"
+    start_variable_name = "ws.start"
+    batch_variable_name = "ws.size"
 
 
 class BatchingResourceMixin:
@@ -325,11 +325,11 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         should eventually go into CollectionResource that implements
         POST to create a new entry inside the collection.
         """
-        operation_name = self.request.form.get('ws_op')
+        operation_name = self.request.form.get('ws.op')
         if operation_name is None:
             self.request.response.setStatus(400)
             return "No operation name given."
-        del self.request.form['ws_op']
+        del self.request.form['ws.op']
         return self.handleCustomPOST(operation_name)
 
     def _processCustomOperationResult(self, result):
@@ -460,7 +460,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Render an appropriate representation of the entry."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.pop('ws_op', None)
+        operation_name = self.request.form.pop('ws.op', None)
         if operation_name is not None:
             result = self.handleCustomGET(operation_name)
             if isinstance(result, basestring):
@@ -716,7 +716,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
         # Handle a custom operation, probably a search.
-        operation_name = self.request.form.pop('ws_op', None)
+        operation_name = self.request.form.pop('ws.op', None)
         if operation_name is not None:
             result = self.handleCustomGET(operation_name)
             if isinstance(result, str) or isinstance(result, unicode):
