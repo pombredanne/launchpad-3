@@ -120,7 +120,7 @@
                   <tal:person
                     tal:condition="not: view/person_or_team/isTeam">
                     <div>
-                      Member since 
+                      Joined 
                       <span
                         tal:attributes="title view/person_or_team/datecreated/fmt:datetime"
                         tal:content="view/person_or_team/datecreated/fmt:displaydate">2005-10-05</span>,
