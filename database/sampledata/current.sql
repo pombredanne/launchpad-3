@@ -3972,7 +3972,7 @@ ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'qQ7dw1fXCR5hhJRN7ztj', '2nWXXdVfpV1G761xDhqNp3WR0Pqvc5WD78V1n7RJFwStQV8v5cqMLqqpp9jq5VLbDHgKC6csPm2ZVBv5');
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'hgm2VK35vXD6rLg5pxWw', 'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz');
-
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, '3SdVlTlVKcgXSJHbsSSk', 'HMfdL8JH6fzdHCvDqtHb37LDKdQCvD7DBp8bBb5Dq937LCgH968flSm7CqKRQP7s3qZcXW6fwz5KCGkH');
 
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
@@ -4102,6 +4102,7 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (7, 13, 36, '2007-08-09 21:25:37.832976');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (8, 11, 35, '2006-10-16 18:31:43.832976');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
