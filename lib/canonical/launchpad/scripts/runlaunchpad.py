@@ -180,6 +180,7 @@ def stop_at_exit(process):
             process.wait()
     atexit.register(stop_process)
 
+
 def prepare_for_librarian():
     if not os.path.isdir(config.librarian_server.root):
         os.makedirs(config.librarian_server.root, 0700)

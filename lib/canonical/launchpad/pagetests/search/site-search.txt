@@ -12,7 +12,7 @@ bugs, teams, etc.).
 
     # Another helper to make searching convenient
     >>> def search_for(terms):
-    ...     search_text = anon_browser.getControl(name='field.search_text')
+    ...     search_text = anon_browser.getControl(name='field.text')
     ...     search_text.value = terms
     ...     anon_browser.getControl(name='field.actions.search').click()
 

@@ -170,7 +170,7 @@
           <input
             type="text"
             id="text"
-            name="field.search_text"
+            name="field.text"
             value="Search"
             onfocus="if(this.value=='Search'){this.value='';};"
           />

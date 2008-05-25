@@ -48,7 +48,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 class LaunchpadSearchView(LaunchpadFormView):
     """A view to search for Launchpad pages and objects."""
     schema = ILaunchpadSearch
-    field_names = ['search_text']
+    field_names = ['text']
 
     def __init__(self, context, request):
         """Initialize the view.
@@ -68,18 +68,18 @@ class LaunchpadSearchView(LaunchpadFormView):
     def _getDefaultSearchParams(self):
         """Return a dict of the search param set to their default state."""
         return {
-            'search_text': None,
+            'text': None,
             'start': 0,
             }
 
     def _updateSearchParams(self):
         """Sanitize the search_params and add the BatchNavigator params."""
-        if self.search_params['search_text'] is not None:
-            search_text = self.search_params['search_text'].strip()
-            if search_text == '':
-                self.search_params['search_text'] = None
+        if self.search_params['text'] is not None:
+            text = self.search_params['text'].strip()
+            if text == '':
+                self.search_params['text'] = None
             else:
-                self.search_params['search_text'] = search_text
+                self.search_params['text'] = text
         request_start = self.request.get('start', self.search_params['start'])
         try:
             start = int(request_start)
@@ -88,9 +88,9 @@ class LaunchpadSearchView(LaunchpadFormView):
         self.search_params['start'] = start
 
     @property
-    def search_text(self):
-        """Return the search_text or None."""
-        return self.search_params['search_text']
+    def text(self):
+        """Return the text or None."""
+        return self.search_params['text']
 
     @property
     def start(self):
@@ -105,10 +105,10 @@ class LaunchpadSearchView(LaunchpadFormView):
     @property
     def page_heading(self):
         """Heading to display above the search results."""
-        if self.search_text is None:
+        if self.text is None:
             return 'Search Launchpad'
         else:
-            return 'Pages matching "%s" in Launchpad' % self.search_text
+            return 'Pages matching "%s" in Launchpad' % self.text
 
     @property
     def bug(self):
@@ -166,11 +166,11 @@ class LaunchpadSearchView(LaunchpadFormView):
         """
         self.search_params.update(**data)
         self._updateSearchParams()
-        if self.search_text is None:
+        if self.text is None:
             return
 
         if self.start == 0:
-            numeric_token = self._getNumericToken(self.search_text)
+            numeric_token = self._getNumericToken(self.text)
             if numeric_token is not None:
                 try:
                     self._bug = getUtility(IBugSet).get(numeric_token)
@@ -178,31 +178,31 @@ class LaunchpadSearchView(LaunchpadFormView):
                     self._bug = None
                 self._question = getUtility(IQuestionSet).get(numeric_token)
 
-            name_token = self._getNameToken(self.search_text)
+            name_token = self._getNameToken(self.text)
             if name_token is not None:
                 self._person_or_team = getUtility(IPersonSet).getByName(
                     name_token)
                 self._pillar = self._getDistributionOrProductOrProject(
                     name_token)
 
-        self._pages = self.searchPages(self.search_text, start=self.start)
+        self._pages = self.searchPages(self.text, start=self.start)
 
-    def _getNumericToken(self, search_text):
+    def _getNumericToken(self, text):
         """Return the first group of numbers in the search text, or None."""
         numeric_pattern = re.compile(r'(\d+)')
-        match = numeric_pattern.search(search_text)
+        match = numeric_pattern.search(text)
         if match is None:
             return None
         return match.group(1)
 
-    def _getNameToken(self, search_text):
+    def _getNameToken(self, text):
         """Return the search text as a Launchpad name.
 
         Launchpad names may contain ^[a-z0-9][a-z0-9\+\.\-]+$.
         See `valid_name_pattern`.
         """
         hypen_pattern = re.compile(r'[ _]')
-        name = hypen_pattern.sub('-', search_text.strip().lower())
+        name = hypen_pattern.sub('-', text.strip().lower())
         return sanitize_name(name)
 
     def _getDistributionOrProductOrProject(self, name):

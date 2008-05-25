@@ -23,12 +23,12 @@
          method="get"
          accept-charset="UTF-8">
         <input
-          id="field.search_text"
+          id="field.text"
           class="textType"
           type="text"
           size="36"
-          name="field.search_text"
-          tal:attributes="value view/search_text"/>
+          name="field.text"
+          tal:attributes="value view/text"/>
           <script
             type="text/javascript"
             tal:define="script view/focusedElementScript"
@@ -42,7 +42,7 @@
            value="Search" />
       </form>
 
-      <tal:wants-results condition="view/search_text">
+      <tal:wants-results condition="view/text">
 
         <div id="search-results" tal:condition="view/has_matches">
           <tal:has_exact_matches condition="view/has_exact_matches">
@@ -189,14 +189,14 @@
         <p id="no-results" tal:condition="not:view/has_matches">
           Your search for
           &ldquo;<span
-            class="search_text"
-            tal:content="view/search_text">some text</span>&rdquo;
+            class="text"
+            tal:content="view/text">some text</span>&rdquo;
           did not return any results.
         </p>
 
       </tal:wants-results>
  
-      <div id="no-search" tal:condition="not:view/search_text">
+      <div id="no-search" tal:condition="not:view/text">
         <p>
         Enter a term or many terms to find matching pages. All words are
         used when matching, "and" is not needed. Capitalization is not
