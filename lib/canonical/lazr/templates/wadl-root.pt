@@ -70,7 +70,7 @@
              xmlns="http://www.w3.org/1999/xhtml/">
           Human-readable documentation for the method.
         </doc>
-        <param name="ws_op" required="True"
+        <param name="ws.op" required="True"
                tal:attributes="fixed operation/name">
           <doc>The name of the operation being invoked.</doc>
         </param>
@@ -136,7 +136,7 @@
              tal:condition="operation/op/wadl_operation:doc"
              xmlns="http://www.w3.org/1999/xhtml/">
         </doc>
-        <param name="ws_op" required="True"
+        <param name="ws.op" required="True"
                tal:attributes="fixed operation/name" />
         <param tal:repeat="field operation/op/params"
                tal:attributes="name field/__name__;

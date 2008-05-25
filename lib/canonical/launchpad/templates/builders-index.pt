@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
@@ -17,6 +17,13 @@
 
     <div metal:fill-slot="main">
       <h1>Launchpad build machines</h1>
+
+    <p>
+      <tal:add_action
+        define="link context/menu:overview/add"
+        condition="link/enabled"
+        replace="structure link/render" />
+    </p>
 
     <div id="ppa-builders" tal:define="category view/ppa_builders">
       <div metal:use-macro="template/macros/builder-category" />
@@ -40,31 +47,41 @@
    <h2 tal:content="category/title" />
 
    <table class="listing">
+     <tbody>
      <tal:group repeat="builder_group category/groups">
-       <tr class="category">
-         <th
-           style="text-align: left"
-           tal:content="builder_group/processor_name"
-         />
-         <th>
+       <tr class="highlighted">
+         <th colspan="3" style="text-align: left">
+          <tal:processor replace="builder_group/processor_name" />
+           &nbsp;&nbsp;&nbsp;
+           <span class="discreet">
              <tal:queue-size replace="builder_group/queue_size"
-               >2</tal:queue-size> waiting
+               >2</tal:queue-size> builds waiting in queue
+           </span>
          </th>
        </tr>
-       <tr>
-         <td colspan="2">
-           <table width="100%">
-            <tr class="builder-row" tal:repeat="builder builder_group/builders">
-            <td>
-              <a tal:attributes="href builder/fmt:url"
-                 tal:content="builder/title">Bob</a>
-            </td>
-            <td tal:content="builder/status">OK</td>
-            </tr>
-           </table>
+       <tr class="builder-row" tal:repeat="builder builder_group/builders">
+         <td class="icon left">
+           <tal:not-ok condition="not: builder/builderok">
+             <img width="14" height="14" alt="[Disabled]"
+                  title="Disabled" src="/@@/no" />
+           </tal:not-ok>
         </td>
+         <td style="text-align: left; width: 12em">
+           <a tal:attributes="href builder/fmt:url"
+              tal:content="builder/title/fmt:shorten/30">Bob</a>
+           <tal:mode condition="builder/manual">
+             (manual)
+           </tal:mode>
+         </td>
+         <td style="text-align: left">
+           <tal:status replace="builder/status">Disabled</tal:status>
+         </td>
        </tr>
-    </tal:group>
+       <tr tal:condition="repeat/builder_group/end" class="note">
+         <td>&nbsp;</td>
+       </tr>
+     </tal:group>
+     </tbody>
   </table>
 
 </metal:macro>

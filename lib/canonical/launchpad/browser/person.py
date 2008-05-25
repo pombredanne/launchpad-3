@@ -113,7 +113,7 @@ from canonical.launchpad.interfaces import (
     BranchPersonSearchContext, BranchPersonSearchRestriction,
     BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, ICountry, IEmailAddress,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
     IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
     IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
@@ -692,21 +692,17 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
     def all_related(self):
-        text = 'All related'
         return Link(canonical_url(self.context, rootsite='code'),
-                    text, icon='branch')
+                    'Related branches')
 
     def owned(self):
-        text = 'Owned'
-        return Link('+ownedbranches', text, icon='branch')
+        return Link('+ownedbranches', 'owned')
 
     def registered(self):
-        text = 'Registered'
-        return Link('+registeredbranches', text, icon='branch')
+        return Link('+registeredbranches', 'registered')
 
     def subscribed(self):
-        text = 'Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
+        return Link('+subscribedbranches', 'subscribed')
 
     def addbranch(self):
         if self.user is None:
@@ -2508,7 +2504,7 @@ class PersonEditSSHKeysView(LaunchpadView):
         process = subprocess.Popen(
             '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey)
+        (out, err) = process.communicate(sshkey.encode('utf-8'))
         if 'compromised' in out.lower():
             self.error_message = (
                 'This key is known to be compromised due to a security flaw '
@@ -3799,14 +3795,58 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchesView(BranchListingView):
+class PersonBranchCountMixin:
+    """A mixin class for person branch listings."""
+
+    @cachedproperty
+    def total_branch_count(self):
+        """Return the number of branches related to the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            self.context, visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def registered_branch_count(self):
+        """Return the number of branches registered by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.REGISTERED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def owned_branch_count(self):
+        """Return the number of branches owned by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.OWNED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def subscribed_branch_count(self):
+        """Return the number of branches subscribed to by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
+
+
+class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person."""
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
 
-class PersonRegisteredBranchesView(BranchListingView):
+class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
@@ -3819,7 +3859,7 @@ class PersonRegisteredBranchesView(BranchListingView):
             self.context, BranchPersonSearchRestriction.REGISTERED)
 
 
-class PersonOwnedBranchesView(BranchListingView):
+class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
@@ -3832,7 +3872,7 @@ class PersonOwnedBranchesView(BranchListingView):
             self.context, BranchPersonSearchRestriction.OWNED)
 
 
-class PersonSubscribedBranchesView(BranchListingView):
+class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
