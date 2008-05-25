@@ -33,6 +33,7 @@ result for that exact match in Launchpad.
     >>> print browser.title
     Pages matching "firefox" in Launchpad
     >>> print_search_results()
+    Most relavent matches
     Mozilla Firefox
     The Mozilla Firefox web browser
     Registered by Sample Person
@@ -45,9 +46,10 @@ as the matching question number, if one exists.
     >>> print browser.title
     Pages matching "3" in Launchpad
     >>> print_search_results()
-    #3 Bug Title Test
+    Most relavent matches
+    Bug #3: Bug Title Test
     ...
-    Firefox is slow and consumes too much RAM
+    3: Firefox is slow and consumes too much RAM
     ...
 
 An arbitrary search returns a list of Google search results.
@@ -57,6 +59,7 @@ An arbitrary search returns a list of Google search results.
     >>> print browser.title
     Pages matching "bug" in Launchpad
     >>> print_search_results()
+    Matching pages
     1 &rarr; 20 of 25 results...
     Launchpad Bugs...
     Bugs in Ubuntu Linux...
@@ -95,24 +98,38 @@ teams, or projects, will return their respective matching item.
     # A project.
     >>> search_for('firefox')
     >>> print_search_results()
+    Most relavent matches
     Mozilla Firefox
     The Mozilla Firefox web browser
-    Registered by Sample Person on 2004-09-24
+    Registered by Sample Person
+    on 2004-09-24
 
     # A bug and a question.
     >>> search_for('1')
     >>> print_search_results()
-    #1...Firefox does not support SVG...
+    Most relavent matches
+    Bug #1: Firefox does not support SVG...
     Firefox cannot render Bank Site...
 
     # A team.
     >>> search_for('rosetta-admins')
     >>> print_search_results()
+    Most relavent matches
     Rosetta Administrators
+    (rosetta-admins)
+    Rosetta Administrators
+    Created
+    on 2005-06-06
 
     # A person
     >>> search_for('sabdfl')
     >>> print_search_results()
+    Most relavent matches
+    Mark Shuttleworth
+    (sabdfl)
+    Joined
+    on 2005-06-06,
+    with 130 karma
 
 
 == Searches with no results ==

@@ -154,6 +154,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         for kind in kinds:
             if kind is not None:
                 return True
+        return False
 
     @safe_action
     @action(u'Search', name='search')

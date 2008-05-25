@@ -164,7 +164,7 @@
           </tal:batch>
         </div>
 
-        <p class="no-results" tal:condition="not:view/has_matches">
+        <p id="no-results" tal:condition="not:view/has_matches">
           Your search, 
           &ldquo;<span class="search_text" tal:content="view/search_text">some text</span>&rdquo;,
           did not return any results.

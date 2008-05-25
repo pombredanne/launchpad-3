@@ -158,8 +158,6 @@ class CodebrowseService(Service):
 
 class GoogleWebService(Service):
 
-    service_name = googletestservice.service_name
-
     @property
     def should_launch(self):
         return config.google_test_service.launch
@@ -199,7 +197,7 @@ SERVICES = {
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
-    GoogleWebService.service_name: GoogleWebService(),
+    'google-webservice': GoogleWebService(),
     }
 
 
