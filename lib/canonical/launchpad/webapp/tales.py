@@ -1140,6 +1140,17 @@ class SpecificationFormatterAPI(CustomizableFormatter):
         return {'title': self._context.title}
 
 
+class CodeReviewMessageFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for CodeReviewMessage objects"""
+
+    _link_summary_template = _('Comment by %(author)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {'author': self._context.message.owner.displayname}
+
+
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
     """Adapter for ISpecificationBranch objects to a formatted string."""
 

@@ -13,6 +13,7 @@ __all__ = [
 from zope.component import adapts, getUtility
 from zope.schema import Bool, Datetime, Int, List, Object, Text
 
+from canonical.lazr import decorates
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.interfaces.rest import IEntry
 from canonical.lazr.rest.schema import CollectionField
@@ -21,7 +22,7 @@ from canonical.launchpad.rest.messagetarget import IMessageTargetEntry
 from canonical.launchpad.interfaces import IBug, IBugSet, IBugTask, IPerson
 from canonical.launchpad.fields import (
     ContentNameField, Tag, Title)
-from canonical.lazr import decorates
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
 class IBugEntry(IMessageTargetEntry):
@@ -121,7 +122,7 @@ class BugCollection(Collection):
         """Return all the bugs on the site."""
         # Our context here is IMaloneApplication, that's why
         # we need getUtility.
-        return getUtility(IBugSet).searchAsUser(None)
+        return getUtility(IBugSet).searchAsUser(getUtility(ILaunchBag).user)
 
 
 def bugcomment_to_entry(comment):

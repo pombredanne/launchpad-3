@@ -313,7 +313,8 @@ class BugTask(SQLBase, BugTaskMixin):
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
-        "date_closed", "date_incomplete")
+        "date_closed", "date_incomplete", "date_left_new",
+        "date_triaged", "date_fix_committed", "date_fix_released")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -556,6 +557,22 @@ class BugTask(SQLBase, BugTaskMixin):
     def _set_date_incomplete(self, value):
         """Set date_incomplete, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
+
+    def _set_date_left_new(self, value):
+        """Set date_left_new, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_left_new", value)
+
+    def _set_date_triaged(self, value):
+        """Set date_left_triaged, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_triaged", value)
+
+    def _set_date_fix_committed(self, value):
+        """Set date_left_fix_committed, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_fix_committed", value)
+
+    def _set_date_fix_released(self, value):
+        """Set date_left_fix_released, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_fix_released", value)
 
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
         """Set a value, and update conjoined BugTask."""
