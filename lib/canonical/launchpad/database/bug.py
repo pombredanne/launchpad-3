@@ -321,8 +321,10 @@ class Bug(SQLBase):
             if sub.person.id == person.id:
                 return sub
 
-        return BugSubscription(
+        sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+        notify(SQLObjectCreatedEvent(sub))
+        return sub
 
     def unsubscribe(self, person):
         """See `IBug`."""
