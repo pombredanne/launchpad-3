@@ -41,8 +41,9 @@ class ImportdTestCase(TestCaseWithTransport):
         self.sandbox.tearDown()
         TestCaseWithTransport.tearDown(self)
 
-    def setUpOneCommit(self):
-        workingtree = self.make_branch_and_tree(self.bzrworking)
+    def setUpOneCommit(self, format=None):
+        workingtree = self.make_branch_and_tree(
+            self.bzrworking, format=format)
         workingtree.commit('first commit')
 
     def mirrorPath(self):

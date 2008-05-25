@@ -67,7 +67,10 @@
       </tal:binary_build_location>
     </li>
 
-
-
   </ul>
+
+  <p tal:condition="view/isRemoved">
+    Removed files can still be downloaded from the Librarian; see below.
+  </p>
+
 </tal:root>

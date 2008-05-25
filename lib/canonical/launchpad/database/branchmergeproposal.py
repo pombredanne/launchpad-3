@@ -29,7 +29,8 @@ from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus, IBranchMergeProposal,
     ILaunchpadCelebrities,
-    UserNotBranchReviewer)
+    UserNotBranchReviewer,
+    WrongBranchMergeProposal,)
 from canonical.launchpad.mailout.notificationrecipientset import \
     NotificationRecipientSet
 from canonical.launchpad.validators.person import public_person_validator
@@ -147,6 +148,18 @@ class BranchMergeProposal(SQLBase):
                           CodeReviewMessage.message = Message.id
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
+
+    @property
+    def all_messages(self):
+        """See `IBranchMergeProposal`."""
+        return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
+
+    def getMessage(self, id):
+        """See `IBranchMergeProposal`."""
+        message = CodeReviewMessage.get(id)
+        if message.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        return message
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -403,7 +416,7 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence')
 
     def createMessage(self, owner, subject, content=None, vote=None,
-                      parent=None, _date_created=None):
+                      vote_tag=None, parent=None, _date_created=None):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
@@ -425,4 +438,5 @@ class BranchMergeProposal(SQLBase):
                       rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         return CodeReviewMessage(
-            branch_merge_proposal=self, message=msg, vote=vote)
+            branch_merge_proposal=self, message=msg, vote=vote,
+            vote_tag=vote_tag)

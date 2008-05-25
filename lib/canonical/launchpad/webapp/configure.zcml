@@ -380,6 +380,13 @@
         name="fmt"
         />
     <adapter
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeReviewMessageFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTrackerFormatterAPI"
@@ -577,6 +584,12 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
+        />
+
+    <!-- Set the default timeout function. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
         />
 
     <subscriber

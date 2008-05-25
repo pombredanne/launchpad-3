@@ -12,12 +12,12 @@ processing.
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                0 waiting
-    The frog builder   NOT OK : None (AUTO)
-    Building other packages
-    386                1 waiting
-    Bob The Builder    NOT OK : None (AUTO)
+    PPA build machines
+    386  0 builds waiting in queue
+    The frog builder   Disabled
+    Official distribution build machines
+    386  1 builds waiting in queue
+    Bob The Builder    Disabled
     Generated at ...
 
 As we can see, this page also presents the number of builds waiting
@@ -25,13 +25,13 @@ in queue for each supported architecture on each separated build-farm
 we have, 'ppa' and 'other' (PRIMARY and PARTNER).
 
     >>> def print_depth(contents):
-    ...     depths = find_tags_by_class(contents, 'category')
+    ...     depths = find_tags_by_class(contents, 'highlighted')
     ...     for depth in depths:
     ...         print extract_text(depth)
 
     >>> print_depth(anon_browser.contents)
-    386     0 waiting
-    386     1 waiting
+    386     0 builds waiting in queue
+    386     1 builds waiting in queue
 
 In order to test the 'ppa' build queue depth portlet we will retry
 a failed build in Celso's PPA.
@@ -57,14 +57,14 @@ exposing one pending build record. The 'other' is still present.
 
     >>> anon_browser.reload()
     >>> print_depth(anon_browser.contents)
-    386     1 waiting
-    386     1 waiting
+    386     1 builds waiting in queue
+    386     1 builds waiting in queue
 
 From this page, users with the appropriate permission can register new
 builders.
 
     >>> admin_browser.open("http://launchpad.dev/+builds/+index")
-    >>> admin_browser.getLink("Add builder").click()
+    >>> admin_browser.getLink("Register a new build machine").click()
     >>> print admin_browser.title
     Register a new build machine
 
@@ -72,7 +72,7 @@ While anonymous users are not given the option to register a new build
 and are not permitted if they go directly to the URL.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/+index")
-    >>> anon_browser.getLink("Add builder")
+    >>> anon_browser.getLink("Register a new build machine")
     Traceback (most recent call last):
     ...
     LinkNotFoundError

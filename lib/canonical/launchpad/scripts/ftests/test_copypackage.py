@@ -18,12 +18,12 @@ from canonical.launchpad.scripts.ftpmaster import (
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet, IPersonSet, PackagePublishingStatus)
+    IComponentSet, IDistributionSet, IPersonSet,
+    ISourcePackagePublishingHistory, PackagePublishingStatus)
 from canonical.librarian.ftests.harness import (
     cleanupLibrarianFiles, fillLibrarianFile)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 
 
 class TestCopyPackageScript(unittest.TestCase):
@@ -42,6 +42,9 @@ class TestCopyPackageScript(unittest.TestCase):
         args.extend(extra_args)
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        # The subprocess commits to the database so we need to tell the layer
+        # to fully tear down and restore the testing database.
+        DatabaseLayer.force_dirty_database()
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
@@ -509,6 +512,19 @@ class TestCopyPackage(unittest.TestCase):
                     self.layer.txn.commit()
                     self.layer.switchDbUser('launchpad')
 
+        # Also make the changes files restricted.
+        for published in sources:
+            queue = published.sourcepackagerelease.getQueueRecord(
+                distroseries=published.distroseries)
+            self.layer.txn.commit()
+            self.layer.switchDbUser('librariangc')
+            if queue is not None:
+                lfa = removeSecurityProxy(queue).changesfile
+                lfa.restricted = True
+                fillLibrarianFile(lfa.content.id, content=FAKE_CONTENT)
+                lfa.content.filesize = len(FAKE_CONTENT)
+            self.layer.txn.commit()
+            self.layer.switchDbUser('launchpad')
 
         # Now switch the to the user that the script runs as.
         self.layer.txn.commit()
@@ -547,6 +563,11 @@ class TestCopyPackage(unittest.TestCase):
                 published.secure_record.component.name, universe.name)
             for published_file in published.files:
                 self.assertFalse(published_file.libraryfilealias.restricted)
+            # Also check the sources' changesfiles.
+            if ISourcePackagePublishingHistory.providedBy(published):
+                queue = published.sourcepackagerelease.getQueueRecord(
+                    distroseries=published.distroseries)
+                self.assertFalse(queue.changesfile.restricted)
 
         cleanupLibrarianFiles()
 

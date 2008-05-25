@@ -40,6 +40,7 @@ And it needs to maintain a minimum length
 
 
     >>> _counter = 0
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> def new_person(email):
     ...     import time
     ...     from canonical.launchpad.interfaces import IPersonSet
@@ -54,7 +55,8 @@ And it needs to maintain a minimum length
     ...     email_address_set = getUtility(IEmailAddressSet)
     ...     global _counter
     ...     for email_address in email_address_set.getByPerson(person):
-    ...         email_address.email = 'nodupe%d@example.com' % _counter
+    ...         removeSecurityProxy(email_address).email = (
+    ...             'nodupe%d@example.com' % _counter)
     ...         _counter += 1
     ...     flush_database_updates()
     ...     assert email_address_set.getByEmail(email) is None, 'Oops'

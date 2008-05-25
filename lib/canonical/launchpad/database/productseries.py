@@ -455,6 +455,17 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datefinished = None
         self.syncinterval = None
 
+    def markStopped(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.STOPPED
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.datestarted = None
+        self.datefinished = None
+        self.syncinterval = None
+
     def deleteImport(self):
         """See `IProductSeriesSourceAdmin`."""
         self.importstatus = None

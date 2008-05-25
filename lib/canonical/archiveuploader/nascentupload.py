@@ -189,11 +189,11 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        # Check upload rights for the signer of the upload.
-        self.verify_acl()
-
         # Override archive location if necessary.
         self.overrideArchive()
+
+        # Check upload rights for the signer of the upload.
+        self.verify_acl()
 
         # Perform policy checks.
         self.policy.checkUpload(self)

@@ -441,6 +441,10 @@ codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
+codereviewmessage_index = 'Code review comment'
+
+codereviewmessage_reply = 'Reply to code review comment'
+
 cveset_all = 'All CVE entries registered in Launchpad'
 
 cveset_index = 'Launchpad CVE tracker'
@@ -504,8 +508,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
-
-distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
@@ -1027,6 +1029,8 @@ product_new = 'Register a project in Launchpad'
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_files = ContextDisplayName('%s project files')
+
+product_review_license = ContextTitle('Review licensing for %s')
 
 product_series = ContextDisplayName('%s timeline')
 
