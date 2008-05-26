@@ -4,15 +4,18 @@
 
 __metaclass__ = type
 __all__ = [
+    'BoolFieldMarshaller',
     'CollectionField',
     'CollectionFieldMarshaller',
     'DateTimeFieldMarshaller',
+    'FloatFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
     'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
     'TimezoneFieldMarshaller',
+    'TokenizedVocabularyFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
     ]
@@ -112,6 +115,14 @@ class SimpleFieldMarshaller:
     """
     implements(IFieldMarshaller)
 
+
+    # Set this to type or tuple of types that the JSON value must be of.
+    _type = None
+
+    # The error message to use if the isinstance fails on the _type. The
+    # value will be interpreted in the message.
+    _type_error_message = None
+
     def __init__(self, field, request):
         self.field = field
         self.request = request
@@ -146,6 +157,9 @@ class SimpleFieldMarshaller:
 
         Default is to return the value unchanged.
         """
+        if self._type is not None:
+            if not isinstance(value, self._type):
+                raise ValueError(self._type_error_message % value)
         return value
 
     @property
@@ -164,20 +178,57 @@ class SimpleFieldMarshaller:
         return value
 
 
+class BoolFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into an integer."""
+
+    _type = bool
+    _type_error_message = 'not a boolean: %r'
+
+
 class IntFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
 
+    _type = int
+    _type_error_message = 'not an integer: %r'
+
+
+class FloatFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into an integer."""
+
+    _type = (float, int)
+    _type_error_message = 'not a float: %r'
+
     def _marshall_from_json_data(self, value):
-        """Make sure the value is an integer"""
-        if not isinstance(value, int):
-            raise ValueError("not an integer: %r" % value)
-        return value
+        """See `SimpleFieldMarshaller`.
+
+        Converts the value to a float.
+        """
+        return float(
+            super(FloatFieldMarshaller, self)._marshall_from_json_data(value))
 
 
 class TimezoneFieldMarshaller(SimpleFieldMarshaller):
 
     def __init__(self, field, request, vocabulary):
         super(TimezoneFieldMarshaller, self).__init__(field, request)
+
+
+class TokenizedVocabularyFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that looks up value using a token in a vocabulary."""
+
+    def __init__(self, field, request, vocabulary):
+        super(TokenizedVocabularyFieldMarshaller, self).__init__(
+            field, request)
+
+    def _marshall_from_json_data(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Looks up the value as a token in the vocabulary.
+        """
+        try:
+            return self.field.vocabulary.getTermByToken(str(value)).value
+        except LookupError:
+            raise ValueError("%r isn't a valid token" % value)
 
 
 class DateTimeFieldMarshaller(SimpleFieldMarshaller):

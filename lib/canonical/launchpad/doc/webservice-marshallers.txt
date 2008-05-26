@@ -124,12 +124,55 @@ value to convert.  In the simple case, the value is returned unchanged.
 
 == Basic types marshallers ==
 
+=== Bool ===
+
+The marshaller for a Bool field asserts that the JSON value is either
+True or False. A ValueError is raised when its not the case.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.schema import Bool
+    >>> field = Bool()
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
+    >>> marshaller.marshall_from_json_data(True)
+    True
+    >>> marshaller.marshall_from_json_data(False)
+    False
+    >>> marshaller.marshall_from_json_data("true")
+    Traceback (most recent call last):
+      ...
+    ValueError: not a boolean: 'true'
+    >>> marshaller.marshall_from_json_data(1)
+    Traceback (most recent call last):
+      ...
+    ValueError: not a boolean: 1
+
+None is passed through though.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+Booleans are encoded using the standard JSON representation of 'true' or
+'false'.
+
+    >>> marshaller.marshall_from_request(u"true")
+    True
+    >>> marshaller.marshall_from_request(u"false")
+    False
+
+    >>> marshaller.marshall_from_request('True')
+    Traceback (most recent call last):
+      ...
+    ValueError: not a boolean: 'True'
+
+
 === Int ===
 
 The marshaller for an Int field asserts that the JSON value is an
-integer. A ValueError is raised in these cases.
+integer. A ValueError is raised when its not the case.
 
-    >>> from zope.component import getMultiAdapter
     >>> from zope.schema import Int
     >>> field = Int()
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
@@ -156,23 +199,105 @@ Integers are encoded using strings when in a request.
     4
 
 
-=== Choice ===
+=== Float ===
 
-The marshaller for a Choice is chosen based on the Choice's
-vocabulary. First, let's look at a Choice whose vocabulary is an
-EnumeratedType
+The marshaller for a Float field checks that the JSON value is indeed a
+float.  A ValueError is raised when its not the case.
 
-    >>> from zope.schema import Choice
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
-    >>> field = Choice(vocabulary=BugTaskStatus)
+    >>> from zope.schema import Float
+    >>> field = Float()
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
     >>> verifyObject(IFieldMarshaller, marshaller)
     True
+
+    >>> marshaller.marshall_from_json_data(1.0)
+    1.0
+    >>> marshaller.marshall_from_json_data(-1.0)
+    -1.0
+    >>> marshaller.marshall_from_json_data("true")
+    Traceback (most recent call last):
+      ...
+    ValueError: not a float: 'true'
+
+None is passed through though.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+And integers are automatically converted to a float.
+
+    >>> marshaller.marshall_from_json_data(1)
+    1.0
+
+Floats are encoded using the standard JSON representation.
+
+    >>> marshaller.marshall_from_request(u"1.2")
+    1.2
+    >>> marshaller.marshall_from_request(u"-1.2")
+    -1.2
+    >>> marshaller.marshall_from_request(u"-1")
+    -1.0
+
+    >>> marshaller.marshall_from_request('True')
+    Traceback (most recent call last):
+      ...
+    ValueError: not a float: 'True'
+
+
+=== Choice ===
+
+The marshaller for a Choice is chosen based on the Choice's
+vocabulary.
+
+    >>> from zope.schema import Choice
+
+
+==== Choice for IVocabularyTokenized ====
+
+The default marshaller will use the vocabulary getTermByToken to
+retrieve the value to use. It raise an error if the value isn't in the
+vocabulary.
+
+    >>> field = Choice(__name__='simple', values=[10, 'a value', True])
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+    >>> marshaller.marshall_from_json_data(10)
+    10
+    >>> marshaller.marshall_from_json_data("a value")
+    'a value'
+    >>> marshaller.marshall_from_json_data(True)
+    True
+    >>> marshaller.marshall_from_request('true')
+    True
+    >>> marshaller.marshall_from_request('a value')
+    'a value'
+    >>> marshaller.marshall_from_request('10')
+    10
+
+    >>> marshaller.marshall_from_json_data('100')
+    Traceback (most recent call last):
+      ...
+    ValueError: '100' isn't a valid token
+
+None is always returned unchanged.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+
+==== Choice of EnumeratedTypes ====
 
 The JSON representation of the enumerated value is its title.  A string
 that corresponds to one of the values is marshalled to the appropriate
 value. A string that doesn't correspond to any enumerated value results
 in a helpful ValueError.
+
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> field = Choice(vocabulary=BugTaskStatus)
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
 
     >>> marshaller.marshall_from_json_data("Triaged")
     <DBItem BugTaskStatus.TRIAGED...>
@@ -193,22 +318,20 @@ None is returned unchanged:
     None
 
 
-== Object marshallers ==
+==== Choice of SQLObjectVocabularyBase ====
 
-Here's a Choice whose vocabulary is a filter on a database table that
-can be very large. Futhermore, every item in the vocabulary is
-published as a resource in Launchpad's web service.
+For vocabularies based on SQLObjectVocabularyBase, the values are
+interpreted as URLs referencing objects on the web service. If the given
+string is a URL corresponding to a vocabulary item, the marshaller
+returns that item. Otherwise it raises a ValueError.
 
     >>> from canonical.launchpad.vocabularies import (
     ...     ValidPersonOrTeamVocabulary)
     >>> field = Choice(
     ...     __name__='some_person', vocabulary=ValidPersonOrTeamVocabulary())
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
-
-Here, the client is expected to designate a vocabulary item by its
-published URL. If the given string is a URL corresponding to a
-vocabulary item, the marshaller returns that item. Otherwise it
-raises a ValueError.
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
 
     >>> from canonical.launchpad.interfaces import IPerson
     >>> person = marshaller.marshall_from_request(
@@ -218,13 +341,19 @@ raises a ValueError.
     >>> person.name
     u'salgado'
 
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> ubuntu_team = marshaller.marshall_from_json_data(
+    ...     "http://api.launchpad.dev/beta/~ubuntu-team")
+    >>> ubuntu_team.name
+    u'ubuntu-team'
+
     >>> marshaller.marshall_from_request(
     ...     "http://api.launchpad.dev/beta/~nosuchperson")
     Traceback (most recent call last):
     ...
     ValueError: No such object "http://api.launchpad.dev/beta/~nosuchperson".
 
-    >>> marshaller.marshall_from_request("salgado")
+    >>> marshaller.marshall_from_json_data("salgado")
     Traceback (most recent call last):
     ...
     ValueError: No such object "salgado".
@@ -247,7 +376,7 @@ resource and not a random string.
     'some_person_link'
 
 
-== Collection marshallers ==
+=== CollectionField ===
 
 The most complicated kind of marshaller is one that manages a
 collection of objects associated with some other object. Let's do an
@@ -260,6 +389,8 @@ membership, or something like that.)
     >>> field = CollectionField(
     ...     __name__='person_memberships', value_type=Object(schema=IPerson))
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
 
 Instead of serving the actual collection, collection marshallers serve
 a URL to that collection.
