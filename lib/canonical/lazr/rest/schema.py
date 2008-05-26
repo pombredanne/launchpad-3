@@ -186,6 +186,12 @@ class TimezoneFieldMarshaller(SimpleFieldMarshaller):
         super(TimezoneFieldMarshaller, self).__init__(field, request)
 
 
+class TimezoneFieldMarshaller(SimpleFieldMarshaller):
+
+    def __init__(self, field, request, vocabulary):
+        super(TimezoneFieldMarshaller, self).__init__(field, request)
+
+
 class DateTimeFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into a datetime object."""
 
