@@ -744,6 +744,47 @@ The branch location is shown using the lp: Bazaar lookup names.
     >>> print branch.bzr_identity
     lp://dev/~landscape-developers/landscape/trunk
 
+Branches associated with product series have shorter identities.  To
+show this the landscape trunk branch will be associated as the primary
+development focus branch.
+
+    >>> landscape = branch.product
+    >>> landscape.development_focus.user_branch = branch
+    >>> syncUpdate(landscape.development_focus)
+
+Private branches still show the full branch name.
+
+    >>> print branch.bzr_identity
+    lp://dev/~landscape-developers/landscape/trunk
+
+    >>> branch.private = False
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+
+If the series is not the main development focus, then the series
+name is appended.  The branch will always use the shorter of the
+names if possible.
+
+    >>> series = landscape.newSeries(branch.owner, 'experimental', '', branch)
+    >>> len(list(branch.associatedProductSeries()))
+    2
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+    >>> landscape.development_focus.user_branch = None
+    >>> syncUpdate(landscape.development_focus)
+    >>> print branch.bzr_identity
+    lp://dev/landscape/experimental
+
+Junk branches associated with a series do not get the short form of
+bzr_identity.
+
+    >>> print junkcode.product
+    None
+    >>> series.user_branch = junkcode
+    >>> syncUpdate(series)
+    >>> print junkcode.bzr_identity
+    lp://dev/~ddaa/+junk/junkcode
+
 
 == Branch Scan List ==
 
@@ -956,31 +997,11 @@ extra display information.
     New VCS imports ~vcs-imports/gnome-terminal/import
 
     >>> branches = branchset.getBranchesForContext(
-    ...     gnome_terminal, sort_by=BranchListingSort.AUTHOR)
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title,
-    ...     if branch.author:
-    ...         print branch.author.displayname,
-    ...     else:
-    ...         print '<none>',
-    ...     print branch.unique_name
-    New Launchpad Developers ~launchpad/gnome-terminal/launchpad
-    Merged Sample Person ~name12/gnome-terminal/slowness
-    Experimental Sample Person ~name12/gnome-terminal/klingon
-    Abandoned <none> ~name12/gnome-terminal/2.4
-    Mature <none> ~name12/gnome-terminal/2.6
-    Development <none> ~name12/gnome-terminal/main
-    New <none> ~ddaa/gnome-terminal/dev
-    New <none> ~vcs-imports/gnome-terminal/import
-    New <none> ~name12/gnome-terminal/mirrored
-    New <none> ~name12/gnome-terminal/pushed
-    New <none> ~name12/gnome-terminal/scanned
-
-    >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     Development ~name12/gnome-terminal/main
+
 
 == Getting branches for a project ==
 

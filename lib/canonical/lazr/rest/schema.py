@@ -9,8 +9,10 @@ __all__ = [
     'DateTimeFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
+    'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
+    'TimezoneFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
     ]
@@ -26,7 +28,9 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
+from zope.schema import Field, Object
 from zope.schema._field import AbstractCollection
+from zope.schema.interfaces import SchemaNotProvided
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -69,7 +73,7 @@ class URLDereferencingMixin:
         traversal code to dereference a URL into a published object.
 
         :param url: The URL to a resource.
-        :raise NotFoundError: If the URL does not designate a
+        :raise NotFound: If the URL does not designate a
             published object.
         """
         (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
@@ -102,8 +106,7 @@ class URLDereferencingMixin:
 class SimpleFieldMarshaller:
     """A marshaller that returns the same value it's served.
 
-    The only exception is that the empty string is treated as the lack
-    of a value; i.e. None.
+    This implementation is meant to be subclassed.
     """
     implements(IFieldMarshaller)
 
@@ -111,40 +114,90 @@ class SimpleFieldMarshaller:
         self.field = field
         self.request = request
 
-    def marshall(self, value):
-        "Make sure the value is a string and then call _marshall()."
+    def marshall_from_json_data(self, value):
+        """See `IFieldMarshaller`.
+
+        When value is None, return None, otherwise call
+        _marshall_from_json_data().
+        """
         if value is None:
             return None
-        assert isinstance(value, basestring), 'Deserializing a non-string'
-        return self._marshall(value)
+        return self._marshall_from_json_data(value)
 
-    def representationName(self, field_name):
-        "Return the field name as is."
-        return field_name
+    def marshall_from_request(self, value):
+        """See `IFieldMarshaller`.
 
-    def unmarshall(self, entry, field_name, value):
-        "Return the value as is."
-        return value
-
-    def _marshall(self, value):
-        """Return the value as is, unless it's empty; then return None."""
+        Make sure the value is a string and then call the
+        _marshall_from_request() hook method.
+        """
+        assert isinstance(value, basestring), (
+            'Marshalling a non-string: %r' % value)
         if value == "":
             return None
+        return self._marshall_from_request(value)
+
+    def _marshall_from_request(self, value):
+        """Hook method to marshall a non-null value.
+
+        Default is to return the value unchanged.
+        """
+        return value
+
+    def _marshall_from_json_data(self, value):
+        """Hook method to marshall a no-null value.
+
+        Default is to return the value unchanged.
+        """
+        return value
+
+    @property
+    def representation_name(self):
+        """See `IFieldMarshaller`.
+
+        Return the field name as is.
+        """
+        return self.field.__name__
+
+    def unmarshall(self, entry, value):
+        """See `IFieldMarshaller`.
+
+        Return the value as is.
+        """
         return value
 
 
 class IntFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
 
-    def _marshall(self, value):
+    def _marshall_from_request(self, value):
         """Try to convert the value into an integer."""
         return int(value)
 
+    def _marshall_from_json_data(self, value):
+        """Make sure the value is an integer"""
+        if not isinstance(value, int):
+            raise ValueError("not an integer: %r" % value)
+        return value
+
+
+class TimezoneFieldMarshaller(SimpleFieldMarshaller):
+
+    def __init__(self, field, request, vocabulary):
+        super(TimezoneFieldMarshaller, self).__init__(field, request)
+
 
 class DateTimeFieldMarshaller(SimpleFieldMarshaller):
-    """A marshaller that transforms its value into an integer."""
+    """A marshaller that transforms its value into a datetime object."""
 
-    def _marshall(self, value):
+    def marshall_from_json_data(self, value):
+        """See `IFieldMarshaller`.
+
+        The JSON value is a string that needs to be parsed.
+        """
+        return self.marshall_from_request(value)
+
+    def _marshall_from_request(self, value):
+        """Parse the value as a datetime object."""
         try:
             value = DateTimeParser().parse(value)
             (year, month, day, hours, minutes, secondsAndMicroseconds,
@@ -161,13 +214,31 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
 
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller for collection fields."""
 
-    def representationName(self, field_name):
-        "Make it clear that the value is a link to a collection."
-        return field_name + '_collection_link'
+    @property
+    def representation_name(self):
+        """See `IFieldMarshaller`.
 
-    def unmarshall(self, entry, field_name, value):
-        return "%s/%s" % (canonical_url(entry.context), field_name)
+        Make it clear that the value is a link to a collection.
+        """
+        return "%s_collection_link" % self.field.__name__
+
+    def marshall_from_json_data(self, value):
+        """See `IFieldMarshaller`.
+
+        The JSON value is a string that needs to be dereferenced.
+        """
+        if value is None:
+            return None
+        return self._marshall_from_request(value)
+
+    def unmarshall(self, entry, value):
+        """See `IFieldMarshaller`.
+
+        This returns a link to the scoped collection.
+        """
+        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
 
 
 def VocabularyLookupFieldMarshaller(field, request):
@@ -190,7 +261,14 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             field, request)
         self.vocabulary = vocabulary
 
-    def _marshall(self, value):
+    def marshall_from_json_data(self, value):
+        """See `IFieldMarshaller`.
+
+        The JSON value is the title of a vocabulary item.
+        """
+        return self.marshall_from_request(value)
+
+    def _marshall_from_request(self, value):
         """Find an item in the vocabulary by title."""
         valid_titles = []
         for item in self.field.vocabulary.items:
@@ -201,8 +279,13 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             'Invalid value "%s". Acceptable values are: %s' %
             (value, ', '.join(valid_titles)))
 
+    def unmarshall(self, entry, value):
+        if value is None:
+            return None
+        return value.title
 
-class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
+
+class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
                                   URLDereferencingMixin):
     """A marshaller that turns URLs into data model objects.
 
@@ -211,22 +294,41 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
     """
 
     def __init__(self, field, request, vocabulary=None):
-        super(ObjectLookupFieldMarshaller, self).__init__(
-            field, request, vocabulary)
+        super(ObjectLookupFieldMarshaller, self).__init__(field, request)
+        self.vocabulary = vocabulary
 
-    def representationName(self, field_name):
-        "Make it clear that the value is a link to an object, not an object."
-        return field_name + '_link'
+    @property
+    def representation_name(self):
+        """See `IFieldMarshaller`.
 
-    def unmarshall(self, entry, field_name, value):
-        "Represent an object as the URL to that object"
+        Make it clear that the value is a link to an object, not an object.
+        """
+        return "%s_link" % self.field.__name__
+
+    def unmarshall(self, entry, value):
+        """See `IFieldMarshaller`.
+
+        Represent an object as the URL to that object
+        """
         repr_value = None
         if value is not None:
             repr_value = canonical_url(value)
         return repr_value
 
-    def _marshall(self, value):
-        """Look up the data model object by URL."""
+    def marshall_from_json_data(self, value):
+        """See `IFieldMarshaller`.
+
+        The JSON value is a string that needs to be dereferenced.
+        """
+        if value is None:
+            return None
+        return self._marshall_from_request(value)
+
+    def _marshall_from_request(self, value):
+        """See `IFieldMarshaller`.
+
+        Look up the data model object by URL.
+        """
         try:
             resource = self.dereference_url(value)
         except NotFound:
@@ -239,3 +341,18 @@ class ObjectLookupFieldMarshaller(SimpleVocabularyLookupFieldMarshaller,
         # to the object underlying a resource, we need to strip its
         # security proxy.
         return removeSecurityProxy(resource).context
+
+
+class Reference(Object):
+    """An Object-like field which doesn't validate all fields of the schema.
+
+    Unlike Object, which does call _validate_fields(self.schema, value) to
+    validate all fields, this field will simply call the _validate() method of
+    the Field class and then check that the given value provides the specified
+    schema.
+    """
+
+    def _validate(self, value):
+        Field._validate(self, value)
+        if not self.schema.providedBy(value):
+            raise SchemaNotProvided()

@@ -47,7 +47,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=False)
+        validator=public_person_validator, notNull=True)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 

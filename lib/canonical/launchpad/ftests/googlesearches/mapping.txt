@@ -1,0 +1,17 @@
+# This file defines a mapping of Google search service URLs to the XML
+# files that should be returned by them.
+#
+# The format is 'url XMLfile'. Blank lines and lines starting with '#'
+# are ignored.
+#
+# The special URL, '*', is returned for all un-mapped URLs.
+
+* googlesearchservice-no-results.xml
+
+/cse?as_sitesearch=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=bug&start=0 googlesearchservice-bugs-1.xml
+
+/cse?as_sitesearch=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=bug&start=20 googlesearchservice-bugs-2.xml
+
+/cse?as_sitesearch=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=launchpad&start=0 googlesearchservice-bugs-1.xml
+
+/cse?as_sitesearch=launchpad.net&client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=launchpad&start=20 googlesearchservice-bugs-2.xml

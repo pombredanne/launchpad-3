@@ -43,28 +43,30 @@
     />
 
   <content class="canonical.launchpad.database.Person">
-    <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
+    <allow interface="canonical.launchpad.interfaces.person.IPersonPublic"/>
+    <allow interface="canonical.launchpad.interfaces.person.ITeamPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
     <allow
-      interface="canonical.launchpad.interfaces.IPersonAdminWriteRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
       />
 
     <require
       permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.IPersonViewRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonViewRestricted"
       />
     <require
       permission="launchpad.Edit"
-      interface="canonical.launchpad.interfaces.IPersonEditRestricted"
+      interface="canonical.launchpad.interfaces.person.IPersonEditRestricted"
       />
     <require
       permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.IPersonPublic"
+      set_schema="canonical.launchpad.interfaces.person.IPersonPublic
+                  canonical.launchpad.interfaces.person.ITeamPublic"
       />
     <require
       permission="launchpad.Admin"
-      set_schema="canonical.launchpad.interfaces.IPersonAdminWriteRestricted"
+      set_schema="canonical.launchpad.interfaces.person.IPersonAdminWriteRestricted"
       />
     <require
       permission="launchpad.Special"
@@ -303,6 +305,16 @@
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
     template="../templates/person-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+relicensing"
+    facet="translations"
+    class="canonical.launchpad.browser.PersonTranslationRelicensingView"
+    permission="launchpad.Edit"
+    template="../templates/person-translations-relicensing.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 

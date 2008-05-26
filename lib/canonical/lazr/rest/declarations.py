@@ -27,7 +27,6 @@ __all__ = [
     'operation_parameters',
     'rename_parameters_as',
     'webservice_error',
-    'WebServiceExceptionView',
     ]
 
 import simplejson
@@ -44,13 +43,14 @@ from zope.schema import getFields
 from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 
+
 # XXX flacoste 2008-01-25 bug=185958:
 # canonical_url and ILaunchBag code should be moved into lazr.
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.decorates import Passthrough
-from canonical.lazr.interface import copy_attribute
+from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
 from canonical.lazr.rest.resource import Collection, Entry
@@ -446,7 +446,7 @@ class export_factory_operation(_export_operation):
             if not IField.providedBy(field):
                 raise TypeError("%s.%s doesn't provide IField." % (
                                 interface.__name__, name))
-            self.params[name] = copy_attribute(field)
+            self.params[name] = copy_field(field)
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
@@ -492,7 +492,7 @@ def generate_entry_interface(interface):
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        attrs[tag['as']] = copy_attribute(field)
+        attrs[tag['as']] = copy_field(field, __name__=tag['as'])
 
     return InterfaceClass(
         "%sEntry" % interface.__name__, bases=(IEntry, ), attrs=attrs,
@@ -578,22 +578,6 @@ def generate_collection_adapter(interface):
 
     protect_schema(factory, ICollection)
     return factory
-
-
-class WebServiceExceptionView:
-    """Generic view handling exceptions on the web service."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Generate the HTTP response describing the exception."""
-        response = self.request.response
-        response.setStatus(self.context.__lazr_webservice_error__)
-        response.setHeader('Content-Type', 'text/plain')
-
-        return str(self.context)
 
 
 class BaseResourceOperationAdapter(ResourceOperation):

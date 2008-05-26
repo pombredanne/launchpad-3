@@ -501,7 +501,7 @@ In the minute after James had deleted the package, he discovered that
 No problem, he goes back to the copy-package interface in his PPA and
 still able to copy the deleted source to the warty series.
 
-By default the copy presents only PUBLISHED or PENDING packages.
+By default the copy view presents only PUBLISHED or PENDING packages.
 
 James mistakenly requests the copy without including the binaries
 resulting from the hoary build, which are still published in grumpy.

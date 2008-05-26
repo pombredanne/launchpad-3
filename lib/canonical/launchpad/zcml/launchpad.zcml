@@ -249,6 +249,12 @@
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
 
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      name="+search"
+      class="canonical.launchpad.browser.root.LaunchpadSearchView"
+      template="../templates/launchpad-search.pt"
+      permission="zope.Public" />
 
   <!-- Declare robots.txt file for the root -->
   <browser:page

@@ -676,6 +676,11 @@ All fields tagged were copied to the new interface:
     price: Float
     title: TextLine
 
+The field __name__ attribute contains the exported name:
+
+    >>> print entry_interface['price'].__name__
+    price
+
 It's an error to use generate_entry_interface() on an interface that
 wasn't marked for export:
 
@@ -869,32 +874,6 @@ parameters accepted by the operation.
 
 The call() method calls the underlying method and return its result.
 
-    >>> class FakeResponse(object):
-    ...     """Simple response wrapper object."""
-    ...     def __init__(self):
-    ...         self.status = 200
-    ...         self.headers = {}
-    ...
-    ...     def setStatus(self, new_status):
-    ...         self.status = new_status
-    ...
-    ...     def setHeader(self, name, value):
-    ...         self.headers[name] = value
-
-    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> class FakeRequest(object):
-    ...     """Simple request object for testing purpose."""
-    ...     # This makes us eligible for get_current_browser_request()
-    ...     implements(IHTTPApplicationRequest)
-    ...
-    ...     def __init__(self):
-    ...         self.response = FakeResponse()
-    ...         self.principal = None
-    ...         self.interaction = None
-    ...
-    ...     def getApplicationURL(self):
-    ...         return "http://api.example.org"
-
     >>> class BookSetOnSteroids(BookSet):
     ...     implements(IBookSetOnSteroids)
     ...
@@ -906,6 +885,7 @@ The call() method calls the underlying method and return its result.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
 
+    >>> from canonical.lazr.testing.webservice import FakeRequest
     >>> request = FakeRequest()
     >>> read_method_adapter = read_method_adapter_factory(
     ...     BookSetOnSteroids(), request)
@@ -1067,26 +1047,6 @@ IMethod marked for export:
     TypeError: 'getAllBooks' isn't tagged for webservice export.
 
 
-=== Exceptions ===
-
-There is a generic view class that can handle exceptions during web
-service requests.
-
-    >>> from canonical.lazr.rest.declarations import WebServiceExceptionView
-
-That view returns the exception message as content, and sets the
-result code to the one specified using the webservice_error() directive.
-
-    >>> exception = InvalidEmail("foo@bar isn't a valid email address")
-    >>> error_view = WebServiceExceptionView(exception, FakeRequest())
-    >>> error_view()
-    "foo@bar isn't a valid email address"
-    >>> error_view.request.response.headers['Content-Type']
-    'text/plain'
-    >>> error_view.request.response.status
-    400
-
-
 === Security ===
 
 The adapters have checkers defined for them that grant access to all
@@ -1199,7 +1159,5 @@ InvalidEmail exception.
 
 (Clean-up.)
 
-    >>> from zope.testing.cleanup import cleanUp
-    >>> cleanUp()
     >>> del bookexample
     >>> del sys.modules['canonical.lazr.bookexample']

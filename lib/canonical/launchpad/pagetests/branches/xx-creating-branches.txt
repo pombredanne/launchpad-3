@@ -111,7 +111,7 @@ the product code facet page.
 
     >>> user_browser.getLink('Code').click()
     >>> print user_browser.url
-    http://code.launchpad.dev/applets/
+    http://code.launchpad.dev/applets
 
 Let's make sure we can load the branch creation form on a product.
 
@@ -179,13 +179,13 @@ Since no-priv is not a member of lifeless, the Register branch link is not
 shown.
 
     >>> user_browser.open('http://code.launchpad.dev/~lifeless')
-    >>> user_browser.getLink('Register branch')
+    >>> user_browser.getLink(id="register-branch")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> browser.open('http://code.launchpad.dev/~landscape-developers')
-    >>> browser.getLink('Register branch').click()
+    >>> browser.getLink(id="register-branch").click()
     >>> print browser.getControl('Owner').displayValue
     ['Landscape Developers']
 
@@ -209,7 +209,7 @@ The specified URL has a trailing slash. We will check later that it has been
 stripped.
 
     >>> user_browser.open('http://code.launchpad.dev/~no-priv')
-    >>> user_browser.getLink('Register branch').click()
+    >>> user_browser.getLink(id="register-branch").click()
     >>> user_browser.getControl('Name').value = 'pyresources'
     >>> user_browser.getControl('Title').value = (
     ...     'Resource Management for Unit Tests')
@@ -365,6 +365,21 @@ URL validation should check that the entered URL is not from Launchpad.
     For Launchpad to mirror a branch, the original branch cannot be on
     launchpad.dev.
 
+As well as checking against the root site set in the config, a check
+is also done against the value stored as a database constraint.
+
+    >>> user_browser.open('http://code.launchpad.dev/firefox')
+    >>> user_browser.getLink(id="register-branch").click()
+    >>> user_browser.getControl('Branch URL').value = (
+    ...     'http://bazaar.launchpad.net/foo/bar/')
+    >>> user_browser.getControl('Name').value = 'unique-name'
+    >>> user_browser.getControl('Register Branch').click()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    There is 1 error.
+    For Launchpad to mirror a branch, the original branch cannot be on
+    http://bazaar.launchpad.net.
+
 
 == Attempting to create a branch in a forbidden project ==
 
@@ -391,7 +406,7 @@ When registering the branch from the person context, there is a
 product widget, so the error is associated with the product widget.
 
     >>> user_browser.open('http://code.launchpad.dev/~no-priv')
-    >>> user_browser.getLink('Register branch').click()
+    >>> user_browser.getLink(id="register-branch").click()
     >>> user_browser.getControl('Project').value = 'landscape'
     >>> user_browser.getControl('Branch URL').value = 'http://foo.com/bar'
     >>> user_browser.getControl('Name').value = 'landscape1'
