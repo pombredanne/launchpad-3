@@ -7,18 +7,40 @@ import unittest
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
+from canonical.testing import LaunchpadFunctionalLayer
+
+from canonical.launchpad.mail.handlers import CodeHandler, mail_handlers
+from canonical.launchpad.database.message import MessageSet
+from canonical.launchpad.testing import TestCaseWithFactory
 
 
-class TestCodeHandler
+class TestCodeHandler(TestCaseWithFactory):
 
-    def test_get():
+    layer = LaunchpadFunctionalLayer
 
-        handlers.get(config.launchpad.code_domain)
+    def test_get(self):
+        handler = mail_handlers.get(config.vhost.code.hostname)
+        self.assertIsInstance(handler, CodeHandler)
+
+    def test_process(self):
+        code_handler = CodeHandler()
+        mail = ''
+        email_addr = ''
+        file_alias = ''
+        log = object()
+        code_handler.process(mail, email_addr, file_alias)
+        #message = MessageSet().get('<my-id>')
+
+    def test_getBranchMergeProposal(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        code_handler = CodeHandler()
+        bmp2 = code_handler.getBranchMergeProposal(bmp.address)
+        self.assertEqual(bmp, bmp2)
 
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers')
+    suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
 

@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
+    'BranchMergeProposalGetter',
     ]
 
 from email.Utils import make_msgid
@@ -31,6 +32,7 @@ from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus, IBranchMergeProposal,
+    IBranchMergeProposalGetter,
     ILaunchpadCelebrities,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,)
@@ -450,3 +452,14 @@ class BranchMergeProposal(SQLBase):
             vote_tag=vote_tag)
         notify(SQLObjectCreatedEvent(code_review_message))
         return code_review_message
+
+
+class BranchMergeProposalGetter:
+    """See `IBranchMergeProposalGetter`."""
+
+    implements(IBranchMergeProposalGetter)
+
+    @staticmethod
+    def get(id):
+        """See `BranchMergeProposalGetter`"""
+        return BranchMergeProposal.get(id)

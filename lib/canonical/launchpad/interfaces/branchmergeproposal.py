@@ -10,6 +10,7 @@ __all__ = [
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
+    'IBranchMergeProposalGetter',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -367,3 +368,10 @@ class IBranchMergeProposal(Interface):
 
     def deleteProposal():
         """Delete the proposal to merge."""
+
+
+class IBranchMergeProposalGetter(Interface):
+    """Utility for getting BranchMergeProposals."""
+
+    def get(id):
+        """Return the BranchMergeProposal with specified id."""

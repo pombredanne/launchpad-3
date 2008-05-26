@@ -10,14 +10,13 @@ from zope.interface import implements
 from zope.event import notify
 
 from canonical.config import config
-from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
-    IBugEmailCommand, IBugMessageSet, IBugTaskEditEmailCommand,
-    IBugTaskEmailCommand, IDistroBugTask, IDistroSeriesBugTask,
-    ILaunchBag, IMailHandler, IMessageSet, IQuestionSet,
+    EmailProcessingError, IBranchMergeProposalGetter, IBugAttachmentSet,
+    IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
+    IBugTaskEditEmailCommand, IBugTaskEmailCommand, IDistroBugTask,
+    IDistroSeriesBugTask, ILaunchBag, IMailHandler, IMessageSet, IQuestionSet,
     ISpecificationSet, IUpstreamBugTask, IWeaklyAuthenticatedPrincipal,
     QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
@@ -473,6 +472,17 @@ class AnswerTrackerHandler:
             question.addComment(message.owner, message)
 
 
+class CodeHandler:
+
+    def process(self, mail, email_addr, file_alias):
+        pass
+
+    @staticmethod
+    def getBranchMergeProposal(email_addr):
+        merge_proposal_id = int(re.match(r'(mp\+)([^@]+).*', email_addr).group(2))
+        return getUtility(IBranchMergeProposalGetter).get(merge_proposal_id)
+
+
 class SpecificationHandler:
     """Handles emails sent to specs.launchpad.net."""
 
@@ -570,6 +580,7 @@ class MailHandlers:
             # XXX flacoste 2007-04-23 Backward compatibility for old domain.
             # We probably want to remove it in the future.
             'support.launchpad.net': AnswerTrackerHandler(),
+            config.vhost.code.hostname: CodeHandler(),
             }
 
     def get(self, domain):

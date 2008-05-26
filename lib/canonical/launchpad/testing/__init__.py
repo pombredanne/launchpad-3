@@ -51,6 +51,10 @@ class TestCase(unittest.TestCase):
         self.assertEqual(
             database_now.utctimetuple(), value.utctimetuple())
 
+    def assertIsInstance(self, instance, assert_class):
+        self.assertTrue(isinstance(instance, assert_class),
+            '%r is not an instance of %r' % (instance, assert_class))
+
 
 class TestCaseWithFactory(TestCase):
 

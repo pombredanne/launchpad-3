@@ -169,4 +169,9 @@
       attribute_to_parent="source_branch"
       rootsite="code" />
 
+  <securedutility
+      class="canonical.launchpad.database.BranchMergeProposalGetter"
+      provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
+    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalGetter" />
+  </securedutility>
 </configure>
