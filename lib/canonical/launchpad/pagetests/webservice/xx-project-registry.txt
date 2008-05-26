@@ -1,0 +1,11 @@
+= Web Service Project Groups =
+
+== Project group entry ==
+
+Projects are available at their canonical URL on the API virtual host.
+
+    >>> mozilla_project = webservice.get('/beta/mozilla').jsonBody()
+    >>> from pprint import pprint
+    >>> pprint(mozilla_project)
+    {'name': 'mozilla',
+    'self_link': '.../beta/mozilla'}
