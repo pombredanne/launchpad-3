@@ -1399,7 +1399,6 @@ on the distribution.
     ...     print d.name
     jblack
 
-
 Finally, on a release where neither the distribution nor the release have a
 driver. Here, we expect the driver to be the owner of the distribution
 (because this is the "commonest fallback").
@@ -1418,6 +1417,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     ...     print d.name
     sabdfl
 
+
 == Lastest Uploads ==
 
 IDistroSeries provides the 'getLatestUpload' method which returns a
@@ -1429,11 +1429,10 @@ uploaded and published in its context.
 
 Each element is an IDistroSeriesSourcePackageRelease instance:
 
-    >>> from operator import attrgetter
-    >>> for upload in sorted(latest_uploads, key=attrgetter('name')):
-    ...     print upload.name, upload.version
-    iceweasel 1.0
-    mozilla-firefox 0.9
+    >>> for upload in latest_uploads:
+    ...     print upload.title
+    iceweasel 1.0 (source) in ubuntu warty
+    mozilla-firefox 0.9 (source) in ubuntu warty
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:
