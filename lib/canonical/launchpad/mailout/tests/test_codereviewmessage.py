@@ -30,8 +30,8 @@ class TestCodeReviewMessage(TestCaseWithFactory):
             email_address_status=EmailAddressStatus.VALIDATED)
         code_message = self.factory.makeCodeReviewMessage(sender)
         if as_reply:
-            code_message = self.factory.makeCodeReviewMessage(sender,
-                                                              code_message)
+            code_message = self.factory.makeCodeReviewMessage(
+                sender, parent=code_message)
         subscriber = self.factory.makePerson(
             displayname='Baz Qux', email='baz.qux@example.com',
             email_address_status=EmailAddressStatus.VALIDATED)

@@ -310,6 +310,16 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    name="+relicensing"
+    facet="translations"
+    class="canonical.launchpad.browser.PersonTranslationRelicensingView"
+    permission="launchpad.Edit"
+    template="../templates/person-translations-relicensing.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+imports"
     class="canonical.launchpad.browser.HasTranslationImportsView"
     facet="translations"

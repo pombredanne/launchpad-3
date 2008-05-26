@@ -2289,7 +2289,7 @@ as a bug attachment.
 If an attachment has one of the content types application/applefile 
 (the resource fork of a MacOS file), application/pgp-signature, 
 application/pkcs7-signature, application/x-pkcs7-signature,
-text/x-vcard, it is not stored.
+text/x-vcard, application/ms-tnef, it is not stored.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -2331,6 +2331,10 @@ text/x-vcard, it is not stored.
     ... n: Person;Sample
     ... tel;work:+1..23..456789
     ... end:vcard
+    ... --BOUNDARY
+    ... Content-type: application/ms-tnef; name="winmail.dat"
+    ...
+    ... some useless content
     ... --BOUNDARY"""
     >>>
     >>> process_email(submit_mail)

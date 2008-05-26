@@ -6,22 +6,221 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/search"
   i18n:domain="launchpad"
 >
 
   <body>
-
-    <metal:portlets fill-slot="portlets">
-    </metal:portlets>
-
-    <p metal:fill-slot="help-XXXX">
-      HELP TEXT HERE
-    </p>
-
     <div metal:fill-slot="main">
-      <h1>Launchpad almost global search</h1>
+      <h1 tal:content="view/page_heading">
+        Pages matching "bazaar" in Launchpad
+      </h1>
 
+      <form
+         action=""
+         name="sitesearch"
+         id="sitesearch"
+         method="get"
+         accept-charset="UTF-8">
+        <input
+          id="field.text"
+          class="textType"
+          type="text"
+          size="36"
+          name="field.text"
+          tal:attributes="value view/text"/>
+          <script
+            type="text/javascript"
+            tal:define="script view/focusedElementScript"
+            tal:condition="script"
+            tal:content="structure script" />
+        <input
+           id="field.actions.search"
+           name="field.actions.search"
+           class="button"
+           type="submit"
+           value="Search" />
+      </form>
+
+      <tal:wants-results condition="view/text">
+
+        <div id="search-results" tal:condition="view/has_matches">
+          <tal:has_exact_matches condition="view/has_exact_matches">
+            <h2>Most relevant matches</h2>
+
+            <ul class="exact-matches">
+              <li tal:condition="view/bug">
+                <div>
+                  <tal:link replace="structure view/bug/fmt:link" />
+                </div>
+                <div class="summary">
+                  in
+                    <tal:per_pillar repeat="pillar view/bug/affected_pillars">
+                      <b tal:content="pillar/displayname" />,
+                    </tal:per_pillar>
+                  reported
+                  <span
+                    tal:attributes="title view/bug/datecreated/fmt:datetime"
+                    tal:content="view/bug/datecreated/fmt:displaydate">2005-10-05</span>
+                  by
+                  <a
+                    tal:attributes="href view/bug/owner/fmt:url"
+                    tal:content="view/bug/owner/browsername">Foo Bar</a>
+                </div>
+              </li>
+
+              <li tal:condition="view/question">
+                <div>
+                  <tal:link replace="structure view/question/fmt:link" />
+                </div>
+                <div class="summary">
+                  posted
+                  <span
+                    tal:attributes="title view/question/datecreated/fmt:datetime"
+                    tal:content="view/question/datecreated/fmt:displaydate">2005-10-05</span>
+                  by
+                  <a tal:replace="structure view/question/owner/fmt:link"
+                    >Foo Bar</a><tal:assignee condition="view/question/assignee">,
+                  assigned to
+                  <a tal:replace="structure view/question/assignee/fmt:link"
+                    >Foo Bar</a></tal:assignee><tal:answerer condition="view/question/answerer">,
+                  answered by
+                  <a tal:replace="structure view/question/answerer/fmt:link">Foo Bar</a>
+                  </tal:answerer>
+                  in
+                  <strong tal:content="view/question/target/title">ubuntu</strong>
+                </div>
+              </li>
+
+              <li tal:condition="view/pillar" class="pillar">
+                <div>
+                  <a tal:replace="structure view/pillar/fmt:link">
+                    The GNOME project
+                  </a>                
+                </div>
+                <div class="summary">
+                  <div
+                    tal:content="view/pillar/summary"
+                    tal:condition="view/pillar/summary">
+                      Project summary
+                  </div>
+                  <div>
+                    Registered by <a
+                      tal:replace="structure view/pillar/owner/fmt:link">Foo Bar</a>
+                    <span
+                      tal:attributes="title view/pillar/datecreated/fmt:datetime"
+                      tal:content="view/pillar/datecreated/fmt:displaydate">2005-10-12</span>
+                  </div>
+                </div>
+              </li>
+
+              <li tal:condition="view/person_or_team">
+                <div>
+                  <a tal:replace="structure view/person_or_team/fmt:link">
+                    Sample Person
+                  </a>
+                  <a
+                    tal:attributes="href view/person_or_team/fmt:url"
+                    tal:content="string:(${view/person_or_team/name})">(name12)</a>
+                </div>
+                <div class="summary">
+                  <tal:team
+                    tal:condition="view/person_or_team/isTeam" >
+                    <div
+                      tal:content="view/person_or_team/teamdescription"
+                      tal:condition="view/person_or_team/teamdescription">
+                      The Launchpad team creates Launchpad. That's what they do.
+                      They rock!
+                    </div>
+                    <div>
+                      Created
+                      <span
+                        tal:attributes="title view/person_or_team/datecreated/fmt:datetime"
+                        tal:content="view/person_or_team/datecreated/fmt:displaydate">2005-10-05</span>
+                    </div>
+                  </tal:team>
+                  <tal:person
+                    tal:condition="not: view/person_or_team/isTeam">
+                    <div>
+                      joined
+                      <span
+                        tal:attributes="title view/person_or_team/datecreated/fmt:datetime"
+                        tal:content="view/person_or_team/datecreated/fmt:displaydate">2005-10-05</span>,
+                        with <tal:karma content="view/person_or_team/karma">1000</tal:karma> karma
+                    </div>
+                  </tal:person>
+                </div>
+              </li>
+            </ul>
+          </tal:has_exact_matches>
+
+          <tal:batch
+            condition="view/pages"
+            define="batch view/pages/currentBatch|nothing">
+            <h2>Matching pages</h2>
+
+            <div class="upper-batch-nav">
+              <tal:navigation
+                 replace="structure view/pages/@@+navigation-links-upper"/>
+            </div>
+
+            <ul class="site-matches" tal:condition="batch">
+              <li class="pagematch" tal:repeat="page batch">
+                <div>
+                  <a
+                    tal:attributes="href page/url"
+                    tal:content="structure page/title">Page title</a>
+                </div>
+                <div
+                  class="summary"
+                  tal:content="structure page/summary">
+                  A snippet of search result summary text.
+                </div>
+              </li>
+            </ul>
+
+            <div class="lower-batch-nav">
+              <tal:navigation
+                 replace="structure view/pages/@@+navigation-links-lower" />
+            </div>
+          </tal:batch>
+        </div>
+
+        <p id="no-results" tal:condition="not:view/has_matches">
+          Your search for
+          &ldquo;<span
+            class="text"
+            tal:content="view/text">some text</span>&rdquo;
+          did not return any results.
+        </p>
+
+      </tal:wants-results>
+ 
+      <div id="no-search" tal:condition="not:view/text">
+        <p>
+        Enter a term or many terms to find matching pages. All words are
+        used when matching, "and" is not needed. Capitalization is not
+        important. Enter a number to match a bug or question. Enter a
+        name to match a project, person, or team.
+        </p>
+
+        <ul>
+          <li>
+            Place words in double quotation marks to match an exact phrase.
+            <br />For example: <em>"core dump"</em>
+          </li>
+          <li>
+            Place a "+" in front of a word to require it to make a match.
+            Common words such as "and" or "the" are ignored when matching,
+            unless they are prefixed with a "+".
+            <br />For example: <em>read +and write</em>
+          </li>
+          <li>
+            Place a "-" in front of a word to exclude pages with that word.
+            <br />For example: <em>core -dump</em>
+          </li>
+        </ul>
+      </div>
     </div>
   </body>
 </html>

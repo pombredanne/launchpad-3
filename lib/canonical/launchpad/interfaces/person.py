@@ -616,16 +616,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             value_type=Object(schema=ITeamMembership),
             readonly=True, required=False),
         exported_as='team_memberships')
-    member_memberships = exported(
-        CollectionField(
-            title=_("Active `ITeamMembership`s for this object's members."),
-            description=_(
-                "Active TeamMemberships are the ones with the ADMIN or "
-                "APPROVED status.  The results are ordered using "
-                "Person.sortingColumns."),
-            readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
-
     open_membership_invitations = exported(
         CollectionField(
             title=_('Open membership invitations.'),
@@ -760,6 +750,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     visibility_consistency_warning = Attribute(
         "Warning that a private team may leak membership info.")
+
+    translations_relicensing_agreement = Bool(
+        title=_("Whether person agrees to relicense their translations"),
+        readonly=False)
+
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1229,6 +1224,15 @@ class IPersonViewRestricted(Interface):
             title=_("All members whose membership is in the INVITED state"),
             value_type=Object(schema=Interface)))
     invited_member_count = Attribute("Number of members with INVITED status")
+    member_memberships = exported(
+        CollectionField(
+            title=_("Active `ITeamMembership`s for this object's members."),
+            description=_(
+                "Active TeamMemberships are the ones with the ADMIN or "
+                "APPROVED status.  The results are ordered using "
+                "Person.sortingColumns."),
+            readonly=True, required=False,
+            value_type=Object(schema=ITeamMembership)))
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     proposedmembers = exported(

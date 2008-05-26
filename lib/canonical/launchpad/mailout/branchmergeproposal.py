@@ -7,6 +7,8 @@
 __metaclass__ = type
 
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import IBranchMergeProposal
@@ -16,7 +18,6 @@ from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.webapp import canonical_url
-
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are created."""
@@ -43,8 +44,9 @@ class BMPMailer:
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()
-        for recipient, (subscription, rationale) in recipients.iteritems():
-            self._recipients.add(recipient, subscription, rationale)
+        naked_recipients = removeSecurityProxy(recipients)
+        for recipient, reason in naked_recipients.iteritems():
+            self._recipients.add(recipient, reason, reason.rationale)
         self.merge_proposal = merge_proposal
         self.from_address = from_address
         self.delta = delta
@@ -98,17 +100,20 @@ class BMPMailer:
 
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""
+        notification_reason, rationale = self._recipients.getReason(
+            recipient.preferredemail.email)
+        if notification_reason.subscription is not None:
+            person = notification_reason.subscription.person
+            relationship = "subscribed to"
+        else:
+            person = notification_reason.branch.owner
+            relationship = "the owner of"
+
         entity = 'You are'
-        subscription = self._recipients.getReason(
-            recipient.preferredemail.email)[0]
-        subscriber = subscription.person
-        if recipient != subscriber:
-            assert recipient.hasParticipationEntryFor(subscriber), (
-                '%s does not participate in team %s.' %
-                (recipient.displayname, subscriber.displayname))
-            entity = 'Your team %s is' % subscriber.displayname
-        branch_name = subscription.branch.displayname
-        return '%s subscribed to branch %s.' % (entity, branch_name)
+        if recipient != person:
+            entity = 'Your team %s is' % person.displayname
+        branch_name = notification_reason.branch.displayname
+        return '%s %s branch %s.' % (entity, relationship, branch_name)
 
     def generateEmail(self, recipient):
         """Generate the email for this recipient
@@ -121,10 +126,12 @@ class BMPMailer:
 
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
-        subscription, rationale = self._recipients.getReason(
+        notification_reason, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
-        return {'X-Launchpad-Branch': subscription.branch.unique_name,
-                'X-Launchpad-Message-Rationale': rationale}
+        return {
+            'X-Launchpad-Message-Rationale': rationale,
+            'X-Launchpad-Branch': notification_reason.branch.unique_name
+            }
 
     def _getTemplateParams(self, recipient):
         """Return a dict of values to use in the body and subject."""

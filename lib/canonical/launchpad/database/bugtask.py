@@ -1058,6 +1058,36 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
+    def getBugTaskBadgeProperties(self, bugtasks):
+        """See `IBugTaskSet`."""
+        # Need to import Bug locally, to avoid circular imports.
+        from canonical.launchpad.database.bug import Bug
+        bugtask_ids = [bugtask.id for bugtask in bugtasks]
+        bugs_with_mentoring_offers = list(Bug.select(
+            """id IN (SELECT MentoringOffer.bug
+                      FROM MentoringOffer, BugTask
+                      WHERE MentoringOffer.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_specifications = list(Bug.select(
+            """id IN (SELECT SpecificationBug.bug
+                      FROM SpecificationBug, BugTask
+                      WHERE SpecificationBug.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_branches = list(Bug.select(
+            """id IN (SELECT BugBranch.bug
+                      FROM BugBranch, BugTask
+                      WHERE BugBranch.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        badge_properties = {}
+        for bugtask in bugtasks:
+            badge_properties[bugtask] = {
+                'has_mentoring_offer':
+                    bugtask.bug in bugs_with_mentoring_offers,
+                'has_specification': bugtask.bug in bugs_with_specifications,
+                'has_branch': bugtask.bug in bugs_with_branches,
+                }
+        return badge_properties
+
     def getMultiple(self, task_ids):
         """See `IBugTaskSet`."""
         # Ensure we have a sequence of bug task IDs:
