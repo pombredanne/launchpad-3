@@ -48,7 +48,7 @@ def create_tarball(directory, tarball_name):
     _check_tar_retcode(retcode)
 
 
-def extract_tarball(tarball_name, directory, extra_args=[]):
+def extract_tarball(tarball_name, directory, extra_args=None):
     """Extract contents of a tarball.
 
     Changes to `directory` and extracts the tarball at `tarball_name`.
@@ -58,6 +58,8 @@ def extract_tarball(tarball_name, directory, extra_args=[]):
     # transition to the new code import system is complete.
     if not os.path.isdir(directory):
         raise NotADirectory(directory)
+    if extra_args is None:
+        extra_args = []
     retcode = subprocess.call(
         ['tar', 'xzf', tarball_name, '-C', directory] + extra_args)
     _check_tar_retcode(retcode)
