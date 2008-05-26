@@ -969,23 +969,8 @@ def notify_bug_subscripiton_added(bug_subscription, event):
     # When a user is subscribed to a bug by someone other
     # than themselves, we send them a notification email.
     if bug_subscription.person != bug_subscription.subscribed_by:
-        body = ("You have been subscribed to a bug in Launchpad.\n"
-                "\n--\n%(bug_title)s\n%(bug_url)s" % {
-            'bug_title': bug_subscription.bug.title,
-            'bug_url': canonical_url(bug_subscription.bug),
-            })
-        from_address = get_bugmail_from_address(
-            bug_subscription.subscribed_by, bug_subscription.bug)
-        for address in contactEmailAddresses(bug_subscription.person):
-            msg = construct_bug_notification(
-                bug=bug_subscription.bug,
-                from_address=from_address,
-                address=address,
-                body=body,
-                subject='You have been subscribed',
-                email_date=datetime.datetime.now(),
-                rationale_header='Subscriber')
-            sendmail(msg)
+        _send_bug_details_to_new_bug_subscribers(
+            bug_subscription.bug, [], [bug_subscription.person])
 
 
 def notify_invitation_to_join_team(event):
