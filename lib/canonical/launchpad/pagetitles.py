@@ -956,6 +956,8 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
+person_translations_relicensing = "Relicense your translations"
+
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))

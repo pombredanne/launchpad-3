@@ -56,6 +56,7 @@ __all__ = [
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'PersonTranslationView',
+    'PersonTranslationRelicensingView',
     'PersonView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
@@ -128,6 +129,9 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+
+from canonical.launchpad.interfaces.translationrelicensingagreement import (
+    ITranslationRelicensingAgreement)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -823,11 +827,15 @@ class PersonTranslationsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ['imports']
+    links = ['imports', 'relicensing']
 
     def imports(self):
         text = 'See import queue'
         return Link('+imports', text)
+
+    def relicensing(self):
+        text = 'Relicense translations'
+        return Link('+relicensing', text)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -2590,6 +2598,50 @@ class PersonTranslationView(LaunchpadView):
             return True
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
+
+
+class PersonTranslationRelicensingView(LaunchpadFormView):
+    """View for Person's translation relicensing page."""
+    label = "Relicense your translations?"
+    schema = ITranslationRelicensingAgreement
+    field_names = ['allow_relicensing']
+
+    @property
+    def initial_values(self):
+        """Set the user's current relicensing preference or a True default."""
+        default = self.context.translations_relicensing_agreement
+        if default is None:
+            default = True
+        return { "allow_relicensing" : default }
+
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        referrer = self.request.getHeader('referer')
+        if referrer and referrer.startswith(self.request.getApplicationURL()):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @action(_("Update my decision"), name="submit")
+    def submit_action(self, action, data):
+        """Store person's decision about translations relicensing.
+
+        Decision is stored through
+        `IPerson.translations_relicensing_agreement`
+        which uses TranslationRelicensingAgreement table.
+        """
+        allow_relicensing = data['allow_relicensing']
+        self.context.translations_relicensing_agreement = allow_relicensing
+        if allow_relicensing:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Thank you for deciding to relicense your translations."))
+        else:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Your translations will be removed once we completely "
+                "switch to BSD license for translations."))
 
 
 class PersonGPGView(LaunchpadView):
