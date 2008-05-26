@@ -7,28 +7,31 @@ __all__ = ['BugSubscriptionAddView']
 
 from zope.component import getUtility
 
-from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.interfaces import IBugSubscription
+from canonical.launchpad.webapp import (
+    action, canonical_url, LaunchpadFormView)
 
 
-class BugSubscriptionAddView(SQLObjectAddView):
+class BugSubscriptionAddView(LaunchpadFormView):
     """Browser view class for subscribing someone else to a bug."""
 
-    def __init__(self, context, request):
-        self._next_url = canonical_url(context)
-        SQLObjectAddView.__init__(self, context, request)
+    schema = IBugSubscription
 
-    def create(self, person):
-        subscription = self.context.bug.subscribe(
-            person, getUtility(ILaunchBag).user)
+    field_names = ['person']
+
+    def setUpFields(self):
+        """Set up 'person' as an input field."""
+        super(BugSubscriptionAddView, self).setUpFields()
+        self.form_fields['person'].for_input = True
+
+    @action('Add', name='add')
+    def add_action(self, action, data):
+        person = data['person']
+        subscription = self.context.bug.subscribe(person, self.user)
         if person.isTeam():
             message = '%s team has been subscribed to this bug.'
         else:
             message = '%s has been subscribed to this bug.'
         self.request.response.addInfoNotification(message %
                                                   person.displayname)
-        return subscription
-
-    def nextURL(self):
-        return self._next_url
+        self.next_url = canonical_url(self.context)
