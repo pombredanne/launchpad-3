@@ -8,7 +8,7 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE PackageUploadSource DROP CONSTRAINT distroreleasequeuesource__distroreleasequeue__sourcepackagerelease;
 
-ALTER TABLE PackageUploadSource ADD CONSTRAINT packageuploadsource__single_source_uploads UNIQUE(packageupload);
+ALTER TABLE PackageUploadSource ADD CONSTRAINT packageuploadsource__packageupload__key UNIQUE(packageupload);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 57, 0);
