@@ -16,6 +16,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -127,6 +128,10 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person',
         validator=public_person_validator, notNull=False,
         default=None)
+
+    @property
+    def address(self):
+        return 'mp+%d@%s' % (self.id, config.vhost.code.hostname)
 
     @property
     def supersedes(self):
