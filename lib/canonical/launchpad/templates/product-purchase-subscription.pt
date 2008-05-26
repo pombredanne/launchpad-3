@@ -1,0 +1,52 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+
+<div metal:fill-slot="main">
+  <h1>Purchase Project Subscription</h1>
+  <div class="error message"
+       tal:condition="context/qualifies_for_free_hosting">
+    This project does not require a commercial subscription to be purchased.
+  </div>
+  <div class="error message"
+       tal:condition="not: context/required:launchpad.Admin">
+    You do not have permission to purchase a subscription for this project.
+  </div>
+  <div tal:condition="view/can_purchase_subscription">
+    <p>
+      This project's licensing does not qualify for free hosting; therefore,
+      a subscription needs to be purchased to continue hosting this project on
+      Launchpad.
+    </p>
+    <div>
+      Here are the steps to obtain a commercial subscription:
+      <ol>
+        <li>Purchase a Launchpad subscription in the
+          <a tal:define="config modules/canonical.config/config"
+             tal:attributes="href config/commercial/purchase_subscription_url">
+          Canonical Shop</a>.
+        </li>
+        <li>You will receive an email that your order has been processed.</li>
+        <li>You can then apply the purchased subscription to this project
+            on your <a href="https://launchpad.net/people/+me/+vouchers">
+            voucher management page</a>.
+        </li>
+      </ol>
+    </div>
+
+    Please review our <a href="/legal">Terms of Use</a>.
+  </div>
+</div>
+</body>
+</html>
