@@ -37,6 +37,7 @@ from canonical.config import config
 
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lazr.interfaces.rest import ICollectionField
 from canonical.lazr.interfaces.field import IFieldMarshaller
