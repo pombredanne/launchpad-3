@@ -6,7 +6,7 @@
 
   <!-- Branch Merge Proposal -->
   <content class="canonical.launchpad.database.BranchMergeProposal">
-    <allow attributes="id registrant source_branch target_branch
+    <allow attributes="address id registrant source_branch target_branch
                        dependent_branch whiteboard queue_status
                        reviewer reviewed_revision_id
                        queuer queue_position queued_revision_id

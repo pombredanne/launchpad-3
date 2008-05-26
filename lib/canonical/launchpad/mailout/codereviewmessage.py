@@ -56,8 +56,7 @@ class CodeReviewMessageMailer(BMPMailer):
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
-        merge_proposal = self.code_review_message.branch_merge_proposal
-        return 'mp+%d@%s' % (merge_proposal.id, config.vhost.code.hostname)
+        return self.code_review_message.branch_merge_proposal.address
 
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
