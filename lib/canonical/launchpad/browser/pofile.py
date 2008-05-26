@@ -316,7 +316,8 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
-        if self.user.translations_relicensing_agreement is None:
+        if (self.user is not None and
+            self.user.translations_relicensing_agreement is None):
             return self.request.response.redirect(
                 canonical_url(self.user) + '/+relicensing')
 
