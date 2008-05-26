@@ -147,10 +147,11 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    def getSourcesForDeletion(name=None):
+    def getSourcesForDeletion(name=None, status=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """

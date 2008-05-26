@@ -54,10 +54,10 @@ When the 'Delete packages' page is loaded a list of all published
 sources is presented,
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors  i386
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+    Source            Published     Status     Series          Section  Built
+    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
+    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
+    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
 
 The user can update the form to only list published sources with name
 matching the given text.
@@ -94,10 +94,10 @@ Foo Bar can select one or more sources to be deleted and the
     Deletion comment is required.
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors  i386
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+    Source            Published     Status     Series          Section  Built
+    cdrkit - 1.0     2007-07-09  Published     Breezy-autotest Editors  i386
+    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
+    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
 
 Deletion requires, at least, one selected a source, otherwise an error
 is issued.
@@ -136,9 +136,9 @@ entirely readable content.
     Read the page help to understand how removals work.
 
     >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section  Built
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+    Source            Published     Status     Series          Section  Built
+    iceweasel - 1.0 (chan...)  2007-07-09   Published Warty    Editors
+    pmount - 0.1-1   2007-07-09  Published     Warty           Editors
 
 Here we can check for maliciously submitted forms containing
 invalid data.
@@ -372,6 +372,30 @@ available for deletion because it contains a PUBLISHED binary.
     Download files from Librarian
       foo-bin_i386.deb (18 bytes)
       foo.dsc (28 bytes)
+
+The list of 'deletable' sources can be filtered by status. The default
+filter is 'Any Status', but the user can choose another.
+
+    >>> print user_browser.getControl(name='field.status_filter').value
+    ['any']
+
+When the user selects 'Published' filter and update the results, no
+records are presented.
+
+    >>> user_browser.getControl(
+    ...     name='field.status_filter').value = ['published']
+    >>> user_browser.getControl("Update").click()
+    >>> print_ppa_packages(user_browser.contents)
+    No matching source packages for ''.
+
+When he selects 'Superseded' the SUPERSEDED source shows up again.
+
+    >>> user_browser.getControl(
+    ...     name='field.status_filter').value = ['superseded']
+    >>> user_browser.getControl("Update").click()
+    >>> print_ppa_packages(user_browser.contents)
+    Source           Published   Status     Series          Section  Built
+    foo - 1.0                    Superseded Hoary           Base     i386
 
 The deletion works exactly as it does for PUBLISHED sources, both,
 source and binaries are marked as DELETED and the corresponding

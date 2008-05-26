@@ -113,7 +113,7 @@ Then he decides that he only wants to filter on untranslated entries (he's
 not aware that this translation is actually empty, i.e. there is no such PO
 file):
 
-  >>> browser.getControl(name='show', index=1).value = ['untranslated']
+  >>> browser.getControl(name='show', index=2).value = ['untranslated']
   >>> browser.getControl('Filter').click()
   >>> print browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=untranslated
@@ -125,7 +125,7 @@ returned all untranslated entries.
 
 Now, lets also check that fuzzy entries show up as well.
 
-  >>> browser.getControl(name='show', index=1).value = ['need_review']
+  >>> browser.getControl(name='show', index=2).value = ['need_review']
   >>> browser.getControl('Filter').click()
   >>> print browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=need_review
@@ -134,7 +134,7 @@ Now, lets also check that fuzzy entries show up as well.
 
 Finally, lets also check that translated entries show up as well.
 
-  >>> browser.getControl(name='show', index=1).value = ['translated']
+  >>> browser.getControl(name='show', index=2).value = ['translated']
   >>> browser.getControl('Filter').click()
   >>> print browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/pt_BR/+translate?batch=10&show=translated
@@ -184,7 +184,7 @@ has the right filter preselected.
     >>> browser.open(untranslated_link.encode('UTF-8'))
     >>> browser.url
     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=untranslated'
-    >>> print browser.getControl(name='show', index=1).value
+    >>> print browser.getControl(name='show', index=2).value
     ['untranslated']
 
 Similarly, the number of unreviewed entries points to the translation page
@@ -197,7 +197,7 @@ with the 'with new suggestions' filter selected.
     >>> browser.open(unreviewed_link.encode('UTF-8'))
     >>> browser.url
     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=new_suggestions'
-    >>> print browser.getControl(name='show', index=1).value
+    >>> print browser.getControl(name='show', index=2).value
     ['new_suggestions']
 
 The number of updated entries points to the translation page with the
@@ -210,5 +210,5 @@ The number of updated entries points to the translation page with the
     >>> browser.open(updated_link.encode('UTF-8'))
     >>> browser.url
     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?show=changed_in_launchpad'
-    >>> print browser.getControl(name='show', index=1).value
+    >>> print browser.getControl(name='show', index=2).value
     ['changed_in_launchpad']

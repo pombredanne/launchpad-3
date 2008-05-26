@@ -1,0 +1,51 @@
+= Converting an import associated with a ProductSeries to a CodeImport =
+
+We want to be able to test the new code imports system on a
+branch-by-branch basis, so we allow the conversion of an 'active'
+import associated with a product series to be converted to a new style
+import.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ImportStatus, RevisionControlSystems)
+    >>> login('david.allouche@canonical.com')
+    >>> product = factory.makeProduct(name='newproduct')
+    >>> series = product.development_focus
+    >>> series.rcstype = RevisionControlSystems.SVN
+    >>> series.svnrepository = 'svn://svn.example.com/fooix/trunk'
+    >>> series.importstatus = ImportStatus.TESTING
+    >>> logout()
+
+We show VCS Imports operators a button on the product series +source
+page to perform this conversion.
+
+    >>> import_browser = setupBrowser(
+    ...     auth='Basic david.allouche@canonical.com:test')
+    >>> import_browser.open('http://launchpad.dev/newproduct/trunk/+source')
+    >>> import_browser.getControl('Convert To New Style Import').click()
+
+When we click this button, the import is converted to a new style
+import.
+
+    >>> print import_browser.url
+    http://launchpad.dev/newproduct/trunk
+    >>> for msg in get_feedback_messages(import_browser.contents):
+    ...     print msg
+    Import converted to new style.
+
+A message explaining that the details of the import can now be seen on
+the branch page is shown to all users.
+
+    >>> sample_person_browser = setupBrowser(
+    ...     auth='Basic test@canonical.com:test')
+    >>> sample_person_browser.open('http://launchpad.dev/newproduct/trunk/')
+    >>> div = find_tag_by_id(
+    ...     sample_person_browser.contents, 'new-style-import-message')
+    >>> print extract_text(div)
+    The details of the import associated with this series can now be
+    seen on the branch page.
+    >>> sample_person_browser.getLink('branch page').click()
+    >>> div = find_tag_by_id(sample_person_browser.contents, 'import-details')
+    >>> print extract_text(div)
+    Status: Pending Review
+    This branch is an import of the Subversion branch
+    from svn://svn.example.com/fooix/trunk.

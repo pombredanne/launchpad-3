@@ -250,7 +250,9 @@ class TestPublisher(TestNativePublishingBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
+            owner=ubuntu_team,
             purpose=ArchivePurpose.EMBARGOED)
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
@@ -269,8 +271,9 @@ class TestPublisher(TestNativePublishingBase):
     def testPublishingWorksForOtherArchives(self):
         """Publisher also works as expected for another archives."""
 
+        ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            distribution=self.ubuntutest,
+            distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.EMBARGOED)
 
         test_pool_dir = tempfile.mkdtemp()

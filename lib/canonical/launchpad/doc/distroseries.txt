@@ -1429,8 +1429,10 @@ uploaded and published in its context.
 
 Each element is an IDistroSeriesSourcePackageRelease instance:
 
-    >>> for upload in latest_uploads:
+    >>> from operator import attrgetter
+    >>> for upload in sorted(latest_uploads, key=attrgetter('name')):
     ...     print upload.name, upload.version
+    iceweasel 1.0
     mozilla-firefox 0.9
 
 Also, empty results (caused obviously by lack of sample data or very

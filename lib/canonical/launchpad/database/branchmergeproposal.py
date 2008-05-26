@@ -29,7 +29,10 @@ from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus, IBranchMergeProposal,
     ILaunchpadCelebrities,
-    UserNotBranchReviewer)
+    UserNotBranchReviewer,
+    WrongBranchMergeProposal,)
+from canonical.launchpad.mailout.notificationrecipientset import \
+    NotificationRecipientSet
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -61,6 +64,16 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
+
+
+class BranchNotificationReason:
+    '''A reason for being notified about a branch.'''
+
+    def __init__(self, person, branch, rationale, subscription=None):
+        self.person = person
+        self.branch = branch
+        self.rationale = rationale
+        self.subscription = subscription
 
 
 class BranchMergeProposal(SQLBase):
@@ -136,6 +149,18 @@ class BranchMergeProposal(SQLBase):
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
 
+    @property
+    def all_messages(self):
+        """See `IBranchMergeProposal`."""
+        return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
+
+    def getMessage(self, id):
+        """See `IBranchMergeProposal`."""
+        message = CodeReviewMessage.get(id)
+        if message.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        return message
+
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
     votes = SQLMultipleJoin(
@@ -144,7 +169,10 @@ class BranchMergeProposal(SQLBase):
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
+        dont_email_me = set()
+
         branches = [self.source_branch, self.target_branch]
+
         if self.dependent_branch is not None:
             branches.append(self.dependent_branch)
         for branch in branches:
@@ -153,8 +181,29 @@ class BranchMergeProposal(SQLBase):
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
+                    dont_email_me.add(recipient)
                     continue
-                recipients[recipient] = (subscription, rationale)
+                recipients[recipient] = BranchNotificationReason(
+                    person=recipient,
+                    branch=subscription.branch,
+                    rationale=rationale,
+                    subscription=subscription)
+
+        owner_recipients = NotificationRecipientSet()
+        owner_recipients.add(
+            self.source_branch.owner, self.source_branch, 'Owner')
+        owner_recipients.add(
+            self.target_branch.owner, self.target_branch, 'Owner')
+        if self.dependent_branch is not None:
+            owner_recipients.add(
+                self.dependent_branch.owner, self.dependent_branch, 'Owner')
+        for recipient in owner_recipients:
+            if recipient in dont_email_me:
+                branch, rationale = owner_recipients.getReason(recipient)
+                recipients[recipient] = BranchNotificationReason(
+                    person=recipient,
+                    branch=branch,
+                    rationale=rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -367,7 +416,7 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence')
 
     def createMessage(self, owner, subject, content=None, vote=None,
-                      parent=None, _date_created=None):
+                      vote_tag=None, parent=None, _date_created=None):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
@@ -389,4 +438,5 @@ class BranchMergeProposal(SQLBase):
                       rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         return CodeReviewMessage(
-            branch_merge_proposal=self, message=msg, vote=vote)
+            branch_merge_proposal=self, message=msg, vote=vote,
+            vote_tag=vote_tag)

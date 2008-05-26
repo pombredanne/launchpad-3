@@ -474,17 +474,6 @@ After some time, James realises that pmount in hoary doesn't make much
 sense and simply deletes it, so his users won't be bothered by this
 broken package.
 
-We will publish all sources in James' PPA so the will show up in the
-delete-packages interface.
-
-    >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> jblack = person_set.getByName('jblack')
-    >>> for source in jblack.archive.getPublishedSources():
-    ...     source.secure_record.status = PackagePublishingStatus.PUBLISHED
-    >>> flush_database_updates()
-    >>> logout()
-
 James uses the 'delete-packages' interface in his PPA to delete the
 'pmount' source in hoary.
 
@@ -503,7 +492,7 @@ really deleted.
     >>> jblack_browser.getControl("Search").click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
-    pmount - 0.1-1              Published  Grumpy           Editors
+    pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
 In the minute after James had deleted the package, he discovered that
@@ -512,13 +501,27 @@ In the minute after James had deleted the package, he discovered that
 No problem, he goes back to the copy-package interface in his PPA and
 still able to copy the deleted source to the warty series.
 
+By default the copy view presents only PUBLISHED or PENDING packages.
+
 James mistakenly requests the copy without including the binaries
 resulting from the hoary build, which are still published in grumpy.
 
     >>> jblack_browser.getLink('Copy packages').click()
+    >>> print jblack_browser.getControl(name='field.status_filter').value
+    ['published']
+
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
-    pmount - 0.1-1              Published  Grumpy           Editors
+    pmount - 0.1-1              Pending    Grumpy           Editors
+
+Packages in other status can be browsed by adjusting the status
+filter dropdown box.
+
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl("Update").click()
+    >>> print_ppa_packages(jblack_browser.contents)
+    Source          Published   Status     Series           Section  Built
+    pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
     >>> jblack_browser.getControl(
@@ -560,7 +563,7 @@ publication.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
     pmount - 0.1-1              Pending    Warty            Editors
-    pmount - 0.1-1              Published  Grumpy           Editors
+    pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
 
@@ -737,11 +740,13 @@ insane because PPA-copy-ui is so cool.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl("Update").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
     pmount - 0.1-1              Pending    Warty            Editors
-    pmount - 0.1-1              Published  Grumpy           Editors
+    pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
     >>> jblack_pub_ids = getPPAPubIDsFor('jblack')
@@ -785,7 +790,10 @@ interface can be used to resurrect deleted packages.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
     >>> jblack_browser.getLink('Copy packages').click()
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl("Update").click()
 
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> deleted_pub_id = getPPAPubIDsFor(
     ...     'jblack', status=PackagePublishingStatus.DELETED)[0]
 
@@ -818,11 +826,12 @@ deleted files will be re-published in his archive.
     pmount-bin 0.1-1 in hoary i386
     pmount-bin 0.1-1 in hoary hppa
 
+
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Built
     pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
-    pmount - 0.1-1              Published  Grumpy           Editors
+    pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
 James is not yet satisfied and to create some fun we will publish
@@ -943,7 +952,7 @@ do not enforce coherent version ordering across suites.
     foo - 1.1                   Pending    Warty            Base
     pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
-    pmount - 0.1-1              Published  Grumpy           Editors
+    pmount - 0.1-1              Pending    Grumpy           Editors
 
 James have heard that Mark's foo version is really rock'n roll and
 since he discovered that PPA allows copying old versions, he decides
