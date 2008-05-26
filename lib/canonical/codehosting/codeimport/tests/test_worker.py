@@ -321,7 +321,7 @@ class TestForeignTreeStore(WorkerTest):
         store = self.makeForeignTreeStore()
         self.build_tree_contents(
             [('svnworking/',), ('svnworking/file', 'contents')])
-        create_tarball('svnworking', 'svnworking.tgz')
+        os.system('tar cfz svnworking.tgz svnworking')
         self.copyCreatingDirectories(
             store.transport, '00000001/svnworking.tgz', 'svnworking.tgz')
         source_details = self.factory.makeCodeImportSourceDetails(
@@ -343,7 +343,7 @@ class TestForeignTreeStore(WorkerTest):
         store = self.makeForeignTreeStore()
         self.build_tree_contents(
             [('cvsworking/',), ('cvsworking/file', 'contents')])
-        create_tarball('cvsworking', 'cvsworking.tgz')
+        os.system('tar cfz cvsworking.tgz cvsworking')
         self.copyCreatingDirectories(
             store.transport, '00000001/cvsworking.tgz', 'cvsworking.tgz')
         source_details = self.factory.makeCodeImportSourceDetails(

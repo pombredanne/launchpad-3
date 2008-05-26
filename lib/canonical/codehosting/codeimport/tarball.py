@@ -48,13 +48,16 @@ def create_tarball(directory, tarball_name):
     _check_tar_retcode(retcode)
 
 
-def extract_tarball(tarball_name, directory):
+def extract_tarball(tarball_name, directory, extra_args=[]):
     """Extract contents of a tarball.
 
     Changes to `directory` and extracts the tarball at `tarball_name`.
     """
+    # XXX: MichaelHudson 2008-05-19 bug=231819: The extra_args argument is
+    # only used for the extraction of legacy data and can be removed when the
+    # transition to the new code import system is complete.
     if not os.path.isdir(directory):
         raise NotADirectory(directory)
     retcode = subprocess.call(
-        ['tar', 'xzf', tarball_name, '-C', directory])
+        ['tar', 'xzf', tarball_name, '-C', directory] + extra_args)
     _check_tar_retcode(retcode)
