@@ -42,8 +42,17 @@ class CodeReviewMessageMailer(BMPMailer):
 
     def _getBody(self, recipient):
         """Return the complete body to use for this email"""
-        return '%s\n--\n%s' % (
-            self.message.text_contents, self.getReason(recipient))
+        if self.code_review_message.vote is None:
+            prefix = ''
+        else:
+            if self.code_review_message.vote_tag is None:
+                vote_tag = ''
+            else:
+                vote_tag = ' ' + self.code_review_message.vote_tag
+            prefix = 'Vote: %s%s\n' % (
+                self.code_review_message.vote.title, vote_tag)
+        return '%s%s\n--\n%s' % (
+            prefix, self.message.text_contents, self.getReason(recipient))
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""

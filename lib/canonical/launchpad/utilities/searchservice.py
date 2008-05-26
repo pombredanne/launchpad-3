@@ -273,7 +273,7 @@ class GoogleSearchService:
             try:
                 title = result.find('T').text
                 url = result.find('U').text
-                summary = result.find('S').text
+                summary = result.find('S').text.replace('<br>', '')
             except (AttributeError):
                 # There is not enough data to create a PageMatch object.
                 raise GoogleWrongGSPVersion(

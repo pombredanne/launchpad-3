@@ -56,7 +56,7 @@ message.
     # We will need the potmsgset of this message to demonstrate the values
     # we get.
     >>> potmsgset = first.potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'Found %i invalid file.')
+    ...     u'Found %i invalid file.', u'Found %i invalid files.')
 
 The sequence specifies the ordering of the message represented by this row in
 the template it belongs to. In this case, it's zero, which means it shouldn't

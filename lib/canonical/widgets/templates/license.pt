@@ -49,8 +49,10 @@
   <p>
     Launchpad.net is free to use for software projects that share
     their source code and comply with these
-    <a href="http://www.ubuntu.com/community/ubuntustory/licensing">
-    licensing policies.</a>
+    <a tal:define="config modules/canonical.config/config"
+       tal:attributes="href config/commercial/licensing_policy_url">
+      licensing policies.
+    </a>
     <br/>
     <a href="mailto:feedback@launchpad.net">Contact us</a>
     if your project uses a proprietary license.

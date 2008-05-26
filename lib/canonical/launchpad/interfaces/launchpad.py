@@ -447,7 +447,7 @@ class IAppFrontPageSearchForm(Interface):
 class ILaunchpadSearch(Interface):
     """The Schema for performing searches across all Launchpad."""
 
-    search_text = TextLine(title=_('Search text'), required=False)
+    text = TextLine(title=_('Search text'), required=False)
 
 
 class UnknownRecipientError(KeyError):
