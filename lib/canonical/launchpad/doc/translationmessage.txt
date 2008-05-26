@@ -214,7 +214,8 @@ contains just a None.
 For a message with plurals, it's the POFile's number of plural forms.
 
     >>> spanish = getUtility(ILanguageSet)['es']
-    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d contact')
+    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact', u'%d contacts')
     >>> plural_message = plural_potmsgset.getCurrentTranslationMessage(
     ...     spanish)
     >>> plural_message.translations

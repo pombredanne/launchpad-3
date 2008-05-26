@@ -51,6 +51,8 @@ from canonical.launchpad.database.oauth import OAuthAccessToken
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
+from canonical.launchpad.database.translationrelicensingagreement import (
+    TranslationRelicensingAgreement)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
@@ -300,6 +302,38 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return None
         return location.time_zone
     timezone = property(get_time_zone, set_time_zone)
+
+
+    def get_translations_relicensing_agreement(self):
+        """Return whether translator agrees to relicense their translations.
+
+        If she has made no explicit decision yet, return None.
+        """
+        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
+            person=self)
+        if relicensing_agreement is None:
+            return None
+        else:
+            return relicensing_agreement.allow_relicensing
+
+    def set_translations_relicensing_agreement(self, value):
+        """Set a translations relicensing decision by translator.
+
+        If she has already made a decision, overrides it with the new one.
+        """
+        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
+            person=self)
+        if relicensing_agreement is None:
+            relicensing_agreement = TranslationRelicensingAgreement(
+                person=self,
+                allow_relicensing=value)
+        else:
+            relicensing_agreement.allow_relicensing = value
+
+    translations_relicensing_agreement = property(
+        get_translations_relicensing_agreement,
+        set_translations_relicensing_agreement,
+        doc="See `IPerson`.")
 
     # specification-related joins
     @property

@@ -78,6 +78,16 @@
 
 <tal:block tal:condition="context/rcstype">
 
+  <tal:converted condition="context/new_style_import">
+    <p id="new-style-import-message">
+      The details of the import associated with this series can now be
+      seen on the <a tal:attributes="href context/new_style_import/branch/fmt:url">
+	branch page</a>.
+    </p>
+    <p>
+      The details listed below are informational only.
+    </p>
+  </tal:converted>
   <table>
     <tbody>
         <tal:block condition="context/rcstype/enumvalue:CVS">

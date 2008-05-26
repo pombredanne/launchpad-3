@@ -273,21 +273,6 @@ are simple little functions.
     True
 
 
-== Add a subscriber to the bug ==
-
-    >>> from canonical.launchpad.database import BugSubscription
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> bug_subscription = BugSubscription(
-    ...     bug=bug, person=foo_bar, subscribed_by=foo_bar)
-    >>> notify(SQLObjectCreatedEvent(bug_subscription))
-    >>> latest_activity = bug.activity[-1]
-    >>> latest_activity.whatchanged
-    u'bug'
-    >>> latest_activity.message
-    u'added subscriber Foo Bar'
-
-
 == Add an attachment to the bug ==
 
 First we have to create the file itself, and upload it to the Librarian:
@@ -316,6 +301,7 @@ First we have to create the file itself, and upload it to the Librarian:
 == Target a bug task to a milestone ==
 
     >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_1_0 = firefox.getMilestone('1.0')

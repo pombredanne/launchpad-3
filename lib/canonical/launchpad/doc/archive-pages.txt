@@ -9,6 +9,32 @@ Let's use Celso's PPA for the tests.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
+== ArchiveSourceSelectionFormView ==
+
+The ArchiveSourceSelectionFormView defines two members that subclasses
+must define to use.
+
+    >>> from canonical.launchpad.browser.archive import (
+    ...      ArchiveSourceSelectionFormView)
+
+    >>> class BadView(ArchiveSourceSelectionFormView):
+    ...     pass
+
+    >>> empty_request = LaunchpadTestRequest(form={})
+    >>> bad_view = BadView(None, empty_request)
+
+    >>> bad_view.default_status_filter
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: Default status_filter should be defined by
+    callsites.
+
+    >>> bad_view.getSources()
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: Source lookup should be implemented by callsites.
+
+
 == ArchivePackageDeletionView ==
 
 We use ArchivePackageDeletionView to provide the mechnisms used to
@@ -27,7 +53,6 @@ required for deleting packages.
 Issuing a empty request we can inspect the internal attributes used to
 build the page.
 
-    >>> empty_request = LaunchpadTestRequest(form={})
     >>> view = getMultiAdapter(
     ...     (cprov.archive, empty_request), name="+delete-packages")
     >>> view.initialize()
