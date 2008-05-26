@@ -315,7 +315,9 @@ class TestMergeProposalAllMessages(TestCase):
         # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        registrant = self.factory.makePerson(password='password')
+        self.merge_proposal = self.factory.makeBranchMergeProposal(
+            registrant=registrant)
 
     def test_all_messages(self):
         """Ensure all messages associated with the proposal are returned."""
@@ -340,7 +342,9 @@ class TestMergeProposalGetMessage(TestCase):
         # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        registrant = self.factory.makePerson(password='password')
+        self.merge_proposal = self.factory.makeBranchMergeProposal(
+            registrant=registrant)
         self.merge_proposal2 = self.factory.makeBranchMergeProposal()
         self.message = self.merge_proposal.createMessage(
             self.merge_proposal.registrant, "Subject")
