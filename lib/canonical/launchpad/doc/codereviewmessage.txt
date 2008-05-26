@@ -65,13 +65,15 @@ a notification is produced when the message is created.
     ...     CodeReviewNotificationLevel.FULL)
     >>> _unused = pop_notifications()
     >>> message = merge_proposal.createMessage(
-    ...     person, 'Please merge', 'This patch is very nice.')
+    ...     person, 'Please merge', 'This patch is very nice.',
+    ...     vote=CodeReviewVote.APPROVE, vote_tag='DB')
     >>> notifications = pop_notifications()
     >>> print_emails(include_reply_to=True, notifications=notifications)
     From: Person-name... <...>
     To: Person-name... <...>
     Reply-To: mp+1@code.launchpad.dev
     Subject: Please merge
+    Vote: Approve DB
     This patch is very nice.
     --
     You are subscribed to branch ~person-name.../product-name.../branch....

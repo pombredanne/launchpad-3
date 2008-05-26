@@ -513,7 +513,7 @@ class LaunchpadObjectFactory:
             source_product_series_id)
 
     def makeCodeReviewMessage(self, sender=None, subject=None, body=None,
-                              vote=None, parent=None):
+                              vote=None, vote_tag=None, parent=None):
         if sender is None:
             sender = self.makePerson()
         if subject is None:
@@ -524,8 +524,8 @@ class LaunchpadObjectFactory:
             merge_proposal = parent.branch_merge_proposal
         else:
             merge_proposal = self.makeBranchMergeProposal(registrant=sender)
-        return merge_proposal.createMessage(sender, subject, body, vote,
-                                            parent=parent)
+        return merge_proposal.createMessage(
+            sender, subject, body, vote, vote_tag, parent)
 
     def makeMessage(self, subject=None, content=None, parent=None):
         if subject is None:

@@ -8,7 +8,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus)
+    CodeReviewVote, EmailAddressStatus)
 from canonical.launchpad.mailout.codereviewmessage import (
     CodeReviewMessageMailer)
 from canonical.launchpad.testing import TestCaseWithFactory
@@ -23,12 +23,13 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
 
     def makeMessageAndSubscriber(self, notification_level=None,
-                                 as_reply=False):
+                                 as_reply=False, vote=None, vote_tag=None):
         """Return a message and a subscriber."""
         sender = self.factory.makePerson(
             displayname='Foo Bar', email='foo.bar@example.com',
             email_address_status=EmailAddressStatus.VALIDATED)
-        code_message = self.factory.makeCodeReviewMessage(sender)
+        code_message = self.factory.makeCodeReviewMessage(
+            sender, vote=vote, vote_tag=vote_tag)
         if as_reply:
             code_message = self.factory.makeCodeReviewMessage(
                 sender, parent=code_message)
@@ -42,10 +43,10 @@ class TestCodeReviewMessage(TestCaseWithFactory):
             notification_level)
         return code_message, subscriber
 
-    def makeMailer(self, as_reply=False):
+    def makeMailer(self, as_reply=False, vote=None, vote_tag=None):
         """Return a CodeReviewMessageMailer and the sole subscriber."""
         code_message, subscriber = self.makeMessageAndSubscriber(
-            as_reply=as_reply)
+            as_reply=as_reply, vote=vote, vote_tag=vote_tag)
         return CodeReviewMessageMailer.forCreation(code_message), subscriber
 
     def test_forCreation(self):
@@ -104,6 +105,22 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         for header, value in expected.items():
             self.assertEqual(headers[header], value)
         self.assertEqual(expected, headers)
+
+    def test_generateEmailWithVote(self):
+        mailer, subscriber = self.makeMailer(
+            vote=CodeReviewVote.APPROVE)
+        headers, subject, body = mailer.generateEmail(subscriber)
+        self.assertEqual('Vote: Approve', body.splitlines()[0])
+        self.assertEqual(body.splitlines()[1:-2],
+                         mailer.message.text_contents.splitlines())
+
+    def test_generateEmailWithVoteAndTag(self):
+        mailer, subscriber = self.makeMailer(
+            vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
+        headers, subject, body = mailer.generateEmail(subscriber)
+        self.assertEqual('Vote: Approve DBTAG', body.splitlines()[0])
+        self.assertEqual(body.splitlines()[1:-2],
+                         mailer.message.text_contents.splitlines())
 
 
 def test_suite():
