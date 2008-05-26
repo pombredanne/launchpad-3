@@ -441,10 +441,13 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
 
     mailwrapper = MailWrapper(width=72)
     content_substitutions = {
-        'visibility' : visibility, 'bug_url' : canonical_url(bug),
-        'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
+        'visibility' : visibility,
+        'bug_url' : canonical_url(bug),
+        'bug_info': "\n".join(bug_info),
+        'bug_title': bug.title,
         'description': mailwrapper.format(bug.description),
-        'notification_rationale': reason}
+        'notification_rationale': reason
+        }
 
     if new_recipients:
         contents += "You have been subscribed to a %(visibility)s bug"
