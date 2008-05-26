@@ -231,7 +231,7 @@ def construct_bug_notification(bug, from_address, address, body, subject,
 
 
 def _send_bug_details_to_new_bug_subscribers(
-    bug, previous_subscribers, current_subscribers):
+    bug, previous_subscribers, current_subscribers, subscribed_by=None):
     """Send an email containing full bug details to new bug subscribers.
 
     This function is designed to handle situations where bugtasks get
@@ -266,7 +266,8 @@ def _send_bug_details_to_new_bug_subscribers(
     for to_addr in sorted(to_addrs):
         reason, rationale_header = recipients.getReason(to_addr)
         subject, contents = generate_bug_add_email(
-            bug, new_recipients=True, reason=reason)
+            bug, new_recipients=True, subscribed_by=subscribed_by,
+            reason=reason)
         msg = construct_bug_notification(
             bug, from_addr, to_addr, contents, subject, email_date,
             rationale_header=rationale_header, references=references)
@@ -400,7 +401,8 @@ def notify_errors_list(message, file_alias_url):
         )
 
 
-def generate_bug_add_email(bug, new_recipients=False, reason=None):
+def generate_bug_add_email(bug, new_recipients=False, reason=None,
+                           subscribed_by=None):
     """Generate a new bug notification from the given IBug.
 
     If new_recipients is supplied we generate a notification explaining
@@ -437,11 +439,23 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     if bug.tags:
         bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
 
+    mailwrapper = MailWrapper(width=72)
+    content_substitutions = {
+        'visibility' : visibility, 'bug_url' : canonical_url(bug),
+        'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
+        'description': mailwrapper.format(bug.description),
+        'notification_rationale': reason}
+
     if new_recipients:
-        contents += ("You have been subscribed to a %(visibility)s bug:\n\n"
+        contents += "You have been subscribed to a %(visibility)s bug"
+        if subscribed_by is not None:
+            contents += " by %(subscribed_by)s"
+            content_substitutions['subscribed_by'] = (
+                subscribed_by.unique_displayname)
+        contents += (":\n\n"
                      "%(description)s\n\n%(bug_info)s")
         # The visibility appears mid-phrase so.. hack hack.
-        visibility = visibility.lower()
+        content_substitutions['visibility'] = visibility.lower()
         # XXX: kiko, 2007-03-21:
         # We should really have a centralized way of adding this
         # footer, but right now we lack a INotificationRecipientSet
@@ -452,12 +466,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
         contents += ("%(visibility)s bug reported:\n\n"
                      "%(description)s\n\n%(bug_info)s")
 
-    mailwrapper = MailWrapper(width=72)
-    contents = contents % {
-        'visibility' : visibility, 'bug_url' : canonical_url(bug),
-        'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
-        'description': mailwrapper.format(bug.description),
-        'notification_rationale': reason}
+    contents = contents % content_substitutions
 
     contents = contents.rstrip()
 
@@ -970,7 +979,8 @@ def notify_bug_subscripiton_added(bug_subscription, event):
     # than themselves, we send them a notification email.
     if bug_subscription.person != bug_subscription.subscribed_by:
         _send_bug_details_to_new_bug_subscribers(
-            bug_subscription.bug, [], [bug_subscription.person])
+            bug_subscription.bug, [], [bug_subscription.person],
+            subscribed_by=bug_subscription.subscribed_by)
 
 
 def notify_invitation_to_join_team(event):
