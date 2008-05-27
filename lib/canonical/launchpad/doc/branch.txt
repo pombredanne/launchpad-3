@@ -1186,6 +1186,7 @@ The current references to the branch table are shown here.
     ...     '%s.%s' % (src_tab, src_col) for
     ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
     ...     print name
+    branch.stacked_on
     branchmergeproposal.dependent_branch
     branchmergeproposal.source_branch
     branchmergeproposal.target_branch
