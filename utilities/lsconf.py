@@ -58,6 +58,10 @@ class Configuration:
 
         Print the final state of configuration after all the conf files
         are loaded.
+        
+        :param verbose: If True, each key has a comment stating where it
+            was defined.
+        :param section_name: Only print the named section.
         """
         print '# This configuration derives from:'
         for config_data in self.config.overlays:
