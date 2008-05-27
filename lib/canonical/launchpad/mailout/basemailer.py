@@ -38,11 +38,19 @@ class BaseMailer:
         subject = self._subject_template % self._getTemplateParams(recipient)
         return (headers, subject, self._getBody(recipient))
 
+    def _getReplyToAddress(self):
+        """Return the address to use for the reply-to header."""
+        return None
+
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
         notification_reason, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
-        return {'X-Launchpad-Message-Rationale': rationale}
+        headers = {'X-Launchpad-Message-Rationale': rationale}
+        reply_to = self._getReplyToAddress()
+        if reply_to is not None:
+            headers['Reply-To'] = reply_to
+        return headers
 
     def _getTemplateParams(self, recipient):
         """Return a dict of values to use in the body and subject."""

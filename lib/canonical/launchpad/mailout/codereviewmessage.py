@@ -64,5 +64,4 @@ class CodeReviewMessageMailer(BMPMailer):
         headers['Message-Id'] = self.message.rfc822msgid
         if self.message.parent is not None:
             headers['In-Reply-To'] = self.message.parent.rfc822msgid
-        headers['Reply-To'] = self._getReplyToAddress()
         return headers
