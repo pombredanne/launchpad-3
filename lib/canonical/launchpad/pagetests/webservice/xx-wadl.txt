@@ -219,6 +219,7 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
+    >>> open("/home/leonardr/programming/wadl/wadl.xml", "w").write(wadl)
     >>> tree = etree.fromstring(wadl)
     >>> wadl_schema.validate(tree)
     1

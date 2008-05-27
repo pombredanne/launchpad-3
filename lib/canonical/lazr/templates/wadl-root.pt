@@ -31,7 +31,7 @@
   <representation mediaType="application/json" id="service-root-json">
     <tal:root_params tal:repeat="param context/wadl:top_level_resources">
       <param style="plain" tal:attributes="name param/name;
-                             path param/path">
+                                           path param/path">
         <link tal:attributes="resource_type param/resource/wadl:type_link" />
       </param>
     </tal:root_params>
