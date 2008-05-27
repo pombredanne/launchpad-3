@@ -512,6 +512,15 @@ We can get the subscribers for a branch based on their level of
 subscription. From the example above, we see that sabdfl has a 'FULL'
 subscription to `gterm_dev`.
 
+Create a subscription to another branch to confirm that we are just
+getting the correct subscriptions.
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> subscription = factory.makeBranchSubscription()
+    >>> subscription.notification_level = BranchSubscriptionNotificationLevel.FULL
+    >>> subscription.max_diff_lines = BranchSubscriptionDiffSize.FIVEKLINES
+    >>> syncUpdate(subscription)
+
     >>> def print_names(persons):
     ...     """Print the name of each person on a new line."""
     ...     for person in persons:
@@ -872,16 +881,14 @@ Lets make gnome terminal have a user branch as the dev focus.
 
     >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
     >>> for product in products:
-    ...     print "%s %s %s" % (
-    ...         product.name,
-    ...         summary[product]['branch_count'],
-    ...         summary[product]['last_commit'])
+    ...     if product.name in ['evolution', 'firefox', 'gnome-terminal']:
+    ...         print "%s %s %s" % (
+    ...             product.name,
+    ...             summary[product]['branch_count'],
+    ...             summary[product]['last_commit'])
     evolution      1 None
     firefox        5 2005-03-09 15:50:00
     gnome-terminal 8 None
-    iso-codes      1 None
-    landscape      2 None
-    thunderbird    1 None
 
 
 == Getting all branches for a person ==
