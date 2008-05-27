@@ -25,7 +25,7 @@ It's an XML document.
     ...
     </wadl:application>
 
-Let's parse it and make sure it validates against the WADL schema
+Let's parse it and make sure it validates against the WADL schema.
 
     >>> from StringIO import StringIO
     >>> from lxml import etree
