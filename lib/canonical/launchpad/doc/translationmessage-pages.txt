@@ -422,7 +422,8 @@ than the other choosen language, Spanish.
 
 We are going to work with a plural form message.
 
-    >>> potmsgset = potemplate_trunk.getPOTMsgSetByMsgIDText(u'%d contact')
+    >>> potmsgset = potemplate_trunk.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact', u'%d contacts')
     >>> potmsgset.msgid_plural is None
     False
 

@@ -135,7 +135,7 @@ class WebServiceCaller:
             path, 'POST', media_type, data, headers)
 
     def named_post(self, path, operation_name, headers, **kwargs):
-        kwargs['ws_op'] = operation_name
+        kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, value)
                          for key, value in kwargs.items()])
         return self.post(path, 'application/x-www-form-urlencoded', data,
@@ -401,6 +401,9 @@ def print_navigation_links(content):
     if navigation_links is None:
         print "No navigation links"
         return
+    title = navigation_links.find('label')
+    if title is not None:
+        print '= %s =' % title.string
     entries = navigation_links.findAll('li')
     for entry in entries:
         if entry.a:
@@ -534,6 +537,10 @@ def setUpGlobs(test):
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
+    test.globs['public_webservice'] = WebServiceCaller(
+        'foobar123451432', 'qQ7dw1fXCR5hhJRN7ztj', port=9000)
+    test.globs['user_webservice'] = WebServiceCaller(
+        'launchpad-library', '3SdVlTlVKcgXSJHbsSSk', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
