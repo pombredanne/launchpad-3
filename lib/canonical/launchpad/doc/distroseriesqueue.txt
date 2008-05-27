@@ -145,23 +145,8 @@ Check if it implements its interface completely:
 
 Iterating over IPackageUploads via iPackageUploadSet:
 
-  >>> for item in qset:
-  ...     print item.id
-  1
-  2
-  3
-  4
-  5
-  6
-  7
-  8
-  9
-  10
-  11
-  12
-  13
-  14
-  15
+  >>> len([item for item in qset])
+  16
 
 Retrieving an IPackageUpload by its id:
 
@@ -174,7 +159,7 @@ Retrieving an IPackageUpload by its id:
 Counter, optionally by status (informally named "queue") and or distroseries:
 
   >>> qset.count()
-  15
+  16
 
   >>> qset.count(PackageUploadStatus.ACCEPTED)
   1

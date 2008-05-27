@@ -29,7 +29,7 @@ location and description.
     Description
       The default build-slave
     Status
-      NOT OK : None (AUTO)
+      Disabled
     Owner
       Launchpad Buildd Admins
 
@@ -143,7 +143,7 @@ automatic (AUTO) mode.
     Description
       The default build-slave
     Status
-      NOT OK : None (AUTO)
+      Disabled
     Owner
       Launchpad Buildd Admins
 
@@ -166,7 +166,7 @@ He can see now, in the details portlet that it say 'MANUAL' now.
     Description
       The default build-slave
     Status
-      NOT OK : None (MANUAL)
+      Disabled
     Owner
       Launchpad Buildd Admins
 
@@ -195,7 +195,7 @@ case is to bring the builder back to work.
     Description
       The default build-slave
     Status
-      BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)
+      Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
     Owner
       Launchpad Buildd Admins
 
@@ -245,10 +245,11 @@ Farm list. Celso cannot see the link to it.
 
     >>> print extract_text(find_main_content(cprov_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                 0 waiting
-    The frog builder    NOT OK : None (AUTO)
-    Building other packages
+    Register a new build machine
+    PPA build machines
+    386    0 builds waiting in queue
+    The frog builder    Disabled
+    Official distribution build machines
     Generated at ...
 
     >>> cprov_browser.getLink('Bob The Builder').click()
