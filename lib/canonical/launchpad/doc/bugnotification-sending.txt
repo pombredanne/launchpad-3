@@ -1144,8 +1144,6 @@ gets over-long.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> bug_three = getUtility(IBugSet).get(3)
-    >>> sample_person = getUtility(ILaunchBag).user
     >>> bug_three.unsubscribe(sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
     >>> commit()
@@ -1154,7 +1152,6 @@ gets over-long.
     ...     config.malone.bugnotification_dbuser)
 
     >>> bug_three = getUtility(IBugSet).get(3)
-    >>> sample_person = getUtility(ILaunchBag).user
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
     [u'another-tag layout-test yet-another']
@@ -1172,7 +1169,6 @@ won't be included.
     ...     config.malone.bugnotification_dbuser)
 
     >>> bug_three = getUtility(IBugSet).get(3)
-    >>> sample_person = getUtility(ILaunchBag).user
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     message.get_all('X-Launchpad-Bug-Tags')
 

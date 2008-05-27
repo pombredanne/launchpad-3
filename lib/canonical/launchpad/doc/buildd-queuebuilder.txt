@@ -22,8 +22,7 @@ Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
     ...      Build, BuildQueue, DistroArchSeries, DistroSeries,
-    ...      PocketChroot, SecureSourcePackagePublishingHistory,
-    ...      SourcePackagePublishingHistory)
+    ...      PocketChroot, SecureSourcePackagePublishingHistory)
 
     >>> from canonical.launchpad.interfaces import (
     ...      PackagePublishingPocket, PackagePublishingStatus)
@@ -137,15 +136,6 @@ exact circumstances we want to test below.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
-Reget a few objects that are now invalid after reconnecting:
-
-    >>> woody = DistroSeries.selectOneBy(name='woody')
-    >>> hoary = DistroSeries.selectOneBy(name='hoary')
-    >>> warty = DistroSeries.selectOneBy(name='warty')
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
-    >>> breezy_autotest_i386 = breezy_autotest['i386']
 
 Let's use SoyuzTestPublisher to create a set of publications in the
 exact state to expose the features that we want to test.
@@ -299,19 +289,6 @@ checks/counters within this test.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
-Reget objects so that they are valid after reconnecting:
-
-    >>> test_publisher.regetBreezyAutotest()
-    >>> warty = DistroSeries.selectOneBy(name='warty')
-    >>> hoary = DistroSeries.selectOneBy(name='hoary')
-    >>> pub_all = SourcePackagePublishingHistory.get(pub_all.id)
-    >>> pub_any = SourcePackagePublishingHistory.get(pub_any.id)
-    >>> pub_three = SourcePackagePublishingHistory.get(pub_three.id)
-    >>> pub_one = SourcePackagePublishingHistory.get(pub_one.id)
-    >>> pub_any_foo = SourcePackagePublishingHistory.get(pub_any_foo.id)
-    >>> pub_linux_foo = SourcePackagePublishingHistory.get(pub_linux_foo.id)
-    >>> pub_hoary_ppa = SourcePackagePublishingHistory.get(pub_hoary_ppa.id)
 
 
 == Package Architecture Specific ==
@@ -492,10 +469,6 @@ architectures supported for the distroseries.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
 
-    >>> hoary = DistroSeries.selectOneBy(name='hoary')
-    >>> legal_archs = set(hoary.architectures)
-    >>> pub_hoary_ppa = SourcePackagePublishingHistory.get(pub_hoary_ppa.id)
-
     >>> pub_hoary_ppa.archive.require_virtualized = False
     >>> sorted([arch.architecturetag for arch in
     ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)])
@@ -507,10 +480,6 @@ Reset the virtualization flag.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-
-    >>> distroserieses = [DistroSeries.get(series.id)
-    ...                   for series in distroserieses]
-    >>> pub_all = SourcePackagePublishingHistory.get(pub_all.id)
 
 
 == Create and verify the new builds ==
