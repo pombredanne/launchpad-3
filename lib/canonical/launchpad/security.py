@@ -1,7 +1,9 @@
-"""Security policies for using content objects.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""
+"""Security policies for using content objects."""
+
 __metaclass__ = type
+__all__ = []
 
 from zope.interface import implements, Interface
 from zope.component import getUtility
@@ -27,7 +29,6 @@ from canonical.launchpad.interfaces import (
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
     PersonVisibility, IAccount)
-    PersonVisibility)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 
 from canonical.launchpad.webapp.authorization import check_permission
