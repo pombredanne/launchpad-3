@@ -20,6 +20,7 @@ from zope.interface import Attribute, Interface
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
    export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
 
@@ -99,11 +100,11 @@ class ITeamMembership(Interface):
     # imports, so we use schema=Interface here and override it in
     # interfaces/person.py.
     team = exported(
-        Object(title=_("Team"), required=True, readonly=False,
-               schema=Interface))
+        Reference(title=_("Team"), required=True, readonly=False,
+                  schema=Interface))
     person = exported(
-        Object(title=_("Member"), required=True, readonly=False,
-               schema=Interface),
+        Reference(title=_("Member"), required=True, readonly=False,
+                  schema=Interface),
         exported_as='member')
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(

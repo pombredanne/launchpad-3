@@ -9,6 +9,7 @@ when given certain user-configurable URLs.
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlsplit
+from canonical.pidfile import make_pidfile
 import subprocess
 import os
 import time
@@ -18,6 +19,9 @@ import logging
 
 # Set up basic logging.
 log = logging.getLogger(__name__)
+
+# The default service name, used by the Launchpad service framework.
+service_name = 'google-webservice'
 
 
 class GoogleRequestHandler(BaseHTTPRequestHandler):
@@ -155,6 +159,11 @@ def main():
     filelog = logging.FileHandler(config.google_test_service.log)
     log.addHandler(filelog)
     log.setLevel(logging.DEBUG)
+
+    # To support service shutdown we need to create a PID file that is
+    # understood by the Launchpad services framework.
+    global service_name
+    make_pidfile(service_name)
 
     host, port = get_service_endpoint()
     server = HTTPServer((host, port), GoogleRequestHandler)

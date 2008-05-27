@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'CodeImport',
     'CodeImportSet',
+    '_ProductSeriesCodeImport',
     ]
 
 from datetime import timedelta
