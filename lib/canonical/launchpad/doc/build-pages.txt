@@ -3,18 +3,16 @@
 For the subsequent tests we will use a specific 'pmount' build record
 from the sampledata which happens to be in FAILEDTOBUILD status.
 
-    >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import IBuildSet
-    >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     BuildStatus, IDistributionSet)
 
-    >>> print failed_build.title
-    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> hoary_pmount = hoary.getSourcePackage('pmount')
 
-    >>> print failed_build.buildstate.name
-    FAILEDTOBUILD
-
-    >>> print failed_build.archive.title
-    Primary Archive for Ubuntu Linux
+    >>> failed_build = hoary_pmount.getBuildRecords(
+    ...      build_state=BuildStatus.FAILEDTOBUILD)[0]
 
 
 == Build Structural Header and Menu ==
@@ -95,5 +93,47 @@ Setup a 'empty' request:
 
 Let's instantiate the view for +index:
 
+    >>> from zope.component import getMultiAdapter
     >>> failed_build_view = getMultiAdapter(
     ...     (failed_build, empty_request), name="+index")
+
+'BuildView.user_can_retry_build' property checks not only the
+users permissions to retry but also if a build is in a status that it
+can be retried.
+
+The build cannot be retried (see IBuild) because it's targeted to a
+stable distroseries. Re-targeting it to a unstable distroarchseries
+will make it 'retrieable'.
+
+    >>> failed_build.can_be_retried
+    False
+
+    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> naked_failed_build = removeSecurityProxy(failed_build)
+    >>> naked_failed_build.distroarchseries = breezy_autotest_i386
+
+    >>> failed_build.can_be_retried
+    True
+
+At this point, that the build can be retried, the view property is
+still checking if the user accessing the page has permission to retry
+the build. Anonymous users, obviously, don't have 'launchpad.Edit'
+permission on this build.
+
+    >>> failed_build_view.user_can_retry_build
+    False
+
+If accessed by a user with the required permission, Foo Bar in this
+case, the 'user_can_retry_build' property finally returns True.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+
+    >>> failed_build_view.user_can_retry_build
+    True
+
+See pagetests/soyuz/xx-build-record.txt for further information about
+the build-retry permission system.
