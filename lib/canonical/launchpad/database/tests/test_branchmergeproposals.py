@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus)
 from canonical.launchpad.testing import (
-     capture_events, LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -440,24 +440,14 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
 
 class TestGetAddress(TestCaseWithFactory):
-    """Test that the getAddress method gives expected results."""
-
-    def test_getAddress(self):
-        merge_proposal = self.factory.makeBranchMergeProposal()
-        expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
-        self.assertEqual(expected, merge_proposal.address)
-
+    """Test that the address property gives expected results."""
 
     layer = LaunchpadFunctionalLayer
 
-    def test_notifyOnCreate(self):
-        """Ensure that a notification is emitted on creation"""
-        source_branch = self.factory.makeBranch()
-        target_branch = self.factory.makeBranch(product=source_branch.product)
-        registrant = self.factory.makePerson()
-        result, event = self.assertNotifies(SQLObjectCreatedEvent,
-            source_branch.addLandingTarget, registrant, target_branch)
-        self.assertEqual(result, event.object)
+    def test_address(self):
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
+        self.assertEqual(expected, merge_proposal.address)
 
 
 def test_suite():

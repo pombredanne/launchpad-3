@@ -1,6 +1,8 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
+
 """Test CodeReviewMessage emailing functionality."""
+
 
 from unittest import TestLoader
 
@@ -15,6 +17,7 @@ from canonical.launchpad.testing import TestCaseWithFactory
 
 
 class TestCodeReviewMessage(TestCaseWithFactory):
+    """Test that messages are generated as expected."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -79,13 +82,14 @@ class TestCodeReviewMessage(TestCaseWithFactory):
                          mailer._recipients.getRecipientPersons())
 
     def test_getReplyAddress(self):
+        """Ensure that the reply-to address is reasonable."""
         mailer, subscriber = self.makeMailer()
         merge_proposal = mailer.code_review_message.branch_merge_proposal
         expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
         self.assertEqual(expected, mailer._getReplyToAddress())
 
     def test_generateEmail(self):
-        """Ensure mailer's generateEmail method prduces expected values."""
+        """Ensure mailer's generateEmail method produces expected values."""
         mailer, subscriber = self.makeMailer(as_reply=True)
         headers, subject, body = mailer.generateEmail(subscriber)
         message = mailer.code_review_message.message
@@ -107,6 +111,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         self.assertEqual(expected, headers)
 
     def test_generateEmailWithVote(self):
+        """Ensure that votes are displayed."""
         mailer, subscriber = self.makeMailer(
             vote=CodeReviewVote.APPROVE)
         headers, subject, body = mailer.generateEmail(subscriber)
@@ -115,6 +120,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
+        """Ensure that vote tages are displayed."""
         mailer, subscriber = self.makeMailer(
             vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
         headers, subject, body = mailer.generateEmail(subscriber)

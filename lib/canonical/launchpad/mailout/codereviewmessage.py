@@ -1,13 +1,13 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
+
+"""Email notifications for code review messages."""
+
+
 __metaclass__ = type
 
 
-from canonical.config import config
-
-
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 
@@ -41,7 +41,7 @@ class CodeReviewMessageMailer(BMPMailer):
         return klass(code_review_message, recipients)
 
     def _getBody(self, recipient):
-        """Return the complete body to use for this email"""
+        """Return the complete body to use for this email."""
         if self.code_review_message.vote is None:
             prefix = ''
         else:
@@ -64,5 +64,4 @@ class CodeReviewMessageMailer(BMPMailer):
         headers['Message-Id'] = self.message.rfc822msgid
         if self.message.parent is not None:
             headers['In-Reply-To'] = self.message.parent.rfc822msgid
-        headers['Reply-To'] = self._getReplyToAddress()
         return headers
