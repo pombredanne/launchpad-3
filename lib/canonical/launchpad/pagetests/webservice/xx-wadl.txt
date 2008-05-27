@@ -27,7 +27,6 @@ It's an XML document.
 
 Let's parse it and make sure it validates against the WADL schema.
 
-    >>> from StringIO import StringIO
     >>> from lxml import etree
     >>> from canonical.lazr.rest.resource import WADL_SCHEMA_FILE
     >>> wadl_schema = etree.XMLSchema(file=WADL_SCHEMA_FILE)
