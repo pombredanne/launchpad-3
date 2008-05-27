@@ -54,9 +54,8 @@ class Credentials:
         # Check the version number and extract the access token and
         # secret.  Then convert these to the appropriate instances.
         if not parser.has_section(CREDENTIALS_FILE_VERSION):
-            self.consumer = None
-            self.access_token = None
-            return
+            raise CredentialsFileError('No configuration for version %s' %
+                                       CREDENTIALS_FILE_VERSION)
         consumer_key = parser.get(
             CREDENTIALS_FILE_VERSION, 'consumer_key')
         consumer_secret = parser.get(

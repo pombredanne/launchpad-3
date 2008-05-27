@@ -110,15 +110,13 @@ have to go through the whole OAuth request dance.
     >>> os.close(fd)
     >>> credentials_file = open(path)
 
-If the credentials file is empty, no credentials will be loaded from it.
+If the credentials file is empty, loading it raises an exception.
 
     >>> credentials = Credentials()
     >>> credentials.load(credentials_file)
-    >>> credentials_file.close()
-    >>> print credentials.consumer
-    None
-    >>> print credentials.access_token
-    None
+    Traceback (most recent call last):
+    ...
+    CredentialsFileError: No configuration for version 1
 
 Once Salgado's credentials are obtained for the first time, just set the
 appropriate instance variables and use the save() method.

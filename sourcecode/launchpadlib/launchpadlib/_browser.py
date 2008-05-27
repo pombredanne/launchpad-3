@@ -1,10 +1,9 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Temporary browser object to make requests of Launchpad web service.
+"""Browser object to make requests of Launchpad web service.
 
-This code will get replaced once WADL parsing is implemented, so it only needs
-to be good enough for the current test suite.  I'm not even going to bother
-pydoctoring this code because it's not part of the public interface.
+The `Browser` class implements OAuth authenticated communications with
+Launchpad.  It is not part of the public launchpadlib API.
 """
 
 __metaclass__ = type
