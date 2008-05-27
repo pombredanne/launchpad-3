@@ -74,6 +74,6 @@ He can't login without first validating his email address.
   >>> from canonical.launchpad.database import EmailAddressSet
   >>> [to_addr] = to_addrs
   >>> e = EmailAddressSet().getByEmail(to_addr)
-  >>> e.statusname
+  >>> e.status.title
   'Preferred Email Address'
 

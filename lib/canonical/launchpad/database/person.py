@@ -51,6 +51,8 @@ from canonical.launchpad.database.oauth import OAuthAccessToken
 from canonical.launchpad.database.personlocation import PersonLocation
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
+from canonical.launchpad.database.translationrelicensingagreement import (
+    TranslationRelicensingAgreement)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
@@ -148,7 +150,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # column.  Watch out for when SQLObject is creating this row, because
         # in that case self.name isn't yet available.
         assert (self._SO_creating or
-                not self.isTeam() or
+                not self.is_team or
                 getUtility(IMailingListSet).get(self.name) is None), (
             'Cannot rename teams with mailing lists')
         # Everything's okay, so let SQLObject do the normal thing.
@@ -309,7 +311,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def convertToTeam(self, team_owner):
         """See `IPerson`."""
-        assert not self.isTeam(), "Can't convert a team to a team."
+        assert not self.is_team, "Can't convert a team to a team."
         assert self.account_status == AccountStatus.NOACCOUNT, (
             "Only Person entries whose account_status is NOACCOUNT can be "
             "converted into teams.")
@@ -356,6 +358,38 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return None
         return location.time_zone
     timezone = property(get_time_zone, set_time_zone)
+
+
+    def get_translations_relicensing_agreement(self):
+        """Return whether translator agrees to relicense their translations.
+
+        If she has made no explicit decision yet, return None.
+        """
+        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
+            person=self)
+        if relicensing_agreement is None:
+            return None
+        else:
+            return relicensing_agreement.allow_relicensing
+
+    def set_translations_relicensing_agreement(self, value):
+        """Set a translations relicensing decision by translator.
+
+        If she has already made a decision, overrides it with the new one.
+        """
+        relicensing_agreement = TranslationRelicensingAgreement.selectOneBy(
+            person=self)
+        if relicensing_agreement is None:
+            relicensing_agreement = TranslationRelicensingAgreement(
+                person=self,
+                allow_relicensing=value)
+        else:
+            relicensing_agreement.allow_relicensing = value
+
+    translations_relicensing_agreement = property(
+        get_translations_relicensing_agreement,
+        set_translations_relicensing_agreement,
+        doc="See `IPerson`.")
 
     # specification-related joins
     @property
@@ -823,7 +857,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert self.hasParticipationEntryFor(team), (
             "%s doesn't seem to be a member/participant in %s"
             % (self.name, team.name))
-        assert team.isTeam(), "You can't pass a person to this method."
+        assert team.is_team, "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
         while team != self:
@@ -855,8 +889,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             % dict(person=self.name, team=team.name))
         return member
 
-    def isTeam(self):
+    @property
+    def is_team(self):
         """See `IPerson`."""
+        return self.teamowner is not None
+
+    def isTeam(self):
+        """Deprecated. Use is_team instead."""
         return self.teamowner is not None
 
     @property
@@ -1067,7 +1106,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def is_valid_person(self):
         """See `IPerson`."""
-        if self.isTeam():
+        if self.is_team:
             return False
         try:
             ValidPersonCache.get(self.id)
@@ -1158,7 +1197,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tp = TeamParticipation.selectOneBy(team=team, person=self)
         if tp is not None or self.id == team.teamownerID:
             in_team = True
-        elif team.isTeam() and not team.teamowner.inTeam(team):
+        elif team.is_team and not team.teamowner.inTeam(team):
             # The owner is not a member but must retain his rights over
             # this team. This person may be a member of the owner, and in this
             # case it'll also have rights over this team.
@@ -1194,7 +1233,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return
 
         if requester is None:
-            assert not self.isTeam(), (
+            assert not self.is_team, (
                 "You need to specify a reviewer when a team joins another.")
             requester = self
 
@@ -1253,7 +1292,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getTeamAdminsEmailAddresses(self):
         """See `IPerson`."""
-        assert self.isTeam()
+        assert self.is_team
         to_addrs = set()
         for person in self.getDirectAdministrators():
             to_addrs.update(contactEmailAddresses(person))
@@ -1263,14 +1302,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                   status=TeamMembershipStatus.APPROVED,
                   may_subscribe_to_list=True):
         """See `IPerson`."""
-        assert self.isTeam(), "You cannot add members to a person."
+        assert self.is_team, "You cannot add members to a person."
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED,
                           TeamMembershipStatus.ADMIN], (
             "You can't add a member with this status: %s." % status.name)
 
         event = JoinTeamEvent
-        if person.isTeam():
+        if person.is_team:
             assert not self.hasParticipationEntryFor(person), (
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
                 "be added as a member of '%s'"
@@ -1296,7 +1335,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 comment=comment)
             notify(event(person, self))
 
-        if not person.isTeam() and may_subscribe_to_list:
+        if not person.is_team and may_subscribe_to_list:
             person.autoSubscribeToMailingList(self.mailing_list,
                                               requester=reviewer)
 
@@ -1354,7 +1393,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def deactivateAllMembers(self, comment, reviewer):
         """Deactivate all members of this team."""
-        assert self.isTeam(), "This method is only available for teams."
+        assert self.is_team, "This method is only available for teams."
         assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
             "Only Launchpad admins can deactivate all members of a team")
         for membership in self.member_memberships:
@@ -1388,7 +1427,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getDirectAdministrators(self):
         """See `IPerson`."""
-        assert self.isTeam(), 'Method should only be called on a team.'
+        assert self.is_team, 'Method should only be called on a team.'
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         return self.adminmembers.union(
             owner, orderBy=self._sortingColumnsForSetOperations)
@@ -1861,7 +1900,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def validateAndEnsurePreferredEmail(self, email):
         """See `IPerson`."""
-        assert not self.isTeam(), "This method must not be used for teams."
+        assert not self.is_team, "This method must not be used for teams."
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
@@ -1890,7 +1929,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def setContactAddress(self, email):
         """See `IPerson`."""
-        assert self.isTeam(), "This method must be used only for teams."
+        assert self.is_team, "This method must be used only for teams."
 
         if email is None:
             if self.preferredemail is not None:
@@ -1903,7 +1942,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def setPreferredEmail(self, email):
         """See `IPerson`."""
-        assert not self.isTeam(), "This method must not be used for teams."
+        assert not self.is_team, "This method must not be used for teams."
         if self.preferredemail is None:
             # This is the first time we're confirming this person's email
             # address, so we now assume this person has a Launchpad account.
@@ -2623,7 +2662,7 @@ class PersonSet:
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
-        if from_person.isTeam() and from_person.allmembers.count() > 0:
+        if from_person.is_team and from_person.allmembers.count() > 0:
             raise AssertionError(
                 "Only teams without active members can be merged")
 
@@ -3368,12 +3407,12 @@ class WikiNameSet:
         """See `IWikiNameSet`."""
         return WikiName.selectBy(person=person)
 
-    def get(self, id, default=None):
+    def get(self, id):
         """See `IWikiNameSet`."""
-        wiki = WikiName.selectOneBy(id=id)
-        if wiki is None:
-            return default
-        return wiki
+        try:
+            return WikiName.get(id)
+        except SQLObjectNotFound:
+            return None
 
     def new(self, person, wiki, wikiname):
         """See `IWikiNameSet`."""
@@ -3401,12 +3440,9 @@ class JabberIDSet:
         """See `IJabberIDSet`"""
         return JabberID(person=person, jabberid=jabberid)
 
-    def getByJabberID(self, jabberid, default=None):
+    def getByJabberID(self, jabberid):
         """See `IJabberIDSet`"""
-        jabber = JabberID.selectOneBy(jabberid=jabberid)
-        if jabber is None:
-            return default
-        return jabber
+        return JabberID.selectOneBy(jabberid=jabberid)
 
     def getByPerson(self, person):
         """See `IJabberIDSet`"""
@@ -3414,6 +3450,7 @@ class JabberIDSet:
 
 
 class IrcID(SQLBase):
+    """See `IIrcID`"""
     implements(IIrcID)
 
     _table = 'IrcID'
@@ -3424,7 +3461,16 @@ class IrcID(SQLBase):
 
 
 class IrcIDSet:
+    """See `IIrcIDSet`"""
     implements(IIrcIDSet)
 
+    def get(self, id):
+        """See `IIrcIDSet`"""
+        try:
+            return IrcID.get(id)
+        except SQLObjectNotFound:
+            return None
+
     def new(self, person, network, nickname):
+        """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)

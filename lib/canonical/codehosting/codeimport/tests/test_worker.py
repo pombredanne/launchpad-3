@@ -20,7 +20,6 @@ from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import get_rocketfuel_root
-from canonical.codehosting.codeimport.tarball import create_tarball
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_tree_store)
@@ -321,7 +320,11 @@ class TestForeignTreeStore(WorkerTest):
         store = self.makeForeignTreeStore()
         self.build_tree_contents(
             [('svnworking/',), ('svnworking/file', 'contents')])
-        create_tarball('svnworking', 'svnworking.tgz')
+        # We would use canonical.codehosting.codeimport.tarball.create_tarball
+        # here, but it creates tarballs with paths starting with
+        # './svnworking/' and the old system created tarballs with paths
+        # starting with 'svnworking/'.
+        os.system('tar cfz svnworking.tgz svnworking')
         self.copyCreatingDirectories(
             store.transport, '00000001/svnworking.tgz', 'svnworking.tgz')
         source_details = self.factory.makeCodeImportSourceDetails(
@@ -343,7 +346,11 @@ class TestForeignTreeStore(WorkerTest):
         store = self.makeForeignTreeStore()
         self.build_tree_contents(
             [('cvsworking/',), ('cvsworking/file', 'contents')])
-        create_tarball('cvsworking', 'cvsworking.tgz')
+        # We would use canonical.codehosting.codeimport.tarball.create_tarball
+        # here, but it creates tarballs with paths starting with
+        # './cvsworking/' and the old system created tarballs with paths
+        # starting with 'cvsworking/'.
+        os.system('tar cfz cvsworking.tgz cvsworking')
         self.copyCreatingDirectories(
             store.transport, '00000001/cvsworking.tgz', 'cvsworking.tgz')
         source_details = self.factory.makeCodeImportSourceDetails(

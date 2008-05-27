@@ -78,6 +78,23 @@ followed by a description of the action that caused the entry to be created.
     >>> p.hide_email_addresses
     True
 
+Since this person has chosen to hide his email addresses they won't be visible
+to other users which are not admins.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(email.email)
+    >>> check_permission('launchpad.View', email)
+    True
+
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.View', email)
+    False
+
+    >>> login('guilherme.salgado@canonical.com')
+    >>> check_permission('launchpad.View', email)
+    True
+    >>> login(ANONYMOUS)
+
 By default, newly created Person entries will have AccountStatus.NOACCOUNT as
 their account_status.  This is only changed if/when we turn that entry into an
 actual user account. (Currently, we assume that a Person entry is turned into
@@ -758,8 +775,7 @@ them as well.
     
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> dave = personset.getByName('justdave')
-    >>> login('dave.miller@ubuntulinux.com')
-    >>> dave.account_status = AccountStatus.DEACTIVATED
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> flush_database_updates()
     >>> list(personset.findPerson('dave'))
     []
@@ -769,7 +785,7 @@ them as well.
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
-    >>> dave.account_status = AccountStatus.ACTIVE
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.ACTIVE
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 

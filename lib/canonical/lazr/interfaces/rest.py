@@ -29,13 +29,13 @@ from zope.interface import Attribute, Interface
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.schema.interfaces import IObject
+from zope.schema.interfaces import ISequence
 
 
-class ICollectionField(IObject):
-    """A collection associated with an entry.
+class ICollectionField(ISequence):
+    """A field representing a sequence.
 
-    This is a marker interface.
+    All iterables satisfy this collection field.
     """
 
 

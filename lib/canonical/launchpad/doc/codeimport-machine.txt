@@ -232,18 +232,13 @@ must fail.
     ...
     AssertionError: State of machine ... was ONLINE.
 
-From the QUIESCING state, a machine can only go OFFLINE. The setOnline
-and setQuiescing method must fail.
-
-It would be meaningful to allow the transition from QUIESCING to ONLINE,
-meaning "oops, I did not want you to quiesce, after all", but it would
-require a new event type. We will add it later if we find we need it.
+From the QUIESCING state, a machine can go OFFLINE or ONLINE. The
+setQuiescing method must fail.
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setOnline()
-    Traceback (most recent call last):
-    ...
-    AssertionError: State of machine ... was QUIESCING.
+    >>> print quiescing_machine.state.name
+    ONLINE
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setQuiescing(ddaa, "No worky!")

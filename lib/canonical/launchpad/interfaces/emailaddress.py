@@ -12,11 +12,14 @@ __all__ = [
     'InvalidEmailAddress']
 
 from zope.schema import Choice, Int, Object, TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import Reference
 
 
 class InvalidEmailAddress(Exception):
@@ -74,18 +77,21 @@ class EmailAddressStatus(DBEnumeratedType):
 
 
 class IEmailAddress(Interface):
-    """The object that stores the IPerson's emails."""
+    """The object that stores the `IPerson`'s emails."""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    email = TextLine(title=_('Email Address'), required=True, readonly=False)
+    email = exported(
+        TextLine(title=_('Email Address'), required=True, readonly=True))
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
     account = Object(title=_('Account'), schema=IAccount, required=False)
     accountID = Int(title=_('AccountID'), required=False, readonly=True)
-    person = Int(title=_('Person'), required=False, readonly=False)
-    personID = Int(title=_('PersonID'), required=False, readonly=True)
-    statusname = Attribute("StatusName")
+    person = exported(
+        Reference(title=_('Person'), required=True, readonly=True,
+                  schema=Interface))
+    personID = Int(title=_('PersonID'), required=True, readonly=True)
 
     def destroySelf():
         """Delete this email from the database."""

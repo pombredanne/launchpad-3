@@ -143,6 +143,8 @@ class IContextMenu(IMenuBase):
 class INavigationMenu(IMenuBase):
     """Navigation menu for an object."""
 
+    title = Attribute("The title of the menu as it appears on the page.")
+
 
 class ILinkData(Interface):
     """An object with immutable attributes that represents the data a

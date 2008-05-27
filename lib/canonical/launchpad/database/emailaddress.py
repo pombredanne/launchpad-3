@@ -32,10 +32,6 @@ class EmailAddress(SQLBase):
             dbName='account', foreignKey='Account', notNull=False,
             default=None)
 
-    @property
-    def statusname(self):
-        return self.status.title
-
     def destroySelf(self):
         """Destroy this email address and any associated subscriptions."""
         for subscription in MailingListSubscription.selectBy(

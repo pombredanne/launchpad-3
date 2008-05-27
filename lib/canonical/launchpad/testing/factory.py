@@ -12,9 +12,10 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+from email.Utils import make_msgid
 from StringIO import StringIO
-import pytz
 
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -59,6 +60,7 @@ from canonical.launchpad.interfaces import (
     UnknownBranchTypeError,
     )
 from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.database import Message, MessageChunk
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -513,6 +515,26 @@ class LaunchpadObjectFactory:
         return CodeImportSourceDetails(
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
             source_product_series_id)
+
+    def makeCodeReviewMessage(self, subject=None, body=None, vote=None):
+        if subject is None:
+            subject = self.getUniqueString()
+        if body is None:
+            body = self.getUniqueString()
+        return self.makeBranchMergeProposal().createMessage(
+            self.makePerson(), subject, body, vote)
+
+    def makeMessage(self, subject=None, content=None, parent=None):
+        if subject is None:
+            subject = self.getUniqueString()
+        if content is None:
+            content = self.getUniqueString()
+        owner = self.makePerson()
+        rfc822msgid = make_msgid("launchpad")
+        message = Message(rfc822msgid=rfc822msgid, subject=subject,
+            owner=owner, parent=parent)
+        MessageChunk(message=message, sequence=1, content=content)
+        return message
 
     def makeSeries(self, user_branch=None, import_branch=None,
                    name=None, product=None):
