@@ -879,13 +879,18 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
+    >>> products = [
+    ...     productset.getByName('evolution'),
+    ...     productset.getByName('firefox'),
+    ...     productset.getByName('gnome-terminal'),
+    ...     ]
+
     >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
     >>> for product in products:
-    ...     if product.name in ['evolution', 'firefox', 'gnome-terminal']:
-    ...         print "%s %s %s" % (
-    ...             product.name,
-    ...             summary[product]['branch_count'],
-    ...             summary[product]['last_commit'])
+    ...     print "%s %s %s" % (
+    ...         product.name,
+    ...         summary[product]['branch_count'],
+    ...         summary[product]['last_commit'])
     evolution      1 None
     firefox        5 2005-03-09 15:50:00
     gnome-terminal 8 None
