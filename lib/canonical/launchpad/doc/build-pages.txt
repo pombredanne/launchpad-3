@@ -1,0 +1,71 @@
+= Build Pages =
+
+For the subsequent tests we will use a specific 'pmount' build record
+from the sampledata which happens to be in FAILEDTOBUILD status.
+
+    >>> from zope.component import getMultiAdapter, getUtility
+    >>> from canonical.launchpad.interfaces import IBuildSet
+    >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
+
+    >>> print failed_build.title
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+
+    >>> print failed_build.buildstate.name
+    FAILEDTOBUILD
+
+    >>> print failed_build.archive.title
+    Primary Archive for Ubuntu Linux
+
+
+== Build Structural Header ==
+
+The IBuild record is adapted to a IStructuralHeaderPresentation by a
+custom factury function, build_to_structuralheading, which reuses the
+IBuild.archive header.
+
+    >>> from canonical.launchpad.browser import build_to_structuralheading
+    >>> import zope.i18n
+
+As mentioned above, the build is targeted to the ubuntu PRIMARY
+archive, so the page header refers to the distribution (see
+browser.archive.archive_to_structuralheading).
+
+    >>> failed_build_shp = build_to_structuralheading(failed_build)
+    >>> print zope.i18n.translate(failed_build_shp.getMainHeading())
+    Ubuntu Linux
+
+On the other hand, if we modify the build to be targeted to Celso's
+PPA, its header will refer to the PPA owner.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> original_archive = failed_build.archive
+
+    >>> naked_failed_build = removeSecurityProxy(failed_build)
+    >>> naked_failed_build.archive = cprov.archive
+
+    >>> failed_build_shp = build_to_structuralheading(failed_build)
+    >>> print zope.i18n.translate(failed_build_shp.getMainHeading())
+    Celso Providelo
+
+We will restore the original 'failed_build' archive for the next
+tests.
+
+    >>> naked_failed_build.archive = original_archive
+
+
+== Build +index page ==
+
+Setup a 'empty' request:
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> empty_request = LaunchpadTestRequest(form={})
+
+Let's instantiate the view for +index:
+
+    >>> failed_build_view = getMultiAdapter(
+    ...     (failed_build, empty_request), name="+index")
+
+
