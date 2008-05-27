@@ -782,6 +782,17 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
     def getLatestBranches(self):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
+    @property
+    def requires_commercial_subscription(self):
+        """Whether to display notice to purchase a commercial subscription."""
+        return (len(self.context.licenses) > 0
+                and self.context.commercial_subscription_is_due)
+
+    @property
+    def can_purchase_subscription(self):
+        return (check_permission('launchpad.Admin', self.context)
+                and not context.qualifies_for_free_hosting)
+
 
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,

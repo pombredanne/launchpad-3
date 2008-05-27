@@ -225,25 +225,59 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             self.commercial_subscription.purchaser = purchaser
 
     @property
-    def requires_commercial_subscription(self):
+    def qualifies_for_free_hosting(self):
         """See `IProduct`."""
-        other_licenses = (License.OTHER_PROPRIETARY,
-                          License.OTHER_OPEN_SOURCE)
         if self.license_approved:
             # The license was manually approved for free hosting.
+            return True
+        elif License.OTHER_PROPRIETARY in self.licenses:
+            # Proprietary licenses need a subscription without
+            # waiting for a review.
             return False
-        elif (len(self.licenses) > 0 and
-              self.license_info in ('', None) and
-              len(set(self.licenses).intersection(other_licenses)) == 0):
-            # The project has only valid open source license(s).
+        elif (self.license_reviewed and
+              (License.OTHER_OPEN_SOURCE in self.licenses or
+               self.license_info not in ('', None))):
+            # We only know that an unknown open source license
+            # requires a subscription after we have reviewed it
+            # when we have not set license_approved to True.
+            return False
+        elif len(self.licenses) == 0:
+            # The owner needs to choose a license.
             return False
         else:
+            # The project has only valid open source license(s).
             return True
 
     @property
+    def commercial_subscription_is_due(self):
+        """See `IProduct`.
+
+        If True, display subscription warning to project owner.
+        """
+        if self.qualifies_for_free_hosting:
+            return False
+        elif (self.commercial_subscription is None
+              or not self.commercial_subscription.is_active):
+            # The project doesn't have an active subscription.
+            return True
+        else:
+            warning_date = (self.commercial_subscription.date_expires
+                            - datetime.timedelta(30))
+            now = datetime.datetime.now(pytz.timezone('UTC'))
+            if now > warning_date:
+                # The subscription is close to being expired.
+                return True
+            else:
+                # The subscription is good.
+                return False
+
+    @property
     def is_permitted(self):
-        """See `IProduct`."""
-        if not self.requires_commercial_subscription:
+        """See `IProduct`.
+
+        If False, disable many tasks on this project.
+        """
+        if self.qualifies_for_free_hosting:
             # The project qualifies for free hosting.
             return True
         elif self.commercial_subscription is None:
@@ -258,7 +292,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             for product_license
                 in ProductLicense.selectBy(product=self, orderBy='license'))
 
-    def _setLicenses(self, licenses):
+    def _setLicenses(self, licenses, reset_license_reviewed=True):
         """Set the licenses from a tuple of license enums.
 
         The licenses parameter must not be an empty tuple.
@@ -267,6 +301,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         old_licenses = set(self.licenses)
         if licenses == old_licenses:
             return
+        # Clear the license_reviewed flag if the license changes.
+        # ProductSet.createProduct() passes in reset_license_reviewed=False
+        # to avoid changing the value when a Launchpad Admin sets
+        # license_reviewed & licenses at the same time.
+        if reset_license_reviewed:
+            self.license_reviewed = False
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute
@@ -285,6 +325,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductLicense(product=self, license=license)
 
     licenses = property(_getLicenses, _setLicenses)
+
+    def _set_license_info(self, value):
+        if not self._SO_creating and value != self.license_info:
+            # Clear the license_reviewed flag if the license changes.
+            self.license_reviewed = False
+        self._SO_set_license_info(value)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -826,7 +872,7 @@ class ProductSet:
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
         if len(licenses) > 0:
-            product.licenses = licenses
+            product._setLicenses(licenses, reset_license_reviewed=False)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(

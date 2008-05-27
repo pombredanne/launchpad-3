@@ -283,8 +283,7 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
         Read-only fields and collections are excluded.
         """
         return [field for field in self.all_fields
-                if (not ICollectionField.providedBy(field)
-                    or field.readonly)]
+                if not (ICollectionField.providedBy(field) or field.readonly)]
 
 
 class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):

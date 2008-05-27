@@ -84,54 +84,97 @@ to Jul-15-2010.
     >>> expiry_diff == (datetime(2010,7,15) - datetime(2010,1,15))
     True
 
-The requires_commercial_subscription attribute is true if the license
-does not qualifies or there is no license.  The is_permitted
-attribute is true if a commercial subscription is not required or if a
-subscription is required and there is an active subscription.
+The commercial_subscription_is_due attribute is true if the license
+does not qualify for free hosting and the commercial subscription
+is inactive or about to expire.  The is_permitted attribute is
+true if the project either has a qualifying license or has an active
+commercial subscription. The qualifies_for_free_hosting attribute is
+true, if automatically qualifying licenses are the only ones selected,
+or if the license has been reviewed and been manually approved.
+
+The commercial subscription is about to expire here.
 
     >>> login('foo.bar@canonical.com')
+    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
     >>> bzr.licenses
     ()
-    >>> bzr.license_approved
+    >>> # The commercial subscription is due within 30 days of expiration.
+    >>> subscription.date_expires = (
+    ...     datetime.now(UTC) + timedelta(29))
+    >>> bzr.qualifies_for_free_hosting
     False
-    >>> bzr.requires_commercial_subscription
+    >>> bzr.commercial_subscription_is_due
     True
     >>> bzr.commercial_subscription.is_active
     True
     >>> bzr.is_permitted
     True
-    >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
+
+The subscription will not expire for more than 30 days so a new
+subscription is not due yet.
+
+    >>> subscription.date_expires = (
+    ...     datetime.now(UTC) + timedelta(31))
+    >>> bzr.commercial_subscription_is_due
+    False
+
+Make the subscription no longer active.
+
+    >>> # Make the subscription last 0 seconds.
     >>> subscription.date_expires = subscription.date_starts
     >>> bzr.commercial_subscription.is_active
     False
+    >>> bzr.commercial_subscription_is_due
+    True
     >>> bzr.is_permitted
     False
 
-The requires_commercial_subscription attribute should be True
-if the product has License.OTHER_PROPRIETARY or
-License.OTHER_OPEN_SOURCE or a description of another license
-in product.license_info.
+The qualifies_for_free_hosting attribute is False
+if the product has License.OTHER_PROPRIETARY.
 
     >>> from canonical.launchpad.interfaces import License
-    >>> bzr.licenses = (License.OTHER_PROPRIETARY,)
-    >>> bzr.requires_commercial_subscription
+    >>> bzr.licenses = [License.OTHER_PROPRIETARY]
+    >>> bzr.qualifies_for_free_hosting
+    False
+    >>> bzr.licenses = [License.GNU_GPL_V2]
+    >>> bzr.qualifies_for_free_hosting
     True
-    >>> bzr.licenses = (License.GNU_GPL_V2,)
-    >>> bzr.requires_commercial_subscription
+
+When the products license is OTHER_OPEN_SOURCE or the license_info
+attribute contains a description of another license, the product
+requires approval for free hosting. The qualifies_for_free_hosting
+attribute is false for products that have licenses that required
+approval, but were not approved. If the licenses or license_info
+attributes are changed, the license_reviewed attribute is reset to
+false. However, qualifies_for_free_hosting remains true until
+it has been reviewed (license_reviewed is set to true). The
+OTHER_PROPRIETARY license does not need to be reviewed as do the
+OTHER_OPEN_SOURCE license or an unknown license in license_info.
+
+    >>> bzr.license_approved
     False
     >>> bzr.license_info = 'blah'
-    >>> bzr.requires_commercial_subscription
-    True
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (True, False)
 
-The requires_commercial_license attribute will be False if
-product.license_approved is True. The product.is_permitted
-attribute will be True if the project does not require a commercial
-subscription.
+    >>> bzr.license_reviewed = True
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (False, True)
+
+    >>> bzr.license_info = ''
+    >>> bzr.licenses = [License.OTHER_OPEN_SOURCE]
+    >>> bzr.license_reviewed
+    False
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (True, False)
+
+    >>> bzr.license_reviewed = True
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (False, True)
+
+When the license is manually approved, a product qualifies for free
+hosting; there is no commercial subscription due.
 
     >>> bzr.license_approved = True
-    >>> bzr.requires_commercial_subscription
-    False
-    >>> bzr.commercial_subscription.is_active
-    False
-    >>> bzr.is_permitted
-    True
+    >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
+    (True, False)
