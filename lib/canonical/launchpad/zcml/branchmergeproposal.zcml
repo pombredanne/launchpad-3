@@ -28,7 +28,7 @@
                     " />
     <require
         permission="launchpad.AnyPerson"
-        attributes="createMessage"
+        attributes="createMessage createMessageFromMessage"
     />
   </content>
   <subscriber

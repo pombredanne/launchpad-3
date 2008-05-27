@@ -473,14 +473,40 @@ class AnswerTrackerHandler:
             question.addComment(message.owner, message)
 
 
+class InvalidBranchMergeProposalAddress(Exception):
+    pass
+
+
 class CodeHandler:
 
-    def process(self, mail, email_addr, file_alias):
-        pass
+    addr_pattern = re.compile(r'(mp\+)([^@]+).*')
 
-    @staticmethod
-    def getBranchMergeProposal(email_addr):
-        merge_proposal_id = int(re.match(r'(mp\+)([^@]+).*', email_addr).group(2))
+    def process(self, mail, email_addr, file_alias):
+        try:
+            self._process(mail, email_addr, file_alias)
+        except:
+            return False
+        return True
+
+    def _process(self, mail, email_addr, file_alias):
+        merge_proposal = self.getBranchMergeProposal(email_addr)
+        messageset = getUtility(IMessageSet)
+        plain_message = messageset.fromEmail(
+            mail.parsed_string,
+            owner=getUtility(ILaunchBag).user,
+            filealias=file_alias,
+            parsed_message=mail)
+        message = merge_proposal.createMessageFromMessage(plain_message)
+
+    @classmethod
+    def getBranchMergeProposal(klass, email_addr):
+        match = klass.addr_pattern.match(email_addr)
+        if match is None:
+            raise InvalidBranchMergeProposalAddress(email_addr)
+        try:
+            merge_proposal_id = int(match.group(2))
+        except ValueError:
+            raise InvalidBranchMergeProposalAddress(email_addr)
         return getUtility(IBranchMergeProposalGetter).get(merge_proposal_id)
 
 

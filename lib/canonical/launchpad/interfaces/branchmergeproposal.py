@@ -366,6 +366,9 @@ class IBranchMergeProposal(Interface):
             BranchMergeProposal.root_message.
         """
 
+    def createMessageFromEmail(self, email):
+        """Create an ICodeReviewMessage from an ISignedEmail"""
+
     def deleteProposal():
         """Delete the proposal to merge."""
 

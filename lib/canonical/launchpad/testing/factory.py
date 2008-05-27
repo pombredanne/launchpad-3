@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Utils import make_msgid
+from email.Utils import make_msgid, formatdate
 from StringIO import StringIO
 
 import pytz
@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
+from canonical.launchpad.mail.signedmessage import SignedMessage
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -377,6 +378,16 @@ class LaunchpadObjectFactory:
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
+
+    def makeSignedMessage(self, msgid=None):
+        mail = SignedMessage()
+        if msgid is None:
+            msgid = make_msgid('launchpad')
+        mail['Message-Id'] = msgid
+        mail['Date'] = formatdate()
+        mail.set_payload(self.getUniqueString('body'))
+        mail.parsed_string = mail.as_string()
+        return mail
 
     def makeSpecification(self, product=None):
         """Create and return a new, arbitrary Blueprint.

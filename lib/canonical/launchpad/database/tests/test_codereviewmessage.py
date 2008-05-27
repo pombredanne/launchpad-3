@@ -2,6 +2,7 @@
 
 """Unit tests for CodeReviewMessage"""
 
+from email.Message import Message
 import unittest
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -66,6 +67,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         result, event = self.assertNotifies(SQLObjectCreatedEvent,
             self.bmp.createMessage, self.submitter, 'Message subject',
             'Message content')
+
 
 
 def test_suite():

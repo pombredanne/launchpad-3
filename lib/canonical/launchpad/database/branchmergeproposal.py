@@ -26,7 +26,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
-from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.database.message import (
+    Message, MessageChunk, MessageSet)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
@@ -452,6 +453,10 @@ class BranchMergeProposal(SQLBase):
             vote_tag=vote_tag)
         notify(SQLObjectCreatedEvent(code_review_message))
         return code_review_message
+
+    def createMessageFromMessage(self, message):
+        code_review_message = CodeReviewMessage(
+            branch_merge_proposal=self, vote=None, message=message)
 
 
 class BranchMergeProposalGetter:
