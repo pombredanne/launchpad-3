@@ -17,7 +17,7 @@ from the sampledata which happens to be in FAILEDTOBUILD status.
     Primary Archive for Ubuntu Linux
 
 
-== Build Structural Header ==
+== Build Structural Header and Menu ==
 
 The IBuild record is adapted to a IStructuralHeaderPresentation by a
 custom factury function, build_to_structuralheading, which reuses the
@@ -34,6 +34,22 @@ browser.archive.archive_to_structuralheading).
     >>> print zope.i18n.translate(failed_build_shp.getMainHeading())
     Ubuntu Linux
 
+In a similar way, the menu presented in the build page depends on the
+targeted archive. For instance the 'PPA' action-menu link is not
+enabled for builds targeted to the PRIMARY archive.
+
+    >>> from canonical.launchpad.browser import BuildContextMenu
+    >>> build_menu = BuildContextMenu(failed_build)
+
+    >>> print build_menu.links
+    ['ppa', 'records', 'retry', 'rescore']
+
+    >>> build_menu.is_ppa_build
+    False
+
+    >>> build_menu.ppa().enabled
+    False
+
 On the other hand, if we modify the build to be targeted to Celso's
 PPA, its header will refer to the PPA owner.
 
@@ -49,6 +65,20 @@ PPA, its header will refer to the PPA owner.
     >>> failed_build_shp = build_to_structuralheading(failed_build)
     >>> print zope.i18n.translate(failed_build_shp.getMainHeading())
     Celso Providelo
+
+Now we have a enabled 'PPA' action-menu item, since the build is
+targeted to a PPA.
+
+    >>> build_menu = BuildContextMenu(failed_build)
+
+    >>> print build_menu.links
+    ['ppa', 'records', 'retry', 'rescore']
+
+    >>> build_menu.is_ppa_build
+    True
+
+    >>> build_menu.ppa().enabled
+    True
 
 We will restore the original 'failed_build' archive for the next
 tests.
@@ -67,5 +97,3 @@ Let's instantiate the view for +index:
 
     >>> failed_build_view = getMultiAdapter(
     ...     (failed_build, empty_request), name="+index")
-
-
