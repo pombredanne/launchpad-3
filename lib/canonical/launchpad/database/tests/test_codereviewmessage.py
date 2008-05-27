@@ -7,7 +7,6 @@ import unittest
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
 

@@ -26,7 +26,7 @@ def pop_notifications(sort_key=None, commit=True):
     if commit:
         transaction.commit()
     if sort_key is None:
-        sort_key=operator.itemgetter('To')
+        sort_key = operator.itemgetter('To')
 
     notifications = [
         email.message_from_string(raw_message)

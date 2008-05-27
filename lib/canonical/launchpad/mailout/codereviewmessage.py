@@ -7,11 +7,7 @@
 __metaclass__ = type
 
 
-from canonical.config import config
-
-
-from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 

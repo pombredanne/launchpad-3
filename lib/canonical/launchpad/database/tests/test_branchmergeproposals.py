@@ -14,7 +14,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus)
 from canonical.launchpad.testing import (
-     capture_events, LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
