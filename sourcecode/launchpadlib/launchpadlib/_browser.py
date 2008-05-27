@@ -21,6 +21,23 @@ from launchpadlib.oauth.oauth import (
 OAUTH_REALM = 'https://api.launchpad.net'
 
 
+class SocketClosingOnErrorHandler(urllib2.BaseHandler):
+    """A handler that ensures that the socket gets closed on errors.
+
+    Interestingly enough <wink> without this, HTTP errors will cause urllib2
+    to leak open socket objects.
+    """
+    # Ensure that this handler is the first default error handler to execute,
+    # because right after this, the built-in default handler will raise an
+    # exception.
+    handler_order = 0
+
+    # Copy signature from base class.
+    def http_error_default(self, req, fp, code, msg, hdrs):
+        """See `urllib2.BaseHandler`."""
+        fp.close()
+
+
 class Browser:
     """A class for making calls to Launchpad web services."""
 
@@ -47,7 +64,8 @@ class Browser:
         full_headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
         url_request = urllib2.Request(url, headers=full_headers)
-        f = urllib2.urlopen(url_request)
+        opener = urllib2.build_opener(SocketClosingOnErrorHandler)
+        f = opener.open(url_request)
         try:
             data = f.read()
         finally:
