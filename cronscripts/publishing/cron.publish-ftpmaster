@@ -8,7 +8,7 @@ if [ -z $LPCONFIG ]; then
 fi
 SECURITY_PUBLISHER="no"
 if [ "$1" = "security" ]; then
-    # we're running a security publisher run, which skips some steps
+    # We are running a security publisher run, which skips some steps.
     SECURITY_PUBLISHER="yes"
 fi
 
@@ -16,9 +16,9 @@ set -x
 set -e
 set -u
 
-# Launchpad cron.daily (currently just for Ubuntu)
+# Launchpad cron.daily (currently just for Ubuntu).
 
-# Informational -- this *MUST* match the database
+# Informational -- this *MUST* match the database.
 ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 DISTSROOT=$ARCHIVEROOT/dists
 OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
@@ -31,13 +31,13 @@ if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ARCHIVEROOT_PARTNER=/srv/launchpad.net/ubuntu-archive/ubuntu-partner
     GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 else
-    # GNUPGHOME does not need to be set, keys can come from ~/.gnupg
+    # GNUPGHOME does not need to be set, keys can come from ~/.gnupg.
     ARCHIVEROOT_PARTNER=/srv/launchpad.net/ppa/ubuntu-partner
 fi
 DISTSROOT_PARTNER=$ARCHIVEROOT_PARTNER/dists
 DISTSCOPYROOT_PARTNER=$ARCHIVEROOT_PARTNER/../ubuntu-partner-distscopy
 
-# Configuration options
+# Configuration options.
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
@@ -45,12 +45,11 @@ TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
 
-# Manipulate the environment
+# Manipulate the environment.
 export GNUPGHOME
 PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing:$LAUNCHPADROOT/scripts/ftpmaster-tools
 
-# claim the lock
-
+# Claim the lock.
 if ! lockfile -r1 $LOCKFILE; then
   echo "Could not claim lock file."
   exit 1
@@ -89,13 +88,12 @@ trap cleanup EXIT
 # Process the accepted queue into the publishing records.
 process-accepted.py -v -v -v $DISTRONAME
 
-# If doing a security run, find out which suites are pending publication
+# If doing a security run, find out which suites are pending publication.
 SUITEOPTS=""
 if [ "$SECURITY_PUBLISHER" = "yes" ]; then
     SUITES=$(lp-query-distro.py pending_suites)
     SECURITY_SUITES="no"
     if [ -n "$SUITES" ]; then
-        SUITEOPTS=""
         for SUITE in $SUITES; do
             case $SUITE in
                 *-security)
@@ -120,26 +118,28 @@ fi
 # dists folder, which we move into place and bring up-to-date with rsync.
 # This should achieve the same as copying, only faster.
 
-# Create backup dists folder, if this is the first time
+# Create backup dists folder, if this is the first time.
 mkdir -p ${DISTSCOPYROOT}/dists
 mkdir -p ${DISTSCOPYROOT_PARTNER}/dists
-# Move the backup dists folder into place
+
+# Move the backup dists folder into place.
 mv ${DISTSCOPYROOT}/dists ${ARCHIVEROOT}/dists.new
 mv ${DISTSCOPYROOT_PARTNER}/dists ${ARCHIVEROOT_PARTNER}/dists.new
+
 # Bring it up-to-date efficiently with rsync. --delete is required to
 # ensure we don't ressurect things previously deleted, bug 58835.
 rsync -aH --delete ${DISTSROOT}/ ${ARCHIVEROOT}/dists.new
 rsync -aH --delete ${DISTSROOT_PARTNER}/ ${ARCHIVEROOT_PARTNER}/dists.new
 
 # Publish the results for all archives (except PPA).
-# (The -R only affects the primary and the partner archive.)
+# The -R only affects the primary and the partner archive.
 publish-distro.py -v -v --partner -d $DISTRONAME -R ${DISTSROOT_PARTNER}.new
 publish-distro.py -v -v -d $DISTRONAME $SUITEOPTS -R ${DISTSROOT}.new
 
 set +x
 # Find all the Release files for which the Release.GPG is missing/too-old
 # We use -maxdepth 2 to only sign Release files for distroreleases,
-# not distroarchreleases/distrosourcereleases
+# not distroarchreleases/distrosourcereleases.
 # Also we sign the dist-upgrader tarballs because they're handy too.
 for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
        $(find ${DISTSROOT}.new/*/*/dist-upgrader* -name "*.tar.gz"); do
@@ -153,7 +153,7 @@ for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
 done
 SIGNLIST_PARTNER=$(find ${DISTSROOT_PARTNER}.new -maxdepth 2 -name Release)
 for CANDIDATE in $SIGNLIST_PARTNER; do
-  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
+  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ].
   if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
     echo "(re-)signing $CANDIDATE"
     gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
@@ -169,7 +169,7 @@ echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 find ${DISTSROOT_PARTNER} \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
-# Copy in the indices
+# Copy in the indices.
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     echo Copying the indices into place.
     rm -f $INDICES/override.*
@@ -191,45 +191,44 @@ mv ${DISTSROOT_PARTNER}.old ${DISTSCOPYROOT_PARTNER}/dists
 # fails.
 commercial-compat.sh || true
 
-# Touch everything you asked us to do
+# Touch everything you asked us to do.
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     for FILE in $TOUCHLIST; do
       touch "$FILE"
     done
 fi
 
-# Skip long-running processes when doing a quick security run:
+# Skip long-running processes when doing a quick security run.
 if [ "$SECURITY_PUBLISHER" != "yes" ]; then
 
-# Make the lslr because we all love those
-LSLR=ls-lR.gz
-( cd $ARCHIVEROOT ; \
-  rm -f .$LSLR.new ; \
-  TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
-  mv -f .$LSLR.new $LSLR )
-( cd $ARCHIVEROOT_PARTNER ; \
-  rm -f .$LSLR.new ; \
-  TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
-  mv -f .$LSLR.new $LSLR )
+    # Make the lslr because we all love those.
+    LSLR=ls-lR.gz
+    ( cd $ARCHIVEROOT ; \
+      rm -f .$LSLR.new ; \
+      TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
+      mv -f .$LSLR.new $LSLR )
+    ( cd $ARCHIVEROOT_PARTNER ; \
+      rm -f .$LSLR.new ; \
+      TZ=UTC ls -lR  | gzip -9n > .$LSLR.new ; \
+      mv -f .$LSLR.new $LSLR )
 
-# Run dsync over primary archive only.
+    # Run dsync over primary archive only.
+    ( cd $ARCHIVEROOT ; \
+      dsync-flist -q generate $DSYNCLIST -e 'Packages*' -e 'Sources*' -e 'Release*' --md5 ; \
+      (dsync-flist -q md5sums $DSYNCLIST; find dists '(' -name 'Packages*' -o -name 'Sources*' -o -name 'Release*' ')' -print | xargs -r md5sum) | gzip -9n > ${MD5LIST} ; \
+      dsync-flist -q link-dups $DSYNCLIST || true )
 
-( cd $ARCHIVEROOT ; \
-  dsync-flist -q generate $DSYNCLIST -e 'Packages*' -e 'Sources*' -e 'Release*' --md5 ; \
-  (dsync-flist -q md5sums $DSYNCLIST; find dists '(' -name 'Packages*' -o -name 'Sources*' -o -name 'Release*' ')' -print | xargs -r md5sum) | gzip -9n > ${MD5LIST} ; \
-  dsync-flist -q link-dups $DSYNCLIST || true )
+    # Clear out empty and thus redundant dirs.
+    find $ARCHIVEROOT -type d -empty | xargs -r rmdir
+    find $ARCHIVEROOT_PARTNER -type d -empty | xargs -r rmdir
 
-# Clear out empty and thus redundant dirs
-find $ARCHIVEROOT -type d -empty | xargs -r rmdir
-find $ARCHIVEROOT_PARTNER -type d -empty | xargs -r rmdir
+    # Invoke cron.germinate to fill ubuntu tasks.
+    cron.germinate
 
-# invoke cron.germinate to fill ubuntu tasks
-cron.germinate
-
-# End of block skipped by security publishing:
+# End of block skipped by security publishing.
 fi
 
-# Trigger master mirrors
+# Trigger master mirrors.
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
     ssh archvsync@syowa
     ssh archvsync@frei

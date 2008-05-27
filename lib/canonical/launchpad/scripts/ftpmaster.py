@@ -1465,7 +1465,10 @@ class LpQueryDistro(LaunchpadScript):
 
     @property
     def get_pending_suites(self):
-        """ """
+        """Return the suite names containing PENDING publication.
+
+        It check for sources and/or binary publications.
+        """
         self.checkNoSuiteDefined()
         pending_suites = set()
         pending_sources = self.location.archive.getPublishedSources(
