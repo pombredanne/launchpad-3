@@ -224,8 +224,6 @@ author have not been approved.
     >>> source_branch.revision_count
     5
 
-As we've reset the database adapter, we need to reget some objects:
-
     >>> # Reget the sample person as we shouldn't be reusing objects across
     >>> # transaction boundaries.
     >>> sample_person = person_set.getByEmail('test@canonical.com')
