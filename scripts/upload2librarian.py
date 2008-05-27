@@ -52,12 +52,12 @@ if __name__ == '__main__':
     
     filepath = options.filepath
 
+    # load the zcml configuration
+    execute_zcml_for_scripts()
+
     # setup a transaction manager to LPDB
     tm = initZopeless()
 
-    # load the zcml configuration
-    execute_zcml_for_scripts()
-    
     # get an librarian client instance
     client = getUtility(ILibrarianClient)
 

@@ -61,9 +61,9 @@ def main():
     log = logger(options, "build-mass-retry")
 
     log.debug("Intitialising connection.")
+    execute_zcml_for_scripts()
     ztm = initZopeless(dbuser="fiera",
                        isolation=ISOLATION_LEVEL_READ_COMMITTED)
-    execute_zcml_for_scripts()
 
     try:
         distribution = getUtility(IDistributionSet)[options.distribution]

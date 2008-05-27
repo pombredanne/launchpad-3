@@ -14,8 +14,8 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILaunchpadCelebrities, NotFoundError)
 
-ztm = initZopeless()
 execute_zcml_for_scripts()
+ztm = initZopeless()
 logging.basicConfig(level=logging.INFO)
 
 ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

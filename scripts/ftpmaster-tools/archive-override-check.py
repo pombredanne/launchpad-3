@@ -46,8 +46,8 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     try:
         try:
