@@ -8,8 +8,9 @@ from urlparse import urlunparse
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
-
 from canonical.config import config
+from canonical.database.sqlbase import rollback
+
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,

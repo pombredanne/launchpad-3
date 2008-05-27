@@ -10,7 +10,6 @@ from canonical.config import config
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.mail.handlers import CodeHandler, mail_handlers
-from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.testing import TestCaseWithFactory
 
 
