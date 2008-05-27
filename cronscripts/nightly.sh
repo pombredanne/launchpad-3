@@ -72,5 +72,7 @@ python2.4 rosetta-pofile-stats.py
 echo == Updating bugtask target name caches `date` ==
 python2.4 update-bugtask-targetnamecaches.py -q
 
-rm -f $LOCK
+echo == Updating personal standings ==
+python2.4 update-standing.py
 
+rm -f $LOCK
