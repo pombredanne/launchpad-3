@@ -426,7 +426,7 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence')
 
     def createMessage(self, owner, subject, content=None, vote=None,
-                      vote_tag=None, parent=None, _date_created=None):
+                      vote_tag=None, parent=None, _date_created=DEFAULT):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
@@ -438,25 +438,18 @@ class BranchMergeProposal(SQLBase):
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
         msgid = make_msgid('codereview')
-        # Can't pass None into Message constructor to get the default, so
-        # we have to supply datecreated only when we want to override the
-        # default.
-        kwargs = {}
-        if _date_created is not None:
-            kwargs['datecreated'] = _date_created
-        msg = Message(parent=parent_message, owner=owner,
-                      rfc822msgid=msgid, subject=subject, **kwargs)
-        chunk = MessageChunk(message=msg, content=content, sequence=1)
+        message = Message(
+            parent=parent_message, owner=owner, rfc822msgid=msgid,
+            subject=subject, datecreated=_date_created)
+        chunk = MessageChunk(message=message, content=content, sequence=1)
+        return self.createMessageFromMessage(message, vote, vote_tag)
 
+    def createMessageFromMessage(self, message, vote=None, vote_tag=None):
         code_review_message = CodeReviewMessage(
-            branch_merge_proposal=self, message=msg, vote=vote,
+            branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=vote_tag)
         notify(SQLObjectCreatedEvent(code_review_message))
         return code_review_message
-
-    def createMessageFromMessage(self, message):
-        code_review_message = CodeReviewMessage(
-            branch_merge_proposal=self, vote=None, message=message)
 
 
 class BranchMergeProposalGetter:
