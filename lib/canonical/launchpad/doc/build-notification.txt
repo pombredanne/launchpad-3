@@ -386,9 +386,12 @@ send notification about current (changed) PPA build record status.
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from zope.security.proxy import removeSecurityProxy
   >>> naked_failed_candidate = removeSecurityProxy(failed_candidate)
   >>> naked_failed_candidate.archive = cprov.archive
+  >>> gpgkey = getUtility(IGPGKeySet).get(1)
+  >>> naked_failed_candidate.sourcepackagerelease.dscsigningkey = gpgkey
 
   >>> failed_candidate.notify()
 
