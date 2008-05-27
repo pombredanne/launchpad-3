@@ -89,7 +89,8 @@ def get_option_parser():
 
     List all the sections and keys in an environment's lazr configuration.
     The configuration is assembled from the schema and conf files. Verbose
-    annotates each key with the location of the file that set its value.""")
+    annotates each key with the location of the file that set its value.
+    The 'section' option limits the list to just the named section.""")
     parser = OptionParser(usage=usage)
     parser.add_option(
         "-l", "--schema", dest="schema_path",
