@@ -89,7 +89,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         self.assertEqual(expected, mailer._getReplyToAddress())
 
     def test_generateEmail(self):
-        """Ensure mailer's generateEmail method prduces expected values."""
+        """Ensure mailer's generateEmail method produces expected values."""
         mailer, subscriber = self.makeMailer(as_reply=True)
         headers, subject, body = mailer.generateEmail(subscriber)
         message = mailer.code_review_message.message

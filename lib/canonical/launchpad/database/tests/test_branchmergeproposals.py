@@ -440,11 +440,11 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
 
 class TestGetAddress(TestCaseWithFactory):
-    """Test that the getAddress method gives expected results."""
+    """Test that the address property gives expected results."""
 
     layer = LaunchpadFunctionalLayer
 
-    def test_getAddress(self):
+    def test_address(self):
         merge_proposal = self.factory.makeBranchMergeProposal()
         expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
         self.assertEqual(expected, merge_proposal.address)

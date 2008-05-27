@@ -41,7 +41,7 @@ class CodeReviewMessageMailer(BMPMailer):
         return klass(code_review_message, recipients)
 
     def _getBody(self, recipient):
-        """Return the complete body to use for this email"""
+        """Return the complete body to use for this email."""
         if self.code_review_message.vote is None:
             prefix = ''
         else:

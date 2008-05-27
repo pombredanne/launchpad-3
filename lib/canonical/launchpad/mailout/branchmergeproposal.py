@@ -37,7 +37,7 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
 
 
 class BMPMailer:
-    """Send mailings related to BranchMergeProposal events"""
+    """Send mailings related to BranchMergeProposal events."""
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None):
@@ -116,7 +116,7 @@ class BMPMailer:
         return '%s %s branch %s.' % (entity, relationship, branch_name)
 
     def generateEmail(self, recipient):
-        """Generate the email for this recipient
+        """Generate the email for this recipient.
 
         :return: (headers, subject, body) of the email.
         """
@@ -149,7 +149,7 @@ class BMPMailer:
         return params
 
     def _getBody(self, recipient):
-        """Return the complete body to use for this email"""
+        """Return the complete body to use for this email."""
         template = get_email_template(self._template_name)
         return template % self._getTemplateParams(recipient)
 
