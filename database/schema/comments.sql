@@ -1728,6 +1728,12 @@ COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached 
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
 COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
+COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
+COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
+COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were built sucessfully?';
+COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
+COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 
 
 -- ArchiveDependency
@@ -1745,6 +1751,17 @@ COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being gra
 COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+
+-- ArchiveRebuild
+
+COMMENT ON TABLE ArchiveRebuild IS 'ArchiveRebuild: A link table that ties a "rebuild archive" to a DistroSeries and that captures the rebild life cycle data.';
+COMMENT ON COLUMN ArchiveRebuild.archive IS 'The archive to be used for the rebuild.';
+COMMENT ON COLUMN ArchiveRebuild.distroseries IS 'The DistroSeries in question.';
+COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started the rebuild.';
+COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
+COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
+COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

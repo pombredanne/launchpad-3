@@ -27,15 +27,15 @@ Test 'status' property:
 
     >>> builder.failnotes = 'Could not open Socket'
     >>> print builder.status
-    NOT OK : Could not open Socket (AUTO)
+    Could not open Socket
 
     >>> builder.builderok = True
     >>> print builder.status
-    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
     >>> builder.manual = True
     >>> print builder.status
-    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
 Confirm we can get the slave xmlrpc interface
 

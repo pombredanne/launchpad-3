@@ -18,7 +18,7 @@
 <div metal:fill-slot="main">
 
   <p id="project-inactive" tal:condition="not: context/active" class="warning message">
-    This project is currently inactive 
+    This project is currently inactive
     <tal:comment condition="nothing">
       This page links to the +review-license form to reactivate the product
       since both the admins and commercial-admins have access to this form
@@ -107,6 +107,30 @@
         </ul>
       </tal:has-external-links>
       <div class="left">
+        <tal:activate-feature
+          tal:define="config modules/canonical.config/config"
+          condition="config/commercial/is_subscription_feature_active">
+          <tal:comment condition="nothing">
+          XXX EdwinGrubbs 2008-05-22 bug=234070
+          Remove condition referencing is_subscription_feature_active after
+          this feature has launched.
+          </tal:comment>
+
+          <tal:warning-for-owner
+            condition="context/required:launchpad.Edit
+                       | context/required:launchpad.Commercial">
+            <div
+              class="section"
+              tal:content="structure context/@@+portlet-requires-subscription"
+              tal:condition="view/requires_commercial_subscription"
+            />
+            <div
+              class="section"
+              tal:content="structure context/@@+portlet-license-missing"
+              tal:condition="not: context/licenses"
+            />
+          </tal:warning-for-owner>
+        </tal:activate-feature>
         <div
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
