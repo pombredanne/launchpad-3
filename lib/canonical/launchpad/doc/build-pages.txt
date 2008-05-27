@@ -18,7 +18,7 @@ from the sampledata which happens to be in FAILEDTOBUILD status.
 == Build Structural Header and Menu ==
 
 The IBuild record is adapted to a IStructuralHeaderPresentation by a
-custom factury function, build_to_structuralheading, which reuses the
+custom factory function, build_to_structuralheading, which reuses the
 IBuild.archive header.
 
     >>> from canonical.launchpad.browser import build_to_structuralheading
@@ -86,7 +86,7 @@ tests.
 
 == Build +index page ==
 
-Setup a 'empty' request:
+Setup an 'empty' request:
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> empty_request = LaunchpadTestRequest(form={})
@@ -98,12 +98,12 @@ Let's instantiate the view for +index:
     ...     (failed_build, empty_request), name="+index")
 
 'BuildView.user_can_retry_build' property checks not only the
-users permissions to retry but also if a build is in a status that it
+user's permissions to retry but also if a build is in a status that it
 can be retried.
 
 The build cannot be retried (see IBuild) because it's targeted to a
 stable distroseries. Re-targeting it to a unstable distroarchseries
-will make it 'retrieable'.
+will allow the build to be retried.
 
     >>> failed_build.can_be_retried
     False
@@ -116,15 +116,15 @@ will make it 'retrieable'.
     >>> failed_build.can_be_retried
     True
 
-At this point, that the build can be retried, the view property is
-still checking if the user accessing the page has permission to retry
-the build. Anonymous users, obviously, don't have 'launchpad.Edit'
-permission on this build.
+While the build is now in a state to be rebuilt, the view property
+still checks to ensure the user has the proper permission. Anonymous
+users, obviously, don't have 'launchpad.Edit' permission on this
+build.
 
     >>> failed_build_view.user_can_retry_build
     False
 
-If accessed by a user with the required permission, Foo Bar in this
+If accessed by an user with the required permission, Foo Bar in this
 case, the 'user_can_retry_build' property finally returns True.
 
     >>> login("foo.bar@canonical.com")
