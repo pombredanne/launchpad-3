@@ -538,12 +538,13 @@ class LaunchpadObjectFactory:
         return merge_proposal.createMessage(
             sender, subject, body, vote, vote_tag, parent)
 
-    def makeMessage(self, subject=None, content=None, parent=None):
+    def makeMessage(self, subject=None, content=None, parent=None, owner=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         rfc822msgid = make_msgid("launchpad")
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)

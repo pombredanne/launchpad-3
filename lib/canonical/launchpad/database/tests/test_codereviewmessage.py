@@ -62,11 +62,17 @@ class TestCodeReviewMessage(TestCaseWithFactory):
                           self.reviewer, 'Reply subject', 'Reply content',
                           CodeReviewVote.ABSTAIN, 'My tag', message)
 
-    def test_createNotifies(self):
+    def test_createMessageFromMessage(self):
+        """Creating a CodeReviewMessage from a message works."""
+        message = self.factory.makeMessage(owner=self.submitter)
+        code_message = self.bmp.createMessageFromMessage(message)
+        self.assertEqual(message, code_message.message)
+
+    def test_createMessageFromMessageNotifies(self):
         """Creating a CodeReviewMessage should trigger a notification."""
+        message = self.factory.makeMessage()
         result, event = self.assertNotifies(SQLObjectCreatedEvent,
-            self.bmp.createMessage, self.submitter, 'Message subject',
-            'Message content')
+            self.bmp.createMessageFromMessage, message)
 
 
 
