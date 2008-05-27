@@ -43,6 +43,7 @@ class Browser:
 
     def __init__(self, credentials):
         self.credentials = credentials
+        self._opener = urllib2.build_opener(SocketClosingOnErrorHandler)
 
     def get(self, url):
         """Get the resource at the requested url."""
@@ -64,8 +65,7 @@ class Browser:
         full_headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
         url_request = urllib2.Request(url, headers=full_headers)
-        opener = urllib2.build_opener(SocketClosingOnErrorHandler)
-        f = opener.open(url_request)
+        f = self._opener.open(url_request)
         try:
             data = f.read()
         finally:
