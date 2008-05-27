@@ -762,6 +762,10 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
+    'google-service-stub.txt': LayeredDocFileSuite(
+            '../doc/google-service-stub.txt',
+            layer=GoogleServiceLayer,
+            ),
     # This test is actually run twice to prove that the AppServerLayer
     # properly isolates the database between tests.
     'launchpadlib.txt': LayeredDocFileSuite(
@@ -774,10 +778,6 @@ special = {
         layer=AppServerLayer,
         setUp=browser.setUp, tearDown=browser.tearDown,
         ),
-    'google-service-stub.txt': LayeredDocFileSuite(
-            '../doc/google-service-stub.txt',
-            layer=GoogleServiceLayer,
-            ),
     }
 
 
