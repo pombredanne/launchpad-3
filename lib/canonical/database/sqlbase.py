@@ -197,12 +197,14 @@ class ZopelessTransactionManager(object):
         This is required for connection setting changes to be made visible.
         """
         zstorm = getUtility(IZStorm)
-        if 'main' in zstorm._named:
-            store = zstorm.get('main')
-            zstorm.remove(store)
-            transaction.abort()
-            store.close()
-        zstorm.get('main')
+        store = getUtility(IZStorm).get('main')
+        connection = store._connection
+        if connection._state == storm.database.STATE_CONNECTED:
+            if connection._raw_connection is not None:
+                connection._raw_connection.close()
+            connection._raw_connection = None
+            connection._state = storm.database.STATE_DISCONNECTED
+        transaction.abort()
 
     @classmethod
     def uninstall(cls):
