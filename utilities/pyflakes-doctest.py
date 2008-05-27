@@ -57,11 +57,14 @@ GLOBAL_NAMES = set([
     'print_portlet_links',
     'print_ppa_packages',
     'print_radio_button_field',
+    'print_self_link_of_entries',
     'print_submit_buttons',
     'print_tab_links',
     'setupBrowser',
     'user_browser',
     'webservice',
+    'public_webservice',
+    'user_webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
     # For buildd tests

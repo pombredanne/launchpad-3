@@ -57,22 +57,20 @@
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
-        <tal:is_beta condition="view/isBetaUser">
         <!-- Search box -->
-          <form id="search_form" method="get" style="float: right;"
-                action="+translate">
-            <!-- the hidden elements -->
-            <input tal:condition="view/second_lang_code"
-                   tal:replace="structure view/alternative_language_widget/hidden" />
-            <input type="hidden" name="batch" value=""
-                   tal:attributes="value view/size" />
-            <input type="hidden" name="show" value="all" />
-            <label for="search_box">Search:</label>
-            <input id="search_box" type="text" name="search"
-                   title="Enter English string to search for"
-                   tal:attributes="value view/search_text" />
-          </form>
-        </tal:is_beta>
+        <form id="search_form" method="get" style="float: right;"
+              action="+translate">
+          <tal:comment condition="nothing">
+            the hidden elements
+          </tal:comment>
+          <input type="hidden" name="batch" value=""
+                 tal:attributes="value view/size" />
+          <input type="hidden" name="show" value="all" />
+          <label for="search_box">Search:</label>
+          <input id="search_box" type="text" name="search"
+                 title="Enter text to search for"
+                 tal:attributes="value view/search_text" />
+        </form>
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">

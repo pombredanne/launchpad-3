@@ -48,11 +48,6 @@
 
   <subscriber
      for="canonical.launchpad.interfaces.IBugSubscription
-          zope.app.event.interfaces.IObjectCreatedEvent"
-     handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_added" />
-
-  <subscriber
-     for="canonical.launchpad.interfaces.IBugSubscription
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_edited" />
 

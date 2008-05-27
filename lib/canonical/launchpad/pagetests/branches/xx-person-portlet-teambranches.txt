@@ -10,24 +10,24 @@ None of No Privileges Person's teams have any branches, so there should
 not be a portlet there.
 
     >>> browser.open('http://code.launchpad.dev/~no-priv')
-    >>> portlet = find_portlet(browser.contents, 'Branches for')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-team-branches')
     >>> print portlet
     None
 
 Robert is a member of vcs-imports so there is one team branch there.
 
     >>> browser.open('http://code.launchpad.dev/~lifeless')
-    >>> portlet = find_portlet(browser.contents, 'Branches for')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-team-branches')
     >>> print extract_text(portlet)
-    Branches for
+    Branches related to
     VCS imports
 
 Now Foo Bar has three different teams with code.
 
     >>> browser.open('http://code.launchpad.dev/~name16')
-    >>> portlet = find_portlet(browser.contents, 'Branches for')
+    >>> portlet = find_tag_by_id(browser.contents, 'portlet-team-branches')
     >>> print extract_text(portlet)
-    Branches for
+    Branches related to
     Launchpad Developers
     Ubuntu Team
     VCS imports
