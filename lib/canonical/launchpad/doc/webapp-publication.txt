@@ -146,8 +146,7 @@ A request publication factory that was initialized with
 handle_default_host=True will handle a request that specifies no virtual
 host. By default, handle_default_host is False.
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> factory.canHandle(environment)
     False
 
@@ -211,8 +210,7 @@ factory is not wrapped:
     >>> requestfactory
     <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> default_handling_factory.canHandle(environment)
     True
     >>> requestfactory, publicationfactory = default_handling_factory()
