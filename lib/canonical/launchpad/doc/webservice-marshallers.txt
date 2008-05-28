@@ -244,6 +244,120 @@ Floats are encoded using the standard JSON representation.
     ValueError: not a float: 'True'
 
 
+=== Text ===
+
+The marshaller for IText field checks that the value is a unicode
+string. A ValueError is raised when that's not the case.
+
+    >>> from zope.schema import Text
+    >>> field = Text()
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
+    >>> marshaller.marshall_from_json_data(u"Test")
+    u'Test'
+    >>> marshaller.marshall_from_json_data(1.0)
+    Traceback (most recent call last):
+      ...
+    ValueError: not a unicode string: 1.0
+    >>> marshaller.marshall_from_json_data('Test')
+    Traceback (most recent call last):
+      ...
+    ValueError: not a unicode string: 'Test'
+
+None is passed through though.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+When coming from the request, everything is interpreted as a unicode
+string:
+
+    >>> marshaller.marshall_from_request('a string')
+    u'a string'
+    >>> marshaller.marshall_from_request(['a', 'b'])
+    u"['a', 'b']"
+    >>> marshaller.marshall_from_request('true')
+    u'True'
+    >>> marshaller.marshall_from_request('')
+    u''
+
+Except that 'null' still returns None.
+
+    >>> print marshaller.marshall_from_request('null')
+    None
+
+
+=== Bytes ===
+
+Since there is no way to represent a bytes string in JSON, all strings
+are converted to a byte string using UTF-8 encoding. If the value isn't
+a string, a ValueError is raised.
+
+    >>> from zope.schema import Bytes
+    >>> field = Bytes(__name__='data')
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
+    >>> marshaller.marshall_from_json_data(u"Test")
+    'Test'
+    >>> marshaller.marshall_from_json_data(u'int\xe9ressant')
+    'int\xc3\xa9ressant'
+    >>> marshaller.marshall_from_json_data(1.0)
+    Traceback (most recent call last):
+      ...
+    ValueError: not a string: 1.0
+
+Again, except for None which is passed through.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+When coming over the request, the value is also converted into a UTF-8
+encoded string.
+
+    >>> marshaller.marshall_from_request(u"Test")
+    'Test'
+    >>> marshaller.marshall_from_request(u'int\xe9ressant')
+    'int\xc3\xa9ressant'
+    >>> marshaller.marshall_from_request('1.0')
+    '1.0'
+
+But again, None is returned as is.
+
+    >>> print marshaller.marshall_from_request('null')
+    None
+
+Since multipart/form-data can be used to upload data, file-like objects
+are read.
+
+    >>> from cStringIO import StringIO
+    >>> marshaller.marshall_from_request(StringIO('A line of data'))
+    'A line of data'
+
+Bytes field used in an entry are stored in the librarian, so their
+representation name states that it's a link.
+
+    >>> marshaller.representation_name
+    'data_link'
+
+And the unmarshall() method returns a link that will serve the file.
+
+    >>> from canonical.lazr.rest import EntryResource
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> entry_resource = EntryResource(
+    ...     getUtility(IPersonSet).getByName('name16'), request)
+
+(The value would be the BytesStorage instance used to store the
+content, but it's not needed.)
+
+    >>> marshaller.unmarshall(entry_resource, None)
+    u'http://.../~name16/data'
+
+
 == Choice marshallers ==
 
 The marshaller for a Choice is chosen based on the Choice's
@@ -362,7 +476,6 @@ Instead of unmarshall() returning the Person object (which
 wouldn't look nice in a JSON representation), this marshaller returns
 the URL to that object.
 
-    >>> from canonical.lazr.rest import EntryResource
     >>> person_resource = EntryResource(person, request)
 
     >>> marshaller.unmarshall(person_resource, person)
@@ -374,6 +487,7 @@ resource and not a random string.
 
     >>> marshaller.representation_name
     'some_person_link'
+
 
 
 == CollectionField ==

@@ -140,7 +140,14 @@
         for="zope.schema.interfaces.IBytes
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.ByteStorageMarshaller"
+        factory="canonical.lazr.rest.BytesFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IText
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.TextFieldMarshaller"
         />
 
     <adapter

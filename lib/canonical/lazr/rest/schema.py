@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BoolFieldMarshaller',
+    'BytesFieldMarshaller',
     'CollectionField',
     'CollectionFieldMarshaller',
     'DateTimeFieldMarshaller',
@@ -14,6 +15,7 @@ __all__ = [
     'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
+    'TextFieldMarshaller',
     'TokenizedVocabularyFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
@@ -44,6 +46,7 @@ from canonical.launchpad.webapp.url import urlsplit
 
 from canonical.lazr.interfaces.rest import ICollectionField
 from canonical.lazr.interfaces.field import IFieldMarshaller
+from canonical.lazr.utils import safe_hasattr
 
 
 class CollectionField(AbstractCollection):
@@ -140,8 +143,8 @@ class SimpleFieldMarshaller:
         """See `IFieldMarshaller`.
 
         Try to decode value as a JSON-encoded string and pass it on to
-        marshall_from_json_data(). If value isn't a JSON-encoded string,
-        interpret it as string literal.
+        _marshall_from_request() if it's not None. If value isn't a
+        JSON-encoded string, interpret it as string literal.
         """
         try:
             value = simplejson.loads(value)
@@ -149,7 +152,16 @@ class SimpleFieldMarshaller:
             # Pass the value as is. This saves client from having to encode
             # strings.
             pass
-        return self.marshall_from_json_data(value)
+        if value is None:
+            return None
+        return self._marshall_from_request(value)
+
+    def _marshall_from_request(self, value):
+        """Hook method to marshall a non-null JSON value.
+
+        Default is to just call _marshall_from_json_data() with the value.
+        """
+        return self._marshall_from_json_data(value)
 
     def _marshall_from_json_data(self, value):
         """Hook method to marshall a no-null value.
@@ -204,6 +216,69 @@ class FloatFieldMarshaller(SimpleFieldMarshaller):
         """
         return float(
             super(FloatFieldMarshaller, self)._marshall_from_json_data(value))
+
+
+class BytesFieldMarshaller(SimpleFieldMarshaller):
+    """FieldMarshaller for IBytes field."""
+
+    _type = str
+    _type_error_message = 'not a string: %r'
+
+    @property
+    def representation_name(self):
+        """See `IFieldMarshaller`.
+
+        Represent as a link to another resource.
+        """
+        return "%s_link" % self.field.__name__
+
+    def unmarshall(self, entry, bytestorage):
+        """See `IFieldMarshaller`.
+
+        Marshall as a link to the byte storage resource.
+        """
+        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
+
+    def _marshall_from_request(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Reads the data from file-like object, and converts non-strings into
+        one.
+        """
+        if safe_hasattr(value, 'seek'):
+            value.seek(0)
+            value = value.read()
+        elif not isinstance(value, basestring):
+            value = str(value)
+        else:
+            # Leave string conversion to _marshall_from_json_data.
+            pass
+        return super(BytesFieldMarshaller, self)._marshall_from_request(value)
+
+    def _marshall_from_json_data(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Convert all strings to byte strings.
+        """
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        return super(
+            BytesFieldMarshaller, self)._marshall_from_json_data(value)
+
+
+class TextFieldMarshaller(SimpleFieldMarshaller):
+    """FieldMarshaller for IText fields."""
+
+    _type = unicode
+    _type_error_message = 'not a unicode string: %r'
+
+    def _marshall_from_request(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Converts the value to unicode.
+        """
+        value = unicode(value)
+        return super(TextFieldMarshaller, self)._marshall_from_request(value)
 
 
 class TokenizedVocabularyFieldMarshaller(SimpleFieldMarshaller):
