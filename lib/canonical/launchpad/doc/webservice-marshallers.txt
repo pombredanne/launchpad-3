@@ -94,7 +94,7 @@ string, the resulting value is passed on to marshall_from_json_data().
     u'null'
 
 Invalid JSON-encoded strings are interpreted as string literals and
-passed on directly to marshall_form_json(). That's for the convenience
+passed on directly to marshall_from_json(). That's for the convenience
 of web clients, they don't need to encode string values in quotes, or
 can pass lists using multiple key-value pairs.
 
@@ -126,7 +126,7 @@ value to convert.  In the simple case, the value is returned unchanged.
 
 === Bool ===
 
-The marshaller for a Bool field asserts that the JSON value is either
+The marshaller for a Bool field checks that the JSON value is either
 True or False. A ValueError is raised when its not the case.
 
     >>> from zope.component import getMultiAdapter
@@ -170,7 +170,7 @@ Booleans are encoded using the standard JSON representation of 'true' or
 
 === Int ===
 
-The marshaller for an Int field asserts that the JSON value is an
+The marshaller for an Int field checks that the JSON value is an
 integer. A ValueError is raised when its not the case.
 
     >>> from zope.schema import Int
