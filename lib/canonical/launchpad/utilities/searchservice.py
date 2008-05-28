@@ -19,8 +19,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
-    ISearchResult, ISearchResults, ISearchService, GoogleParamError,
-    GoogleWrongGSPVersion)
+    ISearchResult, ISearchResults, ISearchService, GoogleWrongGSPVersion)
 from canonical.launchpad.webapp import urlparse
 
 
@@ -174,7 +173,6 @@ class GoogleSearchService:
         used over multiple queries to get successive sets of results.
 
         :return: `ISearchResults` (PageMatches).
-        :raise: `GoogleParamError` when an search parameter is None.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
@@ -270,8 +268,12 @@ class GoogleSearchService:
             raise GoogleWrongGSPVersion(
                 "Could not get the 'total' from the GSP XML response.")
         for result in results.findall('R'):
+            title_tag = result.find('T')
+            if title_tag is None:
+                # Google indexed a bad page. We should not include this.
+                continue
             try:
-                title = result.find('T').text
+                title = title_tag.text
                 url = result.find('U').text
                 summary = result.find('S').text.replace('<br>', '')
             except (AttributeError):
