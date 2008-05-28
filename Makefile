@@ -96,8 +96,10 @@ check_storm: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) \
 	  --module canonical.launchpad.pagetests \
+	  --module canonical.authserver \
 	  --module canonical.database \
 	  --module canonical.ftests \
+	  --module canonical.lazr \
 	  --module canonical.librarian \
 	  --module canonical.lp \
 	  --module canonical.testing
