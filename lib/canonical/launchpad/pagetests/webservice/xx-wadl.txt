@@ -511,10 +511,10 @@ The <method> tag for a named operation will contain one or more
 'create_team' custom operation takes a number of parameters.
 
     >>> [param.attrib['name'] for param in list(create_team)]
-    ['ws_op', 'display_name', 'name', 'default_membership_period',
+    ['ws.op', 'display_name', 'name', 'default_membership_period',
      'team_description', 'default_renewal_period', 'subscription_policy']
 
-The 'ws_op' parameter is present for every named operation, and has a
+The 'ws.op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
 
     >>> ws_op = create_team[0]
@@ -522,10 +522,10 @@ fixed value: the name of the operation.
     'create_team'
 
 The 'find' custom operation accepts one parameter in addition to
-'ws_op'.
+'ws.op'.
 
     >>> [param.attrib['name'] for param in list(find)]
-    ['ws_op', 'text']
+    ['ws.op', 'text']
 
     >>> ws_op = find[0]
     >>> ws_op.attrib['fixed']
@@ -539,7 +539,7 @@ resources.
 
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    ['BugEntry', 'BugTaskEntry', ... 'TeamMembershipEntryAdapter']
+    ['BugEntry', 'BugTaskEntry', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
@@ -768,9 +768,9 @@ Custom operations define parameters, just like representations do.
 
     >>> post_params = list(post[1:])
     >>> [param.attrib['name'] for param in post_params]
-    ['ws_op', 'status']
+    ['ws.op', 'status']
 
-The 'ws_op' parameter is present for all custom operations. It's always
+The 'ws.op' parameter is present for all custom operations. It's always
 required, and fixed to a particular value.
 
     >>> ws_op, status = post_params

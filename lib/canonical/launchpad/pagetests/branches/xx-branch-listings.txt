@@ -68,7 +68,7 @@ If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Subscribed').click()
+    >>> browser.getLink('subscribed').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links is None
     True
@@ -186,13 +186,10 @@ helpful message supplied.
 
 If the user does not have any branches, then we say so.
 
-    >>> browser.open('http://code.launchpad.dev/'
-    ...   '~no-priv?field.lifecycle=Mature')
-    >>> browser.getControl(name='field.lifecycle').displayValue
-    ['Mature']
+    >>> browser.open('http://code.launchpad.dev/~no-priv')
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-    >>> print message.renderContents()
-    There are no branches related to No Privileges Person in Launchpad...
+    >>> print extract_text(message)
+    There are no branches related to No Privileges Person today.
 
 
 == Branch Badge Decoration ==
