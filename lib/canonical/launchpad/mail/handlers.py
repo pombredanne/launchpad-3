@@ -496,6 +496,13 @@ class CodeHandler:
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
 
     def process(self, mail, email_addr, file_alias):
+        """Process an email and create a CodeReviewMessage.
+
+        The only mail command understood is 'vote', which takes 'approve',
+        'disapprove', or 'abstain' as values.
+        :return: True if the message was successfully handled, False
+            otherwise.
+        """
         try:
             self._process(mail, email_addr, file_alias)
         except:
@@ -505,17 +512,23 @@ class CodeHandler:
     def _process(self, mail, email_addr, file_alias):
         merge_proposal = self.getBranchMergeProposal(email_addr)
         messageset = getUtility(IMessageSet)
+        vote, vote_tag = self._getVote(mail)
         plain_message = messageset.fromEmail(
             mail.parsed_string,
             owner=getUtility(ILaunchBag).user,
             filealias=file_alias,
             parsed_message=mail)
-        vote, vote_tag = self._getVote(mail)
         message = merge_proposal.createMessageFromMessage(
             plain_message, vote, vote_tag)
 
     @staticmethod
     def _getVote(message):
+        """Scan message content and find vote commands.
+
+        :param message: a SignedMessage
+        :return: (vote, vote_tag), where vote is a CodeReviewVote, and
+            vote_tag is a string.
+        """
         content = get_main_body(message)
         if content is None:
             return None, None

@@ -29,7 +29,7 @@ class TestParseCommands(TestCase):
         self.assertEqual([], parse_commands('command', ['command']))
 
     def test_parse_commandsSpaceIndent(self):
-        """Commands indented with spaces are recognized"""
+        """Commands indented with spaces are recognized."""
         self.assertEqual(
             [('command', [])], parse_commands(' command', ['command']))
 
@@ -68,6 +68,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertIsInstance(handler, CodeHandler)
 
     def test_process(self):
+        """Processing an email creates an appropriate CodeReviewMessage."""
         mail = self.factory.makeSignedMessage('<my-id>')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
@@ -75,13 +76,15 @@ class TestCodeHandler(TestCaseWithFactory):
             mail, email_addr, None), "Succeeded, but didn't return True")
         message = MessageSet().get('<my-id>')
 
-    def test_process_failure(self):
+    def test_processFailure(self):
+        """When process fails, it returns False."""
         mail = self.factory.makeSignedMessage('<my-id>')
         self.assertFalse(self.code_handler.process(
             mail, 'foo@bar.com', None),
             "Failed, but didn't return False")
 
     def test_processVote(self):
+        """Process respects the vote command."""
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBALIWICK')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
@@ -90,40 +93,47 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('EBALIWICK', bmp.all_messages[0].vote_tag)
 
     def test_getVoteNoCommand(self):
+        """getVote returns None, None when no command is supplied."""
         mail = self.factory.makeSignedMessage(body='')
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, None)
         self.assertEqual(vote_tag, None)
 
     def test_getVoteNoArgs(self):
+        """getVote returns None, None when no arguments are supplied."""
         mail = self.factory.makeSignedMessage(body=' vote')
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, None)
         self.assertEqual(vote_tag, None)
 
     def test_getVoteOneArg(self):
+        """getVote returns vote, None when only a vote is supplied."""
         mail = self.factory.makeSignedMessage(body=' vote apPRoVe')
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.APPROVE)
         self.assertEqual(vote_tag, None)
 
     def test_getVoteDisapprove(self):
+        """getVote returns disapprove when it is specified."""
         mail = self.factory.makeSignedMessage(body=' vote dIsAppRoVe')
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
 
     def test_getVoteThreeArg(self):
+        """getVote returns vote, vote_tag when both are supplied."""
         mail = self.factory.makeSignedMessage(body=' vote apPRoVe DB TAG')
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.APPROVE)
         self.assertEqual(vote_tag, 'DB TAG')
 
     def test_getBranchMergeProposal(self):
+        """The correct BranchMergeProposal is returned for the address."""
         bmp = self.factory.makeBranchMergeProposal()
         bmp2 = self.code_handler.getBranchMergeProposal(bmp.address)
         self.assertEqual(bmp, bmp2)
 
     def test_getBranchMergeProposalInvalid(self):
+        """InvalidBranchMergeProposalAddress is raised if appropriate."""
         self.assertRaises(InvalidBranchMergeProposalAddress,
                           self.code_handler.getBranchMergeProposal, '')
         self.assertRaises(InvalidBranchMergeProposalAddress,
@@ -136,11 +146,13 @@ class TestMaloneHandler(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_getCommandsEmpty(self):
+        """getCommands returns an empty list for messages with no command."""
         message = self.factory.makeSignedMessage()
         handler = MaloneHandler()
         self.assertEqual([], handler.getCommands(message))
 
     def test_getCommandsBug(self):
+        """getCommands returns a reasonable list if commands are specified."""
         message = self.factory.makeSignedMessage(body=' bug foo')
         handler = MaloneHandler()
         commands = handler.getCommands(message)
