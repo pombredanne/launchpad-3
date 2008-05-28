@@ -15,11 +15,11 @@
 
 <div metal:fill-slot="main">
   <h1>Purchase Project Subscription</h1>
-  <div class="error message"
+  <div class="error message" id="free-hosting-error"
        tal:condition="context/qualifies_for_free_hosting">
     This project does not require a commercial subscription to be purchased.
   </div>
-  <div class="error message"
+  <div class="error message" id="permission-error"
        tal:condition="not: context/required:launchpad.Admin">
     You do not have permission to purchase a subscription for this project.
   </div>
