@@ -71,6 +71,8 @@ def nl_phrase_search(phrase, table, constraints='',
     total = table.select(
         constraints, clauseTables=extra_constraints_tables).count()
     term_candidates = nl_term_candidates(phrase)
+    if len(term_candidates) == 0:
+        return ''
     if total < 5:
         return '|'.join(term_candidates)
 
