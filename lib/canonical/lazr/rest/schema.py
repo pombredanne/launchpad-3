@@ -4,24 +4,27 @@
 
 __metaclass__ = type
 __all__ = [
+    'BoolFieldMarshaller',
     'CollectionField',
     'CollectionFieldMarshaller',
     'DateTimeFieldMarshaller',
+    'FloatFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
     'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
-    'TimezoneFieldMarshaller',
+    'TokenizedVocabularyFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
     ]
 
 from datetime import datetime
 import pytz
-import urllib
-import urlparse
 from StringIO import StringIO
+import urllib
+
+import simplejson
 
 from zope.app.datetimeutils import (
     DateError, DateTimeError, DateTimeParser, SyntaxError)
@@ -37,6 +40,7 @@ from canonical.config import config
 
 from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.url import urlsplit
 
 from canonical.lazr.interfaces.rest import ICollectionField
 from canonical.lazr.interfaces.field import IFieldMarshaller
@@ -76,7 +80,7 @@ class URLDereferencingMixin:
         :raise NotFound: If the URL does not designate a
             published object.
         """
-        (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
+        (protocol, host, path, query, fragment) = urlsplit(url)
 
         request_host = self.request.get('HTTP_HOST')
         if config.vhosts.use_https:
@@ -92,7 +96,7 @@ class URLDereferencingMixin:
         path_parts.pop(0)
         path_parts.reverse()
 
-        # Import here is neccessary to avoid circular import.
+        # Import here is necessary to avoid circular import.
         from canonical.launchpad.webapp.servers import WebServiceClientRequest
         request = WebServiceClientRequest(StringIO(), {'PATH_INFO' : path})
         setFirstLayer(request, WebServiceLayer)
@@ -109,6 +113,14 @@ class SimpleFieldMarshaller:
     This implementation is meant to be subclassed.
     """
     implements(IFieldMarshaller)
+
+
+    # Set this to type or tuple of types that the JSON value must be of.
+    _type = None
+
+    # The error message to use if the isinstance fails on the _type. The
+    # value will be interpreted in the message.
+    _type_error_message = None
 
     def __init__(self, field, request):
         self.field = field
@@ -127,27 +139,26 @@ class SimpleFieldMarshaller:
     def marshall_from_request(self, value):
         """See `IFieldMarshaller`.
 
-        Make sure the value is a string and then call the
-        _marshall_from_request() hook method.
+        Try to decode value as a JSON-encoded string and pass it on to
+        marshall_from_json_data(). If value isn't a JSON-encoded string,
+        interpret it as string literal.
         """
-        assert isinstance(value, basestring), (
-            'Marshalling a non-string: %r' % value)
-        if value == "":
-            return None
-        return self._marshall_from_request(value)
-
-    def _marshall_from_request(self, value):
-        """Hook method to marshall a non-null value.
-
-        Default is to return the value unchanged.
-        """
-        return value
+        try:
+            value = simplejson.loads(value)
+        except (ValueError, TypeError):
+            # Pass the value as is. This saves client from having to encode
+            # strings.
+            pass
+        return self.marshall_from_json_data(value)
 
     def _marshall_from_json_data(self, value):
         """Hook method to marshall a no-null value.
 
         Default is to return the value unchanged.
         """
+        if self._type is not None:
+            if not isinstance(value, self._type):
+                raise ValueError(self._type_error_message % value)
         return value
 
     @property
@@ -166,37 +177,57 @@ class SimpleFieldMarshaller:
         return value
 
 
+class BoolFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into an integer."""
+
+    _type = bool
+    _type_error_message = 'not a boolean: %r'
+
+
 class IntFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
 
-    def _marshall_from_request(self, value):
-        """Try to convert the value into an integer."""
-        return int(value)
+    _type = int
+    _type_error_message = 'not an integer: %r'
+
+
+class FloatFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that transforms its value into an integer."""
+
+    _type = (float, int)
+    _type_error_message = 'not a float: %r'
 
     def _marshall_from_json_data(self, value):
-        """Make sure the value is an integer"""
-        if not isinstance(value, int):
-            raise ValueError("not an integer: %r" % value)
-        return value
+        """See `SimpleFieldMarshaller`.
+
+        Converts the value to a float.
+        """
+        return float(
+            super(FloatFieldMarshaller, self)._marshall_from_json_data(value))
 
 
-class TimezoneFieldMarshaller(SimpleFieldMarshaller):
+class TokenizedVocabularyFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller that looks up value using a token in a vocabulary."""
 
     def __init__(self, field, request, vocabulary):
-        super(TimezoneFieldMarshaller, self).__init__(field, request)
+        super(TokenizedVocabularyFieldMarshaller, self).__init__(
+            field, request)
+
+    def _marshall_from_json_data(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Looks up the value as a token in the vocabulary.
+        """
+        try:
+            return self.field.vocabulary.getTermByToken(str(value)).value
+        except LookupError:
+            raise ValueError("%r isn't a valid token" % value)
 
 
 class DateTimeFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into a datetime object."""
 
-    def marshall_from_json_data(self, value):
-        """See `IFieldMarshaller`.
-
-        The JSON value is a string that needs to be parsed.
-        """
-        return self.marshall_from_request(value)
-
-    def _marshall_from_request(self, value):
+    def _marshall_from_json_data(self, value):
         """Parse the value as a datetime object."""
         try:
             value = DateTimeParser().parse(value)
@@ -223,15 +254,6 @@ class CollectionFieldMarshaller(SimpleFieldMarshaller):
         Make it clear that the value is a link to a collection.
         """
         return "%s_collection_link" % self.field.__name__
-
-    def marshall_from_json_data(self, value):
-        """See `IFieldMarshaller`.
-
-        The JSON value is a string that needs to be dereferenced.
-        """
-        if value is None:
-            return None
-        return self._marshall_from_request(value)
 
     def unmarshall(self, entry, value):
         """See `IFieldMarshaller`.
@@ -261,14 +283,7 @@ class SimpleVocabularyLookupFieldMarshaller(SimpleFieldMarshaller):
             field, request)
         self.vocabulary = vocabulary
 
-    def marshall_from_json_data(self, value):
-        """See `IFieldMarshaller`.
-
-        The JSON value is the title of a vocabulary item.
-        """
-        return self.marshall_from_request(value)
-
-    def _marshall_from_request(self, value):
+    def _marshall_from_json_data(self, value):
         """Find an item in the vocabulary by title."""
         valid_titles = []
         for item in self.field.vocabulary.items:
@@ -315,16 +330,7 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
             repr_value = canonical_url(value)
         return repr_value
 
-    def marshall_from_json_data(self, value):
-        """See `IFieldMarshaller`.
-
-        The JSON value is a string that needs to be dereferenced.
-        """
-        if value is None:
-            return None
-        return self._marshall_from_request(value)
-
-    def _marshall_from_request(self, value):
+    def _marshall_from_json_data(self, value):
         """See `IFieldMarshaller`.
 
         Look up the data model object by URL.

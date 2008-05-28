@@ -301,7 +301,11 @@ class ForeignTreeStore:
             raise NoSuchFile(old_tarball_name)
         basename = os.path.basename(old_tarball_name)
         _download(self.transport, old_tarball_name, basename)
-        extract_tarball(basename, target_path)
+        # The old system created tarballs which contained a cvsworking or
+        # svnworking directory which contained what we want to end up in
+        # target_path, so we pass --strip 1 to tar which removes this path
+        # component.
+        extract_tarball(basename, target_path, extra_args=['--strip', '1'])
         tree = self._getForeignTree(source_details, target_path)
         self.archive(source_details, tree)
         tree.update()

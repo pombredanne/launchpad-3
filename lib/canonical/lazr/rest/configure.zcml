@@ -109,6 +109,20 @@
         />
 
     <adapter
+        for="zope.schema.interfaces.IBool
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.BoolFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IFloat
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.FloatFieldMarshaller"
+        />
+
+    <adapter
         for="zope.schema.interfaces.IInt
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
@@ -139,17 +153,17 @@
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
-             canonical.lazr.enum.IEnumeratedType"
+             zope.schema.interfaces.IVocabularyTokenized"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldMarshaller"
+        factory="canonical.lazr.rest.TokenizedVocabularyFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
-             canonical.lazr.interfaces.timezone.ITimezoneNameVocabulary"
+             canonical.lazr.enum.IEnumeratedType"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.TimezoneFieldMarshaller"
+        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldMarshaller"
         />
 
     <adapter
