@@ -81,6 +81,14 @@ class TestCodeHandler(TestCaseWithFactory):
             mail, 'foo@bar.com', None),
             "Failed, but didn't return False")
 
+    def test_processVote(self):
+        mail = self.factory.makeSignedMessage(body=' vote Abstain EBALIWICK')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.code_handler.process(mail, email_addr, None)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_messages[0].vote)
+        self.assertEqual('EBALIWICK', bmp.all_messages[0].vote_tag)
+
     def test_getVoteNoCommand(self):
         mail = self.factory.makeSignedMessage(body='')
         vote, vote_tag = self.code_handler._getVote(mail)

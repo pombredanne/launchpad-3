@@ -510,8 +510,9 @@ class CodeHandler:
             owner=getUtility(ILaunchBag).user,
             filealias=file_alias,
             parsed_message=mail)
-
-        message = merge_proposal.createMessageFromMessage(plain_message)
+        vote, vote_tag = self._getVote(mail)
+        message = merge_proposal.createMessageFromMessage(
+            plain_message, vote, vote_tag)
 
     @staticmethod
     def _getVote(message):
