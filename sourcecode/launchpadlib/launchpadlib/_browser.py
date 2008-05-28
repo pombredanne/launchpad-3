@@ -14,6 +14,7 @@ __all__ = [
 
 import urllib2
 import urlparse
+import simplejson
 
 from launchpadlib._oauth.oauth import (
     OAuthRequest, OAuthSignatureMethod_PLAINTEXT)
@@ -70,4 +71,4 @@ class Browser:
             data = f.read()
         finally:
             f.close()
-        return data
+        return simplejson.loads(data)

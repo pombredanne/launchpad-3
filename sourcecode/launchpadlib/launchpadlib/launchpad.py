@@ -8,8 +8,14 @@ __all__ = [
     ]
 
 
-import simplejson
 from launchpadlib._browser import Browser
+from launchpadlib.collection import Collection, Entry
+from launchpadlib.person import People
+
+
+class _FakeBugCollection(Collection):
+    def _entry(self, entry_dict):
+        return Entry(entry_dict)
 
 
 class Launchpad:
@@ -30,7 +36,7 @@ class Launchpad:
         self.credentials = credentials
         # Get the root resource.
         self._browser = Browser(self.credentials)
-        response = simplejson.loads(self._browser.get(self.SERVICE_ROOT))
+        response = self._browser.get(self.SERVICE_ROOT)
         self._person_set_link = response.get(
             'PersonSetCollectionAdapter_collection_link')
         self._bug_set_link = response.get(
@@ -41,11 +47,11 @@ class Launchpad:
         # XXX Temporary
         if self._person_set_link is None:
             return None
-        return []
+        return People(self._browser, self._person_set_link)
 
     @property
     def bugs(self):
         # XXX Temporary
         if self._bug_set_link is None:
             return None
-        return []
+        return _FakeBugCollection(self._browser, self._bug_set_link)

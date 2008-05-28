@@ -1,0 +1,45 @@
+= People =
+
+You can access Launchpad people, and the set of all people, through the web
+service interface.  The set of people is available from the service root.
+
+    >>> from launchpadlib.credentials import (
+    ...     AccessToken, Consumer, Credentials)
+    >>> consumer = Consumer('launchpad-library')
+    >>> access_token = AccessToken('salgado-change-anything', 'test')
+    >>> credentials = Credentials(consumer, access_token)
+
+    >>> from launchpadlib.launchpad import Launchpad as _Launchpad
+    >>> class Launchpad(_Launchpad):
+    ...     """A testable Launchpad proxy accessing the demo service root."""
+    ...     SERVICE_ROOT = 'http://api.launchpad.dev:8085/beta'
+
+    >>> launchpad = Launchpad(credentials=credentials)
+    >>> len(launchpad.people)
+    63
+
+You can iterate through all the people in the set.
+
+    >>> names = sorted(person.name for person in launchpad.people)
+    >>> len(names)
+    63
+    >>> names
+    [u'andrelop', u'barbier', u'bug-importer', u'bug-watch-updater',
+     ...
+     u'stub', u'thumper', u'tsukimi', u'ubuntu-team', u'valyag']
+
+You can find a person by name.
+
+    >>> salgado = launchpad.people['salgado']
+    >>> salgado.name
+    u'salgado'
+    >>> salgado.display_name
+    u'Guilherme Salgado'
+
+You can find a person by 'id'.
+
+    >>> person12 = launchpad.people[12]
+    >>> person12.name
+    u'daf'
+    >>> person12.display_name
+    u'Dafydd Harries'
