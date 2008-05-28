@@ -17,20 +17,13 @@ __metaclass__ = type
 
 import errno
 import os
-import stat
 
 from bzrlib import errors as bzr_errors
-from bzrlib import osutils, urlutils
+from bzrlib import osutils
 from bzrlib.transport.local import LocalTransport
 from twisted.conch.ssh import filetransfer
 from twisted.conch.interfaces import ISFTPFile, ISFTPServer
-from twisted.internet import defer
-from twisted.python import util
 from zope.interface import implements
-
-from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, LaunchpadServer)
-from canonical.config import config
 
 
 class FileIsADirectory(bzr_errors.PathError):
@@ -53,14 +46,13 @@ class FatLocalTransport(LocalTransport):
         abspath = self._abspath(name)
         osutils.check_legal_path(abspath)
         try:
-            chunk_file = os.open(abspath, os.O_CREAT | os.O_WRONLY)
-        except OSError, e:
+            chunk_file = open(abspath, 'w')
+        except IOError, e:
             if e.errno != errno.EISDIR:
                 raise
             raise FileIsADirectory(name)
-        os.lseek(chunk_file, offset, 0)
-        os.write(chunk_file, data)
-        os.close(chunk_file)
+        chunk_file.seek(offset)
+        chunk_file.write(data)
 
     def local_realPath(self, path):
         """Return the absolute path to `path`."""
@@ -80,7 +72,7 @@ def with_sftp_error(func):
         deferred = func(*args, **kwargs)
         return deferred.addErrback(TransportSFTPServer.translateError,
                                    func.__name__)
-    return util.mergeFunctionMetadata(func, decorator)
+    return decorator
 
 
 class TransportSFTPFile:
@@ -91,62 +83,14 @@ class TransportSFTPFile:
 
     implements(ISFTPFile)
 
-    def __init__(self, transport, name, flags, server):
+    def __init__(self, transport, name):
         self.name = name
-        self._flags = flags
         self.transport = transport
-        self._written = False
-        self._server = server
-
-    def _shouldAppend(self):
-        """Is this file opened append?"""
-        return bool(self._flags & filetransfer.FXF_APPEND)
-
-    def _shouldCreate(self):
-        """Should we create a file?"""
-        # The Twisted VFS adapter creates a file when any of these flags are
-        # set. It's possible that we only need to check for FXF_CREAT.
-        create_mask = (
-            filetransfer.FXF_WRITE | filetransfer.FXF_APPEND |
-            filetransfer.FXF_CREAT)
-        return bool(self._flags & create_mask)
-
-    def _shouldTruncate(self):
-        """Should we truncate the file?"""
-        return (bool(self._flags & filetransfer.FXF_TRUNC)
-                and not self._written)
-
-    def _shouldWrite(self):
-        """Is this file opened writable?"""
-        write_mask = (filetransfer.FXF_WRITE | filetransfer.FXF_APPEND)
-        return bool(self._flags & write_mask)
-
-    def _truncateFile(self):
-        """Truncate this file."""
-        self._written = True
-        return self.transport.put_bytes(self.name, '')
 
     @with_sftp_error
     def writeChunk(self, offset, data):
         """See `ISFTPFile`."""
-        if not self._shouldWrite():
-            raise filetransfer.SFTPError(
-                filetransfer.FX_PERMISSION_DENIED,
-                "%r was opened read-only." % self.name)
-        if self._shouldTruncate():
-            deferred = self._truncateFile()
-        else:
-            deferred = defer.succeed(None)
-        self._written = True
-        if self._shouldAppend():
-            deferred.addCallback(
-                lambda ignored:
-                self.transport.append_bytes(self.name, data))
-        else:
-            deferred.addCallback(
-                lambda ignored:
-                self.transport.writeChunk(self.name, offset, data))
-        return deferred
+        return self.transport.writeChunk(self.name, offset, data)
 
     @with_sftp_error
     def readChunk(self, offset, length):
@@ -154,16 +98,7 @@ class TransportSFTPFile:
         deferred = self.transport.readv(self.name, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
-        deferred.addCallback(get_first_chunk)
-        return deferred.addErrback(self._check_for_eof)
-
-    def _check_for_eof(self, failure):
-        failure.trap(bzr_errors.ShortReadvError)
-        # XXX: JonathanLange 2008-05-13: We might be discarding data here. But
-        # even if we weren't, current versions of Bazaar wouldn't actually use
-        # it. If Bazaar changes to include the returned data in a
-        # ShortReadvError, we should consider changing this method.
-        return ''
+        return deferred.addCallback(get_first_chunk)
 
     def setAttrs(self, attrs):
         """See `ISFTPFile`.
@@ -172,45 +107,25 @@ class TransportSFTPFile:
         """
         # XXX 2008-05-09 JonathanLange: This should at least raise an error,
         # not do nothing silently.
-        return self._server.setAttrs(self.name, attrs)
+        pass
 
-    @with_sftp_error
     def getAttrs(self):
         """See `ISFTPFile`."""
-        return self._server.getAttrs(self.name, False)
+        deferred = self.transport.stat(self.name)
+        def translate_stat(stat_val):
+            return {
+                'size': stat_val.st_size,
+                'uid': stat_val.st_uid,
+                'gid': stat_val.st_gid,
+                'permissions': stat_val.st_mode,
+                'atime': stat_val.st_atime,
+                'mtime': stat_val.st_mtime,
+            }
+        return deferred.addCallback(translate_stat)
 
     def close(self):
         """See `ISFTPFile`."""
-        if self._written or not self._shouldCreate():
-            return defer.succeed(None)
-
-        if self._shouldTruncate():
-            return self._truncateFile()
-
-        deferred = self.transport.has(self.name)
-        def maybe_create_file(already_exists):
-            if not already_exists:
-                return self._truncateFile()
-        return deferred.addCallback(maybe_create_file)
-
-
-def _get_transport_for_dir(directory):
-    url = urlutils.local_path_to_url(directory)
-    return FatLocalTransport(url)
-
-
-def avatar_to_sftp_server(avatar):
-    user_id = avatar.lpid
-    authserver = avatar._launchpad
-    hosted_transport = _get_transport_for_dir(
-        config.codehosting.branches_root)
-    mirror_transport = _get_transport_for_dir(
-        config.supermirror.branchesdest)
-    server = LaunchpadServer(
-        authserver, user_id, hosted_transport, mirror_transport)
-    server.setUp()
-    transport = AsyncLaunchpadTransport(server, server.get_url())
-    return TransportSFTPServer(transport)
+        pass
 
 
 class TransportSFTPServer:
@@ -260,18 +175,9 @@ class TransportSFTPServer:
         deferred = self.transport.list_dir(path)
         return deferred.addCallback(DirectoryListing)
 
-    @with_sftp_error
     def openFile(self, path, flags, attrs):
         """See `ISFTPServer`."""
-        directory = os.path.dirname(path)
-        deferred = self.transport.stat(directory)
-        def open_file(stat_result):
-            if stat.S_ISDIR(stat_result.st_mode):
-                return TransportSFTPFile(self.transport, path, flags, self)
-            else:
-                raise filetransfer.SFTPError(
-                    filetransfer.FX_NO_SUCH_FILE, directory)
-        return deferred.addCallback(open_file)
+        return TransportSFTPFile(self.transport, path)
 
     def readLink(self, path):
         """See `ISFTPServer`."""
@@ -286,25 +192,14 @@ class TransportSFTPServer:
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        return defer.succeed(None)
+        self.openFile(path, 0, {}).setAttrs(attrs)
 
-    @with_sftp_error
     def getAttrs(self, path, followLinks):
         """See `ISFTPServer`.
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        deferred = self.transport.stat(path)
-        def translate_stat(stat_val):
-            return {
-                'size': getattr(stat_val, 'st_size', 0),
-                'uid': getattr(stat_val, 'st_uid', 0),
-                'gid': getattr(stat_val, 'st_gid', 0),
-                'permissions': getattr(stat_val, 'st_mode', 0),
-                'atime': getattr(stat_val, 'st_atime', 0),
-                'mtime': getattr(stat_val, 'st_mtime', 0),
-            }
-        return deferred.addCallback(translate_stat)
+        return self.openFile(path, 0, {}).getAttrs()
 
     def gotVersion(self, otherVersion, extensionData):
         """See `ISFTPServer`."""
@@ -313,7 +208,7 @@ class TransportSFTPServer:
     @with_sftp_error
     def makeDirectory(self, path, attrs):
         """See `ISFTPServer`."""
-        return self.transport.mkdir(path, attrs['permissions'])
+        return self.transport.mkdir(path)
 
     @with_sftp_error
     def removeDirectory(self, path):
@@ -335,8 +230,6 @@ class TransportSFTPServer:
         """Translate Bazaar errors to `filetransfer.SFTPError` instances."""
         types_to_codes = {
             bzr_errors.PermissionDenied: filetransfer.FX_PERMISSION_DENIED,
-            bzr_errors.TransportNotPossible:
-                filetransfer.FX_PERMISSION_DENIED,
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
             bzr_errors.FileExists: filetransfer.FX_FILE_ALREADY_EXISTS,
             bzr_errors.DirectoryNotEmpty: filetransfer.FX_FAILURE,
