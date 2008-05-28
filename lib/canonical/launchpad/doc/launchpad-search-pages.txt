@@ -404,7 +404,7 @@ without titles are skipped when parsing the Google Search XML. The size
 of the batch is still 20, but when the items in the batch are iterated,
 the true size can be seen. For example there could be only 3 matches in
 the PageMatches object, so only 3 are yielded. The start of the next
-batch is is 20, which is the start of the next batch from Google.
+batch is 20, which is the start of the next batch from Google.
 
     >>> matches = range(0, 3)
     >>> page_matches._matches = matches
