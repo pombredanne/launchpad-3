@@ -244,7 +244,7 @@ Floats are encoded using the standard JSON representation.
     ValueError: not a float: 'True'
 
 
-=== Choice ===
+== Choice marshallers ==
 
 The marshaller for a Choice is chosen based on the Choice's
 vocabulary.
@@ -252,7 +252,7 @@ vocabulary.
     >>> from zope.schema import Choice
 
 
-==== Choice for IVocabularyTokenized ====
+=== Choice for IVocabularyTokenized ===
 
 The default marshaller will use the vocabulary getTermByToken to
 retrieve the value to use. It raise an error if the value isn't in the
@@ -286,7 +286,7 @@ None is always returned unchanged.
     None
 
 
-==== Choice of EnumeratedTypes ====
+=== Choice of EnumeratedTypes ===
 
 The JSON representation of the enumerated value is its title.  A string
 that corresponds to one of the values is marshalled to the appropriate
@@ -318,7 +318,7 @@ None is returned unchanged:
     None
 
 
-==== Choice of SQLObjectVocabularyBase ====
+=== Choice of SQLObjectVocabularyBase ===
 
 For vocabularies based on SQLObjectVocabularyBase, the values are
 interpreted as URLs referencing objects on the web service. If the given
@@ -376,7 +376,7 @@ resource and not a random string.
     'some_person_link'
 
 
-=== CollectionField ===
+== CollectionField ==
 
 The most complicated kind of marshaller is one that manages a
 collection of objects associated with some other object. Let's do an
