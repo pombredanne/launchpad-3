@@ -13,7 +13,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class TranslationRelicensingAgreement(SQLBase):
@@ -22,8 +22,8 @@ class TranslationRelicensingAgreement(SQLBase):
     _table = 'TranslationRelicensingAgreement'
 
     person = ForeignKey(
-        foreignKey='Person',
-        validator=public_person_validator, dbName='person', notNull=True)
+        foreignKey='Person', dbName='person', notNull=True,
+        storm_validator=validate_public_person)
 
     allow_relicensing = BoolCol(
         dbName='allow_relicensing', notNull=True, default=True)
