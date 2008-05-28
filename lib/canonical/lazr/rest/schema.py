@@ -14,7 +14,6 @@ __all__ = [
     'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
-    'TimezoneFieldMarshaller',
     'TokenizedVocabularyFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
@@ -205,12 +204,6 @@ class FloatFieldMarshaller(SimpleFieldMarshaller):
         """
         return float(
             super(FloatFieldMarshaller, self)._marshall_from_json_data(value))
-
-
-class TimezoneFieldMarshaller(SimpleFieldMarshaller):
-
-    def __init__(self, field, request, vocabulary):
-        super(TimezoneFieldMarshaller, self).__init__(field, request)
 
 
 class TokenizedVocabularyFieldMarshaller(SimpleFieldMarshaller):
