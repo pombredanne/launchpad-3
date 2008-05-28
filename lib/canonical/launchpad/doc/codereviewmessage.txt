@@ -21,9 +21,11 @@ CodeReviewMessages are created from their BranchMergeProposals:
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> merge_proposal = factory.makeBranchMergeProposal()
-    >>> person = factory.makePerson(password='password')
+    >>> sender = factory.makePerson(
+    ...     email='sender@example.com', password='password',
+    ...     displayname='Sender Person')
     >>> message = merge_proposal.createMessage(
-    ...     person, 'Please merge', 'This patch is very nice.')
+    ...     sender, 'Please merge', 'This patch is very nice.')
 
 The first message to be created is the root of the code review
 conversation, and is available as BranchMergeProposal.root_message.
@@ -36,7 +38,7 @@ default.
 
     >>> from canonical.launchpad.interfaces import CodeReviewVote
     >>> message2 = merge_proposal.createMessage(
-    ...     person, 'No!', 'You are ugly and stupid',
+    ...     sender, 'No!', 'You are ugly and stupid',
     ...     CodeReviewVote.DISAPPROVE)
     >>> message2.message.parent == merge_proposal.root_message.message
     True
@@ -44,7 +46,7 @@ default.
 Messages can be marked as replies to particular messages.
 
     >>> message3 = merge_proposal.createMessage(
-    ...     person, 'Hurt', "That wasn't a nice thing to say.",
+    ...     sender, 'Hurt', "That wasn't a nice thing to say.",
     ...     parent=message2)
     >>> message3.message.parent == message2.message
     True
@@ -57,20 +59,20 @@ a notification is produced when the message is created.
     ...     CodeReviewNotificationLevel)
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
-    >>> source_subscriber = factory.makePerson(email='foo@bar.com',
-    ...     password='baz')
+    >>> source_subscriber = factory.makePerson(email='subscriber@example.com',
+    ...     password='baz', displayname='Subscriber Person')
     >>> _unused = merge_proposal.source_branch.subscribe(source_subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
     >>> _unused = pop_notifications()
     >>> message = merge_proposal.createMessage(
-    ...     person, 'Please merge', 'This patch is very nice.',
+    ...     sender, 'Please merge', 'This patch is very nice.',
     ...     vote=CodeReviewVote.APPROVE, vote_tag='DB')
     >>> notifications = pop_notifications()
     >>> print_emails(include_reply_to=True, notifications=notifications)
-    From: Person-name... <...>
-    To: Person-name... <...>
+    From: Sender Person <sender@example.com>
+    To: Subscriber Person <subscriber@example.com>
     Reply-To: mp+1@code.launchpad.dev
     Subject: Please merge
     Vote: Approve DB

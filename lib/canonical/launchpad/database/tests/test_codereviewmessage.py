@@ -5,11 +5,10 @@
 from email.Message import Message
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
-
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.testing import LaunchpadFunctionalLayer
 
 class TestCodeReviewMessage(TestCaseWithFactory):
 
@@ -71,9 +70,8 @@ class TestCodeReviewMessage(TestCaseWithFactory):
     def test_createMessageFromMessageNotifies(self):
         """Creating a CodeReviewMessage should trigger a notification."""
         message = self.factory.makeMessage()
-        result, event = self.assertNotifies(SQLObjectCreatedEvent,
-            self.bmp.createMessageFromMessage, message)
-
+        self.assertNotifies(
+            SQLObjectCreatedEvent, self.bmp.createMessageFromMessage, message)
 
 
 def test_suite():
