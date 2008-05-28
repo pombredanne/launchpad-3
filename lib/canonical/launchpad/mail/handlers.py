@@ -149,6 +149,36 @@ def reformat_wiki_text(text):
 
     return text
 
+def parse_commands(content, command_names):
+    """Extract commands from a bug-style string.
+
+    All commands must be indented using either spaces or tabs.  They must be
+    listed in command_names-- if not, they are silently ignored.
+
+    The special command 'done' terminates processing.  It takes no arguments.
+    Any commands that follow it will be ignored.  'done' should not be listed
+    in command_names.
+
+    While this syntax is the Launchpad standard, bug #29572 says it should be
+    changed to only accept commands at the beginning and to not require
+    indentation.
+
+    A list of (command, args) tuples is returned.
+    """
+    commands = []
+    for line in content.splitlines():
+        # All commands have to be indented.
+        if line.startswith(' ') or line.startswith('\t'):
+            command_string = line.strip()
+            if command_string == 'done':
+                # If the 'done' statement is encountered,
+                # stop reading any more commands.
+                break
+            words = command_string.split(' ')
+            if len(words) > 0 and words[0] in command_names:
+                commands.append((words[0], words[1:]))
+    return commands
+
 
 class MaloneHandler:
     """Handles emails sent to Malone.
@@ -162,27 +192,11 @@ class MaloneHandler:
 
     def getCommands(self, signed_msg):
         """Returns a list of all the commands found in the email."""
-        commands = []
         content = get_main_body(signed_msg)
         if content is None:
             return []
-        # First extract all commands from the email.
-        command_names = emailcommands.names()
-        for line in content.splitlines():
-            # All commands have to be indented.
-            if line.startswith(' ') or line.startswith('\t'):
-                command_string = line.strip()
-                if command_string == 'done':
-                    # If the 'done' statement is encountered,
-                    # stop reading any more commands.
-                    break
-                words = command_string.split(' ')
-                if words and words[0] in command_names:
-                    command = emailcommands.get(
-                        name=words[0], string_args=words[1:])
-                    commands.append(command)
-        return commands
-
+        return [emailcommands.get(name=name, string_args=args) for
+                name, args in parse_commands(content, emailcommands.names())]
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""

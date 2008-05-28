@@ -7,14 +7,51 @@ import unittest
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
-from canonical.testing import LaunchpadFunctionalLayer
-
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
     CodeHandler, InvalidBranchMergeProposalAddress, mail_handlers,
-    MaloneHandler)
-from canonical.launchpad.testing import TestCaseWithFactory
+    MaloneHandler, parse_commands)
+from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from canonical.testing import LaunchpadFunctionalLayer
+
+
+class TestParseCommands(TestCase):
+    """Test the ParseCommands function."""
+
+    def test_parse_commandsEmpty(self):
+        """Empty messages have no commands."""
+        self.assertEqual([], parse_commands('', ['command']))
+
+    def test_parse_commandsNoIndent(self):
+        """Commands with no indent are not commands."""
+        self.assertEqual([], parse_commands('command', ['command']))
+
+    def test_parse_commandsSpaceIndent(self):
+        """Commands indented with spaces are recognized"""
+        self.assertEqual(
+            [('command', [])], parse_commands(' command', ['command']))
+
+    def test_parse_commandsTabIndent(self):
+        """Commands indented with tabs are recognized.
+
+        (Tabs?  What are we, make?)
+        """
+        self.assertEqual(
+            [('command', [])], parse_commands('\tcommand', ['command']))
+
+    def test_parse_commandsDone(self):
+        """The 'done' pseudo-command halts processing."""
+        self.assertEqual(
+            [('command', []), ('command', [])],
+            parse_commands(' command\n command', ['command']))
+        self.assertEqual(
+            [('command', [])],
+            parse_commands(' command\n done\n command', ['command']))
+        # done brooks no arguments.
+        self.assertEqual(
+            [('command', []), ('command', [])],
+            parse_commands(' command\n done commands\n command', ['command']))
 
 
 class TestCodeHandler(TestCaseWithFactory):
