@@ -162,12 +162,12 @@ is displayed to direct the owner to purchase a subscription.
     >>> owner_browser.url
     'http://launchpad.dev/firefox/+purchase-subscription'
     >>> owner_browser.getLink('Canonical Shop')
-    <...https://shop.canonical.com...>
+    <Link...url='https://shop.canonical.com'...>
     >>> owner_browser.getLink('voucher management page')
-    <...https://launchpad.net/people/+me/+vouchers...>
+    <Link...url='http://launchpad.dev/people/+me/+vouchers'...>
 
 A non-owner does not see that a commercial subscription is due,
-and the +purchase-subscription will display an error. A user would
+and the +purchase-subscription page will display an error. A user would
 have to load that page directly, since the link is not displayed.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
