@@ -15,6 +15,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
+from storm.store import Store
 
 import pytz
 
@@ -47,7 +48,7 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_public_person, notNull=False)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',
@@ -144,6 +145,10 @@ class MessageSet:
             subject=subject, rfc822msgid=rfc822msgid, owner=owner,
             datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
     def _decode_header(self, header):
@@ -404,6 +409,11 @@ class MessageSet:
         #         MessageChunk(
         #             message=message, sequence=sequence, content=epilogue
         #             )
+
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
 class MessageChunk(SQLBase):

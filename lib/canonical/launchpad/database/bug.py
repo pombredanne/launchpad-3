@@ -611,6 +611,10 @@ class Bug(SQLBase):
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
+            # XXX 2008-05-27 jamesh:
+            # Ensure that BugMessages get flushed in same order as
+            # they are created.
+            Store.of(result).flush()
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):
