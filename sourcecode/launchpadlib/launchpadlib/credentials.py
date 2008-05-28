@@ -12,7 +12,7 @@ __all__ = [
 
 from ConfigParser import SafeConfigParser
 from launchpadlib.errors import CredentialsFileError
-from launchpadlib.oauth.oauth import OAuthConsumer, OAuthToken
+from launchpadlib._oauth.oauth import OAuthConsumer, OAuthToken
 
 
 CREDENTIALS_FILE_VERSION = '1'

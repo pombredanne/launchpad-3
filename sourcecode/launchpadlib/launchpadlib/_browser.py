@@ -15,7 +15,7 @@ __all__ = [
 import urllib2
 import urlparse
 
-from launchpadlib.oauth.oauth import (
+from launchpadlib._oauth.oauth import (
     OAuthRequest, OAuthSignatureMethod_PLAINTEXT)
 
 OAUTH_REALM = 'https://api.launchpad.net'
