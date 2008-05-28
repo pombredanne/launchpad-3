@@ -51,10 +51,7 @@ to the OAuth protocol.  Once this happens, we have Salgado's credentials for
 accessing Launchpad.
 
     >>> from launchpadlib.credentials import AccessToken
-    >>> access_token = AccessToken(
-    ...     'hgm2VK35vXD6rLg5pxWw',
-    ...     'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw'
-    ...     + '8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz')
+    >>> access_token = AccessToken('salgado-change-anything', 'test')
 
 And now these credentials are used to access the root service on Salgado's
 behalf.
@@ -112,9 +109,9 @@ dance can be avoided.
     >>> credentials.consumer.secret
     ''
     >>> credentials.access_token.key
-    'hgm2VK35vXD6rLg5pxWw'
+    'salgado-change-anything'
     >>> credentials.access_token.secret
-    'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw...
+    'test'
 
 These credentials too, are perfectly usable to access Launchpad.
 
@@ -135,10 +132,10 @@ Salgado's credentials.
     >>> credentials.save(stream)
     >>> print encrypted_file.getvalue()
     [1]
-    pbafhzre_frperg =
-    npprff_gbxra = utz2IX35iKQ6eYt5ckJj
+    pbafhzre_frperg = 
+    npprff_gbxra = fnytnqb-punatr-nalguvat
     pbafhzre_xrl = ynhapucnq-yvoenel
-    npprff_frperg = DmfXoqx2Se8EfWK3w89IId5zJITID84Ucjqet0Pj...
+    npprff_frperg = grfg
     <BLANKLINE>
     <BLANKLINE>
 
@@ -150,9 +147,9 @@ Salgado's credentials.
     >>> credentials.consumer.secret
     ''
     >>> credentials.access_token.key
-    'hgm2VK35vXD6rLg5pxWw'
+    'salgado-change-anything'
     >>> credentials.access_token.secret
-    'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw...
+    'test'
 
 
 == Credentials file errors ==
