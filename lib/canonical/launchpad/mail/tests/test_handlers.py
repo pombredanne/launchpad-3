@@ -10,8 +10,10 @@ from canonical.config import config
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.database import MessageSet
+from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
-    CodeHandler, InvalidBranchMergeProposalAddress, mail_handlers)
+    CodeHandler, InvalidBranchMergeProposalAddress, mail_handlers,
+    MaloneHandler)
 from canonical.launchpad.testing import TestCaseWithFactory
 
 
@@ -57,6 +59,25 @@ def test_suite():
     suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
+
+
+class TestMaloneHandler(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_getCommandsEmpty(self):
+        message = self.factory.makeSignedMessage()
+        handler = MaloneHandler()
+        self.assertEqual([], handler.getCommands(message))
+
+    def test_getCommandsBug(self):
+        message = self.factory.makeSignedMessage(body=' bug foo')
+        handler = MaloneHandler()
+        commands = handler.getCommands(message)
+        self.assertEqual(1, len(commands))
+        self.assertTrue(isinstance(commands[0], BugEmailCommand))
+        self.assertEqual('bug', commands[0].name)
+        self.assertEqual(['foo'], commands[0].string_args)
 
 
 if __name__ == '__main__':
