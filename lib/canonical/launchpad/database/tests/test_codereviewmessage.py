@@ -2,7 +2,6 @@
 
 """Unit tests for CodeReviewMessage"""
 
-from email.Message import Message
 import unittest
 
 from canonical.launchpad.event import SQLObjectCreatedEvent

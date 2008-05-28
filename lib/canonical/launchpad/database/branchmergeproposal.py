@@ -27,7 +27,7 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.database.message import (
-    Message, MessageChunk, MessageSet)
+    Message, MessageChunk)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
