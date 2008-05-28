@@ -25,10 +25,9 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ICustomLanguageCode, IDistribution, IDistroSeries,
-    IHasTranslationImports, ILanguageSet, IPerson, IPOFileSet,
-    IPOTemplateSet, IProduct, IProductSeries, ISourcePackage,
-    ITranslationImporter, ITranslationImportQueue,
+    IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
+    IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
+    ISourcePackage, ITranslationImporter, ITranslationImportQueue,
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
     TranslationFileFormat)
 from canonical.launchpad.translationformat.gettext_po_importer import (

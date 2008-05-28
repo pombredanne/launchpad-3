@@ -14,7 +14,6 @@ from canonical.launchpad.database import (
     SourcePackageName, TranslationImportQueue)
 from canonical.launchpad.interfaces import (
     ICustomLanguageCode, RosettaImportStatus)
-from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
@@ -31,8 +30,12 @@ class TestCustomLanguageCode(unittest.TestCase):
         self.package_codes = {}
 
         self.product = self.factory.makeProduct()
+
+        # Map "es_ES" to "no language."
         self.product_codes['es_ES'] = CustomLanguageCode(
             product=self.product, language_code='es_ES')
+
+        # Map "pt_PT" to "pt."
         self.product_codes['pt_PT'] = CustomLanguageCode(
             product=self.product, language_code='pt_PT',
             language=Language.byCode('pt'))
@@ -53,26 +56,28 @@ class TestCustomLanguageCode(unittest.TestCase):
 
     def test_NoCustomLanguageCode(self):
         # Look up custom language code for context that has none.
-        product2 = self.factory.makeProduct()
-        self.assertEqual(product2.getCustomLanguageCode('nocode'), None)
-        self.assertEqual(product2.getCustomLanguageCode('pt_PT'), None)
+        # The "fresh" items here are ones that have no custom language codes
+        # associated with them.
+        fresh_product = self.factory.makeProduct()
+        self.assertEqual(fresh_product.getCustomLanguageCode('nocode'), None)
+        self.assertEqual(fresh_product.getCustomLanguageCode('pt_PT'), None)
 
-        distro2 = Distribution.byName('gentoo')
-        nocode = distro2.getCustomLanguageCode(
+        fresh_distro = Distribution.byName('gentoo')
+        nocode = fresh_distro.getCustomLanguageCode(
             self.sourcepackagename, 'nocode')
         self.assertEqual(nocode, None)
-        brazilian = distro2.getCustomLanguageCode(
+        brazilian = fresh_distro.getCustomLanguageCode(
             self.sourcepackagename, 'Brazilian')
         self.assertEqual(brazilian, None)
 
-        sourcepackagename2 = SourcePackageName.byName('cnews')
+        fresh_package = SourcePackageName.byName('cnews')
         self.assertEqual(self.distro.getCustomLanguageCode(
-            sourcepackagename2, 'nocode'), None)
+            fresh_package, 'nocode'), None)
         self.assertEqual(self.distro.getCustomLanguageCode(
-            sourcepackagename2, 'Brazilian'), None)
+            fresh_package, 'Brazilian'), None)
 
     def test_UnsuccessfulCustomLanguageCodeLookup(self):
-        # Look up nonexistent custom language code for product
+        # Look up nonexistent custom language code for product.
         self.assertEqual(self.product.getCustomLanguageCode('nocode'), None)
         self.assertEqual(
             self.distro.getCustomLanguageCode(
@@ -212,8 +217,8 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
         self.assertEqual(entry.getGuessedPOFile(), nn_file)
 
     def test_CustomLanguageCodeReplacesMatch(self):
-        # One custom language code can block uploads for a language code while
-        # another slots uploads for another language code in its place.
+        # One custom language code can block uploads for language code pt
+        # while another redirects the uploads for pt_PT into their place.
         pt_file = self._makePOFile('pt')
         pt_entry = self._makeQueueEntry('pt')
         pt_PT_entry = self._makeQueueEntry('pt_PT')

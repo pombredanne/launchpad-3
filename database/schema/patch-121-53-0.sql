@@ -27,4 +27,4 @@ CREATE UNIQUE INDEX
     WHERE distribution IS NOT NULL;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 53, 0);
