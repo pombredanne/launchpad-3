@@ -520,4 +520,6 @@ def cursor():
     This is useful for code that needs to issue database queries
     directly rather than using the SQLObject interface
     '''
-    return getUtility(IZStorm).get('main')._connection.build_raw_cursor()
+    connection = getUtility(IZStorm).get('main')._connection
+    connection._ensure_connected()
+    return connection.build_raw_cursor()
