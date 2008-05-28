@@ -91,14 +91,9 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertRaises(InvalidBranchMergeProposalAddress,
                           code_handler.getBranchMergeProposal, 'mp+abc@')
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
-    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
 
 class TestMaloneHandler(TestCaseWithFactory):
+    """Test that the Malone/bugs handler works."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -115,6 +110,13 @@ class TestMaloneHandler(TestCaseWithFactory):
         self.assertTrue(isinstance(commands[0], BugEmailCommand))
         self.assertEqual('bug', commands[0].name)
         self.assertEqual(['foo'], commands[0].string_args)
+
+
+def test_suite():
+    suite = unittest.TestSuite()
+    suite.addTests(DocTestSuite('canonical.launchpad.mail.handlers'))
+    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
+    return suite
 
 
 if __name__ == '__main__':
