@@ -79,7 +79,7 @@ def nl_phrase_search(phrase, table, constraints='',
     # with COUNT(*) is a lot slower.
     count_template = (
         'COUNT(CASE WHEN %(table)s.fti @@ ftq(%(term)s)'
-        ' THEN %(table)s.id ELSE null END)')
+        ' THEN TRUE ELSE null END)')
     select_counts = [
         count_template % {'table': table._table, 'term': quote(term)}
         for term in term_candidates
@@ -97,7 +97,7 @@ def nl_phrase_search(phrase, table, constraints='',
 
     # Remove words that are too common.
     terms = [
-        term for index, term in enumerate(term_candidates)
-        if float(counts[index]) / total < 0.5
+        term for count, term in zip(counts, term_candidates)
+        if float(count) / total < 0.5
         ]
     return '|'.join(terms)
