@@ -323,7 +323,6 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
-        notify(SQLObjectCreatedEvent(sub))
         return sub
 
     def unsubscribe(self, person):

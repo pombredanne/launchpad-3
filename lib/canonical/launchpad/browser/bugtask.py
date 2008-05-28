@@ -1077,7 +1077,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         else:
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
-        product = bugtask.product
+        old_product = bugtask.product
 
         if distro is not None and sourcename != data.get('sourcepackagename'):
             try:
@@ -1086,10 +1086,19 @@ class BugTaskEditView(LaunchpadEditFormView):
             except LaunchpadValidationError, error:
                 self.setFieldError('sourcepackagename', str(error))
 
-        if (product is not None and 'product' in data and
-            product != data.get('product')):
+        new_product = data.get('product')
+        if (old_product is None or old_product == new_product or
+            not bugtask.pillar.official_malone):
+            # Either the product wasn't changed, we're dealing with a #
+            # distro task, or the bugtask's product doesn't use Launchpad,
+            # which means the product can't be changed.
+            return
+
+        if new_product is None:
+            self.setFieldError('product', 'Enter a project name')
+        else:
             try:
-                valid_upstreamtask(bugtask.bug, data.get('product'))
+                valid_upstreamtask(bugtask.bug, new_product)
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
 
