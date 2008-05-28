@@ -4,11 +4,10 @@
 
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
-
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.testing import LaunchpadFunctionalLayer
 
 class TestCodeReviewMessage(TestCaseWithFactory):
 
@@ -63,9 +62,8 @@ class TestCodeReviewMessage(TestCaseWithFactory):
 
     def test_createNotifies(self):
         """Creating a CodeReviewMessage should trigger a notification."""
-        result, event = self.assertNotifies(SQLObjectCreatedEvent,
-            self.bmp.createMessage, self.submitter, 'Message subject',
-            'Message content')
+        self.assertNotifies(SQLObjectCreatedEvent, self.bmp.createMessage,
+            self.submitter, 'Message subject', 'Message content')
 
 
 def test_suite():

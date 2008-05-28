@@ -8,7 +8,6 @@ __metaclass__ = type
 
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.interfaces import IBranchMergeProposal
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
@@ -35,16 +34,14 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
 class BMPMailer(BaseMailer):
     """Send mailings related to BranchMergeProposal events."""
 
-    diff_interface = IBranchMergeProposal
-
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta)
         self.merge_proposal = merge_proposal
 
-    @staticmethod
-    def forCreation(merge_proposal, from_user):
+    @classmethod
+    def forCreation(klass, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -57,7 +54,7 @@ class BMPMailer(BaseMailer):
             'The sender must have an email address.')
         from_address = format_address(
             from_user.displayname, from_user.preferredemail.email)
-        return BMPMailer(
+        return klass(
             'Merge of %(source_branch)s into %(target_branch)s proposed',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address)

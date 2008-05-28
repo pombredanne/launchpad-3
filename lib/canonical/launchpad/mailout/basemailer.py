@@ -7,19 +7,41 @@
 __metaclass__ = type
 
 
+
+__all__ = ['BaseMailer']
+
+
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.mailout import text_delta
-from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.mail import simple_sendmail, format_address
+from canonical.launchpad.mailout import text_delta
 from canonical.launchpad.mailout.notificationrecipientset import (
     NotificationRecipientSet)
 
 
 class BaseMailer:
+    """Base class for notification mailers.
+
+    Subclasses must provide getReason (or reimplement _getTemplateParameters
+    or generateEmail).
+
+    It is expected that subclasses may override _getHeaders,
+    _getTemplateParams, and perhaps _getBody.
+    """
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None):
+        """Constructor.
+
+        :param subject: A Python dict-replacement template for the subject
+            line of the email.
+        :param template: Name of the template to use for the message body.
+        :param recipients: A dict of recipient to NotificationReason.
+        :param from_address: The from_addres to use on emails.
+        :param delta: A Delta object with members "delta_values", "interface"
+            and "new_values", such as BranchMergeProposalDelta.
+        """
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()
@@ -59,10 +81,18 @@ class BaseMailer:
             params['delta'] = self.textDelta()
         return params
 
+    def getReason(self, recipient):
+        """Return a string explaining why the message is being sent.
+
+        This string should be user-oriented, human-readable string.  It should
+        ususally vary by recipient.  Typically appears in the message footer.
+        """
+        raise NotImplementedError(BaseMailer.getReason)
+
     def textDelta(self):
         """Return a textual version of the class delta."""
         return text_delta(self.delta, self.delta.delta_values,
-            self.delta.new_values, self.diff_interface)
+            self.delta.new_values, self.delta.interface)
 
     def _getBody(self, recipient):
         """Return the complete body to use for this email."""
