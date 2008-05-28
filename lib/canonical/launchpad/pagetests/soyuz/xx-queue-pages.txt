@@ -212,6 +212,7 @@ upload.
   >>> from canonical.launchpad.scripts.ftests.test_queue import (
   ...     upload_bar_source)
   >>> bar_src = upload_bar_source()
+  >>> bar_queue_id = str(bar_src.queue_root.id)
 
   >>> import transaction
   >>> transaction.commit()
@@ -227,7 +228,8 @@ Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
-  >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['15']
+  >>> upload_manager_browser.getControl(
+  ...     name="QUEUE_ID").value = [bar_queue_id]
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
