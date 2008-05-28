@@ -11,7 +11,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopier, SoyuzScriptError,
     UnembargoSecurityPackage)
@@ -145,11 +145,7 @@ class TestCopyPackage(unittest.TestCase):
         test_args.append(sourcename)
 
         copier = PackageCopier(name='copy-package', test_args=test_args)
-        # Swallowing all log messages.
-        copier.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        copier.logger.message = message
+        copier.logger = QuietFakeLogger()
         copier.setupLocation()
         return copier
 
@@ -538,8 +534,8 @@ class TestCopyPackage(unittest.TestCase):
             ]
 
         script = UnembargoSecurityPackage(
-            name='unembargo',test_args=test_args)
-        script.logger = FakeLogger()
+            name='unembargo', test_args=test_args)
+        script.logger = QuietFakeLogger()
         script.setupLocation()
 
         copied = script.mainTask()
