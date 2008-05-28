@@ -464,7 +464,7 @@ class TestBzrSync(BzrSyncTestCase):
         db_base_branch.branch_type = BranchType.MIRRORED
         db_base_branch.url = urljoin(
             'http://localhost',
-            os.path.abspath(local_path_from_url(bzr_base_tree.branch.base)))
+            local_path_from_url(bzr_base_tree.branch.base)).rstrip('/')
         self.txn.commit()
 
         # Make the stacked branch.
