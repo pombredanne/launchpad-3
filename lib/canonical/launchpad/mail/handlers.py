@@ -16,10 +16,10 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IBranchMergeProposalGetter, IBugAttachmentSet,
     IBugEditEmailCommand, IBugEmailCommand, IBugMessageSet,
-    IBugTaskEditEmailCommand, IBugTaskEmailCommand, IDistroBugTask,
-    IDistroSeriesBugTask, ILaunchBag, IMailHandler, IMessageSet, IQuestionSet,
-    ISpecificationSet, IUpstreamBugTask, IWeaklyAuthenticatedPrincipal,
-    QuestionStatus)
+    IBugTaskEditEmailCommand, IBugTaskEmailCommand, CodeReviewVote,
+    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, IMailHandler,
+    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
+    IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -510,7 +510,29 @@ class CodeHandler:
             owner=getUtility(ILaunchBag).user,
             filealias=file_alias,
             parsed_message=mail)
+
         message = merge_proposal.createMessageFromMessage(plain_message)
+
+    @staticmethod
+    def _getVote(message):
+        content = get_main_body(message)
+        if content is None:
+            return None, None
+        commands = parse_commands(content, ['vote'])
+        if len(commands) == 0:
+            return None, None
+        args = commands[0][1]
+        if len(args) == 0:
+            return None, None
+        else:
+            vote_text = args[0]
+        vote_tag_list = args[1:]
+        vote = getattr(CodeReviewVote, vote_text.upper())
+        if len(vote_tag_list) == 0:
+            vote_tag = None
+        else:
+            vote_tag = ' '.join(vote_tag_list)
+        return vote, vote_tag
 
     @classmethod
     def getBranchMergeProposal(klass, email_addr):
