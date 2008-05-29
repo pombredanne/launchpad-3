@@ -231,7 +231,8 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # set.
         self.build_tree_contents([('foo', 'contents')])
         deferred = self.openFile(
-            'foo', filetransfer.FXF_CREAT | filetransfer.FXF_TRUNC | filetransfer.FXF_WRITE, {})
+            'foo', filetransfer.FXF_CREAT | filetransfer.FXF_TRUNC |
+            filetransfer.FXF_WRITE, {})
         return deferred.addCallback(self._test_overwriteFile_callback)
 
     def _test_overwriteFile_callback(self, handle):
