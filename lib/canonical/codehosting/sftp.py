@@ -93,6 +93,7 @@ class TransportSFTPFile:
 
     def __init__(self, transport, name, flags, server):
         self.name = name
+        self._escaped_path = urlutils.escape(self.name)
         self._flags = flags
         self.transport = transport
         self._written = False
@@ -124,7 +125,7 @@ class TransportSFTPFile:
     def _truncateFile(self):
         """Truncate this file."""
         self._written = True
-        return self.transport.put_bytes(self.name, '')
+        return self.transport.put_bytes(self._escaped_path, '')
 
     @with_sftp_error
     def writeChunk(self, offset, data):
@@ -141,17 +142,18 @@ class TransportSFTPFile:
         if self._shouldAppend():
             deferred.addCallback(
                 lambda ignored:
-                self.transport.append_bytes(self.name, data))
+                self.transport.append_bytes(self._escaped_path, data))
         else:
             deferred.addCallback(
                 lambda ignored:
-                self.transport.writeChunk(self.name, offset, data))
+                self.transport.writeChunk(self._escaped_path, offset, data))
         return deferred
 
     @with_sftp_error
     def readChunk(self, offset, length):
         """See `ISFTPFile`."""
-        deferred = self.transport.readv(self.name, [(offset, length)])
+        deferred = self.transport.readv(
+            self._escaped_path, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
         deferred.addCallback(get_first_chunk)
@@ -187,7 +189,7 @@ class TransportSFTPFile:
         if self._shouldTruncate():
             return self._truncateFile()
 
-        deferred = self.transport.has(self.name)
+        deferred = self.transport.has(self._escaped_path)
         def maybe_create_file(already_exists):
             if not already_exists:
                 return self._truncateFile()

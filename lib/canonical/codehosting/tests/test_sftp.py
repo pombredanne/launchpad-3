@@ -103,8 +103,13 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         self._sftp_server = TransportSFTPServer(transport)
 
     def getPathSegment(self):
-        """Return a unique path segment for testing."""
-        return self._factory.getUniqueString()
+        """Return a unique path segment for testing.
+
+        This returns a path segment such that 'path != unescape(path)'. This
+        exercises the interface between the sftp server and the Bazaar
+        transport, which expects escaped URL segments.
+        """
+        return self._factory.getUniqueString('%41%42%43-')
 
     def assertSFTPError(self, sftp_code, function, *args, **kwargs):
         """Assert that calling functions fails with `sftp_code`."""
