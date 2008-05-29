@@ -333,9 +333,8 @@ out:
     ERROR:...:An exception was raised inside the handler: http://...
     Traceback (most recent call last):
     ...
-    ProgrammingError: ERROR:  division by zero
+    DataError: division by zero
     <BLANKLINE>
-    SELECT 1/0
     WARNING...
 
 The second mail we sent got handled despite the exception:

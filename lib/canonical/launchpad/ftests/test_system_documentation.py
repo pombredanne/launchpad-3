@@ -423,12 +423,12 @@ special = {
     'launchpadform.txt': LayeredDocFileSuite(
             '../doc/launchpadform.txt',
             setUp=setUp, tearDown=tearDown,
-            layer=FunctionalLayer
+            layer=LaunchpadFunctionalLayer
             ),
     'launchpadformharness.txt': LayeredDocFileSuite(
             '../doc/launchpadformharness.txt',
             setUp=setUp, tearDown=tearDown,
-            layer=FunctionalLayer
+            layer=LaunchpadFunctionalLayer
             ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',

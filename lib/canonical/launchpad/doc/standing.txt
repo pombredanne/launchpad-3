@@ -67,14 +67,14 @@ are not a member of, their message gets held for moderator approval.
     ...         # Commit the in-progress transaction, since switching
     ...         # database users does an abort.
     ...         LaunchpadZopelessLayer.txn.commit()
+    ...         launchpad_dbuser = config.launchpad.dbuser
     ...         LaunchpadZopelessLayer.switchDbUser(
     ...             config.standingupdater.dbuser)
     ...         self.txn = LaunchpadZopelessLayer.txn
     ...         self.logger = MockLogger()
     ...         self.logger.setLevel(logging.CRITICAL)
     ...         results = super(TestableScript, self).main()
-    ...         LaunchpadZopelessLayer.switchDbUser(
-    ...             config.launchpad.dbuser)
+    ...         LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
     ...         return results
     >>> script = TestableScript('update-standing', test_args=[])
 
