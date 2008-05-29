@@ -305,6 +305,24 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('dir1')
         self.assertRaises(errors.FileExists, transport.mkdir, 'dir1')
 
+    @defer_to_thread
+    @wait_for_disconnect
+    def test_url_escaping(self):
+        # Transports accept and return escaped URL segments. The literal path
+        # we use should be preserved, even if it can be unescaped itself.
+        from bzrlib import urlutils
+        transport = self._getBzrDirTransport()
+
+        # The bug we are checking only occurs if
+        # unescape(path).encode('utf-8') != path.
+        path = '%41%42%43'
+        escaped_path = urlutils.escape(path)
+        content = 'content'
+
+        transport.put_bytes(escaped_path, content)
+        self.assertEqual([escaped_path], transport.list_dir('.'))
+        self.assertEqual(content, transport.get_bytes(escaped_path))
+
 
 def test_suite():
     # Parametrize the tests so they run against the SFTP server and a Bazaar
