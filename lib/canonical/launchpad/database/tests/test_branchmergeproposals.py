@@ -282,9 +282,7 @@ class TestRootMessage(TestCase):
         TestCase.setUp(self)
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        registrant = self.factory.makePerson(password='password')
-        self.merge_proposal = self.factory.makeBranchMergeProposal(
-            registrant=registrant)
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
 
     def test_orderedByDateNotInsertion(self):
         """Root is determined by create date, not insert order"""
@@ -315,9 +313,7 @@ class TestMergeProposalAllMessages(TestCase):
         # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        registrant = self.factory.makePerson(password='password')
-        self.merge_proposal = self.factory.makeBranchMergeProposal(
-            registrant=registrant)
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
 
     def test_all_messages(self):
         """Ensure all messages associated with the proposal are returned."""
@@ -342,9 +338,7 @@ class TestMergeProposalGetMessage(TestCase):
         # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        registrant = self.factory.makePerson(password='password')
-        self.merge_proposal = self.factory.makeBranchMergeProposal(
-            registrant=registrant)
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
         self.merge_proposal2 = self.factory.makeBranchMergeProposal()
         self.message = self.merge_proposal.createMessage(
             self.merge_proposal.registrant, "Subject")
