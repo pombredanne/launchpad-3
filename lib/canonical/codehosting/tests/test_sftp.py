@@ -537,6 +537,5 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         self.assertIs(result, exception)
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
