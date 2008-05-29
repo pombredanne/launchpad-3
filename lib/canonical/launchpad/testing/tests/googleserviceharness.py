@@ -40,6 +40,13 @@ class GoogleServiceTestSetup:
     >>> GoogleServiceTestSetup().setUp()
     >>> assert service_is_available()
 
+    Having a service instance already running doesn't prevent a new
+    service from starting.  The old instance is killed off and replaced
+    by the new one.
+    >>> old_pid = GoogleServiceTestSetup.service.pid
+    >>> GoogleServiceTestSetup().setUp()
+    >>> assert GoogleServiceTestSetup.service.pid != old_pid
+    
     Tidy up.
 
     >>> GoogleServiceTestSetup().tearDown()
@@ -58,7 +65,7 @@ class GoogleServiceTestSetup:
     @classmethod
     def startService(cls):
         """Start the webservice."""
-        assert not cls.service  # Sanity check.
+        googletestservice.kill_running_process()
         cls.service = googletestservice.start_as_process()
         assert cls.service, "The Search service process did not start."
         try:

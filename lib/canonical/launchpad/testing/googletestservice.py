@@ -9,11 +9,12 @@ when given certain user-configurable URLs.
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.pidfile import make_pidfile
+from canonical.pidfile import make_pidfile, get_pid
 import subprocess
 import os
 import time
 import socket
+import signal
 import logging
 
 
@@ -150,6 +151,22 @@ def start_as_process():
         script = head + '.py'
     return subprocess.Popen(script)
 
+
+def kill_running_process():
+    """Find and kill any running web service processes.
+    
+    Uses the Launchpad services framework.
+    """
+    global service_name
+    try:
+        pid = get_pid(service_name)
+    except IOError:
+        # We could not find an existing pidfile.
+        return
+    else:
+        if pid is not None:
+            os.kill(pid, signal.SIGTERM)
+            os.waitpid(pid, 0)
 
 def main():
     """Run the HTTP server."""
