@@ -213,12 +213,13 @@ class TestLpQueryDistro(unittest.TestCase):
         helper = self.getLpQueryDistro(test_args=[])
         helper._buildLocation()
 
-        self.assertEqual(helper.get_current, u'warty')
-        self.assertEqual(helper.get_development, u'hoary')
-        self.assertEqual(helper.get_supported, u'hoary warty')
-        self.assertEqual(helper.get_archs, u'hppa i386')
-        self.assertEqual(helper.get_official_archs, u'i386')
-        self.assertEqual(helper.get_nominated_arch_indep, u'i386')
+        self.assertEqual(helper.get_current, 'warty')
+        self.assertEqual(helper.get_development, 'hoary')
+        self.assertEqual(helper.get_supported, 'hoary warty')
+        self.assertEqual(helper.get_pending_suites, 'warty')
+        self.assertEqual(helper.get_archs, 'hppa i386')
+        self.assertEqual(helper.get_official_archs, 'i386')
+        self.assertEqual(helper.get_nominated_arch_indep, 'i386')
 
     def testActionsWithDefinedSuite(self):
         """Opposite of  testActionsWithUndefinedSuite.
@@ -240,9 +241,12 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertRaises(
             LaunchpadScriptFailure, operator.attrgetter('get_supported'),
             helper)
-        self.assertEqual(helper.get_archs, u'hppa i386')
-        self.assertEqual(helper.get_official_archs, u'i386')
-        self.assertEqual(helper.get_nominated_arch_indep, u'i386')
+        self.assertRaises(
+            LaunchpadScriptFailure, operator.attrgetter('get_pending_suites'),
+            helper)
+        self.assertEqual(helper.get_archs, 'hppa i386')
+        self.assertEqual(helper.get_official_archs, 'i386')
+        self.assertEqual(helper.get_nominated_arch_indep, 'i386')
 
 
 def test_suite():
