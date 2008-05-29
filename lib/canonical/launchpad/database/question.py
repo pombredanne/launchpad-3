@@ -27,6 +27,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
+from storm.store import Store
 
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
@@ -1089,7 +1090,8 @@ class QuestionTargetMixin:
             "An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self.getTargetTypes())
-        AnswerContact(person=person, **params)
+        answer_contact = AnswerContact(person=person, **params)
+        Store.of(answer_contact).flush()
         return True
 
     def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
@@ -1160,7 +1162,9 @@ class QuestionTargetMixin:
             person=person, **self.getTargetTypes())
         if answer_contact is None:
             return False
+        store = Store.of(answer_contact)
         answer_contact.destroySelf()
+        store.flush()
         return True
 
     def getSupportedLanguages(self):
