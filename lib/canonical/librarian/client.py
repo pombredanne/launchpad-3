@@ -156,7 +156,7 @@ class FileUploadClient:
                 sha1=shaDigester.hexdigest(),
                 md5=md5Digester.hexdigest())
             alias = LibraryFileAlias(
-                id=aliasID, content=content, filename=name,
+                id=aliasID, content=content, filename=name.decode('UTF-8'),
                 mimetype=contentType, expires=expires,
                 restricted=self.restricted)
 
