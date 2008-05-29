@@ -153,10 +153,8 @@ def start_as_process():
 
 
 def kill_running_process():
-    """Find and kill any running web service processes.
-    
-    Uses the Launchpad services framework.
-    """
+    """Find and kill any running web service processes."""
+    # pylint: disable-msg=W0602
     global service_name
     try:
         pid = get_pid(service_name)
