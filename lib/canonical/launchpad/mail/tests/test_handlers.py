@@ -13,8 +13,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
-    CodeHandler, InvalidBranchMergeProposalAddress, mail_handlers,
-    MaloneHandler, parse_commands)
+    CodeHandler, InvalidBranchMergeProposalAddress, InvalidVoteString,
+    mail_handlers, MaloneHandler, parse_commands)
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.testing import LaunchpadFunctionalLayer
@@ -82,9 +82,8 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_processFailure(self):
         """When process fails, it returns False."""
         mail = self.factory.makeSignedMessage('<my-id>')
-        self.assertFalse(self.code_handler.process(
-            mail, 'foo@bar.com', None),
-            "Failed, but didn't return False")
+        self.assertRaises(InvalidBranchMergeProposalAddress,
+            self.code_handler.process, mail, 'foo@bar.com', None)
 
     def test_processVote(self):
         """Process respects the vote command."""
@@ -142,6 +141,11 @@ class TestCodeHandler(TestCaseWithFactory):
         mail = self.factory.makeSignedMessage(body=' vote dIsAppRoVe')
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
+
+    def test_getVoteBadValue(self):
+        """getVote returns vote, None when only a vote is supplied."""
+        mail = self.factory.makeSignedMessage(body=' vote badvalue')
+        self.assertRaises(InvalidVoteString, self.code_handler._getVote, mail)
 
     def test_getVoteThreeArg(self):
         """getVote returns vote, vote_tag when both are supplied."""

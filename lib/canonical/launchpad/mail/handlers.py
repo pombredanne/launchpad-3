@@ -488,7 +488,11 @@ class AnswerTrackerHandler:
 
 
 class InvalidBranchMergeProposalAddress(Exception):
-    pass
+    """The user-supplied address is not an acceptable value."""
+
+
+class InvalidVoteString(Exception):
+    """The user-supplied vote is not an acceptable value."""
 
 
 class CodeHandler:
@@ -501,17 +505,8 @@ class CodeHandler:
 
         The only mail command understood is 'vote', which takes 'approve',
         'disapprove', or 'abstain' as values.
-        :return: True if the message was successfully handled, False
-            otherwise.
+        :return: True.
         """
-        try:
-            self._process(mail, email_addr, file_alias)
-        except:
-            return False
-        return True
-
-    def _process(self, mail, email_addr, file_alias):
-        """Implementation of process."""
         merge_proposal = self.getBranchMergeProposal(email_addr)
         messageset = getUtility(IMessageSet)
         vote, vote_tag = self._getVote(mail)
@@ -522,6 +517,7 @@ class CodeHandler:
             parsed_message=mail)
         message = merge_proposal.createMessageFromMessage(
             plain_message, vote, vote_tag)
+        return True
 
     @staticmethod
     def _getVote(message):
@@ -543,7 +539,10 @@ class CodeHandler:
         else:
             vote_text = args[0]
         vote_tag_list = args[1:]
-        vote = CodeReviewVote.items[vote_text.upper()]
+        try:
+            vote = CodeReviewVote.items[vote_text.upper()]
+        except KeyError:
+            raise InvalidVoteString
         if len(vote_tag_list) == 0:
             vote_tag = None
         else:
