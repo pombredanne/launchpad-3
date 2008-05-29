@@ -386,8 +386,9 @@ or on the navigator object.
 Even if the PageMatch object to have an impossibly large size, the
 navigator conforms to Google's maximum size of 20.
 
-    >>> matches = range(1, 100)
+    >>> matches = range(0, 100)
     >>> page_matches._matches = matches
+    >>> page_matches.start = 0
     >>> page_matches.total = 100
     >>> navigator = GoogleBatchNavigator(
     ...     page_matches, search_view.request, page_matches.start, size=100)
@@ -398,3 +399,28 @@ navigator conforms to Google's maximum size of 20.
     >>> navigator.nextBatchURL()
     '...start=20'
 
+The PageMatches object can be smaller than 20, for instance, pages
+without titles are skipped when parsing the Google Search XML. The size
+of the batch is still 20, but when the items in the batch are iterated,
+the true size can be seen. For example there could be only 3 matches in
+the PageMatches object, so only 3 are yielded. The start of the next
+batch is 20, which is the start of the next batch from Google.
+
+    >>> matches = range(0, 3)
+    >>> page_matches._matches = matches
+    >>> navigator = GoogleBatchNavigator(
+    ...     page_matches, search_view.request, page_matches.start, size=100)
+    >>> batch = navigator.currentBatch()
+    >>> batch.size
+    20
+    >>> len(batch)
+    20
+    >>> batch.endNumber()
+    3
+    >>> for item in batch:
+    ...     print item
+    0
+    1
+    2
+    >>> navigator.nextBatchURL()
+    '...start=20'
