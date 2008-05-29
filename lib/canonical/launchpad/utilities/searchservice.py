@@ -284,7 +284,7 @@ class GoogleSearchService:
                 # has been observed for pages that are from vhosts that
                 # should not be indexed.
                 continue
-            summary = summary_tag.text.replace('<br>', '')
+            summary = summary.replace('<br>', '')
             page_matches.append(PageMatch(title, url, summary))
         if len(page_matches) == 0:
             # No viable page matches could be found in the set; the
