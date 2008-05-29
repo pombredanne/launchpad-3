@@ -28,8 +28,8 @@ the "frog" builder.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login("foo.bar@canonical.com")
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.private = True
     >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
     >>> cprov_builds = getUtility(
     ...     IBuildSet).getBuildsForArchive(cprov.archive)
     >>> frog = getUtility(IBuilderSet)['frog']
