@@ -25,7 +25,9 @@ def process(mlist, msg, msgdata):
         mm_cfg.LIST_ARCHIVE_HEADER_TEMPLATE).safe_substitute(
         team_name=list_name)
     list_post = mlist.GetListEmail()
-    list_unsubscribe = mm_cfg.LIST_SUBSCRIPTION_HEADERS
+    list_unsubscribe = Template(
+        mm_cfg.LIST_SUBSCRIPTION_HEADERS).safe_substitute(
+        team_name=list_name)
     list_help = mm_cfg.LIST_HELP_HEADER
     # Add the RFC 2369 headers.
     msg['List-Id'] = '<%s.%s>' % (list_name, mlist.host_name)
