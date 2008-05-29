@@ -13,9 +13,9 @@ __all__ = [
 from zope.component import adapts, getUtility
 from zope.schema import Bool, Choice, Datetime, Object, Text
 
+from canonical.lazr.fields import CollectionField
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest import Entry, ResourcePOSTOperation
-from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, IBug, IBugTask, ILaunchBag, IPerson)

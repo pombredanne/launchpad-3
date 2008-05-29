@@ -49,7 +49,7 @@ from canonical.lazr.rest.declarations import (
    export_as_webservice_entry, export_factory_operation, export_operation_as,
    export_read_operation, export_write_operation, exported,
    operation_parameters, rename_parameters_as, REQUEST_USER, webservice_error)
-from canonical.lazr.rest.schema import CollectionField
+from canonical.lazr.fields import CollectionField
 
 from canonical.launchpad import _
 

@@ -595,7 +595,7 @@ might be the list of teams in which a person has a membership, or
 something like that.)
 
     >>> from zope.schema import Object
-    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> from canonical.lazr.fields import CollectionField
     >>> field = CollectionField(
     ...     __name__='person_memberships', value_type=Object(schema=IPerson))
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
