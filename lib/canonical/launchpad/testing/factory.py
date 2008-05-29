@@ -540,7 +540,8 @@ class LaunchpadObjectFactory:
         return merge_proposal.createMessage(
             sender, subject, body, vote, vote_tag, parent)
 
-    def makeMessage(self, subject=None, content=None, parent=None, owner=None):
+    def makeMessage(self, subject=None, content=None, parent=None,
+                    owner=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
