@@ -286,9 +286,49 @@ be raised.
                            GSP XML response.
 
 A PageMatch requires a title, url, and a summary. If those elements
-('<T>', '<U>', '<S>') cannot be found nested in an '<R>' element
-an error is raised. In this example, the 'U' element is replaced with
-a 'url' element.
+('<T>', '<U>', '<S>') cannot be found nested in an '<R>' a PageMatch
+cannot be made. A missing title indicates a bad page on Launchpad, so
+it is ignored. In this example, The first match is missing a title,
+so only the second page is present in the PageMatches.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-missing-title.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="2">
+    <M>2</M>
+    ...
+    <R N="1">
+    <U>https://edge.launchpad.net/gc</U>
+    <UE>https://edge.launchpad.net/gc</UE>
+    <RK>0</RK>
+    <S>
+    </S>
+    <LANG>en</LANG>
+    <Label>_cse_ixpjdn21yfg</Label>
+    <HAS>
+    <L/>
+    <RT/>
+    </HAS>
+    </R>...
+    <R N="2">
+    <U>https://bugs.launchpad.net/bugs/205991</U>
+    <UE>https://bugs.launchpad.net/bugs/205991</UE>
+    <T>Bug #205991 in Ubuntu: ... pair Bluetooth Logitech ...</T>...
+
+    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> len(page_matches)
+    1
+    >>> page_matches[0].title
+    u'Bug #205991 in Ubuntu: ... Bluetooth Logitech ...'
+    >>> page_matches[0].url
+    'http://bugs.launchpad.dev/bugs/205991'
+
+When the U or S cannot be found, an error is raised. In this example,
+the 'U' element is replaced with a 'url' element.
 
     >>> gsp_xml_file_name = path.join(
     ...     base_path, 'googlesearchservice-incompatible-result.xml')
