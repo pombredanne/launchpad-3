@@ -23,6 +23,7 @@ from canonical.codehosting.sftp import (
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import BlockingProxy
+from canonical.launchpad.testing import LaunchpadObjectFactory
 
 
 class AsyncTransport:
@@ -98,7 +99,12 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         TestCaseInTempDir.setUp(self)
         transport = AsyncTransport(
             FatLocalTransport(urlutils.local_path_to_url('.')))
+        self._factory = LaunchpadObjectFactory()
         self._sftp_server = TransportSFTPServer(transport)
+
+    def getPathSegment(self):
+        """Return a unique path segment for testing."""
+        return self._factory.getUniqueString()
 
     def assertSFTPError(self, sftp_code, function, *args, **kwargs):
         """Assert that calling functions fails with `sftp_code`."""
@@ -118,83 +124,95 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         # not have any effect.
         return self.assertSFTPError(
             filetransfer.FX_NO_SUCH_FILE,
-            self.openFile, 'doesntexist/foo', 0, {})
+            self.openFile,
+            '%s/%s' % (self.getPathSegment(), self.getPathSegment()), 0, {})
 
     def test_openFileInNonDirectory(self):
         # openFile fails with a no such file error if we try to open a file
         # that has another file as one of its "parents". The flags passed to
         # openFile() do not have any effect.
-        self.build_tree_contents([('filename', 'content')])
+        nondirectory = self.getPathSegment()
+        self.build_tree_contents([(nondirectory, 'content')])
         return self.assertSFTPError(
             filetransfer.FX_NO_SUCH_FILE,
-            self.openFile, 'filename/foo', 0, {})
+            self.openFile,
+            '%s/%s' % (nondirectory, self.getPathSegment()), 0, {})
 
     def test_createEmptyFile(self):
         # Opening a file with create flags and then closing it will create a
         # new, empty file.
-        deferred = self.openFile('foo', filetransfer.FXF_CREAT, {})
-        return deferred.addCallback(self._test_createEmptyFile_callback)
+        filename = self.getPathSegment()
+        deferred = self.openFile(filename, filetransfer.FXF_CREAT, {})
+        return deferred.addCallback(
+            self._test_createEmptyFile_callback, filename)
 
-    def _test_createEmptyFile_callback(self, handle):
+    def _test_createEmptyFile_callback(self, handle, filename):
         deferred = handle.close()
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual('', 'foo'))
+            lambda ignored: self.assertFileEqual('', filename))
 
     def test_createFileWithData(self):
         # writeChunk writes data to the file.
+        filename = self.getPathSegment()
         deferred = self.openFile(
-            'foo', filetransfer.FXF_CREAT | filetransfer.FXF_WRITE, {})
-        return deferred.addCallback(self._test_createFileWithData_callback)
+            filename, filetransfer.FXF_CREAT | filetransfer.FXF_WRITE, {})
+        return deferred.addCallback(
+            self._test_createFileWithData_callback, filename)
 
-    def _test_createFileWithData_callback(self, handle):
+    def _test_createFileWithData_callback(self, handle, filename):
         deferred = handle.writeChunk(0, 'bar')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual('bar', 'foo'))
+            lambda ignored: self.assertFileEqual('bar', filename))
 
     def test_writeChunkToFile(self):
-        self.build_tree_contents([('foo', 'contents')])
-        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
-        return deferred.addCallback(self._test_writeChunkToFile_callback)
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'contents')])
+        deferred = self.openFile(filename, filetransfer.FXF_WRITE, {})
+        return deferred.addCallback(
+            self._test_writeChunkToFile_callback, filename)
 
-    def _test_writeChunkToFile_callback(self, handle):
+    def _test_writeChunkToFile_callback(self, handle, filename):
         deferred = handle.writeChunk(1, 'qux')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual('cquxents', 'foo'))
+            lambda ignored: self.assertFileEqual('cquxents', filename))
 
     def test_writeTwoChunks(self):
         # We can write one chunk after another.
+        filename = self.getPathSegment()
         deferred = self.openFile(
-            'foo', filetransfer.FXF_WRITE | filetransfer.FXF_TRUNC, {})
+            filename, filetransfer.FXF_WRITE | filetransfer.FXF_TRUNC, {})
         def write_chunks(handle):
             deferred = handle.writeChunk(1, 'a')
             deferred.addCallback(lambda ignored: handle.writeChunk(2, 'a'))
             deferred.addCallback(lambda ignored: handle.close())
         deferred.addCallback(write_chunks)
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual(chr(0) + 'aa', 'foo'))
+            lambda ignored: self.assertFileEqual(chr(0) + 'aa', filename))
 
     def test_writeChunkToNonexistentFile(self):
         # Writing a chunk of data to a non-existent file creates the file even
         # if the create flag is not set. NOTE: This behaviour is unspecified
         # in the SFTP drafts at
         # http://tools.ietf.org/wg/secsh/draft-ietf-secsh-filexfer/
-        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        filename = self.getPathSegment()
+        deferred = self.openFile(filename, filetransfer.FXF_WRITE, {})
         return deferred.addCallback(
-            self._test_writeChunkToNonexistentFile_callback)
+            self._test_writeChunkToNonexistentFile_callback, filename)
 
-    def _test_writeChunkToNonexistentFile_callback(self, handle):
+    def _test_writeChunkToNonexistentFile_callback(self, handle, filename):
         deferred = handle.writeChunk(1, 'qux')
         deferred.addCallback(lambda ignored: handle.close())
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual(chr(0) + 'qux', 'foo'))
+            lambda ignored: self.assertFileEqual(chr(0) + 'qux', filename))
 
     def test_writeToReadOpenedFile(self):
         # writeChunk raises an error if we try to write to a file that has
         # been opened only for reading.
-        self.build_tree_contents([('foo', 'bar')])
-        deferred = self.openFile('foo', filetransfer.FXF_READ, {})
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        deferred = self.openFile(filename, filetransfer.FXF_READ, {})
         return deferred.addCallback(
             self._test_writeToReadOpenedFile_callback)
 
@@ -219,90 +237,100 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
     def test_writeToAppendingFileIgnoresOffset(self):
         # If a file is opened with the 'append' flag, writeChunk ignores its
         # offset parameter.
-        self.build_tree_contents([('foo', 'bar')])
-        deferred = self.openFile('foo', filetransfer.FXF_APPEND, {})
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        deferred = self.openFile(filename, filetransfer.FXF_APPEND, {})
         return deferred.addCallback(
-            self._test_writeToAppendingFileIgnoresOffset_callback)
+            self._test_writeToAppendingFileIgnoresOffset_cb, filename)
 
-    def _test_writeToAppendingFileIgnoresOffset_callback(self, handle):
+    def _test_writeToAppendingFileIgnoresOffset_cb(self, handle, filename):
         deferred = handle.writeChunk(0, 'baz')
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual('barbaz', 'foo'))
+            lambda ignored: self.assertFileEqual('barbaz', filename))
 
     def test_openAndCloseExistingFileLeavesUnchanged(self):
         # If we open a file with the 'create' flag and without the 'truncate'
         # flag, the file remains unchanged.
-        self.build_tree_contents([('foo', 'bar')])
-        deferred = self.openFile('foo', filetransfer.FXF_CREAT, {})
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        deferred = self.openFile(filename, filetransfer.FXF_CREAT, {})
         return deferred.addCallback(
-            self._test_openAndCloseExistingFileLeavesUnchanged_callback)
+            self._test_openAndCloseExistingFileUnchanged_cb, filename)
 
-    def _test_openAndCloseExistingFileLeavesUnchanged_callback(self, handle):
+    def _test_openAndCloseExistingFileUnchanged_cb(self, handle, filename):
         deferred = handle.close()
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual('bar', 'foo'))
+            lambda ignored: self.assertFileEqual('bar', filename))
 
     def test_openAndCloseExistingFileTruncation(self):
         # If we open a file with the 'create' flag and the 'truncate' flag,
         # the file is reset to empty.
-        self.build_tree_contents([('foo', 'bar')])
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
         deferred = self.openFile(
-            'foo', filetransfer.FXF_TRUNC | filetransfer.FXF_CREAT, {})
+            filename, filetransfer.FXF_TRUNC | filetransfer.FXF_CREAT, {})
         return deferred.addCallback(
-            self._test_openAndCloseExistingFileTruncation_callback)
+            self._test_openAndCloseExistingFileTruncation_cb, filename)
 
-    def _test_openAndCloseExistingFileTruncation_callback(self, handle):
+    def _test_openAndCloseExistingFileTruncation_cb(self, handle, filename):
         deferred = handle.close()
         return deferred.addCallback(
-            lambda ignored: self.assertFileEqual('', 'foo'))
+            lambda ignored: self.assertFileEqual('', filename))
 
     def test_writeChunkOnDirectory(self):
         # Errors in writeChunk are translated to SFTPErrors.
-        os.mkdir('foo')
-        deferred = self.openFile('foo', filetransfer.FXF_WRITE, {})
+        directory = self.getPathSegment()
+        os.mkdir(directory)
+        deferred = self.openFile(directory, filetransfer.FXF_WRITE, {})
         deferred.addCallback(lambda handle: handle.writeChunk(0, 'bar'))
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_readChunk(self):
         # readChunk reads a chunk of data from the file.
-        self.build_tree_contents([('foo', 'bar')])
-        deferred = self.openFile('foo', 0, {})
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.readChunk(1, 2))
         return deferred.addCallback(self.assertEqual, 'ar')
 
     def test_readChunkEOF(self):
         # readChunk returns the empty string if it reads past the end-of-file.
         # See comment in _check_for_eof for more details.
-        self.build_tree_contents([('foo', 'bar')])
-        deferred = self.openFile('foo', 0, {})
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.readChunk(2, 10))
         return deferred.addCallback(self.assertEqual, '')
 
     def test_readChunkError(self):
         # Errors in readChunk are translated to SFTPErrors.
-        deferred = self.openFile('foo', 0, {})
+        filename = self.getPathSegment()
+        deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.readChunk(1, 2))
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
     def test_setAttrs(self):
         # setAttrs on TransportSFTPFile does nothing.
-        self.build_tree_contents([('foo', 'bar')])
-        deferred = self.openFile('foo', 0, {})
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        deferred = self.openFile(filename, 0, {})
         return deferred.addCallback(lambda handle: handle.setAttrs({}))
 
     def test_getAttrs(self):
         # getAttrs on TransportSFTPFile returns a dictionary consistent
         # with the results of os.stat.
-        self.build_tree_contents([('foo', 'bar')])
-        stat_value = os.stat('foo')
-        deferred = self.openFile('foo', 0, {})
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename, 'bar')])
+        stat_value = os.stat(filename)
+        deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.getAttrs())
         return deferred.addCallback(self.checkAttrs, stat_value)
 
     def test_getAttrsError(self):
         # Errors in getAttrs on TransportSFTPFile are translated into
         # SFTPErrors.
-        deferred = self.openFile('foo', 0, {})
+        filename = self.getPathSegment()
+        deferred = self.openFile(filename, 0, {})
         deferred.addCallback(lambda handle: handle.getAttrs())
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
