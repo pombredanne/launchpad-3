@@ -247,7 +247,24 @@ class BuildDSlave(object):
         """Return the path in the cache of the file specified."""
         return os.path.join(self._cachepath, file)
 
-    def ensurePresent(self, sha1sum, url=None):
+    def installAuthHandler(self, url, username, password):
+        """Install a BasicAuthHandler for urllib2.urlopen.
+
+        :param url: The URL that needs authenticating.
+        :param username: The username for authentication.
+        :param password: The password for authentication.
+
+        This helper installs a urllib2.HTTPBasicAuthHandler that will deal
+        with any HTTP basic authentication required when opening the
+        URL.
+        """
+        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None, url, username, password)
+        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+        opener = urllib2.build_opener(handler)
+        urllib2.install_opener(opener)
+
+    def ensurePresent(self, sha1sum, url=None, username=None, password=None):
         """Ensure we have the file with the checksum specified.
 
         Optionally you can provide the librarian URL and
@@ -259,6 +276,8 @@ class BuildDSlave(object):
             extra_info = 'Cache'
             if not os.path.exists(self.cachePath(sha1sum)):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
+                if username:
+                    self.installAuthHandler(url, username, password)
                 try:
                     f = urllib2.urlopen(url)
                 # Don't change this to URLError without thoroughly
@@ -562,9 +581,9 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         return (self.buildid, )
 
-    def xmlrpc_ensurepresent(self, sha1sum, url):
+    def xmlrpc_ensurepresent(self, sha1sum, url, username, password):
         """Attempt to ensure the given file is present."""
-        return self.slave.ensurePresent(sha1sum, url)
+        return self.slave.ensurePresent(sha1sum, url, username, password)
 
     def xmlrpc_abort(self):
         """Abort the current build."""

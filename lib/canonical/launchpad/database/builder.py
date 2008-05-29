@@ -130,20 +130,17 @@ class Builder(SQLBase):
             poolpath = makePoolPath(source_name, component_name)
             url = urlappend(archive_url, poolpath)
             url = urlappend(url, file_name)
-            uri = URI(url)
-            uri = uri.replace(
-                userinfo="buildd:%s" % archive.buildd_secret)
-            url = str(uri)
             logger.debug("Asking builder on %s to ensure it has file %s "
                          "(%s, %s)" % (self.url, file_name, url, sha1))
-            self._sendFileToSlave(url, sha1)
+            self._sendFileToSlave(url, sha1, "buildd", archive.buildd_secret)
 
-    def _sendFileToSlave(self, url, sha1):
+    def _sendFileToSlave(self, url, sha1, username=None, password=None):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
         if not self.builderok:
             raise BuildDaemonError("Attempted to give a file to a known-bad"
                                    " builder")
-        present, info = self.slave.ensurepresent(sha1, url)
+        present, info = self.slave.ensurepresent(
+            sha1, url, username, password)
         if not present:
             message = """Slave '%s' (%s) was unable to fetch file.
             ****** URL ********
