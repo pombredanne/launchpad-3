@@ -15,7 +15,7 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    LockFailed, NotBranchError, PermissionDenied, TransportNotPossible)
+    BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
@@ -473,7 +473,7 @@ class AcceptanceTests(SSHTestCase):
         # we care about is the one that cmd_push raises.
         self.captureStderr(
             self.assertRaises,
-            (PermissionDenied, TransportNotPossible),
+            (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
         # XXX: JonathanLange 2008-04-07: In the SFTP test, the authserver logs
         # a fault which comes back to us (although a little undesirable). Here
@@ -490,7 +490,7 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertRaises(
-            (PermissionDenied, TransportNotPossible),
+            (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
     @defer_to_thread
@@ -508,7 +508,7 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
         self.assertRaises(
-            (PermissionDenied, TransportNotPossible),
+            (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
     @defer_to_thread
@@ -594,7 +594,7 @@ class SmartserverTests(SSHTestCase):
         # unit tests).
         remote_url = self.getTransportURL('~sabdfl/no-such-product/branch')
         error = self.assertTransportRaises(
-            PermissionDenied,
+            TransportNotPossible,
             self.push, self.local_branch_path, remote_url)
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
