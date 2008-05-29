@@ -11,8 +11,6 @@ __metaclass__ = type
 __all__ = ['BaseMailer']
 
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailout import text_delta
@@ -37,7 +35,7 @@ class BaseMailer:
         :param subject: A Python dict-replacement template for the subject
             line of the email.
         :param template: Name of the template to use for the message body.
-        :param recipients: A dict of recipient to NotificationReason.
+        :param recipients: A dict of recipient to Subscription.
         :param from_address: The from_addres to use on emails.
         :param delta: A Delta object with members "delta_values", "interface"
             and "new_values", such as BranchMergeProposalDelta.
@@ -45,9 +43,8 @@ class BaseMailer:
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()
-        naked_recipients = removeSecurityProxy(recipients)
-        for recipient, reason in naked_recipients.iteritems():
-            self._recipients.add(recipient, reason, reason.rationale)
+        for recipient, (subscription, rationale) in recipients.iteritems():
+            self._recipients.add(recipient, subscription, rationale)
         self.from_address = from_address
         self.delta = delta
 
@@ -66,7 +63,7 @@ class BaseMailer:
 
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
-        notification_reason, rationale = self._recipients.getReason(
+        subscription, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
         headers = {'X-Launchpad-Message-Rationale': rationale}
         reply_to = self._getReplyToAddress()
