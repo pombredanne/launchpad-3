@@ -42,7 +42,7 @@ Let's check the complex properties of a build object.
     <LibraryFileAlias ...>
 
     >>> firefox_build.calculated_buildstart
-    datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
+    datetime.datetime(...)
 
     >>> firefox_build.is_virtualized
     False
@@ -525,8 +525,8 @@ Let's make cprov's archive private (and hence its builds become private):
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = removeSecurityProxy(getUtility(IPersonSet).getByName('cprov'))
-    >>> cprov.archive.private = True
     >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
     >>> flush_database_updates()
 
 Now define a helper function to print out build details:
