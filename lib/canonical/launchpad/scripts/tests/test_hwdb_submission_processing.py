@@ -34,6 +34,7 @@ class TestHWDBSubmissionProcessing(TestCase):
     UDI_PCI_PCI_BRIDGE = '/org/freedesktop/Hal/devices/pci_8086_2448'
     UDI_PCI_PCCARD_BRIDGE = '/org/freedesktop/Hal/devices/pci_1217_7134'
     UDI_PCCARD_DEVICE = '/org/freedesktop/Hal/devices/pci_9004_6075'
+
     def setUp(self):
         """Setup the test environment."""
         self.log = logging.getLogger('test_hwdb_submission_parser')
@@ -44,21 +45,17 @@ class TestHWDBSubmissionProcessing(TestCase):
     def assertWarningMessage(self, submission_key, log_message):
         """Search for message in the log entries for submission_key.
 
-        assertWarningMessage requires that
-        (a) a log message starts with "Parsing submisson <submission_key>:"
-        (b) the error message passed as the parameter message appears
-            in a log string that matches (a)
-
-        If both criteria match, assertErrormessage does not raise any
-        exception.
+        :raise: AssertionError if no log message exists that starts with
+            "Parsing submission <submission_key>:" and that contains
+            the text passed as the parameter message.
         """
         expected_message = ('Parsing submission %s: %s'
                             % (submission_key, log_message))
         last_log_messages = []
-        for r in self.handler.records:
-            if r.levelno != logging.WARNING:
+        for record in self.handler.records:
+            if record.levelno != logging.WARNING:
                 continue
-            candidate = r.getMessage()
+            candidate = record.getMessage()
             if candidate == expected_message:
                 return
         raise AssertionError('No log message found: %s' % expected_message)
@@ -66,22 +63,24 @@ class TestHWDBSubmissionProcessing(TestCase):
     def testBuildDeviceList(self):
         """Test the creation of list HALDevice instances for a submission."""
         devices = [
-            {'id': 1,
-             'udi': self.UDI_COMPUTER,
-             'properties': {}
-            },
-            {'id': 2,
-             'udi': self.UDI_SATA_CONTOLLER,
-             'properties': {
-                 'info.parent': (self.UDI_COMPUTER, 'str'),
-                 },
-            }
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {},
+                },
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_CONTOLLER,
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str')
+                    },
+                },
             ]
         parsed_data = {
             'hardware': {
                 'hal': {'devices': devices,
-                    }
-                }
+                    },
+                },
             }
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
@@ -90,27 +89,27 @@ class TestHWDBSubmissionProcessing(TestCase):
                          'sample data are different')
         root_device = parser.hal_devices[self.UDI_COMPUTER]
         self.assertEqual(root_device.id, 1,
-                         'Unexpected value of root device ID')
+                         'Unexpected value of root device ID.')
         self.assertEqual(root_device.udi, self.UDI_COMPUTER,
-                         'Unexpected value of root device UDI')
+                         'Unexpected value of root device UDI.')
         self.assertEqual(root_device.properties,
                          devices[0]['properties'],
-                         'Unexpected properties of root device')
+                         'Unexpected properties of root device.')
         child_device = parser.hal_devices[self.UDI_SATA_CONTOLLER]
         self.assertEqual(child_device.id, 2,
-                         'Unexpected value of child device ID')
+                         'Unexpected value of child device ID.')
         self.assertEqual(child_device.udi, self.UDI_SATA_CONTOLLER,
-                         'Unexpected value of child device UDI')
+                         'Unexpected value of child device UDI.')
         self.assertEqual(child_device.properties,
                          devices[1]['properties'],
-                         'Unexpected properties of child device')
+                         'Unexpected properties of child device.')
 
         parent = parser.hal_devices[self.UDI_COMPUTER]
         child = parser.hal_devices[self.UDI_SATA_CONTOLLER]
         self.assertEqual(parent.children, [child],
-                         'Child missing in parent.children')
+                         'Child missing in parent.children.')
         self.assertEqual(child.parent, parent,
-                         'Invalid value of child.parent')
+                         'Invalid value of child.parent.')
 
     def testHALDeviceConstructor(self):
         """Test of the HALDevice constructor."""
@@ -178,18 +177,19 @@ class TestHWDBSubmissionProcessing(TestCase):
                                  ):
             UDI_TEST_DEVICE = '/org/freedesktop/Hal/devices/test_device'
             devices = [
-                {'id': 1,
-                 'udi': UDI_TEST_DEVICE,
-                 'properties': {
-                     'info.bus': (hal_bus, 'str'),
-                     }
-                },
+                {
+                    'id': 1,
+                    'udi': UDI_TEST_DEVICE,
+                    'properties': {
+                        'info.bus': (hal_bus, 'str'),
+                        },
+                    },
                 ]
             parsed_data = {
                 'hardware': {
                     'hal': {'devices': devices,
-                        }
-                    }
+                        },
+                    },
                 }
             parser = SubmissionParser(self.log)
             parser.buildDeviceList(parsed_data)
@@ -197,24 +197,25 @@ class TestHWDBSubmissionProcessing(TestCase):
             test_bus = test_device.getBus()
             self.assertEqual(test_bus, real_bus,
                              'Unexpected result of HALDevice.getBus for '
-                             'HAL bus %s: %s' % (hal_bus, test_bus.title))
+                             'HAL bus %s: %s.' % (hal_bus, test_bus.title))
 
     def testHALDeviceGetBusSystem(self):
         """Test of HALDevice.getBus, for the tested machine itself."""
 
         devices = [
-            {'id': 1,
-             'udi': self.UDI_COMPUTER,
-             'properties': {
-                 'info.bus': ('unknown', 'str'),
-                 }
-            },
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {
+                    'info.bus': ('unknown', 'str'),
+                    },
+                },
             ]
         parsed_data = {
             'hardware': {
                 'hal': {'devices': devices,
-                    }
-                }
+                    },
+                },
             }
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
@@ -233,42 +234,46 @@ class TestHWDBSubmissionProcessing(TestCase):
         """
         devices = [
             # The main node of the USB storage device.
-            {'id': 1,
-             'udi': self.UDI_USB_STORAGE,
-             'properties': {
-                 'info.bus': ('usb_device', 'str'),
-                 }
-            },
+            {
+                'id': 1,
+                'udi': self.UDI_USB_STORAGE,
+                'properties': {
+                    'info.bus': ('usb_device', 'str'),
+                    },
+                },
             # The storage interface of the USB device.
-            {'id': 2,
-             'udi': self.UDI_USB_STORAGE_IF0,
-             'properties': {
-                 'info.bus': ('usb', 'str'),
-                 'info.parent': (self.UDI_USB_STORAGE, 'str'),
-                 }
-            },
+            {
+                'id': 2,
+                'udi': self.UDI_USB_STORAGE_IF0,
+                'properties': {
+                    'info.bus': ('usb', 'str'),
+                    'info.parent': (self.UDI_USB_STORAGE, 'str'),
+                    },
+                },
             # The fake SCSI host of the storage device. Note that HAL does
             # _not_ provide the info.bus property.
-            {'id': 3,
-             'udi': self.UDI_USB_STORAGE_SCSI_HOST,
-             'properties': {
-                 'info.parent': (self.UDI_USB_STORAGE_IF0, 'str'),
-                 }
-            },
+            {
+                'id': 3,
+                'udi': self.UDI_USB_STORAGE_SCSI_HOST,
+                'properties': {
+                    'info.parent': (self.UDI_USB_STORAGE_IF0, 'str'),
+                    },
+                },
             # The fake SCSI disk.
-            {'id': 3,
-             'udi': self.UDI_USB_STORAGE_SCSI_DEVICE,
-             'properties': {
-                 'info.bus': ('scsi', 'str'),
-                 'info.parent': (self.UDI_USB_STORAGE_SCSI_HOST, 'str'),
-                 }
-            },
+            {
+                'id': 3,
+                'udi': self.UDI_USB_STORAGE_SCSI_DEVICE,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'info.parent': (self.UDI_USB_STORAGE_SCSI_HOST, 'str'),
+                    },
+                },
             ]
         parsed_data = {
             'hardware': {
                 'hal': {'devices': devices,
-                    }
-                }
+                    },
+                },
             }
 
         parser = SubmissionParser(self.log)
@@ -287,36 +292,39 @@ class TestHWDBSubmissionProcessing(TestCase):
         """
         devices = [
             # The PCI host controller.
-            {'id': 1,
-             'udi': self.UDI_SATA_CONTOLLER,
-             'properties': {
-                 'info.bus': ('pci', 'str'),
-                 'pci.device_class': (1, 'int'),
-                 'pci.device_subclass': (6, 'int'),
-                 }
-            },
+            {
+                'id': 1,
+                'udi': self.UDI_SATA_CONTOLLER,
+                'properties': {
+                    'info.bus': ('pci', 'str'),
+                    'pci.device_class': (1, 'int'),
+                    'pci.device_subclass': (6, 'int'),
+                    },
+                },
             # The fake SCSI host of the storage device. Note that HAL does
             # _not_ provide the info.bus property.
-            {'id': 2,
-             'udi': self.UDI_SATA_CONTOLLER_SCSI,
-             'properties': {
-                 'info.parent': (self.UDI_SATA_CONTOLLER, 'str'),
-                 }
-            },
+            {
+                'id': 2,
+                'udi': self.UDI_SATA_CONTOLLER_SCSI,
+                'properties': {
+                    'info.parent': (self.UDI_SATA_CONTOLLER, 'str'),
+                    },
+                },
             # The (possibly fake) SCSI disk.
-            {'id': 3,
-             'udi': self.UDI_SATA_DISK,
-             'properties': {
-                 'info.bus': ('scsi', 'str'),
-                 'info.parent': (self.UDI_SATA_CONTOLLER_SCSI, 'str'),
-                 }
-            },
+            {
+                'id': 3,
+                'udi': self.UDI_SATA_DISK,
+                'properties': {
+                    'info.bus': ('scsi', 'str'),
+                    'info.parent': (self.UDI_SATA_CONTOLLER_SCSI, 'str'),
+                    },
+                },
             ]
         parsed_data = {
             'hardware': {
                 'hal': {'devices': devices,
-                    }
-                }
+                    },
+                },
             }
 
         pci_subclass_bus = (
@@ -340,8 +348,8 @@ class TestHWDBSubmissionProcessing(TestCase):
             found_bus = fake_scsi_disk.getBus()
             self.assertEqual(found_bus, expected_bus,
                 'Unexpected result of HWDevice.getBus for PCI storage '
-                'class device, subclass %i: %r' % (device_subclass,
-                                                   found_bus))
+                'class device, subclass %i: %r.' % (device_subclass,
+                                                    found_bus))
 
     def testHALDeviceGetBusPci(self):
         """Test of HALDevice.getBus for info.bus=='pci'.
@@ -351,44 +359,47 @@ class TestHWDBSubmissionProcessing(TestCase):
         # possible parent device for the tested device,
         parent_devices = [
             # The host itself.
-            {'id': 1,
-             'udi': self.UDI_COMPUTER,
-             'properties': {
-                 'info.bus': ('unknown', 'str'),
-                 }
-            },
-            # A PCI->PCI bridge
-            {'id': 2,
-             'udi': self.UDI_PCI_PCI_BRIDGE,
-             'properties': {
-                 'info.parent': (self.UDI_COMPUTER, 'str'),
-                 'info.bus': ('pci', 'str'),
-                 'pci.device_class': (6, 'int'),
-                 'pci.device_subclass': (4, 'int'),
-                 }
-            },
-            # A PCI->PCCard bridge
-            {'id': 3,
-             'udi': self.UDI_PCI_PCCARD_BRIDGE,
-             'properties': {
-                 'info.parent': (self.UDI_PCI_PCI_BRIDGE, 'str'),
-                 'info.bus': ('pci', 'str'),
-                 'pci.device_class': (6, 'int'),
-                 'pci.device_subclass': (7, 'int'),
-                 }
-            },
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {
+                    'info.bus': ('unknown', 'str'),
+                    },
+                },
+            # A PCI->PCI bridge.
+            {
+                'id': 2,
+                'udi': self.UDI_PCI_PCI_BRIDGE,
+                'properties': {
+                    'info.parent': (self.UDI_COMPUTER, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.device_class': (6, 'int'),
+                    'pci.device_subclass': (4, 'int'),
+                    },
+                },
+            # A PCI->PCCard bridge.
+            {
+                'id': 3,
+                'udi': self.UDI_PCI_PCCARD_BRIDGE,
+                'properties': {
+                    'info.parent': (self.UDI_PCI_PCI_BRIDGE, 'str'),
+                    'info.bus': ('pci', 'str'),
+                    'pci.device_class': (6, 'int'),
+                    'pci.device_subclass': (7, 'int'),
+                    },
+                },
         ]
         tested_device = {
             'id': 4,
             'udi': self.UDI_PCCARD_DEVICE,
             'properties': {
                 'info.bus': ('pci', 'str'),
-                }
+                },
             }
         parsed_data = {
             'hardware': {
-                'hal': {}
-                }
+                'hal': {},
+                },
             }
         expected_result_for_parent_device = {
             self.UDI_COMPUTER: HWBus.PCI,
@@ -417,18 +428,19 @@ class TestHWDBSubmissionProcessing(TestCase):
     def testHALDeviceGetBusUnknown(self):
         """Test of HALDevice.getBus for unknown values of info.bus."""
         devices = [
-            {'id': 1,
-             'udi': self.UDI_PCCARD_DEVICE,
-             'properties': {
-                 'info.bus': ('nonsense', 'str'),
-                 }
-            },
+            {
+                'id': 1,
+                'udi': self.UDI_PCCARD_DEVICE,
+                'properties': {
+                    'info.bus': ('nonsense', 'str'),
+                    },
+                },
             ]
         parsed_data = {
             'hardware': {
                 'hal': {'devices': devices,
-                    }
-                }
+                    },
+                },
             }
 
         parser = SubmissionParser(self.log)
