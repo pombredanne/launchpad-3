@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+from canonical.launchpad.database import BranchMergeProposalGetter
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -448,6 +449,17 @@ class TestGetAddress(TestCaseWithFactory):
         merge_proposal = self.factory.makeBranchMergeProposal()
         expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
         self.assertEqual(expected, merge_proposal.address)
+
+
+class TestBranchMergeProposalGetter(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_get(self):
+        """Ensure the correct merge proposal is returned."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertEqual(merge_proposal,
+            BranchMergeProposalGetter().get(merge_proposal.id))
 
 
 def test_suite():

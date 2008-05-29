@@ -96,7 +96,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('EBALIWICK', bmp.all_messages[0].vote_tag)
 
     def test_processSendsMail(self):
-        """Process respects the vote command."""
+        """Processing mail causes mail to be sent."""
         mail = self.factory.makeSignedMessage(
             body=' vote Abstain EBALIWICK')
         mail['Subject'] = 'subject'

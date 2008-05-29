@@ -423,5 +423,5 @@ class BranchMergeProposalGetter:
 
     @staticmethod
     def get(id):
-        """See `BranchMergeProposalGetter`"""
+        """See `IBranchMergeProposalGetter`."""
         return BranchMergeProposal.get(id)

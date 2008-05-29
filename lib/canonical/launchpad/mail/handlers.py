@@ -8,9 +8,9 @@ from urlparse import urlunparse
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
+
 from canonical.config import config
 from canonical.database.sqlbase import rollback
-
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
@@ -492,6 +492,7 @@ class InvalidBranchMergeProposalAddress(Exception):
 
 
 class CodeHandler:
+    """Mail handler for the code domain."""
 
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
 
@@ -510,6 +511,7 @@ class CodeHandler:
         return True
 
     def _process(self, mail, email_addr, file_alias):
+        """Implementation of process."""
         merge_proposal = self.getBranchMergeProposal(email_addr)
         messageset = getUtility(IMessageSet)
         vote, vote_tag = self._getVote(mail)
@@ -550,6 +552,13 @@ class CodeHandler:
 
     @classmethod
     def getBranchMergeProposal(klass, email_addr):
+        """Return branch merge proposal designated by email_addr.
+
+        Addresses are of the form mp+5@code.launchpad.net, where 5 is the
+        database id of the related branch merge proposal.
+
+        The inverse operation is BranchMergeProposal.address.
+        """
         match = klass.addr_pattern.match(email_addr)
         if match is None:
             raise InvalidBranchMergeProposalAddress(email_addr)
