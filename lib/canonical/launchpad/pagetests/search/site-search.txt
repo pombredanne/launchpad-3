@@ -103,9 +103,8 @@ has 5 page matches.
 Searches for specific launchpad items such as bugs, people, questions,
 teams, or projects, will return their respective matching item.
 
-
-The user searches for 'firefox' and sees Mozilla Firefox as the
-most relevant match.
+The user searches for 'firefox' and sees the Mozilla Firefox product
+as the most relevant match.
 
     >>> search_for('firefox')
     >>> print_search_results()
@@ -114,6 +113,30 @@ most relevant match.
     The Mozilla Firefox web browser
     Registered by Sample Person
     on 2004-09-24
+
+Projects can appear too. For example, when the user searches for
+'gnome', the GNOME project is the best match.
+
+    >>> search_for('gnome')
+    >>> print_search_results()
+    Most relevant matches
+    GNOME
+    The GNOME Project is an initiative to ...
+    applications to work together in a harmonious desktop-ish way.
+    Registered by Sample Person
+    on 2004-09-24
+
+Distributions also appear in the 'Most relevant matches' section.
+The user searches for 'ubuntu' and sees it listed..
+
+    >>> search_for('ubuntu')
+    >>> print_search_results()
+    Most relevant matches
+    Ubuntu
+    Ubuntu is a new approach to Linux Distribution that includes regular
+    releases, and a simplified single-CD installation system.
+    Registered by Ubuntu Team
+    on 2006-10-16
 
 The user enters the number 1, and he sees a bug and a question in the
 "Most relevant matches" section.
@@ -168,3 +191,27 @@ the page is identical to the page visited without performing a search.
     >>> print anon_browser.title
     Search Launchpad
     >>> print_search_results()
+
+
+== Searching from any page ==
+
+Most pages have the global search form in them. Any user can enter terms
+in the page he is viewing and submit the form to see the results.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print anon_browser.title
+    Bugs in Mozilla Firefox
+    >>> print anon_browser.url
+    http://bugs.launchpad.dev/firefox
+    >>> search_for('mozilla')
+    >>> print anon_browser.title
+    Pages matching "mozilla" in Launchpad
+    >>> print anon_browser.url
+    http://launchpad.dev/+search?...
+    >>> print_search_results()
+    Most relevant matches
+    the Mozilla Project
+    The Mozilla Project is the largest open source web browser collaborati...
+    browser technology.
+    Registered by Sample Person
+    on 2004-09-24

@@ -32,6 +32,7 @@ from canonical.authserver.interfaces import (
     IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
     READ_ONLY, WRITABLE)
 
+from twisted.internet import defer
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
 from twisted.web.xmlrpc import Fault
