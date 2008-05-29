@@ -276,7 +276,8 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson()
+            registrant = self.makePerson(
+                password=self.getUniqueString('password'))
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)

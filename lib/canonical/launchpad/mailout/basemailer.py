@@ -36,7 +36,7 @@ class BaseMailer:
             line of the email.
         :param template: Name of the template to use for the message body.
         :param recipients: A dict of recipient to Subscription.
-        :param from_address: The from_addres to use on emails.
+        :param from_address: The from_address to use on emails.
         :param delta: A Delta object with members "delta_values", "interface"
             and "new_values", such as BranchMergeProposalDelta.
         """

@@ -408,7 +408,6 @@ class BranchMergeProposal(SQLBase):
         msg = Message(parent=parent_message, owner=owner,
                       rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-
         code_review_message = CodeReviewMessage(
             branch_merge_proposal=self, message=msg, vote=vote,
             vote_tag=vote_tag)
