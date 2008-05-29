@@ -347,7 +347,12 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         self._factory = LaunchpadObjectFactory()
 
     def getPathSegment(self):
-        """Return a unique path segment for testing."""
+        """Return a unique path segment for testing.
+
+        This returns a path segment such that 'path != unescape(path)'. This
+        exercises the interface between the sftp server and the Bazaar
+        transport, which expects escaped URL segments.
+        """
         return self._factory.getUniqueString('%41%42%43-')
 
     def test_serverSetAttrs(self):
