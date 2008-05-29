@@ -134,7 +134,7 @@ class Builder(SQLBase):
                          "(%s, %s)" % (self.url, file_name, url, sha1))
             self._sendFileToSlave(url, sha1, "buildd", archive.buildd_secret)
 
-    def _sendFileToSlave(self, url, sha1, username=None, password=None):
+    def _sendFileToSlave(self, url, sha1, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
         if not self.builderok:
             raise BuildDaemonError("Attempted to give a file to a known-bad"

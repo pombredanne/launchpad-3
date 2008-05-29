@@ -34,7 +34,7 @@ put them in the librarian first...
   ...                    hw_sio, "text/plain")
   >>> transaction.commit()
   >>> lf = LibraryFileAlias.get(alias)
-  >>> present, info = s.ensurepresent(lf.content.sha1, lf.http_url)
+  >>> present, info = s.ensurepresent(lf.content.sha1, lf.http_url, "", "")
   >>> present, info
   (True, 'Download')
 
