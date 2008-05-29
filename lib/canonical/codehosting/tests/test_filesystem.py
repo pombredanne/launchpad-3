@@ -10,6 +10,7 @@ import stat
 from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.urlutils import escape
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.helpers import (
@@ -310,18 +311,23 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     def test_url_escaping(self):
         # Transports accept and return escaped URL segments. The literal path
         # we use should be preserved, even if it can be unescaped itself.
-        from bzrlib import urlutils
         transport = self._getBzrDirTransport()
 
         # The bug we are checking only occurs if
         # unescape(path).encode('utf-8') != path.
         path = '%41%42%43'
-        escaped_path = urlutils.escape(path)
+        escaped_path = escape(path)
         content = 'content'
-
         transport.put_bytes(escaped_path, content)
-        self.assertEqual([escaped_path], transport.list_dir('.'))
+
+        # We can use the escaped path to reach the file.
         self.assertEqual(content, transport.get_bytes(escaped_path))
+
+        # We can also use the value that list_dir returns, which may be
+        # different from our original escaped path.
+        [returned_path] = list(transport.list_dir('.'))
+        self.assertEqual(content, transport.get_bytes(returned_path))
+        self.assertNotEqual(escaped_path, returned_path)
 
 
 def test_suite():
