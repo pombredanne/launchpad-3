@@ -17,7 +17,7 @@ import unittest
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
+from bzrlib.errors import FileExists, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
@@ -88,8 +88,6 @@ def exception_names(exceptions):
         # Unfortunately, not all exceptions render themselves as their name.
         # More cases like this may need to be added
         names = ["Transport operation not possible"]
-    elif exceptions is PermissionDenied:
-        names = ['Permission denied', 'PermissionDenied']
     else:
         names = [exceptions.__name__]
     return names
@@ -303,19 +301,6 @@ class FakeLaunchpad:
         new_id = max(item_set.keys() + [0]) + 1
         item_set[new_id] = item_dict
         return new_id
-
-    def getDefaultStackedOnBranch(self, product_name):
-        if product_name == '+junk':
-            return ''
-        elif product_name == 'evolution':
-            # This has to match the sample data. :(
-            return '~vcs-imports/evolution/main'
-        elif product_name == 'firefox':
-            return ''
-        else:
-            raise ValueError(
-                "The crappy mock authserver doesn't know how to translate: %r"
-                % (product_name,))
 
     def createBranch(self, login_id, user, product, branch_name):
         """See `IHostedBranchStorage.createBranch`.

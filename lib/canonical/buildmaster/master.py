@@ -88,7 +88,8 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
         package_tags = legal_arch_tags
     elif hint_string == 'all':
         nominated_arch = distroseries.nominatedarchindep
-        assert nominated_arch in legal_archserieses, (
+        legal_archseries_ids = [arch.id for arch in legal_archserieses]
+        assert nominated_arch.id in legal_archseries_ids, (
             'nominatedarchindep is not present in legal_archseries: %s' %
             ' '.join(legal_arch_tags))
         package_tags = set([nominated_arch.architecturetag])
