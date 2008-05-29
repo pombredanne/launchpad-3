@@ -189,6 +189,13 @@
         />
 
     <adapter
+        for="zope.schema.interfaces.ICollection
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.AbstractCollectionFieldMarshaller"
+        />
+
+    <adapter
         for="canonical.lazr.interfaces.rest.ICollectionField
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"

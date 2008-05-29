@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AbstractCollectionFieldMarshaller',
     'BoolFieldMarshaller',
     'BytesFieldMarshaller',
     'CollectionField',
@@ -317,6 +318,70 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
                             seconds, microseconds, pytz.utc)
         except (DateError, DateTimeError, SyntaxError):
             raise ValueError("Value doesn't look like a date.")
+
+
+class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller for List, Tuple, Set and other AbstractCollections.
+
+    It looks up the marshaller for its value-type, to handle its contained
+    elements.
+    """
+    # The only valid JSON representation is a list.
+    _type = list
+    _type_error_message = 'not a list: %r'
+
+    def __init__(self, field, request):
+        """See `SimpleFieldMarshaller`.
+
+        This also looks for the appropriate marshaller for value_type.
+        """
+        super(AbstractCollectionFieldMarshaller, self).__init__(
+            field, request)
+        self.value_marshaller = getMultiAdapter(
+            (field.value_type, request), IFieldMarshaller)
+
+    def _marshall_from_json_data(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Marshall every elements of the list using the appropriate
+        marshaller.
+        """
+        value = super(
+            AbstractCollectionFieldMarshaller,
+            self)._marshall_from_json_data(value)
+
+        # In AbstractCollection subclasses, _type contains the type object,
+        # which can be used as a factory.
+        return self.field._type(
+            self.value_marshaller.marshall_from_json_data(item)
+            for item in value)
+
+    def _marshall_from_request(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        If the value isn't a list, transform it into a one-element list. That
+        allows web client to submit one-element list of strings
+        without having to JSON-encode it.
+
+        Additionally, all items in the list are marshalled using the
+        appropriate `IFieldMarshaller` for the value_type.
+        """
+        if not isinstance(value, list):
+           value = [value]
+        value = [self.value_marshaller.marshall_from_request(item)
+                 for item in value]
+        return super(
+           AbstractCollectionFieldMarshaller,
+           self)._marshall_from_request(value)
+
+    def unmarshall(self, entry, value):
+        """See `SimpleFieldMarshaller`.
+
+        The colleciton is unmarshalled into a list and all its items are
+        unmarshalled using the appropriate FieldMarshaller.
+        """
+        return [self.value_marshaller.unmarshall(entry, item)
+               for item in value]
 
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
