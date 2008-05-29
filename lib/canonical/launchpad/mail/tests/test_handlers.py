@@ -7,13 +7,16 @@ import unittest
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
-from canonical.launchpad.interfaces import CodeReviewVote
+from canonical.launchpad.interfaces import (
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    CodeReviewVote)
 from canonical.launchpad.database import MessageSet
 from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.mail.handlers import (
     CodeHandler, InvalidBranchMergeProposalAddress, mail_handlers,
     MaloneHandler, parse_commands)
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
+from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -91,6 +94,27 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler.process(mail, email_addr, None)
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_messages[0].vote)
         self.assertEqual('EBALIWICK', bmp.all_messages[0].vote_tag)
+
+    def test_processSendsMail(self):
+        """Process respects the vote command."""
+        mail = self.factory.makeSignedMessage(
+            body=' vote Abstain EBALIWICK')
+        mail['Subject'] = 'subject'
+        bmp = self.factory.makeBranchMergeProposal()
+        subscriber = self.factory.makePerson(password='password')
+        bmp.source_branch.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        email_addr = bmp.address
+        self.code_handler.process(mail, email_addr, None)
+        notification = pop_notifications()[0]
+        self.assertEqual('subject', notification['Subject'])
+        expected_body = ('Vote: Abstain EBALIWICK\n'
+                         ' vote Abstain EBALIWICK\n'
+                         '--\n'
+                         'You are subscribed to branch %s.' %
+                         bmp.source_branch.unique_name)
+        self.assertEqual(expected_body, notification.get_payload(decode=True))
 
     def test_getVoteNoCommand(self):
         """getVote returns None, None when no command is supplied."""
