@@ -52,11 +52,7 @@ Only subscribers whose level is >= the minimum level are selected.
 The value assigned to the recipient is a machine-readable explanation why they
 were chosen, and their subscription
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_recipients = removeSecurityProxy(recipients)
-    >>> [notification_reason] = naked_recipients.values()
-    >>> (target_subscription, 'Subscriber') == \
-    ...     (notification_reason.subscription, notification_reason.rationale)
+    >>> [(target_subscription, 'Subscriber')] == recipients.values()
     True
 
 

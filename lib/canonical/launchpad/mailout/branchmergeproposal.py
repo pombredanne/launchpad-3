@@ -84,27 +84,24 @@ class BMPMailer(BaseMailer):
 
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""
-        notification_reason, rationale = self._recipients.getReason(
-            recipient.preferredemail.email)
-        if notification_reason.subscription is not None:
-            person = notification_reason.subscription.person
-            relationship = "subscribed to"
-        else:
-            person = notification_reason.branch.owner
-            relationship = "the owner of"
-
         entity = 'You are'
-        if recipient != person:
-            entity = 'Your team %s is' % person.displayname
-        branch_name = notification_reason.branch.displayname
-        return '%s %s branch %s.' % (entity, relationship, branch_name)
+        subscription = self._recipients.getReason(
+            recipient.preferredemail.email)[0]
+        subscriber = subscription.person
+        if recipient != subscriber:
+            assert recipient.hasParticipationEntryFor(subscriber), (
+                '%s does not participate in team %s.' %
+                (recipient.displayname, subscriber.displayname))
+            entity = 'Your team %s is' % subscriber.displayname
+        branch_name = subscription.branch.displayname
+        return '%s subscribed to branch %s.' % (entity, branch_name)
 
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
         headers = BaseMailer._getHeaders(self, recipient)
-        notification_reason, rationale = self._recipients.getReason(
+        subscription, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
-        headers['X-Launchpad-Branch'] = notification_reason.branch.unique_name
+        headers['X-Launchpad-Branch'] = subscription.branch.unique_name
         return headers
 
     def _getTemplateParams(self, recipient):
