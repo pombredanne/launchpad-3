@@ -162,9 +162,10 @@
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch" xml:lang="en" lang="en" dir="ltr"
-        action="/+search"
+        action=""
         method="get"
         accept-charset="UTF-8"
+        tal:attributes="action string:${rooturl}+search"
       >
         <div>
           <input
