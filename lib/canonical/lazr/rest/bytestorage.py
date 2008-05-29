@@ -11,11 +11,8 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError
 
-from canonical.launchpad.webapp import canonical_url
-
 from canonical.lazr.interfaces import IByteStorageResource
 from canonical.lazr.rest.resource import HTTPResource
-from canonical.lazr.rest.schema import SimpleFieldMarshaller
 
 
 class ByteStorageResource(HTTPResource):
