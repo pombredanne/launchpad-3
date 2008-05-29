@@ -219,18 +219,16 @@ class VirtualHostRequestPublicationFactory:
         # places; either it's on the SERVER_PORT environment variable
         # or, as is the case with the test suite, it's on the
         # HTTP_HOST variable after a colon.
-        # Check the former first.
+        # The former takes precedence, the port from the host variable is
+        # only checked because the test suite doesn't set SERVER_PORT.
         host = environment.get('HTTP_HOST', '')
         port = environment.get('SERVER_PORT')
         if ":" in host:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
             host, new_port = host.split(':')
-            if port is not None:
-                assert str(port) == new_port, (
-                    "Port specified in SERVER_PORT does not match "
-                    "port specified in HTTP_HOST")
-            port = new_port
+            if port is None:
+                port = new_port
 
         if host == '':
             if not self.handle_default_host:
