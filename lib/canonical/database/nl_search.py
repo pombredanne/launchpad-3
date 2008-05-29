@@ -68,20 +68,38 @@ def nl_phrase_search(phrase, table, constraints='',
     Caveat: The SQLBase class must define a 'fti' column .
     This is the column that is used for full text searching.
     """
-    terms = []
     total = table.select(
         constraints, clauseTables=extra_constraints_tables).count()
     term_candidates = nl_term_candidates(phrase)
+    if len(term_candidates) == 0:
+        return ''
     if total < 5:
         return '|'.join(term_candidates)
-    for term in term_candidates:
-        where_clause = []
-        if constraints:
-            where_clause.append('(' + constraints + ')')
-        where_clause.append('%s.fti @@ ftq(%s)' % (table._table, quote(term)))
-        matches = table.select(
-            ' AND '.join(where_clause),
-            clauseTables=extra_constraints_tables).count()
-        if float(matches) / total < 0.5:
-            terms.append(term)
+
+    # Build the query to get all the counts. We get all the counts in
+    # one query, using COUNT(CASE ...), since issuing separate queries
+    # with COUNT(*) is a lot slower.
+    count_template = (
+        'COUNT(CASE WHEN %(table)s.fti @@ ftq(%(term)s)'
+        ' THEN TRUE ELSE null END)')
+    select_counts = [
+        count_template % {'table': table._table, 'term': quote(term)}
+        for term in term_candidates
+        ]
+    select_tables = [table._table]
+    if extra_constraints_tables is not None:
+        select_tables.extend(extra_constraints_tables)
+    count_query = "SELECT %s FROM %s" % (
+        ', '.join(select_counts), ', '.join(select_tables))
+    if constraints != '':
+        count_query += " WHERE %s" % constraints
+    cur = cursor()
+    cur.execute(count_query)
+    counts = cur.fetchone()
+
+    # Remove words that are too common.
+    terms = [
+        term for count, term in zip(counts, term_candidates)
+        if float(count) / total < 0.5
+        ]
     return '|'.join(terms)
