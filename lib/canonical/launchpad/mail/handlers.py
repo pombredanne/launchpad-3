@@ -543,7 +543,7 @@ class CodeHandler:
         else:
             vote_text = args[0]
         vote_tag_list = args[1:]
-        vote = getattr(CodeReviewVote, vote_text.upper())
+        vote = CodeReviewVote.items[vote_text.upper()]
         if len(vote_tag_list) == 0:
             vote_tag = None
         else:
