@@ -272,6 +272,21 @@ class WindowedList:
             yield self[index]
 
 
+class WindowedListBatch(_Batch):
+    """A batch class that does not include None objects when iterating."""
+
+    def __iter__(self):
+        """Iterate over objects that are not None."""
+        for item in super(WindowedListBatch, self).__iter__():
+            if item is not None:
+                # Never yield None
+                yield item
+
+    def endNumber(self):
+        """Return the end index of the batch, not including None objects."""
+        return self.start + len(self.list._window)
+
+
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
@@ -303,6 +318,8 @@ class GoogleBatchNavigator(BatchNavigator):
                 self.start = int(request_start)
             except (ValueError, TypeError):
                 self.start = start
+
         self.default_size = 20
-        self.batch = _Batch(results, start=self.start, size=self.default_size)
+        self.batch = WindowedListBatch(
+            results, start=self.start, size=self.default_size)
 
