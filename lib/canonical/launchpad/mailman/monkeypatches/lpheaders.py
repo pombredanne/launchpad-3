@@ -2,7 +2,6 @@
 
 """A global pipeline handler for inserting Launchpad specific headers."""
 
-from email.Utils import make_msgid
 from string import Template
 
 from Mailman import mm_cfg
