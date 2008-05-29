@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Schema extensions for HTTP resources."""
+"""Marshallers for fields used in HTTP resources."""
 
 __metaclass__ = type
 __all__ = [

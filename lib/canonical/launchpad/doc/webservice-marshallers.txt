@@ -27,7 +27,7 @@ implement that interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.lazr.interfaces import IFieldMarshaller
-    >>> from canonical.lazr.rest import SimpleFieldMarshaller
+    >>> from canonical.lazr.rest.marshallers import SimpleFieldMarshaller
     >>> from zope.schema import Text
 
     >>> field = Text(__name__='field_name')

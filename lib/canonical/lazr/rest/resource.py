@@ -13,7 +13,6 @@ __all__ = [
     'ReadOnlyResource',
     'ScopedCollection',
     'ServiceRootResource',
-    'URLDereferencingMixin',
     ]
 
 import copy
@@ -51,7 +50,6 @@ from canonical.lazr.interfaces import (
     IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
-from canonical.lazr.rest.schema import URLDereferencingMixin
 
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
@@ -101,7 +99,7 @@ class JSONItem:
         return str(self.context.title)
 
 
-class HTTPResource(URLDereferencingMixin):
+class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
