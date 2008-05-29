@@ -46,10 +46,10 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IFieldMarshaller, IHTTPResource, IJSONPublishable,
-    IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
-    IServiceRootResource)
+    ICollection, ICollectionResource, IEntry, IEntryResource,
+    IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 from canonical.lazr.rest.schema import URLDereferencingMixin
 

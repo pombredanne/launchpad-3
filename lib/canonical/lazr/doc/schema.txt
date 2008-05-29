@@ -7,7 +7,7 @@ field provides ICollectionField which is an extension of ISequence.
 
     >>> from zope.schema import Int
     >>> from zope.schema.interfaces import ISequence
-    >>> from canonical.lazr.interfaces.rest import ICollectionField
+    >>> from canonical.lazr.interfaces.fields import ICollectionField
     >>> from canonical.lazr.rest.schema import CollectionField
 
     >>> int_collection = CollectionField(

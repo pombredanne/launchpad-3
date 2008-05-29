@@ -45,7 +45,7 @@ from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.url import urlsplit
 
-from canonical.lazr.interfaces.rest import ICollectionField
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.interfaces.rest import IFieldMarshaller
 from canonical.lazr.utils import safe_hasattr
 

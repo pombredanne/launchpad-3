@@ -196,7 +196,7 @@
         />
 
     <adapter
-        for="canonical.lazr.interfaces.rest.ICollectionField
+        for="canonical.lazr.interfaces.fields.ICollectionField
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
         factory="canonical.lazr.rest.CollectionFieldMarshaller"

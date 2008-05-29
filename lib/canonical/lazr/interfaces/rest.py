@@ -9,7 +9,6 @@ __all__ = [
     'IByteStorage',
     'IByteStorageResource',
     'ICollection',
-    'ICollectionField',
     'ICollectionResource',
     'IEntry',
     'IEntryResource',
@@ -30,14 +29,6 @@ from zope.interface import Attribute, Interface
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.schema.interfaces import ISequence
-
-
-class ICollectionField(ISequence):
-    """A field representing a sequence.
-
-    All iterables satisfy this collection field.
-    """
 
 
 class IHTTPResource(Interface):
