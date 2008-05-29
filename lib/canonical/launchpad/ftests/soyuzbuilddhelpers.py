@@ -139,7 +139,7 @@ class OkSlave:
 
     def ensurepresent(self, sha1, url, user=None, password=None):
         print "ensurepresent called, url=%s" % url
-        if user:
+        if user is not None:
             print "URL authorisation with %s/%s" % (user, password)
         return True, None
 

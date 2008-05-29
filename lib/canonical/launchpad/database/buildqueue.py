@@ -23,7 +23,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus, SourcePackageUrgency)
+    PackagePublishingPocket, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):

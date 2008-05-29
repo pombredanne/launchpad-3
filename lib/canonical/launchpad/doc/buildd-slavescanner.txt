@@ -799,8 +799,6 @@ permissive database user.
 
     >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> from canonical.launchpad.database.publishing import (
-    ...     SecureSourcePackagePublishingHistory)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = old_candidate.build.sourcepackagerelease

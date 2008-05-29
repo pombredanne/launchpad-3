@@ -11,9 +11,6 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool
-
-from canonical.launchpad import _
 
 
 class IBuildQueue(Interface):

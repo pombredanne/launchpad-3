@@ -16,8 +16,8 @@ See more initialization details in canonical/buildd/ftests/harness.py
 Use simple xmlrpclib client to certify the BuildSlave is running
 
   >>> import xmlrpclib
-  >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
-  >>> s.echo('Hello World')
+  >>> slave = xmlrpclib.Server('http://localhost:8221/rpc/')
+  >>> slave.echo('Hello World')
   ['Hello World']
 
 With slave protocol v1.0new, the only way to get files to the slave is to
@@ -34,7 +34,8 @@ put them in the librarian first...
   ...                    hw_sio, "text/plain")
   >>> transaction.commit()
   >>> lf = LibraryFileAlias.get(alias)
-  >>> present, info = s.ensurepresent(lf.content.sha1, lf.http_url, "", "")
+  >>> present, info = slave.ensurepresent(
+  ...     lf.content.sha1, lf.http_url, "", "")
   >>> present, info
   (True, 'Download')
 
