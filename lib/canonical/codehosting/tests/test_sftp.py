@@ -348,7 +348,7 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
 
     def getPathSegment(self):
         """Return a unique path segment for testing."""
-        return self._factory.getUniqueString()
+        return self._factory.getUniqueString('%41%42%43-')
 
     def test_serverSetAttrs(self):
         # setAttrs on the TransportSFTPServer doesn't do anything either.
