@@ -18,14 +18,14 @@ let's use 'pmount' sources.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
 
-    >>> pmount_from = pmount['0.1-2'].sourcepackagerelease
-    >>> pmount_to = pmount['0.1-1'].sourcepackagerelease
+    >>> pmount_from = pmount['0.1-1'].sourcepackagerelease
+    >>> pmount_to = pmount['0.1-2'].sourcepackagerelease
 
 A packageDiff can be created from the two packages by calling
 requestDiffTo(). It takes two arguments: the user requesting the
 packageDiff, and the sourcepackagerelease to that has the changes.
 
-Requesting a diff from pmount_0.1-2 to pmount_0.1-1.
+Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> package_diff = pmount_from.requestDiffTo(
@@ -59,7 +59,7 @@ Its main attributes are:
     True
 
     >>> print package_diff.from_source.title
-    pmount - 0.1-2
+    pmount - 0.1-1
 
  * 'to_source', which maps to a `ISourcePackageRelease`, the result
    source used in the diff.
@@ -69,7 +69,7 @@ Its main attributes are:
     True
 
     >>> print package_diff.to_source.title
-    pmount - 0.1-1
+    pmount - 0.1-2
 
 Since the PackageDiff was not yet performed, both, 'date_fulfilled'
 and 'diff_content' attributes are empty.
@@ -84,7 +84,7 @@ IPackageDiff offers a property that return the 'title' of the diff
 request.
 
     >>> print package_diff.title
-    Package diff from pmount - 0.1-2 to pmount - 0.1-1
+    Package diff for pmount from 0.1-1 to 0.1-2
 
 An attempt to record an already recorded DiffRequest will result in an
 error:
@@ -93,8 +93,8 @@ error:
     ...     requester=cprov, to_sourcepackagerelease=pmount_to)
     Traceback (most recent call last):
     ...
-    PackageDiffAlreadyRequested: Package diff from pmount - 0.1-2 to
-    pmount - 0.1-1 was already requested by Celso Providelo
+    PackageDiffAlreadyRequested: Package diff for pmount from 0.1-1 to
+    0.1-2 was already requested by Celso Providelo
 
 
 == Diff request for source uploads ==
@@ -149,7 +149,7 @@ requests a diff, since there is a suitable ancestry.
 
     >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-8 to biscuit - 1.0-1
+    Package diff for biscuit from 1.0-1 to 1.0-8
 
 We will release ubuntu/hoary so we can upload to post-RELEASE pockets.
 
@@ -166,7 +166,7 @@ the last published version in the RELEASE pocket.
 
     >>> [diff] = biscuit_nine_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8
+    Package diff for biscuit from 1.0-8 to 1.0-9
 
 The subsequent version uploaded to hoary-updates will get a diff
 against 1.0-9.
@@ -178,7 +178,7 @@ against 1.0-9.
 
     >>> [diff] = biscuit_ten_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9
+    Package diff for biscuit from 1.0-9 to 1.0-10
 
 An upload to other pocket, in this case hoary-proposed, will get a diff
 against the last version in the RELEASE pocket.
@@ -190,7 +190,7 @@ against the last version in the RELEASE pocket.
 
     >>> [diff] = biscuit_eleven_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8
+    Package diff for biscuit from 1.0-8 to 1.0-11
 
 For testing diffs in the PPA context we need to activate the PPA for
 Foo Bar.
@@ -212,7 +212,7 @@ version in the PRIMARY archive in the RELEASE pocket.
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8
+    Package diff for biscuit from 1.0-8 to 1.0-2
 
 A subsequent upload in the PPA context will get a diff against 1.0-2,
 the version found in its context.
@@ -224,7 +224,7 @@ the version found in its context.
 
     >>> [diff] = biscuit_three_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2
+    Package diff for biscuit from 1.0-2 to 1.0-3
 
 
 == Performing a Diff ==
@@ -276,9 +276,31 @@ was uploaded.
 
     >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
 
-Now we can run it.
+The PackageDiff record is not yet 'performed', so both,
+'date_fullfiled' and 'diff_content' fields, are empty.
+
+    >>> print diff.date_fulfilled
+    None
+
+    >>> print diff.diff_content
+    None
+
+Performing the diff.
 
     >>> diff.performDiff()
+
+The record is immediatelly updated, now the record contains a
+'date_fullfilled' and 'diff_contents' points to a LibraryFileAlias
+with a proper mimetype.
+
+    >>> diff.date_fulfilled is not None
+    True
+
+    >>> print diff.diff_content.filename
+    biscuit_1.0-1_1.0-8.diff.gz
+
+    >>> print diff.diff_content.mimetype
+    application/gzipped-patch
 
 Since it stores the diff results in the librarian we need to commit the
 transaction before we can access the file.
@@ -291,17 +313,17 @@ Now we can compare the package diff outcome to the debdiff output
     >>> print get_diff_results(diff)
     --- biscuit-1.0/contents
     +++ biscuit-1.0/contents
-    @@ -3 +2,0 @@
-    -1.0-8
+    @@ -2,0 +3 @@
+    +1.0-8
     --- biscuit-1.0/debian/changelog
     +++ biscuit-1.0/debian/changelog
-    @@ -1,9 +1,3 @@
-    -biscuit (1.0-8) hoary; urgency=low
-    -
-    -  * cookies
-    -
-    - -- Foo Bar <foo.bar@canonical.com> ...
-    -
+    @@ -1,3 +1,9 @@
+    +biscuit (1.0-8) hoary; urgency=low
+    +
+    +  * cookies
+    +
+    + -- Foo Bar <foo.bar@canonical.com>  ...
+    +
      biscuit (1.0-1) hoary; urgency=low
     <BLANKLINE>
        * Initial Upstream package
@@ -329,24 +351,28 @@ stored.
 
     >>> for diff in packagediff_set:
     ...     print diff.title, diff.date_fulfilled is not None
-    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2  False
-    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8  False
-    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8 False
-    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9 False
-    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8  False
-    Package diff from biscuit - 1.0-8 to biscuit - 1.0-1  True
-    Package diff from pmount - 0.1-2 to pmount - 0.1-1    False
+    Package diff for biscuit from 1.0-2 to 1.0-3 False
+    Package diff for biscuit from 1.0-8 to 1.0-2 False
+    Package diff for biscuit from 1.0-8 to 1.0-11 False
+    Package diff for biscuit from 1.0-9 to 1.0-10 False
+    Package diff for biscuit from 1.0-8 to 1.0-9 False
+    Package diff for biscuit from 1.0-1 to 1.0-8 True
+    Package diff for pmount from 0.1-1 to 0.1-2 False
 
 Or only the PackageDiffs not yet fullfilled.
 
     >>> for diff in packagediff_set.getPendingDiffs():
     ...     print diff.title, diff.date_fulfilled is not None
-    Package diff from pmount - 0.1-2 to pmount - 0.1-1    False
-    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8  False
-    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9 False
-    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8 False
-    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8  False
-    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2  False
+    Package diff for pmount from 0.1-1 to 0.1-2 False
+    Package diff for biscuit from 1.0-8 to 1.0-9 False
+    Package diff for biscuit from 1.0-9 to 1.0-10 False
+    Package diff for biscuit from 1.0-8 to 1.0-11 False
+    Package diff for biscuit from 1.0-8 to 1.0-2 False
+    Package diff for biscuit from 1.0-2 to 1.0-3 False
+
+Note that the iteration over all PackageDiffs is sorted by descending
+database ID, i.e. newest first, and getPendingDiffs() results are
+ordered by ascending database IDs, oldest first.
 
 getPendingDiffs() results can optionally be limited.
 
