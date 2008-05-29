@@ -367,7 +367,7 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
         appropriate `IFieldMarshaller` for the value_type.
         """
         if not isinstance(value, list):
-           value = [value]
+            value = [value]
         value = [self.value_marshaller.marshall_from_request(item)
                  for item in value]
         return super(
@@ -377,7 +377,7 @@ class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
     def unmarshall(self, entry, value):
         """See `SimpleFieldMarshaller`.
 
-        The colleciton is unmarshalled into a list and all its items are
+        The collection is unmarshalled into a list and all its items are
         unmarshalled using the appropriate FieldMarshaller.
         """
         return [self.value_marshaller.unmarshall(entry, item)

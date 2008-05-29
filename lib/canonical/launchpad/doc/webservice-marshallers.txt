@@ -552,8 +552,8 @@ The return type is correctly typed to the concrete collection.
     Set([<Person...>, <Person...>])
 
 When coming from the request, either a list or a JSON-encoded
-representation is accepted. The normal request rules for the underlying
-are then followed.
+representation is accepted. The normal request rules for the
+underlying type are then followed.
 
     >>> list_marshaller.marshall_from_request([u'1', u'2'])
     [u'1', u'2']
@@ -568,9 +568,9 @@ Except that 'null' still returns None.
     >>> print list_marshaller.marshall_from_request('null')
     None
 
-Also, as a convenience for web client, not to have to JSON encode list
-of one value, if the input value isn't a list. The single value will be
-interpreted as the sole element of a list.
+Also, as a convenience for web client, so that they don't have to JSON
+encode single-element list, non-list value are promoted into a
+single-element list.
 
     >>> tuple_marshaller.marshall_from_request('1')
     (1,)
@@ -588,7 +588,7 @@ representation of each its members.
 == CollectionField ==
 
 Since CollectionField are really a list of references to other objects,
-and they are exposed using a dedicated ColletionResource, the marshaller
+and they are exposed using a dedicated CollectionResource, the marshaller
 for this kind of field is simpler.  Let's do an example with a
 collection of IPerson objects associated with some IPerson. (This
 might be the list of teams in which a person has a membership, or
