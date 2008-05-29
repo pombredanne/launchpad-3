@@ -290,7 +290,7 @@ Performing the diff.
     >>> diff.performDiff()
 
 The record is immediatelly updated, now the record contains a
-'date_fullfilled' and 'diff_contents' points to a LibraryFileAlias
+'date_fullfilled' and 'diff_content' points to a LibraryFileAlias
 with a proper mimetype.
 
     >>> diff.date_fulfilled is not None
@@ -349,26 +349,31 @@ stored.
     >>> from canonical.launchpad.interfaces import IPackageDiffSet
     >>> packagediff_set = getUtility(IPackageDiffSet)
 
-    >>> for diff in packagediff_set:
-    ...     print diff.title, diff.date_fulfilled is not None
-    Package diff for biscuit from 1.0-2 to 1.0-3 False
-    Package diff for biscuit from 1.0-8 to 1.0-2 False
-    Package diff for biscuit from 1.0-8 to 1.0-11 False
-    Package diff for biscuit from 1.0-9 to 1.0-10 False
-    Package diff for biscuit from 1.0-8 to 1.0-9 False
-    Package diff for biscuit from 1.0-1 to 1.0-8 True
-    Package diff for pmount from 0.1-1 to 0.1-2 False
+    >>> def print_diffs(diff_set):
+    ...     diffs = list(diff_set)
+    ...     diff_first_id = diffs[0].id
+    ...     for diff in diff_set:
+    ...         id_diff = diff.id - diff_first_id
+    ...         print diff.title, diff.date_fulfilled is not None, id_diff
+
+    >>> print_diffs(packagediff_set)
+    Package diff for biscuit from 1.0-2 to 1.0-3   False   0
+    Package diff for biscuit from 1.0-8 to 1.0-2   False  -1
+    Package diff for biscuit from 1.0-8 to 1.0-11  False  -2
+    Package diff for biscuit from 1.0-9 to 1.0-10  False  -3
+    Package diff for biscuit from 1.0-8 to 1.0-9   False  -4
+    Package diff for biscuit from 1.0-1 to 1.0-8   True   -5
+    Package diff for pmount from 0.1-1 to 0.1-2    False  -6
 
 Or only the PackageDiffs not yet fullfilled.
 
-    >>> for diff in packagediff_set.getPendingDiffs():
-    ...     print diff.title, diff.date_fulfilled is not None
-    Package diff for pmount from 0.1-1 to 0.1-2 False
-    Package diff for biscuit from 1.0-8 to 1.0-9 False
-    Package diff for biscuit from 1.0-9 to 1.0-10 False
-    Package diff for biscuit from 1.0-8 to 1.0-11 False
-    Package diff for biscuit from 1.0-8 to 1.0-2 False
-    Package diff for biscuit from 1.0-2 to 1.0-3 False
+    >>> print_diffs(packagediff_set.getPendingDiffs())
+    Package diff for pmount from 0.1-1 to 0.1-2    False   0
+    Package diff for biscuit from 1.0-8 to 1.0-9   False   2
+    Package diff for biscuit from 1.0-9 to 1.0-10  False   3
+    Package diff for biscuit from 1.0-8 to 1.0-11  False   4
+    Package diff for biscuit from 1.0-8 to 1.0-2   False   5
+    Package diff for biscuit from 1.0-2 to 1.0-3   False   6
 
 Note that the iteration over all PackageDiffs is sorted by descending
 database ID, i.e. newest first, and getPendingDiffs() results are
