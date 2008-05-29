@@ -51,6 +51,13 @@ class SoyuzTestPublisher:
         self.breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.breezy_autotest_hppa.addOrUpdateChroot(fake_chroot)
 
+    def regetBreezyAutotest(self): 
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.breezy_autotest = self.ubuntutest['breezy-autotest']
+        self.person = getUtility(IPersonSet).getByName('name16')
+        self.breezy_autotest_i386 = self.breezy_autotest['i386']
+        self.breezy_autotest_hppa = self.breezy_autotest['hppa']
+
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
 

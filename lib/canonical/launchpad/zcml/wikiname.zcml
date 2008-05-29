@@ -1,4 +1,8 @@
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.WikiName">
         <allow interface="canonical.launchpad.interfaces.IWikiName"/>
@@ -15,5 +19,11 @@
         provides="canonical.launchpad.interfaces.IWikiNameSet">
         <allow interface="canonical.launchpad.interfaces.IWikiNameSet" />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IWikiName"
+        path_expression="string:+wikiname/${id}"
+        attribute_to_parent="person"
+        rootsite="api" />
 
 </configure>

@@ -322,11 +322,11 @@ class Bug(SQLBase):
             if sub.person.id == person.id:
                 return sub
 
-        subscription = BugSubscription(
+        sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
         # Ensure that the subscription has been flushed.
-        subscription_id = subscription.id
-        return subscription
+        sub_id = sub.id
+        return sub
 
     def unsubscribe(self, person):
         """See `IBug`."""
@@ -611,6 +611,10 @@ class Bug(SQLBase):
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
+            # XXX 2008-05-27 jamesh:
+            # Ensure that BugMessages get flushed in same order as
+            # they are created.
+            Store.of(result).flush()
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):

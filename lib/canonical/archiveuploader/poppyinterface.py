@@ -9,6 +9,7 @@ import os
 import stat
 import time
 
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from contrib.glock import GlobalLock
 
@@ -21,6 +22,7 @@ class PoppyInterface:
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
                  targetstart=0, perms=None):
+        execute_zcml_for_scripts()
         self.tm = initZopeless(dbuser='ro')
         self.targetpath = targetpath
         self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)

@@ -383,18 +383,33 @@ Just to keep the config sane, as it was before:
 As for the normal (main archive) build candidates we are also able
 send notification about current (changed) PPA build record status.
 
+PPA build notifications should be as much as possible similar to those
+in the main archive, the important differences are:
+
+ * We do not include 'buildd-admins' celebrity in its recipients,
+   instead we include the Archive owner;
+
+ * We try to be explicit in the subject and in the body of the message
+   that it is about a PPA build candidate;
+
+ * We don't have a 'source package' page for PPA sources.
+
+ * We only warn the uploader (person specified in 'Changed-By'
+   changesfile) and the signer (person who owns the GPG key used to
+   signed the package) if the package was not copied.
+
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> naked_failed_candidate = removeSecurityProxy(failed_candidate)
-  >>> naked_failed_candidate.archive = cprov.archive
+  >>> from canonical.launchpad.interfaces import BuildStatus
+  >>> failed_candidate = cprov.archive.getBuildRecords(
+  ...     build_state=BuildStatus.FAILEDTOBUILD, name='cdrkit')[0]
 
   >>> failed_candidate.notify()
 
 Was this package copied?
 
-    >>> (failed_candidate.archive != 
+    >>> (failed_candidate.archive !=
     ... failed_candidate.sourcepackagerelease.upload_archive)
     True
 
@@ -411,13 +426,13 @@ Checking the message contents:
   >>> notification_body = build_notification.get_payload()
   >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
-   * Source Package: pmount
-   * Version: 0.1-1
+   * Source Package: cdrkit
+   * Version: 1.0
    * Architecture: i386
    * Archive: cprov PPA
    * Component: main
    * State: Failed to build
-   * Duration: three minutes
+   * Duration: a minute
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
    * Builder: http://launchpad.dev/+builds/bob
    * Source: not available
@@ -431,21 +446,55 @@ The notification went to the PPA owner.
 Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
-  Subject: [Build #9] i386 build of pmount 0.1-1 in ubuntu warty RELEASE (cprov PPA)
+  Subject: [Build #26] i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE (cprov PPA)
   X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   X-Launchpad-Build-Component: main
   X-Launchpad-Build-Arch: i386
   X-Launchpad-PPA: cprov
 
-PPA build notifications should be as much as possible similar to those
-in the main archive, the important differences are:
+In order to test build notifications for sources that were not copied,
+we will change the 'failed_candidate' source, setting its
+'upload_archive' to the same archive was built, Celso's PPA.
 
- * We do not include 'buildd-admins' celebrity in its recipients,
-   instead we include the Archive owner;
+  >>> naked_candidate = removeSecurityProxy(failed_candidate)
+  >>> naked_sourcepackagerelease = naked_candidate.sourcepackagerelease
+  >>> naked_sourcepackagerelease.upload_archive = failed_candidate.archive
 
- * We try to be explicit in the subject and in the body of the message
-   that it is about a PPA build candidate;
+We also make 'Foo Bar' the source signer.
 
- * We don't have a 'source package' page for PPA sources.
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> gpgkey = getUtility(IGPGKeySet).get(1)
+  >>> print gpgkey.owner.name
+  name16
+  >>> naked_sourcepackagerelease.dscsigningkey = gpgkey
+
+Since 'sabdlf' is the 'creator' it makes the failed-to-build source to
+look like a 'sponsored' upload.
+
+  >>> print failed_candidate.sourcepackagerelease.creator.name
+  sabdfl
+
+Finally we issue the notification.
+
+  >>> failed_candidate.notify()
+
+As expected for a 'not-copied and sponsored' PPA upload, all the three
+people involved with the source are notified.
+
+ * 'cprov' who owns the PPA where the source is being built;
+ * 'name16' who signed the source upload;
+ * 'sabdlf' who was listed as the creator of the source revision.
+
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
+  3
+
+  >>> for notification in notifications:
+  ...     print notification['To']
+  celso.providelo@canonical.com
+  foo.bar@canonical.com
+  mark@hbd.com
+
+
 

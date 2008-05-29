@@ -12,10 +12,12 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+from email.Utils import make_msgid
 from StringIO import StringIO
-import pytz
 
+import pytz
 from zope.component import getUtility
+from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
@@ -55,6 +57,7 @@ from canonical.launchpad.interfaces import (
     UnknownBranchTypeError,
     )
 from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.database import Message, MessageChunk
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -480,6 +483,54 @@ class LaunchpadObjectFactory:
         return getUtility(ICodeImportResultSet).new(
             code_import, machine, requesting_user, log_excerpt, log_alias,
             result_status, date_started, date_finished)
+
+    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
+                                    svn_branch_url=None, cvs_root=None,
+                                    cvs_module=None,
+                                    source_product_series_id=0):
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
+        if branch_id is None:
+            branch_id = self.getUniqueInteger()
+        if rcstype is None:
+            rcstype = 'svn'
+        if rcstype == 'svn':
+            assert cvs_root is cvs_module is None
+            if svn_branch_url is None:
+                svn_branch_url = self.getUniqueURL()
+        elif rcstype == 'cvs':
+            assert svn_branch_url is None
+            if cvs_root is None:
+                cvs_root = self.getUniqueString()
+            if cvs_module is None:
+                cvs_module = self.getUniqueString()
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return CodeImportSourceDetails(
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
+            source_product_series_id)
+
+    def makeCodeReviewMessage(self, subject=None, body=None, vote=None):
+        if subject is None:
+            subject = self.getUniqueString()
+        if body is None:
+            body = self.getUniqueString()
+        return self.makeBranchMergeProposal().createMessage(
+            self.makePerson(), subject, body, vote)
+
+    def makeMessage(self, subject=None, content=None, parent=None):
+        if subject is None:
+            subject = self.getUniqueString()
+        if content is None:
+            content = self.getUniqueString()
+        owner = self.makePerson()
+        rfc822msgid = make_msgid("launchpad")
+        message = Message(rfc822msgid=rfc822msgid, subject=subject,
+            owner=owner, parent=parent)
+        MessageChunk(message=message, sequence=1, content=content)
+        return message
 
     def makeSeries(self, user_branch=None, import_branch=None,
                    name=None, product=None):

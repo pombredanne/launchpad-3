@@ -1,0 +1,31 @@
+<tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
+    <div class="boardComment">
+        <div class="boardCommentDetails">
+            <span tal:content="structure context/message/owner/fmt:link:mainsite"
+                  id="comment-from" />
+            <span tal:condition="context/vote" id="voted-block">
+              voted
+              <strong id="comment-vote" tal:content="context/vote/title" />
+              <strong id="comment-vote-tag" tal:content="context/vote_tag"
+                      tal:condition="context/vote_tag" />
+            </span>
+            <span tal:condition="not:context/vote" id="wrote-block">
+              wrote
+            </span>
+            <span tal:content="context/message/datecreated/fmt:displaydate"
+            id="comment-date"/>:
+            <strong id="comment-subject" tal:content="context/message/subject"
+            />
+        </div>
+        <div class="boardCommentBody">
+            <div>
+              <tt id="comment-body"
+                  tal:content="structure
+                  context/message/text_contents/fmt:text-to-html" />
+            </div>
+        </div>
+    </div>
+</tal:root>

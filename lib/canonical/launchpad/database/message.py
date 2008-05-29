@@ -15,6 +15,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
+from storm.store import Store
 
 import pytz
 
@@ -47,7 +48,7 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_public_person, notNull=False)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',
@@ -100,6 +101,7 @@ class Message(SQLBase):
     # interface because it is used as a UI field in MessageAddView
     content = None
 
+
 def get_parent_msgids(parsed_message):
     """Returns a list of message ids the mail was a reply to.
 
@@ -144,6 +146,10 @@ class MessageSet:
             subject=subject, rfc822msgid=rfc822msgid, owner=owner,
             datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
 
     def _decode_header(self, header):
@@ -224,7 +230,6 @@ class MessageSet:
                 # in the database, but the message headers and/or content
                 # are different. For the moment, we have chosen to allow
                 # this, but in future we may want to flag it in some way
-                pass
 
         # Stuff a copy of the raw email into the Librarian, if it isn't
         # already in there.
@@ -404,7 +409,48 @@ class MessageSet:
         #         MessageChunk(
         #             message=message, sequence=sequence, content=epilogue
         #             )
+
+        # XXX 2008-05-27 jamesh:
+        # Ensure that BugMessages get flushed in same order as they
+        # are created.
+        Store.of(message).flush()
         return message
+
+    @staticmethod
+    def _parentToChild(messages):
+        """Return a mapping from parent to child and list of root messages."""
+        result = {}
+        roots = []
+        for message in messages:
+            if message.parent is None:
+                roots.append(message)
+            else:
+                result.setdefault(message.parent, []).append(message)
+            result.setdefault(message, [])
+        return result, roots
+
+    @classmethod
+    def threadMessages(klass, messages):
+        """See `IMessageSet`."""
+        result, roots = klass._parentToChild(messages)
+        def get_children(node):
+            children = []
+            for child in result[node]:
+                children.append((child, get_children(child)))
+            return children
+        threads = []
+        for root in roots:
+            threads.append((root, get_children(root)))
+        return threads
+
+    @classmethod
+    def flattenThreads(klass, threaded_messages, _depth=0):
+        """See `IMessageSet`."""
+        for message, children in threaded_messages:
+            yield (_depth, message)
+            for depth, message in klass.flattenThreads(children, _depth + 1):
+                yield depth, message
+
 
 class MessageChunk(SQLBase):
     """One part of a possibly multipart Message"""

@@ -47,7 +47,7 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False)
+        storm_validator=validate_public_person, notNull=True)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 

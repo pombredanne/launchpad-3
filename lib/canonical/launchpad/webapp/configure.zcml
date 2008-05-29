@@ -147,6 +147,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.browser.BugTaskListingItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
@@ -379,6 +386,13 @@
         factory="canonical.launchpad.webapp.tales.SpecificationBranchFormatterAPI"
         name="fmt"
         />
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeReviewMessageFormatterAPI"
+        name="fmt"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.app.traversing.interfaces.IPathAdapter"

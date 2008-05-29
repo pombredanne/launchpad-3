@@ -211,11 +211,12 @@ author have not been approved.
     ...     from canonical.testing import LaunchpadZopelessLayer
     ...     from canonical.config import config
     ...     branch_unique_name = branch.unique_name
+    ...     launchpad_dbuser = config.launchpad.dbuser
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
     ...     factory.makeRevisionsForBranch(branch)
     ...     commit()
-    ...     LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+    ...     LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
     ...     return branch_set.getByUniqueName(branch_unique_name)
     >>> source_branch = add_some_revisions_to_branch(
     ...     source_branch, factory, branch_set)

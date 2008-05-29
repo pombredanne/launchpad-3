@@ -18,7 +18,7 @@ import threading
 
 from zope.component import getUtility
 
-from bzrlib.transport import get_transport, sftp, ssh, Server
+from bzrlib.transport import get_transport, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
-from canonical.codehosting.transport import BlockingProxy, LaunchpadServer
+from canonical.codehosting.transport import LaunchpadServer
 
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 
@@ -90,7 +90,6 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
             while self._sftp_clients:
                 client = self._sftp_clients.pop()
                 client.close()
-            sftp.clear_connection_cache()
             gc.collect()
         while self._ssh_transports:
             connection = self._ssh_transports.pop()
@@ -243,7 +242,7 @@ class FakeLaunchpadServer(LaunchpadServer):
         # The backing transport is supplied during FakeLaunchpadServer.setUp.
         mirror_transport = get_transport(server.get_url())
         LaunchpadServer.__init__(
-            self, BlockingProxy(authserver), user_id, None, mirror_transport)
+            self, authserver, user_id, None, mirror_transport)
         self._schema = 'lp'
 
     def getTransport(self, path=None):

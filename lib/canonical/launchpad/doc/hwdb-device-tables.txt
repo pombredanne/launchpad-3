@@ -18,14 +18,18 @@ IHWVendorNameSet.create().
 Each name in the table must be unique. The attempt to create a second
 row with the same name raises an IntegrityError error.
 
+    >>> from storm.store import Store
+    >>> store = Store.of(intel_name)
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> vendor_name_set.create('Intel')
+    <HWVendorName ...
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwvendorname_name_key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
 == HWVendorID ==
@@ -51,11 +55,13 @@ The tuple (bus, vendor id, vendor name) must be unique.
     >>> vendor_id_set.create(bus=HWBus.PCI,
     ...                      vendor_id='0x8086',
     ...                      vendor_name=intel_name)
+    <HWVendorID ...
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwvendorid__bus_vendor_id__vendor_name__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
 We store the (bus specific) vendor ID as a string, but several busses
@@ -98,6 +104,9 @@ A..F is rejected.
     Traceback (most recent call last):
     ...
     ValueError: '0x10AE' is not a valid vendor ID for PCI
+    >>> from storm.tracer import debug; debug(True)
+    >>> store.flush()
+    >>> debug(False)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x10AE',
@@ -555,11 +564,12 @@ IntegrityError error.
     ...                                     vendor_id='0x07b3',
     ...                                     product_id='0x0017',
     ...                                     product_name='some scanner')
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwdevice__bus_vendor_id__bus_product_id__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
     >>> another_scanner = device_set.create(bus=HWBus.USB,
@@ -567,11 +577,12 @@ IntegrityError error.
     ...                                     product_id='0x0017',
     ...                                     variant='OpticPro UT16',
     ...                                     product_name='OpticPro UT16')
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwdevice__bus_vendor_id__bus_product_id__variant__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
 
@@ -612,11 +623,12 @@ IntegrityError error.
     >>> same_variant = device_name_variant_set.create(device=optic_pro_ut16,
     ...                                               vendor_name='Medion',
     ...                                               product_name='MD 1234')
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwdevicenamevariant__vendor_name__product_name__device__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
 
@@ -677,21 +689,23 @@ The tuple (driver name, package name) must be unique.
     >>> driver = driver_set.create(package_name='linux-image-generic',
     ...                            name='usb',
     ...                            license=License.GNU_GPL_V2)
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwdriver__package_name__name__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
     >>> driver = driver_set.create(package_name=None,
     ...                            name='whatever',
     ...                            license=License.GNU_GPL_V2)
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwdriver__name__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
 == HWDeviceDriverLink ==
@@ -776,19 +790,23 @@ The tuple (device, driver) must be unique.
     >>> LaunchpadZopelessLayer.txn.commit()
     >>> device_driver_link_set.create(device=optic_pro_ut12,
     ...                               driver=closed_driver)
+    <HWDeviceDriverLink...
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwdevicedriverlink__device__driver__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
     >>> device_driver_link_set.create(device=tuffbook_2600, driver=None)
+    <HWDeviceDriverLink...
+    >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: duplicate key value violates unique
     constraint "hwdevicedriverlink__device__key"
-    ...
+    <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
 
 
@@ -835,7 +853,7 @@ that we just have created.
     >>> submitted_usb_controller = submission_device_set.create(
     ...      device_driver_link=usb_controller_usb_link,
     ...      submission=sample_submission,
-    ...      parent=usb_controller_ehci_hcd_link)
+    ...      parent=submitted_usb_ehci_hcd_controller)
 
 The USB controller is connected to an (often internal) USB hub. We don't
 yet have HWDevice and HWDeviceDriverLink records for this hub, so we must

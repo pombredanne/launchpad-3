@@ -85,6 +85,7 @@ If the archive is private, its score is boosted by 10000:
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bq0.build.archive.buildd_secret = "secret"
     >>> bq0.build.archive.private = True
     >>> bq0.score()
     >>> bq0.lastscore

@@ -1144,6 +1144,7 @@ gets over-long.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
+    >>> bug_three.unsubscribe(sample_person)
     >>> bug_three.tags = [u'layout-test', u'another-tag', u'yet-another']
     >>> commit()
 

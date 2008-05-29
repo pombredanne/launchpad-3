@@ -143,12 +143,12 @@ will be returned by the search if search_comments is True.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
-    <...Message object at ...>
+    <Message at ...>
 
     # Add another comment to make sure that it won't cause the same
     # bugtask to be returned twice.
     >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
-    <...Message object at ...>
+    <Message at ...>
 
     >>> config.malone.search_comments = True
     >>> found_bugtasks = firefox.searchTasks(comment_search)
@@ -244,7 +244,7 @@ nominated_for parameter.
     ...                     comment='Something'))
     >>> BugNomination(
     ...     owner=no_priv, distroseries=warty, bug=nominated_bug)
-    <...BugNomination object at ...>
+    <BugNomination at ...>
 
     >>> for bugtask in ubuntu.searchTasks(nominated_for_warty):
     ...     print bugtask.bug.title
@@ -267,7 +267,7 @@ series.
     ...                     comment='Something'))
     >>> BugNomination(
     ...     owner=no_priv, productseries=firefox_trunk, bug=nominated_bug)
-    <...BugNomination object at ...>
+    <BugNomination at ...>
 
     >>> for bugtask in firefox.searchTasks(nominated_for_trunk):
     ...     print bugtask.bug.title
@@ -402,14 +402,14 @@ comments will produce eight found bug tasks (three for bug 1, five for bug 2).
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'No subject', 'some comment')
-    <...Message object at ...>
+    <Message at ...>
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_two.newMessage(no_priv, 'No subject', 'another comment')
-    <...Message object at ...>
+    <Message at ...>
 
     >>> bug_two.newMessage(no_priv, 'No subject', 'yet another comment')
-    <...Message object at ...>
+    <Message at ...>
 
     >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
     ...                                for bugtask in found_bugtasks):
@@ -432,7 +432,7 @@ will not be included in the results returned by the bug commenter search.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.createBug(
     ...     CreateBugParams(no_priv, "Some bug", "Some comment"))
-    <...Bug object at ...>
+    <Bug at ...>
 
     >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
     ...                                for bugtask in found_bugtasks):

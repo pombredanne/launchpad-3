@@ -128,6 +128,27 @@ class IMessageSet(Interface):
             * InvalidEmailMessage
         """
 
+    def threadMessages(messages):
+        """Return a threaded version of supplied message list.
+
+        Return value is a recursive list structure.
+        Each parent entry in the top-level list is a tuple of
+        (parent, children), where children is a list of parents.  (Parents
+        may be childless.)
+
+        Example:
+        [(parent, [(child1, [(grandchild1, [])]), (child2, [])])]
+        """
+
+    def flattenThreads(threaded_messages):
+        """Convert threaded messages into a flat, indented form.
+
+        Take a thread (in the form produced by threadMessages) and
+        iterate through a series of (depth, message) tuples.  The ordering
+        will match that implied by the input structure, with all replies
+        to a message appearing after that message.
+        """
+
 
 class IMessageChunk(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)

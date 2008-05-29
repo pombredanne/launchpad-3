@@ -134,9 +134,9 @@ registered either.
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
     >>> emailset = getUtility(IEmailAddressSet)
     >>> new_address = emailset.new('frederick@example.com', fred)
-    >>> new_address.email, new_address.statusname
+    >>> new_address.email, new_address.status.title
     (u'frederick@example.com', 'New Email Address')
-    >>> sorted((email_address.email, email_address.statusname)
+    >>> sorted((email_address.email, email_address.status.title)
     ...        for email_address in emailset.getByPerson(fred))
     [(u'fperson@example.org', 'Validated Email Address'),
      (u'fred.person@example.com', 'Preferred Email Address'),

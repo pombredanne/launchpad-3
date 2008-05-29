@@ -67,7 +67,8 @@ class CodeImportMachine(SQLBase):
 
     def setOnline(self, user=None, message=None):
         """See `ICodeImportMachine`."""
-        if self.state != CodeImportMachineState.OFFLINE:
+        if self.state not in (CodeImportMachineState.OFFLINE,
+                              CodeImportMachineState.QUIESCING):
             raise AssertionError(
                 "State of machine %s was %s."
                 % (self.hostname, self.state.name))

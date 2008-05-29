@@ -101,7 +101,7 @@ class Builder(SQLBase):
     failnotes = StringCol(dbName='failnotes', default=None)
     virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
-    manual = BoolCol(dbName='manual', default=False)
+    manual = BoolCol(dbName='manual', default=True)
     vm_host = StringCol(dbName='vm_host', default=None)
     active = BoolCol(dbName='active', default=True)
 
@@ -442,22 +442,21 @@ class Builder(SQLBase):
     @property
     def status(self):
         """See IBuilder"""
-        if self.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
         if not self.builderok:
-            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
+            if self.failnotes is not None:
+                return self.failnotes
+            return 'Disabled'
+        # Cache the 'currentjob', so we don't have to hit the database
+        # more than once.
+        currentjob = self.currentjob
+        if currentjob is None:
+            return 'Idle'
 
-        if self.currentjob:
-            current_build = self.currentjob.build
-            msg = 'BUILDING %s' % current_build.title
-            if current_build.archive.purpose == ArchivePurpose.PPA:
-                archive_name = current_build.archive.owner.name
-                return '%s [%s] (%s)' % (msg, archive_name, mode)
-            return '%s (%s)' % (msg, mode)
-        return 'IDLE (%s)' % mode
+        msg = 'Building %s' % currentjob.build.title
+        if currentjob.build.archive.purpose != ArchivePurpose.PPA:
+            return msg
+
+        return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""

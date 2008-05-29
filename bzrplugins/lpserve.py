@@ -64,8 +64,8 @@ class cmd_launchpad_server(Command):
 
         :param authserver: An `xmlrpclib.ServerProxy` (or equivalent) for the
             Launchpad authserver.
-        :param user_id: A unique ID of the user whose branches are being
-            served. This can be a database ID, a nickname or an email address.
+        :param user_id: The database ID of the user whose branches are being
+            served.
         :param hosted_url: Where the branches are uploaded to.
         :param mirror_url: Where all Launchpad branches are mirrored.
         :return: A `LaunchpadTransport`.
@@ -74,11 +74,8 @@ class cmd_launchpad_server(Command):
         from canonical.codehosting import transport
         hosted_transport = self._get_chrooted_transport(hosted_url)
         mirror_transport = self._get_chrooted_transport(mirror_url)
-        # Translate the given 'id' into an actual database id.
-        user_id = authserver.getUser(user_id)['id']
         lp_server = transport.LaunchpadServer(
-            transport.BlockingProxy(authserver), user_id, hosted_transport,
-            mirror_transport)
+            authserver, user_id, hosted_transport, mirror_transport)
         return lp_server
 
     def get_smart_server(self, transport, port, inet):
