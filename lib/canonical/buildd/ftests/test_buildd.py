@@ -55,7 +55,7 @@ class BuildlogSecurityTests(unittest.TestCase):
 
         opener = self.slave.setupAuthHandler(url, user, password)
 
-        # Inspect urllib2's opener.
+        # Inspect the opener.
         for handler in opener.handlers:
             if isinstance(handler, urllib2.HTTPBasicAuthHandler):
                 break

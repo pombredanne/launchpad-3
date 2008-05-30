@@ -278,7 +278,8 @@ class BuildDSlave(object):
             if not os.path.exists(self.cachePath(sha1sum)):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
                 if username:
-                    opener = self.setupAuthHandler(url, username, password)
+                    opener = self.setupAuthHandler(
+                        url, username, password).open
                 else:
                     opener = urllib2.urlopen
                 try:
