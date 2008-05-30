@@ -12,10 +12,13 @@ from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
 from select import select
 
-# Die and kill the kids if no output for 60 minutes. Tune this if if your
-# slow arsed machine needs it. The main use for this is to keep the pqm
-# queue flowing without having to give it a lifeless enema.
-TIMEOUT = 60 * 60 
+# The TIMEOUT setting (expressed in seconds) affects how long a test will run
+# before it is deemed to be hung, and then appropriately terminated.
+# It's principal use is preventing a PQM job from hanging indefinitely and
+# backing up the queue.
+# e.g. Usage: TIMEOUT = 60 * 15
+# This will set the timeout to 15 minutes.
+TIMEOUT = 60 * 15
 
 def main():
     """Call test.py with whatever arguments this script was run with.
