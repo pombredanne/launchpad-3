@@ -195,14 +195,25 @@ Integers are encoded using strings when in a request.
 
     >>> marshaller.marshall_from_request("4")
     4
-    >>> marshaller.marshall_from_request(u"4")
-    4
+    >>> marshaller.marshall_from_request(u"-4")
+    -4
+
+Note that python octal and hexadecimal syntax isn't supported.
+
+(This would 13 in octal notation.)
+
+    >>> marshaller.marshall_from_request(u"015")
+    15
+    >>> marshaller.marshall_from_request(u"0x04")
+    Traceback (most recent call last):
+      ...
+    ValueError: invalid literal for int() with base 10: '0x04'
 
 
 === Float ===
 
 The marshaller for a Float field checks that the JSON value is indeed a
-float.  A ValueError is raised when its not the case.
+float.  A ValueError is raised when it's not the case.
 
     >>> from zope.schema import Float
     >>> field = Float()
@@ -255,7 +266,7 @@ vocabulary.
 ==== Choice for IVocabularyTokenized ====
 
 The default marshaller will use the vocabulary getTermByToken to
-retrieve the value to use. It raise an error if the value isn't in the
+retrieve the value to use. It raises an error if the value isn't in the
 vocabulary.
 
     >>> field = Choice(__name__='simple', values=[10, 'a value', True])
