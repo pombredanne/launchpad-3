@@ -37,28 +37,29 @@ PS: do <a href="/feedback">tell us</a> if you don't!
 <h2>A brand new project in Launchpad</h2>
 
 <p style="font-size: larger">
-We know you are here because you want to register a project, but let us
-steal a minute of your time to point out a few important things before
-you proceed with the actual registration.
+Launchpad is a service for <b>registering and hosting software
+projects</b>. Service is provided free for open source/free software
+projects. But let us steal a minute of your time to point out a few
+important things before you proceed with the actual registration.
 </p>
 
 <ul style="font-size: larger">
   <li><b>Want to test drive Launchpad?</b>
   If you want a volatile test area, use <a
   href="https://staging.launchpad.net/"><b>staging.launchpad.net</b></a>,
-  our test and code staging instance. You can use that server to create
-  sample projects, file random bugs and even push throw-away branches, all
+  our code staging instance. You can use that server to create sample
+  projects, file random bugs and even push throw-away branches, all
   without disturbing the community actively using Launchpad.
 
   <li style="margin-top: 1em"><b>Not sure what Launchpad is?</b> It's
-  many things (and sometimes a bit confusing). You can check out <a
+  many things (and sometimes a bit confusing); check out <a
   href="https://help.launchpad.net/FeatureHighlights">our user
-  handbook</a> or, if you are the sort that likes pretty pictures, <a
+  handbook</a> or, if you prefer, <a
   href="https://launchpad.net/+tour">take our guided tour</a>.
 
   <li style="margin-top: 1em"><b>Is the project already registered?</b>
   Launchpad is both a hosting and a registration facility, and someone
-  else may have already registered your project before you.
+  else may have already registered the project.
   <br />
   <b style="margin-left: 1em">Check here:</b>
   <form style="display: inline; font-size: smaller" action="/projects">
@@ -80,14 +81,13 @@ you proceed with the actual registration.
     <input type="submit" value="Oh, I want Ubuntu CDs" />
   </form>
   <br /><small>(this
-  may sound weird to you, but a lot of people register projects in order to
-  request CDs!)</small>
+  may sound weird to you, but a lot of people register projects asking
+  for CDs!)</small>
 
 
-  <li style="margin-top: 1em; list-style-type: circle">At this point
-  you're set to move on to <a href="/projects/+new" style="border: 2px
-  solid blue"><b>the project
-  registration form</b></a>.<br /> Thanks for listening!
+  <li style="margin-top: 1em; list-style-type: circle">All set?
+  Move on to <a href="/projects/+new"><b>the registration form</b></a>.
+  Thanks for listening!
 </ul>
 
 </div>
