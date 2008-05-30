@@ -18,6 +18,14 @@ service interface.  The set of people is available from the service root.
     >>> len(launchpad.people)
     63
 
+You can find a person by name.
+
+    >>> salgado = launchpad.people['salgado']
+    >>> salgado.name
+    u'salgado'
+    >>> salgado.display_name
+    u'Guilherme Salgado'
+
 You can iterate through all the people in the set.
 
     >>> names = sorted(person.name for person in launchpad.people)
@@ -28,17 +36,19 @@ You can iterate through all the people in the set.
      ...
      u'stub', u'thumper', u'tsukimi', u'ubuntu-team', u'valyag']
 
-You can find a person by name.
-
-    >>> salgado = launchpad.people['salgado']
-    >>> salgado.name
-    u'salgado'
-    >>> salgado.display_name
-    u'Guilherme Salgado'
-
-But if no person by that name is registered, you get the expected KeyError.
+But if no person by that name is registered, you get the expected KeyError...
 
     >>> launchpad.people['not-a-registered-person']
     Traceback (most recent call last):
     ...
     KeyError: 'not-a-registered-person'
+
+...unless of course, you use the `get()` interface, which acts just like
+`dict.get()`.
+
+    >>> launchpad.people.get('salgado').display_name
+    u'Guilherme Salgado'
+    >>> print launchpad.people.get('not-a-registered-person')
+    None
+    >>> launchpad.people.get('not-a-registered-person', 'missing')
+    'missing'

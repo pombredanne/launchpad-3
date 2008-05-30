@@ -37,11 +37,26 @@ class People(Collection):
     def __getitem__(self, name):
         """Return the named person or team.
 
-        :param index: The person's or team's name
-        :type index: string
+        :param name: The person's or team's name
+        :type name: string
         :return: the person with the given name
         :rtype: `Person`
         :raise KeyError: when there is no named person in the collection.
+        """
+        missing = object()
+        result = self.get(name, missing)
+        if result is missing:
+            raise KeyError(name)
+        return result
+
+    def get(self, name, default=None):
+        """Return the named person or team.
+
+        :param name: The person's or team's name
+        :type name: string
+        :return: the person with the given name or None if there is no such
+            person
+        :rtype: `Person` or None
         """
         # Fast track: we've already seen the person being requested.
         try:
@@ -55,7 +70,7 @@ class People(Collection):
             data = self._browser.get(urljoin(self._base_url, '~' + name))
         except HTTPError, error:
             if error.code == 404:
-                raise KeyError(name)
+                return default
             raise
         person = Person(data)
         self._peopleByName[person.name] = person
