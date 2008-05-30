@@ -371,6 +371,25 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
 
+    @property
+    def mirror_location(self):
+        """Check the mirror location to see if it is a private one."""
+        branch = self.context
+
+        # If the user has edit permissions, then show the actual location.
+        if check_permission('launchpad.Edit', branch):
+            return branch.url
+
+        hosts = config.codehosting.private_mirror_hosts.split(',')
+        private_mirror_hosts = [name.strip() for name in hosts]
+
+        uri = URI(branch.url)
+        for private_host in private_mirror_hosts:
+            if uri.underDomain(private_host):
+                return '<private server>'
+
+        return branch.url
+
 
 class DecoratedMergeProposal:
     """Provide some additional attributes to a normal branch merge proposal.
