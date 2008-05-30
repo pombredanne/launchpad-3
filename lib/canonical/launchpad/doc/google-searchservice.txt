@@ -287,8 +287,8 @@ be raised.
 
 A PageMatch requires a title, url, and a summary. If those elements
 ('<T>', '<U>', '<S>') cannot be found nested in an '<R>' a PageMatch
-cannot be made. A missing title indicates a bad page on Launchpad, so
-it is ignored. In this example, The first match is missing a title,
+cannot be made. A missing title (<T>) indicates a bad page on Launchpad,
+so it is ignored. In this example, The first match is missing a title,
 so only the second page is present in the PageMatches.
 
     >>> gsp_xml_file_name = path.join(
@@ -327,8 +327,94 @@ so only the second page is present in the PageMatches.
     >>> page_matches[0].url
     'http://bugs.launchpad.dev/bugs/205991'
 
-When the U or S cannot be found, an error is raised. In this example,
-the 'U' element is replaced with a 'url' element.
+When a match is missing a summary (<S>), the match is skipped because
+there is no information about why it matched. This appears to relate to
+pages that are in the index, but should be removed. In this example
+taken from real data, the links are to the same page on different
+vhosts. The edge vhost has no summary, so it is skipped.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-missing-summary.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="2">
+    <M>2</M>
+    ...
+    <R N="1">
+    <U>https://blueprints.edge.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
+    <UE>https://blueprints.edge.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <T>Blueprint: &lt;b&gt;gobuntu&lt;/b&gt; hardy</T>
+    <RK>0</RK>
+    <S></S>
+    <LANG>en</LANG>
+    <Label>_cse_ixpjdn21yfg</Label>
+    <HAS>
+    <L/>
+    <RT/>
+    </HAS>
+    </R>...
+    <R N="2">
+    <U>https://blueprints.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
+    <UE>https://blueprints.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <T>Blueprint: &lt;b&gt;Gobuntu&lt;/b&gt; 8.04</T>
+    <RK>0</RK>
+    <S>Discuss what needs to be done for &lt;b&gt;Gobuntu&lt;/b&gt;...
+
+    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> len(page_matches)
+    1
+    >>> page_matches[0].title
+    'Blueprint: <b>Gobuntu</b> 8.04'
+    >>> page_matches[0].url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/gobuntu-hardy'
+
+When the URL (<U>) cannot be found the match is skipped. There are no
+examples of this. We do not want this hypothetical situation to give
+users a bad experience.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-missing-url.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="2">
+    <M>2</M>
+    ...
+    <R N="1">
+    <!-- Non public URL -->
+    <T>Blueprint: &lt;b&gt;gobuntu&lt;/b&gt; hardy</T>
+    <RK>0</RK>
+    <S>Discuss what needs to be done for &lt;b&gt;Gobuntu&lt;/b&gt;...</S>
+    <LANG>en</LANG>
+    <Label>_cse_ixpjdn21yfg</Label>
+    <HAS>
+    <L/>
+    <RT/>
+    </HAS>
+    </R>...
+    <R N="2">
+    <U>https://blueprints.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
+    <UE>https://blueprints.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <T>Blueprint: &lt;b&gt;Gobuntu&lt;/b&gt; 8.04</T>...
+
+    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> len(page_matches)
+    1
+    >>> page_matches[0].title
+    'Blueprint: <b>Gobuntu</b> 8.04'
+    >>> page_matches[0].url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/gobuntu-hardy'
+
+If no matches are found in the response, an error is raised. It is
+possible that all the matches were missing a title or summary, but there
+is also a possibility that the GSP version is incompatible. As there is
+nothing to show the user, we treat this as an error. This example does
+not have any <R> tags.
 
     >>> gsp_xml_file_name = path.join(
     ...     base_path, 'googlesearchservice-incompatible-result.xml')
@@ -340,7 +426,7 @@ the 'U' element is replaced with a 'url' element.
     <RES SN="1" EN="1">
     <M>1</M>
     ...
-    <R N="1">
+    <RESULT N="1">
       <url>https://bugs.launchpad.net/</url>
       <UE>https://bugs.launchpad.net/</UE>
       <T>Launchpad Bugs</T>
@@ -350,13 +436,13 @@ the 'U' element is replaced with a 'url' element.
       <LANG>en</LANG>
       <Label>_cse_ixpjdn21yfg</Label>
       <HAS><L/><RT/></HAS>
-    </R>...
+    </RESULT>...
 
     >>> google_search._parse_google_search_protocol(gsp_xml)
     Traceback (most recent call last):
      ...
-    GoogleWrongGSPVersion: Could not get the 'title', 'url', and 'summary'
-                           from the GSP XML response.
+    GoogleWrongGSPVersion: Could not get any PageMatches from the
+                           GSP XML response.
 
 The parser removes escaped <br> tags from the summary (S tag) so that
 there are no layout instructions in the data. Google inserts the <br>
