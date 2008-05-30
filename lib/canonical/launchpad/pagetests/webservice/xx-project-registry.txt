@@ -2,10 +2,60 @@
 
 == Project group entry ==
 
-Projects are available at their canonical URL on the API virtual host.
+Project groups are available at their canonical URL on the API virtual host.
+
+    >>> from canonical.lazr.testing.webservice import pprint_entry
 
     >>> mozilla_project = webservice.get('/beta/mozilla').jsonBody()
-    >>> from pprint import pprint
-    >>> pprint(mozilla_project)
-    {'name': 'mozilla',
-    'self_link': '.../beta/mozilla'}
+    >>> pprint_entry(mozilla_project)
+    name: u'mozilla'
+    self_link: u'http://.../beta/mozilla'
+
+
+== Project entry ==
+
+Projects are available at their canonical URL on the API virtual host.
+
+    >>> firefox = webservice.get('/beta/firefox').jsonBody()
+    >>> pprint_entry(firefox)
+    name: u'firefox'
+    project_group_link: u'http://.../beta/mozilla'
+    self_link: u'http://.../beta/firefox'
+
+
+== Project series entry ==
+
+The entry for a project series is available at its canonical URL on the
+virtual host.
+
+
+    >>> firefox_1_0 = webservice.get('/beta/firefox/1.0').jsonBody()
+    >>> pprint_entry(firefox_1_0)
+    name: u'1.0'
+    project_link: u'http://.../beta/firefox'
+    self_link: u'http://.../beta/firefox/1.0'
+
+
+== Project release entry ==
+
+Project releases are available at their canonical URL on the API virtual host.
+
+    >>> firefox_1_0_0 = webservice.get('/beta/firefox/1.0/1.0.0').jsonBody()
+    >>> pprint_entry(firefox_1_0_0)
+    project_series_link: u'http://.../beta/firefox/1.0'
+    self_link: u'http://.../beta/firefox/1.0/1.0.0'
+    version: u'1.0.0'
+
+    
+== Milestone entry ==
+
+The entry for a milestone is available at its canonical URL on the API virtual
+host.
+
+    >>> firefox_milestone_1_0 = webservice.get(
+    ...     '/beta/firefox/+milestone/1.0').jsonBody()
+    >>> pprint_entry(firefox_milestone_1_0)
+    name: u'1.0'
+    self_link: u'http://.../beta/firefox/+milestone/1.0'
+    target_link: u'http://.../beta/firefox'
+

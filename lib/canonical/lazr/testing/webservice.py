@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'FakeRequest',
     'FakeResponse',
+    'pprint_entry',
     ]
 
 from zope.interface import implements
@@ -40,4 +41,10 @@ class FakeRequest(object):
 
     def getApplicationURL(self):
         return "http://api.example.org"
+
+
+def pprint_entry(json_body):
+    """Pretty-print a webservice entry JSON representation."""
+    for key, value in sorted(json_body.items()):
+        print '%s: %r' % (key, value)
 

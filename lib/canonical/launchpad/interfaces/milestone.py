@@ -23,6 +23,10 @@ from canonical.launchpad.fields import (
     )
 from canonical.launchpad.validators.name import name_validator
 
+from canonical.lazr.fields import Reference
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+
 
 class MilestoneNameField(ContentNameField):
 
@@ -50,13 +54,15 @@ class IMilestone(Interface):
     """A milestone, or a targeting point for bugs and other
     release-management items that need coordination.
     """
+    export_as_webservice_entry()
+
     id = Int(title=_("Id"))
-    name = MilestoneNameField(
-        title=_("Name"),
-        description=_(
-            "Only letters, numbers, and simple punctuation are allowed."),
-        required=True,
-        constraint=name_validator)
+    name = exported(
+        MilestoneNameField(
+            title=_("Name"),
+            description=_(
+                "Only letters, numbers, and simple punctuation are allowed."),
+            constraint=name_validator))
     product = Choice(
         title=_("Project"),
         description=_("The project to which this milestone is associated"),
@@ -84,7 +90,11 @@ class IMilestone(Interface):
         description=_(
             "A detailed description of the features and status of this "
             "milestone."))
-    target = Attribute("The product or distribution of this milestone.")
+    target = exported(
+        Reference(
+            schema=Interface, # IHasMilestones
+            title=_("The product or distribution of this milestone."),
+            required=False))
     series_target = Attribute(
         "The productseries or distroseries of this milestone.")
     displayname = Attribute("A displayname for this milestone, constructed "
@@ -135,3 +145,7 @@ class IHasMilestones(Interface):
 
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
+
+
+# Fix cyclic references.
+IMilestone['target'].schema = IHasMilestones
