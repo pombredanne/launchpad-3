@@ -12,10 +12,13 @@ It's exposed in the following pages:
 
 The section is rendered based on the `SourcePackageRelease` content
 class, so, theoretically is can be displayed in any page that has
-access to one or more objects of nature.
+access to one or more objects of this nature.
 
-The available diffs, as the pages mentioned are accessible to anyone
-using Launchpad.
+When there is no diff available the 'Available diffs' section is
+omitted.
+
+The pages mentioned are public, therefore the package diffs are also
+public.
 
 See further information about `PackageDiff` documentation in
 doc/package-diff.txt.
@@ -95,29 +98,25 @@ later.
     >>> from StringIO import StringIO
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.librarian.interfaces import ILibrarianClient
 
-    >>> naked_diff = removeSecurityProxy(diff_one)
-    >>> naked_diff.date_fulfilled = UTC_NOW
-    >>> naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
-    ...    'biscuit_1.0-1_1.0-2.diff.gz', 3, StringIO('Foo'),
-    ...    'application/gzipped-patch')
+    >>> def perform_fake_diff(diff, filename):
+    ...     naked_diff = removeSecurityProxy(diff)
+    ...     naked_diff.date_fulfilled = UTC_NOW
+    ...     naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
+    ...         filename, 3, StringIO('Foo'), 'application/gzipped-patch')
+    ...     syncUpdate(diff)
 
-    >>> naked_diff = removeSecurityProxy(diff_three)
-    >>> naked_diff.date_fulfilled = UTC_NOW
-    >>> naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
-    ...    'biscuit_1.0-3_1.0-4.diff.gz', 3, StringIO('Foo'),
-    ...    'application/gzipped-patch')
+    >>> perform_fake_diff(diff_one, 'biscuit_1.0-1_1.0-2.diff.gz')
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> perform_fake_diff(diff_three, 'biscuit_1.0-3_1.0-4.diff.gz')
 
 Commit again, so the diffs will be available, and log out, we
 are done here.
 
     >>> import transaction
     >>> transaction.commit()
-
     >>> logout()
 
 
@@ -162,18 +161,13 @@ On the other hand, diffs not yet performed are rendered as plain text.
     ...
     LinkNotFoundError
 
-When the remaining pending diff is perform and the page is reloaded
+When the remaining pending diff is performed and the page is reloaded
 the missing link is rendered.
 
     >>> login('foo.bar@canonical.com')
     >>> diff_set = getUtility(IPackageDiffSet)
     >>> [diff] = diff_set.getPendingDiffs()
-    >>> naked_diff = removeSecurityProxy(diff)
-    >>> naked_diff.date_fulfilled = UTC_NOW
-    >>> naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
-    ...    'biscuit_1.0-2_1.0-3.diff.gz', 3, StringIO('Foo'),
-    ...    'application/gzipped-patch')
-    >>> flush_database_updates()
+    >>> perform_fake_diff(diff, 'biscuit_1.0-2_1.0-3.diff.gz')
     >>> transaction.commit()
     >>> logout()
 
@@ -182,7 +176,7 @@ the missing link is rendered.
     ...     'Package diff for biscuit from 1.0-2 to 1.0-3').url
     http://.../biscuit_1.0-2_1.0-3.diff.gz
 
-The same page section is presented in the in the corresponding
+The same page section is presented in the corresponding
 `DistributionSourcePackageRelease` pages
 
     >>> anon_browser.getLink('1.0-3').click()
