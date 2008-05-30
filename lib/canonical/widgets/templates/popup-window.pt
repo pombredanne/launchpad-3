@@ -63,7 +63,7 @@ function hide() {
                tal:attributes="value request/field" />
       </form>
 
-      <tal:has-search condition="request/search|nothing">
+      <tal:has-search>
         <table tal:condition="view/hasMoreThanOnePage">
           <tr>
             <th>
@@ -93,9 +93,11 @@ function hide() {
             <dd tal:content="item/title">Title</dd>
           </tal:x>
         </dl>
-        <tal:no-items condition="not: batchnav/currentBatch">
-          No results found for keyword '<span tal:replace="request/search" />'.
-        </tal:no-items>
+        <tal:no-search condition="request/search|nothing">
+          <tal:no-items condition="not: batchnav/currentBatch">
+            No results found for keyword '<span tal:replace="request/search" />'.
+          </tal:no-items>
+        </tal:no-search>
       </tal:has-search>
       <tal:extra-bottom condition="view/extra_bottom|nothing"
                         replace="structure view/extra_bottom" />
