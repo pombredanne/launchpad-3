@@ -27,58 +27,57 @@ We will create a set of `PackageDiff` so we can precisely test how
 they show up in the UI.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.database.component import (
-    ...     ComponentSelection)
     >>> from canonical.launchpad.interfaces import (
-    ...     IComponentSet, IDistributionSet)
+    ...     IDistributionSet, IPersonSet)
 
     >>> login('foo.bar@canonical.com')
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
-    >>> universe = getUtility(IComponentSet)['universe']
-    >>> selection = ComponentSelection(
-    ...     distroseries=hoary, component=universe)
 
-    >>> from canonical.launchpad.testing.fakepackager import FakePackager
-    >>> packager = FakePackager(
-    ...     'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> test_publisher.person = name16
 
-Upload a series of 'biscuit' source to ubuntu primary archive.
+Create a series of 'biscuit' sources in ubuntu primary archive.
 
-    >>> packager.buildUpstream()
-    >>> packager.buildSource(signed=False)
-    >>> biscuit_one_pub = packager.uploadSourceVersion(
-    ...     '1.0-1', policy='sync')
+    >>> biscuit_one_pub = test_publisher.getPubSource(
+    ...     sourcename='biscuit', version='1.0-1', distroseries=hoary)
 
-    >>> packager.buildVersion('1.0-2', changelog_text="I can haz diff")
-    >>> packager.buildSource(signed=False)
-    >>> biscuit_two_pub_id = packager.uploadSourceVersion(
-    ...     '1.0-2', policy='sync').id
+    >>> biscuit_two_pub = test_publisher.getPubSource(
+    ...     sourcename='biscuit', version='1.0-2', distroseries=hoary)
 
-    >>> packager.buildVersion('1.0-3', changelog_text="I can haz diff too")
-    >>> packager.buildSource(signed=False)
-    >>> biscuit_three_pub_id = packager.uploadSourceVersion(
-    ...     '1.0-3', policy='sync').id
+    >>> biscuit_three_pub = test_publisher.getPubSource(
+    ...     sourcename='biscuit', version='1.0-3', distroseries=hoary)
 
-Activate Foo Bar's PPA and upload another 'biscuit' version.
-
-    >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> import_public_test_keys()
+Activate Foo Bar's PPA and upload another 'biscuit' source version.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IArchiveSet, IPersonSet)
+    ...     ArchivePurpose, IArchiveSet)
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
-    >>> packager.buildVersion(
-    ...     '1.0-4', changelog_text="PPA can haz diff, as well")
-    >>> packager.buildSource()
-    >>> biscuit_four_pub_id = packager.uploadSourceVersion(
-    ...     '1.0-4', archive=foobar.archive).id
+    >>> biscuit_four_pub = test_publisher.getPubSource(
+    ...     sourcename='biscuit', version='1.0-4',
+    ...     distroseries=hoary, archive=foobar.archive)
 
-Quickly check the pending `PackageDiff`s recorded.
+Creating corresponding `PackageDiff`s for all sources uploaded, except
+the first one (new upload).
+
+    >>> diff_one = biscuit_one_pub.sourcepackagerelease.requestDiffTo(
+    ...     requester=name16,
+    ...     to_sourcepackagerelease=biscuit_two_pub.sourcepackagerelease)
+
+    >>> diff_two = biscuit_two_pub.sourcepackagerelease.requestDiffTo(
+    ...     requester=name16,
+    ...     to_sourcepackagerelease=biscuit_three_pub.sourcepackagerelease)
+
+    >>> diff_three = biscuit_three_pub.sourcepackagerelease.requestDiffTo(
+    ...     requester=name16,
+    ...     to_sourcepackagerelease=biscuit_four_pub.sourcepackagerelease)
 
     >>> from canonical.launchpad.interfaces import IPackageDiffSet
     >>> diff_set = getUtility(IPackageDiffSet)
@@ -89,27 +88,36 @@ Quickly check the pending `PackageDiff`s recorded.
     Package diff for biscuit from 1.0-2 to 1.0-3
     Package diff for biscuit from 1.0-3 to 1.0-4
 
-We have to commit in order to have the source files just-uploaded
-available in librarian.
-
-    >>> import transaction
-    >>> transaction.commit()
-
 Perform some diffs in advance, the first diff in ubuntu and the diff
 in PPA will be performed, the second diff in ubuntu will be performed
 later.
 
-    >>> diff_one, diff_two, diff_three = diffs
+    >>> from StringIO import StringIO
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.librarian.interfaces import ILibrarianClient
 
-    >>> diff_one.performDiff()
-    >>> diff_three.performDiff()
+    >>> naked_diff = removeSecurityProxy(diff_one)
+    >>> naked_diff.date_fulfilled = UTC_NOW
+    >>> naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
+    ...    'biscuit_1.0-1_1.0-2.diff.gz', 3, StringIO('Foo'),
+    ...    'application/gzipped-patch')
+
+    >>> naked_diff = removeSecurityProxy(diff_three)
+    >>> naked_diff.date_fulfilled = UTC_NOW
+    >>> naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
+    ...    'biscuit_1.0-3_1.0-4.diff.gz', 3, StringIO('Foo'),
+    ...    'application/gzipped-patch')
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 Commit again, so the diffs will be available, and log out, we
 are done here.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> import transaction
     >>> transaction.commit()
+
     >>> logout()
 
 
@@ -118,7 +126,7 @@ are done here.
 All diffs are visible in the 'biscuit source in ubuntu' page, right
 below the changelog text for each uploaded version.
 
-    >>> anon_browser.open("http://launchpad.dev/ubuntu/+source/biscuit")
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/biscuit')
     >>> changes = find_tags_by_class(anon_browser.contents, 'boardComment')
     >>> for change in changes:
     ...     print 30 * '='
@@ -160,7 +168,11 @@ the missing link is rendered.
     >>> login('foo.bar@canonical.com')
     >>> diff_set = getUtility(IPackageDiffSet)
     >>> [diff] = diff_set.getPendingDiffs()
-    >>> diff.performDiff()
+    >>> naked_diff = removeSecurityProxy(diff)
+    >>> naked_diff.date_fulfilled = UTC_NOW
+    >>> naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
+    ...    'biscuit_1.0-2_1.0-3.diff.gz', 3, StringIO('Foo'),
+    ...    'application/gzipped-patch')
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> logout()
@@ -192,8 +204,9 @@ PPA `PackageDiff` are exposed exactly in the same way ubuntu ones
 are. They are presented in the expandable area right below the
 corresponding source row in the PPA overview page.
 
-    >>> anon_browser.open("http://launchpad.dev/~name16/+archive")
-    >>> biscuit_row_id = "pub%s" % biscuit_four_pub_id
+    >>> anon_browser.open('http://launchpad.dev/~name16/+archive')
+    >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
+    >>> biscuit_row_id = 'pub%s' % biscuit_ppa.id
     >>> biscuit_row = find_tag_by_id(
     ...     anon_browser.contents, biscuit_row_id)
     >>> print extract_text(biscuit_row)
