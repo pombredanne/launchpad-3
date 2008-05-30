@@ -120,7 +120,7 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
         if IScopedCollection.providedBy(self.resource.collection):
             adapter = self._entry_adapter_for_schema(
                 self.context.relationship.value_type.schema)
-            return adapter.scoped_collection_type_link
+            return adapter.entry_page_type_link
         else:
             collection_class = self.resource.collection.__class__
             adapter = WadlCollectionAdapterAPI(collection_class)
@@ -249,15 +249,15 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
             self._service_root_url(), self.singular_type)
 
     @property
-    def scoped_collection_type(self):
+    def entry_page_type(self):
         """The definition of a collection of this kind of object."""
-        return "%s-scoped-collection" % self.singular_type
+        return "%s-page-resource" % self.singular_type
 
     @property
-    def scoped_collection_type_link(self):
+    def entry_page_type_link(self):
         "The URL to the definition of a collection of this kind of object."
         return "%s#%s" % (
-            self._service_root_url(), self.scoped_collection_type)
+            self._service_root_url(), self.entry_page_type)
 
     @property
     def entry_page_representation_id(self):
@@ -383,7 +383,7 @@ class WadlFieldAPI(WadlAPI):
         adapter = self._entry_adapter_for_schema(schema)
 
         if ICollectionField.providedBy(self.field):
-            return adapter.scoped_collection_type_link
+            return adapter.entry_page_type_link
         else:
             return adapter.type_link
 

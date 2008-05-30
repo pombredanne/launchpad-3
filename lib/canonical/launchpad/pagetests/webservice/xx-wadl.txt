@@ -144,7 +144,7 @@ the representation of a top-level collection.
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
-    'http://api.launchpad.dev/beta/#PersonEntryAdapter-scoped-collection'
+    'http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource'
 
 
 == Hosted file resources ==
@@ -438,30 +438,29 @@ tags devoted to it in the WADL document:
    server along with a PATCH request. This would be the
    "#MessageEntryAdapter-diff" referenced in the above WADL example.
 
-4. A <resource_type> tag describing the capabilities of a scoped
+4. A <resource_type> tag describing the capabilities of a page of a
    collection that contains this kind of entry. Some entry types may
-   have both a top-level collection <resource_type> and a scoped
-   collection <resource_type>. They need to be declared separately
-   because top-level collections can have custom operations, and
-   scoped collections can't. It might look like this:
+   have both a top-level collection <resource_type> and a regular
+   collection page <resource_type>. They need to be declared
+   separately because top-level collections can have custom
+   operations, and random collection pages can't. It might look like
+   this:
 
-   <resource_type id="MessageEntryAdapter-scoped-collection">
+   <resource_type id="MessageEntryAdapter-page-resource">
      <method name="GET"
-             id="MessageEntryAdapter-scoped-collection-get">
+             id="MessageEntryAdapter-page-resource-get">
        <response>
          <representation href="#MessageEntryAdapter-page"/>
-         <representation mediaType="application/vd.sun.wadl+xml"
-                         id="MessageEntryAdapter-scoped-collection-wadl"/>
        </response>
      </method>
    </resource_type>
 
 5. A <representation> tag describing the document sent to the client
    in response to a GET request for a collection. This includes
-   top-level collections as well as scoped collections. This would be
-   the "#MessageEntryAdapter-page" referenced in the above WADL
-   example, and the "#IBugEntry-page" referenced in the very first
-   example.
+   top-level collections as well as scoped and other collections. This
+   would be the "#MessageEntryAdapter-page" referenced in the above
+   WADL example, and the "#IBugEntry-page" referenced in the very
+   first example.
 
 (The last <resource_type> tag is a hard-coded description of a hosted
 binary file resource. Since it's hard-coded, this test doesn't deal
@@ -578,7 +577,7 @@ site. Let's take a close look at the WADL description of a bug task.
     ...                        if entry[0].attrib['id'] == 'BugTaskEntry'][0]
 
     >>> (entry_type, full_rep, diff_rep,
-    ...  scoped_collection_type, collection_rep) = bugtask_description
+    ...  collection_type, collection_rep) = bugtask_description
 
 
 == Entry representations ==
@@ -656,8 +655,8 @@ the resource at the other end of the link.
     >>> assignee_link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter'
 
-If the link is a link to a collection, the 'resource_type' will be a reference
-to the appropriate scoped collection resource type (defined
+If the link is a link to a collection, the 'resource_type' will be a
+reference to the appropriate entry page resource type (defined
 below). For example, the list of a bug task's related tasks is a
 collection of bug tasks.
 
@@ -668,7 +667,7 @@ collection of bug tasks.
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#BugTaskEntry-scoped-collection'
+    'http://api.launchpad.dev/beta/#BugTaskEntry-page-resource'
 
 The full representation contains all fields, even read-only ones,
 because it's describing the document you receive when you make a GET
@@ -825,7 +824,7 @@ binary file managed by the web service, such as a person's mugshot.
     >>> person_desc = [entry for entry in entry_resource_descriptions
     ...                if entry[0].attrib['id'] == 'PersonEntryAdapter'][0]
     >>> (person_entry_type, person_full_rep, person_diff_rep,
-    ...  person_scoped_collection_type, person_collection_rep) = person_desc
+    ...  person_page_collection_type, person_collection_rep) = person_desc
     >>> mugshot_param = [param for param in person_full_rep
     ...                  if param.attrib['name'] == 'mugshot_link'][0]
     >>> doc, mugshot_link = mugshot_param
@@ -870,34 +869,33 @@ The client can DELETE an existing file:
     'DELETE'
 
 
-== A scoped collection resource type ==
+== An entry page resource type ==
 
 We're almost done with our in-depth look at the WADL description of
-bug tasks. Now we need to consider a scoped collection of bug
-tasks. There's no top-level collection of bug tasks (only a collection
-of bugs), but any given bug will have a collection of associated bug
-tasks, and this collection will have its own URL. This <resource_type>
-describes the collection at that URL.
+bug tasks. Now we need to consider a page of bug tasks, like you'd see
+from a scoped collection. There's no top-level collection of bug tasks
+(only a collection of bugs), but any given bug will have a collection
+of associated bug tasks, and this collection will have its own
+URL. This <resource_type> describes the collection at that URL.
 
-    >>> scoped_collection_type.tag
+    >>> collection_type.tag
     '...resource_type'
-    >>> scoped_collection_type.attrib['id']
-    'BugTaskEntry-scoped-collection'
+    >>> collection_type.attrib['id']
+    'BugTaskEntry-page-resource'
 
 The difference between a scoped collection and a top-level collection
 is that, right now, scoped collections never have custom
 operations. They only support the standard GET operation.
 
-    >>> [get] = scoped_collection_type
+    >>> [get] = collection_type
     >>> get.attrib['id']
-    'BugTaskEntry-scoped-collection-get'
+    'BugTaskEntry-page-resource-get'
 
-In response to that GET operation they'll serve a WADL representation
-(not that interesting) or a JSON representation (interesting, and
-covered immediately below).
+In response to that GET operation they'll serve a JSON representation,
+described immediately below.
 
     >>> [get_response] = get
-    >>> json_representation, wadl_representation = list(get_response)
+    >>> [json_representation] = get_response
     >>> json_representation.attrib['href']
     '#BugTaskEntry-page'
 
@@ -919,9 +917,9 @@ All collection representations have the same five <param> tags.
 
     >>> params = list(collection_rep)
     >>> [param.attrib['name'] for param in params]
-    ['total_size', 'next_collection_link', 'prev_collection_link',
+    ['total_size', 'start', 'next_collection_link', 'prev_collection_link',
      'entries', 'entry_links']
-    >>> size, next, prev, entries, entry_links = params
+    >>> size, start, next, prev, entries, entry_links = params
 
 So what's the difference between a collection of people and a
 collection of bug tasks? Well, the ID is different, but that's just a
@@ -949,8 +947,8 @@ pages of the same collection!
 
     >>> [next_type] = next
     >>> next_type.attrib['resource_type']
-    '#BugTaskEntry-page'
+    '#BugTaskEntry-page-resource'
 
     >>> [prev_type] = prev
     >>> prev_type.attrib['resource_type']
-    '#BugTaskEntry-page'
+    '#BugTaskEntry-page-resource'

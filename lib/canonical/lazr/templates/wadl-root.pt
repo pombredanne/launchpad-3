@@ -97,7 +97,7 @@
   <!--End resource_type definitions for collection resources.-->
 
   <!--Begin representation and resource_type definitions for entry
-      resources and scoped collections that contain them. -->
+      resources and the collections that contain them. -->
   <tal:entry_classes tal:repeat="context entries">
     <resource_type tal:attributes="id context/wadl_entry:singular_type">
       <wadl:doc tal:content="context/wadl_entry:doc"
@@ -196,20 +196,17 @@
       </param>
     </representation>
 
-    <!--Scoped collection for this type of entry-->
+    <!--Collection page for this type of entry-->
     <resource_type
-      tal:attributes="id context/wadl_entry:scoped_collection_type">
+      tal:attributes="id context/wadl_entry:entry_page_type">
       <method name="GET"
         tal:attributes="id
-          string:${context/wadl_entry:scoped_collection_type}-get">
+          string:${context/wadl_entry:entry_page_type}-get">
         <response>
           <representation
              tal:attributes="href
              string:#${context/wadl_entry:entry_page_representation_id}"
              />
-          <representation mediaType="application/vd.sun.wadl+xml"
-            tal:attributes="id
-              string:${context/wadl_entry:scoped_collection_type}-wadl" />
         </response>
       </method>
     </resource_type>
@@ -220,16 +217,18 @@
       <param style="plain" name="total_size" path="$['total_size']"
              required="true" />
 
+      <param style="plain" name="start" path="$['start']" required="true" />
+
       <param style="plain" name="next_collection_link"
              path="$['next_collection_link']">
         <link tal:attributes="resource_type
-          string:#${context/wadl_entry:entry_page_representation_id}" />
+          string:#${context/wadl_entry:entry_page_type}" />
       </param>
 
       <param style="plain" name="prev_collection_link"
              path="$['prev_collection_link']">
         <link tal:attributes="resource_type
-          string:#${context/wadl_entry:entry_page_representation_id}" />
+          string:#${context/wadl_entry:entry_page_type}" />
       </param>
 
       <param style="plain" name="entries" path="$['entries']"
