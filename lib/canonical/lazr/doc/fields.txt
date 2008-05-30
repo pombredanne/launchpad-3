@@ -58,7 +58,7 @@ If the iterable contains an invalid item, WrongContainedType is raised.
 A Reference field is just like an Object except that it doesn't validate
 by value, but only check that the value provides the proper schema.
 
-    >>> from zope.interface import Interface, directlyProvides, implements
+    >>> from zope.interface import Interface, directlyProvides
     >>> from zope.schema import Text
     >>> class MySchema(Interface):
     ...     a_value = Text()
