@@ -247,6 +247,16 @@ class BranchURIField(URIField):
                 mapping={'domain': escape(launchpad_domain)})
             raise LaunchpadValidationError(structured(message))
 
+        # As well as the check against the config, we also need to check
+        # against the actual text used in the database constraint.
+        constraint_text = 'http://bazaar.launchpad.net'
+        if value.startswith(constraint_text):
+            message = _(
+                "For Launchpad to mirror a branch, the original branch "
+                "cannot be on <code>${domain}</code>.",
+                mapping={'domain': escape(constraint_text)})
+            raise LaunchpadValidationError(structured(message))
+
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
             return # url was not changed
 
@@ -966,12 +976,6 @@ class BranchListingSort(EnumeratedType):
         by lifecycle status
 
         Sort branches by the lifecycle status.
-        """)
-
-    AUTHOR = Item("""
-        by author name
-
-        Sort branches by the display name of the author.
         """)
 
     NAME = Item("""

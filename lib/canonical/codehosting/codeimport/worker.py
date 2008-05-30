@@ -156,7 +156,10 @@ class CodeImportSourceDetails:
         # source_product_series_id attribute is to do with the new system
         # looking in legacy locations for foreign trees and can be deleted
         # when the new system has been running for a while.
-        source_product_series_id = 0
+        if code_import.source_product_series is not None:
+            source_product_series_id = code_import.source_product_series.id
+        else:
+            source_product_series_id = 0
         if code_import.rcs_type == RevisionControlSystems.SVN:
             rcstype = 'svn'
             svn_branch_url = str(code_import.svn_branch_url)
@@ -298,7 +301,11 @@ class ForeignTreeStore:
             raise NoSuchFile(old_tarball_name)
         basename = os.path.basename(old_tarball_name)
         _download(self.transport, old_tarball_name, basename)
-        extract_tarball(basename, target_path)
+        # The old system created tarballs which contained a cvsworking or
+        # svnworking directory which contained what we want to end up in
+        # target_path, so we pass --strip 1 to tar which removes this path
+        # component.
+        extract_tarball(basename, target_path, extra_args=['--strip', '1'])
         tree = self._getForeignTree(source_details, target_path)
         self.archive(source_details, tree)
         tree.update()
