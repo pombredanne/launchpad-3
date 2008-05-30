@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd
+# Copyright 2004-2008 Canonical Ltd
 
 """Person-related wiew classes."""
 
@@ -86,7 +86,7 @@ from operator import attrgetter, itemgetter
 import pytz
 import urllib
 
-from zope.app.form.browser import SelectWidget, TextAreaWidget
+from zope.app.form.browser import SelectWidget, TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
@@ -101,8 +101,9 @@ from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
-    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
-    PasswordChangeWidget)
+    LaunchpadDropdownWidget, LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription, PasswordChangeWidget)
+from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
@@ -117,8 +118,8 @@ from canonical.launchpad.interfaces import (
     IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
     IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType,
+    ISalesforceVoucherProxy, ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
     MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
     PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
@@ -1782,16 +1783,35 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
 class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
-    custom_widget('vouchers', LaunchpadRadioWidget,
-                  orientation='vertical')
-    custom_widget('projects', LaunchpadRadioWidget,
-                  orientation='vertical')
+    custom_widget('voucher', LaunchpadDropdownWidget)
+    custom_widget('project', SinglePopupWidget)
+    custom_widget('voucher_paste', TextWidget, displayWidth=43)
 
     def setUpFields(self):
-        self.form_fields = (self.createVoucherField() +
-                            self.createProjectField())
+        self.form_fields = (self.createProjectField() +
+                            self.createVoucherField() +
+                            self.createVoucherEntryField())
+
+    def createProjectField(self):
+        """Create the project field for selection commercial projects.
+
+        The vocabulary shows commercial projects owned by the current user.
+        """
+        field = FormFields(
+            Choice(__name__='project',
+                   title=_('Select the project you wish to subscribe'),
+                   description=_('Commercial projects you administer'),
+                   vocabulary='CommercialProjects',
+                   required=True),
+            custom_widget=self.custom_widgets['project'],
+            render_context=self.render_context)
+        return field
 
     def createVoucherField(self):
+        """Create voucher field.
+
+        Only unredeemed vouchers owned by the user are shown.
+        """
         unredeemed, redeemed = (
             self.context.getCommercialSubscriptionVouchers())
         terms = []
@@ -1799,35 +1819,33 @@ class PersonVouchersView(LaunchpadFormView):
             text = "%s (%d months)" % (voucher.id, voucher.term)
             terms.append(SimpleTerm(voucher, voucher.id, text))
         voucher_vocabulary = SimpleVocabulary(terms)
-        field = FormFields(Choice(__name__='vouchers',
-                                  title=_('Unredeemed vouchers'),
-                                  vocabulary=voucher_vocabulary,
-                                  required=True),
-                           custom_widget=self.custom_widgets['vouchers'],
-                           render_context=self.render_context)
-        return field
-
-    def createProjectField(self):
-        terms = []
-        for project in self.owned_commercial_projects:
-            text = '<a href="%s">%s</a>' % (
-                canonical_url(project), project.displayname)
-            terms.append(SimpleTerm(project, project.name, text))
-        project_vocabulary = SimpleVocabulary(terms)
         field = FormFields(
-            Choice(__name__='projects',
-                   title=_('Commercial projects owned by %s' %
-                           self.context.displayname),
-                   vocabulary=project_vocabulary,
-                   required=True),
-            custom_widget=self.custom_widgets['projects'],
+            Choice(__name__='voucher',
+                   title=_('Select a voucher'),
+                   description=_('Choose one of these unredeemed vouchers'),
+                   vocabulary=voucher_vocabulary,
+                   required=False),
+            custom_widget=self.custom_widgets['voucher'],
             render_context=self.render_context)
         return field
 
-    @property
-    def xinitial_values(self):
-        return dict(projects=self.owned_commercial_projects[0],
-                    vouchers='V456')
+    def createVoucherEntryField(self):
+        """Create a box for pasting in another voucher id.
+
+        Users may get vouchers in ways other than purchase.  A free-use
+        voucher may be given by one of our team, for example.
+        """
+        return FormFields(TextLine(__name__='voucher_paste',
+                                   title=_('Or enter another voucher'),
+                                   description=_('Enter a voucher you have '
+                                                 'received via email or some '
+                                                 'other means'),
+                                   min_length=43,
+                                   max_length=43,
+                                   required=False),
+                          custom_widget=self.custom_widgets['voucher_paste'],
+                          render_context=self.render_context)
+
 
     @cachedproperty
     def owned_commercial_projects(self):
@@ -1836,6 +1854,60 @@ class PersonVouchersView(LaunchpadFormView):
             if project.requires_commercial_subscription:
                 commercial_projects.append(project)
         return commercial_projects
+
+    def validate(self, data):
+        """Ensure exactly one voucher is given."""
+        voucher = data.get('voucher')
+        voucher_paste = data.get('voucher_paste')
+        if voucher is None and voucher_paste is None:
+            self.addError("You must select a voucher from the list or enter "
+                          "one manually.")
+        elif voucher is not None and voucher_paste is not None:
+            self.addError("You may only select one voucher -- "
+                          "either from the list or by entering manually.")
+
+    @action(_("Cancel"), name="cancel",
+            validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Simply redirect to the user's page."""
+        self.next_url = canonical_url(self.context)
+
+    @action(_("Redeem"), name="redeem")
+    def redeem_action(self, action, data):
+        error_msg = None
+        salesforce_proxy = getUtility(ISalesforceVoucherProxy)
+        project = data['project']
+        if data['voucher'] is not None:
+            voucher = data['voucher']
+        else:
+            voucher_id = data['voucher_paste']
+            voucher = salesforce_proxy.getVoucher(voucher_id)
+            if voucher is None:
+                error_msg = "The voucher entered is invalid."
+            elif voucher.status != 'UNREDEEMED':
+                error_msg = "The voucher entered has already been redeemed."
+        if error_msg is not None:
+            self.setFieldError('voucher_paste',
+                               error_msg)
+        else:
+            result = salesforce_proxy.redeemVoucher(voucher.id,
+                                                    self.context,
+                                                    project)
+            if result:
+                project.redeemSubscriptionVoucher(
+                    voucher=voucher.id,
+                    registrant=self.context,
+                    purchaser=self.context,
+                    subscription_months=voucher.term)
+                self.request.response.addInfoNotification(
+                    _("Voucher redeemed successfully"))
+                # Force the page to reload so the just consumed voucher is not
+                # displayed again (since the field has already been created.)
+                self.next_url = self.request.URL
+            else:
+                self.error_message = (
+                    "The voucher could not be redeemed at this time.")
+
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""

@@ -11,7 +11,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Commercial Subscriptions</h1>
+      <h1>Redeem Vouchers for Commercial Subscriptions</h1>
     </metal:heading>
     <div metal:fill-slot="main"
          tal:define="commercial_projects view/owned_commercial_projects">
@@ -20,7 +20,29 @@
         commerical subscriptions.
       </div>
       <div tal:condition="commercial_projects"
-           metal:use-macro="context/@@launchpad_form/form" />
+           metal:use-macro="context/@@launchpad_form/form">
+        <metal:widgets fill-slot="widgets">
+          <table class="form">
+            <tal:widget define="widget nocall:view/widgets/project">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+            <tal:widget define="widget nocall:view/widgets/voucher">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+            <tal:widget define="widget nocall:view/widgets/voucher_paste">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+            <tr>
+              <td></td>
+              <td>
+                <input tal:replace="structure view/redeem_action/render" />
+                <input tal:replace="structure view/cancel_action/render" />
+              </td>
+            </tr>
+          </table>
+        </metal:widgets>
+        <metal:widgets fill-slot="buttons" />
+      </div>
     </div>
   </body>
 </html>

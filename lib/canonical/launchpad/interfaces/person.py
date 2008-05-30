@@ -918,8 +918,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         owns or drives.
         """
 
-    def getOwnedProjects():
-        """Projects owned by this person or teams to which she belongs."""
+    def getOwnedProjects(extra_clause=None):
+        """Projects owned by this person or teams to which she belongs.
+
+        :param extra_clause: string SQL clause to be AND'ed into the normal
+        query.
+        """
 
     def getCommercialSubscriptionVouchers():
         """Return all commercial subscription vouchers.
