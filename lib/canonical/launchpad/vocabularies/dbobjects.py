@@ -77,6 +77,7 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
     Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
     Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
@@ -1226,11 +1227,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.displayname)
 
-    def __iter__(self):
-        target = None
-
-        milestone_context = self.context
-
+    @staticmethod
+    def getMilestoneTarget(milestone_context):
         if IUpstreamBugTask.providedBy(milestone_context):
             target = milestone_context.product
         elif IDistroBugTask.providedBy(milestone_context):
@@ -1254,6 +1252,12 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # We didn't find a context that can have milestones attached
             # to it.
             target = None
+        return target
+
+    @cachedproperty
+    def visible_milestones(self):
+        milestone_context = self.context
+        target = MilestoneVocabulary.getMilestoneTarget(milestone_context)
 
         # XXX: Brad Bollenbach 2006-02-24: Listifying milestones is
         # evil, but we need to sort the milestones by a non-database
@@ -1296,9 +1300,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
+        return sorted(visible_milestones, key=attrgetter('displayname'))
 
-        for ms in sorted(visible_milestones, key=attrgetter('displayname')):
-            yield self.toTerm(ms)
+    def __iter__(self):
+        for milestone in self.visible_milestones:
+            yield self.toTerm(milestone)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):

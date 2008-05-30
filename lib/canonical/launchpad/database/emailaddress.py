@@ -27,10 +27,6 @@ class EmailAddress(SQLBase):
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
-    @property
-    def statusname(self):
-        return self.status.title
-
     def destroySelf(self):
         """Destroy this email address and any associated subscriptions."""
         for subscription in MailingListSubscription.selectBy(

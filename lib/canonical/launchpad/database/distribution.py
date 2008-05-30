@@ -145,6 +145,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
+    active = True # Required by IPillar interface.
 
     @property
     def uploaders(self):
@@ -1287,6 +1288,6 @@ class DistributionSet:
             logo=logo,
             icon=icon)
         archive = getUtility(IArchiveSet).new(distribution=distro,
-            purpose=ArchivePurpose.PRIMARY)
+            owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
 

@@ -717,18 +717,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (1, 17, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (2, 1, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (3, 1, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (4, 1, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (5, 1, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (7, 4, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (8, 17, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL, false, NULL, 'primary');
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 3, 3, NULL, NULL, true, NULL);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, 1, 1, NULL, NULL, true, NULL);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 0, 0, NULL, NULL, true, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (12, 17, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, false, NULL, 'partnerarchive');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, fti, name) VALUES (13, 17, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL, false, NULL, 'partnerarchive');
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -773,7 +773,7 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 45, 3, 3);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
-INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 37, 1, 8);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 90, 1, 8);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (21, 56, 1, 6);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (22, 40, 1, 7);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (25, 70, 1, 9);
@@ -2065,6 +2065,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (72, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (73, 'sjoerd@spring.luon.net', 243615, 1, '2007-12-18 16:31:34.790641');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (74, 'mpitt@debian.org', 243616, 1, '2007-12-18 16:31:34.790641');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (75, 'tim@canonical.com', 243617, 4, '2008-03-06 09:55:27.289842');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (76, 'commercial-member@canonical.com', 243622, 4, '2008-05-12 17:38:38.798696');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -3236,6 +3237,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (87, 87, 'alsa-1.0.8.tgz', 'application/x-tar', NULL, '2008-03-17 15:37:36.701686', '2008-03-17 15:37:36.701686', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (88, 88, 'README.txt', 'text/plain', NULL, '2008-03-17 15:37:48.465157', '2008-03-17 15:37:48.465157', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (89, 89, 'alsa-1.0.9a.tgz', 'application/x-tar', NULL, '2008-03-17 15:38:16.866444', '2008-03-17 15:38:16.866444', false);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (90, 90, 'pmount_1.0-1_all.deb', 'application/x-debian-package', NULL, '2008-05-08 10:15:32.440132', '2008-05-08 10:10:27.899028', false);
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3327,6 +3329,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (87, '2008-03-17 15:37:36.701686', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (88, '2008-03-17 15:37:48.465157', NULL, 3, '55ca6286e3e4f4fba5d0448333fa99fc5a404a73', false, '764efa883dda1e11db47671c4a3bbd9e');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (89, '2008-03-17 15:38:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (90, '2008-05-08 10:10:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4caa', false, '8a8a67b8dbc5f203ae8712092c68c7aa');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3969,7 +3972,7 @@ ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'qQ7dw1fXCR5hhJRN7ztj', '2nWXXdVfpV1G761xDhqNp3WR0Pqvc5WD78V1n7RJFwStQV8v5cqMLqqpp9jq5VLbDHgKC6csPm2ZVBv5');
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'hgm2VK35vXD6rLg5pxWw', 'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz');
-
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, '3SdVlTlVKcgXSJHbsSSk', 'HMfdL8JH6fzdHCvDqtHb37LDKdQCvD7DBp8bBb5Dq937LCgH968flSm7CqKRQP7s3qZcXW6fwz5KCGkH');
 
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
@@ -4064,6 +4067,7 @@ INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_c
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL, 1);
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12);
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (15, 3, 1, 0, 52, '2008-05-25 20:39:27.186515', NULL, 1);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -4099,6 +4103,7 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (7, 13, 36, '2007-08-09 21:25:37.832976');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (8, 15, 35, '2006-10-16 18:31:43.832976');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
@@ -4207,6 +4212,8 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243617, 'Tim Penhey', '8Z3kccpOP4HerugZDi/VS5VePtVDHk48XE11Mx0DmpnqiPsDLczI3g==', NULL, NULL, 'thumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'CALDpFr', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243618, 'Bazaar Experts', NULL, 243617, 'This team is responsible for the management of Bazaar branches in Launchpad.', 'bazaar-experts', NULL, NULL, NULL, NULL, 3, NULL, '2008-03-06 09:57:59.957489', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'DxX7xPn', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243620, 'Canonical Partner Developers', NULL, 28, NULL, 'canonical-partner-dev', NULL, NULL, NULL, NULL, 2, NULL, '2008-05-14 10:29:17.539543', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'GKhyxKf', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243621, 'Commercial Subscription Admins', NULL, 243622, NULL, 'commercial-admins', NULL, NULL, NULL, NULL, 3, NULL, '2008-04-21 21:29:56.881698', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, '8Wmtekb', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243622, 'Commercial Member', 'x3AXXkF9hiPAvbgZSrM/6wczynYy0x+o7SNoT+Gy2Z1GZCMcDNb08A==', NULL, NULL, 'commercial-member', NULL, NULL, NULL, NULL, 1, NULL, '2008-05-12 17:38:38.798696', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'rPwGRk4', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8546,6 +8553,7 @@ INSERT INTO teammembership (id, person, team, status, date_joined, date_expires,
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (78, 243617, 243618, 3, '2008-03-06 23:56:17.986769', NULL, 1, NULL, 1, NULL, 1, '2008-03-06 23:56:17.986769', NULL, NULL, '2008-03-06 23:56:17.986769', NULL, NULL, NULL, '2008-03-06 23:56:17.007142');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (80, 28, 243620, 3, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, 28, NULL, 28, '2008-05-14 10:29:25.097554', NULL, NULL, '2008-05-14 10:29:25.097554', NULL, NULL, NULL, '2008-05-14 10:29:17.539543');
 INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (81, 16, 243620, 2, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, 16, NULL, 16, '2008-05-14 12:07:14.22745', NULL, NULL, '2008-05-14 12:07:14.22745', NULL, NULL, NULL, '2008-05-14 12:07:14.140921');
+INSERT INTO teammembership (id, person, team, status, date_joined, date_expires, last_changed_by, last_change_comment, proposed_by, acknowledged_by, reviewed_by, date_proposed, date_last_changed, date_acknowledged, date_reviewed, proponent_comment, acknowledger_comment, reviewer_comment, date_created) VALUES (83, 243622, 243621, 3, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, 16, NULL, 16, '2008-05-12 17:40:08.720578', NULL, NULL, '2008-05-12 17:40:08.720578', NULL, NULL, NULL, '2008-05-12 17:40:08.637114');
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -8714,6 +8722,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (175, 243618, 243617);
 INSERT INTO teamparticipation (id, team, person) VALUES (178, 243620, 243620);
 INSERT INTO teamparticipation (id, team, person) VALUES (179, 243620, 28);
 INSERT INTO teamparticipation (id, team, person) VALUES (180, 243620, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (181, 243621, 243621);
+INSERT INTO teamparticipation (id, team, person) VALUES (182, 243621, 243622);
+INSERT INTO teamparticipation (id, team, person) VALUES (183, 243622, 243622);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9454,6 +9465,67 @@ ALTER TABLE translationmessage ENABLE TRIGGER ALL;
 
 ALTER TABLE translationrelicensingagreement DISABLE TRIGGER ALL;
 
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (201, 58, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (202, 62, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (203, 13, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (204, 29, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (205, 243606, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (206, 243608, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (207, 243609, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (208, 243610, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (209, 243611, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (210, 243614, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (211, 243615, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (212, 243616, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (213, 243617, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (214, 243622, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (216, 65, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (217, 66, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (218, 67, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (219, 68, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (220, 243602, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (221, 243603, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (222, 43, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (223, 44, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (224, 45, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (225, 46, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (226, 1, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (227, 2, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (215, 3, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (229, 4, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (230, 5, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (231, 6, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (232, 7, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (233, 8, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (234, 9, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (235, 10, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (236, 11, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (237, 12, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (238, 14, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (239, 16, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (240, 22, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (241, 23, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (242, 26, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (243, 27, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (244, 28, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (245, 33, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (246, 34, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (247, 35, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (248, 36, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (249, 37, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (250, 38, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (251, 39, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (252, 40, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (253, 41, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (254, 42, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (255, 47, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (256, 48, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (257, 49, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (258, 50, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (259, 51, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (260, 52, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (261, 55, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (262, 56, true, '2008-05-23 16:29:22.319166');
 
 
 ALTER TABLE translationrelicensingagreement ENABLE TRIGGER ALL;
@@ -9525,6 +9597,8 @@ INSERT INTO validpersonorteamcache (id) VALUES (243613);
 INSERT INTO validpersonorteamcache (id) VALUES (243617);
 INSERT INTO validpersonorteamcache (id) VALUES (243618);
 INSERT INTO validpersonorteamcache (id) VALUES (243620);
+INSERT INTO validpersonorteamcache (id) VALUES (243621);
+INSERT INTO validpersonorteamcache (id) VALUES (243622);
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
 
@@ -9648,6 +9722,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (63, 243614, 'https://w
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (64, 243615, 'https://wiki.ubuntu.com/', 'SjoerdSimons');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (65, 243616, 'https://wiki.ubuntu.com/', 'MartinPitt2');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (66, 243617, 'https://wiki.ubuntu.com/', 'TimPenhey');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (67, 243622, 'https://wiki.ubuntu.com/', 'CommercialMember');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

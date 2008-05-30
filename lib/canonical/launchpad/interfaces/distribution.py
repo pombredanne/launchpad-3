@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
     IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -44,7 +45,7 @@ class DistributionNameField(PillarNameField):
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, ISpecificationTarget):
+    ILaunchpadUsage, ISpecificationTarget, IPillar):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -282,7 +283,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         The file returned will be one of those published in the distribution.
 
         If searching both source and binary, and the file is found in the
-        source packages it'll return that over a file for a binary package.
+        binary packages it'll return that over a file for a source package.
 
         If 'archive' is not passed the distribution.main_archive is assumed.
 

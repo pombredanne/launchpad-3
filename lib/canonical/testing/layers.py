@@ -22,11 +22,23 @@ of one, forcing us to attempt to make some sort of layer tree.
 __metaclass__ = type
 
 __all__ = [
-    'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
-    'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'ExperimentalLaunchpadZopelessLayer', 'TwistedLaunchpadZopelessLayer'
+    'BaseLayer',
+    'DatabaseLayer',
+    'ExperimentalLaunchpadZopelessLayer',
+    'FunctionalLayer',
+    'GoogleServiceLayer',
+    'LaunchpadFunctionalLayer',
+    'LaunchpadLayer',
+    'LaunchpadScriptLayer',
+    'LaunchpadZopelessLayer',
+    'LayerConsistencyError',
+    'LayerIsolationError',
+    'LibrarianLayer',
+    'PageTestLayer',
+    'TwistedLaunchpadZopelessLayer',
+    'TwistedLayer',
+    'ZopelessLayer',
+    'TwistedLaunchpadZopelessLayer'
     ]
 
 import gc
@@ -59,8 +71,12 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
 from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.testing.tests.googleserviceharness import (
+    GoogleServiceTestSetup)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.timeout import (
+    get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
@@ -443,6 +459,13 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         DatabaseLayer.force_dirty_database()
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
+            dbname='launchpad_ftest_template').generateResetSequencesSQL()
 
     @classmethod
     @profiled
@@ -456,6 +479,7 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = None
 
     @classmethod
     @profiled
@@ -465,7 +489,8 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup().setUp()
+            LaunchpadTestSetup(
+                reset_sequences_sql=DatabaseLayer._reset_sequences_sql).setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
@@ -568,6 +593,11 @@ class DatabaseLayer(BaseLayer):
         return LaunchpadTestSetup().dropDb()
 
 
+def test_default_timeout():
+    """Don't timeout by default in tests."""
+    return None
+
+
 class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     """Provides access to the Launchpad database and daemons.
 
@@ -590,12 +620,19 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        # By default, don't make external service tests timeout.
+        if get_default_timeout_function() is not None:
+            raise LayerIsolationError(
+                "Global default timeout function should be None.")
+        set_default_timeout_function(test_default_timeout)
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        if get_default_timeout_function() is not test_default_timeout:
+            raise LayerIsolationError(
+                "Test didn't reset default timeout function.")
+        set_default_timeout_function(None)
 
 
 class FunctionalLayer(BaseLayer):
@@ -789,7 +826,32 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._restore_signals()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
+class GoogleServiceLayer(BaseLayer):
+    """Tests for Google web service integration."""
+
+    @classmethod
+    def setUp(cls):
+        GoogleServiceTestSetup().setUp()
+
+    @classmethod
+    def tearDown(cls):
+        GoogleServiceTestSetup().tearDown()
+
+    @classmethod
+    def testSetUp(self):
+        # We need to override BaseLayer.testSetUp(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+    @classmethod
+    def testTearDown(self):
+        # We need to override BaseLayer.testTearDown(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
+                               GoogleServiceLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     @profiled

@@ -122,12 +122,12 @@ We're redirected to the newly created poll
     Location: ?Ubuntu Team? team
     Structural title: Ubuntu Team
     Tabs:
-    * Overview (http://launchpad.dev/~ubuntu-team/)
-    * Code (http://code.launchpad.dev/~ubuntu-team/)
-    * Bugs (http://bugs.launchpad.dev/~ubuntu-team/)
-    * Blueprints (http://blueprints.launchpad.dev/~ubuntu-team/)
-    * Translations (http://translations.launchpad.dev/~ubuntu-team/)
-    * Answers (http://answers.launchpad.dev/~ubuntu-team/)
+    * Overview (http://launchpad.dev/~ubuntu-team)
+    * Code (http://code.launchpad.dev/~ubuntu-team)
+    * Bugs (http://bugs.launchpad.dev/~ubuntu-team)
+    * Blueprints (http://blueprints.launchpad.dev/~ubuntu-team)
+    * Translations (http://translations.launchpad.dev/~ubuntu-team)
+    * Answers (http://answers.launchpad.dev/~ubuntu-team)
     Main heading: Debian Project Leader Election 2080
     >>> team_admin_browser.getLink('add an option').url
     'http://launchpad.dev/%7Eubuntu-team/+poll/dpl-2080/+newoption'

@@ -28,10 +28,9 @@ from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
     IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
-    IDistribution, IDistributionSourcePackage, IDistroSeries,
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IPersonSet,
-    IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, NominationError,
+    IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
+    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -322,8 +321,9 @@ class Bug(SQLBase):
             if sub.person.id == person.id:
                 return sub
 
-        return BugSubscription(
+        sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+        return sub
 
     def unsubscribe(self, person):
         """See `IBug`."""
@@ -575,14 +575,15 @@ class Bug(SQLBase):
             notification.date_emailed = UTC_NOW
             notification.syncUpdate()
 
-    def newMessage(self, owner=None, subject=None, content=None, parent=None):
+    def newMessage(self, owner=None, subject=None,
+                   content=None, parent=None, bugwatch=None):
         """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
         MessageChunk(message=msg, content=content, sequence=1)
 
-        bugmsg = self.linkMessage(msg)
+        bugmsg = self.linkMessage(msg, bugwatch)
         if not bugmsg:
             return
 
