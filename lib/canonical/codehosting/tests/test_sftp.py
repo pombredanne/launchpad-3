@@ -78,8 +78,11 @@ class TestSFTPAdapter(TrialTestCase):
         return deferred
 
 
-class GetAttrsMixin:
+class SFTPTestMixin:
     """Mixin used to check getAttrs."""
+
+    def setUp(self):
+        self._factory = LaunchpadObjectFactory()
 
     def checkAttrs(self, attrs, stat_value):
         """Check that an attrs dictionary matches a stat result."""
@@ -90,18 +93,6 @@ class GetAttrsMixin:
         self.assertEqual(int(stat_value.st_mtime), attrs['mtime'])
         self.assertEqual(int(stat_value.st_atime), attrs['atime'])
 
-
-class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
-    """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
-
-    def setUp(self):
-        TrialTestCase.setUp(self)
-        TestCaseInTempDir.setUp(self)
-        transport = AsyncTransport(
-            FatLocalTransport(urlutils.local_path_to_url('.')))
-        self._factory = LaunchpadObjectFactory()
-        self._sftp_server = TransportSFTPServer(transport)
-
     def getPathSegment(self):
         """Return a unique path segment for testing.
 
@@ -110,6 +101,18 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         transport, which expects escaped URL segments.
         """
         return self._factory.getUniqueString('%41%42%43-')
+
+
+class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
+    """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
+
+    def setUp(self):
+        TrialTestCase.setUp(self)
+        TestCaseInTempDir.setUp(self)
+        SFTPTestMixin.setUp(self)
+        transport = AsyncTransport(
+            FatLocalTransport(urlutils.local_path_to_url('.')))
+        self._sftp_server = TransportSFTPServer(transport)
 
     def assertSFTPError(self, sftp_code, function, *args, **kwargs):
         """Assert that calling functions fails with `sftp_code`."""
@@ -341,25 +344,16 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
         return self.assertFailure(deferred, filetransfer.SFTPError)
 
 
-class TestSFTPServer(TrialTestCase, TestCaseInTempDir, GetAttrsMixin):
+class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
 
     def setUp(self):
         TrialTestCase.setUp(self)
         TestCaseInTempDir.setUp(self)
+        SFTPTestMixin.setUp(self)
         transport = AsyncTransport(
             FatLocalTransport(urlutils.local_path_to_url('.')))
         self.sftp_server = TransportSFTPServer(transport)
-        self._factory = LaunchpadObjectFactory()
-
-    def getPathSegment(self):
-        """Return a unique path segment for testing.
-
-        This returns a path segment such that 'path != unescape(path)'. This
-        exercises the interface between the sftp server and the Bazaar
-        transport, which expects escaped URL segments.
-        """
-        return self._factory.getUniqueString('%41%42%43-')
 
     def test_serverSetAttrs(self):
         # setAttrs on the TransportSFTPServer doesn't do anything either.

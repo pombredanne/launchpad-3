@@ -92,8 +92,8 @@ class TransportSFTPFile:
     implements(ISFTPFile)
 
     def __init__(self, transport, name, flags, server):
-        self.name = name
-        self._escaped_path = urlutils.escape(self.name)
+        self._unescaped_relpath = name
+        self._escaped_path = urlutils.escape(self._unescaped_relpath)
         self._flags = flags
         self.transport = transport
         self._written = False
@@ -133,7 +133,7 @@ class TransportSFTPFile:
         if not self._shouldWrite():
             raise filetransfer.SFTPError(
                 filetransfer.FX_PERMISSION_DENIED,
-                "%r was opened read-only." % self.name)
+                "%r was opened read-only." % self._unescaped_relpath)
         if self._shouldTruncate():
             deferred = self._truncateFile()
         else:
@@ -174,12 +174,12 @@ class TransportSFTPFile:
         """
         # XXX 2008-05-09 JonathanLange: This should at least raise an error,
         # not do nothing silently.
-        return self._server.setAttrs(self.name, attrs)
+        return self._server.setAttrs(self._unescaped_relpath, attrs)
 
     @with_sftp_error
     def getAttrs(self):
         """See `ISFTPFile`."""
-        return self._server.getAttrs(self.name, False)
+        return self._server.getAttrs(self._unescaped_relpath, False)
 
     def close(self):
         """See `ISFTPFile`."""

@@ -324,10 +324,10 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertEqual(content, transport.get_bytes(escaped_path))
 
         # We can also use the value that list_dir returns, which may be
-        # different from our original escaped path.
+        # different from our original escaped path. Note that in this case,
+        # returned_path is equivalent but not equal to escaped_path.
         [returned_path] = list(transport.list_dir('.'))
         self.assertEqual(content, transport.get_bytes(returned_path))
-        self.assertNotEqual(escaped_path, returned_path)
 
 
 def test_suite():
