@@ -17,6 +17,8 @@ Get the current counts of stuff in the database:
     ...     EmailAddress,
     ...     BinaryPackageRelease,
     ...     Build)
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingPocket)
     >>> SSPPH = SecureSourcePackagePublishingHistory
     >>> SBPPH = SecureBinaryPackagePublishingHistory
 
@@ -29,8 +31,6 @@ Get the current counts of stuff in the database:
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
     >>> orig_build_count = Build.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
-
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
     >>> orig_sspph_main_count = SSPPH.selectBy(
     ...     componentID=1, pocket=PackagePublishingPocket.RELEASE).count()
 
@@ -318,8 +318,9 @@ successfully processed.
     19
 
     >>> print SSPPH.selectBy(
-    ...     componentID=1, pocket=PackagePublishingPocket.RELEASE
-    ...     ).count() - orig_sspph_main_count
+    ...     componentID=1,
+    ...     pocket=PackagePublishingPocket.RELEASE).count() - \
+    ...     orig_sspph_main_count
     19
 
 === Testing Binary Package Results ===
