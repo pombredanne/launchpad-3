@@ -29,6 +29,7 @@ from canonical.launchpad.database.branchmergeproposal import (
     )
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
+from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.specificationbranch import (
@@ -292,6 +293,24 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal1_id = merge_proposal1.id
         merge_proposal1.dependent_branch.destroySelf(break_references=True)
         self.assertEqual(None, merge_proposal1.dependent_branch)
+
+    def test_deleteSourceCodeReviewMessage(self):
+        """Deletion of branches that have CodeReviewMessages works."""
+        comment = self.factory.makeCodeReviewMessage()
+        comment_id = comment.id
+        branch = comment.branch_merge_proposal.source_branch
+        branch.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewMessage.get, comment_id)
+
+    def test_deleteTargetCodeReviewMessage(self):
+        """Deletion of branches that have CodeReviewMessages works."""
+        comment = self.factory.makeCodeReviewMessage()
+        comment_id = comment.id
+        branch = comment.branch_merge_proposal.target_branch
+        branch.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewMessage.get, comment_id)
 
     def test_branchWithSubscriptionReqirements(self):
         """Deletion requirements for a branch with subscription are right."""

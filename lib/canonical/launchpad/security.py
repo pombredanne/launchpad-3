@@ -13,17 +13,17 @@ from canonical.launchpad.interfaces import (
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportSet,
-    ICodeReviewMessage, IDistribution, IDistributionMirror, IDistroSeries,
-    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
-    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
-    ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
-    IPOFile, IPOTemplate, IPOTemplateSubset, IPackageUpload,
-    IPackageUploadQueue, IPackaging, IPerson, IPillar, IPoll, IPollOption,
-    IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISourcePackage, ISourcePackageRelease, ISpecification,
-    ISpecificationBranch, ISpecificationSubscription, ISprint,
+    ICodeReviewMessage, ICodeReviewMessageDeletion, IDistribution,
+    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
+    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
+    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
+    IMailingListSet, IMilestone, IOAuthAccessToken, IPOFile, IPOTemplate,
+    IPOTemplateSubset, IPackageUpload, IPackageUploadQueue, IPackaging,
+    IPerson, IPillar, IPoll, IPollOption, IPollSubset, IProduct,
+    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
+    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
+    IShippingRequestSet, IShippingRun, ISourcePackage, ISourcePackageRelease,
+    ISpecification, ISpecificationBranch, ISpecificationSubscription, ISprint,
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
@@ -1439,6 +1439,29 @@ class CodeReviewMessageView(AuthorizationBase):
         proposal.
         """
         bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
+
+
+class CodeReviewMessageDelete(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewMessageDeletion
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Are not-logged-in people able to view the code review message?
+
+        They can see a code review message if they can see the branch merge
+        proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
         return bmp_checker.checkUnauthenticated()
 
 

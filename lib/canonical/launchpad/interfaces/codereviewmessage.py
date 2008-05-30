@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'CodeReviewVote',
     'ICodeReviewMessage',
+    'ICodeReviewMessageDeletion',
     ]
 
 from zope.interface import Interface
@@ -63,3 +64,13 @@ class ICodeReviewMessage(Interface):
         title=_('Vote tag'), required=False)
 
     title = TextLine()
+
+
+class ICodeReviewMessageDeletion(Interface):
+    """This interface provides deletion of CodeReviewMessages.
+
+    This is the only mutation of CodeReviewMessages that is permitted.
+    """
+
+    def destroySelf():
+        """Delete this message."""

@@ -1209,3 +1209,6 @@ The current references to the branch table are shown here.
     productseries.import_branch
     productseries.user_branch
     specificationbranch.branch
+
+(Unfortunately, references can form a graph-- note that codereviewmessages
+ aren't shown.)

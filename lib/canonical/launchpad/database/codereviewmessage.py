@@ -10,15 +10,14 @@ from sqlobject import ForeignKey, StringCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    CodeReviewVote,
-    ICodeReviewMessage,
+    CodeReviewVote, ICodeReviewMessage, ICodeReviewMessageDeletion,
     )
 
 
 class CodeReviewMessage(SQLBase):
     """A table linking branch merge proposals and messages."""
 
-    implements(ICodeReviewMessage)
+    implements(ICodeReviewMessage, ICodeReviewMessageDeletion)
 
     _table = 'CodeReviewMessage'
 
