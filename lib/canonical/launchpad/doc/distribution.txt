@@ -299,21 +299,23 @@ raise NotFoundError for us
 === Upload related stuff ===
 
 When uploading to a distribution we need to query its uploaders. Each
-uploader record is in fact a DistroComponentUploader record which
-tells us what component is uploadable to by what person or group of
-people.
+uploader record is in fact an ArchivePermission record that tells us
+what component is uploadable to by what person or group of people.
 
-   >>> for dcu in sorted(ubuntu.uploaders,
-   ...                   key=lambda dcu: dcu.component.name):
-   ...     assert dcu.distribution == ubuntu
-   ...     print dcu.component.name
-   ...     print dcu.uploader.displayname
-   main
+   >>> from operator import attrgetter
+   >>> for permission in sorted(
+   ...     ubuntu.uploaders, key=attrgetter("id")):
+   ...     assert not permission.archive.is_ppa
+   ...     print permission.component.name
+   ...     print permission.person.displayname
+   universe
    Ubuntu Team
    restricted
    Ubuntu Team
-   universe
+   main
    Ubuntu Team
+   partner
+   Canonical Partner Developers
 
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).
@@ -709,8 +711,8 @@ Publishing the record will exclude Celso's PPA from
 pending-publication state:
 
       >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-      >>> src_pub.status = PackagePublishingStatus.PUBLISHED
-      >>> syncUpdate(src_pub)
+      >>> src_pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(src_pub.secure_record)
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
@@ -746,8 +748,8 @@ state:
 Similarly to sources, publishing the binary will exclude Celso's PPA from
 pending-publication state:
 
-      >>> bin_pub.status = PackagePublishingStatus.PUBLISHED
-      >>> syncUpdate(bin_pub)
+      >>> bin_pub.secure_record.status = PackagePublishingStatus.PUBLISHED
+      >>> syncUpdate(bin_pub.secure_record)
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0

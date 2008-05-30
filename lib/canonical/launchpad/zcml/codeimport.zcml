@@ -13,17 +13,22 @@
       attributes="id date_created branch registrant owner assignee
                   product series review_status
                   rcs_type cvs_root cvs_module svn_branch_url
-                  date_last_successful
+                  date_last_successful source_product_series
                   update_interval effective_update_interval
-                  import_job" />
+                  import_job results" />
     <require
       permission="launchpad.Edit"
-      attributes="updateFromData" />
+      attributes="approve invalidate suspend updateFromData" />
 
     <!-- ICodeImport has no set_schema, because all modifications should be
       done through methods that create CodeImportEvent objects when
       appropriate. -->
   </content>
+
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="CodeImportSetNavigation"
+      />
 
   <subscriber
       for="canonical.launchpad.interfaces.ICodeImport
@@ -51,6 +56,12 @@
         template="../templates/codeimport.pt"
         permission="zope.Public"
         />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImport"
+        name="+macros"
+        permission="zope.Public"
+        template="../templates/codeimport-macros.pt" />
 
   </facet>
 
@@ -91,6 +102,7 @@
         template="../templates/codeimport-new.pt"
         permission="launchpad.AnyPerson"
         />
+
   </facet>
 
 </configure>

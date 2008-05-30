@@ -1,0 +1,103 @@
+In order to exercise the estimation of build job start times a setup
+with one job building and another job pending/waiting is to be created.
+
+Activate the builders present in sampledata; we need to be logged in
+as a member of launchpad-buildd-admin:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('celso.providelo@canonical.com')
+    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> builder_set = getUtility(IBuilderSet)
+
+Do we have two builders?
+
+    >>> builder_set.count()
+    2
+
+These are the builders available.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> for b in builder_set:
+    ...     b.builderok = True
+    ...     print "builder: name='%s', id=%d" % (b.name, b.id)
+    ...     syncUpdate(b)
+    builder: name='bob', id=1
+    builder: name='frog', id=2
+
+The 'alsa-utils' package is the one to be built (in the ubuntu/hoary
+distroseries).
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> hoary.main_archive.require_virtualized
+    False
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingPocket)
+    >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
+    >>> alsa_spr = alsa_hoary.currentrelease.sourcepackagerelease
+    >>> print alsa_spr.title
+    alsa-utils - 1.0.9a-4
+
+Create new Build and BuildQueue instances (in ubuntu/hoary/i386) for
+the pending job.
+
+    >>> from datetime import timedelta
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> alsa_build = alsa_spr.createBuild(
+    ...     hoary['i386'], PackagePublishingPocket.RELEASE,
+    ...     hoary.main_archive)
+    >>> alsa_bqueue = alsa_build.createBuildQueueEntry()
+    >>> alsa_bqueue.lastscore = 500
+    >>> alsa_build.buildduration = timedelta(minutes=72)
+    >>> alsa_build.buildstate = BuildStatus.NEEDSBUILD
+
+Access the currently building job via the builder.
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+    >>> bob_the_builder = builder_set.get(1)
+    >>> cur_bqueue = bob_the_builder.currentjob
+    >>> cur_build = cur_bqueue.build
+
+Make sure the job at hand is currently being built.
+
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> cur_build.buildstate == BuildStatus.BUILDING
+    True
+
+The start time estimation mechanism for a pending job N depends on
+proper "build start time" and "estimated build duration" values for
+other jobs that are either currently building or pending but ahead
+of job N in the build queue. These values will now be set for the job
+that is currently building.
+
+    >>> cur_bqueue.lastscore = 1111
+    >>> cur_bqueue.buildstart = datetime(2008, 4, 1, 10, 45, 39,
+    ...                                  tzinfo=UTC)
+    >>> print cur_bqueue.buildstart
+    2008-04-01 10:45:39+00:00
+
+Please note that the "estimated build duration" is an internal property
+and not meant to be viewed or modified by an end user.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_build = removeSecurityProxy(cur_build)
+    >>> naked_build.estimated_build_duration = timedelta(minutes=56)
+
+The estimated start time for the pending job is either now or lies
+in the future.
+
+    >>> now = datetime.utcnow()
+    >>> alsa_build.getEstimatedBuildStartTime() > now
+    True
+
+The estimated build start time may only be requested for jobs that are
+pending.
+
+    >>> cur_build.getEstimatedBuildStartTime()
+    Traceback (most recent call last):
+    ...
+    AssertionError: The start time is only estimated for pending builds.

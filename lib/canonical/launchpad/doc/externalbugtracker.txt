@@ -45,6 +45,40 @@ transaction, since it doesn't need DB access.
     BEGIN
 
 
+=== Choosing another ExternalBugTracker instance ===
+
+Sometimes there is more than one ExternalBugTracker instance for a
+single bug tracker type. For example, for different versions, for
+intances having our Launchpad plugin installed, and so on. This is done
+with the getExternalBugTrackerToUse() method, which returns the correct
+instance.  Usually there is only one version, so the default for the
+original instance is to return itself.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     ExternalBugTracker)
+    >>> external_bugtracker = ExternalBugTracker('http://example.com/')
+    >>> chosen_bugtracker = external_bugtracker.getExternalBugTrackerToUse()
+    >>> chosen_bugtracker is external_bugtracker
+    True
+
+BugWatchUpdater.updateBugWatches will call this method and replace the
+ExternalBugTracker used, before calling getCurrentDBTime(), and all the
+other methods.
+
+    >>> class MoreSpecificExternalBugTracker(TestExternalBugTracker):
+    ...     def getCurrentDBTime(self):
+    ...         print "Using more specific ExternalBugTracker implementation."
+
+    >>> class GeneralExternalBugTracker:
+    ...     def getExternalBugTrackerToUse(self):
+    ...         return MoreSpecificExternalBugTracker('http://example.com')
+
+    >>> bug_watch_updater.updateBugWatches(GeneralExternalBugTracker(), [])
+    COMMIT
+    Using more specific ExternalBugTracker implementation.
+    BEGIN
+
+
 === Checking the server DB time ===
 
 Before initializeRemoteBugDB is called and we start importing
@@ -125,7 +159,7 @@ logged saying that comments won't be imported.
     >>> from canonical.launchpad.interfaces import ISupportsCommentImport
     >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     implements(ISupportsCommentImport)
-    ...     import_comments = True
+    ...     sync_comments = True
     >>> bug_watch_updater.updateBugWatches(
     ...     CommentImportExternalBugTracker(), [], now=utc_now)
     COMMIT
@@ -315,7 +349,7 @@ BugTaskStatus or will raise an UnknownRemoteStatusError.
     ...         if remote_status == 'new':
     ...             return BugTaskStatus.NEW
     ...         else:
-    ...             raise UnknownRemoteStatusError()
+    ...             raise UnknownRemoteStatusError(remote_status)
 
 BugWatchUpdater._convertRemoteStatus() will handle these errors and will
 return BugTaskStatus.UNKNOWN when they occur. It will also log a
@@ -377,7 +411,7 @@ another.
     >>> login('test@canonical.com')
 
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1, sample_person)
+    ...     example_bug_tracker, '1', sample_person)
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
@@ -418,8 +452,9 @@ errors. We temporarily silence the logging from this function because
 we're not interested in it. Again, the watch's lastchecked field also be
 updated. Errors in getRemoteStatus() will produce OOPS reports.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
-    >>> oops_hook.install()
+    >>> from canonical.launchpad.scripts.checkwatches import (
+    ...     CheckWatchesErrorUtility)
+    >>> error_utility = CheckWatchesErrorUtility()
 
     >>> from canonical.launchpad.scripts import log
     >>> loglevel = log._log.level
@@ -432,15 +467,14 @@ updated. Errors in getRemoteStatus() will produce OOPS reports.
     ...         external_bugtracker.get_remote_status_error = error
     ...         bug_watch_updater.updateBugWatches(
     ...             external_bugtracker, [example_bugwatch])
+    ...         oops = error_utility.getLastOopsReport()
     ...         print "%s: %s (%s)" % (
     ...             example_bugwatch.last_error_type.title,
     ...             example_bugwatch.lastchecked is not None,
-    ...             oops_hook.oops_info.oopsid)
+    ...             oops.id)
     ... finally:
     ...     log._log.setLevel(loglevel)
     Bug Not Found: True (OOPS-...)
     Invalid Bug ID: True (OOPS-...)
     Unparsable Bug: True (OOPS-...)
     Unknown: True (OOPS-...)
-
-    >>> oops_hook.uninstall()

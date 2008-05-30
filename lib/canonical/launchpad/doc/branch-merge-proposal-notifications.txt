@@ -32,9 +32,9 @@ notification they would like to receive.
 
 == Notification Recipients ==
 
-Recipients are determined using getCreationNotificationRecipients.
+Recipients are determined using getNotificationRecipients.
 
-    >>> recipients = bmp.getCreationNotificationRecipients(
+    >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.STATUS)
 
 Subscribers to all related branches are candidates.
@@ -44,7 +44,7 @@ Subscribers to all related branches are candidates.
 
 Only subscribers whose level is >= the minimum level are selected.
 
-    >>> recipients = bmp.getCreationNotificationRecipients(
+    >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.FULL)
     >>> [target_subscriber] == recipients.keys()
     True
@@ -52,7 +52,11 @@ Only subscribers whose level is >= the minimum level are selected.
 The value assigned to the recipient is a machine-readable explanation why they
 were chosen, and their subscription
 
-    >>> [(target_subscription, 'Subscriber')] == recipients.values()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_recipients = removeSecurityProxy(recipients)
+    >>> [notification_reason] = naked_recipients.values()
+    >>> (target_subscription, 'Subscriber') == \
+    ...     (notification_reason.subscription, notification_reason.rationale)
     True
 
 

@@ -10,9 +10,10 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageCopyingForm',
     'IArchivePackageDeletionForm',
-    'IArchiveEditDependenciesForm',
     'IArchiveSet',
+    'IArchiveSourceSelectionForm',
     'IPPAActivateForm',
     ]
 
@@ -105,6 +106,8 @@ class IArchive(IHasOwner):
 
     archive_url = Attribute("External archive URL.")
 
+    is_ppa = Attribute("True if this archive is a PPA.")
+
     title = Attribute("Archive Title.")
 
     series_with_sources = Attribute(
@@ -135,7 +138,7 @@ class IArchive(IHasOwner):
         :param: name: source name filter (exact match or SQL LIKE controlled
                       by 'exact_match' argument).
         :param: version: source version filter (always exact match).
-        :param: status: `PackagePublishingStatus` filter, can be a list.
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
         :param: distroseries: `IDistroSeries` filter.
         :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
@@ -144,10 +147,11 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
-    def getSourcesForDeletion(name=None):
+    def getSourcesForDeletion(name=None, status=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
 
         :param: name: optional source name filter (SQL LIKE)
+        :param: status: `PackagePublishingStatus` filter, can be a sequence.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
@@ -246,6 +250,30 @@ class IArchive(IHasOwner):
             `IArchive` requiring 'dependency' `IArchive`.
         """
 
+    def canUpload(user, component_or_package=None):
+        """Check to see if user is allowed to upload to component.
+
+        :param user: An `IPerson` whom should be checked for authentication.
+        :param component_or_package: The context `IComponent` or an
+            `ISourcePackageName` for the check.  This parameter is
+            not required if the archive is a PPA.
+
+        :return: True if 'user' is allowed to upload to the specified
+            component or package name.
+        :raise TypeError: If component_or_package is not one of
+            `IComponent` or `ISourcePackageName`.
+
+        """
+
+    def canAdministerQueue(user, component):
+        """Check to see if user is allowed to administer queue items.
+
+        :param user: An `IPerson` whom should be checked for authenticate.
+        :param component: The context `IComponent` for the check.
+
+        :return: True if 'user' is allowed to administer the package upload
+        queue for items with 'component'.
+        """
 
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
@@ -261,17 +289,30 @@ class IPPAActivateForm(Interface):
         required=True, default=False)
 
 
-class IArchivePackageDeletionForm(Interface):
-    """Schema used to delete packages within a archive."""
+class IArchiveSourceSelectionForm(Interface):
+    """Schema used to select sources within an archive."""
 
     name_filter = TextLine(
         title=_("Package name"), required=False, default=None,
         description=_("Display packages only with name matching the given "
                       "filter."))
 
+
+class IArchivePackageDeletionForm(IArchiveSourceSelectionForm):
+    """Schema used to delete packages within an archive."""
+
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,
         description=_("The reason why the package is being deleted."))
+
+
+class IArchivePackageCopyingForm(IArchiveSourceSelectionForm):
+    """Schema used to copy packages across archive."""
+
+    include_binaries = Bool(
+        title=_("Copy binaries"), required=False, default=False,
+        description=_("Whether or not to copy the binary packages for "
+                      "the selected sources."))
 
 
 class IArchiveEditDependenciesForm(Interface):
@@ -286,6 +327,12 @@ class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
 
     title = Attribute('Title')
+
+    number_of_ppa_sources = Attribute(
+        'Number of published sources in public PPAs.')
+
+    number_of_ppa_binaries = Attribute(
+        'Number of published binaries in public PPAs.')
 
     def new(distribution=None, purpose=None, owner=None, description=None):
         """Create a new archive.
@@ -307,6 +354,31 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+    def getPPAsForUser(user):
+        """Return all PPAs the given user can participate.
+
+        The result is ordered by PPA owner's displayname.
+        """
+
+    def getLatestPPASourcePublicationsForDistribution(distribution):
+        """The latest 5 PPA source publications for a given distribution.
+
+        Private PPAs are excluded from the result.
+        """
+
+    def getMostActivePPAsForDistribution(distribution):
+        """Return the 5 most active PPAs.
+
+        The activity is currently measured by number of uploaded (published)
+        sources for each PPA during the last 7 days.
+
+        Private PPAs are excluded from the result.
+
+        :return A list with up to 5 dictionaries containing the ppa 'title'
+            and the number of 'uploads' keys and corresponding values.
+        """
+
 
 class ArchivePurpose(DBEnumeratedType):
     """The purpose, or type, of an archive.

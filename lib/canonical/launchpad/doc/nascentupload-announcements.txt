@@ -58,7 +58,8 @@ distroseries so that we can upload to it. Also adjust 'changeslist'
 address and allow uploads to universe:
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IComponentSet, IDistributionSet)
+  ...     DistroSeriesStatus, IComponentSet, IDistributionSet,
+  ...     ILibraryFileAliasSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
@@ -66,6 +67,9 @@ address and allow uploads to universe:
   >>> from canonical.launchpad.database import ComponentSelection
   >>> universe = getUtility(IComponentSet)['universe']
   >>> trash = ComponentSelection(distroseries=hoary, component=universe)
+  >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+  >>> trash = hoary['i386'].addOrUpdateChroot(fake_chroot)
+  >>> trash = hoary['hppa'].addOrUpdateChroot(fake_chroot)
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
 the same behaviour than using insecure policy, apart from allowing
@@ -139,6 +143,7 @@ Uploading the same package again will result in a rejection email:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff for bar from 1.0-1 to 1.0-1 requested
   DEBUG: Setting it to ACCEPTED
   ...
   DEBUG: Sending rejection email.
@@ -276,11 +281,7 @@ AUTO_APPROVED source uploads for 'translations' section:
   >>> lang_pack.logger = mock_logger
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Creating PENDING publishing record.
-  DEBUG: Creating PENDING build for hppa.
-  DEBUG: Creating PENDING build for i386.
-  DEBUG: Closing bugs.
+  ...
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
@@ -310,6 +311,7 @@ UNAPPROVED source uploads for 'translations' section via insecure:
   >>> lang_pack.logger = mock_logger
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff for language-pack-pt from 1.0-2 to 1.0-3 requested
   DEBUG: Setting it to UNAPPROVED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -362,6 +364,7 @@ saying they are waiting for approval:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
+  DEBUG: Package diff for bar from 1.0-1 to 1.0-3 requested
   DEBUG: Setting it to UNAPPROVED
   ...
 
@@ -391,12 +394,6 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Creating PENDING publishing record.
-  DEBUG: Creating PENDING build for hppa.
-  DEBUG: Creating PENDING build for i386.
-  DEBUG: Closing bugs.
-  DEBUG: Building recipients list.
   ...
   DEBUG: Skipping announcement, it is a BACKPORT.
   DEBUG: Sent a mail:
@@ -449,12 +446,6 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   >>> bar_src.logger = mock_logger
   >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
-  DEBUG: Setting it to ACCEPTED
-  DEBUG: Creating PENDING publishing record.
-  DEBUG: Creating PENDING build for hppa.
-  DEBUG: Creating PENDING build for i386.
-  DEBUG: Closing bugs.
-  DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
   ...

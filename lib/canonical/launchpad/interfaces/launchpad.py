@@ -50,6 +50,7 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadSearch',
     'ILaunchpadUsage',
     'IMaloneApplication',
     'INotificationRecipientSet',
@@ -59,6 +60,7 @@ __all__ = [
     'IPasswordEncryptor',
     'IPasswordResets',
     'IPrivateApplication',
+    'IPrivateMaloneApplication',
     'IReadZODBAnnotation',
     'IRosettaApplication',
     'IShipItApplication',
@@ -144,6 +146,10 @@ class IMaloneApplication(ILaunchpadApplication):
     latest_bugs = Attribute("The latest 5 bugs filed.")
 
 
+class IPrivateMaloneApplication(ILaunchpadApplication):
+    """Private application root for malone."""
+
+
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
@@ -198,6 +204,8 @@ class IPrivateApplication(ILaunchpadApplication):
     codeimportscheduler = Attribute("""Code import scheduler end point.""")
 
     mailinglists = Attribute("""Mailing list XML-RPC end point.""")
+
+    bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
 
 
 class IAuthServerApplication(ILaunchpadApplication):
@@ -398,9 +406,6 @@ class IHasDateCreated(Interface):
 class IStructuralHeaderPresentation(Interface):
     """Adapter for common aspects of a structural object's presentation."""
 
-    def isPrivate():
-        """Whether read access to the object is restricted."""
-
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 
@@ -437,6 +442,12 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProject')
+
+
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(title=_('Search text'), required=False)
 
 
 class UnknownRecipientError(KeyError):

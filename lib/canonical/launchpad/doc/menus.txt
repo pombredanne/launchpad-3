@@ -7,9 +7,8 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     >>> from canonical.launchpad.webapp import (
     ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
     >>> from canonical.launchpad.webapp.interfaces import (
-    ...     ICanonicalUrlData, IFacetMenu, IApplicationMenu, IContextMenu,
-    ...     ILink, ILinkData, IFacetLink
-    ...     )
+    ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
+    ...     IFacetMenu, ILink, ILinkData)
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.component import queryAdapter
 
@@ -250,6 +249,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: foo
     render: <bound method FacetLink.render ...>
     selected: False
@@ -265,6 +265,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: bar
     render: <bound method FacetLink.render ...>
     selected: False
@@ -274,52 +275,6 @@ are as we expect.
     target: +bar
     text: Bar
     url: http://launchpad.dev/sesamestreet/+bar
-
-
-== Enabled links and disabled links ==
-
-Often, we want to make a facet menu that uses the standard facet menu links,
-but with only some of them enabled.
-
-To do this, we make a new menu class that extends an existing one.  We need
-to provide a set of link names that are to be enabled.  All other links will
-be disabled.
-
-    >>> class OnlySomeEnabledFacets(Facets):
-    ...
-    ...     enable_only = ['foo']
-
-Now, we can make an instance of this class.
-
-    >>> onlysomeenabledfacetmenu = OnlySomeEnabledFacets(street)
-
-We look at the links, to make sure they are as we expect.
-
-    >>> for link in onlysomeenabledfacetmenu.iterlinks():
-    ...     print '--- link %s ---' % link.name
-    ...     print 'enabled:', link.enabled
-    --- link foo ---
-    enabled: True
-    --- link bar ---
-    enabled: False
-
-If 'enable_only' contains a link name that does not appear in 'links', we
-should get a warning.
-
-    >>> class UnknownEnableOnlyFacets(Facets):
-    ...
-    ...     enable_only = ['bar', 'quux']
-
-Now, we can make an instance of this class.
-
-    >>> unknownenableonlyfacets = UnknownEnableOnlyFacets(street)
-
-    >>> for link in unknownenableonlyfacets.iterlinks():
-    ...     print '--- link %s ---' % link.name
-    ...     print 'enabled:', link.enabled
-    Traceback (most recent call last):
-    ...
-    AssertionError: Links in 'enable_only' not found in 'links': quux
 
 
 == The MenuLink and FacetLink adapter classes ==
@@ -411,10 +366,8 @@ Next, we return the link as HTML.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <span class="action">
-        <img alt="" src="/@@/icon" />
-        <a class="menu-link-None" title="summary">text--&gt;</a>
-    </span>
+    <span class="action"><img alt="" class="inlineLinkIcon"
+                              src="/@@/icon" /><a class="menu-link-None" title="summary">text--&gt;</a></span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
@@ -588,7 +541,7 @@ This will be the common case for default links.
     >>> facets = BlankTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ True
+    http://launchpad.dev/sesamestreet True
     http://launchpad.dev/sesamestreet/+bar False
     http://launchpad.dev/sesamestreet/+baz True
 
@@ -651,7 +604,7 @@ earlier in this doctest.
     >>> facets = AbsoluteUrlTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ False
+    http://launchpad.dev/sesamestreet False
     ftp://barlink.example.com/barbarbar True
     http://launchpad.dev/sesamestreet/+baz True
     http://launchpad.dev/sesamestreet/+spoo True
@@ -714,6 +667,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: first
     render: <bound method MenuLink.render ...>
     site: None
@@ -778,6 +732,7 @@ are as we expect.
     icon: None
     icon_url: None
     linked: True
+    menu: None
     name: first
     render: <bound method MenuLink.render ...>
     site: None
@@ -935,7 +890,7 @@ The request is also set as the menu's 'request' attribute.
     ...     print link.url, link.selected, link.linked, link.summary
     http://launchpad.dev/sesamestreet/+foo False True None
     http://launchpad.dev/sesamestreet/+bar True False More explanation about Bar of sesamestreet
-    http://launchpad.dev/sesamestreet/ False True GET
+    http://launchpad.dev/sesamestreet False True GET
 
 So, the first link '+foo' is linked, but the second '+bar' is not.  This
 is because the URL of '+bar' is the same as the request in the CONTEXTS.
@@ -952,7 +907,7 @@ Let's try again, this time with a request from the participation.
     ...     print link.url, link.selected, link.linked
     http://launchpad.dev/sesamestreet/+foo False True
     http://launchpad.dev/sesamestreet/+bar False False
-    http://launchpad.dev/sesamestreet/ False True
+    http://launchpad.dev/sesamestreet False True
 
 Note that '+bar' is not selected.  This is because we're adapting 'context'
 and not 'CONTEXTS', so the menus system has no way of knowing what the
@@ -987,7 +942,7 @@ actually calculates a shortened URL for this case.
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar True
-    http://launchpad.dev/sesamestreet/ False
+    http://launchpad.dev/sesamestreet False
 
 
 The result of `house/menu:application` will be empty at the moment, because
@@ -1087,10 +1042,8 @@ render() method.
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
     >>> print html #doctest: +NORMALIZE_WHITESPACE
-    <span class="action">
-        <a href="http://127.0.0.1/sesamestreet/number73/+first"
-            class="menu-link-first">First menu</a>
-    </span>
+    <span class="action"><a href="http://127.0.0.1/sesamestreet/number73/+first"
+          class="menu-link-first">First menu</a></span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)

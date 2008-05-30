@@ -29,12 +29,10 @@ from canonical.launchpad.interfaces import (
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch,
     IBugNotificationSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
     IDistribution, IDistroSeries, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IProduct, IProductSeries, IQuestionTarget, ISourcePackage,
-    NominationError, NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IMessage, IPersonSet, IProduct, IProductSeries, IQuestionTarget,
+    ISourcePackage, IStructuralSubscriptionTarget, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.mailnotification import (
-    get_bugtask_indirect_subscribers)
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -323,8 +321,9 @@ class Bug(SQLBase):
             if sub.person.id == person.id:
                 return sub
 
-        return BugSubscription(
+        sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+        return sub
 
     def unsubscribe(self, person):
         """See `IBug`."""
@@ -475,10 +474,44 @@ class Bug(SQLBase):
 
         also_notified_subscribers = set()
 
+        structural_subscription_targets = set()
+
         for bugtask in self.bugtasks:
-            bugtask_subscribers = get_bugtask_indirect_subscribers(
-                bugtask, recipients=recipients)
-            also_notified_subscribers.update(bugtask_subscribers)
+            if bugtask.assignee:
+                also_notified_subscribers.add(bugtask.assignee)
+                if recipients is not None:
+                    recipients.addAssignee(bugtask.assignee)
+
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                structural_subscription_targets.add(bugtask.target)
+                if bugtask.target.parent_subscription_target is not None:
+                    structural_subscription_targets.add(
+                        bugtask.target.parent_subscription_target)
+
+            if ISourcePackage.providedBy(bugtask.target):
+                # Distribution series bug tasks with a package have the
+                # source package set as their target, so we add the
+                # distroseries explicitly to the set of subscription
+                # targets.
+                structural_subscription_targets.add(
+                    bugtask.distroseries)
+
+            if bugtask.milestone is not None:
+                structural_subscription_targets.add(bugtask.milestone)
+
+            # If the target's bug supervisor isn't set,
+            # we add the owner as a subscriber.
+            pillar = bugtask.pillar
+            if pillar.bug_supervisor is None:
+                also_notified_subscribers.add(pillar.owner)
+                if recipients is not None:
+                    recipients.addRegistrant(pillar.owner, pillar)
+
+        person_set = getUtility(IPersonSet)
+        target_subscribers = person_set.getSubscribersForTargets(
+            structural_subscription_targets, recipients=recipients)
+
+        also_notified_subscribers.update(target_subscribers)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
@@ -542,14 +575,15 @@ class Bug(SQLBase):
             notification.date_emailed = UTC_NOW
             notification.syncUpdate()
 
-    def newMessage(self, owner=None, subject=None, content=None, parent=None):
+    def newMessage(self, owner=None, subject=None,
+                   content=None, parent=None, bugwatch=None):
         """Create a new Message and link it to this bug."""
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
         MessageChunk(message=msg, content=content, sequence=1)
 
-        bugmsg = self.linkMessage(msg)
+        bugmsg = self.linkMessage(msg, bugwatch)
         if not bugmsg:
             return
 
@@ -557,14 +591,15 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message, bugwatch=None, user=None):
+    def linkMessage(self, message, bugwatch=None, user=None,
+                    remote_comment_id=None):
         """See `IBug`."""
         if message not in self.messages:
             if user is None:
                 user = message.owner
 
             result = BugMessage(bug=self, message=message,
-                bugwatch=bugwatch)
+                bugwatch=bugwatch, remote_comment_id=remote_comment_id)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
@@ -889,14 +924,15 @@ class Bug(SQLBase):
 
         return nomination
 
-    def getNominations(self, target=None):
+    def getNominations(self, target=None, nominations=None):
         """See `IBug`."""
         # Define the function used as a sort key.
         def by_bugtargetdisplayname(nomination):
             """Return the friendly sort key verson of displayname."""
             return nomination.target.bugtargetdisplayname.lower()
 
-        nominations = BugNomination.selectBy(bugID=self.id)
+        if nominations is None:
+            nominations = BugNomination.selectBy(bugID=self.id)
         if IProduct.providedBy(target):
             filtered_nominations = []
             for nomination in shortlist(nominations):
@@ -1190,11 +1226,11 @@ class BugSet:
         # non-security bugs, this test might be simplified to checking
         # params.private.
         elif params.product and params.product.private_bugs:
-            # Subscribe the bugcontact to all bugs,
+            # Subscribe the bug supervisor to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            if params.product.bugcontact:
-                bug.subscribe(params.product.bugcontact, params.owner)
+            if params.product.bug_supervisor:
+                bug.subscribe(params.product.bug_supervisor, params.owner)
             else:
                 bug.subscribe(params.product.owner, params.owner)
         else:

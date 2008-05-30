@@ -21,11 +21,10 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IBuildQueueSet, IBuildSet)
 
-from canonical.config import config
-
 from canonical.buildd.utils import notes
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.buildmaster.buildergroup import BuilderGroup
+from canonical.config import config
 
 
 def determineArchitecturesToBuild(pubrec, legal_archserieses,
@@ -50,7 +49,7 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     known-failures build attempts and thus saving build-farm time.
 
     For PPA publications we only consider architectures supported by PPA
-    subsystem (`DistroArchSeries`.ppa_supported flag) and P-a-s is turned
+    subsystem (`DistroArchSeries`.supports_virtualized flag) and P-a-s is turned
     off to give the users the chance to test their fixes for upstream
     problems.
 
@@ -67,11 +66,21 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
 
     assert hint_string, 'Missing arch_hint_list'
 
-    # For PPA publications exclude non-PPA architectures and ignore P-a-s.
+    # Ignore P-a-s for PPA publications.
     if pubrec.archive.purpose == ArchivePurpose.PPA:
-        legal_archserieses = [
-            arch for arch in legal_archserieses if arch.ppa_supported]
         pas_verify = None
+
+    # The 'PPA supported' flag only applies to virtualized archives
+    if pubrec.archive.require_virtualized:
+        legal_archserieses = [
+            arch for arch in legal_archserieses if arch.supports_virtualized]
+        # Cope with no virtualization support at all. It usually happens when
+        # a distroseries is created and initialized, by default no
+        # architecture supports its. Distro-team might take some time to
+        # decide which architecture will be allowed for PPAs and queue-builder
+        # will continue to work meanwhile.
+        if not legal_archserieses:
+            return []
 
     legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
 
@@ -79,8 +88,10 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
         package_tags = legal_arch_tags
     elif hint_string == 'all':
         nominated_arch = distroseries.nominatedarchindep
-        assert nominated_arch in legal_archserieses, (
-            'nominatedarchindep is not present in legal_archseries')
+        legal_archseries_ids = [arch.id for arch in legal_archserieses]
+        assert nominated_arch.id in legal_archseries_ids, (
+            'nominatedarchindep is not present in legal_archseries: %s' %
+            ' '.join(legal_arch_tags))
         package_tags = set([nominated_arch.architecturetag])
     else:
         my_archs = hint_string.split()
@@ -130,7 +141,7 @@ class BuilddMaster:
 
     def addDistroArchSeries(self, distroarchseries):
         """Setting up a workable DistroArchSeries for this session."""
-        self._logger.info("Adding DistroArchSeries %s/%s/%s"
+        self._logger.debug("Adding DistroArchSeries %s/%s/%s"
                           % (distroarchseries.distroseries.distribution.name,
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
@@ -188,7 +199,7 @@ class BuilddMaster:
 
     def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
-        self._logger.debug("Processing %s" % distroseries.name)
+        self._logger.info("Processing %s" % distroseries.name)
         # Do not create builds for distroserieses with no nominatedarchindep
         # they can't build architecture independent packages properly.
         if not distroseries.nominatedarchindep:
@@ -196,7 +207,8 @@ class BuilddMaster:
                 "No nominatedarchindep for %s, skipping" % distroseries.name)
             return
 
-        # listify to avoid hitting this MultipleJoin multiple times
+        # Listify the architectures to avoid hitting this MultipleJoin
+        # multiple times.
         distroseries_architectures = list(distroseries.architectures)
         if not distroseries_architectures:
             self._logger.debug(
@@ -204,18 +216,19 @@ class BuilddMaster:
                 % distroseries.name)
             return
 
-        registered_arch_ids = set(dar.id for dar in self._archserieses.keys())
-        series_arch_ids = set(dar.id for dar in distroseries_architectures)
-        legal_arch_ids = series_arch_ids.intersection(registered_arch_ids)
-        legal_archs = [dar for dar in distroseries_architectures
-                       if dar.id in legal_arch_ids]
-        if not legal_archs:
+        architectures_available = [
+            arch for arch in distroseries_architectures
+            if arch.getPocketChroot() is not None]
+
+        if not architectures_available:
             self._logger.debug(
                 "Chroots missing for %s, skipping" % distroseries.name)
             return
 
-        self._logger.info("Supported architectures: %s" %
-                          " ".join(a.architecturetag for a in legal_archs))
+        self._logger.info(
+            "Supported architectures: %s" %
+            " ".join(arch_series.architecturetag
+                     for arch_series in architectures_available))
 
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, distroseries)
@@ -225,53 +238,12 @@ class BuilddMaster:
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            build_archs = determineArchitecturesToBuild(
-                pubrec, legal_archs, distroseries, pas_verify)
-
-            self._createMissingBuildsForPublication(pubrec, build_archs)
-
-        self.commit()
-
-    def _createMissingBuildsForPublication(self, pubrec, build_archs):
-        """Create new Build record for the requested archseries.
-
-        It verifies if the requested build is already inserted before
-        creating a new one.
-        The Build record is created for the archseries 'default_processor'.
-        """
-        for archseries in build_archs:
-            # Dismiss if there is no processor available for the
-            # archseries in question.
-            if not archseries.processors:
-                self._logger.debug(
-                    "No processors defined for %s: skipping %s"
-                    % (archseries.title, pubrec.displayname))
+            builds = pubrec.createMissingBuilds(
+                architectures_available=architectures_available,
+                pas_verify=pas_verify, logger=self._logger)
+            if len(builds) == 0:
                 continue
-
-            build_candidate = pubrec.sourcepackagerelease.getBuildByArch(
-                archseries, pubrec.archive)
-
-            # Dismiss if build is already present for this specific
-            # distroarchseries or if it was already FULLYBUILT in any
-            # architecture.
-            if (build_candidate is not None and
-                (build_candidate.distroarchseries == archseries or
-                 build_candidate.buildstate == BuildStatus.FULLYBUILT)):
-                continue
-
-            # Create new Build record, its corresponding BuildQueue and
-            # score it, so it will be ready for dispatching.
-            build = pubrec.sourcepackagerelease.createBuild(
-                distroarchseries=archseries,
-                pocket=pubrec.pocket,
-                processor=archseries.default_processor,
-                archive=pubrec.archive)
-            build_queue = build.createBuildQueueEntry()
-            build_queue.score()
-            self._logger.debug(
-                "Created %s [%d] in %s (%d)" % (
-                    build.title, build.id, build.archive.title,
-                    build_queue.lastscore))
+            self.commit()
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """

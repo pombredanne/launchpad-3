@@ -72,48 +72,53 @@
         </div>
         <div class="three column middle">
           <h2>What&#8217;s new here?</h2>
-          <table>
-            <tbody>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-                <a href="http://news.launchpad.net/?p=57">
-                <strong>Mailing lists for teams!</strong><br />
-                Each team in Launchpad can now have its own mailing list, with full public archives.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-                <a href="http://news.launchpad.net/?p=58">
-                <strong>Six plural forms</strong><br />
-                Translations now support up to six plural forms. Ideal if you're working in Arabic.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-                <a href="http://news.launchpad.net/?p=59">
-                <strong>Improved branch listings</strong><br />
-                See a revision's commit message and visit the author's Launchpad profile from our redesigned branch listing pages.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-                <a href="http://news.launchpad.net/?p=60">
-                <strong>Easier access to download files</strong><br />
-                Get a project's latest downloadable files direct from its overview page.
-               </a>
-              </td>
-             </tr>
-            </tbody>
-          </table>
+          <ul>
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=80">
+                <strong>Site-wide search improvements</strong><br />
+                We have significantly enhanced our site-wide search feature to
+                provide better results. Give it a try!
+              </a>
+           </li>
+            <li class="news">
+              <a href="http://news.launchpad.net/category/podcast">
+                <strong>New Launchpad podcast</strong><br />
+                Hear the latest from the Launchpad team, with interviews and
+                news in Launchpod - the Launchpad team podcast.
+              </a>
+           </li>
+            <li class="news">
+              <a href="http://news.launchpad.net/?p=75">
+                <strong>Package diffs</strong><br />
+                View a diff of your newly uploaded source package with the
+                currently published package
+              </a>
+            </li>
+            <li class="news">
+              <a href="http://news.launchpad.net/?p=74">
+                <strong>Search translations</strong><br />
+                Find words and phrases within translation files. Ideal for
+                locating and correcting errors.
+              </a>
+            </li>
+            <li class="news">
+              <a href="https://help.launchpad.net/PPAQuickStart#copy">
+                <strong>Copy PPA packages</strong><br />
+                Now you can copy source and binary packages between distro
+                releases within a PPA or to any other PPA for which you
+                have upload permission.
+              </a>
+            </li>
+            <li class="news">
+              <a href="http://news.launchpad.net/?p=66">
+                <strong>Meet the bug supervisor</strong><br />
+                Bug contacts are now called bug supervisors. Read our blog
+                post to find out why.
+              </a>
+            </li>
+          </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2008-03-26.
+            Updated 2008-05-28.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>

@@ -9,7 +9,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
+    BoolCol, ForeignKey, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
 
@@ -68,14 +68,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBugContact,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
-    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
-    PackagePublishingStatus, PackageUploadStatus, PackagingType,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchivePermissionSet,
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
+    ISourcePackageName, IStructuralSubscriptionTarget, MirrorContent,
+    MirrorStatus, NotFoundError, PackagePublishingStatus, PackageUploadStatus,
+    PackagingType, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
@@ -89,10 +90,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBuildRecords,
+        IDistribution, IFAQTarget, IHasBugSupervisor, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget, IStructuralSubscriptionTarget,
-        IHasBugContact)
+        IQuestionTarget, IStructuralSubscriptionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -113,8 +113,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
-    bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person',
+    bug_supervisor = ForeignKey(
+        dbName='bug_supervisor', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
@@ -138,21 +138,27 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
-    upload_sender = StringCol(
-        dbName='upload_sender', notNull=False, default=None)
-    upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person',
-        validator=public_person_validator, default=None,
-        notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    uploaders = SQLMultipleJoin('DistroComponentUploader',
-        joinColumn='distribution', prejoins=["uploader", "component"])
     official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
     official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
         default=False)
+    active = True # Required by IPillar interface.
+
+    @property
+    def uploaders(self):
+        """See `IDistribution`."""
+        # Get all the distribution archives and find out the uploaders
+        # for each.
+        distro_uploaders = []
+        permission_set = getUtility(IArchivePermissionSet)
+        for archive in self.all_distro_archives:
+            uploaders = permission_set.uploadersForComponent(archive)
+            distro_uploaders.extend(uploaders)
+
+        return distro_uploaders
 
     @property
     def official_codehosting(self):
@@ -756,7 +762,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompleteSourcePackageCache(self, archive, log, ztm):
+    def updateCompleteSourcePackageCache(self, archive, log, ztm,
+                                         commit_chunk=500):
         """See `IDistribution`."""
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
@@ -774,17 +781,19 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
-        # XXX cprov 20080317: I'm not sure why we need to commit that often.
-        # Now update, committing every 50 packages.
-        counter = 0
+        number_of_updates = 0
+        chunk_size = 0
         for spn in spns:
             log.debug("Considering source '%s'" % spn.name)
             self.updateSourcePackageCache(spn, archive, log)
-            counter += 1
-            if counter > 49:
-                counter = 0
+            chunk_size += 1
+            number_of_updates += 1
+            if chunk_size == commit_chunk:
+                chunk_size = 0
                 log.debug("Committing")
                 ztm.commit()
+
+        return number_of_updates
 
     def updateSourcePackageCache(self, sourcepackagename, archive, log):
         """See `IDistribution`."""
@@ -1192,7 +1201,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # database hard for each product rendered.
             list(Product.select("Product.id IN %s" % 
                  sqlvalues(sources_to_products.values()),
-                 prejoins=["bugcontact", "bugtracker", "project",
+                 prejoins=["bug_supervisor", "bugtracker", "project",
                            "development_focus.user_branch",
                            "development_focus.import_branch"]))
 
@@ -1213,11 +1222,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
 
-    def setBugContact(self, bugcontact, user):
-        """See `IHasBugContact`."""
-        self.bugcontact = bugcontact
-        if bugcontact is not None:
-            subscription = self.addBugSubscription(bugcontact, user)
+    def setBugSupervisor(self, bug_supervisor, user):
+        """See `IHasBugSupervisor`."""
+        self.bug_supervisor = bug_supervisor
+        if bug_supervisor is not None:
+            subscription = self.addBugSubscription(bug_supervisor, user)
 
 
 class DistributionSet:
@@ -1279,6 +1288,6 @@ class DistributionSet:
             logo=logo,
             icon=icon)
         archive = getUtility(IArchiveSet).new(distribution=distro,
-            purpose=ArchivePurpose.PRIMARY)
+            owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
 

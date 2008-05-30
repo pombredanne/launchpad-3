@@ -163,10 +163,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=["ComponentSelection"])
 
     @property
-    def ppa_architectures(self):
+    def virtualized_architectures(self):
         return DistroArchSeries.select("""
         DistroArchSeries.distroseries = %s AND
-        DistroArchSeries.ppa_supported = True
+        DistroArchSeries.supports_virtualized = True
         """ % sqlvalues(self), orderBy='architecturetag')
 
     @property
@@ -197,9 +197,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return sorted(drivers, key=lambda driver: driver.browsername)
 
     @property
-    def bugcontact(self):
+    def bug_supervisor(self):
         """See `IDistroSeries`."""
-        return self.distribution.bugcontact
+        return self.distribution.bug_supervisor
 
     @property
     def security_contact(self):
@@ -962,7 +962,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompletePackageCache(self, archive, log, ztm):
+    def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
         """See `IDistroSeries`."""
         # Get the set of package names to deal with.
         bpns = list(BinaryPackageName.select("""
@@ -981,18 +981,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                           'DistroArchSeries',
                           'BinaryPackageRelease']))
 
-        # Now ask each of them to update themselves. commit every 100
-        # packages.
-        counter = 0
+        number_of_updates = 0
+        chunk_size = 0
         for bpn in bpns:
             log.debug("Considering binary '%s'" % bpn.name)
             self.updatePackageCache(bpn, archive, log)
-            counter += 1
-            if counter > 99:
-                counter = 0
-                if ztm is not None:
-                    log.debug("Committing")
-                    ztm.commit()
+            number_of_updates += 1
+            chunk_size += 1
+            if chunk_size == commit_chunk:
+                chunk_size = 0
+                log.debug("Committing")
+                ztm.commit()
+
+        return number_of_updates
 
     def updatePackageCache(self, binarypackagename, archive, log):
         """See `IDistroSeries`."""
@@ -1067,12 +1068,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
 
     def newArch(self, architecturetag, processorfamily, official, owner,
-                ppa_supported=False):
+                supports_virtualized=False):
         """See `IDistroSeries`."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,
             official=official, distroseries=self, owner=owner,
-            ppa_supported=ppa_supported)
+            supports_virtualized=supports_virtualized)
         return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, description=None):
@@ -1119,7 +1120,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # off to the librarian.
         changes_file = getUtility(ILibraryFileAliasSet).create(
             changesfilename, len(changesfilecontent),
-            StringIO(changesfilecontent), 'text/plain')
+            StringIO(changesfilecontent), 'text/plain',
+            restricted=archive.private)
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,

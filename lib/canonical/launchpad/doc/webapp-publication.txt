@@ -38,7 +38,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     api @ api.launchpad.dev
-    rooturl: http://api.launchpad.dev/
+    rooturl: http://api.launchpad.dev/beta/
     althosts:
     ----
     blueprints @ blueprints.launchpad.dev
@@ -86,7 +86,7 @@ These are parsed into webapp.vhost.allvhosts.
     althosts:
     ----
     xmlrpc_private @ xmlrpc-private.launchpad.dev
-    rooturl: http://xmlrpc-private.launchpad.dev/
+    rooturl: http://launchpad.dev/
     althosts:
     ----
 
@@ -146,8 +146,7 @@ A request publication factory that was initialized with
 handle_default_host=True will handle a request that specifies no virtual
 host. By default, handle_default_host is False.
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> factory.canHandle(environment)
     False
 
@@ -211,8 +210,7 @@ factory is not wrapped:
     >>> requestfactory
     <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> default_handling_factory.canHandle(environment)
     True
     >>> requestfactory, publicationfactory = default_handling_factory()
@@ -262,19 +260,17 @@ The port is also checked for in the HTTP_HOST variable:
     >>> factory.canHandle(environment)
     False
 
-If the port is given twice (in SERVER_PORT and the Host header), and
-the ports don't match, an AssertionError is the result. This prevents
-sneaky outsiders from making requests to ports only exposed
-internally.
+If the port is given twice (in SERVER_PORT and the Host header), the
+value from SERVER_PORT takes precedence. (The rationale behind this is
+that it's valid for a client to put launchpad.dev:80 in the Host header,
+but the request is really coming on the port 1234 because it's being
+proxied.)
 
     >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'SERVER_PORT' : 1234,
+    ...                'SERVER_PORT' : '1234',
     ...                'HTTP_HOST': 'launchpad.dev:80'}
     >>> factory.canHandle(environment)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Port specified in SERVER_PORT does not match
-    port specified in HTTP_HOST
+    True
 
 It's okay to specify the port in both places if the ports are the same:
 
@@ -1133,8 +1129,9 @@ The feeds implementation always returns the anonymous user.
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 
-The webservice implementation returns the user associated with the
-access token specified in the request.
+The webservice implementation returns the principal for the person
+associated with the access token specified in the request.  The
+principal's access_level will be the one specified in the token.
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
@@ -1153,11 +1150,14 @@ access token specified in the request.
     ...     'api.launchpad.dev', 'GET',
     ...     extra_environment=dict(QUERY_STRING=urlencode(form)))
     >>> test_request.processInputs()
-    >>> print publication.getPrincipal(test_request).title
+    >>> principal = publication.getPrincipal(test_request)
+    >>> print principal.title
     Guilherme Salgado
+    >>> principal.access_level
+    <DBItem AccessLevel.WRITE_PUBLIC...
 
-If the token is expired, unauthorized, or doesn't exist, an Unauthorized
-exception is raised, though.
+If the token is expired or doesn't exist, an Unauthorized exception is
+raised, though.
 
     # Must login in order to edit the token.
     >>> login('salgado@ubuntu.com')
@@ -1171,18 +1171,9 @@ exception is raised, though.
     Traceback (most recent call last):
     ...
     Unauthorized: Expired token...
-
     >>> access_token.date_expires = now + timedelta(days=1)
-    >>> access_token.permission = OAuthPermission.UNAUTHORIZED
     >>> syncUpdate(access_token)
-    >>> test_request = LaunchpadTestRequest(form=form)
-    >>> print publication.getPrincipal(test_request).title
-    Traceback (most recent call last):
-    ...
-    Unauthorized: Unauthorized token...
 
-    >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
-    >>> syncUpdate(access_token)
     >>> form2 = form.copy()
     >>> form2['oauth_token'] += 'z'
     >>> test_request = LaunchpadTestRequest(form=form2)

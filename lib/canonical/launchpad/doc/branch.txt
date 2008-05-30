@@ -512,6 +512,15 @@ We can get the subscribers for a branch based on their level of
 subscription. From the example above, we see that sabdfl has a 'FULL'
 subscription to `gterm_dev`.
 
+Create a subscription to another branch to confirm that we are just
+getting the correct subscriptions.
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> subscription = factory.makeBranchSubscription()
+    >>> subscription.notification_level = BranchSubscriptionNotificationLevel.FULL
+    >>> subscription.max_diff_lines = BranchSubscriptionDiffSize.FIVEKLINES
+    >>> syncUpdate(subscription)
+
     >>> def print_names(persons):
     ...     """Print the name of each person on a new line."""
     ...     for person in persons:
@@ -735,33 +744,55 @@ Private branches are not browseable at all.
 URLs are shown for a branch to show a user where they can push to and
 pull or branch from.  These methods don't check any visibility constraints
 for the person passed into the methods, that job is left to the views.
+The branch location is shown using the lp: Bazaar lookup names.
 
     >>> print branch.unique_name
     ~landscape-developers/landscape/trunk
     >>> branch.private
     True
-    >>> print branch.getBzrUploadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrDownloadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrUploadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
-    >>> print branch.getBzrDownloadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~landscape-developers/landscape/trunk
+    >>> print branch.bzr_identity
+    lp://dev/~landscape-developers/landscape/trunk
 
-Public branches use anonymous http for the bzr branch location.
+Branches associated with product series have shorter identities.  To
+show this the landscape trunk branch will be associated as the primary
+development focus branch.
 
-    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/main')
-    >>> print branch.private
-    False
-    >>> print branch.getBzrUploadURL()
-    bzr+ssh://<name>@bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrDownloadURL()
-    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrUploadURL(ddaa)
-    bzr+ssh://ddaa@bazaar.launchpad.dev/~name12/gnome-terminal/main
-    >>> print branch.getBzrDownloadURL(ddaa)
-    http://bazaar.launchpad.dev/~name12/gnome-terminal/main
+    >>> landscape = branch.product
+    >>> landscape.development_focus.user_branch = branch
+    >>> syncUpdate(landscape.development_focus)
+
+Private branches still show the full branch name.
+
+    >>> print branch.bzr_identity
+    lp://dev/~landscape-developers/landscape/trunk
+
+    >>> branch.private = False
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+
+If the series is not the main development focus, then the series
+name is appended.  The branch will always use the shorter of the
+names if possible.
+
+    >>> series = landscape.newSeries(branch.owner, 'experimental', '', branch)
+    >>> len(list(branch.associatedProductSeries()))
+    2
+    >>> print branch.bzr_identity
+    lp://dev/landscape
+    >>> landscape.development_focus.user_branch = None
+    >>> syncUpdate(landscape.development_focus)
+    >>> print branch.bzr_identity
+    lp://dev/landscape/experimental
+
+Junk branches associated with a series do not get the short form of
+bzr_identity.
+
+    >>> print junkcode.product
+    None
+    >>> series.user_branch = junkcode
+    >>> syncUpdate(series)
+    >>> print junkcode.bzr_identity
+    lp://dev/~ddaa/+junk/junkcode
 
 
 == Branch Scan List ==
@@ -848,6 +879,12 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
+    >>> products = [
+    ...     productset.getByName('evolution'),
+    ...     productset.getByName('firefox'),
+    ...     productset.getByName('gnome-terminal'),
+    ...     ]
+
     >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
     >>> for product in products:
     ...     print "%s %s %s" % (
@@ -857,17 +894,15 @@ Lets make gnome terminal have a user branch as the dev focus.
     evolution      1 None
     firefox        5 2005-03-09 15:50:00
     gnome-terminal 8 None
-    iso-codes      1 None
-    landscape      2 None
-    thunderbird    1 None
 
 
 == Getting all branches for a person ==
 
 Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
-result set.  The getBranchesForPerson method on IBranchSet will
-return all branches associated with that person:
+result set.  The getBranchesForContext method on IBranchSet where the
+context is a Person (or team) will return all branches associated with
+that person:
 
   - subscribed branches by person
   - person is author or owner of the branch
@@ -881,7 +916,7 @@ sort order, the sort is by lifecycle, product, author, name).
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchListingSort, DEFAULT_BRANCH_STATUS_IN_LISTING)
-    >>> branches = branchset.getBranchesForPerson(
+    >>> branches = branchset.getBranchesForContext(
     ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
@@ -890,7 +925,7 @@ sort order, the sort is by lifecycle, product, author, name).
     New ~vcs-imports/+junk/junkcode
 
     >>> sample_person = personset.getByName('name12')
-    >>> branches = branchset.getBranchesForPerson(
+    >>> branches = branchset.getBranchesForContext(
     ...     sample_person, visible_by_user=sample_person,
     ...     sort_by=BranchListingSort.LIFECYCLE)
     >>> for branch in branches:
@@ -910,25 +945,44 @@ sort order, the sort is by lifecycle, product, author, name).
     New ~landscape-developers/landscape/trunk
     New ~name12/+junk/junk.contrib
 
-    >>> for branch in branchset.getBranchesRegisteredByPerson(
-    ...     sample_person, sort_by=BranchListingSort.PRODUCT):
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~name12/firefox/main
-    Abandoned ~name12/gnome-terminal/2.4
-    Merged ~name12/gnome-terminal/slowness
-    Mature ~name12/gnome-terminal/2.6
-    Development ~name12/gnome-terminal/main
-    Experimental ~name12/gnome-terminal/klingon
-    New ~name12/gnome-terminal/mirrored
-    New ~name12/gnome-terminal/pushed
-    New ~name12/gnome-terminal/scanned
-    Experimental ~name12/+junk/junk.dev
-    New ~name12/+junk/junk.contrib
+In order to further restrict the branches that are returned for a person
+there is the BranchPersonSearchContext, which has a restriction from
+BranchPersonSearchRestriction.
 
-    >>> for branch in branchset.getBranchesSubscribedByPerson(sample_person):
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~launchpad/gnome-terminal/launchpad
-    Experimental ~name12/+junk/junk.dev
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchPersonSearchContext, BranchPersonSearchRestriction)
+    >>> for item in BranchPersonSearchRestriction.items:
+    ...     print repr(item)
+    <Item ...ALL, All related branches>
+    <Item ...REGISTERED, Registered branches>
+    <Item ...OWNED, Owned branches>
+    <Item ...SUBSCRIBED, Subscribed branches>
+
+A BranchPersonSearchContext takes a person and a restriction.
+
+    >>> search_context = BranchPersonSearchContext(
+    ...     sample_person, BranchPersonSearchRestriction.REGISTERED)
+    >>> for branch in branchset.getBranchesForContext(
+    ...     search_context, sort_by=BranchListingSort.PRODUCT):
+    ...     print branch.unique_name
+    ~name12/firefox/main
+    ~name12/gnome-terminal/2.4
+    ~name12/gnome-terminal/slowness
+    ~name12/gnome-terminal/2.6
+    ~name12/gnome-terminal/main
+    ~name12/gnome-terminal/klingon
+    ~name12/gnome-terminal/mirrored
+    ~name12/gnome-terminal/pushed
+    ~name12/gnome-terminal/scanned
+    ~name12/+junk/junk.dev
+    ~name12/+junk/junk.contrib
+
+    >>> search_context = BranchPersonSearchContext(
+    ...     sample_person, BranchPersonSearchRestriction.SUBSCRIBED)
+    >>> for branch in branchset.getBranchesForContext(search_context):
+    ...     print branch.unique_name
+    ~launchpad/gnome-terminal/launchpad
+    ~name12/+junk/junk.dev
 
 
 == Getting branches for a product ==
@@ -938,7 +992,7 @@ of the work as possible.  This way there are optimal database queries for
 extra display information.
 
     >>> gnome_terminal = productset.getByName('gnome-terminal')
-    >>> branches = branchset.getBranchesForProduct(
+    >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, DEFAULT_BRANCH_STATUS_IN_LISTING,
     ...     sort_by=BranchListingSort.REGISTRANT)
     >>> for branch in branches:
@@ -954,32 +1008,12 @@ extra display information.
     New Sample Person ~name12/gnome-terminal/scanned
     New VCS imports ~vcs-imports/gnome-terminal/import
 
-    >>> branches = branchset.getBranchesForProduct(
-    ...     gnome_terminal, sort_by=BranchListingSort.AUTHOR)
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title,
-    ...     if branch.author:
-    ...         print branch.author.displayname,
-    ...     else:
-    ...         print '<none>',
-    ...     print branch.unique_name
-    New Launchpad Developers ~launchpad/gnome-terminal/launchpad
-    Merged Sample Person ~name12/gnome-terminal/slowness
-    Experimental Sample Person ~name12/gnome-terminal/klingon
-    Abandoned <none> ~name12/gnome-terminal/2.4
-    Mature <none> ~name12/gnome-terminal/2.6
-    Development <none> ~name12/gnome-terminal/main
-    New <none> ~ddaa/gnome-terminal/dev
-    New <none> ~vcs-imports/gnome-terminal/import
-    New <none> ~name12/gnome-terminal/mirrored
-    New <none> ~name12/gnome-terminal/pushed
-    New <none> ~name12/gnome-terminal/scanned
-
-    >>> branches = branchset.getBranchesForProduct(
+    >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     Development ~name12/gnome-terminal/main
+
 
 == Getting branches for a project ==
 
@@ -989,7 +1023,7 @@ products that belong to a given project.
     >>> from canonical.launchpad.interfaces import IProjectSet
     >>> def printMozillaBranches(lifecycle_statuses=None):
     ...     mozilla = getUtility(IProjectSet).getByName('mozilla')
-    ...     branches = branchset.getBranchesForProject(
+    ...     branches = branchset.getBranchesForContext(
     ...         mozilla, lifecycle_statuses)
     ...     for branch in branches:
     ...         print branch.lifecycle_status.title, branch.unique_name
@@ -1014,7 +1048,7 @@ variety of different statuses, so that we can demonstrate filtering by status.
     ...         new_status = getattr(BranchLifecycleStatus, new_status_name)
     ...         branch.lifecycle_status = new_status
     ...         syncUpdate(branch)
-    ...     # getBranchesForProject queries BranchWithSortKeys but we've just
+    ...     # getBranchesForContext queries BranchWithSortKeys but we've just
     ...     # updated Branch.  SQLObject doesn't know that these are related
     ...     # so we have to drop the cached BranchWithSortKeys objects.
     ...     flush_database_caches()
@@ -1164,6 +1198,7 @@ The current references to the branch table are shown here.
     ...     '%s.%s' % (src_tab, src_col) for
     ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
     ...     print name
+    branch.stacked_on
     branchmergeproposal.dependent_branch
     branchmergeproposal.source_branch
     branchmergeproposal.target_branch

@@ -8,6 +8,9 @@ __all__ = ['Product', 'ProductSet']
 
 
 import operator
+import datetime
+import calendar
+import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
@@ -26,6 +29,8 @@ from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.commercialsubscription import (
+    CommercialSubscription)
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
@@ -49,8 +54,8 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget, IHasBugContact,
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget,
+    IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
     IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
     NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
@@ -67,9 +72,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IFAQTarget, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IProduct, IQuestionTarget, IStructuralSubscriptionTarget,
-        IHasBugContact)
+        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
+        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     _table = 'Product'
 
@@ -78,8 +83,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         foreignKey="Person",
         validator=public_person_validator, dbName="owner", notNull=True)
-    bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person',
+    bug_supervisor = ForeignKey(
+        dbName='bug_supervisor', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
@@ -140,7 +145,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
-    reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    license_reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     reviewer_whiteboard = StringCol(notNull=False, default=None)
     private_bugs = BoolCol(
         dbName='private_bugs', notNull=True, default=False)
@@ -156,15 +161,138 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     bug_reporting_guidelines = StringCol(default=None)
 
     license_info = StringCol(dbName='license_info', default=None)
+    license_approved = BoolCol(dbName='license_approved',
+                               notNull=True, default=False)
+
+    @property
+    def default_stacked_on_branch(self):
+        """See `IProduct`."""
+        return self.development_focus.series_branch
+
+    @cachedproperty('_commercial_subscription_cached')
+    def commercial_subscription(self):
+        return CommercialSubscription.selectOneBy(product=self)
+
+    def redeemSubscriptionVoucher(self, voucher, registrant, purchaser,
+                                  subscription_months, whiteboard=None):
+        """See `IProduct`."""
+
+        def add_months(start, num_months):
+            """Given a start date find the new date `num_months` later.
+
+            If the start date day is the last day of the month and the new
+            month does not have that many days, then the new date will be the
+            last day of the new month.  February is handled correctly too,
+            including leap years, where th 28th-31st maps to the 28th or
+            29th.
+            """
+            years, new_month = divmod(start.month + num_months, 12)
+            new_year = start.year + years
+            # If the day is not valid for the new month, make it the last day
+            # of that month, e.g. 20080131 + 1 month = 20080229.
+            weekday, days_in_month = calendar.monthrange(new_year, new_month)
+            new_day = min(days_in_month, start.day)
+            new_date = start.replace(year=new_year,
+                                     month=new_month,
+                                     day=new_day)
+            return new_date
+
+        now = datetime.datetime.now(pytz.timezone('UTC'))
+        if self.commercial_subscription is None:
+            date_starts = now
+            date_expires = add_months(date_starts, subscription_months)
+            subscription = CommercialSubscription(
+                product=self,
+                date_starts=date_starts,
+                date_expires=date_expires,
+                registrant=registrant,
+                purchaser=purchaser,
+                sales_system_id=voucher,
+                whiteboard=whiteboard)
+            self._commercial_subscription_cached = subscription
+        else:
+            if (now <= self.commercial_subscription.date_expires):
+                # Extend current subscription.
+                self.commercial_subscription.date_expires = (
+                    add_months(self.commercial_subscription.date_expires,
+                               subscription_months))
+            else:
+                self.commercial_subscription.date_starts = now
+                self.commercial_subscription.date_expires = (
+                    add_months(date_starts, subscription_months))
+            self.commercial_subscription.sales_system_id = voucher
+            self.commercial_subscription.registrant = registrant
+            self.commercial_subscription.purchaser = purchaser
+
+    @property
+    def qualifies_for_free_hosting(self):
+        """See `IProduct`."""
+        if self.license_approved:
+            # The license was manually approved for free hosting.
+            return True
+        elif License.OTHER_PROPRIETARY in self.licenses:
+            # Proprietary licenses need a subscription without
+            # waiting for a review.
+            return False
+        elif (self.license_reviewed and
+              (License.OTHER_OPEN_SOURCE in self.licenses or
+               self.license_info not in ('', None))):
+            # We only know that an unknown open source license
+            # requires a subscription after we have reviewed it
+            # when we have not set license_approved to True.
+            return False
+        elif len(self.licenses) == 0:
+            # The owner needs to choose a license.
+            return False
+        else:
+            # The project has only valid open source license(s).
+            return True
+
+    @property
+    def commercial_subscription_is_due(self):
+        """See `IProduct`.
+
+        If True, display subscription warning to project owner.
+        """
+        if self.qualifies_for_free_hosting:
+            return False
+        elif (self.commercial_subscription is None
+              or not self.commercial_subscription.is_active):
+            # The project doesn't have an active subscription.
+            return True
+        else:
+            warning_date = (self.commercial_subscription.date_expires
+                            - datetime.timedelta(30))
+            now = datetime.datetime.now(pytz.timezone('UTC'))
+            if now > warning_date:
+                # The subscription is close to being expired.
+                return True
+            else:
+                # The subscription is good.
+                return False
+
+    @property
+    def is_permitted(self):
+        """See `IProduct`.
+
+        If False, disable many tasks on this project.
+        """
+        if self.qualifies_for_free_hosting:
+            # The project qualifies for free hosting.
+            return True
+        elif self.commercial_subscription is None:
+            return False
+        else:
+            return self.commercial_subscription.is_active
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
         return tuple(
             product_license.license
-            for product_license 
+            for product_license
                 in ProductLicense.selectBy(product=self, orderBy='license'))
 
-    def _setLicenses(self, licenses):
+    def _setLicenses(self, licenses, reset_license_reviewed=True):
         """Set the licenses from a tuple of license enums.
 
         The licenses parameter must not be an empty tuple.
@@ -173,6 +301,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         old_licenses = set(self.licenses)
         if licenses == old_licenses:
             return
+        # Clear the license_reviewed flag if the license changes.
+        # ProductSet.createProduct() passes in reset_license_reviewed=False
+        # to avoid changing the value when a Launchpad Admin sets
+        # license_reviewed & licenses at the same time.
+        if reset_license_reviewed:
+            self.license_reviewed = False
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute
@@ -183,7 +317,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 raise AssertionError("%s is not a License" % license)
 
         for license in old_licenses.difference(licenses):
-            product_license = ProductLicense.selectOneBy(product=self, 
+            product_license = ProductLicense.selectOneBy(product=self,
                                                          license=license)
             product_license.destroySelf()
 
@@ -191,6 +325,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductLicense(product=self, license=license)
 
     licenses = property(_getLicenses, _setLicenses)
+
+    def _set_license_info(self, value):
+        if not self._SO_creating and value != self.license_info:
+            # Clear the license_reviewed flag if the license changes.
+            self.license_reviewed = False
+        self._SO_set_license_info(value)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -633,11 +773,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         ProductBounty(product=self, bounty=bounty)
         return None
 
-    def setBugContact(self, bugcontact, user):
-        """See `IHasBugContact`."""
-        self.bugcontact = bugcontact
-        if bugcontact is not None:
-            subscription = self.addBugSubscription(bugcontact, user)
+    def setBugSupervisor(self, bug_supervisor, user):
+        """See `IHasBugSupervisor`."""
+        self.bug_supervisor = bug_supervisor
+        if bug_supervisor is not None:
+            subscription = self.addBugSubscription(bug_supervisor, user)
 
 
 class ProductSet:
@@ -717,7 +857,7 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=False, mugshot=None, logo=None,
+                      license_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=(), license_info=None):
         """See `IProductSet`."""
         product = Product(
@@ -727,11 +867,12 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang, reviewed=reviewed,
+            programminglang=programminglang,
+            license_reviewed=license_reviewed,
             icon=icon, logo=logo, mugshot=mugshot, license_info=license_info)
 
         if len(licenses) > 0:
-            product.licenses = licenses
+            product._setLicenses(licenses, reset_license_reviewed=False)
 
         # Create a default trunk series and set it as the development focus
         trunk = product.newSeries(

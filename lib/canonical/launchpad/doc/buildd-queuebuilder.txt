@@ -22,8 +22,7 @@ Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
     ...      Build, BuildQueue, DistroArchSeries, DistroSeries,
-    ...      PocketChroot, SecureSourcePackagePublishingHistory,
-    ...      SourcePackagePublishingHistory)
+    ...      PocketChroot, SecureSourcePackagePublishingHistory)
 
     >>> from canonical.launchpad.interfaces import (
     ...      PackagePublishingPocket, PackagePublishingStatus)
@@ -38,7 +37,18 @@ test_system_documentation.py for more information.
 Now that we have satisfied all of the needs for BuildMaster, let's
 instantiate it.
 
-    >>> build_master = BuilddMaster(logger, transaction)
+If I pass the current 'transaction' to BuilddMaster it will call
+commit() on it for it build created. It apparently mess with the
+transaction manager is a way that the builds created in the sampledata
+catch-up (line 103) do not persist for the test build creation (line
+469). This issue results in new build records exactly for the same
+souces and locations but with higher IDs.
+
+    >>> class FakeZtm:
+    ...     def commit(self):
+    ...         flush_database_updates()
+
+    >>> build_master = BuilddMaster(logger, FakeZtm())
 
 Emulate a PocketChroot entry to validate the following
 distroarchseries:
@@ -54,8 +64,14 @@ distroarchseries:
     >>> unsused = PocketChroot(distroarchseries=hoary['i386'], chroot=1)
     >>> unused = PocketChroot(distroarchseries=hoary['hppa'], chroot=2)
 
+    >>> ubuntu = hoary.distribution
+    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> unused = PocketChroot(
+    ...     distroarchseries=breezy_autotest_i386, chroot=3)
+
     >>> woody = DistroSeries.selectOneBy(name='woody')
-    >>> unused = PocketChroot(distroarchseries=woody['i386'], chroot=3)
+    >>> unused = PocketChroot(distroarchseries=woody['i386'], chroot=4)
 
 Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
@@ -79,6 +95,7 @@ be considered.
     The Warty Warthog Release for i386 (x86)
     The Hoary Hedgehog Release for i386 (x86)
     WOODY for i386 (x86)
+    Breezy Badger Autotest for i386 (x86)
     The Hoary Hedgehog Release for hppa (hppa)
 
 
@@ -244,6 +261,22 @@ depending on lifting the PRIMARY archive PAS restrictions.
     >>> pub_hoary_ppa = test_publisher.getPubSource(
     ...     sourcename='test-ppa', version='674', distroseries=hoary,
     ...     architecturehintlist="i386 hppa", archive=cprov.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+We will remove the virtualization support from
+ubuntu/breezy-autotest/i386, so we can verify that when a distroseries
+exists but does not support any PPA archictecture the source
+publications in PPA context are ignored; they don't result in any
+build nor a misleading error in determineArchitectureToBuild.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> breezy_autotest_i386.supports_virtualized = False
+    >>> syncUpdate(breezy_autotest_i386)
+
+    >>> pub_breezy_autotest_ppa = test_publisher.getPubSource(
+    ...     sourcename='test-no-ppa-support', version='999',
+    ...     distroseries=breezy_autotest, archive=cprov.archive,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
@@ -418,14 +451,35 @@ corresponding architecture, since only linux is supported in ubuntu.
 
 == PPA architectures ==
 
-Only the architecture with established support for PPA will be
-considered when creating PPA builds. See distroarchseries.txt for
-further information.
+For virtualized archives only architectures with established support for
+PPA will be considered when creating PPA builds. See distroarchseries.txt
+for further information.
 
     >>> legal_archs = set(hoary.architectures)
+    >>> sorted([arch.architecturetag for arch in legal_archs])
+    [u'hppa', u'i386']
+
     >>> [arch.architecturetag for arch in
     ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)]
     [u'i386']
+
+Conversely, for non-virtual archives, build records are created for all
+architectures supported for the distroseries.
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser("launchpad")
+
+    >>> pub_hoary_ppa.archive.require_virtualized = False
+    >>> sorted([arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)])
+    [u'hppa', u'i386']
+
+Reset the virtualization flag.
+
+    >>> pub_hoary_ppa.archive.require_virtualized = True
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 
 == Create and verify the new builds ==
@@ -484,7 +538,7 @@ happen in parallel with build creation.
     >>> print build_queue.build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
     >>> build_queue.lastscore
-    1005
+    4005
 
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.

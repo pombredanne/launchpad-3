@@ -1,0 +1,61 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/applicationhome"
+  i18n:domain="launchpad">
+
+<body>
+
+  <h1 metal:fill-slot="heading">Code Imports</h1>
+
+<div metal:fill-slot="main" class="visualPadding">
+
+  <h1>Import machines for Launchpad</h1>
+
+  <tal:block tal:condition="nothing">
+    <p id="no-imports">No matching code imports found!</p>
+  </tal:block>
+
+  <tal:block tal:condition="not: nothing">
+    <table class="listing" id="code-import-machine-listing">
+      <thead>
+        <tr>
+          <th>Machine</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tal:machine repeat="machine view/machines">
+          <tr>
+            <td><tal:hostname replace="structure machine/fmt:link"/></td>
+            <td><tal:status replace="machine/state/title"/></td>
+          </tr>
+          <tal:has-jobs define="jobs machine/current_jobs"
+                        condition="jobs">
+            <tr>
+              <td colspan="2">
+                <table class="simple">
+                  <tal:jobs repeat="job jobs">
+                    <tr>
+                      <td><tal:branch replace="structure job/code_import/branch/fmt:link"/></td>
+                      <td>Started: <tal:branch replace="job/date_started/fmt:approximatedate"/></td>
+                      <td>Last heartbeat: <tal:branch replace="job/heartbeat/fmt:approximatedate"/></td>
+                    </tr>
+                  </tal:jobs>
+                </table>
+              </td>
+            </tr>
+          </tal:has-jobs>
+        </tal:machine>
+      </tbody>
+    </table>
+  </tal:block>
+</div>
+
+</body>
+</html>

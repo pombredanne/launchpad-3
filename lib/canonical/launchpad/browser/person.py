@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BaseListView',
     'BeginTeamClaimView',
-    'BugContactPackageBugsSearchListingView',
+    'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'PeopleListView',
     'PersonAddView',
@@ -56,6 +56,7 @@ __all__ = [
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'PersonTranslationView',
+    'PersonTranslationRelicensingView',
     'PersonView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
@@ -83,6 +84,7 @@ import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 import pytz
+import subprocess
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
@@ -97,29 +99,39 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
+from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
+from canonical.widgets import (
+    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
+    PasswordChangeWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
-    CannotSubscribe, CannotUnsubscribe,
+    AccountStatus, BranchListingSort,
+    BranchPersonSearchContext, BranchPersonSearchRestriction,
+    BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
-    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
+    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
+    IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
+    IPOTemplateSet, IPasswordEncryptor, IPerson,
+    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
     IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
-    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
-    PersonCreationRationale, PersonVisibility, QuestionParticipation,
-    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership,
+    ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
+    LoginTokenType, MailingListAutoSubscribePolicy,
+    NotFoundError, PersonCreationRationale,
+    PersonVisibility, QuestionParticipation, SSHKeyType,
+    SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+
+from canonical.launchpad.interfaces.translationrelicensingagreement import (
+    ITranslationRelicensingAgreement)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -133,10 +145,11 @@ from canonical.launchpad.browser.openiddiscovery import (
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.branding import BrandingChangeView
+from canonical.launchpad.browser.mailinglists import (
+    enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
-
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -274,6 +287,38 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     @stepto('+archive')
     def traverse_archive(self):
         return self.context.archive
+
+    @stepthrough('+email')
+    def traverse_email(self, email):
+        """Traverse to this person's emails on the webservice layer."""
+        email = getUtility(IEmailAddressSet).getByEmail(email)
+        if email is None or email.person != self.context:
+            return None
+        return email
+
+    @stepthrough('+wikiname')
+    def traverse_wikiname(self, id):
+        """Traverse to this person's WikiNames on the webservice layer."""
+        wiki = getUtility(IWikiNameSet).get(id)
+        if wiki is None or wiki.person != self.context:
+            return None
+        return wiki
+
+    @stepthrough('+jabberid')
+    def traverse_jabberid(self, jabber_id):
+        """Traverse to this person's JabberIDs on the webservice layer."""
+        jabber = getUtility(IJabberIDSet).getByJabberID(jabber_id)
+        if jabber is None or jabber.person != self.context:
+            return None
+        return jabber
+
+    @stepthrough('+ircnick')
+    def traverse_ircnick(self, id):
+        """Traverse to this person's IrcIDs on the webservice layer."""
+        irc_nick = getUtility(IIrcIDSet).get(id)
+        if irc_nick is None or irc_nick.person != self.context:
+            return None
+        return irc_nick
 
 
 class PersonDynMenu(DynMenu):
@@ -651,21 +696,17 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
     def all_related(self):
-        text = 'All related'
         return Link(canonical_url(self.context, rootsite='code'),
-                    text, icon='branch')
+                    'Related branches')
 
     def owned(self):
-        text = 'Owned'
-        return Link('+ownedbranches', text, icon='branch')
+        return Link('+ownedbranches', 'owned')
 
     def registered(self):
-        text = 'Registered'
-        return Link('+registeredbranches', text, icon='branch')
+        return Link('+registeredbranches', 'registered')
 
     def subscribed(self):
-        text = 'Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
+        return Link('+subscribedbranches', 'subscribed')
 
     def addbranch(self):
         if self.user is None:
@@ -696,8 +737,9 @@ class PersonBugsMenu(ApplicationMenu):
 
     def softwarebugs(self):
         text = 'Show package report'
-        summary = ('A summary report for packages where %s is a bug contact.'
-                   % self.context.displayname)
+        summary = (
+            'A summary report for packages where %s is a bug supervisor.'
+            % self.context.displayname)
         return Link('+packagebugs', text, summary=summary)
 
     def reportedbugs(self):
@@ -785,11 +827,15 @@ class PersonTranslationsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ['imports']
+    links = ['imports', 'relicensing']
 
     def imports(self):
         text = 'See import queue'
         return Link('+imports', text)
+
+    def relicensing(self):
+        text = 'Relicense translations'
+        return Link('+relicensing', text, enabled=False)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -973,7 +1019,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
+             'editemail', 'configure_mailing_list', 'moderate_mailing_list',
+             'editlanguages', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'common_packages', 'related_projects',
              'activate_ppa', 'show_ppa']
@@ -990,7 +1037,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change branding'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Owner')
     def reassign(self):
         target = '+reassign'
         text = 'Change owner'
@@ -1064,6 +1111,15 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def configure_mailing_list(self):
         target = '+mailinglist'
         text = 'Configure mailing list'
+        summary = (
+            'The mailing list associated with %s' % self.context.browsername)
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_active_mailing_list
+    @enabled_with_permission('launchpad.Edit')
+    def moderate_mailing_list(self):
+        target = '+mailinglist-moderate'
+        text = 'Moderate mailing list'
         summary = (
             'The mailing list associated with %s' % self.context.browsername)
         return Link(target, text, summary, icon='edit')
@@ -1197,13 +1253,17 @@ class PersonAddView(LaunchpadFormView):
         token.sendProfileCreatedEmail(person, creation_comment)
 
 
+class DeactivateAccountSchema(Interface):
+    use_template(IPerson, include=['password'])
+    comment = copy_field(
+        IPerson['account_status_comment'], readonly=False, __name__='comment')
+
+
 class PersonDeactivateAccountView(LaunchpadFormView):
 
-    schema = IPerson
-    field_names = ['account_status_comment', 'password']
+    schema = DeactivateAccountSchema
     label = "Deactivate your Launchpad account"
-    custom_widget('account_status_comment', TextAreaWidget, height=5,
-                  width=60)
+    custom_widget('comment', TextAreaWidget, height=5, width=60)
 
     def validate(self, data):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -1216,7 +1276,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        self.context.deactivateAccount(data['account_status_comment'])
+        self.context.deactivateAccount(data['comment'])
         logoutPerson(self.request)
         self.request.response.addNoticeNotification(
             _(u'Your account has been deactivated.'))
@@ -1458,8 +1518,8 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         return False
 
 
-class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
-    """Bugs reported on packages for a bug contact."""
+class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
+    """Bugs reported on packages for a bug subscriber."""
 
     columns_to_show = ["id", "summary", "importance", "status"]
 
@@ -1503,13 +1563,13 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
-        for package_counts in self.context.getBugContactOpenBugCounts(
+        for package_counts in self.context.getBugSubscriberOpenBugCounts(
             self.user):
             package = package_counts['package']
             L.append({
                 'package_name': package.displayname,
                 'package_search_url':
-                    self.getBugContactPackageSearchURL(package),
+                    self.getBugSubscriberPackageSearchURL(package),
                 'open_bugs_count': package_counts['open'],
                 'open_bugs_url': self.getOpenBugsURL(package),
                 'critical_bugs_count': package_counts['open_critical'],
@@ -1522,26 +1582,26 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return sorted(L, key=itemgetter('package_name'))
 
-    def getOtherBugContactPackageLinks(self):
-        """Return a list of the other packages for a bug contact.
+    def getOtherBugSubscriberPackageLinks(self):
+        """Return a list of the other packages for a bug subscriber.
 
         This excludes the current package.
         """
         current_package = self.current_package
 
         other_packages = [
-            package for package in self.context.getBugContactPackages()
+            package for package in self.context.getBugSubscriberPackages()
             if package != current_package]
 
         package_links = []
         for other_package in other_packages:
             package_links.append({
                 'title': other_package.displayname,
-                'url': self.getBugContactPackageSearchURL(other_package)})
+                'url': self.getBugSubscriberPackageSearchURL(other_package)})
 
         return package_links
 
-    def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
+    def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
 
@@ -1574,10 +1634,10 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         else:
             return person_url + '/+packagebugs-search?%s' % query_string
 
-    def getBugContactPackageAdvancedSearchURL(self,
+    def getBugSubscriberPackageAdvancedSearchURL(self,
                                               distributionsourcepackage=None):
         """Build the advanced search URL for a distributionsourcepackage."""
-        return self.getBugContactPackageSearchURL(advanced=True)
+        return self.getBugSubscriberPackageSearchURL(advanced=True)
 
     def getOpenBugsURL(self, distributionsourcepackage):
         """Return the URL for open bugs on distributionsourcepackage."""
@@ -1586,7 +1646,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         for status in UNRESOLVED_BUGTASK_STATUSES:
             status_params['field.status'].append(status.title)
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=status_params)
 
@@ -1598,7 +1658,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         for status in UNRESOLVED_BUGTASK_STATUSES:
             critical_bugs_params["field.status"].append(status.title)
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=critical_bugs_params)
 
@@ -1610,7 +1670,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         for status in UNRESOLVED_BUGTASK_STATUSES:
             unassigned_bugs_params["field.status"].append(status.title)
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=unassigned_bugs_params)
 
@@ -1618,7 +1678,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         """Return the URL for unassigned bugs on distributionsourcepackage."""
         inprogress_bugs_params = {"field.status": "In Progress"}
 
-        return self.getBugContactPackageSearchURL(
+        return self.getBugSubscriberPackageSearchURL(
             distributionsourcepackage=distributionsourcepackage,
             extra_params=inprogress_bugs_params)
 
@@ -1637,7 +1697,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return "Search bugs in %s" % self.current_package.displayname
 
     def getSimpleSearchURL(self):
-        return self.getBugContactPackageSearchURL()
+        return self.getBugSubscriberPackageSearchURL()
 
 
 class PersonRelatedBugsView(BugTaskSearchListingView, FeedsMixin):
@@ -2449,6 +2509,20 @@ class PersonEditSSHKeysView(LaunchpadView):
             self.error_message = 'Invalid public key'
             return
 
+        process = subprocess.Popen(
+            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        (out, err) = process.communicate(sshkey.encode('utf-8'))
+        if 'compromised' in out.lower():
+            self.error_message = (
+                'This key is known to be compromised due to a security flaw '
+                'in the software used to generate it, so it will not be '
+                'accepted by Launchpad. See the full '
+                '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
+                'Notice</a> for further information and instructions on how '
+                'to generate another key.')
+            return
+
         if kind == 'ssh-rsa':
             keytype = SSHKeyType.RSA
         elif kind == 'ssh-dss':
@@ -2524,6 +2598,50 @@ class PersonTranslationView(LaunchpadView):
             return True
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
+
+
+class PersonTranslationRelicensingView(LaunchpadFormView):
+    """View for Person's translation relicensing page."""
+    label = "Relicense your translations?"
+    schema = ITranslationRelicensingAgreement
+    field_names = ['allow_relicensing']
+
+    @property
+    def initial_values(self):
+        """Set the user's current relicensing preference or a True default."""
+        default = self.context.translations_relicensing_agreement
+        if default is None:
+            default = True
+        return { "allow_relicensing" : default }
+
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        referrer = self.request.getHeader('referer')
+        if referrer and referrer.startswith(self.request.getApplicationURL()):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @action(_("Update my decision"), name="submit")
+    def submit_action(self, action, data):
+        """Store person's decision about translations relicensing.
+
+        Decision is stored through
+        `IPerson.translations_relicensing_agreement`
+        which uses TranslationRelicensingAgreement table.
+        """
+        allow_relicensing = data['allow_relicensing']
+        self.context.translations_relicensing_agreement = allow_relicensing
+        if allow_relicensing:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Thank you for deciding to relicense your translations."))
+        else:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Your translations will be removed once we completely "
+                "switch to BSD license for translations."))
 
 
 class PersonGPGView(LaunchpadView):
@@ -2804,6 +2922,12 @@ class TeamJoinView(PersonView):
         return not (self.userIsActiveMember() or self.userIsProposedMember())
 
     @property
+    def user_wants_list_subscriptions(self):
+        """Is the user interested in subscribing to mailing lists?"""
+        return (self.user.mailing_list_auto_subscribe_policy !=
+                MailingListAutoSubscribePolicy.NEVER)
+
+    @property
     def team_is_moderated(self):
         """Is this team a moderated team?
 
@@ -2820,7 +2944,10 @@ class TeamJoinView(PersonView):
 
         notification = None
         if 'join' in request.form and self.user_can_request_to_join:
-            user.join(context)
+            # Shut off mailing list auto-subscription - we want direct
+            # control over it.
+            user.join(context, may_subscribe_to_list=False)
+
             if self.team_is_moderated:
                 response.addInfoNotification(
                     _('Your request to join ${team} is awaiting '
@@ -2850,26 +2977,25 @@ class TeamJoinView(PersonView):
         """Subscribe the user to the team's mailing list."""
         response = self.request.response
 
-        if not self.user_can_subscribe_to_list:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-            return
-
-        try:
+        if self.user_can_subscribe_to_list:
+            # 'user_can_subscribe_to_list' should have dealt with
+            # all of the error cases.
             self.context.mailing_list.subscribe(self.user)
-        except CannotSubscribe, error:
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
-        else:
+
             if self.team_is_moderated:
                 response.addInfoNotification(
-                    _('Your mailing list subscription is awaiting '
-                      'approval.'))
+                    _('Your mailing list subscription is '
+                      'awaiting approval.'))
             else:
                 response.addInfoNotification(
                     structured(
-                        _("You have been subscribed to this team&#x2019;s "
-                          "mailing list.")))
+                        _("You have been subscribed to this "
+                          "team&#x2019;s mailing list.")))
+        else:
+            # A catch-all case, perhaps from stale or mangled
+            # form data.
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):
@@ -2984,6 +3110,8 @@ class PersonEditEmailsView(LaunchpadFormView):
                   orientation='vertical')
     custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
                   orientation='vertical')
+    custom_widget('mailing_list_auto_subscribe_policy',
+                  LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
         """Set up fields for this view.
@@ -2997,7 +3125,8 @@ class PersonEditEmailsView(LaunchpadFormView):
                             self._unvalidated_emails_field() +
                             FormFields(TextLine(__name__='newemail',
                                                 title=u'Add a new address'))
-                            + self._mailing_list_fields())
+                            + self._mailing_list_fields()
+                            + self._autosubscribe_policy_fields())
 
     @property
     def initial_values(self):
@@ -3011,14 +3140,27 @@ class PersonEditEmailsView(LaunchpadFormView):
         address: then, that address is used as the default validated
         email address.
         """
+        # Defaults for the user's email addresses.
         validated = self.context.preferredemail
         if validated is None and self.context.validatedemails.count() > 0:
             validated = self.context.validatedemails[0]
         unvalidated = self.unvalidated_addresses
         if len(unvalidated) > 0:
             unvalidated = unvalidated.pop()
-        return dict(VALIDATED_SELECTED=validated,
-                    UNVALIDATED_SELECTED=unvalidated)
+        initial = dict(VALIDATED_SELECTED=validated,
+                       UNVALIDATED_SELECTED=unvalidated)
+
+        # Defaults for the mailing list autosubscribe buttons.
+        policy = self.context.mailing_list_auto_subscribe_policy
+        initial.update(mailing_list_auto_subscribe_policy=policy)
+
+        return initial
+
+    def setUpWidgets(self, context=None):
+        """See `LaunchpadFormView`."""
+        super(PersonEditEmailsView, self).setUpWidgets(context)
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        widget.display_label = False
 
     def _validated_emails_field(self):
         """Create a field with a vocabulary of validated emails.
@@ -3099,6 +3241,16 @@ class PersonEditEmailsView(LaunchpadFormView):
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
         return FormFields(*fields)
+
+    def _autosubscribe_policy_fields(self):
+        """Create a field for each mailing list auto-subscription option."""
+        return FormFields(
+            Choice(__name__='mailing_list_auto_subscribe_policy',
+                   title=_('When should launchpad automatically subscribe '
+                           'you to a team&#x2019;s mailing list?'),
+                   source=MailingListAutoSubscribePolicy),
+            custom_widget=self.custom_widgets[
+                    'mailing_list_auto_subscribe_policy'])
 
     @property
     def mailing_list_widgets(self):
@@ -3392,6 +3544,28 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "Subscriptions updated.")
         self.next_url = self.action_url
 
+    def validate_action_update_autosubscribe_policy(self, action, data):
+        """Ensure that the requested auto-subscribe setting is valid."""
+        # XXX mars 2008-04-27:
+        # This validator appears pointless and untestable, but it is
+        # required for LaunchpadFormView to tell apart the three <form>
+        # elements on the page.  See bug #223303.
+
+        widget = self.widgets['mailing_list_auto_subscribe_policy']
+        self.validate_widgets(data, widget.name)
+        return self.errors
+
+    @action(
+        _('Update Policy'),
+        name="update_autosubscribe_policy",
+        validator=validate_action_update_autosubscribe_policy)
+    def action_update_autosubscribe_policy(self, action, data):
+        newpolicy = data['mailing_list_auto_subscribe_policy']
+        self.context.mailing_list_auto_subscribe_policy = newpolicy
+        self.request.response.addInfoNotification(
+            'Your auto-subscription policy has been updated.')
+        self.next_url = self.action_url
+
 
 class TeamReassignmentView(ObjectReassignmentView):
 
@@ -3673,59 +3847,94 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchesView(BranchListingView):
-    """View for branch listing for a person."""
-
-    extra_columns = ('product',)
-    heading_template = 'Bazaar branches related to %(displayname)s'
-
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+class PersonBranchCountMixin:
+    """A mixin class for person branch listings."""
 
     @cachedproperty
-    def _subscribed_branches(self):
-        return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, [], self.user))
+    def total_branch_count(self):
+        """Return the number of branches related to the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            self.context, visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def registered_branch_count(self):
+        """Return the number of branches registered by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.REGISTERED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def owned_branch_count(self):
+        """Return the number of branches owned by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.OWNED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def subscribed_branch_count(self):
+        """Return the number of branches subscribed to by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
 
 
-class PersonRegisteredBranchesView(BranchListingView):
+class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
+    """View for branch listing for a person."""
+
+    no_sort_by = (BranchListingSort.DEFAULT,)
+    heading_template = 'Bazaar branches related to %(displayname)s'
+
+
+class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's registered branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.REGISTERED)
 
 
-class PersonOwnedBranchesView(BranchListingView):
+class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's owned branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.OWNED)
 
 
-class PersonSubscribedBranchesView(BranchListingView):
+class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
-    extra_columns = ('product',)
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    no_sort_by = (BranchListingSort.DEFAULT,)
 
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
+    @property
+    def branch_search_context(self):
+        """See `BranchListingView`."""
+        return BranchPersonSearchContext(
+            self.context, BranchPersonSearchRestriction.SUBSCRIBED)
 
 
 class PersonTeamBranchesView(LaunchpadView):

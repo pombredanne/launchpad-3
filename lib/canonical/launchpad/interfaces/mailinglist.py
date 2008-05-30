@@ -8,6 +8,7 @@ __all__ = [
     'CannotChangeSubscription',
     'CannotSubscribe',
     'CannotUnsubscribe',
+    'IHeldMessageDetails',
     'IMailingList',
     'IMailingListAPIView',
     'IMailingListApplication',
@@ -15,7 +16,6 @@ __all__ = [
     'IMailingListSubscription',
     'IMessageApproval',
     'IMessageApprovalSet',
-    'MailingListAutoSubscribePolicy',
     'MailingListStatus',
     'PostedMessageStatus',
     ]
@@ -28,6 +28,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -127,41 +128,6 @@ class MailingListStatus(DBEnumeratedType):
         """)
 
 
-class MailingListAutoSubscribePolicy(DBEnumeratedType):
-    """A person's auto-subscription policy.
-
-    When a person joins a team, or is joined to a team, their
-    auto-subscription policy describes how and whether they will be
-    automatically subscribed to any team mailing list that the team may have.
-
-    This does not describe what happens when a team that already has members
-    gets a new team mailing list.  In that case, its members are never
-    automatically subscribed to the mailing list.
-    """
-
-    NEVER = DBItem(0, """
-        Never subscribe automatically
-
-        The user must explicitly subscribe to a team mailing list for any team
-        that she joins.
-        """)
-
-    ON_REGISTRATION = DBItem(1, """
-        Subscribe on self-registration
-
-        The user is automatically joined to any team mailng list for a team
-        that she joins explicitly.  She is never joined to any team mailing
-        list for a team that someone else joins her to.
-        """)
-
-    ALWAYS = DBItem(2, """
-        Always subscribe automatically
-
-        The user is automatically subscribed to any team mailing list when she
-        is added to the team, regardless of who joins her to the team.
-        """)
-
-
 class PostedMessageStatus(DBEnumeratedType):
     """The status of a posted message.
 
@@ -200,6 +166,19 @@ class PostedMessageStatus(DBEnumeratedType):
         Rejected
 
         A message held for first-post moderation has been rejected.
+        """)
+
+    DISCARD_PENDING = DBItem(60, """
+        Discard pending
+
+        The team administrator has discarded this message, but Mailman has not
+        yet been informed of this status.
+        """)
+
+    DISCARDED = DBItem(70, """
+        Discarded
+
+        A message held for first-post moderation has been discarded.
         """)
 
 
@@ -429,6 +408,15 @@ class IMailingList(Interface):
         :return: The IMessageApproval representing the held message.
         """
 
+    def getReviewableMessages():
+        """Return the set of all held messages for this list requiring review.
+
+        :return: A sequence of `IMessageApproval`s for this mailing list,
+            where the status is `PostedMessageStatus.NEW`.  The returned set
+            is ordered first by the date the message was posted, then by
+            Message-ID.
+        """
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
@@ -495,6 +483,15 @@ class IMailingListSet(Interface):
         title=_('Deactivated lists'),
         description=_('All mailing lists with status '
                       '`MailingListStatus.DEACTIVATING`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
+
+    unsynchronized_lists = Set(
+        title=_('Unsynchronized lists'),
+        description=_(
+            'All mailing lists with unsynchronized state, e.g. '
+            '`MailingListStatus.CONSTRUCTING` and '
+            '`MailingListStatus.UPDATING`.'),
         value_type=Object(schema=IMailingList),
         readonly=True)
 
@@ -592,9 +589,10 @@ class IMailingListAPIView(Interface):
         """Get all new message dispositions.
 
         This returns a dictionary mapping message ids to their disposition,
-        which will either be 'accept' or 'decline'.  This only returns
-        message-ids of disposed messages since the last time this method was
-        called.
+        which will either be 'accept', 'decline' or 'discard'.  This only
+        returns message-ids of disposed messages since the last time this
+        method was called.  Because this also acknowledges the pending states
+        of such messages, it changes the state on the Launchpad server.
 
         :return: A dictionary mapping message-ids to the disposition tuple.
             This tuple is of the form (team-name, action), where the action is
@@ -688,8 +686,9 @@ class IMessageApproval(Interface):
     def approve(reviewer):
         """Approve the message.
 
-        This sets the status to APPROVAL_PENDING because the approval must
-        still be recognized by Mailman.
+        Set the status to APPROVAL_PENDING, indicating that the reviewer has
+        chosen to approve the message, but that Mailman has not yet
+        acknowledged this disposition.
 
         :param reviewer: The person who did the review.
         """
@@ -697,8 +696,19 @@ class IMessageApproval(Interface):
     def reject(reviewer):
         """Reject the message.
 
-        This sets the status to REJECTION_PENDING because the approval must
-        still be recognized by Mailman.
+        Set the status to REJECTION_PENDING, indicating that the reviewer has
+        chosen to reject (i.e. bounce) the message, but that Mailman has not
+        yet acknowledged this disposition.
+
+        :param reviewer: The person who did the review.
+        """
+
+    def discard(reviewer):
+        """Discard the message.
+
+        Set the status to DISCARD_PENDING, indicating that the reviewer has
+        chosen to discard the message, but that Mailman has not yet
+        acknowledged this disposition.
 
         :param reviewer: The person who did the review.
         """
@@ -706,9 +716,10 @@ class IMessageApproval(Interface):
     def acknowledge():
         """Acknowledge the pending status of a message.
 
-        This changes APPROVAL_PENDING to APPROVED status and REJECTION_PENDING
-        to REJECTED status.  It is illegal to call this function when the
-        status is not one of those two.
+        This changes the statuses APPROVAL_PENDING to APPROVED,
+        REJECTION_PENDING to REJECTED and DISCARD_PENDING to DISCARD.  It is
+        illegal to call this function when the status is not one of these
+        states.
         """
 
 
@@ -728,6 +739,65 @@ class IMessageApprovalSet(Interface):
         :param status: A PostedMessageStatus enum value.
         :return: An iterator over all the matching held messages.
         """
+
+
+class IHeldMessageDetails(Interface):
+    """Details on a held message.
+
+    This is used via the adaptation machinery to provide a unified detailed
+    set of information about a held message, from several related but separate
+    objects.
+    """
+    message_approval = Object(
+        schema=IMessageApproval,
+        title=_('The held message record'),
+        description=_('The held message record'),
+        required=True)
+
+    message = Object(
+        schema=IMessage,
+        title=_('The message record'),
+        description=_('The representation of the message in the librarian'),
+        required=True)
+
+    message_id = Text(
+        title=_('Message-ID'),
+        description=_('The RFC 2822 Message-ID header.'),
+        required=True, readonly=True)
+
+    subject = Text(
+        title=_('Subject'),
+        description=_('The RFC 2822 Subject header.'),
+        required=True, readonly=True)
+
+    sender = Text(
+        title=_('Message author'),
+        description=_('The message originator (i.e. author), formatted as '
+                      'per RFC 2822 and derived from the RFC 2822 originator '
+                      'fields From and Reply-To.  This is a unicode string.'),
+        required=True, readonly=True)
+
+    author = Object(
+        schema=IPerson,
+        title=_('Message author'),
+        description=_('The person who sent the message'),
+        required=True, readonly=True)
+
+    date = Text(
+        title=_('Date'),
+        description=_('The RFC 2822 Date header.'),
+        required=True, readonly=True)
+
+    body = Text(
+        title=_('Plain text message body'),
+        description=_('The message body as plain text.'),
+        required=True, readonly=True)
+
+    email_message = Text(
+        title=_('The email message object'),
+        description=_('The email.message.Message object created from the '
+                      "original message's raw text."),
+        required=True, readonly=True)
 
 
 class CannotSubscribe(Exception):

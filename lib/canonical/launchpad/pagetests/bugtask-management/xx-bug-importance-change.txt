@@ -16,7 +16,7 @@ Note that the `UNKNOWN` option, which is a valid value for
 `BugTask.importance` isn't showing here. This value can't be set by
 users - only bug watches use it.
 
-Only the bug contact, or a user with launchpd.Edit on the respective
+Only the bug supervisor, or a user with launchpd.Edit on the respective
 product or distro, can edit Importance.
 
     >>> from zope.component import getUtility
@@ -46,16 +46,16 @@ product or distro, can edit Importance.
     ...     else:
     ...         return True
 
-For a product bug contact.
+For a product bug supervisor.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.setBugContact(no_priv, no_priv)
+    >>> firefox.setBugSupervisor(no_priv, no_priv)
     >>> flush_database_updates()
     >>> logout()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/firefox/+bug/1/+editstatus")
+    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
     True
 
 For a product owner.
@@ -69,32 +69,33 @@ For a product owner.
 
     >>> user_sees_importance_widget(
     ...     user=sample_person,
-    ...     url="http://localhost:9000/firefox/+bug/1/+editstatus")
+    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
     True
 
-For someone else. We'll unset no_priv as the bug contact, and note that
+For someone else. We'll unset no_priv as the bug supervisor, and note that
 he can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
     >>> flush_database_updates()
     >>> logout()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/firefox/+bug/1/+editstatus")
+    ...     url="http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
     False
 
-For a distribution bug contact.
+For a distribution bug supervisor.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.setBugContact(no_priv, no_priv)
+    >>> ubuntu.setBugSupervisor(no_priv, no_priv)
     >>> flush_database_updates()
     >>> logout()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url='http://bugs.launchpad.dev/'
+    ...         'ubuntu/+source/mozilla-firefox/+bug/1/+editstatus')
     True
 
 For a distribution owner.
@@ -106,17 +107,19 @@ For a distribution owner.
 
     >>> user_sees_importance_widget(
     ...     user=sabdfl,
-    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url='http://bugs.launchpad.dev/'
+    ...         'ubuntu/+source/mozilla-firefox/+bug/1/+editstatus')
     True
 
 For someone else, on Ubuntu.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.setBugContact(None, None)
+    >>> ubuntu.setBugSupervisor(None, None)
     >>> flush_database_updates()
     >>> logout()
 
     >>> user_sees_importance_widget(
     ...     user=no_priv,
-    ...     url="http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus")
+    ...     url='http://bugs.launchpad.dev/'
+    ...         'ubuntu/+source/mozilla-firefox/+bug/1/+editstatus')
     False

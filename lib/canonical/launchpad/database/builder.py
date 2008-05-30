@@ -36,8 +36,8 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
-    NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
-    pocketsuffix)
+    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
+    ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
@@ -101,14 +101,13 @@ class Builder(SQLBase):
     failnotes = StringCol(dbName='failnotes', default=None)
     virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
-    manual = BoolCol(dbName='manual', default=False)
+    manual = BoolCol(dbName='manual', default=True)
     vm_host = StringCol(dbName='vm_host', default=None)
     active = BoolCol(dbName='active', default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
-        librarian = getUtility(ILibrarianClient)
-        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
+        url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
@@ -271,6 +270,17 @@ class Builder(SQLBase):
                 [dependency.dependency
                  for dependency in target_archive.dependencies])
             for archive in archive_dependencies:
+                # Skip archives with no binaries published for the
+                # target distroarchseries.
+                published_binaries = archive.getAllPublishedBinaries(
+                    distroarchseries=build_queue_item.archseries,
+                    status=PackagePublishingStatus.PUBLISHED)
+                if published_binaries.count() == 0:
+                    continue
+
+                # Encode the private PPA repository password in the
+                # sources_list line. Note that the buildlog will be
+                # sanitized to not expose it.
                 if archive.private:
                     uri = URI(archive.archive_url)
                     uri = uri.replace(
@@ -278,6 +288,7 @@ class Builder(SQLBase):
                     url = str(uri)
                 else:
                     url = archive.archive_url
+
                 source_line = (
                     'deb %s %s %s'
                     % (url, dist_name, ogre_components))
@@ -414,6 +425,10 @@ class Builder(SQLBase):
         archive_purpose = build_queue_item.build.archive.purpose.name
         args['archive_purpose'] = archive_purpose
 
+        # Let the build slave know whether this is a build in a private
+        # archive.
+        args['archive_private'] = build_queue_item.build.archive.private
+
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.
@@ -427,22 +442,21 @@ class Builder(SQLBase):
     @property
     def status(self):
         """See IBuilder"""
-        if self.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
         if not self.builderok:
-            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
+            if self.failnotes is not None:
+                return self.failnotes
+            return 'Disabled'
+        # Cache the 'currentjob', so we don't have to hit the database
+        # more than once.
+        currentjob = self.currentjob
+        if currentjob is None:
+            return 'Idle'
 
-        if self.currentjob:
-            current_build = self.currentjob.build
-            msg = 'BUILDING %s' % current_build.title
-            if current_build.archive.purpose == ArchivePurpose.PPA:
-                archive_name = current_build.archive.owner.name
-                return '%s [%s] (%s)' % (msg, archive_name, mode)
-            return '%s (%s)' % (msg, mode)
-        return 'IDLE (%s)' % mode
+        msg = 'Building %s' % currentjob.build.title
+        if currentjob.build.archive.purpose != ArchivePurpose.PPA:
+            return msg
+
+        return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""
@@ -552,20 +566,15 @@ class Builder(SQLBase):
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
-        if not self.virtualized:
-            clauses.append("""
-                archive.purpose IN %s
-            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
-        else:
-            clauses.append("""
-                archive.purpose = %s
-            """ % sqlvalues(ArchivePurpose.PPA))
+        clauses.append("""
+            archive.require_virtualized = %s
+        """ % sqlvalues(self.virtualized))
 
         query = " AND ".join(clauses)
 
         candidate = BuildQueue.selectFirst(
             query, clauseTables=clauseTables, prejoins=['build'],
-            orderBy=['-buildqueue.lastscore'])
+            orderBy=['-buildqueue.lastscore', 'build.id'])
 
         return candidate
 
@@ -699,3 +708,8 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
+
+    def getBuildersForQueue(self, processor, virtualized):
+        """See `IBuilderSet`."""
+        return Builder.selectBy(builderok=True, processor=processor,
+                                virtualized=virtualized)

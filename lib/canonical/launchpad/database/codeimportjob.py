@@ -21,17 +21,17 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
-    ICodeImportEventSet, ICodeImportJob, ICodeImportJobPublic,
+    CodeImportJobState, CodeImportMachineState, CodeImportResultStatus,
+    CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
-    ICodeImportJobWorkflowPublic, ICodeImportResultSet)
+    ICodeImportMachineSet, ICodeImportResultSet)
 from canonical.launchpad.validators.person import public_person_validator
 
 
 class CodeImportJob(SQLBase):
     """See `ICodeImportJob`."""
 
-    implements(ICodeImportJob, ICodeImportJobPublic)
+    implements(ICodeImportJob)
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -94,8 +94,14 @@ class CodeImportJobSet(object):
         except SQLObjectNotFound:
             return None
 
-    def getJobForMachine(self, machine):
+    def getJobForMachine(self, hostname):
         """See `ICodeImportJobSet`."""
+        machine = getUtility(ICodeImportMachineSet).getByHostname(hostname)
+        if machine is None:
+            machine = getUtility(ICodeImportMachineSet).new(
+                hostname, CodeImportMachineState.ONLINE)
+        elif not machine.shouldLookForJob():
+            return None
         job = CodeImportJob.selectOne(
             """id IN (SELECT id FROM CodeImportJob
                WHERE date_due <= %s AND state = %s
@@ -112,7 +118,7 @@ class CodeImportJobSet(object):
 class CodeImportJobWorkflow:
     """See `ICodeImportJobWorkflow`."""
 
-    implements(ICodeImportJobWorkflow, ICodeImportJobWorkflowPublic)
+    implements(ICodeImportJobWorkflow)
 
     def newJob(self, code_import):
         """See `ICodeImportJobWorkflow`."""
@@ -221,7 +227,7 @@ class CodeImportJobWorkflow:
                import_job.state.name))
         code_import = import_job.code_import
         machine = import_job.machine
-        getUtility(ICodeImportResultSet).new(
+        result = getUtility(ICodeImportResultSet).new(
             code_import=code_import, machine=machine,
             log_excerpt=import_job.logtail,
             requesting_user=import_job.requesting_user,
@@ -232,6 +238,14 @@ class CodeImportJobWorkflow:
         # interface to do this. So we must use removeSecurityProxy here.
         naked_job = removeSecurityProxy(import_job)
         naked_job.destroySelf()
-        self.newJob(code_import)
+        # Only start a new one if not invalid or suspended.
+        if code_import.review_status == CodeImportReviewStatus.REVIEWED:
+            self.newJob(code_import)
+        # If the status was successful, update the date_last_successful and
+        # arrange for the branch to be mirrored.
+        if status == CodeImportResultStatus.SUCCESS:
+            naked_import = removeSecurityProxy(code_import)
+            naked_import.date_last_successful = result.date_created
+            code_import.branch.requestMirror()
         getUtility(ICodeImportEventSet).newFinish(
             code_import, machine)

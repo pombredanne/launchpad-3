@@ -4,19 +4,13 @@
 >
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
-        tal:attributes="action context/request/URL">
+        tal:attributes="action context/view/form_action|context/request/URL">
     <label for="field.lifecycle">
       Branches with status:
     </label>
     <tal:lifecycle-selector replace="structure context/view/widgets/lifecycle"/>
     <tal:sort-by replace="structure context/view/widgets/sort_by"
                  condition="context/view/widgets/sort_by|nothing"/>
-    <label tal:attributes="for context/view/widgets/hide_dormant/name"
-           tal:condition="context/view/widgets/hide_dormant|nothing"
-           style="font-weight: normal">
-      <tal:hide-dormant replace="structure context/view/widgets/hide_dormant"/>
-      Hide dormant branches
-    </label>
     <noscript>
       <input type="submit" value="Filter"/>
     </noscript>
@@ -31,9 +25,6 @@ function hookUpFilterSubmission () {
   connect('field.lifecycle', 'onchange', submit_filter);
   if (getElement('field.sort_by')) {
     connect('field.sort_by', 'onchange', submit_filter);
-  }
-  if (getElement('field.hide_dormant')) {
-    connect('field.hide_dormant', 'onchange', submit_filter);
   }
 }
 function show_commit(id) {
@@ -70,22 +61,36 @@ registerLaunchpadFunction(hookUpFilterSubmission);
         </th>
         <th>Last Modified</th>
         <th>Last Commit</th>
-        <th>Revision Author</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="branch context/branches"
-          tal:attributes="
-              class python:branch.is_development_focus and 'highlighted' or 'unhighlighted'">
+      <tr tal:repeat="branch context/branches">
         <td>
           <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"
-             tal:content="branch/unique_name">
+             tal:content="branch/bzr_identity">
                Name
           </a>
-          <em tal:condition="branch/is_development_focus">&nbsp;Current development focus</em>
+          <tal:associated-series repeat="series branch/associated_product_series"
+                                 condition="context/view/show_series_links">
+            <tal:first-series condition="repeat/series/start">
+              <br/><strong>Series:</strong>
+            </tal:first-series>
+            <tal:comment condition="nothing">
+              The lack of whitespace in the following tal expression
+              is there to make sure the comma immediately follows the series
+              link rather than having a space after it.
+            </tal:comment>
+            <tal:series-link>
+              <a tal:attributes="href series/fmt:url" tal:content="series/name">
+                trunk
+              </a></tal:series-link><tal:comma condition="not: repeat/series/end">,</tal:comma>
+          </tal:associated-series>
         </td>
         <td align="right" style="padding-right: 5px">
+          <tal:dev_focus condition="branch/is_development_focus">
+            <img src="/@@/favourite-yes" title="Current development focus"/>
+          </tal:dev_focus>
           <tal:badges replace="structure branch/badges:small"/>
         </td>
         <td>
@@ -133,7 +138,6 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                 use-macro="branch/@@+macros/no-revision-message" />
             </em>
           </td>
-          <td></td>
         </tal:no_commit>
 
         <tal:has_commit condition="branch/last_commit">
@@ -152,18 +156,14 @@ registerLaunchpadFunction(hookUpFilterSubmission);
             </div>
             <div class="popupTitle"
                  tal:attributes="id string:branch-log-${branch/id};
-                                 onmouseover string:hide_commit(${branch/id});"
-                 tal:content="structure branch/revision_log/fmt:text-to-html">
-            </div>
-          </td>
-          <td>
-            <tal:known-person condition="branch/revision_author/person">
-              <tal:person-link
-                  replace="structure branch/revision_author/person/fmt:link"/>
-            </tal:known-person>
-            <tal:unknown-person
-                condition="not: branch/revision_author/person">
-              <strong>
+                                 onmouseover string:hide_commit(${branch/id});">
+              <p><strong>Author:</strong>
+              <tal:known-person condition="branch/revision_author/person">
+                <tal:person-link
+                    replace="structure branch/revision_author/person/fmt:link"/>
+              </tal:known-person>
+              <tal:unknown-person
+                  condition="not: branch/revision_author/person">
                 <tal:person-text
                     tal:replace="branch/revision_author/name_without_email">
                   John Doe
@@ -180,8 +180,12 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                     &lt;email address hidden&gt;
                   </tal:anonymous>
                 </tal:person-only-email>
-              </strong>
-            </tal:unknown-person>
+              </tal:unknown-person>
+              <br/>
+              <strong>Revision Date:</strong>
+              <tal:revision-date replace="branch/revision_date/fmt:datetime"/></p>
+              <tal:commit-msg replace="structure branch/revision_log/fmt:text-to-html"/>
+            </div>
           </td>
 
         </tal:has_commit>

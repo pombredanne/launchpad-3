@@ -23,6 +23,7 @@ __all__ = [
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import operator
+import re
 
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
@@ -534,6 +535,7 @@ class DeprecatedAssignedBugsView:
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
 
+normalize_mime_type = re.compile(r'\s+')
 
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
@@ -543,7 +545,8 @@ class BugTextView(LaunchpadView):
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
-        text.append('date-reported: %s' % format_rfc2822_date(bug.datecreated))
+        text.append('date-reported: %s' %
+            format_rfc2822_date(bug.datecreated))
         text.append('date-updated: %s' %
             format_rfc2822_date(bug.date_last_updated))
         text.append('reporter: %s' % bug.owner.unique_displayname)
@@ -585,14 +588,16 @@ class BugTextView(LaunchpadView):
         text = []
         text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
-        text.append('date-created: %s' % format_rfc2822_date(task.datecreated))
+        text.append('date-created: %s' %
+            format_rfc2822_date(task.datecreated))
 
-        for status in ["confirmed", "assigned", "inprogress",
-                       "closed", "incomplete"]:
+        for status in ["left_new", "confirmed", "triaged", "assigned",
+                       "inprogress", "closed", "incomplete",
+                       "fix_committed", "fix_released"]:
             date = getattr(task, "date_%s" % status)
             if date:
                 text.append("date-%s: %s" % (
-                    status, format_rfc2822_date(date)))
+                    status.replace('_', '-'), format_rfc2822_date(date)))
 
         text.append('reporter: %s' % task.owner.unique_displayname)
 
@@ -619,8 +624,9 @@ class BugTextView(LaunchpadView):
 
     def attachment_text(self, attachment):
         """Return a text representation of a bug attachment."""
-        return "%s %s" % (attachment.libraryfile.http_url,
-                          attachment.libraryfile.mimetype)
+        mime_type = normalize_mime_type.sub(
+            ' ', attachment.libraryfile.mimetype)
+        return "%s %s" % (attachment.libraryfile.http_url, mime_type)
 
     def comment_text(self):
         """Return a text representation of bug comments."""
@@ -649,7 +655,8 @@ class BugTextView(LaunchpadView):
 
         for comment in comments:
             message = build_message(comment.text_for_display)
-            message['Author'] = comment.owner.unique_displayname.encode('utf-8')
+            message['Author'] = comment.owner.unique_displayname.encode(
+                'utf-8')
             message['Date'] = format_rfc2822_date(comment.datecreated)
             message['Message-Id'] = comment.rfc822msgid
             comment_mime.attach(message)
@@ -660,7 +667,8 @@ class BugTextView(LaunchpadView):
         """Return a text representation of the Bug."""
         self.request.response.setHeader('Content-type', 'text/plain')
         texts = [self.bug_text(self.context)]
-        texts.extend(self.bugtask_text(task) for task in self.context.bugtasks)
+        texts.extend(self.bugtask_text(task)
+                     for task in self.context.bugtasks)
         texts.append(self.comment_text())
         return "\n".join(texts)
 

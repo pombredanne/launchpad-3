@@ -82,7 +82,7 @@ class BuildContextMenu(ContextMenu):
     @property
     def is_ppa_build(self):
         """Some links are only displayed on PPA."""
-        return self.context.archive.owner is not None
+        return self.context.archive.purpose == ArchivePurpose.PPA
 
     def ppa(self):
         return Link(
@@ -252,7 +252,7 @@ class BuildRecordsView(LaunchpadView):
         Raise UnexpectedFormData if no corresponding state for passed 'tag'
         was found.
         """
-        # default states map
+        # Default states map.
         state_map = {
             'built': BuildStatus.FULLYBUILT,
             'failed': BuildStatus.FAILEDTOBUILD,
@@ -262,7 +262,7 @@ class BuildRecordsView(LaunchpadView):
             'uploadfail': BuildStatus.FAILEDTOUPLOAD,
             'all': None,
             }
-        # include pristine (not yet assigned to a builder) builds
+        # Include pristine (not yet assigned to a builder) builds,
         # if requested.
         if self.show_builder_info:
             extra_state_map = {
@@ -271,18 +271,18 @@ class BuildRecordsView(LaunchpadView):
                 }
             state_map.update(**extra_state_map)
 
-        # lookup for the correspondent state or fallback to the default
+        # Lookup for the correspondent state or fallback to the default
         # one if tag is empty string.
         if tag:
             try:
                 self.state = state_map[tag]
-            except KeyError:
+            except (KeyError, TypeError):
                 raise UnexpectedFormData(
                     'No suitable state found for value "%s"' % tag)
         else:
             self.state = self.default_build_state
 
-        # build a dictionary with organized information for rendering
+        # Build a dictionary with organized information for rendering
         # the HTML <select> section.
         self.available_states = []
         for tag, state in state_map.items():

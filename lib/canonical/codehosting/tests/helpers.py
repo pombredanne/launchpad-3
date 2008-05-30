@@ -7,16 +7,17 @@ __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
     'ServerTestCase', 'adapt_suite', 'create_branch_with_one_revision',
-    'make_bazaar_branch_and_tree']
+    'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
 import shutil
+import threading
 import unittest
 
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, TransportNotPossible
+from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
@@ -32,7 +33,8 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer, TwistedLayer
 
-from twisted.internet import defer
+from twisted.internet import defer, threads
+from twisted.python.util import mergeFunctionMetadata
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web.xmlrpc import Fault
 
@@ -86,6 +88,8 @@ def exception_names(exceptions):
         # Unfortunately, not all exceptions render themselves as their name.
         # More cases like this may need to be added
         names = ["Transport operation not possible"]
+    elif exceptions is PermissionDenied:
+        names = ['Permission denied', 'PermissionDenied']
     else:
         names = [exceptions.__name__]
     return names
@@ -240,6 +244,21 @@ class ServerTestCase(TrialTestCase, BranchTestCase):
         return self.server.getTransport(relpath)
 
 
+def deferToThread(f):
+    """Run the given callable in a separate thread and return a Deferred which
+    fires when the function completes.
+    """
+    def decorated(*args, **kwargs):
+        d = defer.Deferred()
+        def runInThread():
+            return threads._putResultInDeferred(d, f, args, kwargs)
+
+        t = threading.Thread(target=runInThread)
+        t.start()
+        return d
+    return mergeFunctionMetadata(f, decorated)
+
+
 class FakeLaunchpad:
     """Stub RPC interface to Launchpad.
 
@@ -284,6 +303,19 @@ class FakeLaunchpad:
         new_id = max(item_set.keys() + [0]) + 1
         item_set[new_id] = item_dict
         return new_id
+
+    def getDefaultStackedOnBranch(self, product_name):
+        if product_name == '+junk':
+            return ''
+        elif product_name == 'evolution':
+            # This has to match the sample data. :(
+            return '~vcs-imports/evolution/main'
+        elif product_name == 'firefox':
+            return ''
+        else:
+            raise ValueError(
+                "The crappy mock authserver doesn't know how to translate: %r"
+                % (product_name,))
 
     def createBranch(self, login_id, user, product, branch_name):
         """See `IHostedBranchStorage.createBranch`.
@@ -432,7 +464,7 @@ def create_branch_with_one_revision(branch_dir):
         tree = BzrDir.create_standalone_workingtree(branch_dir)
     except FileExists:
         return
-    f = open(branch_dir + 'hello', 'w')
+    f = open(os.path.join(branch_dir, 'hello'), 'w')
     f.write('foo')
     f.close()
     tree.commit('message')

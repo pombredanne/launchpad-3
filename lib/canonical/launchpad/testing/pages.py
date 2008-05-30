@@ -25,8 +25,11 @@ from zope.testing import doctest
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
 
@@ -78,11 +81,16 @@ class WebServiceCaller:
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def __call__(self, path, method='GET', data=None, headers=None):
+    def __call__(self, path_or_url, method='GET', data=None, headers=None):
+        if path_or_url.startswith('http:'):
+            scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+        else:
+            path = path_or_url
+        path = str(path)
         # Make an HTTP request.
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:
-            full_url = 'http://api.launchpad.dev' + path
+            full_url = 'http://api.launchpad.dev/' + path
             request = OAuthRequest.from_consumer_and_token(
                 self.consumer, self.access_token, http_url = full_url,
                 )
@@ -101,9 +109,12 @@ class WebServiceCaller:
         response = self.http_caller(request_string)
         return WebServiceResponseWrapper(response)
 
-    def get(self, path, headers=None):
+    def get(self, path, media_type='application/json', headers=None):
         """Make a GET request."""
-        return self(path, 'GET', headers=headers)
+        full_headers = {'Accept' : media_type}
+        if headers is not None:
+            full_headers.update(headers)
+        return self(path, 'GET', headers=full_headers)
 
     def head(self, path, headers=None):
         """Make a HEAD request."""
@@ -124,7 +135,7 @@ class WebServiceCaller:
             path, 'POST', media_type, data, headers)
 
     def named_post(self, path, operation_name, headers, **kwargs):
-        kwargs['ws_op'] = operation_name
+        kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, value)
                          for key, value in kwargs.items()])
         return self.post(path, 'application/x-www-form-urlencoded', data,
@@ -384,6 +395,22 @@ def print_action_links(content):
             print entry.strong.string
 
 
+def print_navigation_links(content):
+    """Print navigation menu urls."""
+    navigation_links  = find_tag_by_id(content, 'navigation-tabs')
+    if navigation_links is None:
+        print "No navigation links"
+        return
+    title = navigation_links.find('label')
+    if title is not None:
+        print '= %s =' % title.string
+    entries = navigation_links.findAll('li')
+    for entry in entries:
+        if entry.a:
+            print '%s: %s' % (entry.a.string, entry.a['href'])
+        elif entry.strong:
+            print entry.strong.string
+
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
 
@@ -443,6 +470,47 @@ def print_batch_header(soup):
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
+def print_self_link_of_entries(json_body):
+    """Print the self_link attribute of each entry in the given JSON body."""
+    links = sorted(entry['self_link'] for entry in json_body['entries'])
+    for link in links:
+        print link
+
+
+def print_ppa_packages(contents):
+    packages = find_tags_by_class(contents, 'ppa_package_row')
+    for pkg in packages:
+        print extract_text(pkg)
+    empty_section = find_tag_by_id(contents, 'empty-result')
+    if empty_section is not None:
+        print extract_text(empty_section)
+
+
+def print_navigation(contents):
+    """Print the location, tabs, and page title of the page."""
+    doc = find_tag_by_id(contents, 'document')
+    breadcrumbs = doc.find(attrs={'id': 'menuroot'}).findAll('a')
+    print "Location: %s" % " > ".join(
+        extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
+        if tag.get('id') != 'homebreadcrumb')
+    print "Structural title: %s" % extract_text(
+        doc.find(id='structuralobject')).encode('us-ascii', 'replace')
+    print 'Tabs:'
+    for tab in doc.find(id='applicationchooser').findAll('li'):
+        if tab.a:
+            link = tab.a['href']
+        else:
+            link = 'Not active'
+        print "* %s (%s)" % (extract_text(tab), link)
+    main_heading = doc.h1
+    if main_heading:
+        main_heading = extract_text(main_heading).encode(
+            'us-ascii', 'replace')
+    else:
+        main_heading = '(No main heading)'
+    print "Main heading: %s" % main_heading
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -459,11 +527,20 @@ def setupBrowser(auth=None):
     return browser
 
 
+def safe_canonical_url(*args, **kwargs):
+    """Generate a bytestring URL for an object"""
+    return str(canonical_url(*args, **kwargs))
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
+    test.globs['public_webservice'] = WebServiceCaller(
+        'foobar123451432', 'qQ7dw1fXCR5hhJRN7ztj', port=9000)
+    test.globs['user_webservice'] = WebServiceCaller(
+        'launchpad-library', '3SdVlTlVKcgXSJHbsSSk', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -472,6 +549,11 @@ def setUpGlobs(test):
     test.globs['admin_browser'] = setupBrowser(
         auth="Basic foo.bar@canonical.com:test")
 
+    test.globs['ANONYMOUS'] = ANONYMOUS
+    # If a unicode URL is opened by the test browswer, later navigation
+    # raises ValueError exceptions in /usr/lib/python2.4/Cookie.py
+    test.globs['canonical_url'] = safe_canonical_url
+    test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
@@ -480,14 +562,20 @@ def setUpGlobs(test):
     test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
+    test.globs['login'] = login
+    test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_navigation'] = print_navigation
+    test.globs['print_navigation_links'] = print_navigation_links
     test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
     test.globs['print_submit_buttons'] = print_submit_buttons
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
+    test.globs['print_ppa_packages'] = print_ppa_packages
+    test.globs['print_self_link_of_entries'] = print_self_link_of_entries
 
 
 class PageStoryTestCase(unittest.TestCase):

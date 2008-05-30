@@ -23,8 +23,8 @@ from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
-    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingPocket,
-    PackagePublishingStatus, PackageUploadStatus)
+    IDistributionSet, ILibraryFileAliasSet, IPackageUploadSet, IPersonSet,
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -261,6 +261,14 @@ class TestQueueTool(TestQueueBase):
         upload_bar_source()
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
+
+        # Add a chroot to breezy-autotest/i386, so the system can create
+        # builds for it.
+        a_file = getUtility(ILibraryFileAliasSet)[1]
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest['i386'].addOrUpdateChroot(a_file)
+
         LaunchpadZopelessLayer.txn.commit()
 
         LaunchpadZopelessLayer.switchDbUser("queued")
@@ -276,7 +284,7 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(
             'i386 build of bar 1.0-1 in ubuntu breezy-autotest RELEASE',
             build.title)
-        self.assertEqual(build.buildqueue_record.lastscore, 255)
+        self.assertEqual(build.buildqueue_record.lastscore, 3255)
 
     def testAcceptingBinaryDoesntGenerateEmail(self):
         """Check if accepting a binary package does not generate email."""
@@ -536,8 +544,17 @@ class TestQueueTool(TestQueueBase):
         Step 4: the remaining duplicated cnews item in UNAPPROVED queue can
         only be rejected.
         """
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+
+        # Add a chroot to breezy-autotest/i386, so the system can create
+        # builds for it.
+        a_file = getUtility(ILibraryFileAliasSet)[1]
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest['i386'].addOrUpdateChroot(a_file)
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser("queued")
 
         # Certify we have a 'cnews' upload duplication in UNAPPROVED.
         self.assertQueueLength(
@@ -955,20 +972,20 @@ class TestQueueToolInJail(TestQueueBase):
         FAKE_CHANGESFILE_CONTENT = "Fake Changesfile"
         FAKE_DEB_CONTENT = "Fake DEB"
         fillLibrarianFile(1, FAKE_CHANGESFILE_CONTENT)
-        fillLibrarianFile(37, FAKE_DEB_CONTENT)
+        fillLibrarianFile(90, FAKE_DEB_CONTENT)
         queue_action = self.execute_command('fetch pmount')
 
         # Check the files' names.
         files = sorted(self._listfiles())
         self.assertEqual(
-            ['netapplet-1.0.0.tar.gz', 'pmount_1.9-1_all.deb'],
+            ['netapplet-1.0.0.tar.gz', 'pmount_1.0-1_all.deb'],
             files)
 
         # Check the files' contents.
         changes_file = open('netapplet-1.0.0.tar.gz')
         self.assertEqual(changes_file.read(), FAKE_CHANGESFILE_CONTENT)
         changes_file.close()
-        debfile = open('pmount_1.9-1_all.deb')
+        debfile = open('pmount_1.0-1_all.deb')
         self.assertEqual(debfile.read(), FAKE_DEB_CONTENT)
         debfile.close()
 

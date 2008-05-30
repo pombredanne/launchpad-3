@@ -8,8 +8,15 @@ Launchpad to be eventually displayed in Launchpad's u/i.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     new_person, new_team)
+    >>> login('foo.bar@canonical.com')
     >>> team_one, list_one = new_team('team-one', True)
     >>> anne = new_person('Anne')
+
+    # We don't care about the email notifications sent when the mailing
+    # list was created, and we don't want the notification to confuse
+    # things later on in this test, so clear the queue.
+    >>> from canonical.launchpad.tests import mail_helpers
+    >>> ignore = mail_helpers.pop_notifications()
 
 Anne posts a message to the Team One list, but because she is not a member of
 the list, Mailman will hold the message for the team's administrators to
@@ -27,7 +34,6 @@ approve or reject.
     ... """)
 
     >>> from canonical.launchpad.ftests import login
-    >>> login('foo.bar@canonical.com')
     >>> mailinglist_api.holdMessage('team-one', message_anne.as_string())
     True
 
@@ -59,6 +65,37 @@ IMessageApprovalSet interface.
     <BLANKLINE>
     >>> held_message_anne.status
      <DBItem PostedMessageStatus.NEW, (0) New status>
+
+A notification message is sent to every team administrator informing
+them that there is a message waiting for their approval.
+
+    >>> mail_helpers.print_emails()
+    From: Team One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Subject: New mailing list message requiring approval for Team One
+    <BLANKLINE>
+    Hello No Privileges Person,
+    <BLANKLINE>
+    Team One has a new message requiring your approval.
+    <BLANKLINE>
+        Subject: A question
+        Author name: Anne Person
+        Author url: http://launchpad.dev/~anne
+        Date: 2000-08-01 01:08:59+00:00
+        Message-ID: <first-post>
+    <BLANKLINE>
+    A message has been posted to the mailing list for your team, but this
+    message requires your approval before it will be sent to the list
+    members.  After reviewing the message, you may approve, discard or
+    reject it.
+    <BLANKLINE>
+    To review all messages pending approval, visit:
+    <BLANKLINE>
+        http://launchpad.dev/~team-one/+mailinglist-moderate
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 There are no messages waiting to be handled by Mailman yet.
 
@@ -95,14 +132,36 @@ the list administrator rejects it.
     >>> held_message_bart.status
     <DBItem PostedMessageStatus.REJECTION_PENDING, (30) Decline pending>
 
-Now there are two messages waiting for Mailman to handle.
+Cris sends spam to the mailing list, which is simply discarded.
+
+    >>> cris = new_person('Cris')
+    >>> message_cris = message_from_string("""\
+    ... From: cris.person@example.com
+    ... To: team-one@lists.launchpad.dev
+    ... Subject: Snakes and Arrows
+    ... Message-ID: <third-post>
+    ... Date: Fri, 01 Aug 2000 01:08:59 -0000
+    ...
+    ... Would you like to buy some snakes or arrows?
+    ... """)
+
+    >>> mailinglist_api.holdMessage('team-one', message_cris.as_string())
+    True
+    >>> held_message_cris = message_set.getMessageByMessageID('<third-post>')
+    >>> held_message_cris.discard(team_one.teamowner)
+    >>> syncUpdate(held_message_cris)
+    >>> held_message_cris.status
+    <DBItem PostedMessageStatus.DISCARD_PENDING, (60) Discard pending>
+
+Now there are three messages waiting for Mailman to handle.
 
     >>> waiting = mailinglist_api.getMessageDispositions()
     >>> for message_id in sorted(waiting):
     ...     list_name, action = waiting[message_id]
     ...     print message_id, list_name, action
-    <first-post>  team-one accept
+    <first-post> team-one accept
     <second-post> team-one decline
+    <third-post> team-one discard
 
 Now that Mailman's received the dispositions, the messages have been
 transitioned to their permanent states.
@@ -113,3 +172,6 @@ transitioned to their permanent states.
     >>> held_message_bart = message_set.getMessageByMessageID('<second-post>')
     >>> held_message_bart.status
     <DBItem PostedMessageStatus.REJECTED, (50) Rejected>
+    >>> held_message_cris = message_set.getMessageByMessageID('<third-post>')
+    >>> held_message_cris.status
+    <DBItem PostedMessageStatus.DISCARDED, (70) Discarded>

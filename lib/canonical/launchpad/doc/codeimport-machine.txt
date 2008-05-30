@@ -7,41 +7,13 @@ is, currently capable of performing imports).
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
-== Accessing ICodeImportMachine/ICodeImportMachineSet ==
-
-The CodeImportMachine table is represented by an utility that provides the
-ICodeImportMachineSet interface.  Currently we hide all aspects of the new
-system from anonymous and regular users.
-
-    >>> login(ANONYMOUS)
-    >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> machine_set.getAll()
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
-
-    >>> login('test@canonical.com')
-    >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> machine_set.getAll()
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
-
-Once we've logged in as David Allouche, a member of vcs-imports, the
-object that provides ICodeImportMachineSet allows access to machines by
-hostname and to all machines.
-
-    >>> login('david.allouche@canonical.com')
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> ddaa = getUtility(ILaunchBag).user
-    >>> ddaa.inTeam(getUtility(ILaunchpadCelebrities).vcs_imports)
-    True
-
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(ICodeImportMachineSet, machine_set)
     True
 
+There are additional unit tests for CodeImportMachine in
+canonical.launchpad.database.tests.test_codeimportmachine.
 
 == Retrieving CodeImportMachines ==
 
@@ -70,14 +42,48 @@ there is no machine by that name in the database.
     None
 
 
+== Canonical URLs ==
+
+In order to be able to have views for the code import machines, they
+need to have a canonical URL.  The CodeImportMachineSet also has a
+canonical URL for set based views.
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(machine_set)
+    http://code.launchpad.dev/+code-imports/+machines
+
+A single code import machine is identified by the hostname of the machine
+directly after the canonical URL of the code import machine set.
+
+    >>> print canonical_url(sample_machine)
+    http://code.launchpad.dev/+code-imports/+machines/bazaar-importer
+
+
 == Creating CodeImportMachines ==
 
 CodeImportMachines can be created with the 'new' method of
-ICodeImportMachineSet.  New machines are created in the OFFLINE state.
+ICodeImportMachineSet.  New machines can be created in either the
+ONLINE or OFFLINE states, but are in the OFFLINE state by default.
 
     >>> new_machine = machine_set.new('frobisher')
     >>> print new_machine.state.name
     OFFLINE
+
+If they are created in the ONLINE state, an ONLINE event is created in
+the CodeImportEvent audit trail.  The NewEvents class helps testing
+the creation of CodeImportEvent objects.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
+    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
+
+    >>> new_events = NewEvents()
+    >>> new_machine2 = machine_set.new(
+    ...     'innocent', CodeImportMachineState.ONLINE)
+    >>> print new_machine2.state.name
+    ONLINE
+    >>> print new_events.summary()
+    ONLINE innocent
 
 
 == Modifying CodeImportMachine ==
@@ -93,13 +99,7 @@ Directly setting the state information on CodeImportMachines is not permitted.
 
 Instead, the setOnline() and related methods must be used.  These methods
 update the fields and in addition create events in the CodeImportEvent audit
-trail.  The NewEvents class helps testing the creation of CodeImportEvent
-objects.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
-    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
-
+trail.
 
 === setOnline ===
 
@@ -136,7 +136,15 @@ heartbeat for some time.
 === setQuiescing ===
 
 The setQuiescing method sets the machine's state to QUIESCING and
-records the corresponding event.
+records the corresponding event.  A user is passed into the method
+to be recorded in the event, and will in almost all cases be a
+member of vcs-imports.
+
+    >>> login('david.allouche@canonical.com')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ddaa = getUtility(ILaunchBag).user
+    >>> ddaa.inTeam(getUtility(ILaunchpadCelebrities).vcs_imports)
+    True
 
     >>> new_machine.setOnline()
     >>> new_events = NewEvents()
@@ -224,18 +232,13 @@ must fail.
     ...
     AssertionError: State of machine ... was ONLINE.
 
-From the QUIESCING state, a machine can only go OFFLINE. The setOnline
-and setQuiescing method must fail.
-
-It would be meaningful to allow the transition from QUIESCING to ONLINE,
-meaning "oops, I did not want you to quiesce, after all", but it would
-require a new event type. We will add it later if we find we need it.
+From the QUIESCING state, a machine can go OFFLINE or ONLINE. The
+setQuiescing method must fail.
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setOnline()
-    Traceback (most recent call last):
-    ...
-    AssertionError: State of machine ... was QUIESCING.
+    >>> print quiescing_machine.state.name
+    ONLINE
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setQuiescing(ddaa, "No worky!")

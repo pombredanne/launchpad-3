@@ -1,4 +1,4 @@
- # Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -12,13 +12,18 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-import pytz
+from email.Utils import make_msgid
+from StringIO import StringIO
 
+import pytz
 from zope.component import getUtility
+from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
+    CodeImportMachineState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
@@ -31,18 +36,28 @@ from canonical.launchpad.interfaces import (
     ICodeImportEventSet,
     ICodeImportResultSet,
     ICodeImportSet,
+    ICountrySet,
+    IEmailAddressSet,
+    ILibraryFileAliasSet,
     IPersonSet,
     IProductSet,
+    IProjectSet,
     IRevisionSet,
+    IShippingRequestSet,
     ISpecificationSet,
+    IStandardShipItRequestSet,
+    ITranslationGroupSet,
     License,
     PersonCreationRationale,
     RevisionControlSystems,
+    ShipItFlavour,
+    ShippingRequestStatus,
     SpecificationDefinitionStatus,
     TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
 from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.database import Message, MessageChunk
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -124,7 +139,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = self.getUniqueString('email')
+            email = "%s@example.com" % self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
@@ -151,27 +166,70 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeTeam(self, team_member, email=None, password=None,
-                 displayname=None):
-        team = self.makePerson(displayname=displayname, email=email,
-                               password=password)
-        team.teamowner = team_member
-        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        team_member.join(team, team)
+    def makeTeam(self, owner, displayname=None, email=None):
+        """Create and return a new, arbitrary Team.
+
+        The subscription policy of this new team will be OPEN.
+
+        :param owner: The IPerson to use as the team's owner.
+        :param displayname: The team's display name.  If not given we'll use
+            the auto-generated name.
+        :param email: The email address to use as the team's contact address.
+        """
+        name = self.getUniqueString('team-name')
+        if displayname is None:
+            displayname = name
+        team = getUtility(IPersonSet).newTeam(
+            owner, name, displayname,
+            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+        if email is not None:
+            team.setContactAddress(
+                getUtility(IEmailAddressSet).new(email, team))
         return team
 
-    def makeProduct(self, name=None):
+    def makeTranslationGroup(
+        self, owner, name=None, title=None, summary=None):
+        """Create a new, arbitrary `TranslationGroup`."""
+        if name is None:
+            name = self.getUniqueString("translationgroup")
+        if title is None:
+            title = self.getUniqueString("title")
+        if summary is None:
+            summary = self.getUniqueString("summary")
+        return getUtility(ITranslationGroupSet).new(
+            name, title, summary, owner)
+
+    def makeProduct(self, name=None, project=None, displayname=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         return getUtility(IProductSet).createProduct(
-            owner, name,
-            self.getUniqueString('displayname'),
+            owner,
+            name,
+            displayname,
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GPL])
+            licenses=[License.GNU_GPL_V2], project=project)
+
+    def makeProject(self, name=None, displayname=None):
+        """Create and return a new, arbitrary Project."""
+        owner = self.makePerson()
+        if name is None:
+            name = self.getUniqueString('project-name')
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
+        return getUtility(IProjectSet).new(
+            name,
+            displayname,
+            self.getUniqueString('title'),
+            None,
+            self.getUniqueString('summary'),
+            self.getUniqueString('description'),
+            owner)
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
@@ -349,7 +407,9 @@ class LaunchpadObjectFactory:
 
         product = self.makeProduct()
         branch_name = self.getUniqueString('name')
-        registrant = self.makePerson()
+        # The registrant gets emailed, so needs a preferred email.
+        registrant = self.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -370,47 +430,158 @@ class LaunchpadObjectFactory:
         code_import_event_set = getUtility(ICodeImportEventSet)
         return code_import_event_set.newCreate(code_import, person)
 
-    def makeCodeImportJob(self, code_import):
+    def makeCodeImportJob(self, code_import=None):
         """Create and return a new code import job for the given import.
 
         This implies setting the import's review_status to REVIEWED.
         """
+        if code_import is None:
+            code_import = self.makeCodeImport()
         code_import.updateFromData(
             {'review_status': CodeImportReviewStatus.REVIEWED},
             code_import.registrant)
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
 
-    def makeCodeImportMachine(self):
+    def makeCodeImportMachine(self, set_online=False, hostname=None):
         """Return a new CodeImportMachine.
 
         The machine will be in the OFFLINE state."""
-        hostname = self.getUniqueString('machine-')
-        return getUtility(ICodeImportMachineSet).new(hostname)
+        if hostname is None:
+            hostname = self.getUniqueString('machine-')
+        if set_online:
+            state = CodeImportMachineState.ONLINE
+        else:
+            state = CodeImportMachineState.OFFLINE
+        machine = getUtility(ICodeImportMachineSet).new(hostname, state)
+        return machine
 
-    def makeCodeImportResult(self):
+    def makeCodeImportResult(self, code_import=None, result_status=None,
+                             date_started=None, date_finished=None,
+                             log_excerpt=None, log_alias=None, machine=None):
         """Create and return a new CodeImportResult."""
-        code_import = self.makeCodeImport()
-        machine = self.makeCodeImportMachine()
-        requesting_user = self.makePerson()
-        log_excerpt = self.getUniqueString()
-        status = CodeImportResultStatus.FAILURE
-        started = time_counter().next()
-        return getUtility(ICodeImportResultSet).new(code_import, machine,
-            requesting_user, log_excerpt, log_file=None, status=status,
-            date_job_started=started)
+        if code_import is None:
+            code_import = self.makeCodeImport()
+        if machine is None:
+            machine = self.makeCodeImportMachine()
+        requesting_user = None
+        if log_excerpt is None:
+            log_excerpt = self.getUniqueString()
+        if result_status is None:
+            result_status = CodeImportResultStatus.FAILURE
+        if date_finished is None:
+            # If a date_started is specified, then base the finish time
+            # on that.
+            if date_started is None:
+                date_finished = time_counter().next()
+            else:
+                date_finished = date_started + timedelta(hours=4)
+        if date_started is None:
+            date_started = date_finished - timedelta(hours=4)
+        if log_alias is None:
+            log_alias = self.makeLibraryFileAlias()
+        return getUtility(ICodeImportResultSet).new(
+            code_import, machine, requesting_user, log_excerpt, log_alias,
+            result_status, date_started, date_finished)
 
-    def makeSeries(self, user_branch=None, import_branch=None):
+    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
+                                    svn_branch_url=None, cvs_root=None,
+                                    cvs_module=None,
+                                    source_product_series_id=0):
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
+        if branch_id is None:
+            branch_id = self.getUniqueInteger()
+        if rcstype is None:
+            rcstype = 'svn'
+        if rcstype == 'svn':
+            assert cvs_root is cvs_module is None
+            if svn_branch_url is None:
+                svn_branch_url = self.getUniqueURL()
+        elif rcstype == 'cvs':
+            assert svn_branch_url is None
+            if cvs_root is None:
+                cvs_root = self.getUniqueString()
+            if cvs_module is None:
+                cvs_module = self.getUniqueString()
+        else:
+            raise AssertionError("Unknown rcstype %r." % rcstype)
+        return CodeImportSourceDetails(
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
+            source_product_series_id)
+
+    def makeCodeReviewMessage(self, subject=None, body=None, vote=None):
+        if subject is None:
+            subject = self.getUniqueString()
+        if body is None:
+            body = self.getUniqueString()
+        return self.makeBranchMergeProposal().createMessage(
+            self.makePerson(), subject, body, vote)
+
+    def makeMessage(self, subject=None, content=None, parent=None):
+        if subject is None:
+            subject = self.getUniqueString()
+        if content is None:
+            content = self.getUniqueString()
+        owner = self.makePerson()
+        rfc822msgid = make_msgid("launchpad")
+        message = Message(rfc822msgid=rfc822msgid, subject=subject,
+            owner=owner, parent=parent)
+        MessageChunk(message=message, sequence=1, content=content)
+        return message
+
+    def makeSeries(self, user_branch=None, import_branch=None,
+                   name=None, product=None):
         """Create a new, arbitrary ProductSeries.
 
         :param user_branch: If supplied, the branch to set as
             ProductSeries.user_branch.
         :param import_branch: If supplied, the branch to set as
             ProductSeries.import_branch.
+        :param product: If supplied, the name of the series.
+        :param product: If supplied, the series is created for this product.
+            Otherwise, a new product is created.
         """
-        product = self.makeProduct()
-        series = product.newSeries(product.owner, self.getUniqueString(),
-            self.getUniqueString(), user_branch)
+        if product is None:
+            product = self.makeProduct()
+        if name is None:
+            name = self.getUniqueString()
+        series = product.newSeries(
+            product.owner, name, self.getUniqueString(), user_branch)
         series.import_branch = import_branch
         syncUpdate(series)
         return series
+
+    def makeShipItRequest(self, flavour=ShipItFlavour.UBUNTU):
+        """Create a `ShipItRequest` associated with a newly created person.
+
+        The request's status will be approved and it will contain an arbitrary
+        number of CDs of the given flavour.
+        """
+        brazil = getUtility(ICountrySet)['BR']
+        city = 'Sao Carlos'
+        addressline = 'Antonio Rodrigues Cajado 1506'
+        name = 'Guilherme Salgado'
+        phone = '+551635015218'
+        person = self.makePerson()
+        request = getUtility(IShippingRequestSet).new(
+            person, name, brazil, city, addressline, phone)
+        # We don't want to login() as the person used to create the request,
+        # so we remove the security proxy for changing the status.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
+        template = getUtility(IStandardShipItRequestSet).getByFlavour(
+            flavour)[0]
+        request.setQuantities({flavour: template.quantities})
+        return request
+
+    def makeLibraryFileAlias(self, log_data=None):
+        """Make a library file, and return the alias."""
+        if log_data is None:
+            log_data = self.getUniqueString()
+        filename = self.getUniqueString('filename')
+        log_alias_id = getUtility(ILibrarianClient).addFile(
+            filename, len(log_data), StringIO(log_data), 'text/plain')
+        return getUtility(ILibraryFileAliasSet)[log_alias_id]

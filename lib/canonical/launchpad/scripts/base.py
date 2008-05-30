@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -175,7 +175,7 @@ class LaunchpadScript:
         try:
             self.lock.acquire(blocking=blocking)
         except LockAlreadyAcquired:
-            self.logger.error('Lockfile %s in use' % self.lockfilepath)
+            self.logger.debug('Lockfile %s in use' % self.lockfilepath)
             sys.exit(1)
 
     def lock_or_quit(self, blocking=False):
@@ -254,4 +254,3 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
-

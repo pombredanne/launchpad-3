@@ -26,10 +26,10 @@ If the package name entered by the user happens to be a binary package
 name, that information is recorded in the description, and the first
 comment, of the bug report.
 
-    >>> from zope.component import getView, getUtility
+    >>> from zope.component import getMultiAdapter, getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugTaskSet, IBugSet, IDistributionSet, BugTaskSearchParams,
-    ...     IProductSet, IPersonSet, ILaunchBag, IOpenLaunchBag)
+    ...     BugTaskSearchParams, IDistributionSet, IBugSet, IBugTaskSet,
+    ...     ILaunchBag, IOpenLaunchBag, IPersonSet, IProductSet)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> launchbag = getUtility(IOpenLaunchBag)
@@ -44,7 +44,7 @@ comment, of the bug report.
     ...           'field.packagename': 'linux-2.6.12',
     ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
-    >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
+    >>> ubuntu_filebug = getMultiAdapter((ubuntu, request), name="+filebug")
     >>> launchbag.clear()
     >>> launchbag.add(ubuntu)
 
@@ -83,7 +83,7 @@ the bugtask.
     ...           'field.comment': 'a test bug',
     ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
-    >>> firefox_filebug = getView(firefox, "+filebug", request)
+    >>> firefox_filebug = getMultiAdapter((firefox, request), name="+filebug")
 
     >>> firefox_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
@@ -102,8 +102,8 @@ You can also access the +filebug page from a sourcepackage.
     ...           'field.packagename': 'mozilla-firefox',
     ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
-    >>> ubuntu_firefox_filebug = getView(
-    ...     ubuntu_firefox, "+filebug", request)
+    >>> ubuntu_firefox_filebug = getMultiAdapter(
+    ...     (ubuntu_firefox, request), name="+filebug")
 
     >>> launchbag.add(ubuntu)
 
@@ -127,7 +127,8 @@ To add new comments, users POST to the +addcomment page:
     ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
     ...           'field.comment': 'I can reproduce this bug.',
     ...           'field.actions.save': 'Save Changes'})
-    >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
+    >>> ubuntu_addcomment = getMultiAdapter(
+    ...     (latest_ubuntu_bugtask, request), name="+addcomment-form")
     >>> ubuntu_addcomment.initialize()
 
 They may even, by mistake, post the same comment twice:
@@ -137,7 +138,8 @@ They may even, by mistake, post the same comment twice:
     ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
     ...           'field.comment': 'I can reproduce this bug.',
     ...           'field.actions.save': 'Save Changes'})
-    >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
+    >>> ubuntu_addcomment = getMultiAdapter(
+    ...     (latest_ubuntu_bugtask, request), name="+addcomment-form")
     >>> ubuntu_addcomment.initialize()
 
 Comments are cached in the view, so we need to flush updates and then
@@ -146,10 +148,12 @@ grab a new view to actually see them:
     >>> flush_database_updates()
     >>> transaction.commit()
 
-    >>> ubuntu_bugview = getView(latest_ubuntu_bugtask, "+index", request)
+    >>> ubuntu_bugview = getMultiAdapter(
+    ...     (latest_ubuntu_bugtask, request), name="+index")
     >>> print len(ubuntu_bugview.comments)
     3
-    >>> [(c.index, c.owner.name, c.text_contents) for c in ubuntu_bugview.comments]
+    >>> [ (c.index, c.owner.name, c.text_contents)
+    ...  for c in ubuntu_bugview.comments ]
     [(0, u'name16', u'Binary package hint: linux-2.6.12\n\na bug in a bin pkg'),
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
@@ -228,8 +232,8 @@ duplicate link remains in the current context.
     firefox
 
 
-    >>> bug_page_view = getView(
-    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
+    >>> bug_page_view = getMultiAdapter(
+    ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
 
     >>> bug_six = bugset.get(6)
 
@@ -244,8 +248,8 @@ and see how the returned link changes.
     >>> bug_two = bugset.get(2)
     >>> bug_two.duplicateof = 5
 
-    >>> bug_page_view = getView(
-    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
+    >>> bug_page_view = getMultiAdapter(
+    ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
 
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
@@ -414,13 +418,15 @@ and nominations. This table is rendered with the
 
     >>> request = LaunchpadTestRequest()
 
-    >>> bugtasks_and_nominations_view = getView(
-    ...     bug_one_bugtask.bug, "+bugtasks-and-nominations-table", request)
+    >>> bugtasks_and_nominations_view = getMultiAdapter(
+    ...     (bug_one_bugtask.bug, request),
+    ...     name="+bugtasks-and-nominations-table")
 
-The getBugTasksAndNominations method returns a list of bugtasks and
-nominations to render in the table, sorted by bugtargetdisplayname. Approved
-nominations are not included in the returned results, because an
-approved nomination will have created a task anyway.
+The getBugTaskAndNominationViews method returns a list of views for
+bugtasks and nominations to render in the table, sorted by
+bugtargetdisplayname. Approved nominations are not included in the
+returned results, because an approved nomination will have created a
+task anyway.
 
     >>> from canonical.launchpad.interfaces import IBugTask, IBugNomination
 
@@ -432,17 +438,18 @@ approved nomination will have created a task anyway.
     ...     else:
     ...         return "unknown"
 
-    >>> def print_tasks_and_nominations(tasks_and_nominations):
-    ...     for task_or_nomination in tasks_and_nominations:
+    >>> def print_tasks_and_nominations(task_and_nomination_views):
+    ...     for task_or_nomination_view in task_and_nomination_views:
+    ...         task_or_nomination = task_or_nomination_view.context
     ...         print "%s, %s, %s" % (
     ...             get_object_type(task_or_nomination),
     ...             task_or_nomination.status.title,
     ...             task_or_nomination.target.bugtargetdisplayname)
 
-    >>> tasks_and_nominations = (
-    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+    >>> task_and_nomination_views = (
+    ...     bugtasks_and_nominations_view.getBugTaskAndNominationViews())
 
-    >>> print_tasks_and_nominations(tasks_and_nominations)
+    >>> print_tasks_and_nominations(task_and_nomination_views)
     bugtask, New, Mozilla Firefox
     nomination, Nominated, Mozilla Firefox 1.0
     bugtask, Confirmed, mozilla-firefox (Debian)
@@ -465,10 +472,10 @@ the list changes.
     >>> bug_one.addNomination(current_user, target=firefox_trunk)
     <BugNomination ...>
 
-    >>> tasks_and_nominations = (
-    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+    >>> task_and_nomination_views = (
+    ...     bugtasks_and_nominations_view.getBugTaskAndNominationViews())
 
-    >>> print_tasks_and_nominations(tasks_and_nominations)
+    >>> print_tasks_and_nominations(task_and_nomination_views)
     bugtask, New, Mozilla Firefox
     nomination, Nominated, Mozilla Firefox 1.0
     nomination, Nominated, Mozilla Firefox trunk
@@ -491,10 +498,10 @@ Let's add another affected package in Ubuntu to the bug.
 
 A nomination row will be included for evolution now too.
 
-    >>> tasks_and_nominations = (
-    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+    >>> task_and_nomination_views = (
+    ...     bugtasks_and_nominations_view.getBugTaskAndNominationViews())
 
-    >>> print_tasks_and_nominations(tasks_and_nominations)
+    >>> print_tasks_and_nominations(task_and_nomination_views)
     bugtask, New, Mozilla Firefox
     nomination, Nominated, Mozilla Firefox 1.0
     nomination, Nominated, Mozilla Firefox trunk
@@ -522,10 +529,10 @@ approve/decline nominations.)
     >>> hoary_nomination.approve(current_user)
     >>> warty_nomination.decline(current_user)
 
-    >>> tasks_and_nominations = (
-    ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
+    >>> task_and_nomination_views = (
+    ...     bugtasks_and_nominations_view.getBugTaskAndNominationViews())
 
-    >>> print_tasks_and_nominations(tasks_and_nominations)
+    >>> print_tasks_and_nominations(task_and_nomination_views)
     bugtask, New, Mozilla Firefox
     nomination, Nominated, Mozilla Firefox 1.0
     nomination, Nominated, Mozilla Firefox trunk
@@ -594,7 +601,7 @@ and the bug will have been edited.
 Emails are sent out by adding entries to the bugnotification table. We
 need to know how many messages are currently in that table.
 
-    >>> from canonical.launchpad.database import BugNotification, Bug
+    >>> from canonical.launchpad.database import BugNotification
     >>> bn_set = BugNotification.select(BugNotification.q.bugID == bug_one.id)
     >>> start_bugnotification_count = bn_set.count()
 
@@ -699,7 +706,12 @@ However, if we set the show_imported_comments config option to True, the
 imported comments for bug 4 will be displayable.
 
     >>> from canonical.config import config
-    >>> config.malone.show_imported_comments = True
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [malone]
+    ...     show_imported_comments: True
+    ...     """)
+    >>> config.push('test_data', test_data)
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
     >>> for comment in view.getBugCommentsForDisplay():
     ...     comment.can_be_shown
@@ -710,3 +722,4 @@ imported comments for bug 4 will be displayable.
     True
     True
 
+    >>> test_config_data = config.pop('test_data')

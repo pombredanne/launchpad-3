@@ -5,16 +5,15 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+import os
 
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 def test_suite():
     """See `zope.testing.testrunner`."""
-    return LayeredDocFileSuite(
-        '../doc/debug.txt',
-        '../doc/decorates.txt',
-        '../doc/checker-utilities.txt',
-        '../doc/config.txt',
-        '../doc/interface.txt',
-        stdout_logging=False)
-
+    tests = sorted(
+        ['../doc/%s' % name
+         for name in os.listdir(
+            os.path.join(os.path.dirname(__file__), '../doc'))
+         if name.endswith('.txt')])
+    return LayeredDocFileSuite(stdout_logging=False, *tests)

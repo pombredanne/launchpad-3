@@ -1,20 +1,29 @@
 = Introduction =
 
-The service root (/) is a resource that responds to GET by describing
-the web service. Right now, it just sends a simple string description.
-you get a string.
+The service root (/[version]/) is a resource that responds to GET by
+describing the web service. The description is a JSON map full of
+links to the top-level web service objects.
 
-  >>> print webservice.get("/")
-  HTTP/1.1 200 Ok
-  ...
-  This is a web service.
+  >>> top_level_links = webservice.get("/beta/").jsonBody()
+  >>> sorted(top_level_links.keys())
+  [u'BugCollection_collection_link',
+   u'PersonSetCollectionAdapter_collection_link']
+  >>> top_level_links['BugCollection_collection_link']
+  u'http://api.launchpad.dev/beta/bugs'
+
+The client can explore the entire web service by following these links
+to other resources, and following the links served in those resources'
+JSON representations, and so on. If the client doesn't know the
+capabilities of a certain resource it can request a WADL
+representation of that resource (see the xx-wadl.txt test) and find
+out.
 
 Though web services in general support all HTTP methods, this
 particular resource supports only GET. Eventually it will also support
 HEAD and OPTIONS.
 
   >>> for method in ['HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS']:
-  ...     print webservice("/", method)
+  ...     print webservice("/beta/", method)
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...

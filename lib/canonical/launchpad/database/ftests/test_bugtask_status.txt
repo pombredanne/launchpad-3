@@ -7,13 +7,13 @@
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> nopriv_user = getUtility(IPersonSet).getByName('no-priv')
     >>> login('foo.bar@canonical.com')
-    >>> firefox.setBugContact(nopriv_user, nopriv_user)
+    >>> firefox.setBugSupervisor(nopriv_user, nopriv_user)
     >>> login('no-priv@canonical.com')
     >>> bug_params = CreateBugParams(
     ...     nopriv_user, 'Test bug', 'Something')
     >>> firefox_bug = firefox.createBug(bug_params)
 
-Bug Contacts can transition bugs to the Won't Fix and Triaged
+Bug Supervisors can transition bugs to the Won't Fix and Triaged
 statuses.
 
     >>> [firefox_bugtask] = firefox_bug.bugtasks
@@ -35,7 +35,7 @@ statuses too.
     >>> print firefox_bugtask.status.title
     Confirmed
 
-    >>> firefox.owner.inTeam(firefox.bugcontact)
+    >>> firefox.owner.inTeam(firefox.bug_supervisor)
     False
 
     >>> firefox_bugtask.transitionToStatus(
@@ -48,13 +48,13 @@ statuses too.
     >>> print firefox_bugtask.status.title
     Triaged
 
-Users who are not bug contacts or product registrants cannot
+Users who are not bug supervisors or product registrants cannot
 transition the status to Won't Fix or Triaged. The option is not
 exposed in the UI, but we also enforce this rule at the database level
 to ensure that all call sites adhere to this.
 
     >>> login('foo.bar@canonical.com')
-    >>> firefox.setBugContact(None, None)
+    >>> firefox.setBugSupervisor(None, None)
 
     >>> login('no-priv@canonical.com')
 
@@ -62,13 +62,13 @@ to ensure that all call sites adhere to this.
     ...     BugTaskStatus.WONTFIX, nopriv_user)
     Traceback (most recent call last):
     ...
-    AssertionError: Only Bug Contacts may change status to Won't Fix.
+    AssertionError: Only Bug Supervisors may change status to Won't Fix.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.TRIAGED, nopriv_user)
     Traceback (most recent call last):
     ...
-    AssertionError: Only Bug Contacts may change status to Triaged.
+    AssertionError: Only Bug Supervisors may change status to Triaged.
 
 The method IBugTask.canTransitionToStatus comes in handy here. It
 tells us if a transition to a status is permitted. It is *not* a

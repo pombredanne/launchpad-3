@@ -25,7 +25,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import public_person_validator
@@ -182,10 +182,85 @@ class POFileMixIn(RosettaStats):
                 "Can't index with type %s. (Must be unicode.)"
                 % type(msgid_text))
 
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(key=msgid_text,
-                                                            context=context)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+            singular_text=msgid_text, context=context)
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
+
+    def findPOTMsgSetsContaining(self, text):
+        """See `IPOFile`."""
+        clauses = [
+            'POTMsgSet.potemplate = %s' % sqlvalues(self.potemplate),
+            # Only count the number of POTMsgSet that are current.
+            'POTMsgSet.sequence > 0',
+            ]
+
+        if text is not None:
+            assert len(text) > 1, (
+                "You can not search for strings shorter than 2 characters.")
+
+            english_match = """
+            -- Step 1: find POTMsgSets with msgid_singular containing `text`.
+            -- To avoid seqscans on POMsgID table (what LIKE usually does),
+            -- we do ILIKE comparison on them in a subselect first filtered
+            -- by this POTemplate.
+               ((POTMsgSet.msgid_singular IS NOT NULL AND
+                 POTMsgSet.msgid_singular IN (
+                   SELECT POMsgID.id FROM POMsgID
+                     WHERE id IN (
+                       SELECT DISTINCT(msgid_singular)
+                         FROM POTMsgSet
+                         WHERE POTMsgSet.potemplate=%s
+                     ) AND
+                     msgid ILIKE '%%' || %s || '%%')) OR
+            -- Step 1b: like above, just on msgid_plural.
+                (POTMsgSet.msgid_plural IS NOT NULL AND
+                 POTMsgSet.msgid_plural IN (
+                   SELECT POMsgID.id FROM POMsgID
+                     WHERE id IN (
+                       SELECT DISTINCT(msgid_plural)
+                         FROM POTMsgSet
+                         WHERE POTMsgSet.potemplate=%s
+                     ) AND
+                     msgid ILIKE '%%' || %s || '%%'))
+               )""" % (quote(self.potemplate), quote_like(text),
+                       quote(self.potemplate), quote_like(text))
+
+            # Do not look for translations in a DummyPOFile.
+            if self.id is not None:
+                search_clauses = [english_match]
+                for plural_form in range(self.plural_forms):
+                    translation_match = """
+                    -- Step 2: find translations containing `text`.
+                    -- Like above, to avoid seqscans on POTranslation table,
+                    -- we do ILIKE comparison on them in a subselect which is
+                    -- first filtered by the POFile.
+                    (POTMsgSet.id IN (
+                      SELECT POTMsgSet.id FROM POTMsgSet
+                        JOIN TranslationMessage
+                          ON TranslationMessage.potmsgset=POTMsgSet.id
+                        WHERE
+                          TranslationMessage.pofile=%(pofile)s AND
+                          TranslationMessage.msgstr%(plural_form)d IN (
+                            SELECT POTranslation.id FROM POTranslation WHERE
+                              POTranslation.id IN (
+                                SELECT DISTINCT(msgstr%(plural_form)d)
+                                  FROM TranslationMessage
+                                  WHERE TranslationMessage.pofile=%(pofile)s
+                              ) AND
+                              POTranslation.translation
+                                ILIKE '%%' || %(text)s || '%%')
+                              ))""" % dict(pofile=quote(self),
+                                           plural_form=plural_form,
+                                           text=quote_like(text))
+                    search_clauses.append(translation_match)
+
+                clauses.append("(" + " OR ".join(search_clauses) + ")")
+            else:
+                clauses.append(english_match)
+
+        return POTMsgSet.select(" AND ".join(clauses),
+                                orderBy='sequence')
 
 
 class POFile(SQLBase, POFileMixIn):
@@ -592,7 +667,6 @@ class POFile(SQLBase, POFileMixIn):
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
-
 
     def updateStatistics(self):
         """See `IPOFile`."""

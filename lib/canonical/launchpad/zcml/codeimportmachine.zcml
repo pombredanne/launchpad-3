@@ -8,28 +8,77 @@
   <!-- CodeImportMachine -->
 
   <content class="canonical.launchpad.database.CodeImportMachine">
-    <require
-      permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImportMachine"
-      />
-
+    <implements interface="canonical.launchpad.interfaces.ICodeImportMachine" />
     <allow
-      interface="canonical.launchpad.interfaces.ICodeImportMachinePublic" />
-
+        attributes="id state hostname current_jobs date_created heartbeat
+                    events shouldLookForJob" />
+    <require
+        permission="launchpad.Edit"
+        attributes="setOnline setOffline setQuiescing" />
     <!-- ICodeImportMachine has no set_schema, because all modifications
-      should be done through methods that create CodeImportEvent objects when
-      appropriate. -->
+         should be done through methods that create CodeImportEvent objects when
+         appropriate. -->
   </content>
 
+  <facet facet="branches">
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        path_expression="string:${hostname}"
+        parent_utility="canonical.launchpad.interfaces.ICodeImportMachineSet"
+        rootsite="code" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        name="+index"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        class="canonical.launchpad.browser.CodeImportMachineView"
+        name="+index"
+        template="../templates/codeimport-machine-index.pt"
+        permission="zope.Public"
+        />
+
+  </facet>
+
   <!-- CodeImportMachineSet -->
+
+  <facet facet="branches">
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="CodeImportMachineSetNavigation"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeImportMachineSet"
+        path_expression="string:+machines"
+        parent_utility="canonical.launchpad.interfaces.ICodeImportSet"
+        rootsite="code" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeImportMachineSet"
+        name="+index"
+        layer="canonical.launchpad.layers.CodeLayer"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeImportMachineSet"
+        class="canonical.launchpad.browser.CodeImportMachineSetView"
+        name="+index"
+        template="../templates/codeimport-machines.pt"
+        permission="zope.Public"
+        />
+
+  </facet>
 
   <securedutility
     class="canonical.launchpad.database.CodeImportMachineSet"
     provides="canonical.launchpad.interfaces.ICodeImportMachineSet" >
-    <require
-      permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
-    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSetPublic" />
+    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
   </securedutility>
 
 </configure>

@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
-    redirection)
+    redirection, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import DelimitedListWidget
 
@@ -43,8 +43,6 @@ from canonical.widgets import DelimitedListWidget
 # tracker.
 SINGLE_INSTANCE_TRACKERS = (
     BugTrackerType.DEBBUGS,
-    BugTrackerType.SAVANNAH,
-    BugTrackerType.SOURCEFORGE,
     )
 
 # A set of bug tracker types that we should not allow direct creation
@@ -187,25 +185,23 @@ class BugTrackerEditView(LaunchpadEditFormView):
     custom_widget('aliases', DelimitedListWidget, height=3)
 
     def validate(self, data):
-        """See `LaunchpadFormView`."""
         # Normalise aliases to an empty list if it's None.
         if data.get('aliases') is None:
             data['aliases'] = []
 
-        # Check that none of the new aliases are used elsewhere.
-        current_aliases = set(self.context.aliases)
-        requested_aliases = set(data['aliases'])
-        new_aliases = requested_aliases - current_aliases
-        bugtracker_set = getUtility(IBugTrackerSet)
-        used_alias_errors = []
-        for alias_url in new_aliases:
-            bugtracker = bugtracker_set.queryByBaseURL(alias_url)
-            if bugtracker is not None and bugtracker != self.context:
-                used_alias_errors.append(
-                    "%s already refers to %s" % (
-                        alias_url, bugtracker.title))
-        if len(used_alias_errors) > 0:
-            self.setFieldError('aliases', '; '.join(used_alias_errors))
+        # If aliases has an error, unwrap the Dantean exception from
+        # Zope so that we can tell the user something useful.
+        if self.getFieldError('aliases'):
+            # XXX: GavinPanella 2008-04-02 bug=210901: The error
+            # messages may already be escaped (with `cgi.escape`), but
+            # the water is muddy, so we won't attempt to unescape them
+            # or otherwise munge them, in case we introduce a
+            # different problem. For now, escaping twice is okay as we
+            # won't see any artifacts of that during normal use.
+            aliases_errors = self.widgets['aliases']._error.errors.args[0]
+            self.setFieldError('aliases', structured(
+                    '<br />'.join(['%s'] * len(aliases_errors)),
+                    *aliases_errors))
 
     @action('Change', name='change')
     def change_action(self, action, data):

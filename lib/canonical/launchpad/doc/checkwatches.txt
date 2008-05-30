@@ -28,7 +28,7 @@ contact any external servers.
     DEBUG   No watches to update on http://bugs.debian.org
     WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on http://sourceforge.net/
     DEBUG   No watches to update on https://bugzilla.mozilla.org/
@@ -36,6 +36,37 @@ contact any external servers.
     INFO    Time for this run: ... seconds.
     DEBUG   Removing lock file:...
     <BLANKLINE>
+
+OOPSes reported by the checkwatches process are raised using the
+CheckWatchesErrorUtility. The errors have 'CW' in their oops prefix
+and their type is 'BugWatchUpdateWarning'.
+
+    >>> from canonical.launchpad.scripts.checkwatches import (
+    ...     CheckWatchesErrorUtility)
+    >>> error_utility = CheckWatchesErrorUtility()
+    >>> report = error_utility.getLastOopsReport()
+    >>> report.id
+    'OOPS-...TCW...'
+    >>> report.type
+    'BugWatchUpdateWarning'
+
+    >>> from sys import stdout
+    >>> def dump_last_oops():
+    ...     error_utility.getLastOopsReport().write(stdout)
+
+    >>> dump_last_oops()
+    Oops-Id: OOPS-...TCW...
+    Exception-Type: BugWatchUpdateWarning
+    Exception-Value: ExternalBugtracker for BugTrackerType 'SAVANE' ...
+    Date: ...
+    Page-Id:
+    Branch: ...
+    Revision: ...
+    User: None
+    URL: None
+    Duration: -1
+    <BLANKLINE>
+    error-explanation=ExternalBugtracker for ... is not known.
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
 this, we can monkey-patch urllib2.urlopen so that it always raises a
@@ -66,7 +97,7 @@ First, we create some bug watches to test with:
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1, sample_person)
+    ...     example_bug_tracker, '1', sample_person)
 
     >>> login('no-priv@canonical.com')
 
@@ -74,9 +105,6 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
 
 The timeout will also produce an OOPS report and the OOPS id will be
 included in the logged error message.
-
-    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
-    >>> oops_hook.install()
 
     >>> import socket
     >>> import urllib2
@@ -91,16 +119,30 @@ included in the logged error message.
     ...     updater._login()
     ...     updater.updateBugTrackers(
     ...         bug_tracker_names=[example_bug_tracker.name])
-    ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
     ERROR...Connection timed out when updating ... (OOPS-...)
-    OOPS-...
-    baseurl=u'http://bugs.example.com'
-    bugtracker=u'example-bugs'
-    error-explanation=u'Connection timed out when updating...
 
-    >>> oops_hook.uninstall()
+    >>> dump_last_oops()
+    Oops-Id: OOPS-...TCW...
+    Exception-Type: timeout
+    Exception-Value: Connection timed out.
+    Date: ...
+    Page-Id:
+    Branch: ...
+    Revision: ...
+    User: None
+    URL: None
+    Duration: -1
+    <BLANKLINE>
+    baseurl=http://bugs.example.com
+    bugtracker=example-bugs
+    error-explanation=Connection timed out ... http://bugs.example.com
+    <BLANKLINE>
+    <BLANKLINE>
+    Traceback (innermost last):
+    ...
+    timeout: Connection timed out.
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
@@ -161,7 +203,7 @@ transaction if something goes wrong.
     >>> login('test@canonical.com')
     >>> for bug_id in range(1, 10):
     ...     example_bugwatch = example_bug.addWatch(
-    ...         example_bug_tracker, bug_id, sample_person)
+    ...         example_bug_tracker, str(bug_id), sample_person)
     >>> for bug_watch in example_bug_tracker.watches:
     ...     sync(bug_watch)
 

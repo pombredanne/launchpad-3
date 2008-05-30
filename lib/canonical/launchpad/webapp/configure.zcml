@@ -147,6 +147,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.browser.BugTaskListingItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
@@ -341,6 +348,20 @@
         factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
         name="fmt"
         />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeImportMachine"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeImportMachineFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.IProductSeries"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -365,6 +386,13 @@
         factory="canonical.launchpad.webapp.tales.SpecificationBranchFormatterAPI"
         name="fmt"
         />
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeReviewMessageFormatterAPI"
+        name="fmt"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -559,6 +587,18 @@
         handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
         />
 
+    <!-- Make sure that the config is sane for references debugging. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
+        />
+
+    <!-- Set the default timeout function. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
+        />
+
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
         handler="canonical.launchpad.webapp.sigusr1.before_traverse"
@@ -590,6 +630,16 @@
         canonical.launchpad.webapp.vocabulary.IHugeVocabulary"
       provides="zope.app.form.interfaces.IInputWidget"
       factory="canonical.widgets.SinglePopupWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        canonical.launchpad.vocabularies.dbobjects.BranchVocabularyBase"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.launchpad.browser.widgets.BranchPopupWidget"
       permission="zope.Public"
       />
 

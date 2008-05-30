@@ -84,7 +84,7 @@ def print_remote_bugtasks(content):
         for key, value in img.attrs:
             if '@@/bug-remote' in value:
                 target = extract_text(img.findAllPrevious('td')[-2])
-                print target, extract_text(img.findPrevious('a'))
+                print target, extract_text(img.findNext('a'))
 
 
 def print_bugs_table(content, table_id):
@@ -172,7 +172,7 @@ def update_task_status(task_id, person, status):
 
 def create_old_bug(
     title, days_old, target, status=BugTaskStatus.INCOMPLETE,
-    with_message=True):
+    with_message=True, external_bugtracker=None):
     """Create an aged bug.
 
     :title: A string. The bug title for testing.
@@ -180,6 +180,8 @@ def create_old_bug(
     :target: A BugTarkget. The bug's target.
     :status: A BugTaskStatus. The status of the bug's single bugtask.
     :with_message: A Bool. Whether to create a reply message.
+    :external_bugtracker: An external bug tracker which is watched for this
+        bug.
     """
     no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     params = CreateBugParams(
@@ -193,6 +195,9 @@ def create_old_bug(
     bugtask = bug.bugtasks[0]
     bugtask.transitionToStatus(
         status, sample_person)
+    if external_bugtracker is not None:
+        getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person, 
+            bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
     return bugtask

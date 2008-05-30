@@ -72,7 +72,7 @@ private build:
     ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status NOT OK: (AUTO)
+    Status Building private build
     ...
 
 and also the main area:
@@ -88,7 +88,7 @@ Launchpad Administrators are allowed to see the build in the portlet:
     ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    Status Building i386 build of ... RELEASE [cprov]
     ...
 
 and also the main area:
@@ -107,7 +107,7 @@ Buildd Administrators are allowed to see the build in the portlet:
     ...     find_tag_by_id(name12_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    Status Building i386 build of ... RELEASE [cprov]
     ...
 
 and also the main area:
@@ -127,7 +127,7 @@ cprov is also allowed to see his own build in the portlet:
     ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    Status Building i386 build of ... RELEASE [cprov]
     ...
 
 and also the main area:
@@ -183,7 +183,7 @@ what it shows a non-privileged user:
     ...
     i386 build of foobar 1.0 in ubuntu warty RELEASE
     ...
-    i386 build of at 0.00 in ubuntu warty RELEASE
+    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
     ...
     5 of 14 results
     ...
@@ -204,7 +204,7 @@ build at the top of the first batch.
     ...
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     ...
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     ...
@@ -225,7 +225,7 @@ If cprov browses the list he will also see his own builds in the list.
     ...
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     ...
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     ...
@@ -247,7 +247,7 @@ cannot see any of the private details.
     ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status NOT OK: (AUTO)
+    Status Building private build
     ...
 
 An authorised user will see the build however:
@@ -264,7 +264,7 @@ An authorised user will see the build however:
     ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    Status Building i386 build of ... RELEASE [cprov]
     ...
 
 
@@ -279,12 +279,13 @@ An admin user can see builds even if they are private:
     >>> admin_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(admin_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                0 waiting
-    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
-    Building other packages
-    386                1 waiting
-    Bob The Builder    NOT OK : None (AUTO)
+    Register a new build machine
+    PPA build machines
+    386      0 builds waiting in queue
+    The frog builder   Building i386 build of iceweasel ...[cprov]
+    Official distribution build machines
+    386      1 builds waiting in queue
+    Bob The Builder    Disabled
     Generated at ...
 
 Launchpad Buildd admins can also see private builds.
@@ -292,12 +293,13 @@ Launchpad Buildd admins can also see private builds.
     >>> name12_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(name12_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                0 waiting
-    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
-    Building other packages
-    386                1 waiting
-    Bob The Builder    NOT OK : None (AUTO)
+    Register a new build machine
+    PPA build machines
+    386      0 builds waiting in queue
+    The frog builder   Building i386 build of iceweasel ...[cprov]
+    Official distribution build machines
+    386      1 builds waiting in queue
+    Bob The Builder    Disabled
     Generated at ...
 
 cprov can see his own private build:
@@ -305,12 +307,13 @@ cprov can see his own private build:
     >>> cprov_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(cprov_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                0 waiting
-    The frog builder   BUILDING i386 build of iceweasel ...[cprov] (AUTO)
-    Building other packages
-    386                1 waiting
-    Bob The Builder    NOT OK : None (AUTO)
+    Register a new build machine
+    PPA build machines
+    386      0 builds waiting in queue
+    The frog builder   Building i386 build of iceweasel ...[cprov]
+    Official distribution build machines
+    386      1 builds waiting in queue
+    Bob The Builder    Disabled
     Generated at ...
 
 Anonymous users cannot see the private build:
@@ -318,12 +321,12 @@ Anonymous users cannot see the private build:
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                0 waiting
-    The frog builder   NOT OK: (AUTO)
-    Building other packages
-    386                1 waiting
-    Bob The Builder    NOT OK : None (AUTO)
+    PPA build machines
+    386      0 builds waiting in queue
+    The frog builder   Building private build
+    Official distribution build machines
+    386      1 builds waiting in queue
+    Bob The Builder    Disabled
     Generated at ...
 
 
@@ -375,13 +378,13 @@ Now the anonymous user can see the build:
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                                            0 waiting
-    The frog builder     BUILDING i386 build of iceweasel 1.0 in ubuntu
-                         warty RELEASE [cprov] (AUTO)
-    Building other packages
-    386                                            1 waiting
-    Bob The Builder      NOT OK : None (AUTO)
+    PPA build machines
+    386      0 builds waiting in queue
+    The frog builder  Building i386 build of iceweasel 1.0 in ubuntu
+                      warty RELEASE [cprov]
+    Official distribution build machines
+    386      1 builds waiting in queue
+    Bob The Builder Disabled
     Generated at ...
 
 Any other logged-in user will also see the build:
@@ -389,13 +392,13 @@ Any other logged-in user will also see the build:
     >>> browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(browser.contents))
     Launchpad build machines
-    Building PPA packages
-    386                                            0 waiting
-    The frog builder    BUILDING i386 build of iceweasel 1.0 in ubuntu
-                        warty RELEASE [cprov] (AUTO)
-    Building other packages
-    386                                            1 waiting
-    Bob The Builder      NOT OK : None (AUTO)
+    PPA build machines
+    386     0 builds waiting in queue
+    The frog builder
+    Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
+    Official distribution build machines
+    386     1 builds waiting in queue
+    Bob The Builder Disabled
     Generated at ...
 
 Accessing the build page will now also work:

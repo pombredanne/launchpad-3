@@ -114,14 +114,23 @@ Create a new poll that starts in 2025-06-04 and will last until 2035.
 
 We're redirected to the newly created poll
 
-  >>> team_admin_browser.url
-  'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
-  >>> team_admin_browser.title
-  'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
-  >>> 'Poll overview' in team_admin_browser.contents
-  True
-  >>> team_admin_browser.getLink('add an option').url
-  'http://launchpad.dev/%7Eubuntu-team/+poll/dpl-2080/+newoption'
+    >>> team_admin_browser.url
+    'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080'
+    >>> team_admin_browser.title
+    'Poll: \xe2\x80\x9cDebian Project Leader Election 2080\xe2\x80\x9d'
+    >>> print_navigation(team_admin_browser.contents)
+    Location: ?Ubuntu Team? team
+    Structural title: Ubuntu Team
+    Tabs:
+    * Overview (http://launchpad.dev/~ubuntu-team)
+    * Code (http://code.launchpad.dev/~ubuntu-team)
+    * Bugs (http://bugs.launchpad.dev/~ubuntu-team)
+    * Blueprints (http://blueprints.launchpad.dev/~ubuntu-team)
+    * Translations (http://translations.launchpad.dev/~ubuntu-team)
+    * Answers (http://answers.launchpad.dev/~ubuntu-team)
+    Main heading: Debian Project Leader Election 2080
+    >>> team_admin_browser.getLink('add an option').url
+    'http://launchpad.dev/%7Eubuntu-team/+poll/dpl-2080/+newoption'
 
 Now lets try to insert a poll with the name of a existing one.
 

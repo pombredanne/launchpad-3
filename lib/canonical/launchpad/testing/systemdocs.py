@@ -17,7 +17,7 @@ import os
 import sys
 
 import transaction
-from zope.component import getUtility, getView
+from zope.component import getUtility, getMultiAdapter
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
@@ -27,7 +27,9 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import reset_logging
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -111,6 +113,7 @@ def LayeredDocFileSuite(*args, **kw):
         def tearDown(test):
             if kw_tearDown is not None:
                 kw_tearDown(test)
+            reset_logging()
             test._stdout_logger.uninstall()
         kw['tearDown'] = tearDown
 
@@ -124,7 +127,7 @@ def LayeredDocFileSuite(*args, **kw):
 class SpecialOutputChecker(doctest.OutputChecker):
     """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
     def output_difference(self, example, got, optionflags):
-        if config.chunkydiff is False:
+        if config.canonical.chunkydiff is False:
             return doctest.OutputChecker.output_difference(
                 self, example, got, optionflags)
 
@@ -158,7 +161,7 @@ def create_view(context, name, form=None, layer=None, server_url=None,
         form=form, SERVER_URL=server_url, method=method)
     if layer is not None:
         setFirstLayer(request, layer)
-    return getView(context, name, request)
+    return getMultiAdapter((context, request), name=name)
 
 
 def setGlobs(test):
@@ -171,6 +174,7 @@ def setGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
+    test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
 
 
 def setUp(test):

@@ -215,6 +215,26 @@ Let's add a fuzzy translation.
     ...     carlos, {0: u'foo'}, is_fuzzy=True, is_imported=True,
     ...     lock_timestamp=datetime.datetime.now(UTC))
 
+XXX CarlosPerelloMarin 20080423: Once we finish shared translations DB
+migration, we could remove this part of the test. We don't need to
+migrate it! Please, read
+https://blueprints.launchpad.net/rosetta/+spec/message-sharing for
+more details.
+
+Finally, it should have some fields initialised in the same way its
+pofile attribute has it:
+
+    >>> new_translation.potemplate.id == new_translation.pofile.potemplate.id
+    True
+    >>> new_translation.language.code
+    u'ca'
+    >>> new_translation.pofile.language.code
+    u'ca'
+    >>> new_translation.variant is None
+    True
+    >>> new_translation.pofile.variant is None
+    True
+
 Since this message came from the import, it doesn't have a reviewer, but
 it does note a person which last changed it.
 
@@ -266,7 +286,7 @@ as zero. The updateStatistics method returns for values:
 Now, we are going to add another translation.
 
     >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
 
 At this time, there is no current or imported translation and no suggestions.
 
@@ -353,7 +373,7 @@ Given that we removed a fuzzy translation, statistics remain unchanged.
 However, if we change a non fuzzy translation...
 
     >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u'', 1: u''}, is_fuzzy=False,
     ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
@@ -487,7 +507,7 @@ form:
 
     >>> apa_dummypofile = evolution_potemplate.getDummyPOFile('apa')
     >>> plural_potmsgset = apa_dummypofile.potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
     >>> print apa_dummypofile.language.code
     apa
 
@@ -528,7 +548,7 @@ We call such a message incomplete, and undesirable as it is, it is still
 gracefully accepted.
 
     >>> plural_potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
     >>> pofile_es.plural_forms
     2
     >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
@@ -972,3 +992,52 @@ However, this one doesn't show up as external suggestion for Spanish.
     []
     >>> new_credits.getExternallySuggestedTranslationMessages(spanish)
     []
+
+== POTMsgSet.setSequence ==
+
+Finally, the new `IPOTMsgSet` should have an entry in the
+`TranslationTemplateItem` table once we assign a sequence number.
+
+    >>> from canonical.launchpad.database import TranslationTemplateItem
+
+First, we need a helper function to check whether the potmsgset exists
+in the table or not.
+
+
+    >>> def is_potmsgset_in_potemplate(potmsgset, potemplate):
+    ...     items = [
+    ...         item.potmsgset.id
+    ...         for item in TranslationTemplateItem.selectBy(
+    ...             potemplate=potemplate, potmsgset=potmsgset)
+    ...         ]
+    ...     return potmsgset.id in items
+
+Let's create a new potmsgset object.
+
+    >>> potmsgset = potemplate.createMessageSetFromText(
+    ...     u'This is just a test', None)
+
+If we assign the sequence == 0, the POTMsgSet object doesn't have an
+entry in the TranslationTemplateItems:
+
+    >>> potmsgset.setSequence(potemplate, 0)
+    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
+    False
+    >>> potmsgset.getSequence(potemplate)
+    0
+
+The used number doesn't matter as long as it's higher than zero.
+
+    >>> potmsgset.setSequence(potemplate, 99)
+    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
+    True
+    >>> potmsgset.getSequence(potemplate)
+    99
+
+If we change it back to zero, it's removed from the table:
+
+    >>> potmsgset.setSequence(potemplate, 0)
+    >>> is_potmsgset_in_potemplate(potmsgset, potmsgset.potemplate)
+    False
+    >>> potmsgset.getSequence(potemplate)
+    0

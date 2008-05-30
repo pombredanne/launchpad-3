@@ -18,14 +18,15 @@ from zope.app.publication.requestpublicationregistry import (
     factoryRegistry as publisher_factory_registry)
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.component import getMultiAdapter, getUtility, queryAdapter
-from zope.component.interfaces import ComponentLookupError
-from zope.interface import directlyProvides, implements
+from zope.component import (
+    getMultiAdapter, getUtility, queryAdapter, queryMultiAdapter)
+from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
-from zope.security.interfaces import Unauthorized
+from zope.schema.interfaces import IBytes
+from zope.security.interfaces import IParticipation, Unauthorized
 from zope.security.checker import ProxyFactory
 from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
@@ -36,9 +37,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, IEntry, IFeed, IHTTPResource,
-    IScopedCollection)
-from canonical.lazr.rest.resource import CollectionResource, EntryResource
+    IByteStorage, ICollection, ICollectionField, IEntry, IFeed,
+    IHTTPResource)
+from canonical.lazr.rest.resource import (
+    CollectionResource, EntryResource, ScopedCollection)
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
@@ -46,6 +48,8 @@ from canonical.launchpad.interfaces import (
     IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
     OAuthPermission, NonceAlreadyUsed)
 
+from canonical.launchpad.webapp.adapter import (
+    get_request_duration, RequestExpired)
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
@@ -61,6 +65,8 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.opstats import OpStats
+
+from canonical.lazr.timeout import set_default_timeout_function
 
 
 class StepsToGo:
@@ -213,18 +219,16 @@ class VirtualHostRequestPublicationFactory:
         # places; either it's on the SERVER_PORT environment variable
         # or, as is the case with the test suite, it's on the
         # HTTP_HOST variable after a colon.
-        # Check the former first.
-        host = environment.get('HTTP_HOST')
+        # The former takes precedence, the port from the host variable is
+        # only checked because the test suite doesn't set SERVER_PORT.
+        host = environment.get('HTTP_HOST', '')
         port = environment.get('SERVER_PORT')
         if ":" in host:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
             host, new_port = host.split(':')
-            if port is not None:
-                assert str(port) == new_port, (
-                    "Port specified in SERVER_PORT does not match "
-                    "port specified in HTTP_HOST")
-            port = new_port
+            if port is None:
+                port = new_port
 
         if host == '':
             if not self.handle_default_host:
@@ -269,7 +273,7 @@ class VirtualHostRequestPublicationFactory:
             publication_factory = self.publication_factory
 
 
-        host = environment.get('HTTP_HOST').split(':')[0]
+        host = environment.get('HTTP_HOST', '').split(':')[0]
         if host in ['', 'localhost']:
             # Sometimes requests come in to the default or local host.
             # If we set the application server for these requests,
@@ -623,8 +627,11 @@ class LaunchpadTestRequest(TestRequest):
     >>> request.needs_datepicker_iframe
     False
     """
-    implements(INotificationRequest, IBasicLaunchpadRequest,
+    implements(INotificationRequest, IBasicLaunchpadRequest, IParticipation,
                canonical.launchpad.layers.LaunchpadLayer)
+    # These two attributes satisfy IParticipation.
+    principal = None
+    interaction = None
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
@@ -654,6 +661,10 @@ class LaunchpadTestRequest(TestRequest):
         """See IBasicLaunchpadRequest."""
         return None, None
 
+    def setInWSGIEnvironment(self, key, value):
+        """See IBasicLaunchpadRequest."""
+        self._orig_env[key] = value
+
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadTestResponse()
@@ -662,6 +673,10 @@ class LaunchpadTestRequest(TestRequest):
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
+
+    def setPrincipal(self, principal):
+        """See `IPublicationRequest`."""
+        self.principal = principal
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
@@ -899,22 +914,19 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- web service
 
-
-class CollectionEntryDummy:
-    """An empty object providing the interface of the items in the collection.
-
-    This is to work around the fact that getMultiAdapter() and other
-    zope.component lookup methods don't accept a bare interface and only
-    works with objects.
-    """
-    def __init__(self, collection_field):
-        directlyProvides(self, collection_field.value_type.schema)
-
-
 class WebServicePublication(LaunchpadBrowserPublication):
     """The publication used for Launchpad web service requests."""
 
     root_object_interface = IWebServiceApplication
+
+    def getApplication(self, request):
+        """See `zope.publisher.interfaces.IPublication`.
+
+        Always use the web service application to serve web service
+        resources, no matter what application is normally used to serve
+        the underlying objects.
+        """
+        return getUtility(IWebServiceApplication)
 
     def traverseName(self, request, ob, name):
         """See `zope.publisher.interfaces.IPublication`.
@@ -927,47 +939,44 @@ class WebServicePublication(LaunchpadBrowserPublication):
         # traversal to entries in a scoped collection, they don't usually
         # handle traversing to the scoped collection itself.
         if len(request.getTraversalStack()) == 0:
-            result = self._traverseToScopedCollection(request, ob, name)
+            try_special_traversal = True
+            try:
+                entry = IEntry(ob)
+            except TypeError:
+                try_special_traversal = False
+            result = None
+            if try_special_traversal:
+                field = entry.schema.get(name)
+                if ICollectionField.providedBy(field):
+                    result = self._traverseToScopedCollection(
+                        request, entry, field, name)
+                elif IBytes.providedBy(field):
+                    result = self._traverseToByteStorage(
+                        request, entry, field, name)
             if result is not None:
                 return result
         return super(WebServicePublication, self).traverseName(
             request, ob, name)
 
-    def _traverseToScopedCollection(self, request, ob, name):
-        """Try to traverse to a collection named name in ob.
+    def _traverseToByteStorage(self, request, entry, field, name):
+        """Try to traverse to a byte storage resource in entry."""
+        # Even if the library file is None, we want to allow
+        # traversal, because the request might be a PUT request
+        # creating a file here.
+        return getMultiAdapter((entry, field.bind(entry)), IByteStorage)
 
-        If ob supports IEntry, we check if name refers to a collection
-        field and if it does, we return the IScopedCollection available
-        for this field.
+    def _traverseToScopedCollection(self, request, entry, field, name):
+        """Try to traverse to a collection in entry.
 
         This is done because we don't usually traverse to attributes
         representing a collection in our regular Navigation.
 
         This method returns None if a scoped collection cannot be found.
         """
-        try:
-            entry = IEntry(ob)
-        except TypeError:
-            return None
-
-        field = entry.schema.get(name)
-        if not ICollectionField.providedBy(field):
-            return None
-
         collection = getattr(entry, name, None)
         if collection is None:
             return None
-
-        # Create a dummy object that implements the field's interface.
-        # This is necessary because we can't pass the interface itself
-        # into getMultiAdapter.
-        example_entry = CollectionEntryDummy(field)
-        try:
-            scoped_collection = getMultiAdapter(
-                (ob, example_entry), IScopedCollection)
-        except ComponentLookupError:
-            return None
-
+        scoped_collection = ScopedCollection(entry.context, entry)
         # Tell the IScopedCollection object what collection it's managing,
         # and what the collection's relationship is to the entry it's
         # scoped to.
@@ -1001,6 +1010,9 @@ class WebServicePublication(LaunchpadBrowserPublication):
               queryAdapter(ob, IEntry) is not None):
             # Object supports IEntry protocol.
             resource = EntryResource(ob, request)
+        elif queryMultiAdapter((ob, request), IHTTPResource) is not None:
+            # Object can be adapted to a resource.
+            resource = queryMultiAdapter((ob, request), IHTTPResource)
         elif IHTTPResource.providedBy(ob):
             # A resource knows how to take care of itself.
             return ob
@@ -1043,7 +1055,8 @@ class WebServicePublication(LaunchpadBrowserPublication):
         else:
             # Everything is fine, let's return the principal.
             pass
-        return getUtility(IPlacelessLoginSource).getPrincipal(token.person.id)
+        return getUtility(IPlacelessLoginSource).getPrincipal(
+            token.person.id, access_level=token.permission)
 
 
 class WebServiceRequestTraversal:
@@ -1060,6 +1073,17 @@ class WebServiceRequestTraversal:
         WebService requests call the WebServicePublication.getResource()
         on the result of the default traversal.
         """
+        stack = self.getTraversalStack()
+        # Only accept versioned URLs.
+        if len(stack) > 0:
+            last_component = stack.pop()
+        else:
+            last_component = ''
+        if last_component == 'beta':
+            self.setTraversalStack(stack)
+            self.setVirtualHostRoot(names=('beta', ))
+        else:
+            raise NotFound(self, '', self)
         result = super(WebServiceRequestTraversal, self).traverse(ob)
         return self.publication.getResource(self, result)
 
@@ -1224,7 +1248,21 @@ class ProtocolErrorException(Exception):
         """
         return "Protocol error: %s" % self.status
 
-# ---- End publication classes.
+
+def launchpad_default_timeout():
+    """Return the time before the request should be expired."""
+    timeout = config.database.db_statement_timeout
+    if timeout is None:
+        return None
+    left = timeout - get_request_duration()
+    if left < 0:
+        raise RequestExpired('request expired.')
+    return left
+
+
+def set_launchpad_default_timeout(event):
+    """Set the LAZR default timeout function."""
+    set_default_timeout_function(launchpad_default_timeout)
 
 
 def register_launchpad_request_publication_factories():

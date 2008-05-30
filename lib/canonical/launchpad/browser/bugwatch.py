@@ -35,6 +35,8 @@ class BugWatchView(LaunchpadView):
 
     schema = IBugWatch
 
+    expand_reply_box = False
+
     @property
     def comments(self):
         """Return the comments to be displayed for a bug watch.
@@ -86,6 +88,8 @@ class BugWatchEditView(LaunchpadFormView):
 
     def validate(self, data):
         """See `LaunchpadFormView.`"""
+        if 'url' not in data:
+            return
         try:
             bugtracker, bug = getUtility(
                 IBugWatchSet).extractBugTrackerAndBug(data['url'])

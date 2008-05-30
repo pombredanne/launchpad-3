@@ -21,11 +21,71 @@ IExternalBugTracker.
     True
 
 
+== LP plugin ==
+
+Some Trac instances have a plugin installed to make it easier for us to
+communicate with them. getExternalBugTrackerToUse() probes the bug
+tracker for the special authentication mechanism the plugin uses, and
+returns a TracLPPlugin if it's found.
+
+If the LP plugin is installed, the URL will return 401, since it fails
+to validate the token.
+
+    >>> import urllib2
+    >>> class TracHavingLPPlugin401(Trac):
+    ...     def urlopen(self, url):
+    ...         print url
+    ...         raise urllib2.HTTPError(
+    ...             url, 401, "Unauthorized", None, None)
+    >>> trac = TracHavingLPPlugin401('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     TracLPPlugin)
+    >>> isinstance(chosen_trac, TracLPPlugin)
+    True
+    >>> chosen_trac.baseurl
+    'http://example.com'
+
+In the unlikely case where the token would be valid, a 200 would be
+returned. This also causes a TracLPPlugin to be used.
+
+    >>> from StringIO import StringIO
+    >>> class TracHavingLPPlugin200(Trac):
+    ...     def urlopen(self, url):
+    ...         print url
+    ...         return StringIO('')
+    >>> trac = TracHavingLPPlugin401('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> isinstance(chosen_trac, TracLPPlugin)
+    True
+    >>> chosen_trac.baseurl
+    'http://example.com'
+
+If a 404 is returned, the normal Trac instance is returned.
+
+    >>> class TracNotHavingLPPlugin(Trac):
+    ...     def urlopen(self, url):
+    ...         print url
+    ...         raise urllib2.HTTPError(
+    ...             url, 404, "Not found", None, None)
+    >>> trac = TracNotHavingLPPlugin('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> chosen_trac is trac
+    True
+
+
 == Status Conversion ==
 
 The basic Trac ticket statuses map to Launchpad bug statuses.
 Trac.convertRemoteStatus() handles the conversion.
 
+    >>> trac = Trac('http://example.com/')
     >>> trac.convertRemoteStatus('open').title
     'New'
     >>> trac.convertRemoteStatus('new').title
@@ -55,7 +115,7 @@ an UnknownRemoteStatusError will be raised.
     >>> trac.convertRemoteStatus('eggs').title
     Traceback (most recent call last):
       ...
-    UnknownRemoteStatusError
+    UnknownRemoteStatusError: eggs
 
 
 == Initialization ==
@@ -113,6 +173,70 @@ doesn't support CSV exports of individual tickets:
     >>> trac.supports_single_exports = False
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
     CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
+
+If, when using the batch export method, the Trac instance comes across
+invalid data, it will raise an UnparseableBugData exception. We will
+force our trac instance to use invalid data for the purposes of this
+test.
+
+    >>> trac.csv_export_file = 'trac_example_broken_ticket_export.csv'
+    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData: External bugtracker http://test.trac does not
+    define all the necessary fields for bug status imports (Defined
+    field names: ['<html>']).
+
+This is also true of the single bug export mode.
+
+    >>> trac.supports_single_exports = True
+    >>> trac.initializeRemoteBugDB([6])
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData: External bugtracker http://test.trac does not
+    define all the necessary fields for bug status imports (Defined
+    field names: ['<html>']).
+
+Trying to get the remote status of the bug will raise a BugNotFound
+error since the bug was never imported.
+
+    >>> trac.getRemoteStatus(6)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 6
+
+Both the single and batch ticket import modes use the _fetchBugData()
+method to retrieve the CSV data from the remote Trac instance. This
+method accepts a URL from which to retrieve the data as a parameter.
+
+    >>> trac.supports_single_exports = False
+    >>> trac.csv_export_file = None
+
+    >>> query_url = 'http://example.com/query?id=%s&format=csv'
+    >>> query_string = '&id='.join(['1', '2', '3', '4', '5'])
+    >>> query_url = query_url % query_string
+
+    >>> remote_bugs = trac._fetchBugData(query_url)
+    CALLED urlopen('http://example.com/query?id=1&id=2...&format=csv')
+
+However, _fetchBugData() doesn't actually check the results it returns
+except for checking that they are valid Trac CSV exports. in this case,
+the IDs returned are nothing like the ones we asked for:
+
+    >>> bug_ids = sorted(int(bug['id']) for bug in remote_bugs)
+    >>> print bug_ids
+    [1, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
+
+If _fetchBugData() receives a response that isn't a valid Trac CSV
+export, it will raise an UnparseableBugData error.
+
+    >>> trac.csv_export_file = 'trac_example_broken_ticket_export.csv'
+    >>> trac._fetchBugData(query_url)
+    Traceback (most recent call last):
+      ...
+    UnparseableBugData: External bugtracker http://test.trac does not
+    define all the necessary fields for bug status imports (Defined
+    field names: ['<html>']).
 
 
 == Updating Bug Watches ==

@@ -25,11 +25,11 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
-from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities,
-    IMailingListSet, IPersonSet, MailingListStatus, PersonCreationRationale,
-    TeamSubscriptionPolicy)
+    IMailingListSet, IMessageApprovalSet, IPersonSet,
+    MailingListAutoSubscribePolicy, MailingListStatus,
+    PersonCreationRationale, PostedMessageStatus, TeamSubscriptionPolicy)
 
 
 def fault_catcher(func):
@@ -80,14 +80,17 @@ def print_actions(pending_actions):
     not need to be coerced because they will be strs in both cases.
     """
     for action in sorted(pending_actions):
-        for team in sorted(pending_actions[action]):
+        for value in sorted(pending_actions[action]):
             if action in ('create', 'modify'):
-                team, modification = team
+                team, modification = value
                 modification = dict((k, unicode(v))
                                     for k, v in modification.items())
                 print team, '-->', action, modification
+            elif action == 'unsynchronized':
+                team, state = value
+                print team, '-->', action, state
             else:
-                print team, '-->', action
+                print value, '-->', action
 
 
 def print_info(info):
@@ -199,12 +202,19 @@ def apply_for_list(browser, team_name):
     browser.getControl('Apply for Mailing List').click()
 
 
-def new_person(first_name):
+def new_person(first_name, set_preferred_email=True,
+               use_default_autosubscribe_policy=False):
     """Create a new person with the given first name.
 
     The person will be given two email addresses, with the 'long form'
-    (e.g. anne.person@example.com) as the preferred address.  Return the new
-    person object.
+    (e.g. anne.person@example.com) as the preferred address.  Return
+    the new person object.
+
+    The person will also have their mailing list auto-subscription
+    policy set to 'NEVER' unless 'use_default_autosubscribe_policy' is
+    set to True. (This requires the Launchpad.Edit permission).  This
+    is useful for testing, where we often want precise control over
+    when a person gets subscribed to a mailing list.
     """
     variable_name = first_name.lower()
     full_name = first_name + ' Person'
@@ -216,7 +226,14 @@ def new_person(first_name):
         preferred_address,
         PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
         name=variable_name, displayname=full_name)
-    person.setPreferredEmail(email)
+    if set_preferred_email:
+        person.setPreferredEmail(email)
+
+    if not use_default_autosubscribe_policy:
+        # Shut off list auto-subscription so that we have direct control
+        # over subscriptions in the doctests.
+        person.mailing_list_auto_subscribe_policy = \
+            MailingListAutoSubscribePolicy.NEVER
     getUtility(IEmailAddressSet).new(alternative_address, person,
                                      EmailAddressStatus.VALIDATED)
     return person
@@ -259,14 +276,27 @@ class MailmanStub:
     """A stand-in for Mailman's XMLRPC client for page tests."""
 
     def act(self):
-        """Perform the effects of the Mailman XMLRPC client."""
-        # This doesn't have to be complete.
-        login('foo.bar@canonical.com')
+        """Perform the effects of the Mailman XMLRPC client.
+
+        This doesn't have to be complete, it just has to do whatever the
+        appropriate tests require.
+        """
+        # Simulate constructing and activating new mailing lists.
         mailing_list_set = getUtility(IMailingListSet)
         for mailing_list in mailing_list_set.approved_lists:
             mailing_list.startConstructing()
             mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
-        logout()
+        # Simulate acknowledging held messages.
+        message_set = getUtility(IMessageApprovalSet)
+        message_ids = set()
+        for status in (PostedMessageStatus.APPROVAL_PENDING,
+                       PostedMessageStatus.REJECTION_PENDING,
+                       PostedMessageStatus.DISCARD_PENDING):
+            for message in message_set.getHeldMessagesWithStatus(status):
+                message_ids.add(message.message_id)
+        for message_id in message_ids:
+            message = message_set.getMessageByMessageID(message_id)
+            message.acknowledge()
         flush_database_updates()
 
 

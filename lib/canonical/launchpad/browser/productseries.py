@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -17,6 +17,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesShortLink',
     'ProductSeriesSOP',
+    'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
     'ProductSeriesSourceView',
     'ProductSeriesSpecificationsMenu',
@@ -47,10 +48,10 @@ from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
-    ICountry, ILaunchpadCelebrities, ImportStatus, IPOTemplateSet,
+    ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
     IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
-    ITranslationImporter, ITranslationImportQueue, NotFoundError,
-    RevisionControlSystems)
+    ITranslationImportQueue, ITranslationImporter, ImportStatus,
+    NotFoundError, RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
@@ -60,7 +61,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.enum import EnumeratedType, Item, use_template
-from canonical.widgets import SinglePopupWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
 
@@ -385,7 +385,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         Ubuntu distroseries to be for the source package name that is given
         in the form.
         """
-        form = self.form
         ubuntupkg = self.form.get('ubuntupkg', '')
         if ubuntupkg == '':
             # No package was selected.
@@ -420,8 +419,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
     def translationsUpload(self):
         """Upload new translatable resources related to this IProductSeries.
         """
-        form = self.form
-
         file = self.request.form['file']
         if not isinstance(file, FileUpload):
             if file == '':
@@ -576,27 +573,16 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     schema = IProductSeries
     field_names = ['user_branch']
 
-    custom_widget('user_branch', SinglePopupWidget, displayWidth=35)
-
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @action(_('Update'), name='update')
+    def not_import(self, action=None):
+        return self.context.import_branch is None
+
+    @action(_('Update'), name='update', condition=not_import)
     def update_action(self, action, data):
         self.updateContextFromData(data)
-        # Clear out old revision control details.
-        if self.context.rcstype == RevisionControlSystems.CVS:
-            self.context.rcstype = None
-            self.context.cvsroot = None
-            self.context.cvsmodule = None
-            self.context.cvsbranch = None
-        elif self.context.rcstype == RevisionControlSystems.SVN:
-            self.context.rcstype = None
-            self.context.svnrepository = None
-        else:
-            # Nothing to clear out.
-            assert self.context.rcstype is None, "rcstype is not None"
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
@@ -864,6 +850,22 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Source import deleted.')
 
+    def allowConversion(self, action):
+        return self.isAdmin() and self.context.importstatus in [
+            ImportStatus.AUTOTESTED,
+            ImportStatus.TESTING,
+            ImportStatus.PROCESSING,
+            ImportStatus.SYNCING,
+            ImportStatus.STOPPED,
+            ]
+
+    @action(_('Convert To New Style Import'), name='convert',
+            condition=allowConversion)
+    def convert_action(self, action, data):
+        getUtility(ICodeImportSet).newFromProductSeries(self.context)
+        self.request.response.addInfoNotification(
+            'Import converted to new style.')
+
     @property
     def next_url(self):
         return canonical_url(self.context)
@@ -946,6 +948,19 @@ class ProductSeriesSourceSetView:
             html += '>' + str(enum.title) + '</option>\n'
         html += '</select>\n'
         return html
+
+
+class ProductSeriesSourceListView(LaunchpadView):
+    """A listing of all the running imports.
+
+    We take 'running' to mean 'has importstatus==SYNCING'."""
+
+    def initialize(self):
+        self.text = self.request.get('text')
+        results = getUtility(IProductSeriesSet).searchImports(
+            text=self.text, importstatus=ImportStatus.SYNCING)
+
+        self.batchnav = BatchNavigator(results, self.request)
 
 
 class ProductSeriesShortLink(DefaultShortLink):

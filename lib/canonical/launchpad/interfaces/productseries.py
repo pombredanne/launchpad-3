@@ -16,7 +16,6 @@ __all__ = [
     ]
 
 import re
-import cgi
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -146,7 +145,7 @@ def validate_cvs_root(cvsroot):
     try:
         root = CVSRoot(cvsroot)
     except CvsRootError, e:
-        raise LaunchpadValidationError(cgi.escape(str(e)))
+        raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
     if root.hostname.count('.') == 0:
@@ -243,8 +242,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'This list is made up of any drivers or owners from this '
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
-    bugcontact = Attribute(
-        'Currently just a reference to the Product bug contact.')
+    bug_supervisor = Attribute(
+        'Currently just a reference to the Product bug supervisor.')
     security_contact = Attribute(
         'Currently just a reference to the Product security contact.')
 
@@ -262,7 +261,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     user_branch = Choice(
         title=_('Branch'),
-        vocabulary='BranchRestrictedOnProduct',
+        vocabulary='Branch',
         required=False,
         description=_("The Bazaar branch for this series.  Leave blank "
                       "if this series is not maintained in Bazaar."))
@@ -340,6 +339,12 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         allow_query=False,    # Query makes no sense in Subversion.
         allow_fragment=False, # Fragment makes no sense in Subversion.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
+
+    def getImportDetailsForDisplay():
+        """Get a one-line summary of the location this import is from.
+
+        Only makes sense for series with import details set."""
+
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
@@ -370,6 +375,13 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "import_branch.last_mirrored"))
     datepublishedsync = Attribute(_("The date of the published code was last "
         "synced, at the time of the last sync."))
+
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This attribute is
+    # only necessary for the transition from the old to the new
+    # code import system, and should be deleted after that process
+    # is done.
+    new_style_import = Attribute(_("The new-style import that was created "
+        "from this import, if any."))
 
     def syncCertified():
         """is the series source sync enabled?"""
@@ -407,6 +419,13 @@ class IProductSeriesSourceAdmin(Interface):
 
     def markDontSync():
         """Mark this import as DONTSYNC.
+
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
+        """
+
+    def markStopped():
+        """Mark this import as STOPPED.
 
         See `ImportStatus` for what this means.  This method also clears
         timestamps and other ancillary data.
@@ -463,3 +482,6 @@ class IProductSeriesSet(Interface):
         Return the default value if there is no ProductSeries with the
         given details.
         """
+
+    def getSeriesForBranches(branches):
+        """Return the ProductSeries associated with a branch in branches."""

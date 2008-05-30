@@ -1,6 +1,6 @@
 # Copyright 2006-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0702
-# pylint: disable-msg=W0603
+# We like global!
+# pylint: disable-msg=W0603,W0702
 
 """Layers used by Canonical tests.
 
@@ -22,12 +22,23 @@ of one, forcing us to attempt to make some sort of layer tree.
 __metaclass__ = type
 
 __all__ = [
-    'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
-    'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError',
-    'TwistedLaunchpadZopelessLayer', 'ExperimentalLaunchpadZopelessLayer',
-    'TwistedLayer'
+    'BaseLayer',
+    'DatabaseLayer',
+    'ExperimentalLaunchpadZopelessLayer',
+    'FunctionalLayer',
+    'GoogleServiceLayer',
+    'LaunchpadFunctionalLayer',
+    'LaunchpadLayer',
+    'LaunchpadScriptLayer',
+    'LaunchpadZopelessLayer',
+    'LayerConsistencyError',
+    'LayerIsolationError',
+    'LibrarianLayer',
+    'PageTestLayer',
+    'TwistedLaunchpadZopelessLayer',
+    'TwistedLayer',
+    'ZopelessLayer',
+    'TwistedLaunchpadZopelessLayer'
     ]
 
 import gc
@@ -60,8 +71,12 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
 import canonical.launchpad.mail.stub
 from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.testing.tests.googleserviceharness import (
+    GoogleServiceTestSetup)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.timeout import (
+    get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
@@ -142,7 +157,7 @@ class BaseLayer:
         BaseLayer.isSetUp = True
 
         # Kill any Librarian left running from a previous test run.
-        LibrarianTestSetup().killTac()
+        LibrarianTestSetup().tearDown()
 
         # Kill any database left lying around from a previous test run.
         try:
@@ -223,12 +238,13 @@ class BaseLayer:
         # Objects with __del__ methods cannot participate in refence cycles.
         # Fail tests with memory leaks now rather than when Launchpad crashes
         # due to a leak because someone ignored the warnings.
-        gc.collect()
         if gc.garbage:
-            BaseLayer.flagTestIsolationFailure(
-                    "Test left uncollectable garbage\n"
-                    "%s (referenced from %s)"
-                    % (gc.garbage, gc.get_referrers(*gc.garbage)))
+            gc.collect() # Expensive, so only do if there might be garbage.
+            if gc.garbage:
+                BaseLayer.flagTestIsolationFailure(
+                        "Test left uncollectable garbage\n"
+                        "%s (referenced from %s)"
+                        % (gc.garbage, gc.get_referrers(*gc.garbage)))
 
     @classmethod
     @profiled
@@ -281,6 +297,7 @@ class BaseLayer:
         """
         test_result = BaseLayer.getCurrentTestResult()
         if test_result.wasSuccessful():
+            # pylint: disable-msg=W0702
             test_case = BaseLayer.getCurrentTestCase()
             try:
                 raise LayerIsolationError(message)
@@ -442,6 +459,13 @@ class DatabaseLayer(BaseLayer):
     @profiled
     def setUp(cls):
         DatabaseLayer.force_dirty_database()
+        # Imported here to avoid circular import issues. This
+        # functionality should be migrated into this module at some
+        # point. -- StuartBishop 20060712
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = LaunchpadTestSetup(
+            dbname='launchpad_ftest_template').generateResetSequencesSQL()
 
     @classmethod
     @profiled
@@ -455,6 +479,7 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
+        DatabaseLayer._reset_sequences_sql = None
 
     @classmethod
     @profiled
@@ -464,7 +489,8 @@ class DatabaseLayer(BaseLayer):
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
-            LaunchpadTestSetup().setUp()
+            LaunchpadTestSetup(
+                reset_sequences_sql=DatabaseLayer._reset_sequences_sql).setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
@@ -567,6 +593,11 @@ class DatabaseLayer(BaseLayer):
         return LaunchpadTestSetup().dropDb()
 
 
+def test_default_timeout():
+    """Don't timeout by default in tests."""
+    return None
+
+
 class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     """Provides access to the Launchpad database and daemons.
 
@@ -589,12 +620,19 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        # By default, don't make external service tests timeout.
+        if get_default_timeout_function() is not None:
+            raise LayerIsolationError(
+                "Global default timeout function should be None.")
+        set_default_timeout_function(test_default_timeout)
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        pass
+        if get_default_timeout_function() is not test_default_timeout:
+            raise LayerIsolationError(
+                "Test didn't reset default timeout function.")
+        set_default_timeout_function(None)
 
 
 class FunctionalLayer(BaseLayer):
@@ -788,7 +826,32 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._restore_signals()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
+class GoogleServiceLayer(BaseLayer):
+    """Tests for Google web service integration."""
+
+    @classmethod
+    def setUp(cls):
+        GoogleServiceTestSetup().setUp()
+
+    @classmethod
+    def tearDown(cls):
+        GoogleServiceTestSetup().tearDown()
+
+    @classmethod
+    def testSetUp(self):
+        # We need to override BaseLayer.testSetUp(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+    @classmethod
+    def testTearDown(self):
+        # We need to override BaseLayer.testTearDown(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer,
+                               GoogleServiceLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
     @profiled

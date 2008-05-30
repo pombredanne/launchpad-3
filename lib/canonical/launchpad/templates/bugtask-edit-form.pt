@@ -168,7 +168,7 @@
       </tr>
       <tr>
         <td tal:content="structure view/widgets/status" />
-        <td title="Changeable only by a project maintainer or bug contact">
+        <td title="Changeable only by a project maintainer or bug supervisor">
           <img
             tal:condition="not:view/userCanEditImportance"
             alt=""
@@ -177,7 +177,7 @@
           <tal:widget content="structure view/widgets/importance" />
         </td>
         <td tal:condition="view/widgets/milestone"
-            title="Changeable only by a project maintainer or bug contact">
+            title="Changeable only by a project maintainer or bug supervisor">
           <img
             tal:condition="not:view/userCanEditMilestone"
             alt=""
@@ -254,7 +254,7 @@
                         name string:${view/prefix}.comment_on_change"
       ></textarea>
     </div>
-    <div tal:condition="python:not context.bug.isSubscribed(view.user)">
+    <div tal:condition="not: view/user_is_subscribed">
       <label style="font-weight: normal">
         <input type="checkbox" name="subscribe" id="subscribe"
                value="Subscribe" />

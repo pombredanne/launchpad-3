@@ -261,6 +261,15 @@ Merge proposals also have a link formatter, which displays branch titles:
     u'<a href="...">Proposed merge of baz into qux</a>'
 
 
+=== Code review comments ===
+
+   >>> comment = factory.makeCodeReviewMessage()
+   >>> print test_tales('comment/fmt:url', comment=comment)
+   http://code.launchpad.dev/~person-name.../product-name.../branch.../+merge/.../comments/...
+   >>> print test_tales('comment/fmt:link', comment=comment)
+   <a href="...">Comment by Person-name...</a>
+
+
 === Bug branches ===
 
     >>> login('test@canonical.com')
@@ -326,6 +335,7 @@ Merge proposals also have a link formatter, which displays branch titles:
 
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> bugtracker.title = 'an@email.address bug tracker'
     >>> bugtracker.aliases = ['mailto:eatme@wundrlnd.com',
     ...                       'http://bugs.vikingsrool.no/']
 
@@ -334,23 +344,43 @@ The "standard" 'url' name is supported:
     >>> test_tales("bugtracker/fmt:url", bugtracker=bugtracker)
     u'http://launchpad.dev/bugs/bugtrackers/email'
 
-As are 'external-link' and 'aliases', which help when hiding email
-addresses from users who are not logged in:
+As are 'link', 'external-link', 'external-title-link' and 'aliases',
+which help when hiding email addresses from users who are not logged
+in.
+
+    >>> def print_formatted_bugtrackers():
+    ...     expression = "bugtracker/fmt:%s"
+    ...     for format in ['link', 'external-link', 'external-title-link']:
+    ...         print '%s -->\n  %r' % (
+    ...             format, test_tales(expression % format,
+    ...                                bugtracker=bugtracker))
+    ...     print 'aliases -->\n  %r' % (
+    ...         list(test_tales(expression % 'aliases',
+    ...                         bugtracker=bugtracker)),)
 
     >>> login('test@canonical.com')
+    >>> print_formatted_bugtrackers()
+    link -->
+      u'<a href=".../bugs/bugtrackers/email">an@email.address bug tracker</a>'
+    external-link -->
+      u'<a class="link-external"
+        href="mailto:bugs@example.com">mailto:bugs@example.com</a>'
+    external-title-link -->
+      u'<a class="link-external"
+        href="mailto:bugs@example.com">an@email.address bug tracker</a>'
+    aliases -->
+      [u'http://bugs.vikingsrool.no/', u'mailto:eatme@wundrlnd.com']
 
-    >>> test_tales("bugtracker/fmt:external-link", bugtracker=bugtracker)
-    u'<a class="link-external"
-         href="mailto:bugs@example.com">mailto:bugs@example.com</a>'
-    >>> list(test_tales("bugtracker/fmt:aliases", bugtracker=bugtracker))
-    [u'http://bugs.vikingsrool.no/', u'mailto:eatme@wundrlnd.com']
-
-    >>> logout()
-
-    >>> test_tales("bugtracker/fmt:external-link", bugtracker=bugtracker)
-    u'mailto:&lt;email address hidden&gt;'
-    >>> list(test_tales("bugtracker/fmt:aliases", bugtracker=bugtracker))
-    [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
+    >>> login(ANONYMOUS)
+    >>> print_formatted_bugtrackers()
+    link -->
+      u'<a href="...ckers/email">&lt;email address hidden&gt; bug tracker</a>'
+    external-link -->
+      u'mailto:&lt;email address hidden&gt;'
+    external-title-link -->
+      u'&lt;email address hidden&gt; bug tracker'
+    aliases -->
+      [u'http://bugs.vikingsrool.no/', u'mailto:&lt;email address hidden&gt;']
 
     >>> login('test@canonical.com')
 
@@ -391,7 +421,7 @@ hiding email addresses from users who are not logged in:
     >>> test_tales("bugwatch/fmt:external-link-short", bugwatch=email_bugwatch)
     u'<a class="link-external" href="mailto:bugs@example.com">&mdash;</a>'
 
-    >>> logout()
+    >>> login(ANONYMOUS)
 
     >>> test_tales("bugwatch/fmt:external-link", bugwatch=sf_bugwatch)
     u'<a class="link-external" href="http://sourceforge.net/support/tracker.php?aid=1234">sf #1234</a>'

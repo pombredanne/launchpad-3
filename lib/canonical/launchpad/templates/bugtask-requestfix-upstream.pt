@@ -121,15 +121,15 @@
 
       <tal:public_bug tal:condition="not: context/bug/private">
 
-      <p tal:condition="product/bugcontact">
-        <a tal:attributes="href product/bugcontact/fmt:url"
-           tal:content="product/bugcontact/displayname">Sample Person</a>,
-           the bug contact for 
+      <p tal:condition="product/bug_supervisor">
+        <a tal:attributes="href product/bug_supervisor/fmt:url"
+           tal:content="product/bug_supervisor/displayname">Sample Person</a>,
+           the bug supervisor for 
            <tal:product tal:replace="product/displayname">Firefox</tal:product>,
            will be notified about this bug.
       </p>
 
-      <tal:no_bugcontact tal:condition="not:product/bugcontact">
+      <tal:no_bug_supervisor tal:condition="not:product/bug_supervisor">
         <p tal:condition="product/official_malone">
           <a tal:attributes="href product/owner/fmt:url"
              tal:content="product/owner/displayname">Sample Person</a>, the
@@ -139,23 +139,23 @@
         </p>
 
         <p tal:condition="not: product/official_malone">
-          There is no bug contact for
+          There is no bug supervisor for
           <tal:product tal:replace="product/displayname">Firefox</tal:product>.
           This means that there is nobody upstream we can notify about
           this issue.
         </p>
 
-      </tal:no_bugcontact>
+      </tal:no_bug_supervisor>
 
       </tal:public_bug>
 
       <tal:private_bug tal:condition="context/bug/private">
 
-      <p tal:condition="product/bugcontact">
+      <p tal:condition="product/bug_supervisor">
         This is a private bug report,
-        so <a tal:attributes="href product/bugcontact/fmt:url"
-           tal:content="product/bugcontact/displayname">Sample Person</a>,
-         the bug contact for 
+        so <a tal:attributes="href product/bug_supervisor/fmt:url"
+           tal:content="product/bug_supervisor/displayname">Sample Person</a>,
+         the bug supervisor for 
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
          won&rsquo;t be notified. You can also set up 
            <a href="+addsubscriber">additional contacts</a> to be notified.

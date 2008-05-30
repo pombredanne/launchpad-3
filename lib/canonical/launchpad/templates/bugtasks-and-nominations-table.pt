@@ -26,8 +26,9 @@
   </thead>
 
   <tbody>
-    <tal:bugtask-or-nomination repeat="task_or_nom view/getBugTasksAndNominations">
-      <tal:block content="structure task_or_nom/@@+bugtasks-and-nominations-table-row" />
+    <tal:bugtask-or-nomination
+        repeat="task_or_nom_view view/getBugTaskAndNominationViews">
+      <tal:block replace="structure task_or_nom_view" />
     </tal:bugtask-or-nomination>
   </tbody>
 

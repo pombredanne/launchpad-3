@@ -3,6 +3,13 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'FileDownloadClient',
+    'FileUploadClient',
+    'LibrarianClient',
+    'RestrictedLibrarianClient',
+    ]
+
 import md5
 import sha
 import socket
@@ -14,11 +21,13 @@ import urllib
 import urllib2
 from urlparse import urljoin
 
+from zope.interface import implements
+
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.librarian.interfaces import UploadFailed, DownloadFailed
-
-__all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
+from canonical.librarian.interfaces import (
+    DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
+    UploadFailed)
 
 
 class FileUploadClient:
@@ -35,12 +44,9 @@ class FileUploadClient:
 
         The host and port default to what is specified in the configuration
         """
-        host = config.librarian.upload_host
-        port = config.librarian.upload_port
-
         try:
             self.state.s = socket.socket(AF_INET, SOCK_STREAM)
-            self.state.s.connect((host, port))
+            self.state.s.connect((self.upload_host, self.upload_port))
             self.state.f = self.state.s.makefile('w+', 0)
         except socket.error, x:
             raise UploadFailed(str(x))
@@ -149,7 +155,8 @@ class FileUploadClient:
                             sha1=shaDigester.hexdigest(),
                             md5=md5Digester.hexdigest())
             LibraryFileAlias(id=aliasID, contentID=contentID, filename=name,
-                            mimetype=contentType, expires=expires)
+                            mimetype=contentType, expires=expires,
+                            restricted=self.restricted)
 
             assert isinstance(aliasID, (int, long)), \
                     "aliasID %r not an integer" % (aliasID,)
@@ -163,7 +170,7 @@ class FileUploadClient:
         return databaseName
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
-        """See canonical.librarian.interfaces.ILibrarianUploadClient"""
+        """See `IFileUploadClient`."""
         if file is None:
             raise TypeError('No data')
         if size <= 0:
@@ -206,9 +213,8 @@ class FileUploadClient:
             status, ids = response.split()
             contentID, aliasID = ids.split('/', 1)
 
-            base = config.librarian.download_url
             path = '/%d/%s' % (int(aliasID), quote(name))
-            return urljoin(base, path)
+            return urljoin(self.download_url, path)
         finally:
             self._close()
 
@@ -276,11 +282,14 @@ class FileDownloadClient:
             lfa = LibraryFileAlias.get(aliasID)
         except SQLObjectNotFound:
             raise DownloadFailed('Alias %d not found' % aliasID)
+        if self.restricted != lfa.restricted:
+            raise DownloadFailed(
+                'Alias %d cannot be downloaded from this client.' % aliasID)
         if lfa.content.deleted:
             return None
         return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
-    def getURLForAlias(self, aliasID, is_buildd=False):
+    def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given
         alias.
 
@@ -291,9 +300,7 @@ class FileDownloadClient:
         path = self._getPathForAlias(aliasID)
         if path is None:
             return None
-        base = config.librarian.download_url
-        if is_buildd:
-            base = config.librarian.buildd_download_url
+        base = self.download_url
         return urljoin(base, path)
 
     def getFileByAlias(self, aliasID):
@@ -318,8 +325,39 @@ class FileDownloadClient:
 
 
 class LibrarianClient(FileUploadClient, FileDownloadClient):
-    """Object combining the upload/download interfaces to the Librarian
-       simplifying access. This object is instantiated as a Utility
-       using getUtility(ILibrarianClient)
-    """
+    """See `ILibrarianClient`."""
+    implements(ILibrarianClient)
+
+    restricted = False
+
+    @property
+    def upload_host(self):
+        return config.librarian.upload_host
+
+    @property
+    def upload_port(self):
+        return config.librarian.upload_port
+
+    @property
+    def download_url(self):
+        return config.librarian.download_url
+
+
+class RestrictedLibrarianClient(LibrarianClient):
+    """See `IRestrictedLibrarianClient`."""
+    implements(IRestrictedLibrarianClient)
+
+    restricted = True
+
+    @property
+    def upload_host(self):
+        return config.librarian.restricted_upload_host
+
+    @property
+    def upload_port(self):
+        return config.librarian.restricted_upload_port
+
+    @property
+    def download_url(self):
+        return config.librarian.restricted_download_url
 

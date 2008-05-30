@@ -14,6 +14,27 @@ contributors.
     Mark Shuttleworth (filter)
     No Privileges Person (filter)
 
+
+
+This page was converted to the 2.0 inline navigation. It has tabs
+to navigate to other pages.
+
+    >>> navigation_tabs = find_tag_by_id(
+    ...     anon_browser.contents, 'context-navigation-tabs')
+    >>> for link in navigation_tabs.findAll('a'):
+    ...     print "%s:\n%s" % (extract_text(link), link['href'])
+    Translate:
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
+    Upload a file:
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+    Download:
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
+
+And has no actions menu:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'actions')
+    None
+
 User can filter any contributions done by Carlos (the first person
 appearing among contributors), by choosing the 'filter' link:
 

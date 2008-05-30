@@ -2,33 +2,21 @@
 
 There are several views of the branches related to a person.
 
-Branch lists for people also include branches that are owned by
-teams that the person is participating in.
-
-Branch listing pages now hide dormant branches by default.  Dormant
-branches are branches that have not been updated or committed to for
-some time.  Since this is a time based change all the branches
-are reset here to be recently updated.
-
-    >>> from canonical.launchpad.ftests.branch_helper import (
-    ...     reset_all_branch_last_modified)
-    >>> reset_all_branch_last_modified()
-
 
 == Related Branches ==
 
 First, check that the condensed branch listing page works:
 
-  >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-  >>> browser.open('http://code.launchpad.dev/~name12')
-  >>> print browser.title
-  Bazaar branches related to Sample Person
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> print browser.title
+    Bazaar branches related to Sample Person
 
 The heading in the main content is the same as the page title text.
 
-  >>> main = find_main_content(browser.contents)
-  >>> print extract_text(main.h1)
-  Bazaar branches related to Sample Person
+    >>> main = find_main_content(browser.contents)
+    >>> print extract_text(main.h1)
+    Bazaar branches related to Sample Person
 
 
 == Default view for a person on code root site ==
@@ -39,12 +27,10 @@ listing view for that person.
 If a person does not have any related branches, we print an informative
 message.
 
-  >>> browser.open('http://code.launchpad.dev/~kinnison')
-  >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There are no branches related to Daniel Silverstone in Launchpad today.
-  You can use Launchpad as a registry for Bazaar branches, and encourage
-  broader community participation in your project using
-  distributed version control.
+    >>> browser.open('http://code.launchpad.dev/~kinnison')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'no-branch-message'))
+    There are no branches related to Daniel Silverstone today.
 
 
 == Owned Branches ==
@@ -53,18 +39,18 @@ There is a link in the branch context menu for person which points to
 the owned branches page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Owned').click()
+    >>> browser.getLink('owned').click()
     >>> print browser.title
     Bazaar branches owned by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    ~name12/firefox/main             New            firefox ...
-    ~name12/gnome-terminal/2.6       Mature         gnome-terminal ...
-    ~name12/gnome-terminal/main      Development    gnome-terminal ...
-    ~name12/gnome-terminal/klingon   Experimental   gnome-terminal ...
-    ~name12/gnome-terminal/mirrored  New            gnome-terminal ...
-    ~name12/gnome-terminal/pushed    New            gnome-terminal ...
+    lp://dev/~name12/firefox/main             New            ...
+    lp://dev/~name12/gnome-terminal/2.6       Mature         ...
+    lp://dev/~name12/gnome-terminal/main      Development    ...
+    lp://dev/~name12/gnome-terminal/klingon   Experimental   ...
+    lp://dev/~name12/gnome-terminal/mirrored  New            ...
+    lp://dev/~name12/gnome-terminal/pushed    New            ...
 
 
 == Registered Branches ==
@@ -72,18 +58,18 @@ the owned branches page.
 There is also a link which points to the registered branches page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Registered').click()
+    >>> browser.getLink('registered').click()
     >>> print browser.title
     Bazaar branches registered by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    ~name12/firefox/main              New            firefox ...
-    ~name12/gnome-terminal/2.6        Mature         gnome-terminal ...
-    ~name12/gnome-terminal/main       Development    gnome-terminal ...
-    ~name12/gnome-terminal/klingon    Experimental   gnome-terminal ...
-    ~name12/gnome-terminal/mirrored   New            gnome-terminal ...
-    ~name12/gnome-terminal/pushed     New            gnome-terminal ...
+    lp://dev/~name12/firefox/main              New            ...
+    lp://dev/~name12/gnome-terminal/2.6        Mature         ...
+    lp://dev/~name12/gnome-terminal/main       Development    ...
+    lp://dev/~name12/gnome-terminal/klingon    Experimental   ...
+    lp://dev/~name12/gnome-terminal/mirrored   New            ...
+    lp://dev/~name12/gnome-terminal/pushed     New            ...
 
 
 == Subscribed branches ==
@@ -92,11 +78,61 @@ From the persons main listing page, there is also a link to subscribed
 branches.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Subscribed').click()
+    >>> browser.getLink('subscribed').click()
     >>> print browser.title
     Bazaar branches subscribed to by Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    ~launchpad/gnome-terminal/launchpad  New           gnome-terminal  ...
-    ~name12/+junk/junk.dev               Experimental  ...
+    lp://dev/~launchpad/gnome-terminal/launchpad  New           ...
+    lp://dev/~name12/+junk/junk.dev               Experimental  ...
+
+
+== Person branch summary ==
+
+Each of the person branch listing pages has a brief summary at the
+top of the page with some branch counts.  These also contain the links
+to the registered, owned and subscribed listing pages for a person.
+
+Firstly lets set up a new person with no branches.
+
+    >>> login(ANONYMOUS)
+    >>> eric = factory.makePerson(
+    ...     name="eric", password="test", email="eric@example.com",
+    ...     displayname="Eric the Viking")
+    >>> logout()
+
+If there are no branches, it will say so nicely.
+
+    >>> eric_browser = setupBrowser(auth="Basic eric@example.com:test")
+
+    >>> def open_page_and_print_tag(tag):
+    ...     eric_browser.open('http://code.launchpad.dev/~eric')
+    ...     print extract_text(find_tag_by_id(eric_browser.contents, tag))
+    >>> open_page_and_print_tag('no-branch-message')
+    There are no branches related to Eric the Viking today.
+
+Let's add a branch.
+
+    >>> login(ANONYMOUS)
+    >>> b1 = factory.makeBranch(owner=eric)
+    >>> logout()
+
+The summary is now shown.
+
+    >>> open_page_and_print_tag('page-summary')
+    Related branches: 1 (1 registered, 1 owned, 0 subscribed)
+
+Now we'll create another branch, and subscribe to it.
+
+    >>> login(ANONYMOUS)
+    >>> b2 = factory.makeBranch(owner=eric)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    >>> ignored = b2.subscribe(
+    ...     eric, BranchSubscriptionNotificationLevel.NOEMAIL,
+    ...     None, CodeReviewNotificationLevel.NOEMAIL)
+    >>> logout()
+
+    >>> open_page_and_print_tag('page-summary')
+    Related branches: 2 (2 registered, 2 owned, 1 subscribed)

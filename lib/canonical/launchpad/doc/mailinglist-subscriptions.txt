@@ -4,6 +4,10 @@ Members of a team, either direct or indirect, may subscribe to that team's
 mailing list, if it has one.  To illustrate, we'll first create a bunch of
 people, a team and its team mailing list.
 
+    # login() as an admin so that we can call join() on anyone
+    # and change their mailing list auto-subscription settings.
+    >>> login('foo.bar@canonical.com')
+
     # We'll need this throughout the test script.
     >>> from canonical.launchpad.ftests import syncUpdate
 
@@ -25,9 +29,6 @@ Anne gets two email addresses.  One is her preferred address...
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one, list_one = new_team('team-one', with_list=True)
 
-    # login() as an admin so that we can call IPerson.join() on any
-    # person/team we want.
-    >>> login('foo.bar@canonical.com')
     >>> anne.join(team_one)
     >>> bart.join(team_one)
 
@@ -230,7 +231,6 @@ superteam's mailing list.
     [u'anne.person@example.com', u'bperson@example.org',
      u'cris.person@example.com']
 
-
 However, their mail-list settings for the super-team will remain via a
 MailingListSubscription object.
 
@@ -417,7 +417,7 @@ A list that is not active cannot be subscribed to.
     >>> list_one.subscribe(anne)
     Traceback (most recent call last):
     ...
-    CannotSubscribe: Mailing list is not active: Team One
+    CannotSubscribe: Mailing list is not usable: Team One
 
 
 == Persistence of preferences ==
@@ -560,3 +560,172 @@ subscriptions that use that address are automatically deleted as well.
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     []
+
+
+== Subscription states ==
+
+A user can subscribe to a mailing list only when the list is active (as
+show above), but for purposes of subscription, we also consider lists in
+the MODIFIED, UPDATING, and MOD_FAILED states to be active.  This is
+because the first two states are transitional states, while the latter
+state does not affect the usability of the mailing list.  Thus, if the
+mailing list is usable, then it can be subscribed to.  See above also
+for states in which the list /cannot/ be subscribed to, such as the
+DEACTIVATED state.
+
+    >>> team_eight, list_eight = new_team('team-8', with_list=True)
+    >>> teri = new_person('Teri')
+    >>> teri.join(team_seven)
+
+    # We don't need to test the ACTIVE state, as that's represented above.
+    # However, because 'status' is a protected attribute, we need to unwrap
+    # the security context in order to set it.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.MODIFIED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.UPDATING
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.MOD_FAILED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    >>> list_seven.unsubscribe(teri)
+
+But in other, non-usable states, the mailing list cannot be subscribed
+to.
+
+    # We don't need to test the INACTIVE state, as that's represented above.
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.REGISTERED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.APPROVED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.DECLINED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.CONSTRUCTING
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = MailingListStatus.FAILED
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+    >>> removeSecurityProxy(list_seven).status = (
+    ...     MailingListStatus.DEACTIVATING)
+    >>> syncUpdate(list_seven)
+    >>> list_seven.subscribe(teri)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Mailing list is not usable: Team 7
+
+
+== Subscribing a person to a list gracefully ==
+
+Calling IMailingList.subscribe() directly will always subscribe a
+person, regardless of their mailing list auto-subscription settings,
+and raise errors if there are any problems.  Calling
+IPerson.autoSubscribeToMailingList() will take these settings into account
+and try to recover gracefully from errors.  The method will return a
+True or False value to indicate if the user was subscribed to the list.
+
+    >>> team_eight, list_eight = new_team('team-eight', with_list=True)
+    >>> mary = new_person('Mary', use_default_autosubscribe_policy=True)
+
+Mary is not a member of list-eight, so she will have no problem joining.
+
+    >>> mary.autoSubscribeToMailingList(list_eight)
+    True
+    >>> print list_eight.getSubscription(mary)
+    <security ...MailingListSubscription instance ...>
+
+Subscribing a second time will do nothing.
+
+    >>> mary.autoSubscribeToMailingList(list_eight)
+    False
+
+Subscribing to an inactive list also does nothing.
+
+    >>> team_off, list_off = new_team('team-off', with_list=True)
+    >>> list_off.deactivate()
+    >>> list_off.isUsable()
+    False
+
+    >>> mary.autoSubscribeToMailingList(list_off)
+    False
+
+If a team's mailing list is non-existant, then the method will try to
+recover gracefully.
+
+    >>> team_sans_list = new_team('sans-list', with_list=False)
+    >>> mary.autoSubscribeToMailingList(team_sans_list.mailing_list)
+    False
+
+
+And we can't subscribe someone who does not have a preferred email address.
+
+    >>> qbert = new_person('Qbert', set_preferred_email=False,
+    ...                    use_default_autosubscribe_policy=True)
+    >>> print qbert.preferredemail
+    None
+
+    >>> qbert.autoSubscribeToMailingList(list_eight)
+    False
+
+
+=== Auto-subscription policy settings ===
+
+Mary's auto-subscription settings are taken into account when signing
+up for the list.
+
+    >>> from canonical.launchpad.interfaces.mailinglistsubscription import (
+    ...     MailingListAutoSubscribePolicy)
+    >>> ALWAYS = MailingListAutoSubscribePolicy.ALWAYS
+    >>> ON_REGISTRATION = MailingListAutoSubscribePolicy.ON_REGISTRATION
+    >>> NEVER = MailingListAutoSubscribePolicy.NEVER
+
+By default, new users have a policy to only join a list if they
+explicitly request it.  If someone else adds them to a list, then they
+are only subscribed to the list if their policy is set to 'ALWAYS'.
+
+    >>> kathy = new_person('Kathy', use_default_autosubscribe_policy=True)
+    >>> kathy.mailing_list_auto_subscribe_policy
+    <...ON_REGISTRATION...>
+
+    >>> kathy.autoSubscribeToMailingList(list_eight, requester=mary)
+    False
+
+    >>> kathy.mailing_list_auto_subscribe_policy = ALWAYS
+    >>> kathy.autoSubscribeToMailingList(list_eight, requester=mary)
+    True
+
+Setting the policy to NEVER should be self-explanatory.
+
+    >>> norbert = new_person('Norbert')
+    >>> norbert.mailing_list_auto_subscribe_policy = NEVER
+    >>> norbert.autoSubscribeToMailingList(list_eight)
+    False

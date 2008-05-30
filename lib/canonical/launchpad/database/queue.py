@@ -23,7 +23,6 @@ from sqlobject import (
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
-from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -34,10 +33,11 @@ from canonical.encoding import (
     guess as guess_encoding, ascii_smash)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    SecureBinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
@@ -175,6 +175,7 @@ class PackageUpload(SQLBase):
 
         for build in self.builds:
             # as before, but for QueueBuildAcceptError
+            build.verifyBeforeAccept()
             try:
                 build.checkComponentAndSection()
             except QueueBuildAcceptError, info:
@@ -196,44 +197,6 @@ class PackageUpload(SQLBase):
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
-
-    def _createBuilds(self, pub_source, ignore_pas=False, logger=None,):
-        """Create corresponding Build records for a published source.
-
-        :param pub_source: source publication record ,
-             `ISourcePackagePublishingHistory`;
-        :param ignore_pas: whether or not to initialise and respect
-             Package-architecture-specific (P-a-s) for creating builds;
-        :param logger: optional context Logger object (used on DEBUG level).
-
-        P-a-s should be only initialised and considered when accepting
-        sources to the PRIMARY archive (in drescher). We explicitly ignore
-        P-a-s for sources targeted to PPAs and when accepting NEW sources
-        (acceptFromQueue).
-        """
-        if self.isPPA() or ignore_pas:
-            pas_verify = None
-        else:
-            pas_verify = BuildDaemonPackagesArchSpecific(
-                config.builddmaster.root, self.distroseries)
-
-        if self.isPPA():
-            archs_available = [
-                arch for arch in self.distroseries.ppa_architectures]
-        else:
-            archs_available = self.distroseries.architectures
-
-        build_archs = determineArchitecturesToBuild(
-            pub_source, archs_available, self.distroseries, pas_verify)
-
-        for arch in build_archs:
-            debug(logger,
-                  "Creating PENDING build for %s." % arch.architecturetag)
-            build = pub_source.sourcepackagerelease.createBuild(
-                distroarchseries=arch, archive=self.archive,
-                pocket=self.pocket)
-            build_queue = build.createBuildQueueEntry()
-            build_queue.score()
 
     def _closeBugs(self, changesfile_path, logger=None):
         """Close bugs for a just-accepted source.
@@ -267,7 +230,9 @@ class PackageUpload(SQLBase):
 
         debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-        self._createBuilds(pub_source, logger=logger)
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, self.distroseries)
+        pub_source.createMissingBuilds(pas_verify=pas_verify, logger=logger)
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -283,7 +248,7 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            self._createBuilds(pub_source, ignore_pas=True)
+            pub_source.createMissingBuilds()
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
@@ -371,7 +336,9 @@ class PackageUpload(SQLBase):
             names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
-        return ",".join(names)
+        # Make sure the list items have a whitespace separator so
+        # that they can be wrapped in table cells in the UI.
+        return ", ".join(names)
 
     @cachedproperty
     def displayarchs(self):
@@ -897,6 +864,72 @@ class PackageUpload(SQLBase):
                 extra_headers
             )
 
+    @property
+    def components(self):
+        """See `IPackageUpload`."""
+        existing_components = set()
+        if self.contains_source:
+            existing_components.add(self.sourcepackagerelease.component)
+        else:
+            # For builds we need to iterate through all its binaries
+            # and collect each component.
+            for build in self.builds:
+                for binary in build.build.binarypackages:
+                    existing_components.add(binary.component)
+        return existing_components
+
+    def overrideSource(self, new_component, new_section, allowed_components):
+        """See `IPackageUpload`."""
+        if not self.contains_source:
+            return False
+
+        if new_component is None and new_section is None:
+            # Nothing needs overriding, bail out.
+            return False
+
+        for source in self.sources:
+            if (new_component not in allowed_components or
+                source.sourcepackagerelease.component not in
+                    allowed_components):
+                # The old or the new component is not in the list of
+                # allowed components to override.
+                raise QueueInconsistentStateError(
+                    "No rights to override from %s to %s" % (
+                        source.sourcepackagerelease.component.name,
+                        new_component.name))
+            source.sourcepackagerelease.override(
+                component=new_component, section=new_section)
+
+        return self.sources.count() > 0
+
+    def overrideBinaries(self, new_component, new_section, new_priority,
+                         allowed_components):
+        """See `IPackageUpload`."""
+        if not self.contains_build:
+            return False
+
+        if (new_component is None and new_section is None and
+            new_priority is None):
+            # Nothing needs overriding, bail out.
+            return False
+
+        for build in self.builds:
+            for binarypackage in build.build.binarypackages:
+                if (new_component not in allowed_components or
+                    binarypackage.component not in allowed_components):
+                    # The old or the new component is not in the list of
+                    # allowed components to override.
+                    raise QueueInconsistentStateError(
+                        "No rights to override from %s to %s" % (
+                            binarypackage.component.name,
+                            new_component.name))
+                binarypackage.override(
+                    component=new_component,
+                    section=new_section,
+                    priority=new_priority)
+
+        return self.builds.count() > 0
+
 
 class PackageUploadBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
@@ -915,7 +948,9 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
         for binary in self.build.binarypackages:
-            if binary.component not in distroseries.upload_components:
+            if (not self.packageupload.archive.is_ppa and
+                binary.component not in distroseries.upload_components):
+                # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distroseries.name))
@@ -924,6 +959,31 @@ class PackageUploadBuild(SQLBase):
                     'Section "%s" is not allowed in %s' %
                         (binary.section.name,
                          distroseries.name))
+
+    def verifyBeforeAccept(self):
+        """See `IPackageUploadBuild`."""
+        distribution = self.packageupload.distroseries.distribution
+        known_filenames = []
+        # Check if the uploaded binaries are already published in the archive.
+        for binary_package in self.build.binarypackages:
+            for binary_file in binary_package.files:
+                try:
+                    published_binary = distribution.getFileByName(
+                        binary_file.libraryfile.filename, source=False,
+                        archive=self.packageupload.archive)
+                except NotFoundError:
+                    # Only unknown files are ok.
+                    continue
+
+                known_filenames.append(binary_file.libraryfile.filename)
+
+        # If any of the uploaded files are already present we have a problem.
+        if len(known_filenames) > 0:
+            filename_list = "\n\t%s".join(
+                [filename for filename in known_filenames])
+            raise QueueInconsistentStateError(
+                'The following files are already published in %s:\n%s' % (
+                    self.packageupload.archive.title, filename_list))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""
@@ -941,6 +1001,7 @@ class PackageUploadBuild(SQLBase):
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
+        main_component = getUtility(IComponentSet)['main']
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
@@ -955,10 +1016,16 @@ class PackageUploadBuild(SQLBase):
             for each_target_dar in target_dars:
                 # XXX: dsilvers 2005-10-20 bug=3408:
                 # What do we do about embargoed binaries here?
+                if self.packageupload.archive.is_ppa:
+                    # We override PPA to always publish in the main component.
+                    component = main_component
+                else:
+                    component = binary.component
+
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
-                    component=binary.component,
+                    component=component,
                     section=binary.section,
                     priority=binary.priority,
                     status=PackagePublishingStatus.PENDING,
@@ -967,7 +1034,8 @@ class PackageUploadBuild(SQLBase):
                     embargo=False,
                     archive=self.packageupload.archive
                     )
-                published_binaries.append(sbpph)
+                bpph = BinaryPackagePublishingHistory.get(sbpph.id)
+                published_binaries.append(bpph)
         return published_binaries
 
 
@@ -986,6 +1054,26 @@ class PackageUploadSource(SQLBase):
         dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease'
         )
+
+    def getSourceAncestry(self):
+        """See `IPackageUploadSource`."""
+        primary_archive = self.packageupload.distroseries.main_archive
+        release_pocket = PackagePublishingPocket.RELEASE
+        ancestry_locations = [
+            (self.packageupload.archive, self.packageupload.pocket),
+            (primary_archive, release_pocket),
+            ]
+
+        ancestry = None
+        for archive, pocket in ancestry_locations:
+            ancestries = archive.getPublishedSources(
+                name=self.sourcepackagerelease.name, pocket=pocket,
+                exact_match=True)
+            if ancestries.count() == 0:
+                continue
+            ancestry = ancestries[0]
+            break
+        return ancestry
 
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
@@ -1047,7 +1135,9 @@ class PackageUploadSource(SQLBase):
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
-        if component not in distroseries.upload_components:
+        if (not self.packageupload.archive.is_ppa and
+            component not in distroseries.upload_components):
+            # Only complain about non-PPA uploads.
             raise QueueSourceAcceptError(
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distroseries.name))
@@ -1068,16 +1158,23 @@ class PackageUploadSource(SQLBase):
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
-        return SecureSourcePackagePublishingHistory(
+        if self.packageupload.archive.is_ppa:
+            # We override PPA to always publish in the main component.
+            component = getUtility(IComponentSet)['main']
+        else:
+            component = self.sourcepackagerelease.component
+
+        sspph = SecureSourcePackagePublishingHistory(
             distroseries=self.packageupload.distroseries,
             sourcepackagerelease=self.sourcepackagerelease,
-            component=self.sourcepackagerelease.component,
+            component=component,
             section=self.sourcepackagerelease.section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.packageupload.pocket,
             embargo=False,
             archive=self.packageupload.archive)
+        return SourcePackagePublishingHistory.get(sspph.id)
 
 
 class PackageUploadCustom(SQLBase):

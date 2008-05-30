@@ -1,45 +1,82 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""A global pipeline handler for moderating Launchpad users.
-
-The normal Mailman moderation handler isn't really sufficient to work with
-Launchpad users.  We need to check things like personal standing in order to
-determine whether non-members are allowed to post to a mailing list.
+"""A pipeline handler for holding list non-members postings for approval.
 """
 
-import socket
 import xmlrpclib
 
+from email.Utils import formatdate, make_msgid
+
+# pylint: disable-msg=F0401
+from Mailman import Errors
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
 
 
 def process(mlist, msg, msgdata):
-    """Check the standing of a non-Launchpad member.
+    """Handle all list non-member postings.
 
-    A message posted to a mailing list from a Launchpad member in good
-    standing is allowed onto the list even if they are not members of the
-    list.
-
-    Because this handler comes before the standard Moderate handler, if the
-    sender is not in good standing, we just defer to other decisions further
-    along the pipeline.  If the sender is in good standing, we approve it.
+    For Launchpad members who are not list-members, a previous handler will
+    check their personal standing to see if they are allowed to post.  This
+    handler takes care of all other cases and it overrides Mailman's standard
+    Moderate handler.  It also knows how to hold messages in Launchpad's
+    librarian.
     """
+    # If the message is already approved, then this handler is done.
+    if msgdata.get('approved'):
+        return
+    # If the sender is a member of the mailing list, then this handler is
+    # done.  Note that we don't need to check the member's Moderate flag as
+    # the original Mailman handler does, because for Launchpad, we know it
+    # will always be unset.
+    for sender in msg.get_senders():
+        if mlist.isMember(sender):
+            return
+    # From here on out, we're dealing with senders who are not members of the
+    # mailing list.  They are also not Launchpad members in good standing or
+    # we'd have already approved the message.  So now the message must be held
+    # in Launchpad for approval via the LP u/i.
     sender = msg.get_sender()
-    # Ask Launchpad about the standing of this member.
-    in_good_standing = False
+    # Hold the message in Mailman too so that it's easier to resubmit it after
+    # approval via the LP u/i.  If the team administrator ends up rejecting
+    # the message, it will also be easy to discard it on the Mailman side.
+    # But this way, we don't have to reconstitute the message from the
+    # librarian if it gets approved.   However, unlike the standard Moderate
+    # handler, we don't craft all the notification messages about this hold.
+    # We also need to keep track of the message-id (which better be unique)
+    # because that's how we communicate about the message's status.
+    request_id = mlist.HoldMessage(msg, 'Not subscribed', msgdata)
+    # This is a hack because by default Mailman cannot look up held messages
+    # by message-id.  This works because Mailman's persistency layer simply
+    # pickles the MailList object, mostly without regard to a known schema.
+    assert mlist.Locked(), (
+        'Mailing list should be locked: %s', mlist.internal_name())
+    # For lists that were created before first-post moderation landed, add the
+    # mapping between message-ids and request-ids.
+    holds = getattr(mlist, 'held_message_ids', None)
+    if holds is None:
+        holds = mlist.held_message_ids = {}
+    message_id = msg.get('message-id')
+    if message_id is None:
+        msg['Message-ID'] = message_id = make_msgid()
+    if message_id in holds:
+        # No legitimate sender should ever give us a message with a duplicate
+        # message id, so treat this as spam.
+        syslog('vette',
+               'Discarding duplicate held message-id: %s', message_id)
+        raise Errors.DiscardMessage
+    holds[message_id] = request_id
+    # In addition to Message-ID, the librarian requires a Date header.
+    if msg.get('date') is None:
+        msg['Date'] = formatdate()
+    # Store the message in the librarian.
     proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
-    try:
-        # If an exception occurs here, say because we can't talk to Launchpad,
-        # the message will end up in the normal moderation queue, held for
-        # approval by the team owner.  This will be done by handlers further
-        # along in the pipeline.
-        in_good_standing = proxy.inGoodStanding(sender)
-    except (xmlrpclib.ProtocolError, socket.error), error:
-        syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
-    except xmlrpclib.Fault, error:
-        syslog('xmlrpc', 'Launchpad exception: %s', error)
-    # If the sender is a member in good standing, that's all we need to know
-    # in order to let the message pass.
-    if in_good_standing:
-        msgdata['approved'] = True
+    # This will fail if we can't talk to Launchpad.  That's okay though
+    # because Mailman's IncomingRunner will re-queue the message and re-start
+    # processing at this handler.
+    proxy.holdMessage(mlist.internal_name(), msg.as_string())
+    syslog('vette', 'Holding message for LP approval: %s', message_id)
+    # Raise this exception, signaling to the incoming queue runner that it is
+    # done processing this message, and should not send it through any further
+    # handlers.
+    raise Errors.HoldMessage

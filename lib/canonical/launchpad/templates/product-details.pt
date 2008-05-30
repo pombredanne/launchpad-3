@@ -10,7 +10,7 @@
       <th>Status:</th>
       <td>
         <ul>
-          <li tal:condition="context/reviewed">Reviewed</li>
+          <li tal:condition="context/license_reviewed">License reviewed</li>
           <li tal:condition="context/active">Active</li>
           <li tal:condition="not: context/active">Disabled</li>
           <li tal:condition="context/official_codehosting">Uses Code</li>
@@ -57,14 +57,14 @@
       <td tal:condition="not:context/driver">Not yet assigned</td>
     </tr>
     <tr>
-      <th>Bug contact:</th>
-      <td tal:condition="context/bugcontact">
+      <th>Bug supervisor:</th>
+      <td tal:condition="context/bug_supervisor">
         <a
-          tal:attributes="href context/bugcontact/fmt:url"
-          tal:content="context/bugcontact/browsername"
+          tal:attributes="href context/bug_supervisor/fmt:url"
+          tal:content="context/bug_supervisor/browsername"
         >foo bar</a>
       </td>
-      <td tal:condition="not:context/bugcontact">Not yet assigned</td>
+      <td tal:condition="not:context/bug_supervisor">Not yet assigned</td>
     </tr>
     <tr>
       <th>Security contact:</th>

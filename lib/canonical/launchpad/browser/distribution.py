@@ -42,9 +42,9 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IDistributionMirrorSet, IDistributionSet, 
-    IDistribution, ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet,
-    MirrorContent, MirrorSpeed, NotFoundError)
+    DistroSeriesStatus, IArchiveSet, IDistributionMirrorSet,
+    IDistributionSet, IDistribution, ILaunchBag, ILaunchpadCelebrities,
+    IPublishedPackageSet, MirrorContent, MirrorSpeed, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -199,7 +199,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'upload_admin', 'ppas', 'subscribe']
+             'ppas', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -278,12 +278,6 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+selectmemberteam', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def upload_admin(self):
-        text = 'Change upload manager'
-        summary = 'Someone with permission to manage uploads'
-        return Link('+uploadadmin', text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def mirror_admin(self):
         text = 'Change mirror admins'
         enabled = self.context.full_functionality
@@ -326,16 +320,16 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['bugcontact', 'securitycontact', 'cve_list']
+    links = ['bugsupervisor', 'securitycontact', 'cve']
 
-    def cve_list(self):
+    def cve(self):
         text = 'CVE reports'
         return Link('+cve', text, icon='cve')
 
     @enabled_with_permission('launchpad.Edit')
-    def bugcontact(self):
-        text = 'Change bug contact'
-        return Link('+bugcontact', text, icon='edit')
+    def bugsupervisor(self):
+        text = 'Change bug supervisor'
+        return Link('+bugsupervisor', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
@@ -479,6 +473,12 @@ class DistributionPPASearchView(LaunchpadView):
         self.name_filter = self.request.get('name_filter')
         self.show_inactive = self.request.get('show_inactive')
 
+    @property
+    def search_results(self):
+        """Process search form request."""
+        if self.name_filter is None:
+            return None
+
         # Preserve self.show_inactive state because it's used in the
         # template and build a boolean field to be passed for
         # searchPPAs.
@@ -489,20 +489,53 @@ class DistributionPPASearchView(LaunchpadView):
             user=self.user)
 
         self.batchnav = BatchNavigator(ppas, self.request)
-        self.search_results = self.batchnav.currentBatch()
+        return self.batchnav.currentBatch()
+
+    @property
+    def number_of_registered_ppas(self):
+        """The number of archives with PPA purpose.
+
+        It doesn't include private PPAs.
+        """
+        return self.context.searchPPAs(show_inactive=True).count()
+
+    @property
+    def number_of_active_ppas(self):
+        """The number of PPAs with at least one source publication.
+
+        It doesn't include private PPAs.
+        """
+        return self.context.searchPPAs(show_inactive=False).count()
+
+    @property
+    def number_of_ppa_sources(self):
+        """The number of sources published across all PPAs."""
+        return getUtility(IArchiveSet).number_of_ppa_sources
+
+    @property
+    def number_of_ppa_binaries(self):
+        """The number of binaries published across all PPAs."""
+        return getUtility(IArchiveSet).number_of_ppa_binaries
+
+    @property
+    def latest_ppa_source_publications(self):
+        """Return the last 5 sources publication in the context PPAs."""
+        archive_set = getUtility(IArchiveSet)
+        return archive_set.getLatestPPASourcePublicationsForDistribution(
+            distribution=self.context)
+
+    @property
+    def most_active_ppas(self):
+        """Return the last 5 most active PPAs."""
+        archive_set = getUtility(IArchiveSet)
+        return archive_set.getMostActivePPAsForDistribution(
+            distribution=self.context)
 
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
         results = self.context.getSourcePackageCaches()
         self.batchnav = BatchNavigator(results, self.request)
-
-
-class DistributionRedirectingEditView(SQLObjectEditView):
-    """A deprecated view to be used by the +driver and +uploadadmin pages."""
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class DistributionBrandingView(BrandingChangeView):

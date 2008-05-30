@@ -78,6 +78,23 @@ followed by a description of the action that caused the entry to be created.
     >>> p.hide_email_addresses
     True
 
+Since this person has chosen to hide his email addresses they won't be visible
+to other users which are not admins.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(email.email)
+    >>> check_permission('launchpad.View', email)
+    True
+
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.View', email)
+    False
+
+    >>> login('guilherme.salgado@canonical.com')
+    >>> check_permission('launchpad.View', email)
+    True
+    >>> login(ANONYMOUS)
+
 By default, newly created Person entries will have AccountStatus.NOACCOUNT as
 their account_status.  This is only changed if/when we turn that entry into an
 actual user account. (Currently, we assume that a Person entry is turned into
@@ -108,6 +125,15 @@ can be used only for people and the former only for teams)
     >>> shipit_admins.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
+Unlike people, teams don't need a contact address, so we can pass None
+to setContactAddress() to leave a team without a contact address.
+
+    >>> shipit_admins.setContactAddress(None)
+    >>> email.status
+    <DBItem EmailAddressStatus.VALIDATED...
+    >>> print shipit_admins.preferredemail
+    None
+
 When a new sourcepackage is imported and a Person entry has to be created
 because we don't know about the maintainer of that package, the code to create
 the person should look like this:
@@ -120,32 +146,21 @@ the person should look like this:
     >>> person.creation_comment
     u'when the ed package was imported into Ubuntu Breezy'
 
+Checking .is_valid_person issues a DB query to the
+ValidPersonOrTeamCache, unless it's already been cached. To avoid many
+small queries when checking whether a lot of people are valid,
+getValidPersons() can be used. This is useful for filling the ORM
+cache, so that code in other places can check .is_valid_person, without
+it issuing a DB query.
 
-In case of failure of creating a new person or email the method returns
-(None, None). Let's demonstrate this trying to create a person with
-an invalid email.
-
-    >>> p2, invalid_email = personset.createPersonAndEmail(
-    ...     'test#canonical.com', PersonCreationRationale.UNKNOWN)
-    >>> p2, invalid_email
-    (None, None)
-
-And now with the same name of a existing account
-
-    >>> p3, invalid_email = personset.createPersonAndEmail(
-    ...     'randomemail@randomhost.com', PersonCreationRationale.UNKNOWN,
-    ...     name='name12')
-    >>> p3, invalid_email
-    (None, None)
-
-    >>> vcs_imports = personset.getByName('vcs-imports')
-    >>> vcs_imports.teamowner is None
+    >>> non_valid_person = person
+    >>> non_valid_person.is_valid_person
     False
-    >>> vcs_imports.is_valid_person # Not valid person because it is a team
-    False
-    >>> lifeless = personset.getByName('lifeless')
-    >>> lifeless.teamowner is None
+    >>> foobar.is_valid_person
     True
+    >>> valid_persons = personset.getValidPersons([non_valid_person, foobar])
+    >>> [person.name for person in valid_persons]
+    [u'name16']
 
 
 === Personal standing ===
@@ -156,6 +171,7 @@ It's a form of automatic moderation.  Most people have unknown standing,
 which is the default.
 
     >>> login('foo.bar@canonical.com')
+    >>> lifeless = personset.getByName('lifeless')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
 
@@ -281,6 +297,26 @@ account_status will always be NOACCOUNT.
     <DBItem AccountStatus.NOACCOUNT...
 
 
+=== Creating teams ===
+
+Teams are created by the IPersonSet.newTeam() method, which takes the team
+owner and some of the team's details, returning the newly created team.
+
+    >>> new_team = personset.newTeam(ddaa, 'new-team', 'Just a new team')
+    >>> new_team.name
+    u'new-team'
+    >>> new_team.teamowner.name
+    u'ddaa'
+
+If the given name is already in use by another team/person, an exception is
+raised.
+
+    >>> personset.newTeam(ddaa, 'ddaa', 'Just a new team')
+    Traceback (most recent call last):
+    ...
+    NameAlreadyTaken:...
+
+
 === Turning people into teams ===
 
 Launchpad may create Person entries automatically and it always assumes
@@ -400,7 +436,7 @@ We can also iterate over the TeamMemberships themselves, which is useful
 when we want to display details about them rather than just the member.
 
     >>> [(membership.person.displayname, membership.status.name)
-    ...  for membership in landscape_devs.getActiveMemberships()]
+    ...  for membership in landscape_devs.member_memberships]
     [(u'Guilherme Salgado', 'APPROVED'), (u'Sample Person', 'ADMIN')]
     >>> [(membership.person.displayname, membership.status.name)
     ...  for membership in landscape_devs.getInvitedMemberships()]
@@ -419,6 +455,7 @@ when checking permissions.
 
     >>> ddaa.is_valid_person
     True
+    >>> vcs_imports = personset.getByName('vcs-imports')
     >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
     True
 
@@ -542,11 +579,11 @@ list is actually sorted by date joined.
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
     >>> for membership in membership_list:
     ...     print membership.datejoined
+    2008-05-14 12:07:14.227450+00:00
     2007-01-17 14:13:39.692693+00:00
     2006-05-15 22:23:29.062603+00:00
     2005-10-13 13:03:41.668724+00:00
     2005-07-12 14:36:09.587753+00:00
-    2005-04-14 00:00:00+00:00
 
 == Deactivating user accounts ==
 
@@ -567,8 +604,9 @@ spec to be reassigned.
     >>> flush_database_updates()
 
     >>> [membership.team.name for membership in foobar.myactivememberships]
-    [u'guadamen', u'admins', u'launchpad-buildd-admins', u'launchpad',
-     u'testing-spanish-team', u'name18', u'ubuntu-team', u'vcs-imports']
+    [u'canonical-partner-dev', u'guadamen', u'admins',
+     u'launchpad-buildd-admins', u'launchpad', u'testing-spanish-team',
+     u'name18', u'ubuntu-team', u'vcs-imports']
     >>> [email.email for email in foobar.validatedemails]
     []
     >>> foobar.name
@@ -732,8 +770,7 @@ them as well.
     
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> dave = personset.getByName('justdave')
-    >>> login('dave.miller@ubuntulinux.com')
-    >>> dave.account_status = AccountStatus.DEACTIVATED
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> flush_database_updates()
     >>> list(personset.findPerson('dave'))
     []
@@ -743,7 +780,7 @@ them as well.
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
-    >>> dave.account_status = AccountStatus.ACTIVE
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.ACTIVE
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
@@ -789,14 +826,10 @@ question to any PPA.
     >>> for sprelease in sabdfl.getLatestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.upload_distroseries.fullseriesname,
     ...            sprelease.version)
-    (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
-    (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
-    (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
-    (u'at', u'Ubuntu Hoary', u'0.00')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
@@ -809,7 +842,6 @@ question to any PPA.
     ...            sprelease.upload_archive.owner.name,
     ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'sabdfl', u'Ubuntu Warty')
-    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
 We will change modify the first SourcePackageRelease to reproduce the
 issue mentioned in bug 157303, where source with same creator and
@@ -829,7 +861,6 @@ maintainer got omitted from the results:
     ...            sprelease.upload_archive.owner.name,
     ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
-    (u'iceweasel', u'1.0', u'sabdfl', u'name16', u'no-priv', u'Ubuntu Warty')
 
 
 == Pillars owned or driven by a person or team ==

@@ -102,6 +102,7 @@ class IPublishing(Interface):
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
     displayname = Attribute("Text representation of the current record.")
+    age = Attribute("Age of the publishing record.")
 
     def publish(diskpool, log):
         """Publish or ensure contents of this publish record
@@ -322,11 +323,26 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "a specific distroseries")
 
     def getPublishedBinaries():
-        """Return all resulted IBinaryPackagePublishingHistory.
+        """Return all resulted `IBinaryPackagePublishingHistory`.
 
-        Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchSeries in this DistroSeries and in the same
-        Pocket, ordered by architecturetag.
+        Follow the build record and return every PUBLISHED or PENDING
+        binary publishing record for any `DistroArchSeries` in this
+        `DistroSeries` and in the same `IArchive` and Pocket, ordered
+        by architecture tag.
+
+        :return: a `SelectResults` pointing to all corresponding publishing
+            records.
+        """
+
+    def getBuiltBinaries():
+        """Return all unique binary publications built by this source.
+
+        Follow the build record and return every unique binary publishing
+        record for any `DistroArchSeries` in this `DistroSeries` and in
+        the same `IArchive` and Pocket.
+
+        :return: a list containing all unique
+            `IBinaryPackagePublishingHistory`.
         """
 
     def getBuilds():
@@ -335,11 +351,30 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         The builds are ordered by `DistroArchSeries.architecturetag`.
         """
 
+    def createMissingBuilds(architectures_available=None, pas_verify=None,
+                            logger=None):
+        """Create missing Build records for a published source.
+
+        P-a-s should be used when accepting sources to the PRIMARY archive
+        (in drescher). It explicitly ignores given P-a-s for sources
+        targeted to PPAs.
+
+        :param architectures_available: options list of `DistroArchSeries`
+            that should be considered for build creation; if not given
+            it will be calculated in place, all architectures for the
+            context distroseries with available chroot.
+        :param pas_verify: optional Package-architecture-specific (P-a-s)
+            object, to be used, when convinient, for creating builds;
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        :return: a list of `Builds` created for this source publication.
+        """
+
     def getSourceAndBinaryLibraryFiles():
         """Return LibraryFileAlias records for all source and binaries.
 
-        All the published source and binary files associated with this
-        source publishing are returned as LibraryFileAlias records.
+        All the source files and all binary files ever published to the
+        same archive context are returned as LibraryFileAlias records.
         """
 
     def changeOverride(new_component=None, new_section=None):

@@ -130,7 +130,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.value, 'error message')
         # XXX jamesh 2005-11-30:
         # this should probably convert back to a datetime
-        self.assertEqual(entry.time, '2005-04-01T00:00:00+00:00')
+        self.assertEqual(entry.time, datetime.datetime(2005, 4, 1))
         self.assertEqual(entry.pageid, 'IFoo:+foo-template')
         self.assertEqual(entry.tb_text, 'traceback-text')
         self.assertEqual(entry.username, 'Sample User')
@@ -151,28 +151,64 @@ class TestErrorReportingUtility(unittest.TestCase):
     def setUp(self):
         # ErrorReportingUtility reads the global config to get the
         # current error directory.
-        self.saved_errordir = config.launchpad.errorreports.errordir
-        config.launchpad.errorreports.errordir = tempfile.mkdtemp()
-        shutil.rmtree(config.launchpad.errorreports.errordir,
-                      ignore_errors=True)
-        self.current_copy_to_zlog = (
-            config.launchpad.errorreports.copy_to_zlog)
-        config.launchpad.errorreports.copy_to_zlog = True
+        test_data = dedent("""
+            [error_reports]
+            copy_to_zlog: true
+            error_dir: %s
+            """ % tempfile.mkdtemp())
+        config.push('test_data', test_data)
+        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
 
     def tearDown(self):
-        shutil.rmtree(config.launchpad.errorreports.errordir,
-                      ignore_errors=True)
-
-        config.launchpad.errorreports.copy_to_zlog = (
-            self.current_copy_to_zlog)
-        config.launchpad.errorreports.errordir = self.saved_errordir
+        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
+        test_config_data = config.pop('test_data')
         reset_logging()
+
+    def test_configure(self):
+        """Test ErrorReportingUtility.setConfigSection()."""
+        utility = ErrorReportingUtility()
+        # The ErrorReportingUtility uses the config.error_reports section
+        # by default.
+        self.assertEqual(config.error_reports.oops_prefix, utility.prefix)
+        self.assertEqual(config.error_reports.error_dir, utility.error_dir)
+        self.assertEqual(
+            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
+        # Some external processes may use another config section to
+        # provide the error log configuration.
+        utility.configure(section_name='branchscanner')
+        self.assertEqual(config.branchscanner.oops_prefix, utility.prefix)
+        self.assertEqual(config.branchscanner.error_dir, utility.error_dir)
+        self.assertEqual(
+            config.branchscanner.copy_to_zlog, utility.copy_to_zlog)
+
+        # The default error section can be restored.
+        utility.configure()
+        self.assertEqual(config.error_reports.oops_prefix, utility.prefix)
+        self.assertEqual(config.error_reports.error_dir, utility.error_dir)
+        self.assertEqual(
+            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
+
+    def test_setOopsToken(self):
+        """Test ErrorReportingUtility.setOopsToken()."""
+        utility = ErrorReportingUtility()
+        default_prefix = config.error_reports.oops_prefix
+        self.assertEqual('T', default_prefix)
+        self.assertEqual('T', utility.prefix)
+
+        # Some scripts will append a string token to the prefix.
+        utility.setOopsToken('CW')
+        self.assertEqual('TCW', utility.prefix)
+
+        # Some scripts run multiple processes and append a string number
+        # to the prefix.
+        utility.setOopsToken('1')
+        self.assertEqual('T1', utility.prefix)
 
     def test_newOopsId(self):
         """Test ErrorReportingUtility.newOopsId()"""
         utility = ErrorReportingUtility()
 
-        errordir = config.launchpad.errorreports.errordir
+        errordir = config.error_reports.error_dir
 
         # first oops of the day
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
@@ -204,14 +240,19 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(
             utility.lasterrordir, os.path.join(errordir, '2006-04-02'))
 
-        # another oops with a naiive datetime
+        # The oops_prefix honours setOopsToken().
+        utility.setOopsToken('XXX')
+        oopsid, filename = utility.newOopsId(now)
+        self.assertEqual(oopsid, 'OOPS-92TXXX2')
+
+        # Another oops with a native datetime.
         now = datetime.datetime(2006, 04, 02, 00, 30, 00)
         self.assertRaises(ValueError, utility.newOopsId, now)
 
     def test_changeErrorDir(self):
         """Test changing the error dir using the global config."""
         utility = ErrorReportingUtility()
-        errordir = config.launchpad.errorreports.errordir
+        errordir = utility.error_dir
 
         # First an oops in the original error directory.
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
@@ -220,11 +261,10 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(
             utility.lasterrordir, os.path.join(errordir, '2006-04-01'))
 
-        # ErrorReportingUtility reads the global config to get the
-        # current error directory.
-        old_errordir = config.launchpad.errorreports.errordir
+        # ErrorReportingUtility uses the error_dir attribute to
+        # get the current error directory.
         new_errordir = tempfile.mkdtemp()
-        config.launchpad.errorreports.errordir = new_errordir
+        utility.error_dir = new_errordir
 
         # Now an oops on the same day, in the new directory.
         now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
@@ -238,13 +278,12 @@ class TestErrorReportingUtility(unittest.TestCase):
             utility.lasterrordir, os.path.join(new_errordir, '2006-04-01'))
 
         shutil.rmtree(new_errordir, ignore_errors=True)
-        config.launchpad.errorreports.errordir = old_errordir
 
     def test_findLastOopsId(self):
         """Test ErrorReportingUtility._findLastOopsId()"""
         utility = ErrorReportingUtility()
 
-        self.assertEqual(config.launchpad.errorreports.oops_prefix, 'T')
+        self.assertEqual(config.error_reports.oops_prefix, 'T')
 
         errordir = utility.errordir()
         # write some files

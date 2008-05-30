@@ -16,7 +16,8 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:portlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="user_can_edit_memberships context/required:launchpad.Edit">
 
   <h1>Members of
     &#8220;<span tal:replace="context/browsername" />&#8221;
@@ -44,12 +45,12 @@
             <th>Member since</th>
             <th>Expires</th>
             <th>Status</th>
-            <th tal:condition="context/required:launchpad.Edit">&nbsp;</th>
+            <th tal:condition="user_can_edit_memberships">&nbsp;</th>
           </tr>
         </thead>
 
         <tbody>
-          <tr tal:repeat="membership context/getActiveMemberships">
+          <tr tal:repeat="membership context/member_memberships">
             <tal:block define="member membership/person">
               <td>
                 <a tal:attributes="href member/fmt:url"
@@ -77,7 +78,7 @@
                 </span>
               </td>
               <td tal:content="membership/status/title"></td>
-              <td tal:condition="context/required:launchpad.Edit">
+              <td tal:condition="user_can_edit_memberships">
                 <a tal:attributes="href membership/fmt:url"
                   ><img src="/@@/edit"
                         title="Change membership duration or status" /></a>
@@ -177,7 +178,7 @@
                     2005-06-14
                   </span>
                 </td>
-              <td tal:condition="context/required:launchpad.Edit">
+              <td tal:condition="user_can_edit_memberships">
                 <a tal:attributes="href membership/fmt:url"
                   ><img src="/@@/edit"
                         title="Change membership duration or status" /></a>
@@ -187,7 +188,7 @@
           </tbody>
         </table>
 
-        <ul class="edit" tal:condition="context/required:launchpad.Edit">
+        <ul class="edit" tal:condition="user_can_edit_memberships">
           <li>
             <a href="+editproposedmembers"
             >Approve or decline members</a>
@@ -232,7 +233,7 @@
             <td
               tal:condition="not: membership/isExpired"
               tal:content="membership/status/title" />
-            <td tal:condition="context/required:launchpad.Edit">
+            <td tal:condition="user_can_edit_memberships">
               <a tal:attributes="href membership/fmt:url"
                 ><img src="/@@/edit"
                       title="Change membership duration or status" /></a>

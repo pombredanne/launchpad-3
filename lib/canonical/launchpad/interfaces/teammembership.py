@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CyclicalTeamMembershipError',
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
     'ITeamMembership',
     'ITeamMembershipSet',
@@ -13,10 +14,13 @@ __all__ = [
     'TeamMembershipStatus',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text
+from zope.schema import Choice, Datetime, Int, Object, Text
 from zope.interface import Attribute, Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.rest.declarations import (
+   export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
 
@@ -89,27 +93,36 @@ class TeamMembershipStatus(DBEnumeratedType):
 
 class ITeamMembership(Interface):
     """TeamMembership for Users"""
+    export_as_webservice_entry()
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("Team"), required=True, readonly=False)
-    person = Int(title=_("Member"), required=True, readonly=False)
     # Can't use Object(schema=IPerson) here because that would cause circular
-    # imports.
+    # imports, so we use schema=Interface here and override it in
+    # interfaces/person.py.
+    team = exported(
+        Reference(title=_("Team"), required=True, readonly=False,
+                  schema=Interface))
+    person = exported(
+        Reference(title=_("Member"), required=True, readonly=False,
+                  schema=Interface),
+        exported_as='member')
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
         _("The team admin who approved/rejected the member."))
     acknowledged_by = Attribute(
         _('The person (usually the member or someone acting on his behalf) '
           'that acknowledged (accepted/declined) a membership invitation.'))
-    last_changed_by = Attribute(_('Last person who change this'))
+    last_changed_by = exported(
+        Object(title=_('Last person who change this'), schema=Interface))
 
-    datejoined = Datetime(
-        title=_("Date joined"), required=False, readonly=True,
-        description=_(
-            "The date in which this membership was made active for the "
-            "first time."))
-    dateexpires = Datetime(
-        title=_("Date expires"), required=False, readonly=False)
+    datejoined = exported(
+        Datetime(title=_("Date joined"), required=False, readonly=True,
+                 description=_("The date in which this membership was made "
+                               "active for the first time.")),
+        exported_as='date_joined')
+    dateexpires = exported(
+        Datetime(title=_("Date expires"), required=False, readonly=False),
+        exported_as='date_expires')
     date_created = Datetime(
         title=_("Date created"), required=False, readonly=True,
         description=_("The date in which this membership was created."))
@@ -128,17 +141,18 @@ class ITeamMembership(Interface):
         title=_("Date last changed"), required=False, readonly=True,
         description=_("The date in which this membership was last changed."))
 
-    last_change_comment = Text(
-        title=_("Comment on the last change"), required=False, readonly=True)
+    last_change_comment = exported(
+        Text(title=_("Comment on the last change"), required=False,
+             readonly=True))
     proponent_comment = Text(
         title=_("Proponent comment"), required=False, readonly=True)
     acknowledger_comment = Text(
         title=_("Acknowledger comment"), required=False, readonly=True)
     reviewer_comment = Text(
         title=_("Reviewer comment"), required=False, readonly=True)
-    status = Choice(
-        title=_("The state of this membership"), required=True,
-        readonly=True, vocabulary=TeamMembershipStatus)
+    status = exported(
+        Choice(title=_("The state of this membership"), required=True,
+               readonly=True, vocabulary=TeamMembershipStatus))
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
@@ -253,3 +267,12 @@ class ITeamParticipation(Interface):
     team = Int(title=_("The team"), required=True, readonly=False)
     person = Int(title=_("The member"), required=True, readonly=False)
 
+
+class CyclicalTeamMembershipError(Exception):
+    """A change resulting in a team membership cycle was attempted.
+
+    Two teams cannot be members of each other and there cannot be
+    any cyclical relationships.  So if A is a member of B and B is
+    a member of C then attempting to make C a member of A will
+    result in this error being raised.
+    """    

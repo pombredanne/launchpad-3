@@ -8,7 +8,18 @@ the individual resources.
 
 An attempt to access a nonexistent resource yields a 404 error.
 
-  >>> print webservice.get("/no-such-resource")
+  >>> print webservice.get("/beta/no-such-resource")
+  HTTP/1.1 404 Not Found
+  ...
+
+An attempt to access an existing resource without versioning the URL
+yields a 404 error.
+
+  >>> print webservice.get("/people")
+  HTTP/1.1 404 Not Found
+  ...
+
+  >>> print webservice.get("/")
   HTTP/1.1 404 Not Found
   ...
 
@@ -18,27 +29,27 @@ An attempt to access a nonexistent resource yields a 404 error.
 An attempt to use an unsupported or nonexistent HTTP method on a
 resource yields a 405 error.
 
-  >>> print webservice("/", method="COPY")
+  >>> print webservice("/beta/", method="COPY")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET HEAD POST PATCH PUT DELETE OPTIONS
   ...
 
-  >>> print webservice.delete("/bugs")
+  >>> print webservice.delete("/beta/bugs")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET
   ...
 
-  >>> print webservice.delete("/people")
+  >>> print webservice.delete("/beta/people")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET POST
   ...
 
-  >>> print webservice.delete("/~salgado")
+  >>> print webservice.delete("/beta/~salgado")
   HTTP/1.1 405 Method Not Allowed
-  Allow: GET PUT PATCH
+  Allow: GET POST PUT PATCH
   ...
 
-  >>> print webservice.delete("/debian/+source/mozilla-firefox/+bug/1")
+  >>> print webservice.delete("/beta/debian/+source/mozilla-firefox/+bug/1")
   HTTP/1.1 405 Method Not Allowed
   Allow: GET POST PUT PATCH
   ...
@@ -49,7 +60,7 @@ resource yields a 405 error.
 An attempt to PATCH a document with unsupported media type to a
 resource yields a 415 error.
 
-  >>> print webservice.patch("/~salgado", 'text/plain', "Foo")
+  >>> print webservice.patch("/beta/~salgado", 'text/plain', "Foo")
   HTTP/1.1 415 Unsupported Media Type
   ...
 
@@ -59,7 +70,7 @@ resource yields a 415 error.
 Soyuz build set (exposed on the web at +builds) are not available on the
 web service:
 
-    >>> print webservice.get("/+builds")
+    >>> print webservice.get("/beta/+builds")
     HTTP/1.1 404 Not Found
     ...
 

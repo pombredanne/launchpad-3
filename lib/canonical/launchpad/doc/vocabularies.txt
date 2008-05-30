@@ -7,7 +7,7 @@ Vocabularies are lists of terms. In Launchpad's Component Architecture
 style widget) "speaks", i.e., its allowed values.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IOpenLaunchBag, IProductSet, IProjectSet)
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -319,9 +319,11 @@ All the teams the person is an active member of.
     >>> person_active_membership = vocabulary_registry.get(
     ...     foo_bar, 'PersonActiveMembership')
     >>> len(person_active_membership)
-    8
+    9
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
+    canonical-partner-dev Canonical Partner Developers
+        Canonical Partner Developers
     guadamen GuadaMen GuadaMen
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
@@ -342,21 +344,38 @@ The PersonActiveMembership vocabulary only shows teams where the
 membership is public.
 
     >>> from canonical.launchpad.interfaces import PersonVisibility
-    >>> launchpad_team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-    >>> vcs_imports = person_set.getByName('vcs-imports')
-    >>> vcs_imports.visibility = PersonVisibility.PRIVATE
+    >>> otherteam = person_set.getByName('otherteam')
+    >>> otherteam.addMember(foo_bar, foo_bar)
 
+    >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
+    canonical-partner-dev Canonical Partner Developers
+        Canonical Partner Developers
     guadamen GuadaMen GuadaMen
     admins Launchpad Administrators Launchpad Administrators
     launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
+    launchpad Launchpad Developers Launchpad Developers
     testing-spanish-team testing Spanish team testing Spanish team
     name18 Ubuntu Gnome Team Ubuntu Gnome Team
     ubuntu-team Ubuntu Team Ubuntu Team
+    vcs-imports VCS imports VCS imports
 
-    >>> launchpad_team.visibility = PersonVisibility.PUBLIC
-    >>> vcs_imports.visibility = PersonVisibility.PUBLIC
+
+    >>> otherteam.visibility = PersonVisibility.PUBLIC
+    >>> for term in person_active_membership:
+    ...     print term.token, term.value.displayname, term.title
+    canonical-partner-dev Canonical Partner Developers
+        Canonical Partner Developers
+    guadamen GuadaMen GuadaMen
+    admins Launchpad Administrators Launchpad Administrators
+    launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
+    launchpad Launchpad Developers Launchpad Developers
+    otherteam Other Team Other Team
+    testing-spanish-team testing Spanish team testing Spanish team
+    name18 Ubuntu Gnome Team Ubuntu Gnome Team
+    ubuntu-team Ubuntu Team Ubuntu Team
+    vcs-imports VCS imports VCS imports
 
     >>> term = person_active_membership.getTerm(launchpad_team)
     >>> print term.token, term.value.displayname, term.title
@@ -485,20 +504,25 @@ The vocabulary contains only visible milestones.
     >>> one_dot_o.visible = False
 
 We have set two milestones to be not visible, so there is only one left that
-is visible in all_milestones. Remember, all_milestones was defined earlier
-as the set of all milestones regardless of context:
+is visible in all_milestones.
 
+    >>> all_milestones = vocabulary_registry.get(None, 'Milestone')
     >>> for term in all_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     debian: 3.1-rc1
+    >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
     >>> len(firefox_milestones)
     0
+    >>> firefox_task_milestones = vocabulary_registry.get(
+    ...     firefox_task, 'Milestone')
     >>> len(firefox_task_milestones)
     0
 
 There's one exception, though; if a bugtask is assigned to a
 non-visible milestone, that milestone will be in the vocabulary.
 
+    >>> firefox_task_milestones = vocabulary_registry.get(
+    ...     firefox_task, 'Milestone')
     >>> firefox_task.milestone = one_dot_o
     >>> for term in firefox_task_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -1335,6 +1359,8 @@ returned.
     ...        for team in vocab.search(None))
     [(u'Bass Players', u'David Allouche'),
      (u'Bazaar Experts', u'Tim Penhey'),
+     (u'Canonical Partner Developers', u'Celso Providelo'),
+     (u'Commercial Subscription Admins', u'Commercial Member'),
      (u'Drummers', u'David Allouche'),
      (u'Flautists', u'David Allouche'),
      (u'GuadaMen', u'Foo Bar'),
@@ -1491,7 +1517,7 @@ All processors type available in Launchpad.
 
 === BugWatchVocabulary ===
 
-All bug watches associated with a bugtask's bug
+All bug watches associated with a bugtask's bug.
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugtask = bug_one.bugtasks[0]
@@ -1502,6 +1528,50 @@ All bug watches associated with a bugtask's bug
     The Mozilla.org Bug Tracker <a...>#2000</a>
     The Mozilla.org Bug Tracker <a...>#42</a>
     Debian Bug tracker <a...>#304014</a>
+
+Bug watches with an email address URL (i.e. starts with "mailto:") are
+treated differently.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugWatchSet, IBugTrackerSet)
+
+    >>> bug_twelve = getUtility(IBugSet).get(12)
+    >>> email_bugtracker = getUtility(IBugTrackerSet).getByName('email')
+    >>> email_bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     bug_twelve, launchbag.user, email_bugtracker, '')
+    >>> email_bugwatch.url
+    u'mailto:bugs@example.com'
+
+The title is rendered differently compared to other bug watches.
+
+    >>> bugtask = bug_twelve.bugtasks[0]
+    >>> vocab = vocabulary_registry.get(bugtask, "BugWatch")
+    >>> for term in vocab:
+    ...     print term.title
+    Email bugtracker &lt;<a...>bugs@example.com</a>&gt;
+
+Additionally, if the bug tracker's title contains the bug tracker's
+URL, then the title is linkified instead.
+
+    >>> email_bugtracker.title = (
+    ...     'Lionel Richtea (%s)' % (
+    ...         email_bugtracker.baseurl,))
+
+    >>> for term in vocab:
+    ...     print term.title
+    Lionel Richtea (<a...>mailto:bugs@example.com</a>)
+
+When there is no logged-in user, the title is much different. The
+email address is hidden, and there is no hyperlink.
+
+    >>> current_user = launchbag.user.preferredemail.email
+    >>> login(ANONYMOUS)
+
+    >>> for term in vocab:
+    ...     print term.title
+    Lionel Richtea (mailto:&lt;email address hidden&gt;)
+
+    >>> login(current_user)
 
 
 === DistributionOrProductVocabulary ===

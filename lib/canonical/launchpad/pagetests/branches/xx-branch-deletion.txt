@@ -6,13 +6,13 @@ branches that have been created in error.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Register branch').click()
+    >>> browser.getLink(id="register-branch").click()
     >>> browser.getControl('Project').value = 'firefox'
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
     >>> browser.title
-    '...~name12/firefox/to-delete... branch by Sample Person in Launchpad'
+    '...~name12/firefox/to-delete... branch in Launchpad'
 
 The newly created branch has an action 'Delete branch'.
 

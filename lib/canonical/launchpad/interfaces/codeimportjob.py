@@ -10,11 +10,9 @@ __metaclass__ = type
 __all__ = [
     'CodeImportJobState',
     'ICodeImportJob',
-    'ICodeImportJobPublic',
     'ICodeImportJobSet',
     'ICodeImportJobSetPublic',
     'ICodeImportJobWorkflow',
-    'ICodeImportJobWorkflowPublic',
     ]
 
 from zope.interface import Interface
@@ -62,6 +60,8 @@ class ICodeImportJob(Interface):
     # Some of these attributes are not conceptually read-only but are
     # set to be read-only here to force client code to use methods
     # that update the audit trail appropriately.
+
+    id = Int(readonly=True, required=True)
 
     date_created = Datetime(required=True, readonly=True)
 
@@ -118,19 +118,6 @@ class ICodeImportJob(Interface):
         """
 
 
-class ICodeImportJobPublic(Interface):
-    """Parts of the CodeImportJob interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated.
-    """
-    # XXX MichaelHudson 2008-02-18 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
-
-    id = Int(readonly=True, required=True)
-
-
 class ICodeImportJobSet(Interface):
     """The set of pending and active code import jobs."""
 
@@ -139,6 +126,7 @@ class ICodeImportJobSet(Interface):
 
         :return: A `CodeImportJob` or None if this database id is not found.
         """
+
 
 class ICodeImportJobSetPublic(Interface):
     """Parts of the CodeImportJobSet interface that need to be public.
@@ -150,8 +138,11 @@ class ICodeImportJobSetPublic(Interface):
     # we implement endpoint specific authentication for the private xml-rpc
     # server.
 
-    def getJobForMachine(machine):
+    def getJobForMachine(hostname):
         """Select a job for the given machine to run and mark it as started.
+
+        If there is not already a CodeImportMachine with the given hostname,
+        one will be created in the the ONLINE state.
 
         This method selects a job that is due to be run for running on the
         given machine and calls ICodeImportJobWorkflowPublic.startJob() on it.
@@ -235,17 +226,6 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: A `CodeImportResult` was created.
         :postcondition: A FINISH `CodeImportEvent` was created.
         """
-
-
-class ICodeImportJobWorkflowPublic(Interface):
-    """Parts of the CodeImportJobWorkflow interface that need to be public.
-
-    These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated.
-    """
-    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
-    # we implement endpoint specific authentication for the private xml-rpc
-    # server.
 
     def startJob(import_job, machine):
         """Record that `machine` is about to start work on `import_job`.

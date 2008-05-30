@@ -14,24 +14,31 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
-                       root_message
-                       isPersonValidReviewer isMergable
-                       getCreationNotificationRecipients isValidTransition
+                       votes root_message all_messages
+                       isPersonValidReviewer isMergable getMessage
+                       getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message"
-        attributes="createMessage deleteProposal
+        attributes="deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
-                    enqueue dequeue moveToFrontOfQueue
+                    enqueue dequeue moveToFrontOfQueue nominateReviewer
                     " />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="createMessage"
+    />
   </content>
   <subscriber
     for="canonical.launchpad.interfaces.IBranchMergeProposal
          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
     handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_created_notifications" />
-
+  <subscriber
+    for="canonical.launchpad.interfaces.IBranchMergeProposal
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    handler="canonical.launchpad.mailout.branchmergeproposal.send_merge_proposal_modified_notifications" />
   <adapter
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
@@ -41,6 +48,10 @@
   <browser:menus
       module="canonical.launchpad.browser"
       classes="BranchMergeProposalContextMenu" />
+
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="BranchMergeProposalNavigation" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBranchMergeProposal"

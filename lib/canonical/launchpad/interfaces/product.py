@@ -11,8 +11,8 @@ __all__ = [
     'License',
     ]
 
-from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Int, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasOwner, IHasSecurityContact, ILaunchpadUsage)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.specificationtarget import (
     ISpecificationTarget)
 from canonical.launchpad.interfaces.sprint import IHasSprints
@@ -39,35 +40,40 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class License(DBEnumeratedType):
-    """Licenses in which a project's code can be released."""
+    """Licenses under which a project's code can be released."""
+
+    # XXX: EdwinGrubbs 2008-04-11 bug=216040
+    # The deprecated licenses can be removed in the next cycle.
 
     ACADEMIC = DBItem(10, "Academic Free License")
     AFFERO = DBItem(20, "Affero GPL")
     APACHE = DBItem(30, "Apache License")
     ARTISTIC = DBItem(40, "Artistic License")
     BSD = DBItem(50, "BSD License (revised)")
-    CDDL = DBItem(60, "CDDL")
-    CECILL = DBItem(70, "CeCILL License")
+    _DEPRECATED_CDDL = DBItem(60, "CDDL")
+    _DEPRECATED_CECILL = DBItem(70, "CeCILL License")
     COMMON_PUBLIC = DBItem(80, "Common Public License")
     ECLIPSE = DBItem(90, "Eclipse Public License")
     EDUCATIONAL_COMMUNITY = DBItem(100, "Educational Community License")
-    EIFFEL = DBItem(110, "Eiffel Forum License")
-    GNAT = DBItem(120, "GNAT Modified GPL")
-    GPL = DBItem(130, "GPL")
-    IBM = DBItem(140, "IBM Public License")
-    LGPL = DBItem(150, "LGPL")
+    _DEPRECATED_EIFFEL = DBItem(110, "Eiffel Forum License")
+    _DEPRECATED_GNAT = DBItem(120, "GNAT Modified GPL")
+    GNU_GPL_V2 = DBItem(130, "GNU GPL v2")
+    GNU_GPL_V3 = DBItem(135, "GNU GPL v3")
+    GNU_LGPL_V2_1 = DBItem(150, "GNU LGPL v2.1")
+    GNU_LGPL_V3 = DBItem(155, "GNU LGPL v3")
+    _DEPRECATED_IBM = DBItem(140, "IBM Public License")
     MIT = DBItem(160, "MIT / X / Expat License")
     MPL = DBItem(170, "Mozilla Public License")
-    OPEN_CONTENT = DBItem(180, "Open Content License")
+    _DEPRECATED_OPEN_CONTENT = DBItem(180, "Open Content License")
     OPEN_SOFTWARE = DBItem(190, "Open Software License")
     PERL = DBItem(200, "Perl License")
     PHP = DBItem(210, "PHP License")
     PUBLIC_DOMAIN = DBItem(220, "Public Domain")
     PYTHON = DBItem(230, "Python License")
-    QPL = DBItem(240, "Q Public License")
-    SUN_PUBLIC = DBItem(250, "SUN Public License")
-    W3C = DBItem(260, "W3C License")
-    ZLIB = DBItem(270, "zlib/libpng License")
+    _DEPRECATED_QPL = DBItem(240, "Q Public License")
+    _DEPRECATED_SUN_PUBLIC = DBItem(250, "SUN Public License")
+    _DEPRECATED_W3C = DBItem(260, "W3C License")
+    _DEPRECATED_ZLIB = DBItem(270, "zlib/libpng License")
     ZPL = DBItem(280, "Zope Public License")
 
     OTHER_PROPRIETARY = DBItem(1000, "Other/Proprietary")
@@ -78,7 +84,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
                IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
                IHasMilestones, IHasMugshot, IMakesAnnouncements, IHasOwner,
                IHasSecurityContact, IHasSprints, IHasTranslationGroup,
-               IKarmaContext, ILaunchpadUsage, ISpecificationTarget):
+               IKarmaContext, ILaunchpadUsage, ISpecificationTarget,
+               IPillar):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -236,22 +243,21 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         description=_("""Whether or not this project's attributes are
         updated automatically."""))
 
-    active = Bool(title=_('Active'), description=_("""Whether or not
-        this project is considered active."""))
-
-    reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
-        this project has been reviewed."""))
+    license_reviewed = Bool(
+        title=_('License reviewed'),
+        description=_("""Whether or not this project's license has been
+        reviewed. Editable only by reviewers (Admins & Commercial Admins).
+        """))
 
     private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
         or not bugs reported into this project are private by default"""))
 
     reviewer_whiteboard = Text(
         title=_('Notes for the project reviewer'),
-        required=False, 
+        required=False,
         description=_(
-            "Notes on the project, viewable only by reviewers "
-            "(administrators and registry experts)."))
-
+            "Notes on the project's license, editable only by reviewers "
+            "(Admins & Commercial Admins)."))
 
     licenses = Set(
         title=_('Licenses'),
@@ -287,6 +293,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         title=_('Development focus'), required=True,
         vocabulary='FilteredProductSeries',
         description=_('The "trunk" series where development is focused'))
+
+    default_stacked_on_branch = Attribute(
+        _('The branch that new branches will be stacked on by default.'))
 
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
@@ -324,6 +333,40 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     aggregatetranslationpermission = Attribute("The translation permission "
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
+
+    commercial_subscription = Attribute("""
+        An object which contains the timeframe and the voucher
+        code of a subscription.""")
+
+    qualifies_for_free_hosting = Attribute("""
+        Whether the project's licensing qualifies it for free
+        use of launchpad.""")
+
+    commercial_subscription_is_due = Attribute("""
+        Whether the project's licensing requires a new commercial
+        subscription to use launchpad.""")
+
+    is_permitted = Attribute("""
+        Whether the project's licensing qualifies for free
+        hosting or the project has an up-to-date subscription.""")
+
+    license_approved = Attribute("""
+        Whether a license is manually approved for free hosting
+        after automatic approval fails.""")
+
+    def redeemSubscriptionVoucher(voucher, registrant, purchaser,
+                                  subscription_months, whiteboard=None):
+        """Redeem a voucher and extend the subscription expiration date.
+
+        The voucher must have already been verified to be redeemable.
+        :param voucher: The voucher id as tracked in the external system.
+        :param registrant: Who is redeeming the voucher.
+        :param purchaser: Who purchased the voucher.  May not be known.
+        :param subscription_months: integer indicating the number of months
+            the voucher is for.
+        :param whiteboard: Notes for this activity.
+        :return: None
+        """
 
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
@@ -465,4 +508,3 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-

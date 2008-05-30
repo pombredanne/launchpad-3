@@ -11,10 +11,11 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
+    'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int
+from zope.schema import Choice, Datetime, Int, List
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
@@ -39,6 +40,10 @@ class UserNotBranchReviewer(Exception):
 
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
+
+
+class WrongBranchMergeProposal(Exception):
+    """The message requested is not associated with this merge proposal."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -141,7 +146,10 @@ class IBranchMergeProposal(Interface):
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
 
-    queue_status = Attribute(_("The current state of the proposal."))
+    queue_status = Choice(
+        title=_('Status'),
+        vocabulary=BranchMergeProposalStatus, required=True, readonly=True,
+        description=_("The current state of the proposal."))
 
     reviewer = Attribute(
         _("The person that accepted (or rejected) the code for merging."))
@@ -195,9 +203,14 @@ class IBranchMergeProposal(Interface):
     # Cannote use Object as this would cause circular dependencies.
     root_message = Attribute(
         _("The first message in discussion of this merge proposal"))
+    all_messages = Attribute(
+        _("All messages discussing this merge proposal"))
 
-    def getCreationNotificationRecipients(min_level):
-        """Return the people who should be notified on creation
+    def getMessage(id):
+        """Return the CodeReviewMessage with the specified ID."""
+
+    def getNotificationRecipients(min_level):
+        """Return the people who should be notified.
 
         Recipients will be returned as a dictionary where the key is the
         person, and the values are (subscription, rationale) tuples.
@@ -206,6 +219,11 @@ class IBranchMergeProposal(Interface):
             notified.
         """
 
+
+    # Cannot specify value type without creating a circular dependency
+    votes = List(
+        title=_('The votes cast or expected for this proposal'),
+        )
 
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
@@ -329,8 +347,11 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def createMessage(owner, subject, content=None, vote=None, parent=None,
-                      _date_created=None):
+    def nominateReviewer(reviewer, registrant):
+        """Create a vote for the specified person."""
+
+    def createMessage(owner, subject, content=None, vote=None, vote_tag=None,
+                      parent=None, _date_created=None):
         """Create an ICodeReviewMessage associated with this merge proposal.
 
         :param owner: The person who the message is from.

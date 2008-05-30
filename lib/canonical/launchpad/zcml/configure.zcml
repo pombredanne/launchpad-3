@@ -23,7 +23,6 @@
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
-    <include file="bugcontact.zcml" />
     <include file="bugcve.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
@@ -32,6 +31,7 @@
     <include file="bugnotification.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />
+    <include file="bugsupervisor.zcml" />
     <include file="bugtask.zcml" />
     <include file="bugtarget.zcml" />
     <include file="bugtracker.zcml" />
@@ -39,6 +39,7 @@
     <include file="bug.zcml" />
     <include file="build.zcml" />
     <include file="builder.zcml" />
+    <include file="codereviewvote.zcml" />
     <include file="codeimport.zcml" />
     <include file="codeimportevent.zcml" />
     <include file="codeimportjob.zcml" />
@@ -57,7 +58,6 @@
     <include file="distributionsourcepackage.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
-    <include file="distrocomponentuploader.zcml" />
     <include file="distroseries.zcml" />
     <include file="distroseriesbinarypackage.zcml" />
     <include file="distroseriespackagecache.zcml" />
@@ -91,7 +91,7 @@
     <include file="milestone.zcml" />
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
-    <include file="packagebugcontact.zcml" />
+    <include file="packagebugsupervisor.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
@@ -145,6 +145,7 @@
     <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
+    <include file="translationtemplateitem.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />
@@ -153,6 +154,7 @@
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
     <include file="archivedependency.zcml" />
+    <include file="archivepermission.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
 
@@ -174,5 +176,6 @@
     <!-- Special Utilities -->
     <include file="geoip.zcml" />
     <include file="gpghandler.zcml" />
+    <include file="searchservice.zcml" />
 
 </configure>

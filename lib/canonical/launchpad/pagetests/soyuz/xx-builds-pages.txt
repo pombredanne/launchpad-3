@@ -130,23 +130,23 @@ initialised' one (fix bug #52704).
     taking a minute &mdash; see the log
     ------------------------------
     Failed to build
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    Build started not available on an unknown build machine
-    ------------------------------
-    Failed to build
     i386 build of foobar 1.0 in ubuntu warty RELEASE
     Build started on 2006-12-01 on Bob The Builder and finished on 2006-12-01
     taking 1 second &mdash; see the log
+    ------------------------------
+    Failed to build
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    Build started not available on an unknown build machine
     ------------------------------
 
     >>> anon_browser.getLink("Next").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Build for superseded Source
-    i386 build of at 0.00 in ubuntu warty RELEASE
+    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
-    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
+    i386 build of at 0.00 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
     i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE
@@ -182,7 +182,7 @@ Then anonymous user checks the results of some searches on build state.
     on 2007-08-09 taking
     ------------------------------
     Successfully built
-    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
+    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
     Build started on 2005-03-24 on Bob The Builder and finished on 2005-03-25
     taking a minute &mdash; see the log
     ------------------------------
@@ -192,7 +192,7 @@ Then anonymous user checks the results of some searches on build state.
     taking a minute &mdash; see the log
     ------------------------------
     Successfully built
-    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
     Build started on 2005-03-24 on Bob The Builder and finished on 2005-03-25
     taking a minute &mdash; see the log
     ------------------------------
@@ -252,6 +252,17 @@ code is prepared to raise the correct exception:
     ...
     UnexpectedFormData: No suitable state found for value "foo"
 
+The code also raises UnexpectedFormData when valid, but duplicated,
+form values are submitted:
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+builds"
+    ...     "?build_text=binutils&build_state=building"
+    ...     "&build_text=binutils&build_state=all")
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: No suitable state found for value "[u'building', u'all']"
+
 
 == Builder history ==
 
@@ -284,7 +295,7 @@ failed-to-build builds.
     taking a minute &mdash; see the log
     ------------------------------
     Failed to build
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     Build started on 2007-07-07 and finished on 2007-07-08
     taking a minute &mdash; see the log
     ------------------------------
@@ -312,10 +323,10 @@ don't have much to say.
     taking 1 second &mdash; see the log
     ------------------------------
     Build for superseded Source
-    i386 build of at 0.00 in ubuntu warty RELEASE
+    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
-    i386 build of linux-source-2.6.15 2.6.15.3 in ubuntu warty RELEASE
+    i386 build of at 0.00 in ubuntu warty RELEASE
     ------------------------------
     Build for superseded Source
     i386 build of netapplet 0.99.6-1 in ubuntu warty RELEASE

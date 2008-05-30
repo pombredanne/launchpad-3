@@ -167,6 +167,14 @@
       template="../templates/branch-edit.pt" />
 
   <browser:page
+      name="+edit-import"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.CodeImportEditView"
+      facet="branches"
+      permission="launchpad.Edit"
+      template="../templates/codeimport-edit.pt" />
+
+  <browser:page
       name="+delete"
       for="canonical.launchpad.interfaces.IBranch"
       class="canonical.launchpad.browser.BranchDeletionView"
@@ -186,14 +194,6 @@
         name="+messages"
         template="../templates/branch-messages.pt" />
   </browser:pages>
-
-  <browser:page
-      name="+reassign"
-      for="canonical.launchpad.interfaces.IBranch"
-      permission="launchpad.Edit"
-      facet="branches"
-      class="canonical.launchpad.browser.BranchReassignmentView"
-      template="../templates/object-reassignment.pt" />
 
   <!-- Subscribe to a branch -->
   <browser:page
@@ -244,6 +244,13 @@
       facet="branches"
       permission="launchpad.AnyPerson"
       template="../templates/branch-edit-subscription.pt" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.BranchRequestImportView"
+      name="+request-import"
+      template="../templates/inline-form-only-buttons.pt"
+      permission="launchpad.AnyPerson" />
 
   <browser:page
       for="canonical.launchpad.interfaces.IBranchBatchNavigator"

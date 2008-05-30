@@ -27,9 +27,10 @@
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
                            date_confirmed date_incomplete date_inprogress
-                           date_closed bug_subscribers is_complete
-                           canTransitionToStatus isMentor canMentor
-                           isSubscribed getPackageComponent" />
+                           date_left_new date_triaged date_fix_committed
+                           date_fix_released date_closed bug_subscribers
+                           is_complete canTransitionToStatus isMentor
+                           canMentor isSubscribed getPackageComponent" />
         <require
             permission="launchpad.View"
             attributes="bugtargetname bugtargetdisplayname
@@ -39,7 +40,8 @@
                         title related_tasks other_affected_pillars
                         asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
-                        conjoined_master conjoined_slave subscribe" />
+                        conjoined_master conjoined_slave subscribe
+                        getConjoinedMaster" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
@@ -84,6 +86,20 @@
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       for="canonical.launchpad.interfaces.IBugTask"
       factory="canonical.launchpad.browser.BugTaskSOP"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.lazr.interfaces.IObjectPrivacy"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskPrivacyAdapter"
+      permission="zope.Public"
+      />
+
+    <adapter
+      provides="canonical.launchpad.webapp.badge.IHasBadges"
+      for="canonical.launchpad.interfaces.IBugTask"
+      factory="canonical.launchpad.browser.BugTaskBadges"
       permission="zope.Public"
       />
 
@@ -382,13 +398,10 @@
       template="../templates/bug-removecve.pt">
     </browser:generalform>
 
-    <browser:addform
+    <browser:page
       name="+addsubscriber"
       for="canonical.launchpad.interfaces.IBugTask"
-      schema="canonical.launchpad.interfaces.IBugSubscription"
       class="canonical.launchpad.browser.BugSubscriptionAddView"
-      fields="person"
-      keyword_arguments="person"
       permission="launchpad.AnyPerson"
       template="../templates/bug-addsubscriber.pt"
       />

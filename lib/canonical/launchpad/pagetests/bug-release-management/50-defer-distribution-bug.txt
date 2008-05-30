@@ -16,16 +16,16 @@ in the release task.
     True
 
 The use of the Won't Fix status is restricted. We need to use it to
-illustrate conjoined bugtasks, so we'll make 'no-priv' the bug contact
+illustrate conjoined bugtasks, so we'll make 'no-priv' the bug supervisor
 for Ubuntu:
 
-    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugcontact')
-    >>> admin_browser.getControl('Bug Contact').value = 'no-priv'
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugsupervisor')
+    >>> admin_browser.getControl('Bug Supervisor').value = 'no-priv'
     >>> admin_browser.getControl('Change').click()
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
-    Successfully changed the bug contact to...No Privileges Person...
+    Successfully changed the bug supervisor to...No Privileges Person...
 
     >>> user_browser.reload()
 

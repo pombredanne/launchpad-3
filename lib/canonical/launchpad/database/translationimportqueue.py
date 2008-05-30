@@ -790,7 +790,8 @@ class TranslationImportQueue:
                     ' IProductSeries, IDistribution, IDistroSeries or'
                     ' ISourcePackage')
         if status is not None:
-            queries.append('status = %s' % sqlvalues(status))
+            queries.append(
+                'TranslationImportQueueEntry.status = %s' % sqlvalues(status))
         if file_extensions:
             extension_clauses = [
                 "path LIKE '%%' || %s" % quote_like(extension)
@@ -829,8 +830,8 @@ class TranslationImportQueue:
             " AND ".join(queries), clauseTables=clause_tables,
             orderBy=['dateimported'])
 
-    def getPillarObjectsWithImports(self, status=None):
-        """See ITranslationImportQueue."""
+    def getRequestTargets(self, status=None):
+        """See `ITranslationImportQueue`."""
         # XXX DaniloSegan 2007-05-22: When imported on the module level,
         # it errs out with: "ImportError: cannot import name Person"
         from canonical.launchpad.database.distroseries import DistroSeries
@@ -839,7 +840,8 @@ class TranslationImportQueue:
         if status is None:
             status_clause = "TRUE"
         else:
-            status_clause = "status = %s" % sqlvalues(status)
+            status_clause = (
+                "TranslationImportQueueEntry.status = %s" % sqlvalues(status))
 
         def product_sort_key(product):
             return product.name

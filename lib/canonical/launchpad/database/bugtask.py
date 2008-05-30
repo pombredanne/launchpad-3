@@ -43,7 +43,7 @@ from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
-    BUG_CONTACT_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
+    BUG_SUPERVISOR_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
     ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
     IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
@@ -313,7 +313,8 @@ class BugTask(SQLBase, BugTaskMixin):
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
-        "date_closed", "date_incomplete")
+        "date_closed", "date_incomplete", "date_left_new",
+        "date_triaged", "date_fix_committed", "date_fix_released")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -356,6 +357,10 @@ class BugTask(SQLBase, BugTaskMixin):
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
     date_incomplete = UtcDateTimeCol(notNull=False, default=None)
+    date_left_new = UtcDateTimeCol(notNull=False, default=None)
+    date_triaged = UtcDateTimeCol(notNull=False, default=None)
+    date_fix_committed = UtcDateTimeCol(notNull=False, default=None)
+    date_fix_released = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
@@ -436,23 +441,28 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagename == prev_sourcepackagename):
                     bugtask.sourcepackagename = self.sourcepackagename
 
-    @property
-    def conjoined_master(self):
+    def getConjoinedMaster(self, bugtasks):
         """See `IBugTask`."""
         conjoined_master = None
-        if (IDistroBugTask.providedBy(self) and
-            self.distribution.currentseries is not None):
+        if IDistroBugTask.providedBy(self):
+            possible_masters = [
+                bugtask for bugtask in bugtasks
+                if (bugtask.distroseries is not None and
+                    bugtask.sourcepackagename == self.sourcepackagename)]
+            # Return early, so that we don't have to get currentseries,
+            # which is expensive.
+            if len(possible_masters) == 0:
+                return None
             current_series = self.distribution.currentseries
-            for bugtask in shortlist(self.bug.bugtasks):
-                if (bugtask.distroseries == current_series and
-                    bugtask.sourcepackagename == self.sourcepackagename):
+            for bugtask in possible_masters:
+                if bugtask.distroseries == current_series:
                     conjoined_master = bugtask
                     break
         elif IUpstreamBugTask.providedBy(self):
             assert self.product.development_focus is not None, (
                 'A product should always have a development series.')
             devel_focus = self.product.development_focus
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in bugtasks:
                 if bugtask.productseries == devel_focus:
                     conjoined_master = bugtask
                     break
@@ -461,6 +471,11 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
+
+    @property
+    def conjoined_master(self):
+        """See `IBugTask`."""
+        return self.getConjoinedMaster(shortlist(self.bug.bugtasks))
 
     @property
     def conjoined_slave(self):
@@ -542,6 +557,22 @@ class BugTask(SQLBase, BugTaskMixin):
     def _set_date_incomplete(self, value):
         """Set date_incomplete, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
+
+    def _set_date_left_new(self, value):
+        """Set date_left_new, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_left_new", value)
+
+    def _set_date_triaged(self, value):
+        """Set date_left_triaged, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_triaged", value)
+
+    def _set_date_fix_committed(self, value):
+        """Set date_left_fix_committed, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_fix_committed", value)
+
+    def _set_date_fix_released(self, value):
+        """Set date_left_fix_released, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_fix_released", value)
 
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
         """Set a value, and update conjoined BugTask."""
@@ -638,13 +669,13 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
-        if (user.inTeam(self.pillar.bugcontact) or
+        if (user.inTeam(self.pillar.bug_supervisor) or
             user.inTeam(self.pillar.owner) or
             user.id == celebrities.bug_watch_updater.id or
             user.id == celebrities.bug_importer.id):
             return True
         else:
-            return new_status not in BUG_CONTACT_BUGTASK_STATUSES
+            return new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES
 
     def transitionToStatus(self, new_status, user):
         """See `IBugTask`."""
@@ -656,7 +687,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
-                "Only Bug Contacts may change status to %s." % (
+                "Only Bug Supervisors may change status to %s." % (
                     new_status.title,))
 
         if self.status == new_status:
@@ -675,6 +706,9 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_inprogress = None
             self.date_closed = None
             self.date_incomplete = None
+            self.date_triaged = None
+            self.date_fix_committed = None
+            self.date_fix_released = None
 
             return
 
@@ -697,6 +731,39 @@ class BugTask(SQLBase, BugTaskMixin):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
+
+        if (old_status == BugTaskStatus.NEW and
+            new_status > BugTaskStatus.NEW and
+            self.date_left_new is None):
+            # This task is leaving the NEW status for the first time
+            self.date_left_new = now
+
+        # If the new status is equal to or higher
+        # than TRIAGED, we record a `date_triaged`
+        # to mark the fact that the task has passed
+        # through this status.
+        if (old_status < BugTaskStatus.TRIAGED and
+            new_status >= BugTaskStatus.TRIAGED):
+            # This task is now marked as TRIAGED
+            self.date_triaged = now
+
+        # If the new status is equal to or higher
+        # than FIXCOMMITTED, we record a `date_fixcommitted`
+        # to mark the fact that the task has passed
+        # through this status.
+        if (old_status < BugTaskStatus.FIXCOMMITTED and
+            new_status >= BugTaskStatus.FIXCOMMITTED):
+            # This task is now marked as FIXCOMMITTED
+            self.date_fix_committed = now
+
+        # If the new status is equal to or higher
+        # than FIXRELEASED, we record a `date_fixreleased`
+        # to mark the fact that the task has passed
+        # through this status.
+        if (old_status < BugTaskStatus.FIXRELEASED and
+            new_status >= BugTaskStatus.FIXRELEASED):
+            # This task is now marked as FIXRELEASED
+            self.date_fix_released = now
 
         # Bugs can jump in and out of 'incomplete' status
         # and for just as long as they're marked incomplete
@@ -723,6 +790,15 @@ class BugTask(SQLBase, BugTaskMixin):
 
         if new_status < BugTaskStatus.INPROGRESS:
             self.date_inprogress = None
+
+        if new_status < BugTaskStatus.TRIAGED:
+            self.date_triaged = None
+
+        if new_status < BugTaskStatus.FIXCOMMITTED:
+            self.date_fix_committed = None
+
+        if new_status < BugTaskStatus.FIXRELEASED:
+            self.date_fix_released = None
 
     def transitionToAssignee(self, assignee):
         """See `IBugTask`."""
@@ -982,6 +1058,36 @@ class BugTaskSet:
                                 str(task_id))
         return bugtask
 
+    def getBugTaskBadgeProperties(self, bugtasks):
+        """See `IBugTaskSet`."""
+        # Need to import Bug locally, to avoid circular imports.
+        from canonical.launchpad.database.bug import Bug
+        bugtask_ids = [bugtask.id for bugtask in bugtasks]
+        bugs_with_mentoring_offers = list(Bug.select(
+            """id IN (SELECT MentoringOffer.bug
+                      FROM MentoringOffer, BugTask
+                      WHERE MentoringOffer.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_specifications = list(Bug.select(
+            """id IN (SELECT SpecificationBug.bug
+                      FROM SpecificationBug, BugTask
+                      WHERE SpecificationBug.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_branches = list(Bug.select(
+            """id IN (SELECT BugBranch.bug
+                      FROM BugBranch, BugTask
+                      WHERE BugBranch.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        badge_properties = {}
+        for bugtask in bugtasks:
+            badge_properties[bugtask] = {
+                'has_mentoring_offer':
+                    bugtask.bug in bugs_with_mentoring_offers,
+                'has_specification': bugtask.bug in bugs_with_specifications,
+                'has_branch': bugtask.bug in bugs_with_branches,
+                }
+        return badge_properties
+
     def getMultiple(self, task_ids):
         """See `IBugTaskSet`."""
         # Ensure we have a sequence of bug task IDs:
@@ -1122,13 +1228,6 @@ class BugTaskSet:
                             AND Milestone.name = %s)
                 """ % sqlvalues(params.milestone.target,
                                 params.milestone.name)
-
-                # A bug may have bugtasks in more than one series, and these
-                # bugtasks may have the same milestone value. To avoid
-                # duplicate result rows for one bug, ensure that only that
-                # bugtask is returned, that is directly assigned to the
-                # product.
-                extra_clauses.append("BugTask.product IS NOT null")
             else:
                 where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
@@ -1239,31 +1338,31 @@ class BugTaskSet:
 
         # XXX Tom Berger 2008-02-14:
         # We use StructuralSubscription to determine
-        # the bug contact relation for distribution source
+        # the bug supervisor relation for distribution source
         # packages, following a conversion to use this object.
         # We know that the behaviour remains the same, but we
         # should change the terminology, or re-instate
-        # PackageBugContact, since the use of this relation here
+        # PackageBugSupervisor, since the use of this relation here
         # is not for subscription to notifications.
         # See bug #191809
-        if params.bug_contact:
-            bug_contact_clause = """BugTask.id IN (
+        if params.bug_supervisor:
+            bug_supervisor_clause = """BugTask.id IN (
                 SELECT BugTask.id FROM BugTask, Product
                 WHERE BugTask.product = Product.id
-                    AND Product.bugcontact = %(bug_contact)s
+                    AND Product.bug_supervisor = %(bug_supervisor)s
                 UNION ALL
                 SELECT BugTask.id
                 FROM BugTask, StructuralSubscription
                 WHERE BugTask.distribution = StructuralSubscription.distribution
                     AND BugTask.sourcepackagename =
                         StructuralSubscription.sourcepackagename
-                    AND StructuralSubscription.subscriber = %(bug_contact)s
+                    AND StructuralSubscription.subscriber = %(bug_supervisor)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, Distribution
                 WHERE BugTask.distribution = Distribution.id
-                    AND Distribution.bugcontact = %(bug_contact)s
-                )""" % sqlvalues(bug_contact=params.bug_contact)
-            extra_clauses.append(bug_contact_clause)
+                    AND Distribution.bug_supervisor = %(bug_supervisor)s
+                )""" % sqlvalues(bug_supervisor=params.bug_supervisor)
+            extra_clauses.append(bug_supervisor_clause)
 
         if params.bug_reporter:
             bug_reporter_clause = (
@@ -1617,6 +1716,7 @@ class BugTaskSet:
                 SELECT BugTask.id
                 FROM BugTask
                     JOIN Bug ON BugTask.bug = Bug.id
+                    LEFT JOIN BugWatch on Bug.id = BugWatch.bug
                 """ + unconfirmed_bug_join + """
                 """ + target_join + """
                 WHERE
@@ -1625,11 +1725,11 @@ class BugTaskSet:
                 """ + bug_privacy_filter + """
                     AND BugTask.status = %s
                     AND BugTask.assignee IS NULL
-                    AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
                     AND Bug.duplicateof IS NULL
                     AND Bug.date_last_updated < CURRENT_TIMESTAMP
                         AT TIME ZONE 'UTC' - interval '%s days'
+                    AND BugWatch.id IS NULL
             )""" % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old),
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
