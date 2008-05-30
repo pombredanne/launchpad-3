@@ -19,8 +19,7 @@ __all__ = [
 import os
 import re
 
-from sqlobject import SQLObjectNotFound
-from storm.exceptions import NotOneError
+from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 
 from zope.component import getUtility
 
@@ -718,7 +717,7 @@ class BinaryPackageHandler:
         try:
             bpr = BinaryPackageRelease.selectOne(
                 query, clauseTables=clauseTables)
-        except NotOneError:
+        except SQLObjectMoreThanOneResultError:
             # XXX kiko 2005-10-27: Untested
             raise MultiplePackageReleaseError("Found more than one "
                     "entry for %s (%s) for %s in %s" %
@@ -802,7 +801,7 @@ class BinaryPackageHandler:
 
         try:
             build = Build.selectOne(query, clauseTables)
-        except NotOneError:
+        except SQLObjectMoreThanOneResultError:
             # XXX kiko 2005-10-27: Untested.
             raise MultipleBuildError("More than one build was found "
                 "for package %s (%s)" % (binary.package, binary.version))
