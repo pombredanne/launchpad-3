@@ -87,9 +87,9 @@ the first one (new upload).
     >>> diffs = list(diff_set.getPendingDiffs())
     >>> for diff in diffs:
     ...     print diff.title
-    Package diff for biscuit from 1.0-1 to 1.0-2
-    Package diff for biscuit from 1.0-2 to 1.0-3
-    Package diff for biscuit from 1.0-3 to 1.0-4
+    1.0-1 to 1.0-2
+    1.0-2 to 1.0-3
+    1.0-3 (in Ubuntu) to 1.0-4
 
 Perform some diffs in advance, the first diff in ubuntu and the diff
 in PPA will be performed, the second diff in ubuntu will be performed
@@ -135,13 +135,13 @@ below the changelog text for each uploaded version.
     Pending in hoary-release
     ...
     Available diffs
-    Package diff for biscuit from 1.0-2 to 1.0-3
+    1.0-2 to 1.0-3
     ==============================
     1.0-2
     Pending in hoary-release
     ...
     Available diffs
-    Package diff for biscuit from 1.0-1 to 1.0-2 (3 bytes)
+    1.0-1 to 1.0-2 (3 bytes)
     ==============================
     1.0-1
     Pending in hoary-release
@@ -149,14 +149,12 @@ below the changelog text for each uploaded version.
 
 Diffs already performed are rendered as link to the librarian file.
 
-    >>> print anon_browser.getLink(
-    ...     'Package diff for biscuit from 1.0-1 to 1.0-2').url
+    >>> print anon_browser.getLink('1.0-1 to 1.0-2').url
     http://.../biscuit_1.0-1_1.0-2.diff.gz
 
 On the other hand, diffs not yet performed are rendered as plain text.
 
-    >>> anon_browser.getLink(
-    ...     'Package diff for biscuit from 1.0-2 to 1.0-3')
+    >>> anon_browser.getLink('1.0-2 to 1.0-3')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -172,8 +170,7 @@ the missing link is rendered.
     >>> logout()
 
     >>> anon_browser.reload()
-    >>> print anon_browser.getLink(
-    ...     'Package diff for biscuit from 1.0-2 to 1.0-3').url
+    >>> print anon_browser.getLink('1.0-2 to 1.0-3').url
     http://.../biscuit_1.0-2_1.0-3.diff.gz
 
 The same page section is presented in the corresponding
@@ -185,10 +182,9 @@ The same page section is presented in the corresponding
     ...     anon_browser.contents, 'diff-for-1.0-3')
     >>> print extract_text(diff_section)
     Available diffs
-    Package diff for biscuit from 1.0-2 to 1.0-3 (3 bytes)
+      1.0-2 to 1.0-3 (3 bytes)
 
-    >>> print anon_browser.getLink(
-    ...     'Package diff for biscuit from 1.0-2 to 1.0-3').url
+    >>> print anon_browser.getLink('1.0-2 to 1.0-3').url
     http://.../biscuit_1.0-2_1.0-3.diff.gz
 
 
@@ -207,11 +203,11 @@ corresponding source row in the PPA overview page.
     Publishing details
     ...
     Available diffs
-      Package diff for biscuit from 1.0-3 to 1.0-4 (3 bytes)
+      1.0-3 (in Ubuntu) to 1.0-4 (3 bytes)
     ...
 
 The text also link to the librarian file containing the diff.
 
     >>> print anon_browser.getLink(
-    ...     'Package diff for biscuit from 1.0-3 to 1.0-4').url
+    ...     '1.0-3 (in Ubuntu) to 1.0-4').url
     http://.../biscuit_1.0-3_1.0-4.diff.gz
