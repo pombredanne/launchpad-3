@@ -6,7 +6,7 @@ Based on debzilla/bugzilla.py by Matt Zimmerman
 """
 
 import sys
-import psycopg
+import psycopg2
 
 from canonical.launchpad.database import *
 from canonical.launchpad.validators.name import valid_name
@@ -174,7 +174,7 @@ class Launchpad:
                              rfc822msgid=msgid,
                              owner=owner,
                              datecreated=datecreated)
-        except psycopg.ProgrammingError:
+        except psycopg2.ProgrammingError:
             print 'ERROR STORING %s IN DATABASE:' % msgid
             print '    ', sys.exc_value
             return None
