@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211
 
 """CodeReviewMessage interfaces."""
 
