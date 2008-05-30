@@ -1137,3 +1137,166 @@ class HALDevice:
                 'Unknown bus %r for device %s' % (device_bus, self.udi),
                 self.parser.submission_key)
             return None
+
+    @property
+    def is_real_device(self):
+        """True, if the HAL device correspends to a real device.
+
+        In many cases HAL has more than one device entry for the
+        same physical device. We are only interested in real, physical,
+        devices but not in the fine details, how HAL represents different
+        aspects of them.
+
+        For example, the HAL device node hiearchy for a SATA disk and
+        its host controllerlooks like this:
+
+        HAL device node of the host controller
+            udi: .../pci_8086_27c5
+            HAL properties:
+                info.bus: pci
+                pci.device_class: 1 (storage)
+                pci.device_subclass: 6 (SATA)
+                info.linux.driver: ahci
+
+        HAL device node of the "output aspect" of the host controller
+            udi: .../pci_8086_27c5_scsi_host
+            HAL properties:
+                info.bus: n/a
+                info.driver: n/a
+                info.parent: .../pci_8086_27c5
+
+        HAL device node of a hard disk.
+            udi: .../pci_8086_27c5_scsi_host_scsi_device_lun0
+            HAL properties:
+                info.bus: scsi
+                info.driver: sd
+                info.parent: .../pci_8086_27c5_scsi_host
+
+        HAL device node of the "storage aspect" of the hard disk
+            udi: .../storage_serial_1ATA_Hitachi_HTS541616J9SA00_SB...
+            HAL properties
+                info.driver: n/a
+                info.parent: .../pci_8086_27c5_scsi_host_scsi_device_lun0
+
+        HAL device node of a disk partition:
+            udi: .../volume_uuid_0ee803cf_...
+            HAL properties
+                info.driver: n/a
+                info.parent: .../storage_serial_1ATA_Hitachi_HTS541616J...
+
+        (optionally more nodes for more partitions)
+
+        HAL device node of the "generic SCSI aspect" of the hard disk:
+            udi: .../pci_8086_27c5_scsi_host_scsi_device_lun0_scsi_generic
+                info.driver: n/a
+                info.parent: .../pci_8086_27c5_scsi_host_scsi_device_lun0
+
+        This disk is _not_ a SCSI disk, but a SATA disk. In other words,
+        the SCSI details are in this case just an artifact of the Linux
+        kernel, which uses its SCSI subsystem as a "central hub" to access
+        IDE, SATA, USB, IEEE1394 storage devices. The only interesting
+        detail for us is that the sd driver is involved in accesses to the
+        disk.
+
+
+        Heuristics:
+
+        - Most real devices have the property info.bus; we consider only
+          those devices to be real which have this property set.
+
+        - As written above, the SCSI bus often appears as an artifact;
+          for PCI host controllers, their properties pci.device_class
+          and pci.device_subclass tell us, if we have a real SCSI host
+          controller: pci.device_class == 1 means a storage controller,
+          pci.device_subclass == 0 means a SCSI controller. This works
+          too for PCCard controllers, which use the PCI device class
+          numbers too.
+
+        - The value "usb_device" of the HAL property info.bus identifies
+          USB devices, with one exception: The USB host controller, which
+          itself has an info.bus property with the value "pci", has a
+          sub-device with info.bus='usb_device' for its "output aspect".
+          These sub-devices can be identified by the device class their
+          parent and by their USB vendor/product IDs, which are 0:0.
+        """
+        bus = self.getProperty('info.bus')
+        if bus is None or bus in ('platform', 'pnp', 'usb'):
+            # bus is None for a number of "virtual components", like
+            # /org/freedesktop/Hal/devices/computer_alsa_timer or
+            # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
+            # we ignore them. (The real sound devices appear with
+            # other UDIs in HAL.)
+            # 
+            # XXX Abel Deuring 20080425: This ignores a few components
+            # like laptop batteries or the CPU, where info.bus is None.
+            # Since these components are not the most important ones
+            # for the HWDB, we'll ignore them for now.
+            #
+            # info.bus == 'platform' is used for devices like the i8042
+            # which controls keyboard and mouse; HAL has no vendor
+            # information for these devices, so there is no point to
+            # treat them as real devices.
+            #
+            # info.bus == 'pnp' is used for components like the ancient
+            # AT DMA controller or or the keyboard. Like for the bus
+            # 'platform', HAL does not provide any vendor data.
+            #
+            # info.bus == 'usb' is used for end points of USB devices;
+            # the root node of a USB device has info.bus == 'usb_device'.
+            return False
+        if bus == 'usb_device':
+            vendor_id = self.getProperty('usb_device.vendor_id')
+            product_id = self.getProperty('usb_device.product_id')
+            if vendor_id == 0 and product_id == 0:
+                # double-check: The parent device should be a PCI host
+                # controller, identifiable by its device class and subclass.
+                # XXX Abel Deuring 20080428: This ignores other possible
+                # bridges, like ISA->USB.
+                parent = self.parent
+                parent_bus = parent.getProperty('info.bus')
+                parent_class = parent.getProperty('pci.device_class')
+                parent_subclass = parent.getProperty('pci.device_subclass')
+                if (parent_bus == 'pci' and parent_class == 12 and
+                    parent_subclass == 3):
+                    return False
+                else:
+                    self.parser._logWarning(
+                        'USB device found with vendor ID==0, product ID==0, '
+                        'where the parent device does not look like a USB '
+                        'host controller: %s' % self.udi,
+                        self.parser.submission_key)
+                    return False
+            return True
+        elif bus == 'scsi':
+            # Ensure consistency with HALDevice.getBus()
+            return self.getBus() is not None
+        else:
+            return True
+
+    def getRealChildren(self):
+        """Return the list of real child devices of this devices.
+
+        The list of real child devices consists of the direct child
+        devices of this device where child.is_real_device == True, and
+        of the (recursively collected) list of real sub-devices of
+        those child devices where child.is_real_device == False.        
+        """
+        result = []
+        for sub_device in self.children:
+            if sub_device.is_real_device:
+                # XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
+                # nasty: The standard does not define any specification
+                # for product IDs or product names, hence HAL often
+                # uses the value 0 for the property ieee1394.product_id
+                # and a value like "Unknown (0x00d04b)" for
+                # ieee.product, where 0x00d04b is the vendor ID. I have
+                # currently no idea how to find or generate something
+                # that could be used as the product ID, so IEEE1394
+                # devices are at present simply dropped from the list of
+                # devices. Otherwise, we'd pollute the HWDB with
+                # unreliable data.
+                if sub_device.getProperty('info.bus') != 'ieee1394':
+                    result.append(sub_device)
+            else:
+                result.extend(sub_device.getRealChildren())
+        return result
