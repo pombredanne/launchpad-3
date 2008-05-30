@@ -219,7 +219,6 @@ resources. It's a big document.
 
     >>> wadl = webservice.get(
     ...     '/beta/', 'application/vd.sun.wadl+xml').getBody()
-    >>> open("/home/leonardr/programming/wadl/wadl.xml", "w").write(wadl)
     >>> tree = etree.fromstring(wadl)
     >>> wadl_schema.validate(tree)
     1
@@ -869,7 +868,7 @@ The client can DELETE an existing file:
     'DELETE'
 
 
-== An entry page resource type ==
+== A non-top-level collection resource type ==
 
 We're almost done with our in-depth look at the WADL description of
 bug tasks. Now we need to consider a page of bug tasks, like you'd see
@@ -883,16 +882,18 @@ URL. This <resource_type> describes the collection at that URL.
     >>> collection_type.attrib['id']
     'BugTaskEntry-page-resource'
 
-The difference between a scoped collection and a top-level collection
-is that, right now, scoped collections never have custom
-operations. They only support the standard GET operation.
+A top-level collection can have custom operations, but all other
+collection resources only support the standard GET operation. This
+includes scoped collections like the collection of tasks for a bug. It
+also includes the second and subsequent pages of a top-level
+collection.
 
     >>> [get] = collection_type
     >>> get.attrib['id']
     'BugTaskEntry-page-resource-get'
 
-In response to that GET operation they'll serve a JSON representation,
-described immediately below.
+In response to the standard GET operation, collection resources will
+serve a JSON representation, described immediately below.
 
     >>> [get_response] = get
     >>> [json_representation] = get_response
@@ -905,8 +906,11 @@ described immediately below.
 The representation of one type of entry (say, a person) looks very
 different from the representation of another type (say, a bug), but
 all collections look pretty much the same, no matter what kind of
-entries they contain. In fact, a top-level collection references the
-same <representation> tag as the corresponding scoped collection.
+entries they contain. In fact, a top-level collection (say, the
+collection of bugs) references the same <representation> tag as a
+corresponding scoped collection (say, the bugs assigned to a person)
+or any other collection (say, the second page of the top-level bug
+collection).
 
     >>> collection_rep.tag
     '...representation'
