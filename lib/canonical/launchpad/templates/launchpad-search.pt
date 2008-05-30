@@ -21,7 +21,8 @@
          name="sitesearch"
          id="sitesearch"
          method="get"
-         accept-charset="UTF-8">
+         accept-charset="UTF-8"
+         tal:attributes="action string:${rooturl}+search">
         <input
           id="field.text"
           class="textType"
@@ -107,9 +108,15 @@
                   <div>
                     Registered by <a
                       tal:replace="structure view/pillar/owner/fmt:link">Foo Bar</a>
+                    <tal:comment condition="nothing">
+                      # XXX sinzui 2008-05-27:
+                      # Product and Project still use the wrong name for
+                      # date_created.
+                    </tal:comment>
                     <span
-                      tal:attributes="title view/pillar/datecreated/fmt:datetime"
-                      tal:content="view/pillar/datecreated/fmt:displaydate">2005-10-12</span>
+                      tal:define="date_created view/pillar/datecreated|view/pillar/date_created|nothing"
+                      tal:attributes="title date_created/fmt:datetime"
+                      tal:content="date_created/fmt:displaydate">2005-10-12</span>
                   </div>
                 </div>
               </li>
