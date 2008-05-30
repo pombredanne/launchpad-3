@@ -835,7 +835,7 @@ class PersonTranslationsMenu(ApplicationMenu):
 
     def relicensing(self):
         text = 'Relicense translations'
-        return Link('+relicensing', text)
+        return Link('+relicensing', text, enabled=False)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
