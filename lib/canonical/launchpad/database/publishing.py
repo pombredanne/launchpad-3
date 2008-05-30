@@ -93,7 +93,7 @@ class SourcePackageFilePublishing(FilePublishingBase):
     Represents the source portion of the pool.
     """
 
-    _idType = str
+    _idType = unicode
     _defaultOrder = "id"
 
     implements(ISourcePackageFilePublishing)
@@ -156,7 +156,7 @@ class BinaryPackageFilePublishing(FilePublishingBase):
     Represents the binary portion of the pool.
     """
 
-    _idType = str
+    _idType = unicode
     _defaultOrder = "id"
 
     implements(IBinaryPackageFilePublishing)
