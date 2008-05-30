@@ -22,6 +22,9 @@ which are just dictionaries in the transport.
     ...     for voucher in vouchers:
     ...         print "%s,%s" % (voucher['voucher'], voucher['status'])
 
+
+== Test the transport directly ==
+
 All of the sample voucher data in the transport can be shown.
 
     >>> for voucher in test_transport.vouchers:
@@ -44,6 +47,21 @@ We can retrieve all unredeemed vouchers for a person.
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
 
+A single voucher can be retrieved and does not require the owner's
+id.
+
+    >>> voucher = server.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000001')
+    >>> print_vouchers([voucher])
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
+
+Attempting to retrieve a non-existent voucher returns no results.
+
+    >>> voucher = server.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-nonexistent1')
+    >>> voucher is None
+    True
+
 A single voucher can be redeemed, but must be associated with a project.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -57,6 +75,9 @@ A single voucher can be redeemed, but must be associated with a project.
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
 
+
+== Test the wrapper ==
+
 The interface `ISalesforceVoucherProxy` defines the interaction with
 the Salesforce proxy.
 
@@ -65,8 +86,6 @@ the Salesforce proxy.
     >>> sfv = getUtility(ISalesforceVoucherProxy)
     >>> verifyObject(ISalesforceVoucherProxy, sfv)
     True
-
-The interface can now be exercised.
 
 The status of the proxy server can be checked.
 
@@ -90,6 +109,20 @@ The user mark has some vouchers and they can be retrieved.
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED,12,unassigned
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+
+Get a single voucher by id.
+
+    >>> voucher = sfv.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000003')
+    >>> print voucher
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+
+Get a single voucher with an invalid id.
+
+    >>> voucher = sfv.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-nonexistent1')
+    >>> voucher is None
+    True
 
 Redeem the first voucher for firefox.
 
