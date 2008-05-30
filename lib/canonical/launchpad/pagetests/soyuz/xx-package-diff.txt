@@ -141,7 +141,7 @@ below the changelog text for each uploaded version.
     Pending in hoary-release
     ...
     Available diffs
-    Package diff for biscuit from 1.0-1 to 1.0-2
+    Package diff for biscuit from 1.0-1 to 1.0-2 (3 bytes)
     ==============================
     1.0-1
     Pending in hoary-release
@@ -185,7 +185,7 @@ The same page section is presented in the corresponding
     ...     anon_browser.contents, 'diff-for-1.0-3')
     >>> print extract_text(diff_section)
     Available diffs
-    Package diff for biscuit from 1.0-2 to 1.0-3
+    Package diff for biscuit from 1.0-2 to 1.0-3 (3 bytes)
 
     >>> print anon_browser.getLink(
     ...     'Package diff for biscuit from 1.0-2 to 1.0-3').url
@@ -207,7 +207,7 @@ corresponding source row in the PPA overview page.
     Publishing details
     ...
     Available diffs
-      Package diff for biscuit from 1.0-3 to 1.0-4
+      Package diff for biscuit from 1.0-3 to 1.0-4 (3 bytes)
     ...
 
 The text also link to the librarian file containing the diff.
