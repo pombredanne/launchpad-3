@@ -36,10 +36,9 @@ You can find a person by name.
     >>> salgado.display_name
     u'Guilherme Salgado'
 
-You can find a person by 'id'.
+But if no person by that name is registered, you get the expected KeyError.
 
-    >>> person12 = launchpad.people[12]
-    >>> person12.name
-    u'daf'
-    >>> person12.display_name
-    u'Dafydd Harries'
+    >>> launchpad.people['not-a-registered-person']
+    Traceback (most recent call last):
+    ...
+    KeyError: 'not-a-registered-person'
