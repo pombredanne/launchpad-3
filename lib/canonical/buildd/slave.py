@@ -247,12 +247,13 @@ class BuildDSlave(object):
         """Return the path in the cache of the file specified."""
         return os.path.join(self._cachepath, file)
 
-    def installAuthHandler(self, url, username, password):
-        """Install a BasicAuthHandler for urllib2.urlopen.
+    def setupAuthHandler(self, url, username, password):
+        """Set up a BasicAuthHandler to open the url.
 
         :param url: The URL that needs authenticating.
         :param username: The username for authentication.
         :param password: The password for authentication.
+        :return: The OpenerDirector instance.
 
         This helper installs a urllib2.HTTPBasicAuthHandler that will deal
         with any HTTP basic authentication required when opening the
@@ -262,7 +263,7 @@ class BuildDSlave(object):
         password_mgr.add_password(None, url, username, password)
         handler = urllib2.HTTPBasicAuthHandler(password_mgr)
         opener = urllib2.build_opener(handler)
-        urllib2.install_opener(opener)
+        return opener
 
     def ensurePresent(self, sha1sum, url=None, username=None, password=None):
         """Ensure we have the file with the checksum specified.
@@ -277,9 +278,11 @@ class BuildDSlave(object):
             if not os.path.exists(self.cachePath(sha1sum)):
                 self.log('Fetching %s by url %s' % (sha1sum, url))
                 if username:
-                    self.installAuthHandler(url, username, password)
+                    opener = self.setupAuthHandler(url, username, password)
+                else:
+                    opener = urllib2.urlopen
                 try:
-                    f = urllib2.urlopen(url)
+                    f = opener(url)
                 # Don't change this to URLError without thoroughly
                 # testing for regressions. For now, just suppress
                 # the PyLint warnings.

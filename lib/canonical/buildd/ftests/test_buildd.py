@@ -53,10 +53,13 @@ class BuildlogSecurityTests(unittest.TestCase):
         user = "myuser"
         password = "fakepassword"
 
-        self.slave.installAuthHandler(url, user, password)
+        opener = self.slave.setupAuthHandler(url, user, password)
 
         # Inspect urllib2's opener.
-        password_mgr = urllib2._opener.handlers[-2].passwd
+        for handler in opener.handlers:
+            if isinstance(handler, urllib2.HTTPBasicAuthHandler):
+                break
+        password_mgr = handler.passwd
         stored_user, stored_pass = password_mgr.find_user_password(None, url)
         self.assertEqual(user, stored_user)
         self.assertEqual(password, stored_pass)
