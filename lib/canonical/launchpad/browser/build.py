@@ -82,7 +82,7 @@ class BuildContextMenu(ContextMenu):
     @property
     def is_ppa_build(self):
         """Some links are only displayed on PPA."""
-        return self.context.archive.owner is not None
+        return self.context.archive.purpose == ArchivePurpose.PPA
 
     def ppa(self):
         return Link(
