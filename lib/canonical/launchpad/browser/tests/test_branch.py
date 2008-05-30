@@ -40,7 +40,8 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             "http://example.com/good/mirror", view.mirror_location)
 
     def testHiddenBranchAsAnonymous(self):
-        # A branch from a normal location is fine.
+        # A branch location with a defined private host is hidden from
+        # anonymous browsers.
         branch = self.factory.makeBranch(
             branch_type=BranchType.MIRRORED,
             url="http://bk-internal.mysql.com/bzr-mysql/mysql-5.0")
@@ -50,7 +51,8 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             "<private server>", view.mirror_location)
 
     def testHiddenBranchAsBranchOwner(self):
-        # A branch from a normal location is fine.
+        # A branch location with a defined private host is visible to the
+        # owner.
         owner = self.factory.makePerson(
             email="eric@example.com", password="test")
         branch = self.factory.makeBranch(
@@ -67,7 +69,8 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             view.mirror_location)
 
     def testHiddenBranchAsOtherLoggedInUser(self):
-        # A branch from a normal location is fine.
+        # A branch location with a defined private host is hidden from other
+        # users.
         owner = self.factory.makePerson(
             email="eric@example.com", password="test")
         other = self.factory.makePerson(
