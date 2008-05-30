@@ -105,49 +105,56 @@
         for="zope.schema.interfaces.IField
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.SimpleFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.SimpleFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IBool
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.BoolFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.BoolFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IFloat
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.FloatFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.FloatFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IInt
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.IntFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.IntFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IDatetime
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.DateTimeFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.DateTimeFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IBytes
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.ByteStorageMarshaller"
+        factory="canonical.lazr.rest.marshallers.BytesFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IText
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.TextFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.VocabularyLookupFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.VocabularyLookupFieldMarshaller"
         />
 
     <adapter
@@ -155,7 +162,7 @@
              canonical.lazr.interfaces.rest.WebServiceLayer
              zope.schema.interfaces.IVocabularyTokenized"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.TokenizedVocabularyFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.TokenizedVocabularyFieldMarshaller"
         />
 
     <adapter
@@ -163,7 +170,7 @@
              canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.lazr.enum.IEnumeratedType"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.SimpleVocabularyLookupFieldMarshaller"
         />
 
     <adapter
@@ -171,21 +178,28 @@
              canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.ObjectLookupFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IObject
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.ObjectLookupFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
         />
 
     <adapter
-        for="canonical.lazr.interfaces.rest.ICollectionField
+        for="zope.schema.interfaces.ICollection
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
-        factory="canonical.lazr.rest.CollectionFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.AbstractCollectionFieldMarshaller"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.fields.ICollectionField
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.CollectionFieldMarshaller"
         />
 
     <!-- System Errors -->

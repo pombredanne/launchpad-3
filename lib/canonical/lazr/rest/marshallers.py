@@ -1,19 +1,20 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Schema extensions for HTTP resources."""
+"""Marshallers for fields used in HTTP resources."""
 
 __metaclass__ = type
 __all__ = [
+    'AbstractCollectionFieldMarshaller',
     'BoolFieldMarshaller',
-    'CollectionField',
+    'BytesFieldMarshaller',
     'CollectionFieldMarshaller',
     'DateTimeFieldMarshaller',
     'FloatFieldMarshaller',
     'IntFieldMarshaller',
     'ObjectLookupFieldMarshaller',
-    'Reference',
     'SimpleFieldMarshaller',
     'SimpleVocabularyLookupFieldMarshaller',
+    'TextFieldMarshaller',
     'TokenizedVocabularyFieldMarshaller',
     'URLDereferencingMixin',
     'VocabularyLookupFieldMarshaller',
@@ -31,9 +32,6 @@ from zope.app.datetimeutils import (
 from zope.component import getMultiAdapter
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
-from zope.schema import Field, Object
-from zope.schema._field import AbstractCollection
-from zope.schema.interfaces import SchemaNotProvided
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -42,26 +40,8 @@ from canonical.launchpad.layers import WebServiceLayer, setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.url import urlsplit
 
-from canonical.lazr.interfaces.rest import ICollectionField
-from canonical.lazr.interfaces.field import IFieldMarshaller
-
-
-class CollectionField(AbstractCollection):
-    """A collection associated with an entry."""
-    # We subclass AbstractCollection instead of List because List
-    # has a _type of list, and we don't want to have to implement list
-    # semantics for this class.
-    implements(ICollectionField)
-
-    def __init__(self, *args, **kwargs):
-        """A generic collection field.
-
-        The readonly property defaults to True since these fields are usually
-        for collections of things linked to an object, and these collections
-        are managed through a dedicated API.
-        """
-        kwargs.setdefault('readonly', True)
-        super(CollectionField, self).__init__(*args, **kwargs)
+from canonical.lazr.interfaces.rest import IFieldMarshaller
+from canonical.lazr.utils import safe_hasattr
 
 
 class URLDereferencingMixin:
@@ -140,8 +120,8 @@ class SimpleFieldMarshaller:
         """See `IFieldMarshaller`.
 
         Try to decode value as a JSON-encoded string and pass it on to
-        marshall_from_json_data(). If value isn't a JSON-encoded string,
-        interpret it as string literal.
+        _marshall_from_request() if it's not None. If value isn't a
+        JSON-encoded string, interpret it as string literal.
         """
         try:
             value = simplejson.loads(value)
@@ -149,7 +129,16 @@ class SimpleFieldMarshaller:
             # Pass the value as is. This saves client from having to encode
             # strings.
             pass
-        return self.marshall_from_json_data(value)
+        if value is None:
+            return None
+        return self._marshall_from_request(value)
+
+    def _marshall_from_request(self, value):
+        """Hook method to marshall a non-null JSON value.
+
+        Default is to just call _marshall_from_json_data() with the value.
+        """
+        return self._marshall_from_json_data(value)
 
     def _marshall_from_json_data(self, value):
         """Hook method to marshall a no-null value.
@@ -206,6 +195,69 @@ class FloatFieldMarshaller(SimpleFieldMarshaller):
             super(FloatFieldMarshaller, self)._marshall_from_json_data(value))
 
 
+class BytesFieldMarshaller(SimpleFieldMarshaller):
+    """FieldMarshaller for IBytes field."""
+
+    _type = str
+    _type_error_message = 'not a string: %r'
+
+    @property
+    def representation_name(self):
+        """See `IFieldMarshaller`.
+
+        Represent as a link to another resource.
+        """
+        return "%s_link" % self.field.__name__
+
+    def unmarshall(self, entry, bytestorage):
+        """See `IFieldMarshaller`.
+
+        Marshall as a link to the byte storage resource.
+        """
+        return "%s/%s" % (canonical_url(entry.context), self.field.__name__)
+
+    def _marshall_from_request(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Reads the data from file-like object, and converts non-strings into
+        one.
+        """
+        if safe_hasattr(value, 'seek'):
+            value.seek(0)
+            value = value.read()
+        elif not isinstance(value, basestring):
+            value = str(value)
+        else:
+            # Leave string conversion to _marshall_from_json_data.
+            pass
+        return super(BytesFieldMarshaller, self)._marshall_from_request(value)
+
+    def _marshall_from_json_data(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Convert all strings to byte strings.
+        """
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        return super(
+            BytesFieldMarshaller, self)._marshall_from_json_data(value)
+
+
+class TextFieldMarshaller(SimpleFieldMarshaller):
+    """FieldMarshaller for IText fields."""
+
+    _type = unicode
+    _type_error_message = 'not a unicode string: %r'
+
+    def _marshall_from_request(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Converts the value to unicode.
+        """
+        value = unicode(value)
+        return super(TextFieldMarshaller, self)._marshall_from_request(value)
+
+
 class TokenizedVocabularyFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that looks up value using a token in a vocabulary."""
 
@@ -242,6 +294,70 @@ class DateTimeFieldMarshaller(SimpleFieldMarshaller):
                             seconds, microseconds, pytz.utc)
         except (DateError, DateTimeError, SyntaxError):
             raise ValueError("Value doesn't look like a date.")
+
+
+class AbstractCollectionFieldMarshaller(SimpleFieldMarshaller):
+    """A marshaller for List, Tuple, Set and other AbstractCollections.
+
+    It looks up the marshaller for its value-type, to handle its contained
+    elements.
+    """
+    # The only valid JSON representation is a list.
+    _type = list
+    _type_error_message = 'not a list: %r'
+
+    def __init__(self, field, request):
+        """See `SimpleFieldMarshaller`.
+
+        This also looks for the appropriate marshaller for value_type.
+        """
+        super(AbstractCollectionFieldMarshaller, self).__init__(
+            field, request)
+        self.value_marshaller = getMultiAdapter(
+            (field.value_type, request), IFieldMarshaller)
+
+    def _marshall_from_json_data(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        Marshall every elements of the list using the appropriate
+        marshaller.
+        """
+        value = super(
+            AbstractCollectionFieldMarshaller,
+            self)._marshall_from_json_data(value)
+
+        # In AbstractCollection subclasses, _type contains the type object,
+        # which can be used as a factory.
+        return self.field._type(
+            self.value_marshaller.marshall_from_json_data(item)
+            for item in value)
+
+    def _marshall_from_request(self, value):
+        """See `SimpleFieldMarshaller`.
+
+        If the value isn't a list, transform it into a one-element list. That
+        allows web client to submit one-element list of strings
+        without having to JSON-encode it.
+
+        Additionally, all items in the list are marshalled using the
+        appropriate `IFieldMarshaller` for the value_type.
+        """
+        if not isinstance(value, list):
+            value = [value]
+        value = [self.value_marshaller.marshall_from_request(item)
+                 for item in value]
+        return super(
+           AbstractCollectionFieldMarshaller,
+           self)._marshall_from_request(value)
+
+    def unmarshall(self, entry, value):
+        """See `SimpleFieldMarshaller`.
+
+        The collection is unmarshalled into a list and all its items are
+        unmarshalled using the appropriate FieldMarshaller.
+        """
+        return [self.value_marshaller.unmarshall(entry, item)
+               for item in value]
 
 
 class CollectionFieldMarshaller(SimpleFieldMarshaller):
@@ -349,16 +465,3 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         return removeSecurityProxy(resource).context
 
 
-class Reference(Object):
-    """An Object-like field which doesn't validate all fields of the schema.
-
-    Unlike Object, which does call _validate_fields(self.schema, value) to
-    validate all fields, this field will simply call the _validate() method of
-    the Field class and then check that the given value provides the specified
-    schema.
-    """
-
-    def _validate(self, value):
-        Field._validate(self, value)
-        if not self.schema.providedBy(value):
-            raise SchemaNotProvided()

@@ -37,8 +37,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    IByteStorage, ICollection, ICollectionField, IEntry, IFeed,
-    IHTTPResource)
+    IByteStorage, ICollection, IEntry, IFeed, IHTTPResource)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryResource, ScopedCollection)
 

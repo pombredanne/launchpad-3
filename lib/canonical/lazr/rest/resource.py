@@ -13,7 +13,6 @@ __all__ = [
     'ReadOnlyResource',
     'ScopedCollection',
     'ServiceRootResource',
-    'URLDereferencingMixin',
     ]
 
 import copy
@@ -46,12 +45,11 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IFieldMarshaller, IHTTPResource, IJSONPublishable,
-    IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
-    IServiceRootResource)
+    ICollection, ICollectionResource, IEntry, IEntryResource,
+    IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
-from canonical.lazr.rest.schema import URLDereferencingMixin
 
 
 class LazrPageTemplateFile(TrustedAppPT, PageTemplateFile):
@@ -101,7 +99,7 @@ class JSONItem:
         return str(self.context.title)
 
 
-class HTTPResource(URLDereferencingMixin):
+class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 

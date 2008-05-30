@@ -721,7 +721,8 @@ class VirtualTransport(Transport):
     def _abspath(self, relpath):
         """Return the absolute path to `relpath` without the schema."""
         return urlutils.joinpath(
-            self.base[len(self.server.scheme)-1:], relpath)
+            self.base[len(self.server.scheme)-1:],
+            urlutils.unescape(relpath).encode('utf-8'))
 
     def _getUnderylingTransportAndPath(self, relpath):
         """Return the underlying transport and path for `relpath`."""
@@ -810,7 +811,7 @@ class VirtualTransport(Transport):
         # Here, we assume that the underlying transport has no symlinks
         # (Bazaar transports cannot create symlinks). This means that we can
         # just return the absolute path.
-        return self._abspath(relpath)
+        return urlutils.escape(self._abspath(relpath))
 
     def readv(self, relpath, offsets, adjust_for_latency=False,
               upper_limit=None):

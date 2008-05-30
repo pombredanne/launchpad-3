@@ -14,9 +14,9 @@ from zope.component import adapts, getUtility
 from zope.schema import Bool, Datetime, Int, List, Object, Text
 
 from canonical.lazr import decorates
+from canonical.lazr.fields import CollectionField
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.interfaces.rest import IEntry
-from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.rest.messagetarget import IMessageTargetEntry
 from canonical.launchpad.interfaces import IBug, IBugSet, IBugTask, IPerson

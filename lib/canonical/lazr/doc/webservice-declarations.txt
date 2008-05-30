@@ -120,7 +120,7 @@ items:
     ...     comment = TextLine(title=u'Comment')
 
     >>> from zope.schema import Object
-    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> from canonical.lazr.fields import CollectionField
     >>> class IBookWithComments(IBook):
     ...     """A book with some comments."""
     ...     export_as_webservice_entry()

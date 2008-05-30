@@ -27,7 +27,7 @@ implement that interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.lazr.interfaces import IFieldMarshaller
-    >>> from canonical.lazr.rest import SimpleFieldMarshaller
+    >>> from canonical.lazr.rest.marshallers import SimpleFieldMarshaller
     >>> from zope.schema import Text
 
     >>> field = Text(__name__='field_name')
@@ -94,9 +94,9 @@ string, the resulting value is passed on to marshall_from_json_data().
     u'null'
 
 Invalid JSON-encoded strings are interpreted as string literals and
-passed on directly to marshall_from_json(). That's for the convenience
-of web clients, they don't need to encode string values in quotes, or
-can pass lists using multiple key-value pairs.
+passed on directly to marshall_from_json_data(). That's for the
+convenience of web clients, they don't need to encode string values in
+quotes, or can pass lists using multiple key-value pairs.
 
     >>> marshaller.marshall_from_request(u"a string")
     u'a string'
@@ -244,7 +244,121 @@ Floats are encoded using the standard JSON representation.
     ValueError: not a float: 'True'
 
 
-=== Choice ===
+=== Text ===
+
+The marshaller for IText field checks that the value is a unicode
+string. A ValueError is raised when that's not the case.
+
+    >>> from zope.schema import Text
+    >>> field = Text()
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
+    >>> marshaller.marshall_from_json_data(u"Test")
+    u'Test'
+    >>> marshaller.marshall_from_json_data(1.0)
+    Traceback (most recent call last):
+      ...
+    ValueError: not a unicode string: 1.0
+    >>> marshaller.marshall_from_json_data('Test')
+    Traceback (most recent call last):
+      ...
+    ValueError: not a unicode string: 'Test'
+
+None is passed through though.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+When coming from the request, everything is interpreted as a unicode
+string:
+
+    >>> marshaller.marshall_from_request('a string')
+    u'a string'
+    >>> marshaller.marshall_from_request(['a', 'b'])
+    u"['a', 'b']"
+    >>> marshaller.marshall_from_request('true')
+    u'True'
+    >>> marshaller.marshall_from_request('')
+    u''
+
+Except that 'null' still returns None.
+
+    >>> print marshaller.marshall_from_request('null')
+    None
+
+
+=== Bytes ===
+
+Since there is no way to represent a bytes string in JSON, all strings
+are converted to a byte string using UTF-8 encoding. If the value isn't
+a string, a ValueError is raised.
+
+    >>> from zope.schema import Bytes
+    >>> field = Bytes(__name__='data')
+    >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, marshaller)
+    True
+
+    >>> marshaller.marshall_from_json_data(u"Test")
+    'Test'
+    >>> marshaller.marshall_from_json_data(u'int\xe9ressant')
+    'int\xc3\xa9ressant'
+    >>> marshaller.marshall_from_json_data(1.0)
+    Traceback (most recent call last):
+      ...
+    ValueError: not a string: 1.0
+
+Again, except for None which is passed through.
+
+    >>> print marshaller.marshall_from_json_data(None)
+    None
+
+When coming over the request, the value is also converted into a UTF-8
+encoded string.
+
+    >>> marshaller.marshall_from_request(u"Test")
+    'Test'
+    >>> marshaller.marshall_from_request(u'int\xe9ressant')
+    'int\xc3\xa9ressant'
+    >>> marshaller.marshall_from_request('1.0')
+    '1.0'
+
+But again, None is returned as is.
+
+    >>> print marshaller.marshall_from_request('null')
+    None
+
+Since multipart/form-data can be used to upload data, file-like objects
+are read.
+
+    >>> from cStringIO import StringIO
+    >>> marshaller.marshall_from_request(StringIO('A line of data'))
+    'A line of data'
+
+Bytes field used in an entry are stored in the librarian, so their
+representation name states that it's a link.
+
+    >>> marshaller.representation_name
+    'data_link'
+
+And the unmarshall() method returns a link that will serve the file.
+
+    >>> from canonical.lazr.rest import EntryResource
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from zope.component import getUtility
+    >>> entry_resource = EntryResource(
+    ...     getUtility(IPersonSet).getByName('name16'), request)
+
+(The value would be the BytesStorage instance used to store the
+content, but it's not needed.)
+
+    >>> marshaller.unmarshall(entry_resource, None)
+    u'http://.../~name16/data'
+
+
+== Choice marshallers ==
 
 The marshaller for a Choice is chosen based on the Choice's
 vocabulary.
@@ -252,7 +366,7 @@ vocabulary.
     >>> from zope.schema import Choice
 
 
-==== Choice for IVocabularyTokenized ====
+=== Choice for IVocabularyTokenized ===
 
 The default marshaller will use the vocabulary getTermByToken to
 retrieve the value to use. It raise an error if the value isn't in the
@@ -286,7 +400,7 @@ None is always returned unchanged.
     None
 
 
-==== Choice of EnumeratedTypes ====
+=== Choice of EnumeratedTypes ===
 
 The JSON representation of the enumerated value is its title.  A string
 that corresponds to one of the values is marshalled to the appropriate
@@ -318,17 +432,16 @@ None is returned unchanged:
     None
 
 
-==== Choice of SQLObjectVocabularyBase ====
+=== Choice of SQLObjectVocabularyBase ===
 
 For vocabularies based on SQLObjectVocabularyBase, the values are
 interpreted as URLs referencing objects on the web service. If the given
 string is a URL corresponding to a vocabulary item, the marshaller
 returns that item. Otherwise it raises a ValueError.
 
-    >>> from canonical.launchpad.vocabularies import (
-    ...     ValidPersonOrTeamVocabulary)
-    >>> field = Choice(
-    ...     __name__='some_person', vocabulary=ValidPersonOrTeamVocabulary())
+    # Bind the field, to resolve the vocabulary name.
+    >>> field = Choice(__name__='some_person', vocabulary='ValidPersonOrTeam')
+    >>> field = field.bind(None)
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
     >>> verifyObject(IFieldMarshaller, marshaller)
     True
@@ -362,7 +475,6 @@ Instead of unmarshall() returning the Person object (which
 wouldn't look nice in a JSON representation), this marshaller returns
 the URL to that object.
 
-    >>> from canonical.lazr.rest import EntryResource
     >>> person_resource = EntryResource(person, request)
 
     >>> marshaller.unmarshall(person_resource, person)
@@ -376,16 +488,114 @@ resource and not a random string.
     'some_person_link'
 
 
-=== CollectionField ===
+== Collections ==
 
 The most complicated kind of marshaller is one that manages a
-collection of objects associated with some other object. Let's do an
-example with a collection of IPerson objects associated with some
-IPerson. (This might be the list of teams in which a person has a
-membership, or something like that.)
+collection of objects associated with some other object. The generic
+collection marshaller will take care of marshalling to the proper
+collection type, and of marshalling the individual items using the
+marshaller for its value_type.
+
+    >>> from zope.schema import List, Tuple, Set
+    >>> list_of_strings_field = List(value_type=Text())
+    >>> tuple_of_ints_field = Tuple(value_type=Int())
+    >>> set_of_choices_field = Set(
+    ...  value_type=Choice(vocabulary='ValidPersonOrTeam')).bind(None)
+
+    >>> list_marshaller = getMultiAdapter(
+    ...     (list_of_strings_field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, list_marshaller)
+    True
+
+    >>> tuple_marshaller = getMultiAdapter(
+    ...     (tuple_of_ints_field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, tuple_marshaller)
+    True
+
+    >>> set_marshaller = getMultiAdapter(
+    ...     (set_of_choices_field, request), IFieldMarshaller)
+    >>> verifyObject(IFieldMarshaller, set_marshaller)
+    True
+
+The only JSON representation for the collection itself is a list, since
+that's the only sequence type available in JSON. Anything else will
+raise a ValueError.
+
+    >>> list_marshaller.marshall_from_json_data([u"Test"])
+    [u'Test']
+
+    >>> list_marshaller.marshall_from_json_data(u"Test")
+    Traceback (most recent call last):
+      ...
+    ValueError: not a list: u'Test'
+
+None is passed through though.
+
+    >>> print list_marshaller.marshall_from_json_data(None)
+    None
+
+ValueError is also raised if one of the value in the list doesn't
+validate against the more specific marshaller.
+
+    >>> list_marshaller.marshall_from_json_data([u'Text', 1, 2])
+    Traceback (most recent call last):
+      ...
+    ValueError: not a unicode string: 1
+
+The return type is correctly typed to the concrete collection.
+
+    >>> tuple_marshaller.marshall_from_json_data([1, 2, 3])
+    (1, 2, 3)
+    >>> set_marshaller.marshall_from_json_data(
+    ...     ['http://api.launchpad.dev/beta/~salgado',
+    ...      'http://api.launchpad.dev/beta/~ubuntu-team'])
+    Set([<Person...>, <Person...>])
+
+When coming from the request, either a list or a JSON-encoded
+representation is accepted. The normal request rules for the
+underlying type are then followed.
+
+    >>> list_marshaller.marshall_from_request([u'1', u'2'])
+    [u'1', u'2']
+    >>> list_marshaller.marshall_from_request('["1", "2"]')
+    [u'1', u'2']
+
+    >>> tuple_marshaller.marshall_from_request([u'1', u'2'])
+    (1, 2)
+
+Except that 'null' still returns None.
+
+    >>> print list_marshaller.marshall_from_request('null')
+    None
+
+Also, as a convenience for web client, so that they don't have to JSON
+encode single-element list, non-list value are promoted into a
+single-element list.
+
+    >>> tuple_marshaller.marshall_from_request('1')
+    (1,)
+
+    >>> list_marshaller.marshall_from_request('test')
+    [u'test']
+
+The unmarshall() method will return a list containing the unmarshalled
+representation of each its members.
+
+    >>> sorted(set_marshaller.unmarshall(None, set([person, ubuntu_team])))
+    [u'http://.../~salgado', u'http://.../~ubuntu-team']
+
+
+== CollectionField ==
+
+Since CollectionField are really a list of references to other objects,
+and they are exposed using a dedicated CollectionResource, the marshaller
+for this kind of field is simpler.  Let's do an example with a
+collection of IPerson objects associated with some IPerson. (This
+might be the list of teams in which a person has a membership, or
+something like that.)
 
     >>> from zope.schema import Object
-    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> from canonical.lazr.fields import CollectionField
     >>> field = CollectionField(
     ...     __name__='person_memberships', value_type=Object(schema=IPerson))
     >>> marshaller = getMultiAdapter((field, request), IFieldMarshaller)
