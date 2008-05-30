@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = ['TestBranchView', 'test_suite']
 
 from datetime import datetime
+from textwrap import dedent
 import unittest
 
 import pytz
@@ -13,6 +14,7 @@ import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchView)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
@@ -29,6 +31,18 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        config.push(
+            "test", dedent("""\
+                [codehosting]
+                private_mirror_hosts: private.example.com
+                """))
+
+    def tearDown(self):
+        config.pop("test")
+        TestCaseWithFactory.tearDown(self)
+
     def testNormalBranch(self):
         # A branch from a normal location is fine.
         branch = self.factory.makeBranch(
@@ -44,7 +58,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         # anonymous browsers.
         branch = self.factory.makeBranch(
             branch_type=BranchType.MIRRORED,
-            url="http://bk-internal.mysql.com/bzr-mysql/mysql-5.0")
+            url="http://private.example.com/bzr-mysql/mysql-5.0")
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.user is None)
         self.assertEqual(
@@ -58,14 +72,14 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
-            url="http://bk-internal.mysql.com/bzr-mysql/mysql-5.0")
+            url="http://private.example.com/bzr-mysql/mysql-5.0")
         # Now log in the owner.
         logout()
         login('eric@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertEqual(view.user, owner)
         self.assertEqual(
-            "http://bk-internal.mysql.com/bzr-mysql/mysql-5.0",
+            "http://private.example.com/bzr-mysql/mysql-5.0",
             view.mirror_location)
 
     def testHiddenBranchAsOtherLoggedInUser(self):
@@ -78,7 +92,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         branch = self.factory.makeBranch(
             branch_type=BranchType.MIRRORED,
             owner=owner,
-            url="http://bk-internal.mysql.com/bzr-mysql/mysql-5.0")
+            url="http://private.example.com/bzr-mysql/mysql-5.0")
         # Now log in the other person.
         logout()
         login('other@example.com')

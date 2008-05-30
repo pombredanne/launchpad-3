@@ -380,6 +380,12 @@ class BranchView(LaunchpadView, FeedsMixin):
         if check_permission('launchpad.Edit', branch):
             return branch.url
 
+        # XXX: Tim Penhey, 2008-05-30
+        # Instead of a configuration hack we should support the users
+        # specifying whether or not they want the mirror location
+        # hidden or not.  Given that this is a database patch,
+        # it isn't going to happen today.
+        # See bug 235916
         hosts = config.codehosting.private_mirror_hosts.split(',')
         private_mirror_hosts = [name.strip() for name in hosts]
 
