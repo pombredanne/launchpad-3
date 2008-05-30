@@ -38,6 +38,10 @@
         name="+portlet-details-content"
         template="../templates/sourcepackagerelease-portlet-details-content.pt"
         />
+      <browser:page
+        name="+diffs"
+        template="../templates/sourcepackagerelease-diffs.pt"
+        />
     </browser:pages>
 
   <browser:page
