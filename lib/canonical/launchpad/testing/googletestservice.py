@@ -166,6 +166,7 @@ def kill_running_process():
             os.kill(pid, signal.SIGTERM)
             os.waitpid(pid, 0)
 
+
 def main():
     """Run the HTTP server."""
     # Redirect our service output to a log file.
