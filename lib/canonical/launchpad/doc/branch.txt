@@ -974,6 +974,7 @@ A BranchPersonSearchContext takes a person and a restriction.
     ~name12/gnome-terminal/mirrored
     ~name12/gnome-terminal/pushed
     ~name12/gnome-terminal/scanned
+    ~landscape-developers/landscape/trunk
     ~name12/+junk/junk.dev
     ~name12/+junk/junk.contrib
 

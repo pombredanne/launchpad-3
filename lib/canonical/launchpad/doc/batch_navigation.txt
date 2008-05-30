@@ -175,10 +175,10 @@ the number of rows, and the first 10 rows:
 
   >>> len(CursorWrapper.last_executed_sql)
   2
+  >>> print CursorWrapper.last_executed_sql[1]
+  SELECT ... FROM EmailAddress ... LIMIT 10...
   >>> print CursorWrapper.last_executed_sql[0]
-  SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
-  >>> CursorWrapper.last_executed_sql[1].endswith('LIMIT 10')
-  True
+  SELECT COUNT(*) FROM EmailAddress
 
 Get the next 10.  The database is only asked for the next 10 rows -- no further
 COUNTs are issued:

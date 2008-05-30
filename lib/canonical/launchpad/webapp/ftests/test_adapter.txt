@@ -1,40 +1,27 @@
 
-The canonical.database.adapter module provides a Zope database adapter
-that can prevent SQL statements from being executed if a request takes
-longer than length of time to execute.
+The canonical.database.adapter module provides a Storm store that can
+prevent SQL statements from being executed if a request takes longer
+than length of time to execute, and uses canonical.config for
+configuration parameters.
 
 Imports and test setup:
 
     >>> import threading
-    >>> import psycopg
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-    >>> from sqlos.interfaces import IConnectionName
+    >>> from storm.zope.interfaces import IZStorm
     >>> from canonical.config import config
     >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.webapp.adapter import (
     ...     clear_request_started, get_request_statements,
-    ...     LaunchpadDatabaseAdapter, set_request_started)
+    ...     set_request_started)
 
-The Launchpad database connection is created by getting the
-IZopeDatabaseAdapter for the connection name in question.  The
-LaunchpadDatabaseAdapter class is registered for the connection name
-SQLOS uses:
+The Launchpad database connection is registered as the store named
+"main":
 
-    >>> name = getUtility(IConnectionName)
-    >>> da = getUtility(IZopeDatabaseAdapter, name.name)
-    >>> isinstance(da, LaunchpadDatabaseAdapter)
-    True
-
-
-The database adapter is a reconnecting database adapter, so handles
-connection drops (as tested elsewhere):
-
-    >>> from canonical.launchpad.webapp.adapter import (
-    ...     ReconnectingDatabaseAdapter)
-    >>> isinstance(da, ReconnectingDatabaseAdapter)
-    True
+    >>> store = getUtility(IZStorm).get("main")
+    >>> print store.execute("SELECT current_database()").get_one()[0]
+    launchpad_ftest
 
 
 Statement Timeout
@@ -50,17 +37,31 @@ which corresponds to no timeout:
 Connections created with the database adapter will use this timeout as
 the Postgres statement timeout (a value of zero means no timeout):
 
-    >>> def current_statement_timeout(cursor):
-    ...     cursor.execute('SHOW statement_timeout')
-    ...     return cursor.fetchone()[0]
+    >>> def current_statement_timeout(store):
+    ...     result = store.execute('SHOW statement_timeout')
+    ...     timeout = result.get_one()[0]
+    ...     # convert to miliseconds and round value to nearest 10ms
+    ...     if timeout == '0':
+    ...         timeout = 0
+    ...     elif timeout.endswith('ms'):
+    ...         timeout = int(timeout[:-2])
+    ...     elif timeout.endswith('s'):
+    ...         timeout = int(timeout[:-1]) * 1000
+    ...     else:
+    ...         raise ValueError('Unknown timeout value: %s' % timeout)
+    ...     return '%dms' % round(timeout, -1)
     ...
+    >>> def reset_store():
+    ...     global store
+    ...     zstorm = getUtility(IZStorm)
+    ...     zstorm.remove(store)
+    ...     transaction.abort()
+    ...     store.close()
+    ...     store = zstorm.get("main")
 
     >>> set_request_started()
-    >>> conn = da()
-    >>> cursor = conn.cursor()
-    >>> print current_statement_timeout(cursor)
-    0
-    >>> da.disconnect()
+    >>> print current_statement_timeout(store)
+    0ms
     >>> clear_request_started()
 
 
@@ -73,16 +74,14 @@ timeout by sleeping for 200ms with a 100ms statement timeout:
     ...     db_statement_timeout: 100
     ...     """)
     >>> config.push('base_test_data', test_data)
-    >>> conn = da()
-    >>> cursor = conn.cursor()
+    >>> reset_store()
     >>> set_request_started()
-    >>> print current_statement_timeout(cursor)
+    >>> print current_statement_timeout(store)
     100ms
-    >>> cursor.execute('SELECT pg_sleep(0.200)')
+    >>> store.execute('SELECT pg_sleep(0.200)', noresult=True)
     Traceback (most recent call last):
       ...
-    RequestStatementTimedOut: SELECT pg_sleep(0.200)
-    >>> da.disconnect()
+    TimeoutError: ...SELECT pg_sleep(0.200)...
     >>> clear_request_started()
 
 
@@ -109,25 +108,24 @@ to fake how long things take.
     ...     db_statement_timeout_precision: 1000
     ...     """)
     >>> config.push('test', test_data)
-    >>> conn = da()
-    >>> cursor = conn.cursor()
+    >>> reset_store()
     >>> set_request_started()
 
-    >>> cursor.execute('SELECT TRUE')
-    >>> print current_statement_timeout(cursor)
-    10s
+    >>> store.execute('SELECT TRUE', noresult=True)
+    >>> print current_statement_timeout(store)
+    10000ms
     >>> time_travel(0.5) # Forward in time 0.5 seconds
 
-    >>> cursor.execute('SELECT TRUE')
-    >>> print current_statement_timeout(cursor)
-    10s
+    >>> store.execute('SELECT TRUE', noresult=True)
+    >>> print current_statement_timeout(store)
+    10000ms
     >>> time_travel(0.6) # Forward in time 0.6 seconds, now over precision
 
 This invokation, the PostgreSQL statement timeout will be updated before
 issuing the SQL command as we have exceeded the precision period:
 
-    >>> cursor.execute('SELECT TRUE')
-    >>> print current_statement_timeout(cursor)
+    >>> store.execute('SELECT TRUE', noresult=True)
+    >>> print current_statement_timeout(store)
     8900ms
     >>> time_travel(8.89) # 0.01s remaining before hard timeout
 
@@ -135,11 +133,10 @@ issuing the SQL command as we have exceeded the precision period:
 This final invokation, we will actually sleep to ensure that the
 timeout being reported by PostgreSQL is actually working:
 
-    >>> cursor.execute('SELECT pg_sleep(0.2)')
+    >>> store.execute('SELECT pg_sleep(0.2)', noresult=True)
     Traceback (most recent call last):
       ...
-    RequestStatementTimedOut: SELECT pg_sleep(0.2)
-    >>> da.disconnect()
+    TimeoutError: ...SELECT pg_sleep(0.2)...
     >>> clear_request_started()
 
 
@@ -156,11 +153,10 @@ Set the timeout to 5000ms for the next tests:
     ...     db_statement_timeout: 5000
     ...     """)
     >>> config.push('test', test_data)
-    >>> conn = da()
-    >>> cursor = conn.cursor()
+    >>> reset_store()
     >>> set_request_started()
-    >>> print current_statement_timeout(cursor)
-    5s
+    >>> print current_statement_timeout(store)
+    5000ms
     >>> clear_request_started()
 
 
@@ -182,7 +178,7 @@ Signal the start of a request:
 
 Perform an operation before the time limit expires:
 
-    >>> cursor.execute('SELECT 1')
+    >>> store.execute('SELECT 1', noresult=True)
 
 Once the request has been completed, clear_request_started() should be
 called:
@@ -195,27 +191,25 @@ Set the request start time to 1 minute in the past, and execute
 another query:
 
     >>> set_request_started(time.time() - 60)
-    >>> cursor.execute('SELECT 1')
+    >>> store.execute('SELECT 1', noresult=True)
     Traceback (most recent call last):
     ...
-    RequestExpired: SELECT 1
+    TimeoutError: ...SELECT 1...
 
 
 When a RequestExpired exception is raised, the current database
 transaction will be doomed, and future queries will fail:
 
     >>> clear_request_started()
-    >>> try:
-    ...     cursor.execute('SELECT 1')
-    ... except psycopg.DatabaseError, e:
-    ...     print str(e)
-    ERROR:  current transaction is aborted, commands ignored until end of transaction block
+    >>> store.execute('SELECT 1', noresult=True)
+    Traceback (most recent call last):
+    ...
+    InternalError: current transaction is aborted, commands ignored until end of transaction block
     <BLANKLINE>
-    SELECT 1
 
 Cleanup:
 
-    >>> conn.rollback()
+    >>> transaction.abort()
 
 The LaunchpadDatabaseAdapter assumes that each thread services a
 different request, so a request timing out on one thread will not
@@ -232,7 +226,7 @@ affect other threads:
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
     >>> started_request.wait()
-    >>> cursor.execute('SELECT 1')
+    >>> store.execute('SELECT 1', noresult=True)
     >>> statement_issued.set()
     >>> thread.join()
     >>> clear_request_started()
@@ -251,14 +245,14 @@ remove the timout:
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
     >>> started_request.wait()
-    >>> cursor.execute('SELECT 1')
+    >>> store.execute('SELECT 1', noresult=True)
     Traceback (most recent call last):
     ...
-    RequestExpired: SELECT 1
+    TimeoutError: ...SELECT 1...
     >>> statement_issued.set()
     >>> thread.join()
     >>> clear_request_started()
-    >>> conn.rollback()
+    >>> transaction.abort()
 
 
 If no timeout has been set, then requests will not time out:
@@ -268,11 +262,9 @@ If no timeout has been set, then requests will not time out:
     ...     db_statement_timeout: none
     ...     """)
     >>> config.push('test', test_data)
-    >>> da.disconnect()
-    >>> conn = da()
-    >>> cursor = conn.cursor()
+    >>> reset_store()
     >>> set_request_started(time.time() - 60)
-    >>> cursor.execute('SELECT 1')
+    >>> store.execute('SELECT 1', noresult=True)
     >>> clear_request_started()
 
 
@@ -285,16 +277,16 @@ not maintained outside of a request:
 
     >>> get_request_statements()
     []
-    >>> cursor.execute('SELECT 1')
-    >>> cursor.execute('SELECT 2')
+    >>> store.execute('SELECT 1', noresult=True)
+    >>> store.execute('SELECT 2', noresult=True)
     >>> get_request_statements()
     []
 
 Now begin a request, and issue a number of statements:
 
     >>> set_request_started()
-    >>> cursor.execute('SELECT 1')
-    >>> cursor.execute('SELECT 2')
+    >>> store.execute('SELECT 1', noresult=True)
+    >>> store.execute('SELECT 2', noresult=True)
     >>> for starttime, endtime, statement in get_request_statements():
     ...     print statement
     SELECT 1
@@ -307,87 +299,53 @@ After we complete the request, the statement log is cleared:
     []
 
 
-Read Only Transactions
-======================
-
-Customizing the database adapter also lets us easily tweak the current
-connection. For example we can make it read only:
-
-    >>> cursor.execute("""
-    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord')
-    ...     """)
-    >>> da.readonly()
-    >>> cursor.execute("""
-    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord2')
-    ...     """)
-    Traceback (most recent call last):
-    ...
-    ProgrammingError: ERROR:  transaction is read-only
-    ...
-
-The read only status only lasts until the end of the transaction.:
-
-    >>> transaction.abort()
-    >>> cursor = da().cursor()
-    >>> cursor.execute("""
-    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord3')
-    ...     """)
-    >>> transaction.abort()
-
-
 == Switching Database Users ==
 
-We can also change the user we are connected as, which is useful in
-tests. The getUser() method will return the current database user. The
-switchUser() method will change the connection to the user that that
-is passed as an argument. You should only change the user at the start
-of a transaction, or else any uncommitted changes made may be lost:
+The Launchpad store uses canonical.config to configure its
+connection.  This can be adjusted by choosing a different database
+config section.  By default we connect as "launchpad"
 
-    >>> da.getUser()
-    'launchpad'
-    >>> da.switchUser(config.statistician.dbuser)
-    >>> da.getUser()
+    >>> print store.execute("select current_user").get_one()[0]
+    launchpad
+
+    >>> from canonical.config import config, dbconfig
+    >>> config.statistician.dbuser
     'statistician'
-    >>> cursor = da().cursor()
-    >>> cursor.execute("SELECT current_user")
-    >>> cursor.fetchone()[0] == config.statistician.dbuser
-    True
-    >>> cursor.execute("""
+    >>> dbconfig.setConfigSection('statistician')
+    >>> reset_store()
+    >>> print store.execute("select current_user").get_one()[0]
+    statistician
+    >>> store.execute("""
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
-    ...     """)
+    ...     """, noresult=True)
     Traceback (most recent call last):
     ...
-    ProgrammingError: ERROR:  permission denied for relation sourcepackagename
-    ...
+    ProgrammingError: permission denied for relation sourcepackagename
+    <BLANKLINE>
 
-Unlike readonly, this is not reset at the end of the transaction:
+This is not reset at the end of the transaction:
 
     >>> transaction.abort()
-    >>> cursor = da().cursor()
-    >>> cursor.execute("SELECT current_user")
-    >>> cursor.fetchone()[0] == config.statistician.dbuser
-    True
-    >>> cursor.execute("""
+    >>> print store.execute("select current_user").get_one()[0]
+    statistician
+    >>> store.execute("""
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
-    ...     """)
+    ...     """, noresult=True)
     Traceback (most recent call last):
     ...
-    ProgrammingError: ERROR:  permission denied for relation sourcepackagename
-    ...
+    ProgrammingError: permission denied for relation sourcepackagename
+    <BLANKLINE>
     >>> transaction.abort()
 
 So you need to explicitly set the user back:
 
-    >>> da.switchUser()
-    >>> da.getUser()
-    'launchpad'
-    >>> cursor = da().cursor()
-    >>> cursor.execute("""
+    >>> dbconfig.setConfigSection('launchpad')
+    >>> reset_store()
+    >>> print store.execute("select current_user").get_one()[0]
+    launchpad
+    >>> store.execute("""
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
-    ...     """)
-    >>> cursor.execute("SELECT current_user")
-    >>> cursor.fetchone()[0] == config.launchpad.dbuser
-    True
+    ...     """, noresult=True)
 
 Reset out config:
 

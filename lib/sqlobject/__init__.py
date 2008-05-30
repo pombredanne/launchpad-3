@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import datetime
 
+from storm.exceptions import NotOneError as SQLObjectMoreThanOneResultError
 from storm.expr import SQL
 from storm.sqlobject import *
 

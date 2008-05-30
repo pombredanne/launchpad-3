@@ -956,8 +956,8 @@ class NascentUpload:
             ancestry = package_upload_source.getSourceAncestry()
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
-                diff = sourcepackagerelease.requestDiffTo(
-                    sourcepackagerelease.creator, to_sourcepackagerelease)
+                diff = to_sourcepackagerelease.requestDiffTo(
+                    sourcepackagerelease.creator, sourcepackagerelease)
                 self.logger.debug('%s requested' % diff.title)
 
         if self.binaryful:

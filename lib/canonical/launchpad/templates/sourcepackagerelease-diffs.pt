@@ -1,0 +1,27 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+  <div tal:attributes="id string:diff-for-${context/version}"
+       tal:define="diffs context/package_diffs"
+       tal:condition="diffs">
+
+    <h3>Available diffs</h3>
+
+    <ul>
+       <li tal:repeat="diff diffs">
+          <tal:pending condition="not: diff/date_fulfilled">
+             <tal:pending_diff replace="diff/title" />
+          </tal:pending>
+          <tal:fulfilled condition="diff/date_fulfilled">
+             <a tal:attributes="href diff/diff_content/http_url"
+                tal:content="diff/title">Diff for foo from 1.0 to 1.1</a>
+          </tal:fulfilled>
+       </li>
+    </ul>
+
+  </div>
+
+</tal:root>
