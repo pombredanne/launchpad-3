@@ -149,7 +149,7 @@ run_all_quickly_and_quietly:
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
-		 -C $(CONFFILE) > ${LPCONFIG}-quiet.log 2>&1
+		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
 
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
