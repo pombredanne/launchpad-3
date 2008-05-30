@@ -54,9 +54,6 @@ Let's make some bugtasks that qualify for expiration. A Jokosher
 bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
 will suffice.
 
-The test harness provides create_old_bug() and summarize_bugtask()
-for creating old bugs and printing a summary of their state.
-
 IBug specifies two properties related to bug expiration. can_expire
 tells you whether one or more of the bug's bug tasks may be expired, if
 the bug doesn't get any more activity. permits_expiration on the other
@@ -75,15 +72,16 @@ that no bug tasks can be expired.
 
     # A expirable bugtask. It will be expired because its conjoined
     # master can be expired.
+    >>> from canonical.launchpad.ftests.bug import create_old_bug
     >>> ubuntu_bugtask = create_old_bug('expirable_distro', 351, ubuntu)
     >>> ubuntu_bugtask.bug.permits_expiration
     True
-    >>> sync_bugtasks(ubuntu_bugtask)
     >>> ubuntu_bugtask.bug.can_expire
     True
 
     # An expirable bugtask, a distroseries. The ubuntu bugtask is its
     # conjoined slave.
+    >>> from canonical.launchpad.ftests.bug import sync_bugtasks
     >>> hoary_bugtask = bugtaskset.createTask(
     ...     bug=ubuntu_bugtask.bug, owner=sample_person,
     ...     distroseries=ubuntu.currentseries)
@@ -99,7 +97,6 @@ that no bug tasks can be expired.
     >>> jokosher_bugtask = create_old_bug('jokosher', 61, jokosher)
     >>> jokosher_bugtask.bug.permits_expiration
     True
-    >>> sync_bugtasks(jokosher_bugtask)
     >>> jokosher_bugtask.bug.can_expire
     True
 
@@ -215,9 +212,7 @@ expired. The other bugs do not meet one of the preconditions.
     ...     confirmed_bugtask, duplicate_bugtask, external_bugtask, 
     ...     milestone_bugtask, recent_bugtask, no_expiration_bugtask]
 
-    # Sync the bugs and bugtasks defined above with their modified DB values.
-    >>> sync_bugtasks(bugtasks)
-
+    >>> from canonical.launchpad.ftests.bug import summarize_bugtasks
     >>> summarize_bugtasks(bugtasks)
     ROLE             EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
     ubuntu           False   351  Incomplete  False     False  False  False
