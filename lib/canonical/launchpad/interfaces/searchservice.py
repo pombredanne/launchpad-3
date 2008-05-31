@@ -9,7 +9,6 @@ __all__ = [
     'ISearchResult',
     'ISearchResults',
     'ISearchService',
-    'GoogleParamError',
     'GoogleWrongGSPVersion',
     ]
 
@@ -56,10 +55,6 @@ class ISearchResults(Interface):
 
     def __iter__():
         """Iterate over the items in the collection."""
-
-
-class GoogleParamError(ValueError):
-    """Raised when a Google search parameter has a bad value."""
 
 
 class GoogleWrongGSPVersion(ValueError):
