@@ -19,8 +19,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
-    ISearchResult, ISearchResults, ISearchService, GoogleParamError,
-    GoogleWrongGSPVersion)
+    ISearchResult, ISearchResults, ISearchService, GoogleWrongGSPVersion)
 from canonical.launchpad.webapp import urlparse
 
 
@@ -174,7 +173,6 @@ class GoogleSearchService:
         used over multiple queries to get successive sets of results.
 
         :return: `ISearchResults` (PageMatches).
-        :raise: `GoogleParamError` when an search parameter is None.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
@@ -270,14 +268,27 @@ class GoogleSearchService:
             raise GoogleWrongGSPVersion(
                 "Could not get the 'total' from the GSP XML response.")
         for result in results.findall('R'):
-            try:
-                title = result.find('T').text
-                url = result.find('U').text
-                summary = result.find('S').text.replace('<br>', '')
-            except (AttributeError):
+            url_tag = result.find('U')
+            title_tag = result.find('T')
+            summary_tag = result.find('S')
+            if None in (url_tag, title_tag, summary_tag):
+                # Google indexed a bad page, or the page may be marked for
+                # removal from the index. We should not include this.
+                continue
+            title = title_tag.text
+            url = url_tag.text
+            summary = summary_tag.text
+            if None in (url, title, summary):
                 # There is not enough data to create a PageMatch object.
-                raise GoogleWrongGSPVersion(
-                    "Could not get the 'title', 'url', and 'summary' from "
-                    "the GSP XML response.")
+                # This can be caused by an empty title or summary which
+                # has been observed for pages that are from vhosts that
+                # should not be indexed.
+                continue
+            summary = summary.replace('<br>', '')
             page_matches.append(PageMatch(title, url, summary))
+        if len(page_matches) == 0:
+            # No viable page matches could be found in the set; the
+            # XML may be the wrong version.
+            raise GoogleWrongGSPVersion(
+                "Could not get any PageMatches from the GSP XML response.")
         return PageMatches(page_matches, start, total)
