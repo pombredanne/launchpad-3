@@ -536,7 +536,10 @@ class ProductSetContextMenu(ContextMenu):
 
     def register(self):
         text = 'Register a project'
-        return Link('+new', text, icon='add')
+        # We link to the guided form, though people who know the URL can
+        # just jump to +new directly. That might be considered a
+        # feature!
+        return Link('+new-guided', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
