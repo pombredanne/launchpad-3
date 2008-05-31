@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0322
 
 """Views, navigation and actions for BranchMergeProposals."""
 
@@ -12,6 +13,7 @@ __all__ = [
     'BranchMergeProposalEnqueueView',
     'BranchMergeProposalInlineDequeueView',
     'BranchMergeProposalJumpQueueView',
+    'BranchMergeProposalNavigation',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalResubmitView',
@@ -20,6 +22,7 @@ __all__ = [
     'BranchMergeProposalWorkInProgressView',
     ]
 
+from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface
@@ -38,10 +41,12 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
-    IStructuralObjectPresentation)
+    IMessageSet,
+    IStructuralObjectPresentation,
+    WrongBranchMergeProposal)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadView, action)
+    LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
 
 
@@ -221,6 +226,23 @@ class BranchMergeProposalRevisionIdMixin:
             self.context.queued_revision_id)
 
 
+class BranchMergeProposalNavigation(Navigation):
+    """Navigation from BranchMergeProposal to CodeReviewComment views."""
+
+    usedfor = IBranchMergeProposal
+
+    @stepthrough('comments')
+    def traverse_comment(self, id):
+        try:
+            id = int(id)
+        except ValueError:
+            return None
+        try:
+            return self.context.getMessage(id)
+        except WrongBranchMergeProposal:
+            return None
+
+
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
@@ -234,6 +256,32 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         # Will point to the target_branch queue, or the queue
         # with multiple targets if specified.
         return canonical_url(self.context.target_branch) + '/+merge-queue'
+
+    @property
+    def comment_location(self):
+        """Location of page for commenting on this proposal."""
+        return canonical_url(self.context, view_name='+comment')
+
+    @property
+    def comments(self):
+        """Return comments associated with this proposal, plus styling info.
+
+        Comments are in threaded order, and the style indicates indenting
+        for use with threads.
+        """
+        message_to_comment = {}
+        messages = []
+        for comment in self.context.all_messages:
+            message_to_comment[comment.message] = comment
+            messages.append(comment.message)
+        message_set = getUtility(IMessageSet)
+        threads = message_set.threadMessages(messages)
+        result = []
+        for depth, message in message_set.flattenThreads(threads):
+            comment = message_to_comment[message]
+            style = 'margin-left: %dem;' % (2 * depth)
+            result.append(dict(style=style, comment=comment))
+        return result
 
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):

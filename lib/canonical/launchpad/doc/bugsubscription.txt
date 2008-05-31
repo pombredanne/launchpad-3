@@ -471,6 +471,10 @@ there is no security contact:
     >>> ubuntu.security_contact is None
     True
 
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, security_related=True, private=True)
@@ -478,6 +482,14 @@ there is no security contact:
 
     >>> getSubscribers(new_bug)
     ['foo.bar@canonical.com', 'support@ubuntu.com']
+
+Even though support@ubuntu.com got subscribed while filing the bug, no
+"You have been subscribed" notification was sent, which is normally sent
+to new subscribers.
+
+    >>> transaction.commit()
+    >>> stub.test_emails
+    []
 
 Another example, this time for an upstream:
 
@@ -662,3 +674,37 @@ subscriptions themselves, rather than the subscribers.
     ...         subscription.display_subscribed_by)
     Foo Bar (Subscribed by Robert Collins)
     Scott James Remnant (Subscribed themselves)
+
+
+== Email notification ==
+
+When a user is subscribed to a bug by someone other than themselves,
+they receive an email notification. The notification is sent only when
+an SQLObjectCreatedEvent is issued, since subscribe() is used in places
+where no notification should be sent.
+
+    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
+    >>> from canonical.launchpad.mail import stub
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+    >>> bug_subscription = bug.subscribe(sabdfl, lifeless)
+    >>> notify(SQLObjectCreatedEvent(bug_subscription))
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> print stub.test_emails[-1][2]
+    MIME-Version: 1.0
+    ...
+    From: Launchpad Bug Tracker <...@bugs.launchpad.net>
+    To: mark@hbd.com
+    Reply-To: Bug ... <...@bugs.launchpad.net>
+    ...
+    X-Launchpad-Message-Rationale: Subscriber
+    ...
+    You have been subscribed to a public bug by Robert Collins (lifeless):
+    ...
+    If a Save As dialog for a nonexistent window exists,
+    ...
+    ** Affects: firefox
+    ...
+    http://bugs.launchpad.dev/bugs/...

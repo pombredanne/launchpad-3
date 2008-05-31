@@ -19,7 +19,7 @@ from bzrlib.transport import (
     unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase as BzrTestCase, TestCaseInTempDir
-from bzrlib.urlutils import local_path_to_url
+from bzrlib.urlutils import escape, local_path_to_url
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -31,13 +31,13 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, BlockingProxy, LaunchpadServer, set_up_logging,
-    VirtualTransport)
+    AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
+    LaunchpadServer, set_up_logging, VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
 
-class TestLaunchpadServer(BzrTestCase):
+class TestLaunchpadServer(TrialTestCase, BzrTestCase):
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -183,6 +183,71 @@ class TestLaunchpadServer(BzrTestCase):
         deferred.addCallback(assert_path_starts_with, branch_id_to_path(1))
         return deferred
 
+    def test_translateControlPath(self):
+        deferred = self.server.translateVirtualPath(
+            '~testuser/evolution/.bzr/control.conf')
+        def check_control_file((transport, path)):
+            self.assertEqual(
+                'default_stack_on=%s\n'
+                % self.server._getStackOnURL('~vcs-imports/evolution/main'),
+                transport.get_bytes(path))
+        return deferred.addCallback(check_control_file)
+
+    def test_buildControlDirectory(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+        branch = '~user/product/branch'
+        transport = self.server._buildControlDirectory(branch)
+        self.assertEqual(
+            'default_stack_on=%s\n' % self.server._getStackOnURL(branch),
+            transport.get_bytes('.bzr/control.conf'))
+
+    def test_buildControlDirectory_no_branch(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+        transport = self.server._buildControlDirectory('')
+        self.assertEqual([], transport.list_dir('.'))
+
+    def test_parseProductControlDirectory(self):
+        # _parseProductControlDirectory takes a path to a product control
+        # directory and returns the name of the product, followed by the path.
+        product, path = self.server._parseProductControlDirectory(
+            '~user/product/.bzr')
+        self.assertEqual('product', product)
+        self.assertEqual('.bzr', path)
+        product, path = self.server._parseProductControlDirectory(
+            '~user/product/.bzr/foo')
+        self.assertEqual('product', product)
+        self.assertEqual('.bzr/foo', path)
+
+    def test_parseProductControlDirectoryNotControlDir(self):
+        # If the directory isn't a control directory (doesn't have '.bzr'),
+        # raise an error.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user/product/branch')
+
+    def test_parseProductControlDirectoryTooShort(self):
+        # If there aren't enough path segments, raise an error.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user')
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            '~user/product')
+
+    def test_parseProductControlDirectoryInvalidUser(self):
+        # If the user directory is invalid, raise an InvalidControlDirectory.
+        self.assertRaises(
+            InvalidControlDirectory,
+            self.server._parseProductControlDirectory,
+            'user/product/.bzr/foo')
+
 
 class TestVirtualTransport(TestCaseInTempDir):
 
@@ -229,6 +294,13 @@ class TestVirtualTransport(TestCaseInTempDir):
         os.symlink('prefix_foo', 'prefix_baz/bar')
         t = self.transport.clone('baz')
         self.assertEqual('/baz/bar', t.local_realPath('bar'))
+
+    def test_realPathEscaping(self):
+        # local_realPath returns an escaped path to the file.
+        escaped_path = escape('~baz')
+        self.transport.mkdir(escaped_path)
+        self.assertEqual(
+            '/' + escaped_path, self.transport.local_realPath(escaped_path))
 
 
 class LaunchpadTransportTests:
@@ -311,6 +383,14 @@ class LaunchpadTransportTests:
         transport = self.getTransport()
         deferred = self._ensureDeferred(
             transport.get_bytes, '~testuser/firefox/baz/.bzr/hello.txt')
+        return deferred.addCallback(self.assertEqual, 'Hello World!')
+
+    def test_get_mapped_file_escaped_url(self):
+        # Getting a file from a public branch URL gets the file as stored on
+        # the base transport, even when the URL is escaped.
+        url = escape('~testuser/firefox/baz/.bzr/hello.txt')
+        transport = self.getTransport()
+        deferred = self._ensureDeferred(transport.get_bytes, url)
         return deferred.addCallback(self.assertEqual, 'Hello World!')
 
     def test_readv_mapped_file(self):

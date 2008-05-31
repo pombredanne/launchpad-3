@@ -8,7 +8,7 @@ lists the bug assigned to that person.
     >>> print anon_browser.title
     Bugs related to Sample Person
     >>> print anon_browser.url
-    http://bugs.launchpad.dev/~name12/
+    http://bugs.launchpad.dev/~name12
 
 Note that we may see each bug more than once in case it's reported against
 more than one target (https://launchpad.net/bugs/1357).

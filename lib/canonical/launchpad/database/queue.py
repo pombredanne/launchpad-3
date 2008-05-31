@@ -175,6 +175,7 @@ class PackageUpload(SQLBase):
 
         for build in self.builds:
             # as before, but for QueueBuildAcceptError
+            build.verifyBeforeAccept()
             try:
                 build.checkComponentAndSection()
             except QueueBuildAcceptError, info:
@@ -958,6 +959,31 @@ class PackageUploadBuild(SQLBase):
                     'Section "%s" is not allowed in %s' %
                         (binary.section.name,
                          distroseries.name))
+
+    def verifyBeforeAccept(self):
+        """See `IPackageUploadBuild`."""
+        distribution = self.packageupload.distroseries.distribution
+        known_filenames = []
+        # Check if the uploaded binaries are already published in the archive.
+        for binary_package in self.build.binarypackages:
+            for binary_file in binary_package.files:
+                try:
+                    published_binary = distribution.getFileByName(
+                        binary_file.libraryfile.filename, source=False,
+                        archive=self.packageupload.archive)
+                except NotFoundError:
+                    # Only unknown files are ok.
+                    continue
+
+                known_filenames.append(binary_file.libraryfile.filename)
+
+        # If any of the uploaded files are already present we have a problem.
+        if len(known_filenames) > 0:
+            filename_list = "\n\t%s".join(
+                [filename for filename in known_filenames])
+            raise QueueInconsistentStateError(
+                'The following files are already published in %s:\n%s' % (
+                    self.packageupload.archive.title, filename_list))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""

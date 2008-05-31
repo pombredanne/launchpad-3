@@ -14,11 +14,11 @@ Taking an IPOFile for IProductSeries context:
 The Application tabs should point to IProductSeries URLs.
 
     >>> print_tab_links(browser.contents)
-    Overview: http://launchpad.dev/evolution/trunk/
+    Overview: http://launchpad.dev/evolution/trunk
     Code: http://code.launchpad.dev/evolution
-    Bugs: http://bugs.launchpad.dev/evolution/trunk/
-    Blueprints: http://blueprints.launchpad.dev/evolution/trunk/
-    Translations: http://translations.launchpad.dev/evolution/trunk/
+    Bugs: http://bugs.launchpad.dev/evolution/trunk
+    Blueprints: http://blueprints.launchpad.dev/evolution/trunk
+    Translations: http://translations.launchpad.dev/evolution/trunk
     Answers: Unavailable
 
 But the navigation links should point to IPOFile urls.
@@ -40,12 +40,12 @@ Taking an IPOFile for ISourcePackage context:
 The Application tabs should point to ISourcePackage URLs.
 
     >>> print_tab_links(browser.contents)
-    Overview: http://launchpad.dev/ubuntu/hoary/+source/evolution/
+    Overview: http://launchpad.dev/ubuntu/hoary/+source/evolution
     Code: Unavailable
-    Bugs: http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution/
+    Bugs: http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution
     Blueprints: Unavailable
-    Translations: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/
-    Answers: http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/
+    Translations: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution
+    Answers: http://answers.launchpad.dev/ubuntu/hoary/+source/evolution
 
 But the navigation links should point to IPOFile urls.
 

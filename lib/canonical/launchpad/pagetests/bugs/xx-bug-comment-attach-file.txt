@@ -68,17 +68,6 @@ You cannot upload an empty attachment.
     There is 1 error.
     Cannot upload empty file.
 
-You cannot add a comment without a subject.
-
-    >>> user_browser.open(
-    ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
-    >>> user_browser.getControl("Subject").value = ""
-    >>> user_browser.getControl("Save Changes").click()
-    >>> for msg in get_feedback_messages(user_browser.contents):
-    ...     print msg
-    There is 1 error.
-    Required input is missing.
-
 The size of uploaded files is limited with the max_bug_attachment_size
 option in launchpad.conf. In our example, the size is limited to 1024.
 
