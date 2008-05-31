@@ -1030,7 +1030,7 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_new = 'Register a project in Launchpad'
 
-product_new_guided = 'Register a project in Launchpad'
+product_new_guided = 'Before you register your project...'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
