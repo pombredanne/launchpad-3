@@ -9,6 +9,7 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
+import operator
 from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
@@ -220,7 +221,7 @@ class DistributionSourcePackage(BugTargetBase,
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagename),
-            orderBy='-datecreated',
+            orderBy=['-datecreated', '-id'],
             clauseTables=['distroseries', 'sourcepackagerelease'])
         result = []
         versions = set()
@@ -231,7 +232,7 @@ class DistributionSourcePackage(BugTargetBase,
                     distribution=self.distribution,
                     sourcepackagerelease=spp.sourcepackagerelease)
                 result.append(dspr)
-        return result
+        return sorted(result, key=operator.attrgetter('id'), reverse=True)
 
     def __eq__(self, other):
         """See IDistributionSourcePackage."""
