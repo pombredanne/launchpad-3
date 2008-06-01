@@ -184,7 +184,7 @@ is widely available:
     None
 
     >>> print frog.status
-    BUILDING i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov] (AUTO)
+    Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -208,12 +208,12 @@ all the 'private' information is exposed.
     None
 
     >>> print admin_view.context.status
-    BUILDING i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov] (AUTO)
+    Building i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov]
 
 When accessing the same view as a unprivileged user, No-Priv, the
 sensitive information is hidden (the context class is 'cloaked', see
 browser/builder.py for futher information on this) and the builder
-shows up as 'NOT OK'.
+shows up as 'Building private build'.
 
     >>> login('no-priv@canonical.com')
 
@@ -232,7 +232,7 @@ shows up as 'NOT OK'.
     None
 
     >>> print nopriv_view.context.status
-    NOT OK: (AUTO)
+    Building private build
 
 XXX cprov 20080214: this is clearly a counterintuitive way to identify
 builders building private jobs. We will certainly have to fine-tune it
@@ -248,7 +248,7 @@ again.
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
 
     >>> print nopriv_view.context.status
-    IDLE (AUTO)
+    Idle
 
     >>> login(ANONYMOUS)
 
@@ -258,11 +258,11 @@ again.
 BuilderSetView offer a way to treat the currently registered builders
 in categories. They are:
 
- * 'Building other packages': a group of builders capable of building
-   'trusted' sources, ubuntu official packages. The 'non-vitualized'
-   build-farm.
+ * 'Official distribution build machines': a group of builders capable
+   of building 'trusted' sources, ubuntu official packages. The
+   'non-vitualized' build-farm.
 
- * 'Building PPP packages': a group of builders capable of building
+ * 'PPA build machines': a group of builders capable of building
    'untrusted' sources, PPA packages. The 'virtualized' build-farm.
 
     >>> from canonical.launchpad.interfaces import IBuilderSet
@@ -336,7 +336,7 @@ contains the following attributes:
     <...BuilderCategory ...>
 
     >>> print builder_category.title
-    Building other packages
+    Official distribution build machines
 
     >>> print builder_category.virtualized
     False
@@ -390,7 +390,7 @@ The 'PPA' builder category is also available in BuilderSetView as a
     >>> builder_category = builderset_view.ppa_builders
 
     >>> print builder_category.title
-    Building PPA packages
+    PPA build machines
 
     >>> print builder_category.virtualized
     True

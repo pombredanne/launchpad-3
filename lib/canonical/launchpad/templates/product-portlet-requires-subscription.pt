@@ -1,0 +1,52 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-requires-subscription"
+     tal:condition="context/commercial_subscription_is_due">
+  <img style="padding-top: 1em; float: right" alt="" src="/@@/warning-large" />
+  <h2>
+    Purchasing a subscription is required
+  </h2>
+  <div tal:condition="context/commercial_subscription/date_expires | nothing">
+    <strong>Current subscription expires
+    <tal:date_expire
+     tal:replace="context/commercial_subscription/date_expires/fmt:displaydate"
+    />.
+    </strong>
+  </div>
+  <div>
+    The licensing of your project does not qualify for free
+    hosting. You have two options to continue using Launchpad
+    for this project.
+    <ul>
+      <li><a href="+purchase-subscription">Purchase a subscription.</a></li>
+      <li><a href="mailto:feedback@launchpad.net">Contact us</a>
+          about changing your license.
+      </li>
+    </ul>
+    To qualify for free hosting, the project's licensing must meet the
+    following requirements:
+    <ul>
+      <li>Must make the source code freely available.</li>
+      <li>Must allow modification and distribution of modified copies under
+          the same license.</li>
+      <li>Must allow redistribution.</li>
+      <li>Must not require royalty payments or any other fee for
+          redistribution or modification.</li>
+      <li>Must allow these rights to be passed on along with the software.</li>
+      <li>Must not discriminate against persons, groups or against fields
+          of endeavour.</li>
+      <li>Must not be distributed under a license specific to Ubuntu.</li>
+      <li>Must not contaminate other software licenses.</li>
+    </ul>
+
+    <a tal:define="config modules/canonical.config/config"
+       tal:attributes="href config/commercial/licensing_policy_url">
+      View licensing policies
+    </a>
+  </div>
+</div>
+</tal:root>

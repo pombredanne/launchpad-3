@@ -165,7 +165,7 @@ version, component, section and priority.
 
   >>> [filelist] = find_tags_by_class(anon_browser.contents, 'queue-pmount-2')
   >>> print extract_text(filelist)
-  pmount_1.9-1_all.deb (3 bytes) NEW 0.1-1 main base important
+  pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 main base important
 
 XXX cprov 20070726: we should extend the test when we are able to
 probe javascripts events.
@@ -212,6 +212,7 @@ upload.
   >>> from canonical.launchpad.scripts.ftests.test_queue import (
   ...     upload_bar_source)
   >>> bar_src = upload_bar_source()
+  >>> bar_queue_id = str(bar_src.queue_root.id)
 
   >>> import transaction
   >>> transaction.commit()
@@ -227,7 +228,8 @@ Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
-  >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['15']
+  >>> upload_manager_browser.getControl(
+  ...     name="QUEUE_ID").value = [bar_queue_id]
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> print_queue(upload_manager_browser.contents)
   Package             Version     Component Section Priority Pocket  When
@@ -388,7 +390,7 @@ values:
   ...     anon_browser.contents, 'queue-pmount-2')
   >>> for row in filelist:
   ...     print extract_text(row)
-  pmount_1.9-1_all.deb (3 bytes) NEW 0.1-1 restricted admin extra
+  pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 restricted admin extra
 
 'netapplet' has gone straight to the 'done' queue because it's a single
 source upload, and we can see its overridden values there:

@@ -215,14 +215,6 @@ def record_product_infestation_edited(product_infestation_edited,
                 oldvalue=oldvalue,
                 newvalue=newvalue)
 
-def record_bugsubscription_added(bugsubscription_added, object_created_event):
-    getUtility(IBugActivitySet).new(
-        bug=bugsubscription_added.bug,
-        datechanged=UTC_NOW,
-        person=object_created_event.user,
-        whatchanged='bug',
-        message='added subscriber %s' % (
-            bugsubscription_added.person.browsername))
 
 def record_bugsubscription_edited(bugsubscription_edited,
                                   sqlobject_modified_event):

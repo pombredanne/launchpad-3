@@ -332,7 +332,7 @@ def canonical_url(
 
     if view_name is not None:
         assert request is not None, (
-            "Cannot check view_name parameter when there request is not "
+            "Cannot check view_name parameter when the request is not "
             "available.")
 
         # Look first for a view.

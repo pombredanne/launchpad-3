@@ -4,20 +4,20 @@
 from unittest import TestCase
 
 from canonical.database.sqlbase import cursor
-from canonical.testing import LaunchpadZopelessLayer
 import zope.event
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing.factory import *
 
 
 class TestCaseWithFactory(TestCase):
 
-    layer = LaunchpadZopelessLayer
-
     def setUp(self):
-        login('test@canonical.com')
+        login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
+
+    def tearDown(self):
+        logout()
 
     def assertIsDBNow(self, value):
         """Assert supplied value equals database time.

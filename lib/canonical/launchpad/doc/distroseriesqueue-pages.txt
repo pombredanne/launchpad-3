@@ -51,7 +51,7 @@ Let's instantiate the view for a specific queue:
   >>> queue_view.state.name
   'DONE'
   >>> len(queue_view.batchnav.currentBatch())
-  1
+  2
 
 Unexpected values for queue_state results in a proper error, anything
 that can't be can't fit as an integer is automatically assume as the

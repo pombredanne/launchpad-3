@@ -773,7 +773,7 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (16, 42, 1, 4);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 45, 3, 3);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
-INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 37, 1, 8);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (20, 90, 1, 8);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (21, 56, 1, 6);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (22, 40, 1, 7);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (25, 70, 1, 9);
@@ -3237,6 +3237,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (87, 87, 'alsa-1.0.8.tgz', 'application/x-tar', NULL, '2008-03-17 15:37:36.701686', '2008-03-17 15:37:36.701686', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (88, 88, 'README.txt', 'text/plain', NULL, '2008-03-17 15:37:48.465157', '2008-03-17 15:37:48.465157', false);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (89, 89, 'alsa-1.0.9a.tgz', 'application/x-tar', NULL, '2008-03-17 15:38:16.866444', '2008-03-17 15:38:16.866444', false);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed, date_created, restricted) VALUES (90, 90, 'pmount_1.0-1_all.deb', 'application/x-debian-package', NULL, '2008-05-08 10:15:32.440132', '2008-05-08 10:10:27.899028', false);
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -3328,6 +3329,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (87, '2008-03-17 15:37:36.701686', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (88, '2008-03-17 15:37:48.465157', NULL, 3, '55ca6286e3e4f4fba5d0448333fa99fc5a404a73', false, '764efa883dda1e11db47671c4a3bbd9e');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (89, '2008-03-17 15:38:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4cf8', false, '8a8a67b8dbc5f203ae8712092c68c780');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (90, '2008-05-08 10:10:16.866444', NULL, 18, '0c805a60b31058a1018680f99447033dcb9d4caa', false, '8a8a67b8dbc5f203ae8712092c68c7aa');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3970,7 +3972,7 @@ ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
 
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (1, 1, 29, 20, '2008-03-18 20:57:44.710251', NULL, 'qQ7dw1fXCR5hhJRN7ztj', '2nWXXdVfpV1G761xDhqNp3WR0Pqvc5WD78V1n7RJFwStQV8v5cqMLqqpp9jq5VLbDHgKC6csPm2ZVBv5');
 INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (2, 2, 29, 50, '2008-03-18 20:57:44.710251', NULL, 'hgm2VK35vXD6rLg5pxWw', 'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz');
-
+INSERT INTO oauthaccesstoken (id, consumer, person, permission, date_created, date_expires, "key", secret) VALUES (3, 2, 52, 20, '2008-05-19 21:36:47.994029', NULL, '3SdVlTlVKcgXSJHbsSSk', 'HMfdL8JH6fzdHCvDqtHb37LDKdQCvD7DBp8bBb5Dq937LCgH968flSm7CqKRQP7s3qZcXW6fwz5KCGkH');
 
 
 ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
@@ -4065,6 +4067,7 @@ INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_c
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (12, 1, 10, 30, 1, '2007-02-15 14:39:27.186515', NULL, 1);
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (13, 3, 10, 0, 65, '2007-08-09 21:25:37.832976', NULL, 12);
 INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (14, 3, 10, 0, 69, '2007-08-09 21:54:18.456616', NULL, 12);
+INSERT INTO packageupload (id, status, distroseries, pocket, changesfile, date_created, signing_key, archive) VALUES (15, 3, 1, 0, 52, '2008-05-25 20:39:27.186515', NULL, 1);
 
 
 ALTER TABLE packageupload ENABLE TRIGGER ALL;
@@ -4100,6 +4103,7 @@ INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_c
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (5, 11, 14, '2006-11-14 18:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (6, 12, 34, '2007-02-15 14:40:09.479212');
 INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (7, 13, 36, '2007-08-09 21:25:37.832976');
+INSERT INTO packageuploadsource (id, packageupload, sourcepackagerelease, date_created) VALUES (8, 15, 35, '2006-10-16 18:31:43.832976');
 
 
 ALTER TABLE packageuploadsource ENABLE TRIGGER ALL;
@@ -9461,6 +9465,67 @@ ALTER TABLE translationmessage ENABLE TRIGGER ALL;
 
 ALTER TABLE translationrelicensingagreement DISABLE TRIGGER ALL;
 
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (201, 58, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (202, 62, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (203, 13, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (204, 29, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (205, 243606, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (206, 243608, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (207, 243609, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (208, 243610, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (209, 243611, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (210, 243614, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (211, 243615, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (212, 243616, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (213, 243617, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (214, 243622, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (216, 65, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (217, 66, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (218, 67, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (219, 68, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (220, 243602, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (221, 243603, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (222, 43, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (223, 44, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (224, 45, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (225, 46, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (226, 1, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (227, 2, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (215, 3, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (229, 4, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (230, 5, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (231, 6, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (232, 7, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (233, 8, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (234, 9, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (235, 10, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (236, 11, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (237, 12, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (238, 14, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (239, 16, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (240, 22, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (241, 23, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (242, 26, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (243, 27, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (244, 28, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (245, 33, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (246, 34, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (247, 35, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (248, 36, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (249, 37, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (250, 38, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (251, 39, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (252, 40, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (253, 41, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (254, 42, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (255, 47, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (256, 48, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (257, 49, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (258, 50, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (259, 51, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (260, 52, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (261, 55, true, '2008-05-23 16:29:22.319166');
+INSERT INTO translationrelicensingagreement (id, person, allow_relicensing, date_decided) VALUES (262, 56, true, '2008-05-23 16:29:22.319166');
 
 
 ALTER TABLE translationrelicensingagreement ENABLE TRIGGER ALL;

@@ -15,6 +15,7 @@ __all__ = [
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
     'BugTaskExpirableListingView',
+    'BugTaskListingItem',
     'BugTaskListingView',
     'BugTaskNavigation',
     'BugTaskPortletView',
@@ -1076,7 +1077,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         else:
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
-        product = bugtask.product
+        old_product = bugtask.product
 
         if distro is not None and sourcename != data.get('sourcepackagename'):
             try:
@@ -1085,10 +1086,19 @@ class BugTaskEditView(LaunchpadEditFormView):
             except LaunchpadValidationError, error:
                 self.setFieldError('sourcepackagename', str(error))
 
-        if (product is not None and 'product' in data and
-            product != data.get('product')):
+        new_product = data.get('product')
+        if (old_product is None or old_product == new_product or
+            not bugtask.pillar.official_malone):
+            # Either the product wasn't changed, we're dealing with a #
+            # distro task, or the bugtask's product doesn't use Launchpad,
+            # which means the product can't be changed.
+            return
+
+        if new_product is None:
+            self.setFieldError('product', 'Enter a project name')
+        else:
             try:
-                valid_upstreamtask(bugtask.bug, data.get('product'))
+                valid_upstreamtask(bugtask.bug, new_product)
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
 
@@ -1501,10 +1511,13 @@ class BugTaskListingItem:
     """
     decorates(IBugTask, 'bugtask')
 
-    def __init__(self, bugtask, bugbranches):
+    def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
+                 has_specification):
         self.bugtask = bugtask
-        self.bugbranches = bugbranches
         self.review_action_widget = None
+        self.has_mentoring_offer = has_mentoring_offer
+        self.has_bug_branch = has_bug_branch
+        self.has_specification = has_specification
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -1515,22 +1528,18 @@ class BugListingBatchNavigator(TableBatchNavigator):
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
     @cachedproperty
-    def bug_id_mapping(self):
-        # Now load the bug-branch links for this batch
-        bugbranches = getUtility(IBugBranchSet).getBugBranchesForBugTasks(
+    def bug_badge_properties(self):
+        return getUtility(IBugTaskSet).getBugTaskBadgeProperties(
             self.currentBatch())
-        # Create a map from the bug id to the branches.
-        bug_id_mapping = {}
-        for bugbranch in bugbranches:
-            if check_permission('launchpad.View', bugbranch.branch):
-                bug_id_mapping.setdefault(
-                    bugbranch.bug.id, []).append(bugbranch)
-        return bug_id_mapping
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
+        badge_property = self.bug_badge_properties[bugtask]
         return BugTaskListingItem(
-            bugtask, self.bug_id_mapping.get(bugtask.bug.id, None))
+            bugtask,
+            badge_property['has_mentoring_offer'],
+            badge_property['has_branch'],
+            badge_property['has_specification'])
 
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""

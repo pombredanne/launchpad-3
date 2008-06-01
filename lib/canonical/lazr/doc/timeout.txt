@@ -72,6 +72,7 @@ operation times out.
     Traceback (most recent call last):
       ...
     TimeoutError: timeout exceeded.
+
     >>> print closed
     True
 
@@ -214,13 +215,21 @@ The function also times out if the server replies very slowly.
     ...     # it times out in read() and not urlopen.
     ...     for c in content:
     ...         client_sock.send(c)
-    ...         time.sleep(0.2)
+    ...         time.sleep(0.05)
     ...     client_sock.close()
-    >>> threading.Thread(target=slow_reply).start()
+    >>> slow_thread = threading.Thread(target=slow_reply)
+    >>> slow_thread.start()
+
+    >>> saved_threads = set(threading.enumerate())
     >>> print urlfetch(http_server_url)
     Traceback (most recent call last):
       ...
     TimeoutError: timeout exceeded.
+
+Note that the cleanup also takes care of leaving no worker thread behind.
+
+    >>> set(threading.enumerate()).difference(saved_threads)
+    set([])
 
 When the request succeeds, the result content is returned.
 
@@ -247,11 +256,7 @@ urlfetch() only supports http urls:
 
 == Cleanup ==
 
-    # Reap threads that may still hang around.
-    >>> import threading
-    >>> for thread in threading.enumerate():
-    ...     if thread is not threading.currentThread():
-    ...         thread.join()
+    >>> slow_thread.join()
 
     # Reset default socket timeout.
     >>> socket.setdefaulttimeout(old_timeout)

@@ -1,0 +1,426 @@
+= Launchpad search page =
+
+Users can search for Launchpad objects and pages from the search form
+located on all pages. The search is performed and displayed by the
+LaunchpadSearchView.
+
+    >>> from zope.component import getMultiAdapter, getUtility
+    >>> from canonical.launchpad.interfaces import ILaunchpadRoot
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> root = getUtility(ILaunchpadRoot)
+    >>> request = LaunchpadTestRequest()
+    >>> search_view = getMultiAdapter((root, request), name="+search")
+    >>> search_view.initialize()
+    >>> search_view
+    <....SimpleViewClass from .../templates/launchpad-search.pt ...>
+
+
+== Page title and heading ==
+
+The page title and heading suggest to the user to search launchpad
+when there is no search text.
+
+    >>> print search_view.text
+    None
+    >>> search_view.page_title
+    'Search Launchpad'
+    >>> search_view.page_heading
+    'Search Launchpad'
+
+When text is not None, the title indicates what was searched.
+
+    >>> def getSearchView(form):
+    ...     request = LaunchpadTestRequest(form=form)
+    ...     search_view = getMultiAdapter((root, request), name="+search")
+    ...     search_view.initialize()
+    ...     return search_view
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'albatross'})
+
+    >>> search_view.text
+    u'albatross'
+    >>> search_view.page_title
+    u'Pages matching "albatross" in Launchpad'
+    >>> search_view.page_heading
+    u'Pages matching "albatross" in Launchpad'
+
+
+== No matches ==
+
+There were no matches for 'albatross'.
+
+    >>> search_view.has_matches
+    False
+
+When search text is not submitted there are no matches. Search text is
+required to perform a search. Note that field.actions.search is not a
+required param to call the Search Action. The view always calls the
+search action.
+
+    >>> search_view = getSearchView(form={})
+
+    >>> print search_view.text
+    None
+    >>> search_view.has_matches
+    False
+
+
+== bug and question searches ==
+
+When a numeric token can be extracted from the submitted search text,
+the view tries to match a bug and question. Bugs and questions are
+matched by their id.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': '5'})
+    >>> search_view._getNumericToken(search_view.text)
+    u'5'
+    >>> search_view.has_matches
+    True
+    >>> search_view.bug.title
+    u'Firefox install instructions should be complete'
+    >>> search_view.question.title
+    u'Installation failed'
+
+Bugs and questions are matched independent of each other. The number
+extracted may only match one kind of object. For example, there are
+more bugs than questions.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': '15'})
+    >>> search_view._getNumericToken(search_view.text)
+    u'15'
+    >>> search_view.has_matches
+    True
+    >>> search_view.bug.title
+    u'Nonsensical bugs are useless'
+    >>> print search_view.question
+    None
+
+The text and punctuation in the search text is ignored, and only the
+first group of numbers is matched. For example a user searches for three
+questions by number ('Question #15, #7, and 5.'). Only the first number
+is used, and it matches a bug, not a question. The second and third
+numbers do match questions, but they are not used.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'Question #15, #7, and 5.'})
+    >>> search_view._getNumericToken(search_view.text)
+    u'15'
+    >>> search_view.has_matches
+    True
+    >>> search_view.bug.title
+    u'Nonsensical bugs are useless'
+    >>> print search_view.question
+    None
+
+It is not an error to search for a non-existent bug or question.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': '55555'})
+    >>> search_view._getNumericToken(search_view.text)
+    u'55555'
+    >>> search_view.has_matches
+    False
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
+
+There is no error if a number cannot be extracted from the search text.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'fifteen'})
+    >>> print search_view._getNumericToken(
+    ...     search_view.text)
+    None
+    >>> search_view.has_matches
+    False
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
+
+Bugs and questions are only returned for the first page of search,
+when the start param is 0.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': '5',
+    ...           'start': '20'})
+    >>> search_view.has_matches
+    False
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
+
+
+
+== Projects and Persons and Teams searches ==
+
+When a Launchpad name can be made from the search text, the view tries
+to match the name to a pillar or person. a pillar is a distribution,
+product, or project. A person is a person or a team.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'launchpad'})
+    >>> search_view._getNameToken(search_view.text)
+    u'launchpad'
+    >>> search_view.has_matches
+    True
+    >>> search_view.pillar.displayname
+    u'Launchpad'
+    >>> search_view.person_or_team.displayname
+    u'Launchpad Developers'
+
+A launchpad name is constructed from the search text. The letters are
+converted to lowercase. groups of spaces and punctuation are replaced
+with a hyphen.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'Gnome Terminal'})
+    >>> search_view._getNameToken(search_view.text)
+    u'gnome-terminal'
+    >>> search_view.has_matches
+    True
+    >>> search_view.pillar.displayname
+    u'GNOME Terminal'
+    >>> print search_view.person_or_team
+    None
+
+This is a harder example that illustrates that text that is clearly not
+the name of a pillar will none-the-less be tried. See the `Page searches`
+section for how this kind of search can return matches.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': "YAHOO! webservice's Python API."})
+    >>> search_view._getNameToken(search_view.text)
+    u'yahoo-webservices-python-api.'
+    >>> search_view.has_matches
+    False
+    >>> print search_view.pillar
+    None
+    >>> print search_view.person_or_team
+    None
+
+Leading and trailing punctuation and whitespace are stripped.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': "~name12"})
+    >>> search_view._getNameToken(search_view.text)
+    u'name12'
+    >>> search_view.has_matches
+    True
+    >>> print search_view.pillar
+    None
+    >>> search_view.person_or_team.displayname
+    u'Sample Person'
+
+Pillars, persons and teams are only returned for the first page of
+search, when the start param is 0.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'launchpad',
+    ...           'start': '20'})
+    >>> search_view.has_matches
+    True
+    >>> print search_view.bug
+    None
+    >>> print search_view.question
+    None
+    >>> print search_view.pillar
+    None
+
+
+== Page searches ==
+
+The view uses the GoogleSearchService to locate pages that match the
+search terms.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': " bug"})
+    >>> search_view.text
+    u'bug'
+    >>> search_view.has_matches
+    True
+    >>> search_view.pages
+    <...GoogleBatchNavigator ...>
+
+The GoogleBatchNavigator behaves like most BatchNavigators, except that
+its batch size is always 20. The size restriction conforms to Google's
+maximum number of results that can be returned per request.
+
+    >>> search_view.start
+    0
+    >>> search_view.pages.currentBatch().size
+    20
+    >>> pages = list(search_view.pages.currentBatch())
+    >>> len(pages)
+    20
+    >>> for page in pages[0:5]:
+    ...     page.title
+    'Launchpad Bugs'
+    'Bugs in Ubuntu Linux'
+    'Bugs related to Sample Person'
+    u'<b>Bug</b> #1 in Mozilla Firefox: ...Firefox does not support SVG...'
+    'Bugs in Source Package "thunderbird" in Ubuntu Linux'
+
+The batch navigator provides access to the other batches. There are two
+batches of pages that match the search text 'bugs'. The navigator
+provides a link to the next batch, which also happens to be the last
+batch.
+
+    >>> len(search_view.pages.getBatches())
+    2
+    >>> search_view.pages.nextBatchURL()
+    '...start=20'
+    >>> search_view.pages.lastBatchURL()
+    '...start=20'
+
+The second batch has only five matches in it, even though the batch size
+is 20. That is because there were only 25 matching pages.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': "bug",
+    ...           'start': '20'})
+    >>> search_view.start
+    20
+    >>> search_view.text
+    u'bug'
+    >>> search_view.has_matches
+    True
+
+    >>> search_view.pages.currentBatch().size
+    20
+    >>> pages = list(search_view.pages.currentBatch())
+    >>> len(pages)
+    5
+    >>> for page in pages:
+    ...     page.title
+    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    u'<b>Bug</b> #2 in mozilla-firefox (Debian): ...Blackhole Trash folder...'
+    u'<b>Bug</b> #3 in mozilla-firefox (Debian): \u201cBug Title Test\u201d'
+    '<b>Bug</b> trackers registered in Launchpad'
+    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
+
+    >>> search_view.pages.nextBatchURL()
+    ''
+    >>> search_view.pages.lastBatchURL()
+    ''
+
+The PageMatch object has a title, url, and summary. The title and url
+are used for making links to the pages. The summary contains markup
+showing the matching terms in context of the page text.
+
+    >>> page = pages[0]
+    >>> page
+    <...PageMatch ...>
+    >>> page.title
+    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    >>> page.url
+    'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2'
+    >>> page.summary
+    u'<b>Bug</b> tracking <b>...</b> Search <b>bugs</b> reports ...'
+
+See `google-searchservice.txt` for more information about the
+GoogleSearchService and PageMatch objects.
+
+
+== WindowedList and GoogleBatchNavigator ==
+
+The LaunchpadSearchView uses two helper classes to work with
+PageMatches.
+
+The PageMatches object returned by the GoogleSearchService contains 20
+or fewer PageMatches of what could be thousands of matches. Google
+requires client's to make repeats request to step though the batches of
+matches. The Windowed list is a list that contains only a subset of its
+reported size. It is used to make batches in the GoogleBatchNavigator.
+
+For example, the last batch of the 'bug' search contained 5 of the 25
+matching pages. The WindowList claims to be 25 items in length, but
+the first 20 items are None. Only the last 5 items are PageMatches.
+
+    >>> from canonical.launchpad.browser.root import WindowedList
+    >>> from canonical.launchpad.utilities.searchservice import (
+    ...     GoogleSearchService)
+
+    >>> google_search = GoogleSearchService()
+    >>> page_matches = google_search.search(terms='bug', start=20)
+    >>> results = WindowedList(
+    ...     page_matches, page_matches.start, page_matches.total)
+    >>> len(results)
+    25
+    >>> print results[0]
+    None
+    >>> results[24].title
+    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
+    >>> results[18, 22]
+    [None, None, <...PageMatch ...>, <...PageMatch ...>]
+
+The GoogleBatchNavigator restricts the batch size to 20. the 'batch'
+parameter that comes from the URL is ignored. For example, setting
+the 'batch' parameter to 100 has no affect upon the Google search
+or on the navigator object.
+
+    >>> from canonical.launchpad.browser.root import GoogleBatchNavigator
+
+    >>> GoogleBatchNavigator.batch_variable_name
+    'batch'
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': "bug",
+    ...           'start': '0',
+    ...           'batch': '100',})
+
+    >>> navigator = search_view.pages
+    >>> navigator.currentBatch().size
+    20
+    >>> len(navigator.currentBatch())
+    20
+    >>> navigator.nextBatchURL()
+    '...start=20'
+
+Even if the PageMatch object to have an impossibly large size, the
+navigator conforms to Google's maximum size of 20.
+
+    >>> matches = range(0, 100)
+    >>> page_matches._matches = matches
+    >>> page_matches.start = 0
+    >>> page_matches.total = 100
+    >>> navigator = GoogleBatchNavigator(
+    ...     page_matches, search_view.request, page_matches.start, size=100)
+    >>> navigator.currentBatch().size
+    20
+    >>> len(navigator.currentBatch())
+    20
+    >>> navigator.nextBatchURL()
+    '...start=20'
+
+The PageMatches object can be smaller than 20, for instance, pages
+without titles are skipped when parsing the Google Search XML. The size
+of the batch is still 20, but when the items in the batch are iterated,
+the true size can be seen. For example there could be only 3 matches in
+the PageMatches object, so only 3 are yielded. The start of the next
+batch is 20, which is the start of the next batch from Google.
+
+    >>> matches = range(0, 3)
+    >>> page_matches._matches = matches
+    >>> navigator = GoogleBatchNavigator(
+    ...     page_matches, search_view.request, page_matches.start, size=100)
+    >>> batch = navigator.currentBatch()
+    >>> batch.size
+    20
+    >>> len(batch)
+    20
+    >>> batch.endNumber()
+    3
+    >>> for item in batch:
+    ...     print item
+    0
+    1
+    2
+    >>> navigator.nextBatchURL()
+    '...start=20'

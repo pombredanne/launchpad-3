@@ -29,8 +29,8 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
-    FunctionalLayer)
+    DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
+    LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -576,6 +576,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-bugzilla-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla-lp-plugin.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla-oddities.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla-oddities.txt',
@@ -766,6 +773,10 @@ special = {
             '../doc/standing.txt',
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
+            ),
+    'google-service-stub.txt': LayeredDocFileSuite(
+            '../doc/google-service-stub.txt',
+            layer=GoogleServiceLayer,
             ),
     }
 

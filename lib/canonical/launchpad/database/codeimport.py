@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'CodeImport',
     'CodeImportSet',
+    '_ProductSeriesCodeImport',
     ]
 
 from datetime import timedelta
@@ -36,8 +37,23 @@ from canonical.launchpad.mailout.codeimport import code_import_status_updated
 from canonical.launchpad.validators.person import public_person_validator
 
 
+class _ProductSeriesCodeImport(SQLBase):
+    """A table linking CodeImports to the ProductSeries their data came from.
+    """
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This table is only necessary
+    # for the transition from the old to the new code import system, and
+    # should be deleted after that process is done.
+
+    _table = 'ProductSeriesCodeImport'
+
+    productseries = ForeignKey(
+        dbName='productseries', foreignKey='ProductSeries', notNull=True)
+    codeimport = ForeignKey(
+        dbName='codeimport', foreignKey='CodeImport', notNull=True)
+
+
 class CodeImport(SQLBase):
-    """See ICodeImport."""
+    """See `ICodeImport`."""
 
     implements(ICodeImport)
     _table = 'CodeImport'
@@ -114,6 +130,20 @@ class CodeImport(SQLBase):
     results = SQLMultipleJoin(
         'CodeImportResult', joinColumn='code_import',
         orderBy=['-date_job_started'])
+
+    @property
+    def source_product_series(self):
+        """See `ICodeImport`."""
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This property is
+        # only necessary for the transition from the old to the new
+        # code import system, and should be deleted after that process
+        # is done.
+        pair = _ProductSeriesCodeImport.selectOneBy(
+            codeimport=self)
+        if pair is not None:
+            return pair.productseries
+        else:
+            return None
 
     def approve(self, data, user):
         """See `ICodeImport`."""
@@ -338,8 +368,10 @@ class CodeImportSet:
         # We deliberately don't fire an object created event or call
         # newCreate.
 
-        # XXX MichaelHudson 2008-05-20, bug=232080: Record association between
-        # the new code import and the productseries here!
+        # Record the link between the new code import and the product series
+        # it came from.
+        _ProductSeriesCodeImport(
+            codeimport=code_import, productseries=product_series)
 
         return code_import
 

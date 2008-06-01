@@ -286,7 +286,7 @@ as zero. The updateStatistics method returns for values:
 Now, we are going to add another translation.
 
     >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
 
 At this time, there is no current or imported translation and no suggestions.
 
@@ -373,7 +373,7 @@ Given that we removed a fuzzy translation, statistics remain unchanged.
 However, if we change a non fuzzy translation...
 
     >>> upstream_potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
     >>> new_translation = upstream_potmsgset.updateTranslation(
     ...     upstream_pofile, carlos, {0: u'', 1: u''}, is_fuzzy=False,
     ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
@@ -507,7 +507,7 @@ form:
 
     >>> apa_dummypofile = evolution_potemplate.getDummyPOFile('apa')
     >>> plural_potmsgset = apa_dummypofile.potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
     >>> print apa_dummypofile.language.code
     apa
 
@@ -548,7 +548,7 @@ We call such a message incomplete, and undesirable as it is, it is still
 gracefully accepted.
 
     >>> plural_potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
-    ...     u'%d contact')
+    ...     u'%d contact', u'%d contacts')
     >>> pofile_es.plural_forms
     2
     >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,

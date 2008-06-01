@@ -619,12 +619,12 @@ class ArchiveSourceSelectionFormView(ArchiveViewBase, LaunchpadFormView):
     def default_status_filter(self):
         """Return the default status_filter value."""
         raise NotImplementedError(
-            'Default status_filter should be defined by callsites')
+            'Default status_filter should be defined by callsites.')
 
     def getSources(self, name=None, status=None):
         """Source lookup method, should be implemented by callsites."""
         raise NotImplementedError(
-            'Source lookup should be implemented by callsites')
+            'Source lookup should be implemented by callsites.')
 
 
 
@@ -1174,7 +1174,7 @@ class ArchiveAdminView(BaseArchiveEditView):
 
 def archive_to_structuralheading(archive):
     """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
-    if archive.owner is not None:
+    if archive.purpose == ArchivePurpose.PPA:
         return IStructuralHeaderPresentation(archive.owner)
     else:
         return IStructuralHeaderPresentation(archive.distribution)

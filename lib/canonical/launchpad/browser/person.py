@@ -56,6 +56,7 @@ __all__ = [
     'PersonSubscribedBranchesView',
     'PersonTeamBranchesView',
     'PersonTranslationView',
+    'PersonTranslationRelicensingView',
     'PersonView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
@@ -98,6 +99,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
+from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
@@ -112,7 +114,7 @@ from canonical.launchpad.interfaces import (
     BranchPersonSearchContext, BranchPersonSearchRestriction,
     BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, ICountry, IEmailAddress,
+    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
     IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
     IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
@@ -127,6 +129,9 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+
+from canonical.launchpad.interfaces.translationrelicensingagreement import (
+    ITranslationRelicensingAgreement)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -282,6 +287,38 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
     @stepto('+archive')
     def traverse_archive(self):
         return self.context.archive
+
+    @stepthrough('+email')
+    def traverse_email(self, email):
+        """Traverse to this person's emails on the webservice layer."""
+        email = getUtility(IEmailAddressSet).getByEmail(email)
+        if email is None or email.person != self.context:
+            return None
+        return email
+
+    @stepthrough('+wikiname')
+    def traverse_wikiname(self, id):
+        """Traverse to this person's WikiNames on the webservice layer."""
+        wiki = getUtility(IWikiNameSet).get(id)
+        if wiki is None or wiki.person != self.context:
+            return None
+        return wiki
+
+    @stepthrough('+jabberid')
+    def traverse_jabberid(self, jabber_id):
+        """Traverse to this person's JabberIDs on the webservice layer."""
+        jabber = getUtility(IJabberIDSet).getByJabberID(jabber_id)
+        if jabber is None or jabber.person != self.context:
+            return None
+        return jabber
+
+    @stepthrough('+ircnick')
+    def traverse_ircnick(self, id):
+        """Traverse to this person's IrcIDs on the webservice layer."""
+        irc_nick = getUtility(IIrcIDSet).get(id)
+        if irc_nick is None or irc_nick.person != self.context:
+            return None
+        return irc_nick
 
 
 class PersonDynMenu(DynMenu):
@@ -659,21 +696,17 @@ class PersonBranchesMenu(ApplicationMenu):
     links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
     def all_related(self):
-        text = 'All related'
         return Link(canonical_url(self.context, rootsite='code'),
-                    text, icon='branch')
+                    'Related branches')
 
     def owned(self):
-        text = 'Owned'
-        return Link('+ownedbranches', text, icon='branch')
+        return Link('+ownedbranches', 'owned')
 
     def registered(self):
-        text = 'Registered'
-        return Link('+registeredbranches', text, icon='branch')
+        return Link('+registeredbranches', 'registered')
 
     def subscribed(self):
-        text = 'Subscribed'
-        return Link('+subscribedbranches', text, icon='branch')
+        return Link('+subscribedbranches', 'subscribed')
 
     def addbranch(self):
         if self.user is None:
@@ -794,11 +827,15 @@ class PersonTranslationsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'translations'
-    links = ['imports']
+    links = ['imports', 'relicensing']
 
     def imports(self):
         text = 'See import queue'
         return Link('+imports', text)
+
+    def relicensing(self):
+        text = 'Relicense translations'
+        return Link('+relicensing', text, enabled=False)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -1216,13 +1253,17 @@ class PersonAddView(LaunchpadFormView):
         token.sendProfileCreatedEmail(person, creation_comment)
 
 
+class DeactivateAccountSchema(Interface):
+    use_template(IPerson, include=['password'])
+    comment = copy_field(
+        IPerson['account_status_comment'], readonly=False, __name__='comment')
+
+
 class PersonDeactivateAccountView(LaunchpadFormView):
 
-    schema = IPerson
-    field_names = ['account_status_comment', 'password']
+    schema = DeactivateAccountSchema
     label = "Deactivate your Launchpad account"
-    custom_widget('account_status_comment', TextAreaWidget, height=5,
-                  width=60)
+    custom_widget('comment', TextAreaWidget, height=5, width=60)
 
     def validate(self, data):
         loginsource = getUtility(IPlacelessLoginSource)
@@ -1235,7 +1276,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
-        self.context.deactivateAccount(data['account_status_comment'])
+        self.context.deactivateAccount(data['comment'])
         logoutPerson(self.request)
         self.request.response.addNoticeNotification(
             _(u'Your account has been deactivated.'))
@@ -2471,7 +2512,7 @@ class PersonEditSSHKeysView(LaunchpadView):
         process = subprocess.Popen(
             '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey)
+        (out, err) = process.communicate(sshkey.encode('utf-8'))
         if 'compromised' in out.lower():
             self.error_message = (
                 'This key is known to be compromised due to a security flaw '
@@ -2557,6 +2598,50 @@ class PersonTranslationView(LaunchpadView):
             return True
         return not (
             translationmessage.potmsgset.hide_translations_from_anonymous)
+
+
+class PersonTranslationRelicensingView(LaunchpadFormView):
+    """View for Person's translation relicensing page."""
+    label = "Relicense your translations?"
+    schema = ITranslationRelicensingAgreement
+    field_names = ['allow_relicensing']
+
+    @property
+    def initial_values(self):
+        """Set the user's current relicensing preference or a True default."""
+        default = self.context.translations_relicensing_agreement
+        if default is None:
+            default = True
+        return { "allow_relicensing" : default }
+
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        referrer = self.request.getHeader('referer')
+        if referrer and referrer.startswith(self.request.getApplicationURL()):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @action(_("Update my decision"), name="submit")
+    def submit_action(self, action, data):
+        """Store person's decision about translations relicensing.
+
+        Decision is stored through
+        `IPerson.translations_relicensing_agreement`
+        which uses TranslationRelicensingAgreement table.
+        """
+        allow_relicensing = data['allow_relicensing']
+        self.context.translations_relicensing_agreement = allow_relicensing
+        if allow_relicensing:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Thank you for deciding to relicense your translations."))
+        else:
+            self.request.response.addInfoNotification(_(
+                "Your choice has been saved. "
+                "Your translations will be removed once we completely "
+                "switch to BSD license for translations."))
 
 
 class PersonGPGView(LaunchpadView):
@@ -3762,14 +3847,58 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchesView(BranchListingView):
+class PersonBranchCountMixin:
+    """A mixin class for person branch listings."""
+
+    @cachedproperty
+    def total_branch_count(self):
+        """Return the number of branches related to the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            self.context, visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def registered_branch_count(self):
+        """Return the number of branches registered by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.REGISTERED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def owned_branch_count(self):
+        """Return the number of branches owned by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.OWNED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def subscribed_branch_count(self):
+        """Return the number of branches subscribed to by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
+
+
+class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person."""
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
 
-class PersonRegisteredBranchesView(BranchListingView):
+class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
@@ -3782,7 +3911,7 @@ class PersonRegisteredBranchesView(BranchListingView):
             self.context, BranchPersonSearchRestriction.REGISTERED)
 
 
-class PersonOwnedBranchesView(BranchListingView):
+class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
@@ -3795,7 +3924,7 @@ class PersonOwnedBranchesView(BranchListingView):
             self.context, BranchPersonSearchRestriction.OWNED)
 
 
-class PersonSubscribedBranchesView(BranchListingView):
+class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
