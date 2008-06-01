@@ -107,6 +107,14 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
                     if voucher.owner == lp_openid]
         return vouchers
 
+    def getVoucher(self, voucher_id):
+        """Return the voucher."""
+
+        voucher = self._findVoucher(voucher_id)
+        if voucher is not None:
+            voucher = voucher.asDict()
+        return [voucher]
+
     def redeemVoucher(self, voucher_id, lp_openid,
                       lp_project_id, lp_project_name):
         """Redeem the voucher.
