@@ -145,7 +145,7 @@ run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecod
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
-run_all_quickly_and_quietly:
+run_all_quickly_and_quietly: stop_quickly_and_quietly
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
