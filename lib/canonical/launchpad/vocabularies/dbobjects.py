@@ -1344,7 +1344,10 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
 
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
-    """List specifications on which the current specification depends."""
+    """List commercial projects a user administers.
+
+    A commercial project is one that does not qualify for free hosting.
+    """
 
     implements(IHugeVocabulary)
 
@@ -1353,10 +1356,11 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     displayname = 'Select one of the commercial projects you administer'
 
     def _filter_projs(self, projects):
+        """Filter the list of all projects to just the commercial ones."""
         filtered = []
         for project in sorted(projects,
                               key=attrgetter('displayname')):
-            if project.requires_commercial_subscription:
+            if not project.qualifies_for_free_hosting:
                 filtered.append(project)
         return filtered
 
@@ -1368,8 +1372,6 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if user is None:
             return self.emptySelectResults()
 
-        if query == 'cow':
-            query = None
         if not query:
             sql_query = None
         else:
@@ -1380,7 +1382,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
                  Product.displayname LIKE %s OR
                  fti @@ ftq(%s))
                 """
-                % (quoted_query, like_query, like_query))
+                % (like_query, like_query, quoted_query))
         projects = user.getOwnedProjects(extra_clause=sql_query)
         commercial_projects = self._filter_projs(projects)
         return commercial_projects

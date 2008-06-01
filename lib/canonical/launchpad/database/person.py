@@ -981,6 +981,22 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=['PillarName.distribution', 'PillarName.project',
                      'PillarName.product'])
 
+    def getOwnedProjects(self, extra_clause=None):
+        """See `IPerson`."""
+        # Import here to work around a circular import problem.
+        from canonical.launchpad.database import Product
+        query = """
+            SELECT DISTINCT Product.id
+            FROM product, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND owner = teamparticipation.team
+            """ % sqlvalues(person=self, extra_clause=extra_clause)
+        if extra_clause is not None:
+            query += " AND " + extra_clause
+        results = Product.select("""id IN (%s)""" % query,
+                                 orderBy=['displayname'])
+        return results
+
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
         for name, ignored in self._getProjectsWithTheMostKarma(limit=limit):

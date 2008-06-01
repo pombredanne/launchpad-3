@@ -199,13 +199,16 @@ class LaunchpadObjectFactory:
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
 
-    def makeProduct(self, name=None, project=None, displayname=None):
+    def makeProduct(self, name=None, project=None, displayname=None,
+                    licenses=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
             displayname = self.getUniqueString('displayname')
+        if licenses is None:
+            licenses = [License.GNU_GPL_V2]
         return getUtility(IProductSet).createProduct(
             owner,
             name,
@@ -213,7 +216,8 @@ class LaunchpadObjectFactory:
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GNU_GPL_V2], project=project)
+            licenses=licenses,
+            project=project)
 
     def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
