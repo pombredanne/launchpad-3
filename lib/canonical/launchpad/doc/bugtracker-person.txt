@@ -5,8 +5,12 @@ bugtrackers. BugTrackerPersons are created using the
 linkPersonToBugTracker() method of IBugTrackerPersonSet.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IBugTrackerPersonSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.bugtracker import (
+    ...     BugTrackerType)
+    >>> from canonical.launchpad.interfaces.bugtrackerperson import (
+    ...     IBugTrackerPersonSet)
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     IPersonSet)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
 
