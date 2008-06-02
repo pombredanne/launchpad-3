@@ -41,7 +41,13 @@ class CodeReviewMessageMailer(BMPMailer):
         return klass(code_review_message, recipients)
 
     def _getBody(self, recipient):
-        """Return the complete body to use for this email."""
+        """Return the complete body to use for this email.
+
+        If there was a vote, we prefix "Vote: " to the message.
+        We always append information about why this message was sent.  If
+        there is an existing footer, we append it to that.  Otherwise, we
+        we insert a new footer.
+        """
         if self.code_review_message.vote is None:
             prefix = ''
         else:
@@ -51,13 +57,13 @@ class CodeReviewMessageMailer(BMPMailer):
                 vote_tag = ' ' + self.code_review_message.vote_tag
             prefix = 'Vote: %s%s\n' % (
                 self.code_review_message.vote.title, vote_tag)
-        if '\n-- \n' in self.message.text_contents:
+        main = self.message.text_contents
+        if '\n-- \n' in main:
             footer_separator = ''
         else:
             footer_separator = '\n-- \n'
-        return '%s%s%s%s' % (
-            prefix, self.message.text_contents, footer_separator,
-            self.getReason(recipient))
+        return ''.join((
+            prefix, main, footer_separator, self.getReason(recipient)))
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
