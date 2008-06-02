@@ -3,4 +3,9 @@
 
 __all__ = ['UtcDateTimeCol']
 
-from storm.sqlobject import UtcDateTimeCol
+import pytz
+import storm.sqlobject
+
+
+class UtcDateTimeCol(storm.sqlobject.UtcDateTimeCol):
+    _kwargs = {'tzinfo': pytz.timezone('UTC')}

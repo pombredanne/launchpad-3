@@ -1,6 +1,5 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="lazr">
 
     <class class="canonical.lazr.rest.CollectionResource">
@@ -173,6 +172,50 @@
              canonical.lazr.interfaces.rest.WebServiceLayer"
         provides="canonical.lazr.interfaces.IFieldMarshaller"
         factory="canonical.lazr.rest.CollectionFieldMarshaller"
+        />
+
+    <!-- System Errors -->
+    <view
+        for="zope.interface.common.interfaces.IException"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.SystemErrorView"
+        name="index.html"
+        />
+
+    <!-- Unauthorized -->
+    <view
+        for="zope.exceptions.IUnauthorized"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.UnauthorizedView"
+        name="index.html"
+        />
+
+    <!-- NotFound -->
+    <view
+        for="zope.publisher.interfaces.NotFound"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.NotFoundView"
+        name="index.html"
+        />
+
+    <!-- RequestExpired 
+
+    XXX flacoste 2008-05-22 bug=185958 This interface should 
+    be moved to LAZR.
+    -->
+    <view
+        for="canonical.database.interfaces.IRequestExpired"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.RequestExpiredView"
+        name="index.html"
+        />
+
+    <!-- TimeoutError -->
+    <view
+        for="canonical.lazr.timeout.TimeoutError"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.RequestExpiredView"
+        name="index.html"
         />
 
 </configure>

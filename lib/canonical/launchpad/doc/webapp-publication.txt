@@ -701,6 +701,15 @@ the pageid.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:+test
 
+Views registered through ZCML using the attribute property, are really a
+bounded method. These views have the same pageid as their class.
+
+    >>> del request._orig_env['launchpad.pageid']
+    >>> publication.callObject(request, view.__call__)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:+test
+
 If the published object doesn't have a context attribute (unlike most
 views), the pageid will be empty.
 
@@ -841,16 +850,16 @@ variables from there.
     >>> request._orig_env['launchpad.publicationticks'] = 500
     >>> request.supportsRetry()
     True
-    >>> import canonical.launchpad.webapp.adapter as da
+    >>> from storm.exceptions import DisconnectionError
     >>> try:
-    ...     raise da.DisconnectionError()
+    ...     raise DisconnectionError()
     ... except:
     ...     exc_info = sys.exc_info()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=True)
     Traceback (most recent call last):
     ...
-    Retry: (<class canonical.launchpad.webapp.adapter.DisconnectionError...
+    Retry: (<class storm.exceptions.DisconnectionError...
     ...
 
     >>> request._orig_env.has_key('launchpad.publicationticks')
@@ -968,7 +977,6 @@ be automatically reverted in a GET request.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city
@@ -987,7 +995,6 @@ But not if the request uses POST, the changes will be preserved.
     # have to change the request manually.
     >>> request._publicationticks_start = 1345
     >>> publication.afterCall(request, None)
-    >>> publication.clearSQLOSCache()
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
     >>> print foo_bar.city

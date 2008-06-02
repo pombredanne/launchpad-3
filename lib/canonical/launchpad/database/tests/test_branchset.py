@@ -233,6 +233,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
         """Mirroring branches resets their mirror request times."""
         branch = self.makeBranch()
         branch.requestMirror()
+        transaction.commit()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.next_mirror_time)
@@ -331,6 +332,7 @@ class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
         """
         branch = self.makeBranch()
         branch.requestMirror()
+        transaction.commit()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
         self.assertInFuture(

@@ -26,7 +26,9 @@ import logging
 import datetime
 import pytz
 
+from storm.store import Store
 from zope.component import getUtility
+
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
     IBugAttachmentSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
@@ -391,10 +393,10 @@ class Bugzilla:
         name = re.sub(r'[^a-z0-9\+\.\-]', '-', bug.target_milestone.lower())
 
         milestone = self.ubuntu.getMilestone(name)
-        if milestone is not None:
-            return milestone
-        else:
-            return self.ubuntu.currentseries.newMilestone(name)
+        if milestone is None:
+            milestone = self.ubuntu.currentseries.newMilestone(name)
+            Store.of(milestone).flush()
+        return milestone
 
     def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.
@@ -499,7 +501,7 @@ class Bugzilla:
         if bug.alias:
             if re.match(r'^deb\d+$', bug.alias):
                 watch = self.bugwatchset.createBugWatch(
-                    lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
+                    lp_bug, lp_bug.owner, self.debbugs, bug.alias[3:])
                 debtask = self.bugtaskset.createTask(
                     lp_bug,
                     owner=lp_bug.owner,

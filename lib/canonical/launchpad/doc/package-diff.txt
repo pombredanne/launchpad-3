@@ -84,7 +84,7 @@ IPackageDiff offers a property that return the 'title' of the diff
 request.
 
     >>> print package_diff.title
-    Package diff for pmount from 0.1-1 to 0.1-2
+    0.1-1 to 0.1-2
 
 An attempt to record an already recorded DiffRequest will result in an
 error:
@@ -93,8 +93,8 @@ error:
     ...     requester=cprov, to_sourcepackagerelease=pmount_to)
     Traceback (most recent call last):
     ...
-    PackageDiffAlreadyRequested: Package diff for pmount from 0.1-1 to
-    0.1-2 was already requested by Celso Providelo
+    PackageDiffAlreadyRequested: 0.1-1 to 0.1-2 was already requested
+    by Celso Providelo
 
 
 == Diff request for source uploads ==
@@ -149,7 +149,7 @@ requests a diff, since there is a suitable ancestry.
 
     >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff for biscuit from 1.0-1 to 1.0-8
+    1.0-1 to 1.0-8
 
 We will release ubuntu/hoary so we can upload to post-RELEASE pockets.
 
@@ -166,7 +166,7 @@ the last published version in the RELEASE pocket.
 
     >>> [diff] = biscuit_nine_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff for biscuit from 1.0-8 to 1.0-9
+    1.0-8 to 1.0-9
 
 The subsequent version uploaded to hoary-updates will get a diff
 against 1.0-9.
@@ -178,7 +178,7 @@ against 1.0-9.
 
     >>> [diff] = biscuit_ten_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff for biscuit from 1.0-9 to 1.0-10
+    1.0-9 to 1.0-10
 
 An upload to other pocket, in this case hoary-proposed, will get a diff
 against the last version in the RELEASE pocket.
@@ -190,7 +190,7 @@ against the last version in the RELEASE pocket.
 
     >>> [diff] = biscuit_eleven_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff for biscuit from 1.0-8 to 1.0-11
+    1.0-8 to 1.0-11
 
 For testing diffs in the PPA context we need to activate the PPA for
 Foo Bar.
@@ -212,7 +212,7 @@ version in the PRIMARY archive in the RELEASE pocket.
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff for biscuit from 1.0-8 to 1.0-2
+    1.0-8 (in Ubuntu) to 1.0-2
 
 A subsequent upload in the PPA context will get a diff against 1.0-2,
 the version found in its context.
@@ -224,7 +224,7 @@ the version found in its context.
 
     >>> [diff] = biscuit_three_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff for biscuit from 1.0-2 to 1.0-3
+    1.0-2 to 1.0-3
 
 
 == Performing a Diff ==
@@ -354,26 +354,27 @@ stored.
     ...     diff_first_id = diffs[0].id
     ...     for diff in diff_set:
     ...         id_diff = diff.id - diff_first_id
-    ...         print diff.title, diff.date_fulfilled is not None, id_diff
+    ...         print diff.from_source.name, diff.title, \
+    ...               diff.date_fulfilled is not None, id_diff
 
     >>> print_diffs(packagediff_set)
-    Package diff for biscuit from 1.0-2 to 1.0-3   False   0
-    Package diff for biscuit from 1.0-8 to 1.0-2   False  -1
-    Package diff for biscuit from 1.0-8 to 1.0-11  False  -2
-    Package diff for biscuit from 1.0-9 to 1.0-10  False  -3
-    Package diff for biscuit from 1.0-8 to 1.0-9   False  -4
-    Package diff for biscuit from 1.0-1 to 1.0-8   True   -5
-    Package diff for pmount from 0.1-1 to 0.1-2    False  -6
+    biscuit 1.0-2 to 1.0-3               False   0
+    biscuit 1.0-8 (in Ubuntu) to 1.0-2   False  -1
+    biscuit 1.0-8 to 1.0-11              False  -2
+    biscuit 1.0-9 to 1.0-10              False  -3
+    biscuit 1.0-8 to 1.0-9               False  -4
+    biscuit 1.0-1 to 1.0-8               True   -5
+    pmount 0.1-1 to 0.1-2                False  -6
 
 Or only the PackageDiffs not yet fullfilled.
 
     >>> print_diffs(packagediff_set.getPendingDiffs())
-    Package diff for pmount from 0.1-1 to 0.1-2    False   0
-    Package diff for biscuit from 1.0-8 to 1.0-9   False   2
-    Package diff for biscuit from 1.0-9 to 1.0-10  False   3
-    Package diff for biscuit from 1.0-8 to 1.0-11  False   4
-    Package diff for biscuit from 1.0-8 to 1.0-2   False   5
-    Package diff for biscuit from 1.0-2 to 1.0-3   False   6
+    pmount 0.1-1 to 0.1-2                False   0
+    biscuit 1.0-8 to 1.0-9               False   2
+    biscuit 1.0-9 to 1.0-10              False   3
+    biscuit 1.0-8 to 1.0-11              False   4
+    biscuit 1.0-8 (in Ubuntu) to 1.0-2   False   5
+    biscuit 1.0-2 to 1.0-3               False   6
 
 Note that the iteration over all PackageDiffs is sorted by descending
 database ID, i.e. newest first, and getPendingDiffs() results are
