@@ -40,31 +40,15 @@ __all__ = [
 import string
 
 
-_repr_key_chars = set(string.letters + string.digits + '-_+=*')
-
-def _repr_key(key):
-    """Return a pretty representation of simple keys.
-
-    If the key, as a string, contains only characters from a small
-    selected set, it is returned without quotes. Otherwise, the result
-    of `repr` is returned.
-    """
-    as_string = str(key)
-    if _repr_key_chars.issuperset(as_string):
-        return as_string
-    else:
-        return repr(key)
-
-
 class LookupTree(tuple):
     """A searchable tree."""
 
     def __new__(cls, *args):
         """Flatten and/or promote the given arguments into `LookupBranch`s.
 
-        Because tuples are read-only, we have to manipulate the
-        constructor arguments here, just before the instance is
-        actually made.
+        The constructor arguments must be manipulated here, just
+        before the instance is actually made, because tuples are
+        read-only.
 
         :param args: `LookupBranch`s, `LookupTree`s, or iterables to
           be attached to this tree. Iterable arguments will be
@@ -84,16 +68,25 @@ class LookupTree(tuple):
                 # Promote a tuple or other iterable into a branch. The
                 # last value from the iterable is the result of the
                 # branch, and all the preceeding values are keys.
-                branches.append(LookupBranch(*arg))
+                branches.append(cls._create_branch(arg))
         return super(LookupTree, cls).__new__(cls, branches)
 
     def __init__(self, *branches):
         """See `__new__`.
 
-        As a last step, the tree is verified by calling `_verify`.
+        As an extra step, the tree is verified by calling `_verify`.
         """
         super(LookupTree, self).__init__()
         self._verify()
+
+    @staticmethod
+    def _create_branch(args):
+        """Promote arg to a `LookupBranch`.
+
+        :param args: An iterable suitable for passing, expanded, to
+          the `LookupBranch` constructor.
+        """
+        return LookupBranch(*args)
 
     def _verify(self):
         """Check the validity of the tree.
@@ -136,8 +129,7 @@ class LookupTree(tuple):
                     raise KeyError(key)
         raise KeyError(key)
 
-    @property
-    def flattened(self):
+    def flatten(self):
         """Generate a flat representation of this tree.
 
         Generate tuples. The last element in the tuple is the
@@ -150,35 +142,44 @@ class LookupTree(tuple):
             if branch.is_leaf:
                 yield branch, branch.result
             else:
-                for path in branch.result.flattened:
+                for path in branch.result.flatten():
                     yield (branch,) + path
 
     @property
     def min_depth(self):
         """The minimum distance to a leaf."""
-        return min(len(path) for path in self.flattened) - 1
+        return min(len(path) for path in self.flatten()) - 1
 
     @property
     def max_depth(self):
         """The maximum distance to a leaf."""
-        return max(len(path) for path in self.flattened) - 1
+        return max(len(path) for path in self.flatten()) - 1
 
-    def __repr__(self, level=1):
-        """A representation of this tree.
+    def describe(self, _level=1):
+        """A representation of this tree, formatted for human consumption.
 
         The representation of each branch in this tree is indented
-        corresponding to `level`, which indicates the position we are
+        corresponding to `_level`, which indicates the position we are
         at within the tree that is being represented.
 
         When asking each branch for a representation, the next level
-        is passed to `__repr__`, so that sub-trees will be indented
+        is passed to `describe`, so that sub-trees will be indented
         more.
+
+        This is mainly intended as an aid to development.
         """
-        indent = '    ' * level
+        indent = '    ' * _level
         format = indent + '%s'
         return 'tree(\n%s\n%s)' % (
-            '\n'.join(format % branch.__repr__(level + 1) for branch in self),
+            '\n'.join(format % branch.describe(_level + 1)
+                      for branch in self),
             indent)
+
+    def __repr__(self):
+        """A machine-readable representation of this tree."""
+        return '%s(%s)' % (
+            self.__class__.__name__,
+            ', '.join(repr(branch) for branch in self))
 
 
 class LookupBranch(tuple):
@@ -198,7 +199,7 @@ class LookupBranch(tuple):
     def __init__(self, *args):
         """See `__new__`."""
         super(LookupBranch, self).__init__()
-        # The last args is the result of this branch.
+        # The last arg is the result of this branch.
         self.result = args[-1]
 
     @property
@@ -220,22 +221,55 @@ class LookupBranch(tuple):
         """
         return len(self) == 0
 
-    def __repr__(self, level=1):
+    def describe(self, _level=1):
         """A representation of this branch.
 
         If the result of this branch is a `LookupTree` instance, it's
-        asked for a representation at a specific `level`, which
+        asked for a representation at a specific `_level`, which
         corresponds to its position in the tree. This allows for
         pretty indentation to aid human comprehension.
 
-        If the result is any other object, `repr` is used.
+        If the result is any other object, `_describe_result` is used.
+
+        Keys are formatted using `_describe_key`.
+
+        This is mainly intended as an aid to development.
         """
         format = 'branch(%s => %%s)'
         if self.is_default:
             format = format % '*'
         else:
-            format = format % ', '.join(_repr_key(key) for key in self)
-        if isinstance(self.result, LookupTree):
-            return format % self.result.__repr__(level)
+            format = format % ', '.join(
+                self._describe_key(key) for key in self)
+        if self.is_leaf:
+            return format % self._describe_result(self.result)
         else:
-            return format % repr(self.result)
+            return format % self.result.describe(_level)
+
+    _describe_key_chars = set(string.letters + string.digits + '-_+=*')
+
+    def _describe_key(self, key):
+        """Return a pretty representation of a simple key.
+
+        If the key, as a string, contains only characters from a small
+        selected set, it is returned without quotes. Otherwise, the
+        result of `repr` is returned.
+        """
+        as_string = str(key)
+        if self._describe_key_chars.issuperset(as_string):
+            return as_string
+        else:
+            return repr(key)
+
+    def _describe_result(self, result):
+        """Return a pretty representation of the branch result.
+
+        By default, return the representation as returned by `repr`.
+        """
+        return repr(result)
+
+    def __repr__(self):
+        """A machine-readable representation of this branch."""
+        return '%s(%s)' % (
+            self.__class__.__name__,
+            ', '.join(repr(item) for item in (self + (self.result,))))
