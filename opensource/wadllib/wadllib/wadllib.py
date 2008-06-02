@@ -169,16 +169,14 @@ class Resource(WADLMayBeReference):
         for representation in response.representationDefinitionIter():
             yield representation
 
-    def getRepresentationDefinition(self, media_type=None):
+    def getRepresentationDefinition(self, media_type):
         """Get a description of one of this resource's representations."""
-        if media_type is None:
-            media_type = self.mediaType
         for representation in self.representationDefinitionIter():
             representation_tag = representation.dereference().tag
             if representation_tag.attrib.get('mediaType') == media_type:
                 return representation
         raise ValueError("No definition for representation with "
-                         "media type %s" % media_ype)
+                         "media type %s" % media_type)
 
     def findMethod(self, http_method, fixed_params=None):
         """Look up one of this resource's methods by HTTP method.
