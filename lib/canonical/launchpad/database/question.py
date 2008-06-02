@@ -438,14 +438,18 @@ class Question(SQLBase, BugLinkTargetMixin):
             if sub.person.id == person.id:
                 return sub
         # Since no previous subscription existed, create a new one.
-        return QuestionSubscription(question=self, person=person)
+        sub = QuestionSubscription(question=self, person=person)
+        Store.of(sub).flush()
+        return sub
 
     def unsubscribe(self, person):
         """See `IQuestion`."""
         # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                store = Store.of(sub)
                 sub.destroySelf()
+                store.flush()
                 return
 
     def getSubscribers(self):
