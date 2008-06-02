@@ -349,7 +349,7 @@ We can also get the ones that have validation errors.
 Check that the plural form was imported correctly.
 
     >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'Singular %d')
+    ...     u'Singular %d', u'Plural %d')
     >>> imported_translationmessage = potmsgset.getImportedTranslationMessage(
     ...     pofile.language)
     >>> print imported_translationmessage.validation_status.name
@@ -481,53 +481,6 @@ non-upstream translations for these messages are ignored.
     >>> pofile['translator-credits'].msgstr0.translation
     u'helpful@example.com'
 
-When a plural version of an English string (msgid_plural) is changed but
-the singular msgid (msgid_singular) remains the same, that may be a sign
-of a mistake.
-
-    >>> pofile_content = r'''
-    ... msgid ""
-    ... msgstr ""
-    ... "PO-Revision-Date: 2005-06-04 20:41+0100\n"
-    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
-    ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=2; plural=n==1 ? 0;\n"
-    ... "X-Rosetta-Export-Date: %s\n"
-    ...
-    ... #, c-format
-    ... msgid "Singular %%d"
-    ... msgid_plural "Plurals %%d"
-    ... msgstr[0] ""
-    ... msgstr[1] ""
-    ... ''' % datetime.datetime.now(UTC).isoformat()
-    >>> entry = translation_import_queue.addOrUpdateEntry(
-    ...     pofile.path, pofile_content, True, rosetta_experts,
-    ...     productseries=series, potemplate=potemplate)
-    >>> transaction.commit()
-    >>> entry.pofile = entry.getGuessedPOFile()
-    >>> entry.status = RosettaImportStatus.APPROVED
-    >>> (subject, body) = pofile.importFromQueue(entry, FakeLogger())
-    >>> print entry.status.name
-    IMPORTED
-
-The email notification mentions the oddity:
-
-    >>> subject
-    u'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
-    >>> print body
-    Hello Rosetta Administrators,
-    <BLANKLINE>
-    ...
-    5. "The msgid_plural field has changed since the last time this file was
-    generated, please report this error to ...
-    <BLANKLINE>
-    #, c-format
-    msgid "Singular %d"
-    msgid_plural "Plurals %d"
-    msgstr[0] ""
-    msgstr[1] ""
-    ...
-
 
 === Import Preconditions ===
 
@@ -603,19 +556,12 @@ composed before, but also sends them.
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox trunk'
+    'Translation import - Welsh (cy) - firefox in Mozilla Firefox trunk'
     >>> print msg.get_payload(decode=True)
     Hello Rosetta Administrators,
     <BLANKLINE>
     ...
-    5. "The msgid_plural field has changed since the last time this file was
-    generated, please report this error to ...
-    <BLANKLINE>
-    #, c-format
-    msgid "Singular %d"
-    msgid_plural "Plurals %d"
-    msgstr[0] ""
-    msgstr[1] ""
+    This mail is to notify you that all translations have now been imported.
     ...
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
@@ -903,7 +849,7 @@ translations (which is a default when the language has no plural forms
 specified):
 
     >>> potmsgset_plural = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'Singular %d')
+    ...     u'Singular %d', u'Plural %d')
     >>> current_dv = potmsgset_plural.getCurrentTranslationMessage(divehi)
     >>> current_dv.translations
     [u'First form %d', u'Second form %d']

@@ -22,6 +22,7 @@ from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.z3batching.batch import _Batch
 
 
@@ -47,7 +48,7 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 class LaunchpadSearchView(LaunchpadFormView):
     """A view to search for Launchpad pages and objects."""
     schema = ILaunchpadSearch
-    field_names = ['search_text']
+    field_names = ['text']
 
     def __init__(self, context, request):
         """Initialize the view.
@@ -67,24 +68,47 @@ class LaunchpadSearchView(LaunchpadFormView):
     def _getDefaultSearchParams(self):
         """Return a dict of the search param set to their default state."""
         return {
-            'search_text': None,
+            'text': None,
             'start': 0,
             }
 
     def _updateSearchParams(self):
         """Sanitize the search_params and add the BatchNavigator params."""
-        if self.search_params['search_text'] is not None:
-            search_text = self.search_params['search_text'].strip()
-            if search_text == '':
-                self.search_params['search_text'] = None
+        if self.search_params['text'] is not None:
+            text = self.search_params['text'].strip()
+            if text == '':
+                self.search_params['text'] = None
             else:
-                self.search_params['search_text'] = search_text
+                self.search_params['text'] = text
         request_start = self.request.get('start', self.search_params['start'])
         try:
             start = int(request_start)
         except (ValueError, TypeError):
             return
         self.search_params['start'] = start
+
+    @property
+    def text(self):
+        """Return the text or None."""
+        return self.search_params['text']
+
+    @property
+    def start(self):
+        """Return the start index of the batch."""
+        return self.search_params['start']
+
+    @property
+    def page_title(self):
+        """Page title."""
+        return self.page_heading
+
+    @property
+    def page_heading(self):
+        """Heading to display above the search results."""
+        if self.text is None:
+            return 'Search Launchpad'
+        else:
+            return 'Pages matching "%s" in Launchpad' % self.text
 
     @property
     def bug(self):
@@ -112,10 +136,21 @@ class LaunchpadSearchView(LaunchpadFormView):
         return self._pages
 
     @property
+    def has_exact_matches(self):
+        """Return True if something exactly matched the search terms."""
+        kinds = (self.bug, self.question, self.pillar, self.person_or_team)
+        return self.containsMatchingKind(kinds)
+
+    @property
     def has_matches(self):
         """Return True if something matched the search terms, or False."""
         kinds = (self.bug, self.question, self.pillar,
                  self.person_or_team, self.pages)
+        return self.containsMatchingKind(kinds)
+
+
+    def containsMatchingKind(self, kinds):
+        """Return True if one of the items in kinds is not None, or False."""
         for kind in kinds:
             if kind is not None:
                 return True
@@ -131,40 +166,43 @@ class LaunchpadSearchView(LaunchpadFormView):
         """
         self.search_params.update(**data)
         self._updateSearchParams()
-        search_text = self.search_params['search_text']
-        if search_text is None:
+        if self.text is None:
             return
 
-        numeric_token = self._getNumericToken(search_text)
-        if numeric_token is not None:
-            self._bug = getUtility(IBugSet).get(numeric_token)
-            self._question = getUtility(IQuestionSet).get(numeric_token)
+        if self.start == 0:
+            numeric_token = self._getNumericToken(self.text)
+            if numeric_token is not None:
+                try:
+                    self._bug = getUtility(IBugSet).get(numeric_token)
+                except NotFoundError:
+                    self._bug = None
+                self._question = getUtility(IQuestionSet).get(numeric_token)
 
-        name_token = self._getNameToken(search_text)
-        if name_token is not None:
-            self._person_or_team = getUtility(IPersonSet).getByName(
-                name_token)
-            self._pillar = self._getDistributionOrProductOrProject(name_token)
+            name_token = self._getNameToken(self.text)
+            if name_token is not None:
+                self._person_or_team = getUtility(IPersonSet).getByName(
+                    name_token)
+                self._pillar = self._getDistributionOrProductOrProject(
+                    name_token)
 
-        start = self.search_params['start']
-        self._pages = self.searchPages(search_text, start=start)
+        self._pages = self.searchPages(self.text, start=self.start)
 
-    def _getNumericToken(self, search_text):
+    def _getNumericToken(self, text):
         """Return the first group of numbers in the search text, or None."""
         numeric_pattern = re.compile(r'(\d+)')
-        match = numeric_pattern.search(search_text)
+        match = numeric_pattern.search(text)
         if match is None:
             return None
         return match.group(1)
 
-    def _getNameToken(self, search_text):
+    def _getNameToken(self, text):
         """Return the search text as a Launchpad name.
 
         Launchpad names may contain ^[a-z0-9][a-z0-9\+\.\-]+$.
         See `valid_name_pattern`.
         """
         hypen_pattern = re.compile(r'[ _]')
-        name = hypen_pattern.sub('-', search_text.strip().lower())
+        name = hypen_pattern.sub('-', text.strip().lower())
         return sanitize_name(name)
 
     def _getDistributionOrProductOrProject(self, name):
@@ -234,8 +272,27 @@ class WindowedList:
             yield self[index]
 
 
+class WindowedListBatch(_Batch):
+    """A batch class that does not include None objects when iterating."""
+
+    def __iter__(self):
+        """Iterate over objects that are not None."""
+        for item in super(WindowedListBatch, self).__iter__():
+            if item is not None:
+                # Never yield None
+                yield item
+
+    def endNumber(self):
+        """Return the end index of the batch, not including None objects."""
+        return self.start + len(self.list._window)
+
+
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
+
+    # Searches generally don't show the 'Last' link when there is a
+    # good chance of getting over 100,000 results.
+    show_last_link = False
 
     def __init__(self, results, request, start=0, size=20, callback=None):
         """See `BatchNavigator`.
@@ -261,6 +318,8 @@ class GoogleBatchNavigator(BatchNavigator):
                 self.start = int(request_start)
             except (ValueError, TypeError):
                 self.start = start
+
         self.default_size = 20
-        self.batch = _Batch(results, start=self.start, size=self.default_size)
+        self.batch = WindowedListBatch(
+            results, start=self.start, size=self.default_size)
 

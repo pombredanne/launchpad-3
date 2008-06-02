@@ -8,16 +8,11 @@ Such features include plural forms support and context support.
 
 == Helper imports ==
 
-    >>> from zope.app import datetimeutils
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet, IProductSet,
-    ...     TranslationFileFormat)
+    ...     IPersonSet, IProductSet, TranslationFileFormat)
     >>> from canonical.launchpad.database import (
-    ...     POTemplateSubset, SourcePackageName)
-    >>> from canonical.launchpad.scripts.po_import import (
-    ...     AutoApproveProcess, ImportProcess)
+    ...     POTemplateSubset)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -103,6 +98,17 @@ message is preceded with '_n: ' (space at the end of the string is important).
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr ""
     ...
+    ... # Legacy KDE PO files allow two messages with same singular message
+    ... # ID, but different or no plural to exist, what is otherwise not
+    ... # allowed by standard gettext support.
+    ... #, c-format
+    ... msgid "%%d foo"
+    ... msgstr ""
+    ...
+    ... #, c-format
+    ... msgid "_n: %%d foo\n%%d bars"
+    ... msgstr ""
+    ...
     ... msgid "_n: entry\nentries"
     ... msgstr ""
     ... ''' % ISO_FORMATTED_DATE
@@ -132,11 +138,22 @@ not considered plural forms messages.
 Proper format in messages is to use '_n: ' and separate singular and
 plural with a newline.
 
-    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(u'%d foo')
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d foo', plural_text=u'%d foos')
     >>> print potmsgset.singular_text
     %d foo
     >>> print potmsgset.plural_text
     %d foos
+
+To get a non-plural message, we can either not specify plural_text or
+set it as None:
+
+    >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d foo', plural_text=None)
+    >>> print potmsgset.singular_text
+    %d foo
+    >>> print potmsgset.plural_text
+    None
 
 For translations, a specially formatted msgstr is used to hold all plural
 forms. They are simply newline-separated strings.
@@ -165,6 +182,10 @@ forms. They are simply newline-separated strings.
     ... msgid "_n: %%d foo\n%%d foos"
     ... msgstr "%%d translation\n%%d translationes\n%%d translations"
     ...
+    ... # Legacy KDE PO files allow multiple messages with same singular msgid.
+    ... msgid "%%d foo"
+    ... msgstr "no-plural translation %%d"
+    ...
     ... # This translation is incomplete, since it fails to provide
     ... # translations for the second plural form.
     ... msgid "_n: entry\nentries"
@@ -188,7 +209,7 @@ support.
 Non-KDE style messages get their translations in the usual way.
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'_n:bar\nbars')
+    ...     singular_text=u'_n:bar\nbars')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations
@@ -198,7 +219,7 @@ While KDE style plural form message is correctly split into three separate
 plural messages:
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'%d foo')
+    ...     singular_text=u'%d foo', plural_text=u'%d foos')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations
@@ -256,6 +277,19 @@ Template export turns it back into a KDE-style PO file:
     "%d foos"
     msgstr ""
     <BLANKLINE>
+    # Legacy KDE PO files allow two messages with same singular message
+    # ID, but different or no plural to exist, what is otherwise not
+    # allowed by standard gettext support.
+    #, c-format
+    msgid "%d foo"
+    msgstr ""
+    <BLANKLINE>
+    #, c-format
+    msgid ""
+    "_n: %d foo\n"
+    "%d bars"
+    msgstr ""
+    <BLANKLINE>
     msgid ""
     "_n: entry\n"
     "entries"
@@ -289,6 +323,19 @@ But, we can also export it as a regular gettext PO file:
     #, c-format
     msgid "%d foo"
     msgid_plural "%d foos"
+    msgstr[0] ""
+    msgstr[1] ""
+    <BLANKLINE>
+    # Legacy KDE PO files allow two messages with same singular message
+    # ID, but different or no plural to exist, what is otherwise not
+    # allowed by standard gettext support.
+    #, c-format
+    msgid "%d foo"
+    msgstr ""
+    <BLANKLINE>
+    #, c-format
+    msgid "%d foo"
+    msgid_plural "%d bars"
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
@@ -328,6 +375,18 @@ Exporting a translation is possible in a very similar way.
     "%d translation\n"
     "%d translationes\n"
     "%d translations"
+    <BLANKLINE>
+    # Legacy KDE PO files allow multiple messages with same singular msgid.
+    #, c-format
+    msgid "%d foo"
+    msgstr "no-plural translation %d"
+    <BLANKLINE>
+    #, c-format
+    msgid ""
+    "_n: %d foo\n"
+    "%d bars"
+    msgstr ""
+    <BLANKLINE>
     # This translation is incomplete, since it fails to provide
     # translations for the second plural form.
     msgid ""
@@ -418,7 +477,7 @@ We can also import a translated file with message contexts:
 We can get the first translation by specifying 'Context' for the context:
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'Message', context=u'Context')
+    ...     singular_text=u'Message', context=u'Context')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations
@@ -428,7 +487,7 @@ And if we ask for a message with context 'Different Context', we get the
 other message and its translation:
 
     >>> potmsgset = firefox_potemplate.getPOTMsgSetByMsgIDText(
-    ...     key=u'Message', context=u'Different Context')
+    ...     singular_text=u'Message', context=u'Different Context')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     firefox_serbian_pofile.language)
     >>> print current.translations

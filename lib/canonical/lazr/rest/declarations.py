@@ -27,11 +27,11 @@ __all__ = [
     'operation_parameters',
     'rename_parameters_as',
     'webservice_error',
-    'WebServiceExceptionView',
     ]
 
 import simplejson
 import sys
+import types
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
@@ -42,6 +42,7 @@ from zope.interface.interfaces import IInterface, IMethod
 from zope.schema import getFields
 from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
+
 
 # XXX flacoste 2008-01-25 bug=185958:
 # canonical_url and ILaunchBag code should be moved into lazr.
@@ -579,22 +580,6 @@ def generate_collection_adapter(interface):
     return factory
 
 
-class WebServiceExceptionView:
-    """Generic view handling exceptions on the web service."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        """Generate the HTTP response describing the exception."""
-        response = self.request.response
-        response.setStatus(self.context.__lazr_webservice_error__)
-        response.setHeader('Content-Type', 'text/plain')
-
-        return str(self.context)
-
-
 class BaseResourceOperationAdapter(ResourceOperation):
     """Base class for generated operation adapters."""
 
@@ -628,10 +613,11 @@ class BaseResourceOperationAdapter(ResourceOperation):
         params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
 
-        # The webservice assumes that the request is complete when the
-        # operation returns a string. So we take care of marshalling the
-        # result to json.
-        if isinstance(result, basestring):
+        # The webservice passes string results straight to the client.
+        # Otherwise, it will try to convert iterable to collection, and other
+        # objects to entries. We want to marshall simple values using json.
+        basic_types = (basestring, bool, int, float, types.NoneType)
+        if isinstance(result, basic_types):
             response = self.request.response
             response.setHeader('Content-Type', 'application/json')
             return simplejson.dumps(result)
