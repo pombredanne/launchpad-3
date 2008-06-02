@@ -371,13 +371,16 @@ class BuildDSlave(object):
         if self._log is not None:
             rlog = None
             try:
-                rlog = open(self.cachePath("buildlog"), "r")
-                rlog.seek(0, 2)
-                count = rlog.tell()
-                if count > 2048:
-                    count = 2048
-                rlog.seek(-count, 2)
-                ret = rlog.read(count)
+                try:
+                    rlog = open(self.cachePath("buildlog"), "r")
+                    rlog.seek(0, 2)
+                    count = rlog.tell()
+                    if count > 2048:
+                        count = 2048
+                    rlog.seek(-count, 2)
+                    ret = rlog.read(count)
+                except IOError: 
+                    ret = ""
             finally:
                 if rlog is not None:
                     rlog.close()
