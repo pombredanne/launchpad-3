@@ -83,7 +83,6 @@ by value, but only check that the value provides the proper schema.
 
 The Reference field supports the standard IField constraint.
 
-
     >>> reference = Reference(
     ...     schema=MySchema,
     ...     constraint=lambda value: 'good' in value.a_value)
