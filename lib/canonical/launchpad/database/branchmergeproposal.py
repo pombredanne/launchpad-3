@@ -24,7 +24,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
@@ -137,8 +137,8 @@ class BranchMergeProposal(SQLBase):
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
     @property
-    def root_message(self):
-        return CodeReviewMessage.selectOne("""
+    def root_comment(self):
+        return CodeReviewComment.selectOne("""
             CodeReviewMessage.id in (
                 SELECT CodeReviewMessage.id
                     FROM CodeReviewMessage, Message
@@ -148,16 +148,16 @@ class BranchMergeProposal(SQLBase):
             """ % self.id)
 
     @property
-    def all_messages(self):
+    def all_comments(self):
         """See `IBranchMergeProposal`."""
-        return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
+        return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
 
-    def getMessage(self, id):
+    def getComment(self, id):
         """See `IBranchMergeProposal`."""
-        message = CodeReviewMessage.get(id)
-        if message.branch_merge_proposal != self:
+        comment = CodeReviewComment.get(id)
+        if comment.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
-        return message
+        return comment
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -389,14 +389,14 @@ class BranchMergeProposal(SQLBase):
             ''' % sqlvalues(self.source_branch, self.target_branch),
             prejoins=['revision'], orderBy='-sequence')
 
-    def createMessage(self, owner, subject, content=None, vote=None,
+    def createComment(self, owner, subject, content=None, vote=None,
                       vote_tag=None, parent=None, _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is None:
-            if self.root_message is not None:
-                parent_message = self.root_message.message
+            if self.root_comment is not None:
+                parent_message = self.root_comment.message
         else:
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
@@ -406,11 +406,11 @@ class BranchMergeProposal(SQLBase):
             parent=parent_message, owner=owner, rfc822msgid=msgid,
             subject=subject, datecreated=_date_created)
         chunk = MessageChunk(message=message, content=content, sequence=1)
-        return self.createMessageFromMessage(message, vote, vote_tag)
+        return self.createCommentFromMessage(message, vote, vote_tag)
 
-    def createMessageFromMessage(self, message, vote, vote_tag):
+    def createCommentFromMessage(self, message, vote, vote_tag):
         """See `IBranchMergeProposal`."""
-        code_review_message = CodeReviewMessage(
+        code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=vote_tag)
         notify(SQLObjectCreatedEvent(code_review_message))

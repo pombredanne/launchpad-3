@@ -387,9 +387,9 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CodeReviewMessageFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"
         />
 

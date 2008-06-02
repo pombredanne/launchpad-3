@@ -1,11 +1,11 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""CodeReviewMessage interfaces."""
+"""CodeReviewComment interfaces."""
 
 __metaclass__ = type
 __all__ = [
     'CodeReviewVote',
-    'ICodeReviewMessage',
+    'ICodeReviewComment',
     ]
 
 from zope.interface import Interface
@@ -44,12 +44,12 @@ class CodeReviewVote(DBEnumeratedType):
         """)
 
 
-class ICodeReviewMessage(Interface):
+class ICodeReviewComment(Interface):
     """A link between a merge proposal and a message."""
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
-        description=_("The tracking number for this message."))
+        description=_("The tracking number for this comment."))
 
     branch_merge_proposal = Object(
         schema=IBranchMergeProposal, title=_('The branch merge proposal'))

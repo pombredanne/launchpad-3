@@ -274,8 +274,8 @@ class TestBranchMergeProposalQueueing(TestCase):
             "Expected %s, got %s" % (new_queue_order, queue_order))
 
 
-class TestRootMessage(TestCase):
-    """Test the behavior of the root_message attribute"""
+class TestRootComment(TestCase):
+    """Test the behavior of the root_comment attribute"""
 
     layer = LaunchpadFunctionalLayer
 
@@ -290,22 +290,22 @@ class TestRootMessage(TestCase):
         counter = time_counter()
         oldest_date, middle_date, newest_date = [counter.next() for index in
             (1, 2, 3)]
-        message1 = self.merge_proposal.createMessage(
+        comment1 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject",
             _date_created=middle_date)
-        self.assertEqual(message1, self.merge_proposal.root_message)
-        message2 = self.merge_proposal.createMessage(
+        self.assertEqual(comment1, self.merge_proposal.root_comment)
+        comment2 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject",
             _date_created=newest_date)
-        self.assertEqual(message1, self.merge_proposal.root_message)
-        message3 = self.merge_proposal.createMessage(
+        self.assertEqual(comment1, self.merge_proposal.root_comment)
+        comment3 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject",
             _date_created=oldest_date)
-        self.assertEqual(message3, self.merge_proposal.root_message)
+        self.assertEqual(comment3, self.merge_proposal.root_comment)
 
 
-class TestMergeProposalAllMessages(TestCase):
-    """Tester for `BranchMergeProposal.all_messages`."""
+class TestMergeProposalAllComments(TestCase):
+    """Tester for `BranchMergeProposal.all_comments`."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -316,21 +316,21 @@ class TestMergeProposalAllMessages(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.merge_proposal = self.factory.makeBranchMergeProposal()
 
-    def test_all_messages(self):
-        """Ensure all messages associated with the proposal are returned."""
-        message1 = self.merge_proposal.createMessage(
+    def test_all_comments(self):
+        """Ensure all comments associated with the proposal are returned."""
+        comment1 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
-        message2 = self.merge_proposal.createMessage(
+        comment2 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
-        message3 = self.merge_proposal.createMessage(
+        comment3 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
         self.assertEqual(
-            set([message1, message2, message3]),
-            set(self.merge_proposal.all_messages))
+            set([comment1, comment2, comment3]),
+            set(self.merge_proposal.all_comments))
 
 
-class TestMergeProposalGetMessage(TestCase):
-    """Tester for `BranchMergeProposal.getMessage`."""
+class TestMergeProposalGetComment(TestCase):
+    """Tester for `BranchMergeProposal.getComment`."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -341,18 +341,18 @@ class TestMergeProposalGetMessage(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.merge_proposal = self.factory.makeBranchMergeProposal()
         self.merge_proposal2 = self.factory.makeBranchMergeProposal()
-        self.message = self.merge_proposal.createMessage(
+        self.comment = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
 
-    def test_getMessage(self):
-        """Tests that we can get a message."""
+    def test_getComment(self):
+        """Tests that we can get a comment."""
         self.assertEqual(
-            self.message, self.merge_proposal.getMessage(self.message.id))
+            self.comment, self.merge_proposal.getComment(self.comment.id))
 
-    def test_getMessageWrongBranchMergeProposal(self):
-        """Tests that we can get a message."""
+    def test_getCommentWrongBranchMergeProposal(self):
+        """Tests that we can get a comment."""
         self.assertRaises(WrongBranchMergeProposal,
-                          self.merge_proposal2.getMessage, self.message.id)
+                          self.merge_proposal2.getComment, self.comment.id)
 
 
 class TestMergeProposalNotification(TestCaseWithFactory):

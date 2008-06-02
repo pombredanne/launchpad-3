@@ -501,7 +501,7 @@ class CodeHandler:
     addr_pattern = re.compile(r'(mp\+)([^@]+).*')
 
     def process(self, mail, email_addr, file_alias):
-        """Process an email and create a CodeReviewMessage.
+        """Process an email and create a CodeReviewComment.
 
         The only mail command understood is 'vote', which takes 'approve',
         'disapprove', or 'abstain' as values.  Specifically, it takes
@@ -511,13 +511,13 @@ class CodeHandler:
         merge_proposal = self.getBranchMergeProposal(email_addr)
         messageset = getUtility(IMessageSet)
         vote, vote_tag = self._getVote(mail)
-        plain_message = messageset.fromEmail(
+        message = messageset.fromEmail(
             mail.parsed_string,
             owner=getUtility(ILaunchBag).user,
             filealias=file_alias,
             parsed_message=mail)
-        message = merge_proposal.createMessageFromMessage(
-            plain_message, vote, vote_tag)
+        comment = merge_proposal.createCommentFromMessage(
+            message, vote, vote_tag)
         return True
 
     @staticmethod

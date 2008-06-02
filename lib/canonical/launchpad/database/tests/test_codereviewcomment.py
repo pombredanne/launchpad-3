@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Unit tests for CodeReviewMessage"""
+"""Unit tests for CodeReviewComment"""
 
 import unittest
 
@@ -9,7 +9,7 @@ from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
-class TestCodeReviewMessage(TestCaseWithFactory):
+class TestCodeReviewComment(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
@@ -20,57 +20,57 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         self.reviewer = self.factory.makePerson(password='password')
         self.bmp2 = self.factory.makeBranchMergeProposal()
 
-    def test_createRootMessage(self):
-        message = self.bmp.createMessage(
+    def test_createRootComment(self):
+        comment = self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
-        self.assertEqual(None, message.vote)
-        self.assertEqual(None, message.vote_tag)
-        self.assertEqual(self.submitter, message.message.owner)
-        self.assertEqual(message, self.bmp.root_message)
-        self.assertEqual('Message subject', message.message.subject)
-        self.assertEqual('Message content', message.message.chunks[0].content)
+        self.assertEqual(None, comment.vote)
+        self.assertEqual(None, comment.vote_tag)
+        self.assertEqual(self.submitter, comment.message.owner)
+        self.assertEqual(comment, self.bmp.root_comment)
+        self.assertEqual('Message subject', comment.message.subject)
+        self.assertEqual('Message content', comment.message.chunks[0].content)
 
-    def test_createReplyMessage(self):
-        message = self.bmp.createMessage(
+    def test_createReplyComment(self):
+        comment = self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
-        reply = self.bmp.createMessage(
+        reply = self.bmp.createComment(
             self.reviewer, 'Reply subject', 'Reply content',
-            CodeReviewVote.ABSTAIN, 'My tag', message)
-        self.assertEqual(message, self.bmp.root_message)
-        self.assertEqual(message.message.id, reply.message.parent.id)
-        self.assertEqual(message.message, reply.message.parent)
+            CodeReviewVote.ABSTAIN, 'My tag', comment)
+        self.assertEqual(comment, self.bmp.root_comment)
+        self.assertEqual(comment.message.id, reply.message.parent.id)
+        self.assertEqual(comment.message, reply.message.parent)
         self.assertEqual('Reply subject', reply.message.subject)
         self.assertEqual('Reply content', reply.message.chunks[0].content)
         self.assertEqual(CodeReviewVote.ABSTAIN, reply.vote)
         self.assertEqual('My tag', reply.vote_tag)
 
-    def test_createNoParentMessage(self):
-        message = self.bmp.createMessage(
+    def test_createNoParentComment(self):
+        comment = self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
-        new_message = self.bmp.createMessage(
+        new_comment = self.bmp.createComment(
             self.reviewer, 'New subject', 'New content',
             CodeReviewVote.ABSTAIN)
         self.assertEqual(
-            self.bmp.root_message.message, new_message.message.parent)
+            self.bmp.root_comment.message, new_comment.message.parent)
 
     def test_replyWithWrongMergeProposal(self):
-        message = self.bmp.createMessage(
+        comment = self.bmp.createComment(
             self.submitter, 'Message subject', 'Message content')
-        self.assertRaises(AssertionError, self.bmp2.createMessage,
+        self.assertRaises(AssertionError, self.bmp2.createComment,
                           self.reviewer, 'Reply subject', 'Reply content',
-                          CodeReviewVote.ABSTAIN, 'My tag', message)
+                          CodeReviewVote.ABSTAIN, 'My tag', comment)
 
-    def test_createMessageFromMessage(self):
-        """Creating a CodeReviewMessage from a message works."""
+    def test_createCommentFromMessage(self):
+        """Creating a CodeReviewComment from a message works."""
         message = self.factory.makeMessage(owner=self.submitter)
-        code_message = self.bmp.createMessageFromMessage(message, None, None)
-        self.assertEqual(message, code_message.message)
+        comment = self.bmp.createCommentFromMessage(message, None, None)
+        self.assertEqual(message, comment.message)
 
-    def test_createMessageFromMessageNotifies(self):
-        """Creating a CodeReviewMessage should trigger a notification."""
+    def test_createCommentFromMessageNotifies(self):
+        """Creating a CodeReviewComment should trigger a notification."""
         message = self.factory.makeMessage()
         self.assertNotifies(
-            SQLObjectCreatedEvent, self.bmp.createMessageFromMessage, message,
+            SQLObjectCreatedEvent, self.bmp.createCommentFromMessage, message,
             None, None)
 
 

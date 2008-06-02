@@ -44,7 +44,7 @@ class BadStateTransition(Exception):
 
 
 class WrongBranchMergeProposal(Exception):
-    """The message requested is not associated with this merge proposal."""
+    """The comment requested is not associated with this merge proposal."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -202,13 +202,13 @@ class IBranchMergeProposal(Interface):
     date_queued = Datetime(
         title=_('Date Queued'), required=False, readonly=True)
     # Cannote use Object as this would cause circular dependencies.
-    root_message = Attribute(
+    root_comment = Attribute(
         _("The first message in discussion of this merge proposal"))
-    all_messages = Attribute(
+    all_comments = Attribute(
         _("All messages discussing this merge proposal"))
 
-    def getMessage(id):
-        """Return the CodeReviewMessage with the specified ID."""
+    def getComment(id):
+        """Return the CodeReviewComment with the specified ID."""
 
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
@@ -351,7 +351,7 @@ class IBranchMergeProposal(Interface):
     def nominateReviewer(reviewer, registrant):
         """Create a vote for the specified person."""
 
-    def createMessage(owner, subject, content=None, vote=None, vote_tag=None,
+    def createComment(owner, subject, content=None, vote=None, vote_tag=None,
                       parent=None, _date_created=None):
         """Create an ICodeReviewMessage associated with this merge proposal.
 
@@ -366,8 +366,8 @@ class IBranchMergeProposal(Interface):
             BranchMergeProposal.root_message.
         """
 
-    def createMessageFromMessage(self, message, vote, vote_tag):
-        """Create an `ICodeReviewMessage` from an IMessage.
+    def createCommentFromMessage(self, message, vote, vote_tag):
+        """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
         :param vote: A CodeReviewVote (or None).
