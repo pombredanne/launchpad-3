@@ -923,7 +923,7 @@ class AsyncLaunchpadTransport(VirtualTransport):
         # We hook into rmdir in order to prevent users from deleting branches,
         # products and people from the VFS.
         virtual_url_fragment = self._abspath(relpath)
-        path_segments = path = virtual_url_fragment.lstrip('/').split('/')
+        path_segments = virtual_url_fragment.lstrip('/').split('/')
         if len(path_segments) <= 3:
             return self._extractResult(defer.fail(
                 failure.Failure(PermissionDenied(virtual_url_fragment))))
