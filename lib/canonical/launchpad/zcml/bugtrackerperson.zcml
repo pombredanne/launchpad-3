@@ -7,22 +7,25 @@
   <!-- BugTrackerPerson -->
   <content
       class="canonical.launchpad.database.bugtrackerperson.BugTrackerPerson">
-    <allow interface="canonical.launchpad.interfaces.IBugTrackerPerson" />
-    <require
-        permission="zope.Public"
-        set_schema="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPerson" />
+    <allow
+        interface="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPerson"
+        />
   </content>
 
   <!-- BugTrackerPersonSet -->
   <content
       class="canonical.launchpad.database.bugtrackerperson.BugTrackerPersonSet">
-    <allow interface="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPersonSet" />
+    <allow
+        interface="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPersonSet"
+        />
   </content>
 
   <securedutility
       class="canonical.launchpad.database.bugtrackerperson.BugTrackerPersonSet"
       provides="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPersonSet">
-    <allow interface="canonical.launchpad.interfaces.IBugTrackerPersonSet"/>
+    <allow
+        interface="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPersonSet"
+        />
   </securedutility>
 
 </configure>

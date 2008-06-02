@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """BugTrackerPerson interface."""
 
@@ -8,11 +9,10 @@ __all__ = [
     'IBugTrackerPersonSet',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Bytes, Datetime, Int, Object, Text, TextLine
+from zope.interface import Interface
+from zope.schema import Datetime, Object, Text
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces.bugtracker import IBugTracker
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.person import IPerson

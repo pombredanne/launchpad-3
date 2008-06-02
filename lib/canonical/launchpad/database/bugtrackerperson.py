@@ -14,11 +14,14 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import IBugTrackerPerson
+from canonical.launchpad.interfaces.bugtrackerperson import (
+    IBugTrackerPerson, IBugTrackerPersonSet)
 
 
 class BugTrackerPerson(SQLBase):
     """See `IBugTrackerPerson`."""
+
+    implements(IBugTrackerPerson)
 
     bugtracker = ForeignKey(
         dbName='bugtracker', foreignKey='BugTracker', notNull=True)
@@ -31,7 +34,7 @@ class BugTrackerPerson(SQLBase):
 class BugTrackerPersonSet:
     """See `IMessageSet`."""
 
-    implements(IMessageSet)
+    implements(IBugTrackerPersonSet)
 
     def linkPersonToBugTracker(self, person, bugtracker, name):
         """See `IMessageSet`."""
