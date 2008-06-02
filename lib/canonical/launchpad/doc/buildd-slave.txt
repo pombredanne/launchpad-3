@@ -42,59 +42,60 @@ As of slave protocol v1.0new, /filecache/SHA1SUM is *THE* way
 to retrieve files from the slave. Verify it works...
 
   >>> from urllib2 import urlopen
-  >>> f = urlopen("http://localhost:8221/filecache/"+lf.content.sha1)
+  >>> f = urlopen("http://localhost:8221/filecache/" + lf.content.sha1)
   >>> hw_str = f.read()
   >>> f.close()
   >>> hw_str == helloworld
   True
 
-# XXX cprov 2005-06-30
-# As soon as we have better control of the environment we can try to
-# simulate the some certified build job, maybe the historical 'at'
-# that build even 'under the water'.
 
-=============================================================================
+== BuilddMaster class ==
 
-What follows are "out-of-place" tests of some of the buildd slave code...
+    >>> import logging
+    >>> from canonical.buildmaster.master import BuilddMaster
 
-  >>> import os
-  >>> from canonical.buildd import slave
-  >>> class MockBuildManager(object):
-  ...     """Mock BuildManager class."""
-  ...     is_archive_private = False
-  >>> class MungedSlave(slave.BuildDSlave):
-  ...     def __init__(self):
-  ...         self.manager = MockBuildManager()
-  ...     def cachePath(self,p):
-  ...         return os.path.join("/var/tmp/buildd/filecache", p)
-  ...     _log = True
+    >>> bm = BuilddMaster(logging.getLogger(), transaction)
 
-  >>> def makeLog(l):
-  ...     f = open("/var/tmp/buildd/filecache/buildlog", "w")
-  ...     f.write("x" * l)
-  ...     f.close()
+Retrieve a known DistroArchSeries.
 
-  >>> s = MungedSlave()
-  >>> makeLog(0)
-  >>> len(s.getLogTail())
-  0
-  >>> makeLog(1)
-  >>> len(s.getLogTail())
-  1
-  >>> makeLog(2047)
-  >>> len(s.getLogTail())
-  2047
-  >>> makeLog(2048)
-  >>> len(s.getLogTail())
-  2048
-  >>> makeLog(2049)
-  >>> len(s.getLogTail())
-  2048
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+    >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
 
+Create a totally bogus CHROOT.
 
-Tested, time to shutdown
+    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> fake_chroot = LibraryFileAlias.get(1)
+    >>> unused = hoary_i386.addOrUpdateChroot(fake_chroot)
+    >>> unused = warty_i386.addOrUpdateChroot(fake_chroot)
+
+Initialise the BuildMaster with all available distroarchseries.
+Because the sampledata builders are busy we issue and warning stating
+that.
+
+    >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
+    >>> all_architectures = sorted(
+    ...     getUtility(IDistroArchSeriesSet),
+    ...     key=lambda dar: (dar.distroseries.distribution.name,
+    ...                      dar.distroseries.name, dar.architecturetag))
+    >>> for dar in all_architectures:
+    ...     bm.addDistroArchSeries(dar)
+    ...     bm.setupBuilders(dar)
+
+Scan active builders looking for information about current jobs,
+collect result of finished jobs, everything is stored directly in
+the Launchpad DB. (simply check if it doesn't explode)
+
+    >>> bm.scanActiveBuilders()
+    WARNING:root.builders.x86:Builder http://localhost:8221/ forgot about
+    build i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE --
+    resetting buildqueue record
+
+Tested, time to shutdown.
 
   >>> BuilddSlaveTestSetup().tearDown()
+
+At this point the buildd-slave is not accessible anymore.
 
   >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
   >>> s.info()

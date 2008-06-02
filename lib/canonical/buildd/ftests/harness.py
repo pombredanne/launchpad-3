@@ -1,15 +1,60 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
 
 __metaclass__ = type
+__all__ = [
+    'BuildlogSecurityTests',
+    'BuilddTestCase',
+    ]
 
 import os
 import shutil
+import tempfile
+import unittest
+from ConfigParser import SafeConfigParser
 
 import canonical
 
+from canonical.buildd.slave import BuildDSlave
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 
-conffile = os.path.join(os.path.dirname(__file__), 'buildd-slave-test.conf')
+
+test_conffile = os.path.join(
+    os.path.dirname(__file__), 'buildd-slave-test.conf')
+
+
+class MockBuildManager(object):
+    """Mock BuildManager class.
+
+    Only implements 'is_archive_private' as False.
+    """
+    is_archive_private = False
+
+
+class BuilddTestCase(unittest.TestCase):
+    """Unit tests for logtail mechanisms."""
+
+    def setUp(self):
+        """Setup a BuildDSlave using the test config."""
+        conf = SafeConfigParser()
+        conf.read(test_conffile)
+        conf.set("slave", "filecache", tempfile.mkdtemp())
+
+        self.slave = BuildDSlave(conf)
+        self.slave._log = True
+        self.slave.manager = MockBuildManager()
+
+    def tearDown(self):
+        """Remove the 'filecache' directory used for the tests."""
+        if os.path.isdir(self.slave._cachepath):
+            shutil.rmtree(self.slave._cachepath)
+
+    def makeLog(self, size):
+        """Inject data into the default buildlog file."""
+        f = open(self.slave.cachePath('buildlog'), 'w')
+        f.write("x" * size)
+        f.close()
+
 
 class BuilddSlaveTestSetup(TacTestSetup):
     r"""Setup BuildSlave for use by functional tests
@@ -48,7 +93,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
         filecache = os.path.join(self.root, 'filecache')
         os.mkdir(filecache)
         os.environ['HOME'] = self.root
-        os.environ['BUILDD_SLAVE_CONFIG'] = conffile
+        os.environ['BUILDD_SLAVE_CONFIG'] = test_conffile
         # XXX cprov 2005-05-30:
         # When we are about running it seriously we need :
         # * install sbuild package

@@ -36,8 +36,8 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
-    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    ProtocolVersionMismatch, pocketsuffix)
+    ILibraryFileAliasSet, NotFoundError, PackagePublishingPocket,
+    PackagePublishingStatus, ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
@@ -524,13 +524,16 @@ class Builder(SQLBase):
             bytes_written = out_file.tell()
             out_file.seek(0)
 
-            return getUtility(ILibrarianClient).addFile(filename,
-                bytes_written, out_file,
+            library_file_id = getUtility(ILibrarianClient).addFile(
+                filename, bytes_written, out_file,
                 contentType=filenameToContentType(filename))
         finally:
             # Finally, remove the temporary file
             out_file.close()
             os.remove(out_file_name)
+
+        library_file = getUtility(ILibraryFileAliasSet)[library_file_id]
+        return library_file.id
 
     @property
     def is_available(self):

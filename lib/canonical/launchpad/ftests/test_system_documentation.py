@@ -364,6 +364,12 @@ special = {
             layer=LaunchpadZopelessLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'buildd-slave.txt': LayeredDocFileSuite(
+            '../doc/buildd-slave.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer,
+            stdout_logging_level=logging.WARNING
+            ),
     'buildd-scoring.txt': LayeredDocFileSuite(
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,

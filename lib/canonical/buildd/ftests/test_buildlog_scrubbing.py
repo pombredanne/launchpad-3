@@ -1,19 +1,16 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-
 """Build log sanitization (removal of passwords from buildlog URLs) tests."""
 
 __metaclass__ = type
+
 __all__ = ['BuildlogSecurityTests']
 
 import difflib
 import os
 import shutil
-import tempfile
 import unittest
 
-from ConfigParser import SafeConfigParser
-
-from canonical.buildd.slave import BuildDSlave
+from canonical.buildd.ftests.harness import BuilddTestCase
 
 
 def read_file(path):
@@ -25,36 +22,22 @@ def read_file(path):
         file_object.close()
 
 
-class MockBuildManager(object):
-    """Mock BuildManager class."""
-    is_archive_private = False
-
-
-class BuildlogSecurityTests(unittest.TestCase):
+class BuildlogSecurityTests(BuilddTestCase):
     """Unit tests for scrubbing (removal of passwords) of buildlog files."""
 
     def setUp(self):
+        """Also setup a local path reference to dealing with files."""
+        BuilddTestCase.setUp(self)
         self.here = os.path.abspath(os.path.dirname(__file__))
-        conffile = os.path.join(self.here, 'buildd-slave-test.conf')
-        conf = SafeConfigParser()
-        conf.read(conffile)
-        self.cache_path = tempfile.mkdtemp()
-        conf.set("slave", "filecache", self.cache_path)
-        self.slave = BuildDSlave(conf)
-
-    def tearDown(self):
-        if os.path.isdir(self.cache_path):
-            shutil.rmtree(self.cache_path)
 
     def testBuildlogScrubbing(self):
         """Tests the buildlog scrubbing (removal of passwords from URLs)."""
         # This is where the buildlog file lives.
-        log_path = os.path.join(self.cache_path, 'buildlog')
+        log_path = self.slave.cachePath('buildlog')
 
         # This is where the slave leaves the original/unsanitized
         # buildlog file after scrubbing.
-        unsanitized_path = os.path.join(self.cache_path,
-                                        'buildlog.unsanitized')
+        unsanitized_path = self.slave.cachePath('buildlog.unsanitized')
 
         # Copy the fake buildlog file to the cache path.
         shutil.copy(os.path.join(self.here, 'buildlog'), log_path)
@@ -80,19 +63,16 @@ class BuildlogSecurityTests(unittest.TestCase):
         """Test the scrubbing of the slave's getLogTail() output."""
 
         # This is where the buildlog file lives.
-        log_path = os.path.join(self.cache_path, 'buildlog')
+        log_path = self.slave.cachePath('buildlog')
 
         # Copy the prepared, longer buildlog file so we can test lines
         # that are chopped off in the middle.
         shutil.copy(os.path.join(self.here, 'buildlog.long'), log_path)
 
-        # Make slave believe that logging is turned on.
-        self.slave._log = tempfile.TemporaryFile()
-
         # First get the unfiltered log tail output (which is the default
         # behaviour because the BuildManager's 'is_archive_private'
         # property is initialized to False).
-        self.slave.manager = MockBuildManager()
+        self.slave.manager.is_archive_private = False
         unsanitized = self.slave.getLogTail().splitlines()
 
         # Make the slave believe we are building in a private archive to
