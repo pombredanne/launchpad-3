@@ -84,7 +84,7 @@ class SoyuzTestPublisher:
         if distroseries is None:
             distroseries = self.breezy_autotest
         if archive is None:
-            archive = self.breezy_autotest.main_archive
+            archive = distroseries.main_archive
 
         spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,

@@ -701,6 +701,15 @@ the pageid.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:+test
 
+Views registered through ZCML using the attribute property, are really a
+bounded method. These views have the same pageid as their class.
+
+    >>> del request._orig_env['launchpad.pageid']
+    >>> publication.callObject(request, view.__call__)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:+test
+
 If the published object doesn't have a context attribute (unlike most
 views), the pageid will be empty.
 

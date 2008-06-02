@@ -17,7 +17,9 @@ from zope.interface.interfaces import IInterface
 from canonical.lazr.rest.declarations import (
     LAZR_WEBSERVICE_EXPORTED, OPERATION_TYPES, generate_collection_adapter,
     generate_entry_adapter, generate_entry_interface,
-    generate_operation_adapter, WebServiceExceptionView)
+    generate_operation_adapter)
+from canonical.lazr.rest.error import WebServiceExceptionView
+
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation,
     WebServiceLayer)

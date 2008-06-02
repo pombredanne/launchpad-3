@@ -191,6 +191,9 @@ class IBuildSet(Interface):
         satisfied at this point will be automatically retried and re-scored.
         """
 
+    def getCurrentPublication():
+        """Return the publishing record for this build."""
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
