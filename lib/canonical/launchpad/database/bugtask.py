@@ -392,8 +392,10 @@ def validate_assignee(self, attr, value):
 
 @block_implicit_flushes
 def validate_sourcepackagename(self, attr, value):
+    is_passthrough = isinstance(value, PassthroughValue)
     value = validate_conjoined_attribute(self, attr, value)
-    self._syncSourcePackages(value)
+    if not is_passthrough:
+        self._syncSourcePackages(value)
     return validate_target_attribute(self, attr, value)
 
 
