@@ -80,13 +80,13 @@ class LookupTree(tuple):
         self._verify()
 
     @staticmethod
-    def _create_branch(args):
+    def _create_branch(arg):
         """Promote arg to a `LookupBranch`.
 
-        :param args: An iterable suitable for passing, expanded, to
-          the `LookupBranch` constructor.
+        :param arg: An iterable suitable for passing, expanded, to the
+          `LookupBranch` constructor.
         """
-        return LookupBranch(*args)
+        return LookupBranch(*arg)
 
     def _verify(self):
         """Check the validity of the tree.
@@ -197,10 +197,23 @@ class LookupBranch(tuple):
         return super(LookupBranch, cls).__new__(cls, args[:-1])
 
     def __init__(self, *args):
-        """See `__new__`."""
+        """See `__new__`.
+
+        As an extra step, the branch is verified by calling `_verify`.
+        """
         super(LookupBranch, self).__init__()
         # The last arg is the result of this branch.
         self.result = args[-1]
+        self._verify()
+
+    def _verify(self):
+        """Check the validity of the branch.
+
+        The default implementation does nothing.
+
+        :raises TypeError: If the branch is invalid.
+        """
+        pass
 
     @property
     def is_leaf(self):

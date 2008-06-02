@@ -28,7 +28,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BugWatchErrorType, IExternalBugTracker)
+    BugTaskStatus, BugWatchErrorType, IExternalBugTracker)
 from canonical.launchpad.components import treelookup
 
 
@@ -253,8 +253,38 @@ class ExternalBugTracker:
         return page_contents
 
 
+class LookupBranch(treelookup.LookupBranch):
+    """A lookup branch customised for documenting external bug trackers."""
+
+    def _verify(self):
+        """Check the validity of the branch.
+
+        The branch result must be a member of `BugTaskStatus`, or
+        another `LookupTree`.
+
+        :raises TypeError: If the branch is invalid.
+        """
+        if isinstance(self.result, treelookup.LookupTree):
+            pass # Expected.
+        elif self.result not in BugTaskStatus:
+            raise TypeError(
+                'Result is not a member of BugTaskStatus: %r' % (
+                    self.result,))
+        super(LookupBranch, self)._verify()
+
+    def _describe_result(self, result):
+        """See `treelookup.LookupBranch._describe_result`."""
+        # `result` should be a member of `BugTaskStatus`.
+        return result.title
+
+
 class LookupTree(treelookup.LookupTree):
     """A lookup tree customised for documenting external bug trackers."""
+
+    @staticmethod
+    def _create_branch(arg):
+        """See `treelookup.LookupTree._create_branch`."""
+        return LookupBranch(*arg)
 
     def moinmoin_table(self, titles=None):
         """Return lines of a MoinMoin table that documents self."""
@@ -282,7 +312,7 @@ class LookupTree(treelookup.LookupTree):
                     yield now
 
         last_columns = None
-        for elems in self.flattened:
+        for elems in self.flatten():
             path, result = elems[:-1], elems[-1]
             columns = []
             for keys in path:
