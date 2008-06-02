@@ -330,7 +330,8 @@ class LaunchpadBranch:
             database operations on the branch. This XML-RPC client should
             implement 'callRemote'.
         :param virtual_path: A public path to a branch, or to a file or
-            directory within a branch. This path is assumed to be URL escaped.
+            directory within a branch. This path is required to be URL
+            escaped.
 
         :raise NotABranchPath: If `virtual_path` cannot be translated into a
             (potential) path to a branch. See also `NotEnoughInformation`
@@ -338,7 +339,7 @@ class LaunchpadBranch:
 
         :return: (launchpad_branch, rest_of_path), where `launchpad_branch`
             is an instance of LaunchpadBranch that represents the branch at
-            the virtual path, and `rest_of_path` is a URL-escaped path within
+            the virtual path, and `rest_of_path` is a URL fragment within
             that branch.
         """
         virtual_path = urlutils.unescape(virtual_path).encode('utf-8')
