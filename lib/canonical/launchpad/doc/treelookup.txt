@@ -53,6 +53,14 @@ Tuples/nodes without keys are default choices. They must come last.
   ...
   TypeError: Default node must be last
 
+To help when constructing more complex trees, an existing `Lookup`
+instance can be passed in when constructing a new one. Its nodes are
+copied into the new `Lookup` at that point.
+
+  >>> breakfast_tree = Lookup(
+  ...     ('Breakfast', 'Corn flakes'),
+  ...     tree)
+
 
 == Searching ==
 
@@ -82,6 +90,23 @@ description of the tree you've created.
 
   >>> print repr(tree)
   lookup(
+      node(Snack => lookup(
+          node('Mars Bar', Snickers => 'Bad')
+          node(Apple, Banana => 'Good')
+          ))
+      node(Lunch, Dinner => lookup(
+          node('Fish and chips', "Penne all'arrabbiata" => 'Nice')
+          node('Raw liver' => 'Not so nice')
+          ))
+      node(* => 'Make up your mind!')
+      )
+
+We can also see that the result of constructing a new lookup using an
+existing one is the as if we had constructed it independently.
+
+  >>> print repr(breakfast_tree)
+  lookup(
+      node(Breakfast => 'Corn flakes')
       node(Snack => lookup(
           node('Mars Bar', Snickers => 'Bad')
           node(Apple, Banana => 'Good')
