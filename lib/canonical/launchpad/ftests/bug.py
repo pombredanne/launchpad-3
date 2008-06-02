@@ -17,9 +17,14 @@ from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IBugSet, IBugTaskSet, IBugWatchSet,
-    IDistributionSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 
 

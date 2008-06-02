@@ -186,7 +186,8 @@ Let's also make some bugs that almost qualify for expiration.
     False
 
     # A bugtask can be subject for expiration, even though it is less
-    # than the min_days_old.
+    # than the min_days_old. can_expire indicates whether the bugtask can be
+    # expired in the future, if it doesn't get any further activity.
     >>> recent_bugtask = create_old_bug('recent', 31, ubuntu)
     >>> recent_bugtask.bug.permits_expiration
     True
