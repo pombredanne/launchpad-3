@@ -29,7 +29,14 @@ Let's parse it and make sure it validates against the WADL schema.
 
     >>> from lxml import etree
     >>> from canonical.lazr.rest.resource import WADL_SCHEMA_FILE
-    >>> wadl_schema = etree.XMLSchema(file=WADL_SCHEMA_FILE)
+    >>> contents = open(WADL_SCHEMA_FILE).read()
+    >>> print contents
+    'Debugging string--this test is expected to fail.'
+    >>> print etree.XMLSchema(file=contents)
+    'Debugging string--this test is expected to fail.'
+    >>> print etree.XMLSchema(file=open(WADL_SCHEMA_FILE))
+    'Debugging string--this test is expected to fail.'
+    >>> wadl_schema = etree.XMLSchema(file=open(WADL_SCHEMA_FILE))
 
     >>> tree = etree.fromstring(wadl)
     >>> wadl_schema.validate(tree)
