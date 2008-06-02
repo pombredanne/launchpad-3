@@ -504,7 +504,8 @@ class CodeHandler:
         """Process an email and create a CodeReviewMessage.
 
         The only mail command understood is 'vote', which takes 'approve',
-        'disapprove', or 'abstain' as values.
+        'disapprove', or 'abstain' as values.  Specifically, it takes
+        any CodeReviewVote item value, case-insensitively.
         :return: True.
         """
         merge_proposal = self.getBranchMergeProposal(email_addr)
@@ -525,7 +526,7 @@ class CodeHandler:
 
         :param message: a SignedMessage
         :return: (vote, vote_tag), where vote is a CodeReviewVote, and
-            vote_tag is a string.
+            vote_tag is a string.  vote_tag or vote may also be None.
         """
         content = get_main_body(message)
         if content is None:

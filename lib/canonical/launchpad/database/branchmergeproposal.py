@@ -391,7 +391,7 @@ class BranchMergeProposal(SQLBase):
 
     def createMessage(self, owner, subject, content=None, vote=None,
                       vote_tag=None, parent=None, _date_created=DEFAULT):
-        """See IBranchMergeProposal.createMessage"""
+        """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is None:
@@ -408,7 +408,8 @@ class BranchMergeProposal(SQLBase):
         chunk = MessageChunk(message=message, content=content, sequence=1)
         return self.createMessageFromMessage(message, vote, vote_tag)
 
-    def createMessageFromMessage(self, message, vote=None, vote_tag=None):
+    def createMessageFromMessage(self, message, vote, vote_tag):
+        """See `IBranchMergeProposal`."""
         code_review_message = CodeReviewMessage(
             branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=vote_tag)

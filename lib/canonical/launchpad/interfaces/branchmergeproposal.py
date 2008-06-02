@@ -366,8 +366,13 @@ class IBranchMergeProposal(Interface):
             BranchMergeProposal.root_message.
         """
 
-    def createMessageFromEmail(self, email):
-        """Create an ICodeReviewMessage from an ISignedEmail"""
+    def createMessageFromMessage(self, message, vote, vote_tag):
+        """Create an `ICodeReviewMessage` from an IMessage.
+
+        :param message: The IMessage to use.
+        :param vote: A CodeReviewVote (or None).
+        :param vote_tag: A string (or None).
+        """
 
     def deleteProposal():
         """Delete the proposal to merge."""

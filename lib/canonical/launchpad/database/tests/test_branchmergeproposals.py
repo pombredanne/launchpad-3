@@ -446,6 +446,7 @@ class TestGetAddress(TestCaseWithFactory):
 
 
 class TestBranchMergeProposalGetter(TestCaseWithFactory):
+    """Test that the BranchMergeProposalGetter behaves as expected."""
 
     layer = LaunchpadFunctionalLayer
 
