@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, Lookup,
+    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
@@ -233,7 +233,7 @@ class Trac(ExternalBugTracker):
         return BugTaskImportance.UNKNOWN
 
     _status_lookup_titles = 'Trac status',
-    _status_lookup = Lookup(
+    _status_lookup = LookupTree(
         # XXX, 2007-08-06 Graham Binns:
         #      We should follow dupes if possible.
         ('new', 'open', 'reopened', BugTaskStatus.NEW),

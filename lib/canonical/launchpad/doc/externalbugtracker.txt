@@ -482,19 +482,20 @@ updated. Errors in getRemoteStatus() will produce OOPS reports.
 
 == Generating documentation ==
 
-Most of the status conversions are done by a customized Lookup class.
+Most of the status conversions are done by a customized LookupTree
+class.
 
   >>> from canonical.launchpad.components.externalbugtracker import (
-  ...     Lookup)
+  ...     LookupTree)
 
 First, we need a tree to document.
 
-  >>> tree = Lookup(
+  >>> tree = LookupTree(
   ...     ('ASSIGNED', 'STARTED', BugTaskStatus.INPROGRESS),
   ...     ('NEEDINFO', 'WAITING', 'SUSPENDED', BugTaskStatus.INCOMPLETE),
   ...     ('PENDINGUPLOAD', 'RELEASE_PENDING', BugTaskStatus.FIXCOMMITTED),
   ...     ('REJECTED', BugTaskStatus.INVALID),
-  ...     ('RESOLVED', 'CLOSED', Lookup(
+  ...     ('RESOLVED', 'CLOSED', LookupTree(
   ...             ('ERRATA', 'FIXED', BugTaskStatus.FIXRELEASED),
   ...             ('WONTFIX', BugTaskStatus.WONTFIX),
   ...             (BugTaskStatus.INVALID,))),
@@ -503,7 +504,7 @@ First, we need a tree to document.
   ...     (BugTaskStatus.UNKNOWN,),
   ...     )
 
-The customized Lookup instance has a method to generate a MoinMoin
+The customized LookupTree instance has a method to generate a MoinMoin
 compatible table that describes the paths through the tree. The result
 is always assumed to be a BugTaskStatus.
 

@@ -8,7 +8,7 @@ __all__ = ['Roundup']
 import csv
 
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, Lookup,
+    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -254,7 +254,7 @@ class Roundup(ExternalBugTracker):
     # are integer-only and highly configurable.  Therefore we map the
     # statuses available by default so that they can be overridden by
     # subclassing the Roundup class.
-    _status_lookup_standard = Lookup(
+    _status_lookup_standard = LookupTree(
         (1, BugTaskStatus.NEW),          # Roundup status 'unread'
         (2, BugTaskStatus.CONFIRMED),    # Roundup status 'deferred'
         (3, BugTaskStatus.INCOMPLETE),   # Roundup status 'chatting'
@@ -268,7 +268,7 @@ class Roundup(ExternalBugTracker):
     # Python bugtracker statuses come in two parts: status and
     # resolution. Both of these are integer values. We can look them
     # up in the form status_map[status][resolution]
-    _status_lookup_python_1 = Lookup(
+    _status_lookup_python_1 = LookupTree(
         # Open issues (status=1). We also use this as a fallback for
         # statuses 2 and 3, for which the mappings are different only
         # in a few instances.
@@ -285,15 +285,15 @@ class Roundup(ExternalBugTracker):
         (10, BugTaskStatus.WONTFIX),     # Resolution: wontfix
         (11, BugTaskStatus.INVALID),     # Resolution: works for me
         )
-    _status_lookup_python = Lookup(
+    _status_lookup_python = LookupTree(
         (1, _status_lookup_python_1),
-        (2, Lookup(
+        (2, LookupTree(
                 (None, BugTaskStatus.WONTFIX),   # No resolution
                 (1, BugTaskStatus.FIXCOMMITTED), # Resolution: accepted
                 (3, BugTaskStatus.FIXRELEASED),  # Resolution: fixed
                 (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
                 _status_lookup_python_1)),    # Failback
-        (3, Lookup(
+        (3, LookupTree(
                 (None, BugTaskStatus.INCOMPLETE),# No resolution
                 (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
                 _status_lookup_python_1)),    # Failback
@@ -302,7 +302,7 @@ class Roundup(ExternalBugTracker):
     # Combine custom mappings with the standard mappings.
     _status_lookup_titles = (
         'Remote host', 'Roundup status', 'Roundup resolution')
-    _status_lookup = Lookup(
+    _status_lookup = LookupTree(
         (PYTHON_BUGS_HOSTNAME, _status_lookup_python),
         (_status_lookup_standard,), # Default
         )

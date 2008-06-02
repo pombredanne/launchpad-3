@@ -10,7 +10,7 @@ __all__ = [
     'BugWatchUpdateWarning',
     'ExternalBugTracker',
     'InvalidBugId',
-    'Lookup',
+    'LookupTree',
     'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteStatusError',
@@ -23,8 +23,6 @@ __all__ = [
 import socket
 import urllib
 import urllib2
-
-from itertools import chain
 
 from zope.interface import implements
 
@@ -255,11 +253,11 @@ class ExternalBugTracker:
         return page_contents
 
 
-class Lookup(treelookup.Lookup):
-    """A `Lookup` customised for documenting external bug trackers."""
+class LookupTree(treelookup.LookupTree):
+    """A lookup tree customised for documenting external bug trackers."""
 
     def moinmoin_table(self, titles=None):
-        """Return lines of a MoinMoin table documenting a `Lookup`."""
+        """Return lines of a MoinMoin table that documents self."""
         max_depth = self.max_depth
 
         def line(columns):

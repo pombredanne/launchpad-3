@@ -10,8 +10,8 @@ import re
 from BeautifulSoup import BeautifulSoup
 
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, Lookup, PrivateRemoteBug,
-    UnknownRemoteStatusError, UnparseableBugData)
+    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
+    PrivateRemoteBug, UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 
@@ -151,7 +151,7 @@ class SourceForge(ExternalBugTracker):
     # resolution. Both of these are strings.  We use the open status
     # as a fallback when we can't find an exact mapping for the other
     # statuses.
-    _status_lookup_open = Lookup(
+    _status_lookup_open = LookupTree(
         (None, BugTaskStatus.NEW),
         ('Accepted', BugTaskStatus.CONFIRMED),
         ('Duplicate', BugTaskStatus.CONFIRMED),
@@ -169,15 +169,15 @@ class SourceForge(ExternalBugTracker):
         ('Works For Me', BugTaskStatus.INVALID),
         )
     _status_lookup_titles = 'SourceForge status', 'SourceForge resolution'
-    _status_lookup = Lookup(
+    _status_lookup = LookupTree(
         ('Open', _status_lookup_open),
-        ('Closed', Lookup(
+        ('Closed', LookupTree(
                 (None, BugTaskStatus.FIXRELEASED),
                 ('Accepted', BugTaskStatus.FIXCOMMITTED),
                 ('Fixed', BugTaskStatus.FIXRELEASED),
                 ('Postponed', BugTaskStatus.WONTFIX),
                 _status_lookup_open)),
-        ('Pending', Lookup(
+        ('Pending', LookupTree(
                 (None, BugTaskStatus.INCOMPLETE),
                 ('Postponed', BugTaskStatus.WONTFIX),
                 _status_lookup_open)),

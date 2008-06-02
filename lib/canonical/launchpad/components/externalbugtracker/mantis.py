@@ -16,7 +16,7 @@ from urlparse import urlunparse
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugWatchUpdateError, BugWatchUpdateWarning,
-    ExternalBugTracker, InvalidBugId, Lookup, UnknownRemoteStatusError,
+    ExternalBugTracker, InvalidBugId, LookupTree, UnknownRemoteStatusError,
     UnparseableBugData)
 from canonical.launchpad.webapp.url import urlparse
 from canonical.launchpad.interfaces import (
@@ -462,12 +462,12 @@ class Mantis(ExternalBugTracker):
 
     _status_lookup_titles = 'Mantis status', 'Mantis resolution'
     _status_lookup = (
-        Lookup(
+        LookupTree(
             ('assigned', BugTaskStatus.INPROGRESS),
             ('feedback', BugTaskStatus.INCOMPLETE),
             ('new', BugTaskStatus.NEW),
             ('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
-            ('resolved', 'closed', Lookup(
+            ('resolved', 'closed', LookupTree(
                     ('reopened', BugTaskStatus.NEW),
                     ('fixed', 'open', 'no change required',
                      BugTaskStatus.FIXRELEASED),

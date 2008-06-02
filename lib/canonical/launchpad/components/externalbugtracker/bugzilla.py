@@ -19,7 +19,7 @@ from xml.dom import minidom
 from canonical import encoding
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
-    Lookup, UnknownRemoteStatusError, UnparseableBugData,
+    LookupTree, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -114,7 +114,7 @@ class Bugzilla(ExternalBugTracker):
         return BugTaskImportance.UNKNOWN
 
     _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
-    _status_lookup = Lookup(
+    _status_lookup = LookupTree(
         ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
          BugTaskStatus.INPROGRESS),
         ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
@@ -122,7 +122,7 @@ class Bugzilla(ExternalBugTracker):
         ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
          BugTaskStatus.FIXCOMMITTED),
         ('REJECTED', BugTaskStatus.INVALID),
-        ('RESOLVED', 'VERIFIED', 'CLOSED', Lookup(
+        ('RESOLVED', 'VERIFIED', 'CLOSED', LookupTree(
                 ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
                  'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
                  BugTaskStatus.FIXRELEASED),

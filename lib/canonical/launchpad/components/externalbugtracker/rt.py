@@ -13,7 +13,7 @@ import urllib2
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
-    Lookup, UnknownRemoteStatusError)
+    LookupTree, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlparse
@@ -199,7 +199,7 @@ class RequestTracker(ExternalBugTracker):
         return UNKNOWN_REMOTE_IMPORTANCE
 
     _status_lookup_titles = 'RT status',
-    _status_lookup = Lookup(
+    _status_lookup = LookupTree(
         ('new', BugTaskStatus.NEW),
         ('open', BugTaskStatus.CONFIRMED),
         ('stalled', BugTaskStatus.CONFIRMED),
