@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces related to the hardware database."""
@@ -261,6 +261,22 @@ class HWBus(DBEnumeratedType):
     PARALLEL = DBItem(5, 'Parallel Port')
 
     SERIAL = DBItem(6, 'Serial port')
+
+    IDE = DBItem(7, 'IDE')
+
+    ATA = DBItem(8, 'ATA')
+
+    FLOPPY = DBItem(9, 'Floppy')
+
+    IPI = DBItem(10, 'IPI')
+
+    SATA = DBItem(11, 'SATA')
+
+    SAS = DBItem(12, 'SAS')
+
+    PCCARD = DBItem(13, 'PC Card')
+
+    PCMCIA = DBItem(14, 'PCMCIA')
 
 
 class IHWVendorName(Interface):

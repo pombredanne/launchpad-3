@@ -6,7 +6,7 @@ import unittest
 from canonical.database.sqlbase import cursor
 import zope.event
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing.factory import *
 
 
@@ -63,9 +63,12 @@ class TestCase(unittest.TestCase):
 
 class TestCaseWithFactory(TestCase):
 
-    def setUp(self, user='test@canonical.com'):
+    def setUp(self, user=ANONYMOUS):
         login(user)
         self.factory = LaunchpadObjectFactory()
+
+    def tearDown(self):
+        logout()
 
 
 def capture_events(callable_obj, *args, **kwargs):
