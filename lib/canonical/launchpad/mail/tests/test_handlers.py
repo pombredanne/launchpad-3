@@ -71,7 +71,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertIsInstance(handler, CodeHandler)
 
     def test_process(self):
-        """Processing an email creates an appropriate CodeReviewMessage."""
+        """Processing an email creates an appropriate CodeReviewComment."""
         mail = self.factory.makeSignedMessage('<my-id>')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
