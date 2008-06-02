@@ -7,7 +7,14 @@ __all__ = []
 
 import os
 
+from zope.testing.cleanup import cleanUp
+
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+
+def tearDown(test):
+    """Run registered clean-up function."""
+    cleanUp()
+
 
 def test_suite():
     """See `zope.testing.testrunner`."""
@@ -16,4 +23,5 @@ def test_suite():
          for name in os.listdir(
             os.path.join(os.path.dirname(__file__), '../doc'))
          if name.endswith('.txt')])
-    return LayeredDocFileSuite(stdout_logging=False, *tests)
+    return LayeredDocFileSuite(
+        stdout_logging=False, tearDown=tearDown, *tests)

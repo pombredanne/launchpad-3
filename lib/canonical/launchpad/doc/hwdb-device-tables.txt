@@ -27,7 +27,7 @@ row with the same name raises an IntegrityError error.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwvendorname_name_key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -59,7 +59,7 @@ The tuple (bus, vendor id, vendor name) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwvendorid__bus_vendor_id__vendor_name__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -567,7 +567,7 @@ IntegrityError error.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwdevice__bus_vendor_id__bus_product_id__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -580,7 +580,7 @@ IntegrityError error.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwdevice__bus_vendor_id__bus_product_id__variant__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -626,7 +626,7 @@ IntegrityError error.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwdevicenamevariant__vendor_name__product_name__device__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -692,7 +692,7 @@ The tuple (driver name, package name) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwdriver__package_name__name__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -703,7 +703,7 @@ The tuple (driver name, package name) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwdriver__name__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -794,7 +794,7 @@ The tuple (device, driver) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwdevicedriverlink__device__driver__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -804,7 +804,7 @@ The tuple (device, driver) must be unique.
     >>> store.flush()
     Traceback (most recent call last):
     ...
-    IntegrityError: duplicate key value violates unique
+    IntegrityError: duplicate key... violates unique
     constraint "hwdevicedriverlink__device__key"
     <BLANKLINE>
     >>> LaunchpadZopelessLayer.txn.abort()
