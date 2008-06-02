@@ -27,16 +27,17 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def makeMessageAndSubscriber(self, notification_level=None,
-                                 as_reply=False, vote=None, vote_tag=None):
+                                 body=None, as_reply=False, vote=None,
+                                 vote_tag=None):
         """Return a message and a subscriber."""
         sender = self.factory.makePerson(
             displayname='Sender', email='sender@example.com',
             email_address_status=EmailAddressStatus.VALIDATED)
         code_message = self.factory.makeCodeReviewMessage(
-            sender, vote=vote, vote_tag=vote_tag)
+            sender, body=body, vote=vote, vote_tag=vote_tag)
         if as_reply:
             code_message = self.factory.makeCodeReviewMessage(
-                sender, parent=code_message)
+                sender, body=body, parent=code_message)
         subscriber = self.factory.makePerson(
             displayname='Subscriber', email='subscriber@example.com',
             email_address_status=EmailAddressStatus.VALIDATED)
@@ -47,10 +48,10 @@ class TestCodeReviewMessage(TestCaseWithFactory):
             notification_level)
         return code_message, subscriber
 
-    def makeMailer(self, as_reply=False, vote=None, vote_tag=None):
+    def makeMailer(self, as_reply=False, vote=None, vote_tag=None, body=None):
         """Return a CodeReviewMessageMailer and the sole subscriber."""
         code_message, subscriber = self.makeMessageAndSubscriber(
-            as_reply=as_reply, vote=vote, vote_tag=vote_tag)
+            body=body, as_reply=as_reply, vote=vote, vote_tag=vote_tag)
         return CodeReviewMessageMailer.forCreation(code_message), subscriber
 
     def test_forCreation(self):
@@ -103,7 +104,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         source_branch = mailer.merge_proposal.source_branch
         branch_name = source_branch.displayname
         self.assertEqual(body.splitlines()[-2:],
-            ['--', 'You are subscribed to branch %s.' % branch_name])
+            ['-- ', 'You are subscribed to branch %s.' % branch_name])
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
@@ -113,6 +114,18 @@ class TestCodeReviewMessage(TestCaseWithFactory):
         for header, value in expected.items():
             self.assertEqual(headers[header], value)
         self.assertEqual(expected, headers)
+
+    def test_appendToFooter(self):
+        """If there is an existing footer, we append to it."""
+        mailer, subscriber = self.makeMailer(
+            body='Hi!\n'
+            '-- \n'
+            'I am a wacky guy.\n')
+        branch_name = mailer.merge_proposal.source_branch.displayname
+        body = mailer._getBody(subscriber)
+        self.assertEqual(body.splitlines()[1:],
+            ['-- ', 'I am a wacky guy.',
+             'You are subscribed to branch %s.' % branch_name])
 
     def test_generateEmailWithVote(self):
         """Ensure that votes are displayed."""

@@ -51,8 +51,13 @@ class CodeReviewMessageMailer(BMPMailer):
                 vote_tag = ' ' + self.code_review_message.vote_tag
             prefix = 'Vote: %s%s\n' % (
                 self.code_review_message.vote.title, vote_tag)
-        return '%s%s\n--\n%s' % (
-            prefix, self.message.text_contents, self.getReason(recipient))
+        if '\n-- \n' in self.message.text_contents:
+            footer_separator = ''
+        else:
+            footer_separator = '\n-- \n'
+        return '%s%s%s%s' % (
+            prefix, self.message.text_contents, footer_separator,
+            self.getReason(recipient))
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
