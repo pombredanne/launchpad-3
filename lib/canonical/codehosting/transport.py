@@ -154,21 +154,23 @@ class BranchNotFound(BzrError):
 
 
 class NotABranchPath(BzrError):
-    """Raised when we cannot translate a virtual path to a branch.
+    """Raised when we cannot translate a virtual URL fragment to a branch.
 
     In particular, this is raised when there is some intrinsic deficiency in
     the path itself.
     """
 
-    _fmt = ("Could not translate %(virtual_path)r to branch. %(reason)s")
+    _fmt = ("Could not translate %(virtual_url_fragment)r to branch. "
+            "%(reason)s")
 
 
 class NotEnoughInformation(NotABranchPath):
     """Raised when there's not enough information in the path."""
 
-    def __init__(self, virtual_path):
+    def __init__(self, virtual_url_fragment):
         NotABranchPath.__init__(
-            self, virtual_path=virtual_path, reason="Not enough information.")
+            self, virtual_url_fragment=virtual_url_fragment,
+            reason="Not enough information.")
 
 
 class InvalidOwnerDirectory(NotABranchPath):
@@ -177,9 +179,9 @@ class InvalidOwnerDirectory(NotABranchPath):
     This generally means that it doesn't start with a tilde (~).
     """
 
-    def __init__(self, virtual_path):
+    def __init__(self, virtual_url_fragment):
         NotABranchPath.__init__(
-            self, virtual_path=virtual_path,
+            self, virtual_url_fragment=virtual_url_fragment,
             reason="Path must start with a user or team directory.")
 
 
@@ -322,8 +324,8 @@ class LaunchpadBranch:
     """
 
     @classmethod
-    def from_virtual_path(cls, authserver, virtual_path):
-        """Construct a LaunchpadBranch from a virtual path.
+    def from_virtual_path(cls, authserver, virtual_url_fragment):
+        """Construct a LaunchpadBranch from a virtual URL fragment.
 
         :param authserver: An XML-RPC client to the Launchpad authserver.
             This is used to get information about the branch and to perform
@@ -342,7 +344,7 @@ class LaunchpadBranch:
             the virtual path, and `rest_of_path` is a URL fragment within
             that branch.
         """
-        virtual_path = urlutils.unescape(virtual_path).encode('utf-8')
+        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
         segments = get_path_segments(virtual_path, 3)
         # If we don't have at least an owner, product and name, then we don't
         # have enough information for a branch.
@@ -360,8 +362,8 @@ class LaunchpadBranch:
             raise NotEnoughInformation(virtual_path)
         if not user_dir.startswith('~'):
             raise InvalidOwnerDirectory(virtual_path)
-        path = urlutils.escape(path)
-        return cls(authserver, user_dir[1:], product, name), path
+        escaped_path = urlutils.escape(path)
+        return cls(authserver, user_dir[1:], product, name), escaped_path
 
     def __init__(self, authserver, owner, product, name):
         """Construct a LaunchpadBranch object.
@@ -442,13 +444,14 @@ class LaunchpadBranch:
             lambda real_path: ensure_base(transport.clone(real_path)))
         return deferred
 
-    def getRealPath(self, path_on_branch):
-        """Return the 'real' path to a path within this branch.
+    def getRealPath(self, url_fragment_on_branch):
+        """Return the 'real' URL-escaped path to a path within this branch.
 
-        :param path_on_branch: A path within this branch.
+        :param path_on_branch: A URL fragment referring to a path within this
+             branch.
 
         :raise BranchNotFound: if the branch does not exist.
-        :raise PermissionDenied: if `path_on_branch` is forbidden.
+        :raise PermissionDenied: if `url_fragment_on_branch` is forbidden.
 
         :return: A path relative to the base directory where all branches
             are stored. This path will look like '00/AB/02/43/.bzr/foo', where
@@ -456,13 +459,13 @@ class LaunchpadBranch:
             '.bzr/foo' is `path_on_branch`.
         """
         try:
-            self.checkPath(path_on_branch)
+            self.checkPath(url_fragment_on_branch)
         except PermissionDenied:
             return defer.fail(failure.Failure())
         deferred = self.getID()
         return deferred.addCallback(
             lambda branch_id: '/'.join(
-                [branch_id_to_path(branch_id), path_on_branch]))
+                [branch_id_to_path(branch_id), url_fragment_on_branch]))
 
     def getID(self):
         """Return the database ID of this branch.
@@ -573,21 +576,22 @@ class LaunchpadServer(Server):
             raise InvalidControlDirectory(virtual_path)
         return product, '/'.join([control] + segments[3:])
 
-    def _translateControlPath(self, virtual_path):
-        virtual_path = urlutils.unescape(virtual_path).encode('utf-8')
+    def _translateControlPath(self, virtual_url_fragment):
+        virtual_path = urlutils.unescape(virtual_url_fragment).encode('utf-8')
         product, path = self._parseProductControlDirectory(virtual_path)
         deferred = self._authserver.getDefaultStackedOnBranch(product)
         deferred.addCallback(self._buildControlDirectory)
         return deferred.addCallback(
             lambda transport: (transport, urlutils.escape(path)))
 
-    def createBranch(self, virtual_path):
-        """Make a new directory for the given virtual path.
+    def createBranch(self, virtual_url_fragment):
+        """Make a new directory for the given virtual URL fragment.
 
-        If `virtual_path` is a branch directory, create the branch in the
-        database, then create a matching directory on the backing transport.
+        If `virtual_url_fragment` is a branch directory, create the branch in
+        the database, then create a matching directory on the backing
+        transport.
 
-        :param virtual_path: A virtual path to be translated.
+        :param virtual_url_fragment: A virtual path to be translated.
 
         :raise NotABranchPath: If `virtual_path` does not have at least a
             valid path to a branch.
@@ -597,7 +601,7 @@ class LaunchpadServer(Server):
             database. This might indicate that the branch already exists, or
             that its creation is forbidden by a policy.
         """
-        branch, ignored = self._getBranch(virtual_path)
+        branch, ignored = self._getBranch(virtual_url_fragment)
         deferred = branch.create()
 
         def ensure_path(branch_id):
@@ -605,24 +609,24 @@ class LaunchpadServer(Server):
             return deferred.addCallback(lambda ignored: branch_id)
         return deferred.addCallback(ensure_path)
 
-    def requestMirror(self, virtual_path):
-        """Request that the branch that owns 'virtual_path' be mirrored.
+    def requestMirror(self, virtual_url_fragment):
+        """Mirror the branch that owns 'virtual_url_fragment'.
 
-        :param virtual_path: A virtual path to be translated.
+        :param virtual_path: A virtual URL fragment to be translated.
 
-        :raise NotABranchPath: If `virtual_path` does not have at least a
-            valid path to a branch.
+        :raise NotABranchPath: If `virtual_url_fragment` does not have at
+            least a valid path to a branch.
         """
-        branch, ignored = self._getBranch(virtual_path)
+        branch, ignored = self._getBranch(virtual_url_fragment)
         branch.requestMirror()
 
-    def translateVirtualPath(self, virtual_path):
-        """Translate 'virtual_path' into a transport and sub-path.
+    def translateVirtualPath(self, virtual_url_fragment):
+        """Translate 'virtual_url_fragment' into a transport and sub-fragment.
 
-        :param virtual_path: A virtual path to be translated.
+        :param virtual_url_fragment: A virtual URL fragment to be translated.
 
-        :raise NotABranchPath: If `virtual_path` does not have at least a
-            valid path to a branch.
+        :raise NotABranchPath: If `virtual_url_fragment` does not have at
+            least a valid path to a branch.
         :raise BranchNotFound: If `virtual_path` looks like a path to a
             branch, but there is no branch in the database that matches.
         :raise NoSuchFile: If `virtual_path` is *inside* a non-existing
@@ -632,11 +636,11 @@ class LaunchpadServer(Server):
         :return: (transport, path_on_transport)
         """
         try:
-            branch, path = self._getBranch(virtual_path)
+            branch, path = self._getBranch(virtual_url_fragment)
         except NotABranchPath:
             fail = failure.Failure()
             deferred = defer.maybeDeferred(
-                self._translateControlPath, virtual_path)
+                self._translateControlPath, virtual_url_fragment)
             deferred.addErrback(lambda ignored: fail)
             return deferred
 
@@ -650,7 +654,7 @@ class LaunchpadServer(Server):
             else:
                 # We are trying to translate a path within a branch that
                 # doesn't exist.
-                raise NoSuchFile(virtual_path)
+                raise NoSuchFile(virtual_url_fragment)
 
         virtual_path_deferred.addErrback(branch_not_found)
 
@@ -732,8 +736,8 @@ class VirtualTransport(Transport):
 
     def _getUnderylingTransportAndPath(self, relpath):
         """Return the underlying transport and path for `relpath`."""
-        virtual_path = self._abspath(relpath)
-        return self.server.translateVirtualPath(virtual_path)
+        virtual_url_fragment = self._abspath(relpath)
+        return self.server.translateVirtualPath(virtual_url_fragment)
 
     def _call(self, method_name, relpath, *args, **kwargs):
         """Call a method on the backing transport, translating relative,
@@ -876,7 +880,8 @@ class AsyncLaunchpadTransport(VirtualTransport):
             # translate it to an underlying transport. For almost all
             # purposes, this is as good as not existing at all.
             exception = failure.value
-            raise NoSuchFile(exception.virtual_path, exception.reason)
+            raise NoSuchFile(
+                exception.virtual_url_fragment, exception.reason)
         return deferred.addErrback(convert_failure)
 
     def mkdir(self, relpath, mode=None):
@@ -896,7 +901,8 @@ class AsyncLaunchpadTransport(VirtualTransport):
             # name. That's strictly forbidden.
             failure.trap(NotABranchPath)
             exc_object = failure.value
-            raise PermissionDenied(exc_object.virtual_path, exc_object.reason)
+            raise PermissionDenied(
+                exc_object.virtual_url_fragment, exc_object.reason)
         def mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
@@ -916,11 +922,11 @@ class AsyncLaunchpadTransport(VirtualTransport):
     def rmdir(self, relpath):
         # We hook into rmdir in order to prevent users from deleting branches,
         # products and people from the VFS.
-        virtual_path = self._abspath(relpath)
-        path_segments = path = virtual_path.lstrip('/').split('/')
+        virtual_url_fragment = self._abspath(relpath)
+        path_segments = path = virtual_url_fragment.lstrip('/').split('/')
         if len(path_segments) <= 3:
             return self._extractResult(defer.fail(
-                failure.Failure(PermissionDenied(virtual_path))))
+                failure.Failure(PermissionDenied(virtual_url_fragment))))
         return VirtualTransport.rmdir(self, relpath)
 
 
