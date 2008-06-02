@@ -360,6 +360,9 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
     def test_notifyOnCreate(self):
         """Ensure that a notification is emitted on creation"""
         source_branch = self.factory.makeBranch()
@@ -438,6 +441,9 @@ class TestGetAddress(TestCaseWithFactory):
     """Test that the address property gives expected results."""
 
     layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def test_address(self):
         merge_proposal = self.factory.makeBranchMergeProposal()
