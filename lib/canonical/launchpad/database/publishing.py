@@ -48,8 +48,9 @@ def makePoolPath(source_name, component_name):
         'pool', poolify(source_name, component_name))
 
 
-class FilePublishingBase(SQLBase):
+class FilePublishingBase:
     """Base class to publish files in the archive."""
+
     def publish(self, diskpool, log):
         """See IFilePublishing."""
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
@@ -87,7 +88,7 @@ class FilePublishingBase(SQLBase):
                 self.libraryfilealiasfilename)
 
 
-class SourcePackageFilePublishing(FilePublishingBase):
+class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     """Source package release files and their publishing status.
 
     Represents the source portion of the pool.
@@ -103,8 +104,9 @@ class SourcePackageFilePublishing(FilePublishingBase):
                               unique=False,
                               notNull=True)
 
-    sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
-         foreignKey='SecureSourcePackagePublishingHistory')
+    sourcepackagepublishing = ForeignKey(
+        dbName='sourcepackagepublishing',
+        foreignKey='SourcePackagePublishingHistory')
 
     libraryfilealias = ForeignKey(
         dbName='libraryfilealias', foreignKey='LibraryFileAlias',
@@ -150,7 +152,7 @@ class SourcePackageFilePublishing(FilePublishingBase):
         return "other"
 
 
-class BinaryPackageFilePublishing(FilePublishingBase):
+class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
     """A binary package file which is published.
 
     Represents the binary portion of the pool.
@@ -166,8 +168,9 @@ class BinaryPackageFilePublishing(FilePublishingBase):
                               unique=False, notNull=True,
                               immutable=True)
 
-    binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
-        foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
+    binarypackagepublishing = ForeignKey(
+        dbName='binarypackagepublishing',
+        foreignKey='BinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = ForeignKey(
         dbName='libraryfilealias', foreignKey='LibraryFileAlias',
