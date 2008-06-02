@@ -255,6 +255,10 @@ class HWVendorNameSet:
         """See `IHWVendorNameSet`."""
         return HWVendorName(name=name)
 
+    def getByName(self, name):
+        """See `IHWVendorNameSet`."""
+        return HWVendorName.selectOneBy(name=name)
+
 
 four_hex_digits = re.compile('^0x[0-9a-f]{4}$')
 six_hex_digits = re.compile('^0x[0-9a-f]{6}$')
@@ -268,6 +272,7 @@ scsi_product = re.compile('^.{16}$')
 
 validVendorID = {
     HWBus.PCI: four_hex_digits,
+    HWBus.PCCARD: four_hex_digits,
     HWBus.USB: four_hex_digits,
     HWBus.IEEE1394: six_hex_digits,
     HWBus.SCSI: scsi_vendor,
@@ -275,10 +280,10 @@ validVendorID = {
 
 validProductID = {
     HWBus.PCI: four_hex_digits,
+    HWBus.PCCARD: four_hex_digits,
     HWBus.USB: four_hex_digits,
     HWBus.SCSI: scsi_product,
     }
-
 
 def isValidVendorID(bus, id):
     """Check that the string id is a valid vendor ID for this bus.
@@ -374,6 +379,13 @@ class HWVendorIDSet:
         return HWVendorID(bus=bus, vendor_id_for_bus=vendor_id,
                           vendor_name=vendor_name)
 
+    def getByBusAndVendorID(self, bus, vendor_id):
+        """See `IHWVendorIDSet`."""
+        if not isValidVendorID(bus, vendor_id):
+            raise ValueError('%s is not a valid vendor ID for %s'
+                             % (repr(vendor_id), bus.title))
+        return HWVendorID.selectOneBy(bus=bus, vendor_id_for_bus=vendor_id)
+
 
 class HWDevice(SQLBase):
     """See `IHWDevice.`"""
@@ -435,6 +447,25 @@ class HWDeviceSet:
                         bus_product_id=product_id, name=product_name,
                         variant=variant, submissions=0)
 
+    def getByDeviceID(self, bus, vendor_id, product_id, variant=None):
+        """See `IHWDeviceSet`."""
+        if not isValidProductID(bus, product_id):
+            raise ValueError('%s is not a valid product ID for %s'
+                             % (repr(product_id), bus.title))
+        bus_vendor = HWVendorIDSet().getByBusAndVendorID(bus, vendor_id)
+        return HWDevice.selectOneBy(bus_vendor=bus_vendor,
+                                    bus_product_id=product_id,
+                                    variant=variant)
+
+    def getOrCreate(self, bus, vendor_id, product_id, product_name,
+                    variant=None):
+        """See `IHWDeviceSet`."""
+        device = self.getByDeviceID(bus, vendor_id, product_id, variant)
+        if device is None:
+            return self.create(bus, vendor_id, product_id, product_name,
+                               variant)
+        return device
+
 
 class HWDeviceNameVariant(SQLBase):
     """See `IHWDeviceNameVariant`."""
@@ -485,6 +516,18 @@ class HWDriverSet:
         """See `IHWDriverSet`."""
         return HWDriver(package_name=package_name, name=name, license=license)
 
+    def getByPackageAndName(self, package_name, name):
+        """See `IHWDriverSet`."""
+        return HWDriver.selectOneBy(package_name=package_name,
+                                    name=name)
+
+    def getOrCreate(self, package_name, name, license=None):
+        """See `IHWDriverSet`."""
+        link = HWDriver.selectOneBy(package_name=package_name,
+                                    name=name)
+        if link is None:
+            return self.create(package_name, name, license)
+
 
 class HWDeviceDriverLink(SQLBase):
     """See `IHWDeviceDriverLinkSet`."""
@@ -504,6 +547,17 @@ class HWDeviceDriverLinkSet:
     def create(self, device, driver):
         """See `IHWDeviceDriverLinkSet`."""
         return HWDeviceDriverLink(device=device, driver=driver)
+
+    def getByDeviceAndDriver(self, device, driver):
+        """See `IHWDeviceDriverLink`."""
+        return HWDeviceDriverLink.selectOneBy(device=device, driver=driver)
+
+    def getOrCreate(self, device, driver):
+        """See `IHWDeviceDriverLink`."""
+        device_driver_link = self.getByDeviceAndDriver(device, driver)
+        if device_driver_link is None:
+            return self.create(device, driver)
+        return device_driver_link
 
 
 class HWSubmissionDevice(SQLBase):
