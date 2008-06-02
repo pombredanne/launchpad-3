@@ -261,7 +261,7 @@
                           <metal:block define-slot="main" />
                         </tal:noportlets>
                         <div id="navigation-tabs"
-                             tal:condition="not:view/macro:show_actions_menu">
+                             tal:condition="view/macro:pagehas/navigationtabs">
                           <div id="context-navigation-tabs"
                                tal:condition="context/menu:navigation">
                             <tal:menu
@@ -301,7 +301,7 @@
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <tal:menu condition="view/macro:show_actions_menu"
+                          <tal:menu condition="view/macro:pagehas/actionsmenu"
                                     replace="structure CONTEXTS/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />

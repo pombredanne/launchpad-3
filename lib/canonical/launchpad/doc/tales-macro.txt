@@ -14,7 +14,6 @@ usually done:
 
     <html metal:use-macro="view/macro:page/default" />
 
-
     >>> from canonical.launchpad.ftests import test_tales
     >>> view = FakeView()
 
@@ -49,56 +48,27 @@ rendered in the layout.
     >>> test_tales('view/macro:pagehas/heading', view=view)
     False
 
-For the transition to the new 2.0 inline navigation, there is also a
-macro:show_actions_menu expression that determines if the actions
-portlet layout should be used. That expression is True when running in
-development mode and the pagetype has 'navigationtabs'.
 
-So for the 'default' page type, the actions portlet will always be
-shown:
+The actions menu is deprecated. Some of the links are moved inline,
+others are shown as navigation tabs. The navigationtabs feature that
+aspect. Two layouts show these, default2.0 and onecolumn.
 
-    >>> from canonical.config import config
-    >>> config.devmode
-    True
+    >>> from canonical.launchpad.webapp.tales import PageMacroDispatcher
+    >>> for layout in sorted(PageMacroDispatcher._pagetypes):
+    ...     view = FakeView()
+    ...     macro = test_tales('view/macro:page/%s' % layout, view=view)
+    ...     if test_tales('view/macro:pagehas/navigationtabs', view=view):
+    ...         print layout
+    default2.0
+    onecolumn
 
-    >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
-    True
-
-    >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
-    False
-
-    >>> test_tales('view/macro:show_actions_menu', view=view)
-    True
-
-The 'default2.0' pagetype will show the actions menu only when not in
-development mode:
+These two layouts have the actionsmenu turned off.
 
     >>> macro = test_tales('view/macro:page/default2.0', view=view)
-
-    >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
-    True
-    >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
-    True
-
-    >>> test_tales('view/macro:show_actions_menu', view=view)
-    False
-
-    >>> config.devmode = False
-    >>> test_tales('view/macro:show_actions_menu', view=view)
-    True
-
-    >>> config.devmode = True
-
-But if the layout doesn't require the actions menu, that expression will
-be False.
-
-    >>> macro = test_tales('view/macro:page/defaultnomenu', view=view)
-
     >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
     False
-    >>> test_tales('view/macro:pagehas/navigationtabs', view=view)
-    False
 
-    >>> test_tales('view/macro:show_actions_menu', view=view)
+    >>> macro = test_tales('view/macro:page/onecolumn', view=view)
+    >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
     False
 
