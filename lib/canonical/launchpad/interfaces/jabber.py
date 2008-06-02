@@ -12,13 +12,25 @@ __all__ = [
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface
+
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import Reference
+
 from canonical.launchpad import _
+
 
 class IJabberID(Interface):
     """Jabber specific user ID """
+    export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    person = Int(title=_("Owner"), required=True)
-    jabberid = TextLine(title=_("Jabber user ID"), required=True)
+    # schema=Interface will be overriden in person.py because of circular
+    # dependencies.
+    person = exported(
+        Reference(
+            title=_("Owner"), required=True, schema=Interface, readonly=True))
+    jabberid = exported(
+        TextLine(title=_("Jabber user ID"), required=True))
 
     def destroySelf():
         """Delete this JabberID from the database."""
@@ -30,11 +42,8 @@ class IJabberIDSet(Interface):
     def new(person, jabberid):
         """Create a new JabberID pointing to the given Person."""
 
-    def getByJabberID(jabberid, default=None):
-        """Return the JabberID with the given jabberid.
-
-        Return the default value if not found.
-        """
+    def getByJabberID(jabberid):
+        """Return the JabberID with the given jabberid or None."""
 
     def getByPerson(person):
         """Return all JabberIDs for the given person."""

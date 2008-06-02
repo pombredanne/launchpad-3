@@ -115,6 +115,14 @@ class IPackageUpload(Interface):
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
 
+    components = Attribute(
+        """The set of components used in this upload.
+
+        For sources, this is the component on the associated
+        sourcepackagerelease.  For binaries, this is all the components
+        on all the binarypackagerelease records arising from the build.
+        """)
+
     def setNew():
         """Set queue state to NEW."""
 
@@ -200,13 +208,19 @@ class IPackageUpload(Interface):
         :param logger: Specify a logger object if required.  Mainly for tests.
         """
 
-    def overrideSource(new_component, new_section):
+    def overrideSource(new_component, new_section, allowed_components):
         """Override the source package contained in this queue item.
 
         :param new_component: An IComponent to replace the existing one
             in the upload's source.
         :param new_section: An ISection to replace the existing one
             in the upload's source.
+        :param allowed_components: A sequence of components that the
+            callsite is allowed to override from and to.
+
+        :raises QueueInconsistentStateError: if either the existing
+            or the new_component are not in the allowed_components
+            sequence.
 
         The override values may be None, in which case they are not
         changed.
@@ -214,7 +228,8 @@ class IPackageUpload(Interface):
         :return: True if the source was overridden.
         """
 
-    def overrideBinaries(new_component, new_section, new_priority):
+    def overrideBinaries(new_component, new_section, new_priority,
+                         allowed_components):
         """Override all the binaries in a binary queue item.
 
         :param new_component: An IComponent to replace the existing one
@@ -223,6 +238,12 @@ class IPackageUpload(Interface):
             in the upload's source.
         :param new_priority: A valid PackagePublishingPriority to replace
             the existing one in the upload's binaries.
+        :param allowed_components: A sequence of components that the
+            callsite is allowed to override from and to.
+
+        :raises QueueInconsistentStateError: if either the existing
+            or the new_component are not in the allowed_components
+            sequence.
 
         The override values may be None, in which case they are not
         changed.
@@ -247,6 +268,23 @@ class IPackageUploadBuild(Interface):
     build = Int(
             title=_("The related build"), required=True, readonly=False,
             )
+
+    def verifyBeforeAccept():
+        """Perform overall checks before accepting a binary upload.
+
+        Ensure each uploaded binary file can be published in the targeted
+        archive.
+
+        If any of the uploaded binary files are already published a
+        QueueInconsistentStateError is raised containing all filenames
+        that cannot be published.
+
+        This check is very similar to the one we do for source upload and
+        was designed to prevent the creation of binary publications that
+        will never reach the archive.
+
+        See bug #227184 for further details.
+        """
 
     def publish(logger=None):
         """Publish this queued source in the distroseries referred to by

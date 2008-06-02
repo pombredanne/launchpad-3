@@ -14,7 +14,6 @@ __all__ = [
 
 import os
 import shutil
-import tempfile
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -110,34 +109,57 @@ class CodeImportSourceDetails:
     :ivar svn_branch_url: The branch URL if rcstype == 'svn', None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
+    :ivar source_product_series_id: The id of the ProductSeries the
+        code import was created from, if any.  This attribute will be
+        deleted when the transition to the new system is complete.
     """
 
     def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
-                 cvs_module=None):
+                 cvs_module=None, source_product_series_id=0):
         self.branch_id = branch_id
         self.rcstype = rcstype
         self.svn_branch_url = svn_branch_url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
+        self.source_product_series_id = source_product_series_id
 
     @classmethod
     def fromArguments(cls, arguments):
         """Convert command line-style arguments to an instance."""
-        branch_id = int(arguments[0])
-        rcstype = arguments[1]
+        branch_id = int(arguments.pop(0))
+        rcstype = arguments.pop(0)
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
+        source_product_series_id = int(arguments.pop(0))
         if rcstype == 'svn':
-            [svn_branch_url] = arguments[2:]
+            [svn_branch_url] = arguments
             cvs_root = cvs_module = None
         elif rcstype == 'cvs':
             svn_branch_url = None
-            [cvs_root, cvs_module] = arguments[2:]
+            [cvs_root, cvs_module] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
-        return cls(branch_id, rcstype, svn_branch_url, cvs_root, cvs_module)
+        return cls(
+            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
+            source_product_series_id)
 
     @classmethod
     def fromCodeImport(cls, code_import):
         """Convert a `CodeImport` to an instance."""
+        # XXX: MichaelHudson 2008-05-19 bug=231819: The
+        # source_product_series_id attribute is to do with the new system
+        # looking in legacy locations for foreign trees and can be deleted
+        # when the new system has been running for a while.
+        if code_import.source_product_series is not None:
+            source_product_series_id = code_import.source_product_series.id
+        else:
+            source_product_series_id = 0
         if code_import.rcs_type == RevisionControlSystems.SVN:
             rcstype = 'svn'
             svn_branch_url = str(code_import.svn_branch_url)
@@ -151,12 +173,13 @@ class CodeImportSourceDetails:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
             code_import.branch.id, rcstype, svn_branch_url,
-            cvs_root, cvs_module)
+            cvs_root, cvs_module, source_product_series_id)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
-        result = [str(self.branch_id), self.rcstype]
+        result = [str(self.branch_id), self.rcstype,
+                  str(self.source_product_series_id)]
         if self.rcstype == 'svn':
             result.append(self.svn_branch_url)
         elif self.rcstype == 'cvs':
@@ -205,6 +228,18 @@ class ForeignTreeStore:
         """Return the name of the tarball for the code import."""
         return '%08x.tar.gz' % branch_id
 
+    def _getOldTarballName(self, source_details):
+        """Return the name of the tarball for the code import."""
+        dirname = '%08x' % source_details.source_product_series_id
+        if source_details.rcstype == 'svn':
+            filename = 'svnworking.tgz'
+        elif source_details.rcstype == 'cvs':
+            filename = 'cvsworking.tgz'
+        else:
+            raise AssertionError(
+                "unknown RCS type: %r" % source_details.rcstype)
+        return '%s/%s' % (dirname, filename)
+
     def archive(self, source_details, foreign_tree):
         """Archive the foreign tree."""
         tarball_name = self._getTarballName(source_details.branch_id)
@@ -226,7 +261,15 @@ class ForeignTreeStore:
         try:
             return self.fetchFromArchive(source_details, target_path)
         except NoSuchFile:
-            return self.fetchFromSource(source_details, target_path)
+            try:
+                # XXX: MichaelHudson 2008-05-19 bug=231819: This code is to do
+                # with the new system looking in legacy locations for foreign
+                # trees and can be deleted when the new system has been
+                # running for a while.
+                return self.fetchFromOldLocationAndUploadToNewLocation(
+                    source_details, target_path)
+            except NoSuchFile:
+                return self.fetchFromSource(source_details, target_path)
 
     def fetchFromSource(self, source_details, target_path):
         """Fetch the foreign tree for `source_details` to `target_path`."""
@@ -242,6 +285,29 @@ class ForeignTreeStore:
         _download(self.transport, tarball_name, tarball_name)
         extract_tarball(tarball_name, target_path)
         tree = self._getForeignTree(source_details, target_path)
+        tree.update()
+        return tree
+
+    def fetchFromOldLocationAndUploadToNewLocation(self, source_details,
+                                                   target_path):
+        """Transitional code."""
+        # XXX: MichaelHudson 2008-05-19 bug=231819: This code is to do with
+        # the new system looking in legacy locations for foreign trees and can
+        # be deleted when the new system has been running for a while.
+        if source_details.source_product_series_id == 0:
+            raise NoSuchFile("")
+        old_tarball_name = self._getOldTarballName(source_details)
+        if not self.transport.has(old_tarball_name):
+            raise NoSuchFile(old_tarball_name)
+        basename = os.path.basename(old_tarball_name)
+        _download(self.transport, old_tarball_name, basename)
+        # The old system created tarballs which contained a cvsworking or
+        # svnworking directory which contained what we want to end up in
+        # target_path, so we pass --strip 1 to tar which removes this path
+        # component.
+        extract_tarball(basename, target_path, extra_args=['--strip', '1'])
+        tree = self._getForeignTree(source_details, target_path)
+        self.archive(source_details, tree)
         tree.update()
         return tree
 
@@ -276,31 +342,25 @@ class ImportWorker:
         self.source_details = source_details
         self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
-        self.working_directory = tempfile.mkdtemp()
-        self._foreign_branch = None
         self._logger = logger
-        self._bazaar_working_tree_path = os.path.join(
-            self.working_directory, self.BZR_WORKING_TREE_PATH)
-        self._foreign_working_tree_path = os.path.join(
-            self.working_directory, self.FOREIGN_WORKING_TREE_PATH)
 
     def getBazaarWorkingTree(self):
         """Return the Bazaar `WorkingTree` that we are importing into."""
-        if os.path.isdir(self._bazaar_working_tree_path):
-            shutil.rmtree(self._bazaar_working_tree_path)
+        if os.path.isdir(self.BZR_WORKING_TREE_PATH):
+            shutil.rmtree(self.BZR_WORKING_TREE_PATH)
         return self.bazaar_branch_store.pull(
-            self.source_details.branch_id, self._bazaar_working_tree_path)
+            self.source_details.branch_id, self.BZR_WORKING_TREE_PATH)
 
     def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
 
         :return: A `SubversionWorkingTree` or a `CVSWorkingTree`.
         """
-        if os.path.isdir(self._foreign_working_tree_path):
-            shutil.rmtree(self._foreign_working_tree_path)
-        os.mkdir(self._foreign_working_tree_path)
+        if os.path.isdir(self.FOREIGN_WORKING_TREE_PATH):
+            shutil.rmtree(self.FOREIGN_WORKING_TREE_PATH)
+        os.mkdir(self.FOREIGN_WORKING_TREE_PATH)
         return self.foreign_tree_store.fetch(
-            self.source_details, self._foreign_working_tree_path)
+            self.source_details, self.FOREIGN_WORKING_TREE_PATH)
 
     def importToBazaar(self, foreign_tree, bazaar_tree):
         """Actually import `foreign_tree` into `bazaar_tree`.
@@ -345,6 +405,13 @@ class ImportWorker:
                        flags, revisions, bazpath]
         totla.totla(config, self._logger, config.args, SCM.tree(source_dir))
 
+    def getWorkingDirectory(self):
+        """The directory we should change to and store all scratch files in.
+        """
+        base = config.codeimportworker.working_directory_root
+        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
+        return os.path.join(base, dirname)
+
     def run(self):
         """Run the code import job.
 
@@ -361,6 +428,11 @@ class ImportWorker:
          5. Archives the foreign tree, so that we can update it quickly next
             time.
         """
+        working_directory = self.getWorkingDirectory()
+        if os.path.exists(working_directory):
+            shutil.rmtree(working_directory)
+        os.makedirs(working_directory)
+        os.chdir(working_directory)
         foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
@@ -368,5 +440,3 @@ class ImportWorker:
             self.source_details.branch_id, bazaar_tree)
         self.foreign_tree_store.archive(
             self.source_details, foreign_tree)
-        shutil.rmtree(bazaar_tree.basedir)
-        shutil.rmtree(foreign_tree.local_path)

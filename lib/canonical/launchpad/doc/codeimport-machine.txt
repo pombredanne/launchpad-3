@@ -62,17 +62,28 @@ directly after the canonical URL of the code import machine set.
 == Creating CodeImportMachines ==
 
 CodeImportMachines can be created with the 'new' method of
-ICodeImportMachineSet.  New machines can be created in any state, but
-are in the OFFLINE state by default,
+ICodeImportMachineSet.  New machines can be created in either the
+ONLINE or OFFLINE states, but are in the OFFLINE state by default.
 
     >>> new_machine = machine_set.new('frobisher')
     >>> print new_machine.state.name
     OFFLINE
 
+If they are created in the ONLINE state, an ONLINE event is created in
+the CodeImportEvent audit trail.  The NewEvents class helps testing
+the creation of CodeImportEvent objects.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
+    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
+
+    >>> new_events = NewEvents()
     >>> new_machine2 = machine_set.new(
     ...     'innocent', CodeImportMachineState.ONLINE)
     >>> print new_machine2.state.name
     ONLINE
+    >>> print new_events.summary()
+    ONLINE innocent
 
 
 == Modifying CodeImportMachine ==
@@ -88,13 +99,7 @@ Directly setting the state information on CodeImportMachines is not permitted.
 
 Instead, the setOnline() and related methods must be used.  These methods
 update the fields and in addition create events in the CodeImportEvent audit
-trail.  The NewEvents class helps testing the creation of CodeImportEvent
-objects.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
-    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
-
+trail.
 
 === setOnline ===
 
@@ -227,18 +232,13 @@ must fail.
     ...
     AssertionError: State of machine ... was ONLINE.
 
-From the QUIESCING state, a machine can only go OFFLINE. The setOnline
-and setQuiescing method must fail.
-
-It would be meaningful to allow the transition from QUIESCING to ONLINE,
-meaning "oops, I did not want you to quiesce, after all", but it would
-require a new event type. We will add it later if we find we need it.
+From the QUIESCING state, a machine can go OFFLINE or ONLINE. The
+setQuiescing method must fail.
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setOnline()
-    Traceback (most recent call last):
-    ...
-    AssertionError: State of machine ... was QUIESCING.
+    >>> print quiescing_machine.state.name
+    ONLINE
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setQuiescing(ddaa, "No worky!")

@@ -231,15 +231,24 @@ When creating a product, a default product series is created for it:
     trunk
 
 A product's licenses is now being tracked. Previously registered products 
-may not have a license set, so an empty tuple is valid.
+may not have a license set, so an empty tuple is valid. If the licenses
+or license_info attributes are changed, the license_reviewed is reset
+to false.
 
     >>> productset.getByName('jokosher').licenses == ()
     True
     >>> product.licenses
     (<...License.GNU_GPL_V2...>,)
+    >>> product.license_reviewed = True
     >>> product.licenses = (License.GNU_GPL_V2, License.GNU_LGPL_V2_1)
     >>> product.licenses
     (<...License.GNU_GPL_V2...>, <...License.GNU_LGPL_V2_1...>)
+    >>> product.license_reviewed
+    False
+    >>> product.license_reviewed = True
+    >>> product.license_info = 'foo'
+    >>> product.license_reviewed
+    False
 
 This series is set as the development focus for the product:
 
@@ -505,3 +514,29 @@ Change the development focus and the sort order changes.
     ...     print series.name
     trunk
     1.0
+
+
+= Stacking policy =
+
+Launchpad stacks branches that are uploaded to a product. Each created branch
+is 'stacked' on to a default base branch, called the 'default stacked-on
+branch' in Bazaar terminology.
+
+This default stacked-on branch is the development focus branch of a product.
+
+In the sample data, Firefox has no development focus branch set, so it has no
+default stacked-on branch:
+
+    >>> print firefox.development_focus.series_branch
+    None
+    >>> print firefox.default_stacked_on_branch
+    None
+
+However, Evolution has a branch for its development focus in the sample data,
+so it has a default stacked-on branch.
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> print evolution.development_focus.series_branch.unique_name
+    ~vcs-imports/evolution/main
+    >>> print evolution.default_stacked_on_branch.unique_name
+    ~vcs-imports/evolution/main

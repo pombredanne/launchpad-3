@@ -47,6 +47,7 @@ BuildQueue entries.
 
     >>> def setUpBuildQueueEntry(
     ...     component_name='main', urgency=SourcePackageUrgency.HIGH,
+    ...     pocket=PackagePublishingPocket.RELEASE,
     ...     date_created=LOCAL_NOW, manual=False):
     ...     global version
     ...     commit()
@@ -54,7 +55,7 @@ BuildQueue entries.
     ...     pub = test_publisher.getPubSource(
     ...        sourcename='test-build', version=str(version),
     ...        distroseries=hoary, component=component_name,
-    ...        urgency=urgency,
+    ...        urgency=urgency, pocket=pocket,
     ...        status=PackagePublishingStatus.PUBLISHED)
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
@@ -69,6 +70,7 @@ BuildQueue entries.
     ...     return build_queue
 
 
+ * 3000 points for pocket 'RELEASE',
  * 1000 points for component 'main',
  * 15 points for urgency HIGH.
  * nothing for queue_time
@@ -77,22 +79,21 @@ BuildQueue entries.
 
     >>> bq0.score()
     >>> bq0.lastscore
-    1015
+    4015
 
-If the archive is private, its score is boosted by 1000:
+If the archive is private, its score is boosted by 10000:
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bq0.build.archive.private = True
     >>> bq0.score()
     >>> bq0.lastscore
-    2015
+    14015
 
-    >>> bq0.build.archive.private = False
-    >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 
+ * 3000 points for pocket 'RELEASE',
  * 1000 points for main components
  * 5 point for priority LOW
  * nothing for queue_time
@@ -103,8 +104,9 @@ If the archive is private, its score is boosted by 1000:
 
     >>> bq1.score()
     >>> bq1.lastscore
-    1005
+    4005
 
+ * 3000 points for pocket 'RELEASE',
  * 250 points for universe component universe
  * 15 points for priority HIGH
  * 5 points for queue_time ( > 300 seconds)
@@ -117,8 +119,9 @@ If the archive is private, its score is boosted by 1000:
     >>> bq2.score()
 
     >>> bq2.lastscore
-    270
+    3270
 
+ * 3000 points for pocket 'RELEASE',
  * nothing for component multiverse
  * 10 points for MEDIUM priority
  * 10 points for queue_time ( > 900 seconds)
@@ -131,8 +134,9 @@ If the archive is private, its score is boosted by 1000:
     >>> bq3.score()
 
     >>> bq3.lastscore
-    20
+    3020
 
+ * 3000 points for pocket 'RELEASE',
  * 1000 points for main component
  * 20 points for EMERGENCY priority
  * 15 points for queue_time ( > 1800 seconds)
@@ -144,8 +148,9 @@ If the archive is private, its score is boosted by 1000:
 
     >>> bq4.score()
     >>> bq4.lastscore
-    1035
+    4035
 
+ * 3000 points for pocket 'RELEASE',
  * 750 points for restricted component
  * 5 points for LOW priority
  * 20 points for queue_time ( > 3600 seconds)
@@ -157,7 +162,7 @@ If the archive is private, its score is boosted by 1000:
 
     >>> bq5.score()
     >>> bq5.lastscore
-    775
+    3775
 
 By setting manual attribute of a BuildQueue entry we prevent it to be
 rescored, which allows us to set an arbitrary value on it.
@@ -172,3 +177,47 @@ rescored, which allows us to set an arbitrary value on it.
 
     >>> bq6.lastscore
     5000
+
+Let's see how the score varies for different publishing pockets.
+
+We will start with the lowest priority pocket: proposed.
+
+    >>> bq7 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.PROPOSED)
+    >>> bq7.score()
+    >>> bq7.lastscore
+    1015
+
+The score will increase by 1500 for the next ranked pocket: backports.
+
+    >>> bq8 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.BACKPORTS)
+    >>> bq8.score()
+    >>> bq8.lastscore
+    2515
+
+Going to the next ranked pocket (RELEASE) there will be another score
+increase of 1500.
+
+    >>> bq9 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> bq9.score()
+    >>> bq9.lastscore
+    4015
+
+Moving up to the UPDATES pocket will bump the score up by another 1500.
+
+    >>> bqa = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.UPDATES)
+    >>> bqa.score()
+    >>> bqa.lastscore
+    5515
+
+Finally, placing the build in the SECURITY pocket will push its score
+up by another 1500.
+
+    >>> bqb = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> bqb.score()
+    >>> bqb.lastscore
+    7015

@@ -110,7 +110,7 @@ the new product form for the project group.
     >>> admin_browser.getLink(
     ...     'register another project that is part of Test Group').click()
     >>> admin_browser.title
-    'Register a project in Launchpad'
+    'Register a project in your project group'
 
 == Products of a project ==
 

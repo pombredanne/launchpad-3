@@ -318,9 +318,11 @@ class LaunchpadBrowserPublication(
 
         # launchpad.pageid contains an identifier of the form
         # ContextName:ViewName. It will end up in the page log.
-        unrestricted_ob = removeSecurityProxy(ob)
+        view = removeSecurityProxy(ob)
+        # It's possible that the view is a bounded method.
+        view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(
-            getattr(unrestricted_ob, 'context', None))
+            getattr(view, 'context', None))
         if context is None:
             pageid = ''
         else:
@@ -328,10 +330,10 @@ class LaunchpadBrowserPublication(
             # is accessible in the instance __name__ attribute. We use
             # that if it's available, otherwise fall back to the class
             # name.
-            if getattr(unrestricted_ob, '__name__', None) is not None:
-                view_name = unrestricted_ob.__name__
+            if getattr(view, '__name__', None) is not None:
+                view_name = view.__name__
             else:
-                view_name = unrestricted_ob.__class__.__name__
+                view_name = view.__class__.__name__
             pageid = '%s:%s' % (context.__class__.__name__, view_name)
         # The view name used in the pageid usually comes from ZCML and so
         # it will be a unicode string although it shouldn't.  To avoid

@@ -376,6 +376,13 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     datepublishedsync = Attribute(_("The date of the published code was last "
         "synced, at the time of the last sync."))
 
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This attribute is
+    # only necessary for the transition from the old to the new
+    # code import system, and should be deleted after that process
+    # is done.
+    new_style_import = Attribute(_("The new-style import that was created "
+        "from this import, if any."))
+
     def syncCertified():
         """is the series source sync enabled?"""
 
@@ -412,6 +419,13 @@ class IProductSeriesSourceAdmin(Interface):
 
     def markDontSync():
         """Mark this import as DONTSYNC.
+
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
+        """
+
+    def markStopped():
+        """Mark this import as STOPPED.
 
         See `ImportStatus` for what this means.  This method also clears
         timestamps and other ancillary data.

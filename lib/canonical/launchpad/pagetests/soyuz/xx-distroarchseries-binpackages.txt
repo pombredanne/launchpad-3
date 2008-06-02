@@ -59,7 +59,7 @@ Then the DistroArchSeries page:
 
 Now we are able to use the search box in this page:
 
-    >>> browser.getControl(name="text", index=1).value = "moz"
+    >>> browser.getControl(name="text").value = "moz"
     >>> browser.getControl("Search Packages").click()
 
 Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
@@ -150,7 +150,7 @@ Then the DistroArchSeries page:
 
 Now we are able to use the search box in this page:
 
-    >>> browser.getControl(name="text", index=1).value = "commercialpackage"
+    >>> browser.getControl(name="text").value = "commercialpackage"
     >>> browser.getControl("Search Packages").click()
 
 Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:

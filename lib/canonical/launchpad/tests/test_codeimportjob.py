@@ -14,6 +14,8 @@ import unittest
 
 from sqlobject.sqlbuilder import SQLConstant
 
+from twisted.python.util import mergeFunctionMetadata
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -25,13 +27,18 @@ from canonical.launchpad.database import (
 from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
-    CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
-    ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
-from canonical.launchpad.ftests import login, sync
+    CodeImportReviewStatus, EmailAddressStatus, ICodeImportEventSet,
+    ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportResult,
+    ICodeImportResultSet, ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing.codeimporthelpers import (
+    make_finished_import)
+from canonical.launchpad.testing.pages import (
+    get_feedback_messages, setupBrowser)
+from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, PageTestLayer
 
 def login_for_code_imports():
     """Login as a member of the vcs-imports team.
@@ -710,13 +717,11 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         result_set = getUtility(ICodeImportResultSet)
         # Before calling finishJob() there are no CodeImportResults for the
         # given import...
-        results = list(result_set.getResultsForImport(code_import))
-        self.assertEqual(len(results), 0)
+        self.assertEqual(len(list(code_import.results)), 0)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         # ... and after, there is exactly one.
-        results = list(result_set.getResultsForImport(code_import))
-        self.assertEqual(len(results), 1)
+        self.assertEqual(len(list(code_import.results)), 1)
 
     def getResultForJob(self, job, status=CodeImportResultStatus.SUCCESS,
                         log_alias=None):
@@ -724,8 +729,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         code_import = job.code_import
         getUtility(ICodeImportJobWorkflow).finishJob(
             job, status, log_alias)
-        [result] = getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import)
+        [result] = list(code_import.results)
         return result
 
     def assertFinishJobPassesThroughJobField(self, from_field, to_field,
@@ -754,8 +758,10 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
 
         unchecked_result_fields = set(ICodeImportResult)
 
-        # We don't care about 'id'!
+        # We don't care about 'id', and 'job_duration' only matters
+        # when we have a valid date_created (as opposed to UTC_NOW).
         unchecked_result_fields.remove('id')
+        unchecked_result_fields.remove('job_duration')
         # Some result fields are tested in other tests:
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
@@ -860,6 +866,115 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             else:
                 self.assertTrue(
                     code_import.branch.next_mirror_time is None)
+
+
+def logged_in_as(email):
+    """Return a decorator that wraps functions to runs logged in as `email`.
+    """
+    def decorator(function):
+        def decorated(*args, **kw):
+            login(email)
+            try:
+                return function(*args, **kw)
+            finally:
+                logout()
+        return mergeFunctionMetadata(function, decorated)
+    return decorator
+
+
+# This is a dependence on the sample data: David Allouche is a member of the
+# ~vcs-imports celebrity team.
+logged_in_for_code_imports = logged_in_as('david.allouche@canonical.com')
+
+
+class TestRequestJobUIRaces(unittest.TestCase):
+    """What does the 'Import Now' button do when things have changed?
+
+    All these tests load up a view of a code import that shows the 'Import
+    Now' button, make a change so the button no longer makes sense then press
+    the button and check that appropriate notifications are displayed.
+    """
+
+    layer = PageTestLayer
+
+    def setUp(self):
+        self.factory = LaunchpadObjectFactory()
+
+    def getUserBrowserAtPage(self, url):
+        """Return a Browser object for a logged in user opened at `url`."""
+        user = logged_in_as(ANONYMOUS)(self.factory.makePerson)(
+            password='test')
+        user_browser = setupBrowser(
+            auth="Basic %s:test" % str(user.preferredemail.email))
+        user_browser.open(url)
+        return user_browser
+
+    @logged_in_for_code_imports
+    def getNewCodeImportIDAndBranchURL(self):
+        """Create a code import and return its ID and the URL of its branch.
+        """
+        code_import = make_finished_import(factory=self.factory)
+        branch_url = canonical_url(code_import.branch)
+        code_import_id = code_import.id
+        return code_import_id, branch_url
+
+    @logged_in_as('no-priv@canonical.com')
+    def requestJobByUserWithDisplayName(self, code_import_id, displayname):
+        """Record a request for the job by a user with the given name."""
+        getUtility(ICodeImportJobWorkflow).requestJob(
+            getUtility(ICodeImportSet).get(code_import_id).import_job,
+            self.factory.makePerson(displayname=displayname))
+        flush_database_updates()
+
+    @logged_in_for_code_imports
+    def deleteJob(self, code_import_id):
+        """Cause the code import job associated to the import to be deleted.
+        """
+        user = self.factory.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
+        getUtility(ICodeImportSet).get(code_import_id).suspend(
+            {}, user)
+        flush_database_updates()
+
+    @logged_in_as(ANONYMOUS)
+    def startJob(self, code_import_id):
+        """Mark the job as started on an arbitrary machine."""
+        getUtility(ICodeImportJobWorkflow).startJob(
+            getUtility(ICodeImportSet).get(code_import_id).import_job,
+            self.factory.makeCodeImportMachine(set_online=True))
+        flush_database_updates()
+
+    def test_pressButtonImportAlreadyRequested(self):
+        # If the import has been requested by another user, we display a
+        # notification saying who it was.
+        code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
+        user_browser = self.getUserBrowserAtPage(branch_url)
+        self.requestJobByUserWithDisplayName(code_import_id, "New User")
+        user_browser.getControl('Import Now').click()
+        self.assertEqual(
+            [u'The import has already been requested by New User.'],
+            get_feedback_messages(user_browser.contents))
+
+    def test_pressButtonJobDeleted(self):
+        # If the import job has been deleled, for example because the code
+        # import has been suspended, we display a notification saying this.
+        code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
+        user_browser = self.getUserBrowserAtPage(branch_url)
+        self.deleteJob(code_import_id)
+        user_browser.getControl('Import Now').click()
+        self.assertEqual(
+            [u'This import is no longer being updated automatically.'],
+            get_feedback_messages(user_browser.contents))
+
+    def test_pressButtonJobStarted(self):
+        # If the job has started, we display a notification saying so.
+        code_import_id, branch_url = self.getNewCodeImportIDAndBranchURL()
+        user_browser = self.getUserBrowserAtPage(branch_url)
+        self.startJob(code_import_id)
+        user_browser.getControl('Import Now').click()
+        self.assertEqual(
+            [u'The import is already running.'],
+            get_feedback_messages(user_browser.contents))
 
 
 def test_suite():

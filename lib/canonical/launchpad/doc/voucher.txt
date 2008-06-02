@@ -1,0 +1,190 @@
+= Subscription Vouchers =
+
+Subscription vouchers are items sold in the Canonical store.  When
+redeemed against a commercial project in Launchpad they give that
+project the right to use all of the services of Launchpad, just like
+open source projects.
+
+For testing purposes we use a custom XML-RPC transport which
+implements a mock proxy in the transport and avoids network traffic.
+
+    >>> from canonical.launchpad.ftests.salesforce import (
+    ...     SalesforceXMLRPCTestTransport)
+    >>> import xmlrpclib
+    >>> test_transport = SalesforceXMLRPCTestTransport()
+    >>> server = xmlrpclib.ServerProxy("http://example.com",
+    ...                                transport=test_transport)
+
+Let's create a convenience function for displaying our voucher lists,
+which are just dictionaries in the transport.
+
+    >>> def print_vouchers(vouchers):
+    ...     for voucher in vouchers:
+    ...         print "%s,%s" % (voucher['voucher'], voucher['status'])
+
+
+== Test the XMLRPC transport ==
+
+All of the sample voucher data in the transport can be shown.
+
+    >>> for voucher in test_transport.vouchers:
+    ...     print voucher
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000004,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000005,UNREDEEMED
+
+We can retrieve all unredeemed vouchers for a person.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IProductSet)
+    >>> mark = getUtility(IPersonSet).getByName('sabdfl')
+
+    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> print_vouchers(vouchers)
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
+
+A single voucher can be retrieved using the `getVoucher` method.
+Unlike the other retrieval methods this one does the lookup based on
+the voucher id, not the owner's id.
+
+    >>> voucher = server.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000001')
+    >>> print_vouchers([voucher])
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
+
+Attempting to retrieve a non-existent voucher returns no results.
+Note that the XMLRPC library requires that return values be
+encapuslated in a list, so the server actually returns [None] but the
+transport converts lists of length one to the scalar value.
+
+    >>> voucher = server.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-nonexistent1')
+    >>> print voucher
+    None
+
+A single voucher can be redeemed, but must be associated with a project.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> voucher = vouchers[0]['voucher']
+    >>> result = server.redeemVoucher(voucher, mark.openid_identifier,
+    ...                               firefox.id, firefox.displayname)
+    >>> print result
+    True
+    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> print_vouchers(vouchers)
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
+
+
+== Test the wrapper ==
+
+The interface `ISalesforceVoucherProxy` defines the interaction with
+the Salesforce proxy.
+
+    >>> from canonical.launchpad.interfaces import ISalesforceVoucherProxy
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> sfv = getUtility(ISalesforceVoucherProxy)
+    >>> verifyObject(ISalesforceVoucherProxy, sfv)
+    True
+
+The status of the proxy server can be checked.
+
+    >>> print sfv.getServerStatus()
+    Server is running normally
+
+All of the unredeemed vouchers for a Launchpad user can be retrieved.
+
+If the user has no matching vouchers an empty list is returned.
+
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> vouchers = sfv.getUnredeemedVouchers(foobar)
+    >>> len(vouchers)
+    0
+
+The user mark has some vouchers and they can be retrieved.
+
+    >>> vouchers = sfv.getUnredeemedVouchers(mark)
+    >>> for voucher in vouchers:
+    ...     print voucher
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+
+Get a single voucher by id.
+
+    >>> voucher = sfv.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000003')
+    >>> print voucher
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+
+Get a single voucher with an invalid id.
+
+    >>> voucher = sfv.getVoucher(
+    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-nonexistent1')
+    >>> print voucher
+    None
+
+Redeem the first voucher for firefox.
+
+    >>> voucher_id = vouchers[0].id
+    >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
+    >>> print result
+    True
+    >>> vouchers = sfv.getUnredeemedVouchers(mark)
+    >>> for voucher in vouchers:
+    ...     print voucher
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+
+If we get all of the vouchers the redeemed one is shown.
+
+    >>> vouchers = sfv.getAllVouchers(mark)
+    >>> for voucher in vouchers:
+    ...     print voucher
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,REDEEMED,12,Mozilla Firefox
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+
+Attempting to redeem an already redeemed voucher is unsuccessful.
+
+    >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
+    >>> print result
+    False
+
+Attempting to redeem a bogus voucher is also unsuccessful.
+
+    >>> voucher_id = "hownowbrowncow"
+    >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
+    >>> print result
+    False
+
+Using None for the project results in an error.
+
+    >>> result = sfv.redeemVoucher(voucher_id, mark, None)
+    Traceback (most recent call last):
+      ...
+    AttributeError:...
+
+Using None for the person results in an error.
+
+    >>> result = sfv.redeemVoucher(voucher_id, None, firefox)
+    Traceback (most recent call last):
+      ...
+    AttributeError:...
+
+If a project's name changes we can communicate that to Salesforce.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_firefox = removeSecurityProxy(firefox)
+    >>> print naked_firefox.displayname
+    Mozilla Firefox
+    >>> naked_firefox.displayname = 'Super Mozilla Firefox'
+    >>> print naked_firefox.displayname
+    Super Mozilla Firefox
+    >>> result = sfv.updateProjectName(naked_firefox)
+    >>> print result
+    1

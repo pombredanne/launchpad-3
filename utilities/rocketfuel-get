@@ -19,13 +19,18 @@ rsync $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
 
 cd ~/canonical/lp-branches
 for branch in *; do
-  cd $branch
-  echo "Updating sourcecode dependencies for ${branch}"
-  utilities/link-external-sourcecode ../../lp-sourcedeps
-  cd ..
+  if [ -d $branch ]
+  then
+     cd $branch
+     if [ -d sourcecode ]
+     then
+        echo "Updating sourcecode dependencies for ${branch}"
+        ../trunk/utilities/link-external-sourcecode ../../lp-sourcedeps
+     fi
+     cd ..
+  fi
 done
 
 cd ~/canonical/lp-branches/trunk
 bzr pull
 make
-
