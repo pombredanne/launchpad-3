@@ -4,7 +4,7 @@ launchpad-buildd (47) dapper-cat; urgency=low
     getLogTail() goes looking for it (which is a possible race with
     the new sanitisation code), just return an empty string.
 
- -- Adam Conrad <adconrad@cthulhu>  Mon, 02 Jun 2008 13:09:55 -0600
+ -- Adam Conrad <adconrad@ubuntu.com>  Mon, 02 Jun 2008 13:09:55 -0600
 
 launchpad-buildd (46) dapper-cat; urgency=low
 
