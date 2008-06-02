@@ -509,13 +509,13 @@ is always assumed to be a BugTaskStatus.
 
   >>> for line in tree.moinmoin_table():
   ...     print line
-  || ASSIGNED '''or''' STARTED || - (''ignored'') || INPROGRESS ||
+  || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
   || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
-  || PENDINGUPLOAD '''or''' RELEASE_PENDING || - (''ignored'') || FIX...
-  || REJECTED || - (''ignored'') || INVALID ||
-  || RESOLVED '''or''' CLOSED || ERRATA '''or''' FIXED || FIXRELEASED ||
-  ||  || WONTFIX || WONTFIX ||
-  ||  || * (''any'') || INVALID ||
-  || REOPENED '''or''' NEW '''or''' DEFERRED || - (''ignored'') || CO...
-  || UNCONFIRMED || - (''ignored'') || NEW ||
-  || * (''any'') || - (''ignored'') || UNKNOWN ||
+  || PENDINGUPLOAD '''or''' RELEASE_PENDING || - (''ignored'') || Fix...
+  || REJECTED || - (''ignored'') || Invalid ||
+  || RESOLVED '''or''' CLOSED || ERRATA '''or''' FIXED || Fix Released ||
+  ||  || WONTFIX || Won't Fix ||
+  ||  || * (''any'') || Invalid ||
+  || REOPENED '''or''' NEW '''or''' DEFERRED || - (''ignored'') || Co...
+  || UNCONFIRMED || - (''ignored'') || New ||
+  || * (''any'') || - (''ignored'') || Unknown ||

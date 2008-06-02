@@ -285,7 +285,7 @@ class Lookup(treelookup.Lookup):
 
         last_columns = None
         for elems in self.flattened:
-            path, key = elems[:-1], elems[-1]
+            path, result = elems[:-1], elems[-1]
             columns = []
             for keys in path:
                 if len(keys) == 0: # Default
@@ -294,7 +294,7 @@ class Lookup(treelookup.Lookup):
                     columns.append(
                         " '''or''' ".join(str(key) for key in keys))
             columns.extend(["- (''ignored'')"] * (max_depth - len(path)))
-            columns.append(key.name)
+            columns.append(result.title)
             if last_columns is None:
                 yield line(columns)
             else:
