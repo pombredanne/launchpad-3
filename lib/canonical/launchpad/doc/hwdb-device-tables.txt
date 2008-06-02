@@ -23,7 +23,9 @@ row with the same name raises an IntegrityError error.
     >>> vendor_name_set.create('Intel')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwvendorname_name_key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
 == HWVendorID ==
@@ -51,7 +53,9 @@ The tuple (bus, vendor id, vendor name) must be unique.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwvendorid__bus_vendor_id__vendor_name__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
 We store the (bus specific) vendor ID as a string, but several busses
@@ -553,7 +557,9 @@ IntegrityError error.
     ...                                     product_name='some scanner')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwdevice__bus_vendor_id__bus_product_id__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
     >>> another_scanner = device_set.create(bus=HWBus.USB,
@@ -563,7 +569,9 @@ IntegrityError error.
     ...                                     product_name='OpticPro UT16')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwdevice__bus_vendor_id__bus_product_id__variant__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
 
@@ -606,7 +614,9 @@ IntegrityError error.
     ...                                               product_name='MD 1234')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwdevicenamevariant__vendor_name__product_name__device__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
 
@@ -669,7 +679,9 @@ The tuple (driver name, package name) must be unique.
     ...                            license=License.GNU_GPL_V2)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwdriver__package_name__name__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
     >>> driver = driver_set.create(package_name=None,
@@ -677,7 +689,9 @@ The tuple (driver name, package name) must be unique.
     ...                            license=License.GNU_GPL_V2)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwdriver__name__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
 == HWDeviceDriverLink ==
@@ -764,13 +778,17 @@ The tuple (device, driver) must be unique.
     ...                               driver=closed_driver)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwdevicedriverlink__device__driver__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
     >>> device_driver_link_set.create(device=tuffbook_2600, driver=None)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwdevicedriverlink__device__key"
+    ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
 

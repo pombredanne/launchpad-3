@@ -19,7 +19,7 @@ from bzrlib.transport import (
     unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase as BzrTestCase, TestCaseInTempDir
-from bzrlib.urlutils import local_path_to_url
+from bzrlib.urlutils import escape, local_path_to_url
 
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -295,6 +295,13 @@ class TestVirtualTransport(TestCaseInTempDir):
         t = self.transport.clone('baz')
         self.assertEqual('/baz/bar', t.local_realPath('bar'))
 
+    def test_realPathEscaping(self):
+        # local_realPath returns an escaped path to the file.
+        escaped_path = escape('~baz')
+        self.transport.mkdir(escaped_path)
+        self.assertEqual(
+            '/' + escaped_path, self.transport.local_realPath(escaped_path))
+
 
 class LaunchpadTransportTests:
     """Tests for a Launchpad transport.
@@ -376,6 +383,14 @@ class LaunchpadTransportTests:
         transport = self.getTransport()
         deferred = self._ensureDeferred(
             transport.get_bytes, '~testuser/firefox/baz/.bzr/hello.txt')
+        return deferred.addCallback(self.assertEqual, 'Hello World!')
+
+    def test_get_mapped_file_escaped_url(self):
+        # Getting a file from a public branch URL gets the file as stored on
+        # the base transport, even when the URL is escaped.
+        url = escape('~testuser/firefox/baz/.bzr/hello.txt')
+        transport = self.getTransport()
+        deferred = self._ensureDeferred(transport.get_bytes, url)
         return deferred.addCallback(self.assertEqual, 'Hello World!')
 
     def test_readv_mapped_file(self):
