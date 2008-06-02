@@ -77,7 +77,7 @@ a notification is produced when the message is created.
     Subject: Please merge
     Vote: Approve DB
     This patch is very nice.
-    --
+    --...
     You are subscribed to branch ~person-name.../product-name.../branch....
     ----------------------------------------
     >>> print notifications[0]['X-Launchpad-Branch']
