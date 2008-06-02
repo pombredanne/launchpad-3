@@ -8,8 +8,11 @@ We start by turning an XML WADL definition into a wadllib Application
 object.
 
    >>> import os
+   >>> import sys
+   >>> testdata_path = os.path.join(os.path.split(sys.argv[0])[0],
+   ...                              'testdata')
    >>> from wadllib import Application
-   >>> wadl_path = os.path.join("testdata", "launchpad-wadl.xml")
+   >>> wadl_path = os.path.join(testdata_path, "launchpad-wadl.xml")
    >>> wadl = Application("http://api.launchpad.dev/beta/", open(wadl_path))
 
    >>> print wadl.findResourceByPath('nosuchresource')
@@ -45,7 +48,8 @@ actual GET request, and bind the resulting representation to the
 WADL description of the resource:
 
    >>> def bind_to_testdata(resource, filename):
-   ...     data = open(os.path.join("testdata", filename + '.json')).read()
+   ...     data = open(os.path.join(testdata_path,
+   ...                 filename + '.json')).read()
    ...     return resource.bind(data, 'application/json')
    >>> bound_service_root = bind_to_testdata(service_root, 'root')
 
