@@ -7,11 +7,10 @@
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
 
-   >>> from canonical.launchpad.database.distroarchseries import (
-   ...     DistroArchSeries)
-
-
-   >>> hoary_i386 = DistroArchSeries.get(6)
+   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+   >>> hoary = ubuntu.getSeries('hoary')
+   >>> hoary_i386 = hoary['i386']
 
 # XXX: daniels 2005-10-17 bug=3257:
 #      This needs many more tests to be effective.
@@ -42,7 +41,8 @@ list of IDARBPR instances containing the matching packages.
 The method works even when we are searching for packages whose names are
 not fti-matchable, such as "linux-2.6.12", and substrings:
 
-   >>> warty_i386 = DistroArchSeries.get(1)
+   >>> warty = ubuntu.getSeries('warty')
+   >>> warty_i386 = warty['i386']
    >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
    >>> len(results)
    1
@@ -115,8 +115,9 @@ Supersede current publication:
    >>> pmount_hoary_i386.publishing_history.count()
    3
 
-   >>> superseded_pmount.status.name, superseded_pmount.datesuperseded
-   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+   >>> pub = superseded_pmount
+   >>> print pub.status.name, pub.datesuperseded is not None
+   SUPERSEDED True
 
 
 == Binary publishing lookups ==
