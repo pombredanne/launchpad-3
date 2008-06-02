@@ -25,10 +25,10 @@ linkPersonToBugTracker() method of IBugTrackerPersonSet.
     ...         sample_person, bugtracker, name)
 
     >>> print bugtracker_person.name
-    'some-name-i-made-up'
+    some-name-i-made-up
 
-    >>> bugtracker_person.person == sample_person
-    True
+    >>> print bugtracker_person.person.name
+    name12
 
-    >>> bugtracker_person.bugtracker == bugtracker
-    True
+    >>> print bugtracker_person.bugtracker.name
+    bugzilla-checkwatches-1

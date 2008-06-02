@@ -36,7 +36,13 @@ class IBugTrackerPersonSet(Interface):
     """A set of IBugTrackerPersons."""
 
     def getByNameAndBugTracker(name, bugtracker):
-        """Return the Person with a given name on a given bugtracker."""
+        """Return the `IPerson` with a given name on a given bugtracker.
+
+        :param name: The name of the person on the bugtracker in
+            `bugtracker`.
+        :param bugtracker: The `IBugTracker` against which the `IPerson`
+            to be returned is registered with `name`.
+        """
 
     def linkPersonToBugTracker(person, bugtracker, name):
         """Link a Person to a BugTracker using a given name.
