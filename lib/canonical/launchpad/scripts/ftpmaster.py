@@ -32,21 +32,29 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
+
+from canonical.launchpad.components.pubhistcopier import (
+    PackageLocationError, build_package_location)
+
 from canonical.launchpad.helpers import filenameToContentType
+
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
     IBinaryPackagePublishingHistory, IBinaryPackageReleaseSet,
     IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
     ISourcePackagePublishingHistory, NotFoundError, PackagePublishingPocket,
     PackagePublishingPriority, PackagePublishingStatus, pocketsuffix)
+
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
+
+from canonical.launchpad.scripts.ftpmasterbase import (
+    SoyuzScript, SoyuzScriptError)
+
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
+
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, PackageLocationError, SoyuzScript,
-    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -1479,7 +1487,8 @@ class LpQueryDistro(LaunchpadScript):
         pending_binaries = self.location.archive.getAllPublishedBinaries(
             status=PackagePublishingStatus.PENDING)
         for pub in pending_binaries:
-            pending_suites.add((pub.distroarchseries.distroseries, pub.pocket))
+            pending_suites.add((
+                pub.distroarchseries.distroseries, pub.pocket))
 
         return " ".join([distroseries.name + pocketsuffix[pocket]
                          for distroseries, pocket in pending_suites])

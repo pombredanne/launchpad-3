@@ -20,6 +20,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.launchpad.components.pubhistcopier import (
+    PackageLocation, PubHistoryCopier)
+
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -49,7 +53,6 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
@@ -66,7 +69,9 @@ from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
+
 from canonical.launchpad.helpers import shortlist
+
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBinaryPackageName,
     IBuildSet, ICanPublishPackages, IDistroSeries, IDistroSeriesSet,
@@ -77,6 +82,8 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
+
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -1333,10 +1340,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Perform the copies
         self._copy_component_and_section_selections(cur)
-        self._copy_source_publishing_records(cur)
+        self._copy_source_publishing_records()
         for arch in self.architectures:
             parent_arch = self.parent_series[arch.architecturetag]
-            self._copy_binary_publishing_records(cur, arch, parent_arch)
+            self._copy_binary_publishing_records(arch, parent_arch)
         self._copy_lucille_config(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
@@ -1352,7 +1359,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             WHERE id = %s
             ''' % sqlvalues(self.parent_series.id, self.id))
 
-    def _copy_binary_publishing_records(self, cur, arch, parent_arch):
+    def _copy_binary_publishing_records(self, arch, parent_arch):
         """Copy the binary publishing records from the parent arch series
         to the given arch series in ourselves.
 
@@ -1362,6 +1369,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
+        copier = PubHistoryCopier()
+
         archive_set = getUtility(IArchiveSet)
         for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
@@ -1371,28 +1380,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             target_archive = archive_set.ensure(
                 distribution=self.distribution, purpose=archive.purpose,
                 owner=None)
-            cur.execute('''
-                INSERT INTO SecureBinaryPackagePublishingHistory (
-                    binarypackagerelease, distroarchseries, status,
-                    component, section, priority, archive, datecreated,
-                    datepublished, pocket, embargo)
-                SELECT bpph.binarypackagerelease, %s as distroarchseries,
-                       bpph.status, bpph.component, bpph.section, bpph.priority,
-                       %s as archive, %s as datecreated, %s as datepublished,
-                       %s as pocket, false as embargo
-                FROM BinaryPackagePublishingHistory AS bpph
-                WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
-                AND
-                    bpph.pocket = %s and bpph.archive = %s
-                ''' % sqlvalues(arch.id, target_archive, UTC_NOW, UTC_NOW,
-                                PackagePublishingPocket.RELEASE,
-                                parent_arch.id,
-                                PackagePublishingStatus.PENDING,
-                                PackagePublishingStatus.PUBLISHED,
-                                PackagePublishingPocket.RELEASE,
-                                archive))
 
-    def _copy_source_publishing_records(self, cur):
+            origin = PackageLocation(
+                archive, self.parent_series.distribution, self.parent_series,
+                PackagePublishingPocket.RELEASE, parent_arch)
+            destination = PackageLocation(
+                target_archive, self.distribution, self,
+                PackagePublishingPocket.RELEASE, arch)
+            copier.copy_binary_publishing_data(origin, destination)
+
+    def _copy_source_publishing_records(self):
         """Copy the source publishing records from our parent distro series.
 
         We copy all PENDING and PUBLISHED records as PENDING into our own
@@ -1401,6 +1398,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
+        copier = PubHistoryCopier()
+
         archive_set = getUtility(IArchiveSet)
         for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
@@ -1410,25 +1409,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             target_archive = archive_set.ensure(
                 distribution=self.distribution, purpose=archive.purpose,
                 owner=None)
-            cur.execute('''
-                INSERT INTO SecureSourcePackagePublishingHistory (
-                    sourcepackagerelease, distroseries, status, component,
-                    section, archive, datecreated, datepublished, pocket,
-                    embargo)
-                SELECT spph.sourcepackagerelease, %s as distroseries,
-                       spph.status, spph.component, spph.section, %s as archive,
-                       %s as datecreated, %s as datepublished,
-                       %s as pocket, false as embargo
-                FROM SourcePackagePublishingHistory AS spph
-                WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
-                      spph.pocket = %s and spph.archive = %s
-                ''' % sqlvalues(self.id, target_archive, UTC_NOW, UTC_NOW,
-                                PackagePublishingPocket.RELEASE,
-                                self.parent_series.id,
-                                PackagePublishingStatus.PENDING,
-                                PackagePublishingStatus.PUBLISHED,
-                                PackagePublishingPocket.RELEASE,
-                                archive))
+            origin = PackageLocation(
+                archive, self.parent_series.distribution, self.parent_series,
+                PackagePublishingPocket.RELEASE)
+            destination = PackageLocation(
+                target_archive, self.distribution, self,
+                PackagePublishingPocket.RELEASE)
+            copier.copy_source_publishing_data(origin, destination)
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro
