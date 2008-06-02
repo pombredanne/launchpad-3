@@ -42,6 +42,9 @@ Let's create a new request for foo.bar@canonical.com.
 Note that we store a normalized version of the request's address, so that we
 can identify people making requests from multiple different accounts.
 
+    >>> from storm.store import Store
+    >>> Store.of(request).flush()
+    >>> Store.of(request).invalidate(request)
     >>> request.normalized_address
     u'antoniorodriguescajado1506saocarlos'
 
@@ -165,12 +168,12 @@ We have 16 requests, and two of them are cancelled
      (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
      (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
      (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
-     (20, u'sabdfl'), (21, u'karl'), (22L, u'name16')]
+     (20, u'sabdfl'), (21, u'karl'), (22, u'name16')]
 
     >>> cancelled = ShippingRequestStatus.CANCELLED
     >>> sorted((shipreq.id, shipreq.recipient.name) 
     ...        for shipreq in requestset.search(status=cancelled))
-    [(6, u'cprov'), (22L, u'name16')]
+    [(6, u'cprov'), (22, u'name16')]
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
@@ -216,7 +219,7 @@ of a given distroseries (or both, obviously).
      (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
      (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
      (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
-     (u'Stuart Bishop', 2), (u'Foo Bar', 22L)]
+     (u'Stuart Bishop', 2), (u'Foo Bar', 22)]
 
     >>> edubuntu = ShipItFlavour.EDUBUNTU
     >>> [(shipreq.recipient.displayname , shipreq.id)
@@ -1128,11 +1131,11 @@ This is the description of each column, in its context:
              # of people: 8
                        %: 80.0
        people with karma: 1
-     avg CDs per request: 0.0
+     avg CDs per request: 0
              # of people: 8
                        %: 80.0
        people with karma: 1
-    avg CDs per shipment: 0.0
+    avg CDs per shipment: 0
     ------------------------------------------------------------ Line 2
            # of requests: 1
              # of people: 9
@@ -1156,11 +1159,11 @@ This is the description of each column, in its context:
              # of people: 1
                        %: 10.0
        people with karma: 0
-     avg CDs per request: 1.5
+     avg CDs per request: 1.50
              # of people: 1
                        %: 12.5
        people with karma: 0
-    avg CDs per shipment: 1.5
+    avg CDs per shipment: 1.50
              # of people: 0
                        %: 0.0
        people with karma: 0
