@@ -129,11 +129,11 @@ Inspecting the modified record shows it's ready for domination:
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
     >>> modified_spph.datesuperseded
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-    >>> modified_spph.removed_by.name
-    u'sabdfl'
-    >>> modified_spph.removal_comment
-    u'testing deletion'
+    datetime.datetime(...)
+    >>> print modified_spph.removed_by.name
+    sabdfl
+    >>> print modified_spph.removal_comment
+    testing deletion
 
 requstObsolescence takes no additional arguments:
 
@@ -146,7 +146,7 @@ pockets for stable distroseries):
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.OBSOLETE, (5) Obsolete>
     >>> modified_spph.scheduleddeletiondate
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    datetime.datetime(...)
 
 
 == Copying and published binarypackages lookup ==
