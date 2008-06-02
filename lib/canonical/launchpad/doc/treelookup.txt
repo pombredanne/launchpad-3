@@ -96,10 +96,10 @@ But an exception is raised if it does not reach a leaf.
 
 == Development ==
 
-`LookupTree` makes development easy, because __repr__ gives a complete
-description of the tree you've created.
+`LookupTree` makes development easy, because `describe` gives a
+complete description of the tree you've created.
 
-  >>> print repr(tree)
+  >>> print tree.describe()
   tree(
       branch(Snack => tree(
           branch('Mars Bar', Snickers => 'Bad')
@@ -115,7 +115,7 @@ description of the tree you've created.
 We can also see that the result of constructing a new lookup using an
 existing one is the same as if we had constructed it independently.
 
-  >>> print repr(breakfast_tree)
+  >>> print breakfast_tree.describe()
   tree(
       branch(Breakfast => 'Corn flakes')
       branch(Snack => tree(
@@ -142,11 +142,11 @@ You can discover the minimum and maximum depth of a tree.
   >>> tree.max_depth
   2
 
-`LookupTree` has a `flattened` property that may be useful when
-generating documentation. It yields tuples of keys that represent
-paths to leaves.
+`LookupTree` has a `flatten` method that may be useful when generating
+documentation. It yields tuples of keys that represent paths to
+leaves.
 
-  >>> for elems in tree.flattened:
+  >>> for elems in tree.flatten():
   ...     path, result = elems[:-1], elems[-1]
   ...     print ' => '.join(
   ...         [repr(tuple(node)) for node in path] + [repr(result)])
