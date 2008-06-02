@@ -330,7 +330,7 @@ class LaunchpadBranch:
             database operations on the branch. This XML-RPC client should
             implement 'callRemote'.
         :param virtual_path: A public path to a branch, or to a file or
-            directory within a branch.
+            directory within a branch. This path is assumed to be URL escaped.
 
         :raise NotABranchPath: If `virtual_path` cannot be translated into a
             (potential) path to a branch. See also `NotEnoughInformation`
@@ -338,8 +338,10 @@ class LaunchpadBranch:
 
         :return: (launchpad_branch, rest_of_path), where `launchpad_branch`
             is an instance of LaunchpadBranch that represents the branch at
-            the virtual path, and `rest_of_path` is a path within that branch.
+            the virtual path, and `rest_of_path` is a URL-escaped path within
+            that branch.
         """
+        virtual_path = urlutils.unescape(virtual_path).encode('utf-8')
         segments = get_path_segments(virtual_path, 3)
         # If we don't have at least an owner, product and name, then we don't
         # have enough information for a branch.
@@ -357,6 +359,7 @@ class LaunchpadBranch:
             raise NotEnoughInformation(virtual_path)
         if not user_dir.startswith('~'):
             raise InvalidOwnerDirectory(virtual_path)
+        path = urlutils.escape(path)
         return cls(authserver, user_dir[1:], product, name), path
 
     def __init__(self, authserver, owner, product, name):
@@ -570,10 +573,12 @@ class LaunchpadServer(Server):
         return product, '/'.join([control] + segments[3:])
 
     def _translateControlPath(self, virtual_path):
+        virtual_path = urlutils.unescape(virtual_path).encode('utf-8')
         product, path = self._parseProductControlDirectory(virtual_path)
         deferred = self._authserver.getDefaultStackedOnBranch(product)
         deferred.addCallback(self._buildControlDirectory)
-        return deferred.addCallback(lambda transport: (transport, path))
+        return deferred.addCallback(
+            lambda transport: (transport, urlutils.escape(path)))
 
     def createBranch(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -719,10 +724,10 @@ class VirtualTransport(Transport):
         raise InProcessTransport(self)
 
     def _abspath(self, relpath):
-        """Return the absolute path to `relpath` without the schema."""
+        """Return the absolute, escaped path to `relpath` without the schema.
+        """
         return urlutils.joinpath(
-            self.base[len(self.server.scheme)-1:],
-            urlutils.unescape(relpath).encode('utf-8'))
+            self.base[len(self.server.scheme)-1:], relpath)
 
     def _getUnderylingTransportAndPath(self, relpath):
         """Return the underlying transport and path for `relpath`."""
@@ -811,7 +816,7 @@ class VirtualTransport(Transport):
         # Here, we assume that the underlying transport has no symlinks
         # (Bazaar transports cannot create symlinks). This means that we can
         # just return the absolute path.
-        return urlutils.escape(self._abspath(relpath))
+        return self._abspath(relpath)
 
     def readv(self, relpath, offsets, adjust_for_latency=False,
               upper_limit=None):

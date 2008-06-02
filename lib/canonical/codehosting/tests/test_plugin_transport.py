@@ -302,6 +302,20 @@ class TestVirtualTransport(TestCaseInTempDir):
         self.assertEqual(
             '/' + escaped_path, self.transport.local_realPath(escaped_path))
 
+    def test_canAccessEscapedPathsOnDisk(self):
+        # Sometimes, the paths to files on disk are themselves URL-escaped.
+        # The VirtualTransport can access these files.
+        #
+        # This test added in response to https://launchpad.net/bugs/236380.
+        escaped_disk_path = 'prefix_%43razy'
+        content = 'content\n'
+        escaped_file = open(escaped_disk_path, 'w')
+        escaped_file.write(content)
+        escaped_file.close()
+
+        deferred = self.transport.get_bytes(escape('%43razy'))
+        return deferred.addCallback(self.assertEqual, content)
+
 
 class LaunchpadTransportTests:
     """Tests for a Launchpad transport.
