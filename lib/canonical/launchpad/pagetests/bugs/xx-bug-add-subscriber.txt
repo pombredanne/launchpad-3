@@ -48,6 +48,23 @@ The subscribers portlet now contains the new subscriber's name.
     >>> extract_text(subs.ul)
     u'...David Allouche...'
 
+David got a notification, saying that he was subscribed to the bug.
+
+    >>> from canonical.launchpad.mail import stub
+    >>> len(stub.test_emails)
+    1
+    >>> print stub.test_emails[0][2]
+    MIME-Version: 1.0
+    ...
+    To: david.allouche@canonical.com
+    Reply-To: Bug ... <...@bugs.launchpad.net>
+    ...
+    X-Launchpad-Message-Rationale: Subscriber
+    ...
+    You have been subscribed to a public bug by No Privileges Person (no-priv):
+    ...
+    http://bugs.launchpad.dev/bugs/...
+
 He subscribes the Landscape developers team.
 
     >>> user_browser.getLink('Subscribe someone else').click()

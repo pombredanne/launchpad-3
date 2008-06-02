@@ -1,18 +1,75 @@
-Test that the page to add a new product loads.
+== Adding products ==
+
+First step in adding a project is hitting the registration link on the
+project homepage. Sample Person decides to register his project, and
+chooses the 'Register a project' link.
 
     >>> user_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> user_browser.open("http://launchpad.dev/projects")
+    >>> user_browser.getLink("Register a project").click()
+    >>> user_browser.url
+    'http://launchpad.dev/projects/+new-guided'
+
+The first page of project registration provides information about
+registration. Sample Person reads the explanation:
+
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Hi there!
+    ...
+    Launchpad is a service for registering and hosting software
+    projects. Service is provided free for open source/free software
+    projects. But let us steal a minute of your time to point out a few
+    important things before you proceed with the actual registration.
+    ...
+
+He sees hints to the existence of staging, the user guide and the tour:
+
+    >>> user_browser.getLink("staging.launchpad.net").url
+    'https://staging.launchpad.net/'
+    >>> user_browser.getLink("our user handbook").url
+    'https://help.launchpad.net/FeatureHighlights'
+    >>> user_browser.getLink("take our guided tour").url
+    'https://launchpad.net/+tour'
+
+The page even includes a direct link to shipit, since people are so
+confused about it:
+
+    >>> user_browser.getLink("shipit.ubuntu.com").url
+    'https://shipit.ubuntu.com/'
+
+Sample Person sees a link to the registration form as he finishes
+reading the page. He clicks the link to see the new project
+form:
+
+    >>> user_browser.getLink("the registration form").click()
+    >>> user_browser.url
+    'http://launchpad.dev/projects/+new'
+    >>> user_browser.title
+    'Register a project in Launchpad'
+
+== The product registration form ==
+
+Sample Person sees the new project form. It encourages him
+to fill out as much as he can, and tells him he can manage
+his project a soon as he submits the form.
+
     >>> user_browser.open("http://launchpad.dev/projects/+new")
     >>> h1 = find_main_content(user_browser.contents).find('h1')
     >>> print h1.renderContents()
     Register an upstream open source project
+
     >>> tags = find_tags_by_class(user_browser.contents, 
     ...     'documentDescription')
     >>> for tag in tags:
     ...     print extract_text(tag)
-    Use this page to register a project, so that you can track translations, bugs
-    or specifications for it.
+    Form filling fun! The more information you provide out here, the more
+    attention and collaboration your project will be able to attract.
+    And there's no wait: once registered, you can immediately
+    start using your project to track bugs, code, translations (and
+    more).
 
-Tests if the validator is working for the URL fields
+URLs are validated in the form. Sample Person gets it wrong when filling
+it out:
 
     >>> user_browser.getControl('Part of').value = 'mozilla'
     >>> user_browser.getControl('Name', index=0).value = 'testing'
@@ -42,7 +99,8 @@ Tests if the validator is working for the URL fields
     There is 1 error.
     "www.test.test.com/" is not a valid URI
 
-And just 'http://' for the url
+He is a bit lazy and checks out whether just 'http://' for the url
+works. It doesn't:
 
     >>> user_browser.getControl('Homepage URL').value = 'http://'
     >>> user_browser.getControl('Add').click()
@@ -52,7 +110,7 @@ And just 'http://' for the url
     There is 1 error.
     http URIs must have a host name
 
-Test that the validator requires a license to be selected in the form:
+The license is also mandatory:
 
     >>> user_browser.getControl('Homepage URL').value = 'http://www.test.test.com/'
     >>> user_browser.getControl(name='field.licenses').value = []
@@ -64,8 +122,7 @@ Test that the validator requires a license to be selected in the form:
     Select all licenses for this software or select
     Other/Proprietary or Other/Open Source.
 
-
-Test that the page to add a new product works.
+But at this point he gets it right!
 
     >>> user_browser.getControl(name='field.licenses').value = ['GNU_GPL_V2']
     >>> user_browser.getControl('Add').click()
@@ -73,6 +130,10 @@ Test that the page to add a new product works.
     >>> user_browser.url
     'http://launchpad.dev/testing'
 
+
+== A brand new project ==
+
+XXX: This narrative still needs fixing.
 
 Test if we can see the page of the added product and tests if we can see the
 Project.

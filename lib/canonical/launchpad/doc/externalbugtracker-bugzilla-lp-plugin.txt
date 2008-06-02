@@ -1,0 +1,37 @@
+= Bugzilla bugtrackers with the Launchpad plugin =
+
+These tests cover the BugzillaLPPlugin ExternalBugTracker, which handles
+Bugzilla instances that have the Launchpad plugin installed.
+
+For testing purposes, a custom XML-RPC transport can be passed to it,
+so that we can avoid network traffic in tests.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     BugzillaLPPlugin)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestBugzillaXMLRPCTransport)
+    >>> test_transport = TestBugzillaXMLRPCTransport()
+    >>> bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
+    >>> bugzilla.xmlrpc_transport is test_transport
+    True
+
+
+== Getting the current time ==
+
+The BugzillaLPPlugin ExternalBugTracker, like all other
+ExternalBugTrackers, has a getCurrentDBTime() method, which returns the
+current time on the remote server.
+
+    >>> from datetime import datetime
+    >>> # It seems there's no way to create a UTC timestamp without
+    >>> # monkey-patching the TZ environment variable. Rather than do
+    >>> # that, we create our own timestamp and work with that.
+    >>> datetime.utcfromtimestamp(1210953200.0)
+    datetime.datetime(2008, 5, 16, 15, 53, 20)
+
+    >>> test_transport.utc_offset = 60**2
+    >>> test_transport.timezone = 'CET'
+    >>> test_transport.seconds_since_epoch = 1210956800.0
+    >>> bugzilla.getCurrentDBTime()
+    datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)

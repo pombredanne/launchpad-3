@@ -80,3 +80,43 @@ ConversionError saying that the package name doesn't exist.
     ...
     ConversionError...
 
+
+== BugTaskAlsoAffectsSourcePackageNameWidget ==
+
+The +distrotask page accepts both source and binary package names, but
+the distribution can't be obtained from the widget's context. For this
+page, BugTaskAlsoAffectsSourcePackageNameWidget exists, which gets the
+distribution from the request.
+
+    >>> from canonical.widgets.bugtask import (
+    ...     BugTaskAlsoAffectsSourcePackageNameWidget)
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.distribution': 'debian',
+    ...           'field.sourcepackagename': 'linux-2.6.12'})
+    >>> widget = BugTaskAlsoAffectsSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary, request)
+    >>> widget.getDistribution().name
+    u'debian'
+
++distrotask always supplies a valid distribution name. If the widget
+doesn't get a name, or the name isn't the name of a distro,
+UnexpectedFormData is raised.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.distribution': 'non-existing',
+    ...           'field.sourcepackagename': 'linux-2.6.12'})
+    >>> widget = BugTaskAlsoAffectsSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary, request)
+    >>> widget.getDistribution().name
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: ...
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.sourcepackagename': 'linux-2.6.12'})
+    >>> widget = BugTaskAlsoAffectsSourcePackageNameWidget(
+    ...     package_field, package_field.vocabulary, request)
+    >>> widget.getDistribution().name
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: ...

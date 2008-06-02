@@ -1146,7 +1146,9 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .description {font-size: 1.125em;}
 /* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
-.boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
+.boardComment, .boardCommentSummary {border: 1px solid #ddd;}
+.boardComment {margin: 1em 0 1.5em;}
+.boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
 .boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
@@ -1253,7 +1255,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   background-color: #d18b39;
 }
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong {
+.tab-branches #application-footer strong, .tab-branches #application-summary strong, .tab-branches #page-summary strong.count {
   background: none;
   color: #d18b39;
 }
@@ -1569,7 +1571,7 @@ div#applications {padding: 1em 0; text-align: center;}
   color: #303030;
   font-size: 1.2em;
 }
-#application-summary, #application-footer {
+#application-summary, #application-footer, #page-summary {
   font-size: 1.2em;
   line-height: 1.4em;
   margin-top: 0;
@@ -1777,3 +1779,52 @@ div.popupTitle {
 
 /* The icon next to inline action links */
 .inlineLinkIcon {margin-right: 0.5em; margin-left: 0.5em;}
+
+/* Search results*/
+
+#search-results {
+    margin-top: 1em;
+}
+
+#search-results ul {
+  margin: .5em 0 .5em 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+#search-results ul li {
+  margin-bottom: 1em;
+}
+
+#search-results ul li div.summary {
+  margin-left: 17px;
+  font-weight: normal;
+}
+
+#search-results ul.exact-matches {
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+#search-results, #no-search{
+  width: 40em;
+}
+
+#search-results div.upper-batch-nav {
+  border-top: 1px solid #d2d2d2;
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+
+#search-results div.lower-batch-nav {
+  margin-top: 1.5em;
+  border-top: 1px solid #d2d2d2;
+}
+
+#no-results {
+  margin-top: 2em;
+}
+
+#no-results span.search_text {
+  font-weight: bold;
+}

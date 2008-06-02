@@ -11,6 +11,7 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
+    'WrongBranchMergeProposal',
     ]
 
 from zope.interface import Attribute, Interface
@@ -39,6 +40,10 @@ class UserNotBranchReviewer(Exception):
 
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
+
+
+class WrongBranchMergeProposal(Exception):
+    """The message requested is not associated with this merge proposal."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -198,6 +203,11 @@ class IBranchMergeProposal(Interface):
     # Cannote use Object as this would cause circular dependencies.
     root_message = Attribute(
         _("The first message in discussion of this merge proposal"))
+    all_messages = Attribute(
+        _("All messages discussing this merge proposal"))
+
+    def getMessage(id):
+        """Return the CodeReviewMessage with the specified ID."""
 
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
@@ -340,8 +350,8 @@ class IBranchMergeProposal(Interface):
     def nominateReviewer(reviewer, registrant):
         """Create a vote for the specified person."""
 
-    def createMessage(owner, subject, content=None, vote=None, parent=None,
-                      _date_created=None):
+    def createMessage(owner, subject, content=None, vote=None, vote_tag=None,
+                      parent=None, _date_created=None):
         """Create an ICodeReviewMessage associated with this merge proposal.
 
         :param owner: The person who the message is from.

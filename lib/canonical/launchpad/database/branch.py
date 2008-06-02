@@ -241,7 +241,18 @@ class Branch(SQLBase):
         # authenticated, we can't resolve series branches that end
         # up pointing to private branches, so don't show short names
         # for the branch if it is private.
-        if not self.private:
+
+        # It is possible for +junk branches to be related to a product
+        # series.  However we do not show the shorter name for these
+        # branches as it would be giving extra authority to them.  When
+        # the owner of these branches realises that they want other people
+        # to be able to commit to them, the branches will need to have a
+        # team owner.  When this happens, they will no longer be able to
+        # stay as junk branches, and will need to be associated with a
+        # product.  In this way +junk branches associated with product
+        # series should be self limiting.  We are not looking to enforce
+        # extra strictness in this case, but instead let it manage itself.
+        if not self.private and self.product is not None:
             for series in self.associatedProductSeries():
                 # If the branch is associated with the development focus
                 # then we'll use that, otherwise use the series with the
@@ -258,7 +269,7 @@ class Branch(SQLBase):
         else:
             return "%(prefix)s%(product)s/%(series)s" % {
                 'prefix': lp_prefix,
-                'product': self.product.name,
+                'product': use_series.product.name,
                 'series': use_series.name}
 
     @property
@@ -476,10 +487,9 @@ class Branch(SQLBase):
         """See `IBranch`."""
         notification_levels = [level.value for level in notification_levels]
         return BranchSubscription.select(
-            "BranchSubscription.branch = Branch.id "
-            "AND BranchSubscription.notification_level IN (%s)"
-            % ', '.join(sqlvalues(*notification_levels)),
-            clauseTables=['Branch'])
+            "BranchSubscription.branch = %s "
+            "AND BranchSubscription.notification_level IN %s"
+            % sqlvalues(self, notification_levels))
 
     def hasSubscription(self, person):
         """See `IBranch`."""
@@ -675,7 +685,6 @@ class BranchWithSortKeys(Branch):
 LISTING_SORT_TO_COLUMN = {
     BranchListingSort.PRODUCT: 'product_name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NAME: 'name',
     BranchListingSort.REGISTRANT: 'owner_name',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',
