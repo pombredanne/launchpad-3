@@ -24,7 +24,7 @@ class TestCodeReviewMessage(TestCaseWithFactory):
 
     def setUp(self):
         """Prepare test fixtures."""
-        TestCaseWithFactory.setUp(self)
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def makeMessageAndSubscriber(self, notification_level=None,
                                  as_reply=False, vote=None, vote_tag=None):
