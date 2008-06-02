@@ -114,9 +114,9 @@ for a user to hit her email settings page.  The List-Subscribe header is
 similar.
 
     >>> message['list-subscribe']
-    '<http://launchpad.dev/people/+me/+editemails>'
+    '<http://launchpad.dev/~itest-one>'
     >>> message['list-unsubscribe']
-    '<http://launchpad.dev/people/+me/+editemails>'
+    '<http://launchpad.dev/~itest-one>'
 
 
 === List-Archive ===
@@ -128,7 +128,7 @@ list.  It is a list-wide url, not a url-specific to the individual message
 This url should exactly match the link given on the team's overview page.
 
     >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/~itest-one/')
+    >>> browser.open('http://launchpad.dev/~itest-one')
     >>> browser.getLink(id='mailing-list-archive')
     <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/itest-one'>
@@ -159,7 +159,7 @@ our case, we point this at the team owning the mailing list.
 
 Mailman appends a footer of helpful text on each message.  This footer
 contains a link to this message's archive (which should be the same as the RFC
-5064 link), the message's posting address, the user's editemails page, etc.
+5064 link), the message's posting address, the unsubscribe address, etc.
 The easiest way to see the footer is to just scan the message body for the
 separator.
 
@@ -172,7 +172,7 @@ separator.
     >>> print ''.join(body_lines[line_number + 1:])
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
