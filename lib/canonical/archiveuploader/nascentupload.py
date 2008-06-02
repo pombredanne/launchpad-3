@@ -958,10 +958,11 @@ class NascentUpload:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
                 diff = to_sourcepackagerelease.requestDiffTo(
                     sourcepackagerelease.creator, sourcepackagerelease)
-                self.logger.debug('%s requested' % diff.title)
+                self.logger.debug(
+                    'Package diff for %s from %s requested' % (
+                        diff.from_source.name, diff.title))
 
         if self.binaryful:
-
             for custom_file in self.changes.custom_files:
                 libraryfile = custom_file.storeInDatabase()
                 self.queue_root.addCustom(

@@ -22,6 +22,9 @@ class ISalesforceVoucherProxy(Interface):
     def getServerStatus():
         """Get the server status."""
 
+    def getVoucher(voucher_id):
+        """Lookup a voucher."""
+
     def redeemVoucher(voucher_id, user, project):
         """Redeem a voucher.
 
