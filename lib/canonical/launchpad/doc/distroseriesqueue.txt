@@ -99,12 +99,9 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   >>> for item in new_queue:
   ...     try:
   ...         item.setAccepted()
+  ...         item.syncUpdate()
   ...     except QueueInconsistentStateError, info:
   ...         print info
-
-Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
-
-  >>> flush_database_updates()
 
   >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
 
