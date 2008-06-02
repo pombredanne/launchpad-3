@@ -122,3 +122,15 @@ brute-force attacks, so we don't accept any of these keys.
      software used to generate it, so it will not be accepted by Launchpad. See
      the full Security Notice for further information and instructions on how
      to generate another key.']
+
+
+== Keys containing non-ASCII comments ==
+
+These keys can be imported just like the others which have ASCII
+comments.
+
+    >>> key = 'ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAzSc+OzlZaURcX8NK9Hy1VoA1SXXuxFAvLw9ljz6xXEFgodmkSgSE/Pc+nR2fO/hl0rnWi//8oOwkHlwLVPQpor2cjQlceVs9rKaQcrcwRm6Jmi8CYKlEIBq82kpaLwXwK/x5ZsDfFtYUq558C5IKZOnDozthC7REPYK0cQ8gZ4bLf+5hmJ6QO4sSRZcXTZuPvgUixhlazFo6w6GqWbynf29Wp+WkLFGxGF2UE/dI8HyQy2j7ddaLnW50mGfB00B/pYtO246s84097BRUE8XoBC3SvzsZx6IbI3hOd2e834lq6kOj6QI0wu6+GINRCZf5UyNlpJv6X809XBvq68SCgw== St\xc3\xa9phane'
+    >>> browser.getControl(name='sshkey').value = key
+    >>> browser.getControl('Import Public Key').click()
+    >>> print get_feedback_messages(browser.contents)
+    [u'SSH public key added.']

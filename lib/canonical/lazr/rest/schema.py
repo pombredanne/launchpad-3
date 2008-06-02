@@ -50,18 +50,13 @@ class CollectionField(AbstractCollection):
     implements(ICollectionField)
 
     def __init__(self, *args, **kwargs):
-        """Define a container object that's related to some other object.
+        """A generic collection field.
 
-        This will show up in the web service as a scoped collection.
-
-        :param is_entry_container: By default, scoped collections
-        contain references to entries whose self_link URLs are handled
-        by the data type's parent_collection_path. Set this to True if
-        the self_link URL of an entry should be handled by the scoped
-        collection.
+        The readonly property defaults to True since these fields are usually
+        for collections of things linked to an object, and these collections
+        are managed through a dedicated API.
         """
-
-        self.is_entry_container = kwargs.pop('is_entry_container', False)
+        kwargs.setdefault('readonly', True)
         super(CollectionField, self).__init__(*args, **kwargs)
 
 

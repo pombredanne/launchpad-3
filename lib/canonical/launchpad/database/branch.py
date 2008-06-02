@@ -487,10 +487,9 @@ class Branch(SQLBase):
         """See `IBranch`."""
         notification_levels = [level.value for level in notification_levels]
         return BranchSubscription.select(
-            "BranchSubscription.branch = Branch.id "
-            "AND BranchSubscription.notification_level IN (%s)"
-            % ', '.join(sqlvalues(*notification_levels)),
-            clauseTables=['Branch'])
+            "BranchSubscription.branch = %s "
+            "AND BranchSubscription.notification_level IN %s"
+            % sqlvalues(self, notification_levels))
 
     def hasSubscription(self, person):
         """See `IBranch`."""
@@ -686,7 +685,6 @@ class BranchWithSortKeys(Branch):
 LISTING_SORT_TO_COLUMN = {
     BranchListingSort.PRODUCT: 'product_name',
     BranchListingSort.LIFECYCLE: '-lifecycle_status',
-    BranchListingSort.AUTHOR: 'author_name',
     BranchListingSort.NAME: 'name',
     BranchListingSort.REGISTRANT: 'owner_name',
     BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: '-date_last_modified',

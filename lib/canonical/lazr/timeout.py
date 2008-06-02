@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 import httplib
+import socket
 import sys
 from threading import Thread
 import urllib2
@@ -115,6 +116,8 @@ class with_timeout:
                         getattr(args[0], self.cleanup)()
                     else:
                         self.cleanup()
+                    # Collect cleaned-up worker thread.
+                    t.join()
                 raise TimeoutError("timeout exceeded.")
             if getattr(t, 'exc_info', None) is not None:
                 exc_info = t.exc_info
@@ -139,6 +142,12 @@ class CleanableHTTPHandler(urllib2.HTTPHandler):
 
     def reset_connection(self):
         """Reset the underlying HTTP connection."""
+        try:
+            self.__conn.sock.shutdown(socket.SHUT_RDWR)
+        except AttributeError:
+            # It's possible that the other thread closed the socket
+            # beforehand.
+            pass
         self.__conn.close()
 
 

@@ -8,7 +8,7 @@ The service is available at a URL pulled from the service config:
     >>> from canonical.config import config
     >>> test_url = config.google.site
     >>> print test_url
-    http://launchpad.dev:8091/
+    http://launchpad.dev.../cse
 
 The URL-to-XML mapping is loaded from a text file.  The mapping
 determines which XML files will be returned when a specific URL is
@@ -21,8 +21,8 @@ accessed.
     >>> for key in sorted(routes.keys()):
     ...     print key, routes[key]
     * ...
-    /custom?... googlesearchservice...xml
-    /custom?... googlesearchservice...xml
+    /cse?... googlesearchservice...xml
+    /cse?... googlesearchservice...xml
 
 The URL-to-XML mapping has a default route, '*'.  This is a catch-all:
 requests that are not specific to any other service URL will return

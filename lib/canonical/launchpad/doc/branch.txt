@@ -512,6 +512,15 @@ We can get the subscribers for a branch based on their level of
 subscription. From the example above, we see that sabdfl has a 'FULL'
 subscription to `gterm_dev`.
 
+Create a subscription to another branch to confirm that we are just
+getting the correct subscriptions.
+
+    >>> factory = LaunchpadObjectFactory()
+    >>> subscription = factory.makeBranchSubscription()
+    >>> subscription.notification_level = BranchSubscriptionNotificationLevel.FULL
+    >>> subscription.max_diff_lines = BranchSubscriptionDiffSize.FIVEKLINES
+    >>> syncUpdate(subscription)
+
     >>> def print_names(persons):
     ...     """Print the name of each person on a new line."""
     ...     for person in persons:
@@ -870,6 +879,12 @@ Lets make gnome terminal have a user branch as the dev focus.
 
 == Getting the branch count and last commit for products ==
 
+    >>> products = [
+    ...     productset.getByName('evolution'),
+    ...     productset.getByName('firefox'),
+    ...     productset.getByName('gnome-terminal'),
+    ...     ]
+
     >>> summary = branchset.getActiveUserBranchSummaryForProducts(products)
     >>> for product in products:
     ...     print "%s %s %s" % (
@@ -879,9 +894,6 @@ Lets make gnome terminal have a user branch as the dev focus.
     evolution      1 None
     firefox        5 2005-03-09 15:50:00
     gnome-terminal 8 None
-    iso-codes      1 None
-    landscape      2 None
-    thunderbird    1 None
 
 
 == Getting all branches for a person ==
@@ -997,31 +1009,11 @@ extra display information.
     New VCS imports ~vcs-imports/gnome-terminal/import
 
     >>> branches = branchset.getBranchesForContext(
-    ...     gnome_terminal, sort_by=BranchListingSort.AUTHOR)
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title,
-    ...     if branch.author:
-    ...         print branch.author.displayname,
-    ...     else:
-    ...         print '<none>',
-    ...     print branch.unique_name
-    New Launchpad Developers ~launchpad/gnome-terminal/launchpad
-    Merged Sample Person ~name12/gnome-terminal/slowness
-    Experimental Sample Person ~name12/gnome-terminal/klingon
-    Abandoned <none> ~name12/gnome-terminal/2.4
-    Mature <none> ~name12/gnome-terminal/2.6
-    Development <none> ~name12/gnome-terminal/main
-    New <none> ~ddaa/gnome-terminal/dev
-    New <none> ~vcs-imports/gnome-terminal/import
-    New <none> ~name12/gnome-terminal/mirrored
-    New <none> ~name12/gnome-terminal/pushed
-    New <none> ~name12/gnome-terminal/scanned
-
-    >>> branches = branchset.getBranchesForContext(
     ...     gnome_terminal, [BranchLifecycleStatus.DEVELOPMENT])
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     Development ~name12/gnome-terminal/main
+
 
 == Getting branches for a project ==
 
@@ -1206,6 +1198,7 @@ The current references to the branch table are shown here.
     ...     '%s.%s' % (src_tab, src_col) for
     ...     src_tab, src_col, ref_tab, ref_col, updact, delact in references]):
     ...     print name
+    branch.stacked_on
     branchmergeproposal.dependent_branch
     branchmergeproposal.source_branch
     branchmergeproposal.target_branch

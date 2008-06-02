@@ -935,14 +935,14 @@ But if we ask for a page size of two, we can see how pagination
 works. Here's page one, with two cookbooks on it.
 
     >>> request = create_web_service_request(
-    ...     '/beta/cookbooks', environ={'QUERY_STRING' : 'ws_size=2'})
+    ...     '/beta/cookbooks', environ={'QUERY_STRING' : 'ws.size=2'})
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
     [u'entries', u'next_collection_link', u'start', u'total_size']
     >>> representation['next_collection_link']
-    u'http://api.launchpad.dev/beta/cookbooks?ws_start=2&ws_size=2'
+    u'http://api.launchpad.dev/beta/cookbooks?ws.start=2&ws.size=2'
     >>> len(representation['entries'])
     2
     >>> representation['total_size']
@@ -953,14 +953,14 @@ has the last cookbook on it.
 
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks',
-    ...     environ={'QUERY_STRING' : 'ws_start=2&ws_size=2'})
+    ...     environ={'QUERY_STRING' : 'ws.start=2&ws.size=2'})
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
     [u'entries', u'prev_collection_link', u'start', u'total_size']
     >>> representation['prev_collection_link']
-    u'http://api.launchpad.dev/beta/cookbooks?ws_start=0&ws_size=2'
+    u'http://api.launchpad.dev/beta/cookbooks?ws.start=0&ws.size=2'
     >>> len(representation['entries'])
     1
 
@@ -975,7 +975,7 @@ cookbooks.
     >>> request = create_web_service_request(
     ...    '/beta/cookbooks',
     ...    environ={'QUERY_STRING' :
-    ...             'ws_op=find_recipes&name=Roast%20chicken'})
+    ...             'ws.op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
     >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
@@ -989,7 +989,7 @@ are passed along to the client.
     >>> request = create_web_service_request(
     ...    '/beta/cookbooks',
     ...    environ={'QUERY_STRING' :
-    ...             'ws_op=find_recipes&name=NoSuchRecipe'})
+    ...             'ws.op=find_recipes&name=NoSuchRecipe'})
     >>> operation_resource = request.traverse(app)
     >>> print operation_resource()
     No matches for NoSuchRecipe
@@ -998,7 +998,7 @@ Collections may also support named POST operations. These operations
 are often factory operations. Here we create a new cookbook for an
 existing author:
 
-    >>> body = ("ws_op=create_cookbook&title=Beard%20on%20Bread&"
+    >>> body = ("ws.op=create_cookbook&title=Beard%20on%20Bread&"
     ...         "author_name=James%20Beard")
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks', 'POST', body,
@@ -1013,7 +1013,7 @@ existing author:
 
 Here we create a cookbook for a new author.
 
-    >>> body = ("ws_op=create_cookbook&title=Everyday%20Greens&"
+    >>> body = ("ws.op=create_cookbook&title=Everyday%20Greens&"
     ...         "author_name=Deborah%20Madison")
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks', 'POST', body,
@@ -1074,7 +1074,7 @@ EntryResource.
 For instance, creating a new cookbook and making a request to its URL
 will wrap it into an EntryResource.
 
-    >>> body = ("ws_op=create_cookbook&title=Feijoada&"
+    >>> body = ("ws.op=create_cookbook&title=Feijoada&"
     ...         "author_name=Fernando%20Yokota")
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks', 'POST', body,
@@ -1149,7 +1149,7 @@ across cookbooks.
 
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken',
-    ...     environ={'QUERY_STRING' : 'ws_op=find_similar_recipes'})
+    ...     environ={'QUERY_STRING' : 'ws.op=find_similar_recipes'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
     >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
@@ -1297,8 +1297,8 @@ At this point it exists:
     >>> file_resource()
     >>> get_request.response.getStatus()
     303
-    >>> get_request.response.getHeader('Location')
-    'http://localhost:58000/90/cover'
+    >>> print get_request.response.getHeader('Location')
+    http://localhost:58000/.../cover
 
 The cover can be deleted with DELETE.
 

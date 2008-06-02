@@ -146,8 +146,7 @@ A request publication factory that was initialized with
 handle_default_host=True will handle a request that specifies no virtual
 host. By default, handle_default_host is False.
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> factory.canHandle(environment)
     False
 
@@ -211,8 +210,7 @@ factory is not wrapped:
     >>> requestfactory
     <class 'canonical.launchpad.webapp.servers.LaunchpadBrowserRequest'>
 
-    >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'HTTP_HOST': ''}
+    >>> environment = {'REQUEST_METHOD': 'GET'}
     >>> default_handling_factory.canHandle(environment)
     True
     >>> requestfactory, publicationfactory = default_handling_factory()
@@ -262,19 +260,17 @@ The port is also checked for in the HTTP_HOST variable:
     >>> factory.canHandle(environment)
     False
 
-If the port is given twice (in SERVER_PORT and the Host header), and
-the ports don't match, an AssertionError is the result. This prevents
-sneaky outsiders from making requests to ports only exposed
-internally.
+If the port is given twice (in SERVER_PORT and the Host header), the
+value from SERVER_PORT takes precedence. (The rationale behind this is
+that it's valid for a client to put launchpad.dev:80 in the Host header,
+but the request is really coming on the port 1234 because it's being
+proxied.)
 
     >>> environment = {'REQUEST_METHOD': 'GET',
-    ...                'SERVER_PORT' : 1234,
+    ...                'SERVER_PORT' : '1234',
     ...                'HTTP_HOST': 'launchpad.dev:80'}
     >>> factory.canHandle(environment)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Port specified in SERVER_PORT does not match
-    port specified in HTTP_HOST
+    True
 
 It's okay to specify the port in both places if the ports are the same:
 
@@ -678,6 +674,15 @@ the pageid.
 
     >>> view.__name__ = '+test'
     >>> publication.callObject(request, view)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:+test
+
+Views registered through ZCML using the attribute property, are really a
+bounded method. These views have the same pageid as their class.
+
+    >>> del request._orig_env['launchpad.pageid']
+    >>> publication.callObject(request, view.__call__)
     u'Result'
     >>> print request._orig_env['launchpad.pageid']
     TestContext:+test

@@ -751,6 +751,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     visibility_consistency_warning = Attribute(
         "Warning that a private team may leak membership info.")
 
+    translations_relicensing_agreement = Bool(
+        title=_("Whether person agrees to relicense their translations"),
+        readonly=False)
+
+
     @invariant
     def personCannotHaveIcon(person):
         """Only Persons can have icons."""

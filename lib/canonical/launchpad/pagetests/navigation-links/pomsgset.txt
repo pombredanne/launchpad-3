@@ -16,11 +16,11 @@ system forwards automatically there.
 The Application tabs should point to IProductSeries URLs.
 
   >>> print_tab_links(browser.contents)
-  Overview: http://launchpad.dev/evolution/trunk/
+  Overview: http://launchpad.dev/evolution/trunk
   Code: http://code.launchpad.dev/evolution
-  Bugs: http://bugs.launchpad.dev/evolution/trunk/
-  Blueprints: http://blueprints.launchpad.dev/evolution/trunk/
-  Translations: http://translations.launchpad.dev/evolution/trunk/
+  Bugs: http://bugs.launchpad.dev/evolution/trunk
+  Blueprints: http://blueprints.launchpad.dev/evolution/trunk
+  Translations: http://translations.launchpad.dev/evolution/trunk
   Answers: Unavailable
 
 But the actions should point to IPOFile urls because IPOMsgSet is just a
@@ -49,7 +49,7 @@ The Application tabs should point to ISourcePackage URLs.
   >>> for tag in find_tags_by_class(browser.contents, 'tab-overview'):
   ...     print tag
   <...
-  ...http://launchpad.dev/ubuntu/hoary/+source/evolution/"...
+  ...http://launchpad.dev/ubuntu/hoary/+source/evolution"...
   >>> for tag in find_tags_by_class(browser.contents, 'tab-branches'):
   ...     print tag
   <...
@@ -57,7 +57,7 @@ The Application tabs should point to ISourcePackage URLs.
   >>> for tag in find_tags_by_class(browser.contents, 'tab-bugs'):
   ...     print tag
   <...
-  ...http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution/"...
+  ...http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution"...
   >>> for tag in find_tags_by_class(browser.contents, 'tab-specifications'):
   ...     print tag
   <...
@@ -67,7 +67,7 @@ The Application tabs should point to ISourcePackage URLs.
   >>> for tag in find_tags_by_class(browser.contents, 'tab-answers'):
   ...     print tag
   <...
-  ...http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/"...
+  ...http://answers.launchpad.dev/ubuntu/hoary/+source/evolution"...
 
 But the actions should point to IPOFile urls because IPOMsgSet is just a
 zoom view for IPOfile.

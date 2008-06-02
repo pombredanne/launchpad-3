@@ -84,9 +84,16 @@ class ServersToStart(unittest.TestCase):
         """
         services = sorted(get_services_to_run([]))
         expected = [SERVICES['restricted-librarian'], SERVICES['librarian']]
+
         # Mailman may or may not be asked to run.
         if config.mailman.launch:
             expected.append(SERVICES['mailman'])
+
+        # Likewise, the GoogleWebService may or may not be asked to
+        # run.
+        if config.google_test_service.launch:
+            expected.append(SERVICES['google-webservice'])
+
         expected = sorted(expected)
         self.assertEqual(expected, services)
 
