@@ -97,7 +97,7 @@ The characters a..f are accepted as digits.
     ...                                          vendor_id='0x10ae',
     ...                                          vendor_name=intel_name)
     >>> print another_pci_vendor_id.bus.title
-    PC Card
+    PC Card (32 bit)
     >>> print another_pci_vendor_id.vendor_id_for_bus
     0x10ae
     >>> print another_pci_vendor_id.vendor_name.name
@@ -127,7 +127,7 @@ A..F is rejected.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x10AE' is not a valid vendor ID for PC Card
+    ValueError: '0x10AE' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x10AE',
@@ -150,7 +150,7 @@ The ID must have the prefix "0x".
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '8086' is not a valid vendor ID for PC Card
+    ValueError: '8086' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='8086',
@@ -173,7 +173,7 @@ The number must have four digits.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid vendor ID for PC Card
+    ValueError: '0x123' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x123',
@@ -194,7 +194,7 @@ The number must have four digits.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid vendor ID for PC Card
+    ValueError: '0x12345' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x12345',
@@ -217,7 +217,7 @@ Only hex digits are allowed.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid vendor ID for PC Card
+    ValueError: '0xblah' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0xblah',
@@ -433,7 +433,7 @@ A..F is rejected.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0xABCD' is not a valid product ID for PC Card
+    ValueError: '0xABCD' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -459,7 +459,7 @@ The ID must have the prefix "0x".
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '1234' is not a valid product ID for PC Card
+    ValueError: '1234' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -485,7 +485,7 @@ The number must have four digits.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0x123' is not a valid product ID for PC Card
+    ValueError: '0x123' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -509,7 +509,7 @@ The number must have four digits.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0x12345' is not a valid product ID for PC Card
+    ValueError: '0x12345' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -535,7 +535,7 @@ Only hex digits are allowed.
     ...                   product_name='A PC Card')
     Traceback (most recent call last):
     ...
-    ValueError: '0xblah' is not a valid product ID for PC Card
+    ValueError: '0xblah' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
