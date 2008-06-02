@@ -40,9 +40,9 @@ means they can be customised.
   ...     ('Make up your mind!',),
   ...     )
 
-Behind the scenes, `Lookup` promotes plain tuples into `Node`
-instances. This means that the last member of the tuple is the result
-(or next step) of the node. All the other members are keys.
+Behind the scenes, `Lookup` promotes plain tuples (or any iterable)
+into `Node` instances. This means that the last member of the tuple is
+the result (or next step) of the node. All the other members are keys.
 
 Tuples/nodes without keys are default choices. They must come last.
 
@@ -59,7 +59,13 @@ copied into the new `Lookup` at that point.
 
   >>> breakfast_tree = Lookup(
   ...     ('Breakfast', 'Corn flakes'),
-  ...     tree)
+  ...     tree,
+  ...     )
+
+  >>> len(tree)
+  3
+  >>> len(breakfast_tree)
+  4
 
 
 == Searching ==
