@@ -243,7 +243,7 @@ class BranchContextMenu(ContextMenu):
 
     def link_bug(self):
         text = 'Link to bug report'
-        return Link('+linkbug', text, icon='edit')
+        return Link('+linkbug', text, icon='add')
 
     def merge_queue(self):
         text = 'View merge queue'
@@ -257,7 +257,7 @@ class BranchContextMenu(ContextMenu):
         # Since the blueprints are only related to products, there is no
         # point showing this link if the branch is junk.
         enabled = self.context.product is not None
-        return Link('+linkblueprint', text, icon='edit', enabled=enabled)
+        return Link('+linkblueprint', text, icon='add', enabled=enabled)
 
 
 class BranchView(LaunchpadView, FeedsMixin):

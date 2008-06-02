@@ -311,6 +311,13 @@
     </div>
   </tal:has-related-bugs>
 
+  <div
+    tal:define="link context/menu:context/link_bug"
+    tal:condition="link/enabled"
+    tal:content="structure link/render">
+    Link to a bug
+  </div>
+
   <tal:has-related-blueprints condition="context/spec_links">
     <div id="related-blueprints">
       <h2>Related blueprints</h2>
@@ -323,6 +330,12 @@
     </div>
   </tal:has-related-blueprints>
 
+  <div
+    tal:define="link context/menu:context/link_blueprint"
+    tal:condition="link/enabled"
+    tal:content="structure link/render">
+    Link to a blueprint
+  </div>
 
       <div class="related">
 
