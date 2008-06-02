@@ -153,13 +153,61 @@ directly, let's add a grumpy task first.
     >>> login('test@canonical.com')
 
 
+== Edit the Product ==
+
++editstatus-page allows a bug to be retargeted to another product.
+
+    >>> bug_seven = getUtility(IBugSet).get(7)
+    >>> product_task = bug_seven.bugtasks[0]
+    >>> product_task.bugtargetname
+    u'evolution'
+
+    >>> edit_form = {
+    ...    'evolution.actions.save': 'Save Changes',
+    ...    'evolution.status': product_task.status.title,
+    ...    'evolution.importance':
+    ...        product_task.importance.title,
+    ...    'evolution.evolution.assignee.option':
+    ...        'evolution.assignee.assign_to_nobody',
+    ...    'evolution.product': 'firefox',
+    ...     }
+    >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
+    >>> edit_view = getMultiAdapter(
+    ...     (product_task, request), name='+editstatus-page')
+    >>> edit_view.initialize()
+    >>> [str(error) for error in edit_view.errors]
+    []
+    >>> product_task.bugtargetname
+    u'firefox'
+
+If no product name is given, an error message is displayed.
+
+    >>> edit_form = {
+    ...    'firefox.actions.save': 'Save Changes',
+    ...    'firefox.status': product_task.status.title,
+    ...    'firefox.importance':
+    ...        product_task.importance.title,
+    ...    'firefox.firefox.assignee.option':
+    ...        'firefox.assignee.assign_to_nobody',
+    ...    'firefox.product': '',
+    ...     }
+    >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
+    >>> edit_view = getMultiAdapter(
+    ...     (product_task, request), name='+editstatus-page')
+    >>> edit_view.initialize()
+    >>> for error in edit_view.errors:
+    ...     print error
+    Enter a project name
+
+
 == Bug Watch Linkage ==
 
 Let's edit a bugtask which is linked to a remote bug. The most
 important thing to edit is the bug watch, since it controls the status
-information about the bug task. To show it how it works we remote the
+information about the bug task. To show it how it works we remove the
 link temporarily:
 
+    >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> bugzilla_watch = thunderbird_task.bugwatch
     >>> thunderbird_task.bugwatch = None

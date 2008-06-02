@@ -6,6 +6,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'IByteStorage',
+    'IByteStorageResource',
     'ICollection',
     'ICollectionField',
     'ICollectionResource',
@@ -27,13 +29,13 @@ from zope.interface import Attribute, Interface
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.schema.interfaces import IObject
+from zope.schema.interfaces import ISequence
 
 
-class ICollectionField(IObject):
-    """A collection associated with an entry.
+class ICollectionField(ISequence):
+    """A field representing a sequence.
 
-    This is a marker interface.
+    All iterables satisfy this collection field.
     """
 
 
@@ -56,6 +58,9 @@ class IJSONPublishable(Interface):
 
 class IServiceRootResource(IHTTPResource):
     """A service root object that also acts as a resource."""
+
+    def getTopLevelPublications(request):
+        """Return a mapping of top-level link names to published objects."""
 
 
 class IEntryResource(IHTTPResource):
@@ -136,6 +141,8 @@ class IEntry(Interface):
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
 
+    entry_schema = Attribute("The schema for this collection's entries.")
+
     def find():
         """Retrieve all entries in the collection under the given scope.
 
@@ -153,3 +160,40 @@ class IScopedCollection(ICollection):
 class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
 
+
+class IByteStorage(Interface):
+    """A sequence of bytes stored on the server.
+
+    The bytestream is expected to have a URL other than the one used
+    by the web service.
+    """
+
+    alias_url = Attribute("The external URL to the byte stream.")
+    filename = Attribute("Filename for the byte stream.")
+    is_stored = Attribute("Whether or not there's a previously created "
+                          "external byte stream here.")
+
+    def createStored(mediaType, representation):
+        """Create a new stored bytestream."""
+
+    def deleteStored():
+        """Delete an existing stored bytestream."""
+
+
+class IByteStorageResource(IHTTPResource):
+    """A resource that represents an external binary file."""
+
+    def do_GET():
+        """Redirect the client to the externally hosted file."""
+
+    def do_PUT(media_type, representation):
+        """Update the stored bytestream.
+
+        :param media_type: The media type of the proposed new bytesteram.
+        :param representation: The proposed new bytesteram.
+        :return: None or an error message describing validation errors. The
+            HTTP status code should be set appropriately.
+        """
+
+    def do_DELETE():
+        """Delete the stored bytestream."""

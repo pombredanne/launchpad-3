@@ -42,6 +42,7 @@ COMMENT ON COLUMN Branch.home_page IS 'This column is deprecated and to be remov
 COMMENT ON COLUMN Branch.branch_format IS 'The bzr branch format';
 COMMENT ON COLUMN Branch.repository_format IS 'The bzr repository format';
 COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
+COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
 
 -- BranchMergeProposal
 
@@ -588,6 +589,11 @@ COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
 series, as set by the user.  If this is not set, then import_branch is
 considered to be the product series branch';
 
+-- ProductSeriesCodeImport
+
+COMMENT ON TABLE ProductSeriesCodeImport IS 'A record of which ProductSeries'' import data a CodeImport was constructed from.';
+COMMENT ON COLUMN ProductSeriesCodeImport.productseries IS 'The source ProductSeries.';
+COMMENT ON COLUMN ProductSeriesCodeImport.codeimport IS 'The CodeImport that was constructed from the ProductSeries.';
 
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
@@ -1720,6 +1726,14 @@ COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
+COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
+COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
+COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
+COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
+COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were built sucessfully?';
+COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
+COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 
 
 -- ArchiveDependency
@@ -1737,6 +1751,17 @@ COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being gra
 COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+
+-- ArchiveRebuild
+
+COMMENT ON TABLE ArchiveRebuild IS 'ArchiveRebuild: A link table that ties a "rebuild archive" to a DistroSeries and that captures the rebild life cycle data.';
+COMMENT ON COLUMN ArchiveRebuild.archive IS 'The archive to be used for the rebuild.';
+COMMENT ON COLUMN ArchiveRebuild.distroseries IS 'The DistroSeries in question.';
+COMMENT ON COLUMN ArchiveRebuild.registrant IS 'The person who requested/started the rebuild.';
+COMMENT ON COLUMN ArchiveRebuild.status IS 'The rebuild status (in-progress, complete, cancelled, obsolete).';
+COMMENT ON COLUMN ArchiveRebuild.reason IS 'The reason why this rebuild was started (one-liner).';
+COMMENT ON COLUMN ArchiveRebuild.date_created IS 'Date of creation for this rebuild.';
+
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

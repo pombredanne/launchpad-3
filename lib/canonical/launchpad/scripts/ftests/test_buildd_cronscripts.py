@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.buildd import RetryDepwait
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
-from canonical.testing import LaunchpadLayer, LaunchpadZopelessLayer
+from canonical.testing import (
+    DatabaseLayer, LaunchpadLayer, LaunchpadZopelessLayer)
 
 
 class TestCronscriptBase(unittest.TestCase):
@@ -27,7 +28,11 @@ class TestCronscriptBase(unittest.TestCase):
     layer = LaunchpadLayer
 
     def setUp(self):
-        self.layer.setUp()
+        super(TestCronscriptBase, self).setUp()
+        # All of these tests commit to the launchpad_ftest database in
+        # subprocesses, so we need to tell the layer to fully tear down and
+        # restore the database.
+        DatabaseLayer.force_dirty_database()
 
     def runCronscript(self, name, extra_args):
         """Run given cronscript, returning the result and output.
@@ -148,7 +153,7 @@ class TestRetryDepwait(unittest.TestCase):
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(depwait_build.buildqueue_record.lastscore, 255)
+        self.assertEqual(depwait_build.buildqueue_record.lastscore, 3255)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

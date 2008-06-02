@@ -52,6 +52,15 @@
       class="canonical.launchpad.webapp.error.RequestExpiredView"
       />
 
+  <!-- TimeoutError -->
+  <browser:page
+      for="canonical.lazr.timeout.TimeoutError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-requestexpired.pt"
+      class="canonical.launchpad.webapp.error.RequestExpiredView"
+      />
+
   <!-- UnexpectedFormData -->
   <browser:page
       for="canonical.launchpad.interfaces.UnexpectedFormData"
@@ -240,6 +249,12 @@
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
 
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+      name="+search"
+      class="canonical.launchpad.browser.root.LaunchpadSearchView"
+      template="../templates/launchpad-search.pt"
+      permission="zope.Public" />
 
   <!-- Declare robots.txt file for the root -->
   <browser:page

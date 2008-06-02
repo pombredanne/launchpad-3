@@ -9,6 +9,32 @@ Let's use Celso's PPA for the tests.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
+== ArchiveSourceSelectionFormView ==
+
+The ArchiveSourceSelectionFormView defines two members that subclasses
+must define to use.
+
+    >>> from canonical.launchpad.browser.archive import (
+    ...      ArchiveSourceSelectionFormView)
+
+    >>> class BadView(ArchiveSourceSelectionFormView):
+    ...     pass
+
+    >>> empty_request = LaunchpadTestRequest(form={})
+    >>> bad_view = BadView(None, empty_request)
+
+    >>> bad_view.default_status_filter
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: Default status_filter should be defined by
+    callsites.
+
+    >>> bad_view.getSources()
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: Source lookup should be implemented by callsites.
+
+
 == ArchivePackageDeletionView ==
 
 We use ArchivePackageDeletionView to provide the mechnisms used to
@@ -27,7 +53,6 @@ required for deleting packages.
 Issuing a empty request we can inspect the internal attributes used to
 build the page.
 
-    >>> empty_request = LaunchpadTestRequest(form={})
     >>> view = getMultiAdapter(
     ...     (cprov.archive, empty_request), name="+delete-packages")
     >>> view.initialize()
@@ -106,6 +131,7 @@ which the available options already exclude the deleted items.
     >>> delete_all_request = LaunchpadTestRequest(
     ...    form={'field.actions.delete': 'Delete Packages',
     ...          'field.name_filter': '',
+    ...          'field.status_filter': 'any',
     ...          'field.deletion_comment': 'Go away',
     ...          'field.selected_sources': ['27', '28', '29'],
     ...          'field.selected_sources-empty-marker': 1})
@@ -287,7 +313,23 @@ build the page.
     >>> view.initialize()
 
 The main difference for ArchivePackageDeletionView  is that this uses a
-different 'source' provider, which includes deleted sources.
+different 'source' provider, which may include deleted sources, and a
+different default status filter (only published sources are presented
+by default).
+
+    >>> [pub.status.name for pub in view.sources]
+    []
+
+All sources in Celso's PPA were just-deleted, so we have to tweak the
+'status_filter' to see them.
+
+    >>> any_state_request = LaunchpadTestRequest(
+    ...     form={'field.status_filter': 'any'})
+    >>> any_state_request.method = 'POST'
+
+    >>> view = getMultiAdapter(
+    ...     (cprov.archive, any_state_request), name="+copy-packages")
+    >>> view.initialize()
 
     >>> [pub.status.name for pub in view.sources]
     ['DELETED', 'DELETED', 'DELETED']

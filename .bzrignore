@@ -1,6 +1,7 @@
 .tags
 bzr-version-info.py
 launchpad.log
+google-stub.log
 launchpad-access.log
 pagetests-access.log
 configs/+config-overrides.zcml
@@ -17,3 +18,7 @@ TAGS
 cover.txt
 lint.txt
 .shelf
+sourcecode/launchpadlib/build
+sourcecode/launchpadlib/*.egg*
+sourcecode/launchpadlib/dist
+google-stub.log

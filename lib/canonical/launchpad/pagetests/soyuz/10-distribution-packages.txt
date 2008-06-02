@@ -11,7 +11,7 @@ This page is used to search packages in a distribution context.
 
 Search for a package and check if the result page is not broken
 
-  >>> field = browser.getControl(name="text", index=1)
+  >>> field = browser.getControl(name="text")
   >>> field.value = 'pmount'
   >>> browser.getControl("Search").click()
   >>> browser.contents
@@ -51,7 +51,7 @@ Now run a search for mozilla-firefox and check that it is found:
 
   >>> browser.open("http://localhost/ubuntu")
   >>> browser.getLink("Search packages").click()
-  >>> field = browser.getControl(name="text", index=1)
+  >>> field = browser.getControl(name="text")
   >>> field.value = 'mozilla-firefox'
   >>> browser.getControl("Search").click()
   >>> browser.contents
@@ -69,7 +69,7 @@ Follow the link to the binaries page and make sure it's the right binary.
 The search page will also present commercial packages:
 
   >>> browser.goBack()
-  >>> field = browser.getControl(name="text", index=1)
+  >>> field = browser.getControl(name="text")
   >>> field.value = 'commercialpackage'
   >>> browser.getControl("Search").click()
   >>> extract_text(find_main_content(browser.contents))
@@ -83,7 +83,7 @@ is not mentioned in anything else that is indexed.
 
   >>> browser.open("http://localhost/ubuntu")
   >>> browser.getLink("Search packages").click()
-  >>> field = browser.getControl(name="text", index=1)
+  >>> field = browser.getControl(name="text")
   >>> field.value = 'placeholder'
   >>> browser.getControl("Search").click()
   >>> browser.contents

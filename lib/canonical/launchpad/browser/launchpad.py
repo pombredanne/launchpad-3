@@ -192,7 +192,7 @@ class NavigationMenuTabs(LaunchpadView):
             # There are no menu entries.
             self.links = []
             return
-
+        self.title = menu.title
         # We are only interested on enabled links in non development mode.
         menu.request = self.request
         self.links = sorted([
@@ -544,15 +544,11 @@ class LaunchpadRootNavigation(Navigation):
                 canonical_url(self.context) + canonical_name(name),
                 status=301)
 
-        admins = getUtility(ILaunchpadCelebrities).admin
-        user = getUtility(ILaunchBag).user
-        ignore_inactive = True
-        if user and user.inTeam(admins):
-            # Admins should be able to access deactivated projects too.
-            ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
-            name, ignore_inactive=ignore_inactive)
-        return pillar
+            name, ignore_inactive=False)
+        if pillar is not None and check_permission('launchpad.View', pillar):
+            return pillar
+        return None
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect.

@@ -17,5 +17,10 @@
         <allow interface="canonical.launchpad.interfaces.IEmailAddressSet" />
     </securedutility>
 
-</configure>
+    <browser:url
+        for="canonical.launchpad.interfaces.IEmailAddress"
+        path_expression="string:+email/${email}"
+        rootsite="api"
+        attribute_to_parent="person" />
 
+</configure>

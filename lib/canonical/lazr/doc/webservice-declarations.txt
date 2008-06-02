@@ -138,7 +138,7 @@ returns all of the collection items must be tagged with
     ...     REQUEST_USER)
     >>> class IBookSet(Interface):
     ...     """Set of all the books in the system."""
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IBook)
     ...
     ...     @collection_default_content()
     ...     def getAllBooks():
@@ -151,7 +151,7 @@ parameter should contain the logged in user.
 
     >>> class ICheckedOutBookSet(Interface):
     ...     """Give access to the checked out books."""
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IBook)
     ...
     ...     @collection_default_content(user=REQUEST_USER, title='')
     ...     def getByTitle(title, user):
@@ -167,19 +167,39 @@ tagged value.
     >>> print_export_tag(IBookSet)
     collection_default_content: 'getAllBooks'
     collection_default_content_params: {}
+    collection_entry_schema: <InterfaceClass __builtin__.IBook>
     type: 'collection'
 
     >>> print_export_tag(ICheckedOutBookSet)
     collection_default_content: 'getByTitle'
-    collection_default_content_params: {'user': <object...>,
-    'title': ''}
+    collection_default_content_params: {'user': <object...>, 'title': ''}
+    collection_entry_schema: <InterfaceClass __builtin__.IBook>
     type: 'collection'
+
+The entry schema for a collection must be provided and must be an
+interface:
+
+    >>> class MissingEntrySchema(Interface):
+    ...     export_as_webservice_collection()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_as_webservice_collection() takes exactly 1
+    argument (0 given)
+
+    >>> class InvalidEntrySchema(Interface):
+    ...     export_as_webservice_collection("not an interface")
+    Traceback (most recent call last):
+      ...
+    TypeError: entry_schema must be an interface.
 
 It's an error to try to export a collection without marking a method as
 exporting the default content.
 
+    >>> class IDummyInterface(Interface):
+    ...     pass
+
     >>> class MissingDefaultContent(Interface):
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_as_webservice_collection() is missing a method
@@ -188,7 +208,7 @@ exporting the default content.
 As it is an error, to mark more than one methods:
 
     >>> class TwoDefaultContent(Interface):
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IDummyInterface)
     ...     @collection_default_content()
     ...     def getAll1():
     ...         """A first getAll()."""
@@ -203,7 +223,7 @@ As it is an error, to mark more than one methods:
 export_as_webservice_collection() can only be used on Interface.
 
     >>> class NotAnInterface(object):
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_as_webservice_collection() can only be used on an
@@ -211,7 +231,7 @@ export_as_webservice_collection() can only be used on Interface.
 
 And from within a class declaration.
 
-    >>> export_as_webservice_collection()
+    >>> export_as_webservice_collection(IDummyInterface)
     Traceback (most recent call last):
       ...
     TypeError: export_as_webservice_collection() can only be used from
@@ -279,7 +299,7 @@ decorator, which takes normal IField instances.
     >>> from canonical.lazr.interface import copy_field
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
-    ...     export_as_webservice_collection()
+    ...     export_as_webservice_collection(IBook)
     ...
     ...     @collection_default_content()
     ...     @operation_parameters(
@@ -849,32 +869,6 @@ parameters accepted by the operation.
 
 The call() method calls the underlying method and return its result.
 
-    >>> class FakeResponse(object):
-    ...     """Simple response wrapper object."""
-    ...     def __init__(self):
-    ...         self.status = 200
-    ...         self.headers = {}
-    ...
-    ...     def setStatus(self, new_status):
-    ...         self.status = new_status
-    ...
-    ...     def setHeader(self, name, value):
-    ...         self.headers[name] = value
-
-    >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> class FakeRequest(object):
-    ...     """Simple request object for testing purpose."""
-    ...     # This makes us eligible for get_current_browser_request()
-    ...     implements(IHTTPApplicationRequest)
-    ...
-    ...     def __init__(self):
-    ...         self.response = FakeResponse()
-    ...         self.principal = None
-    ...         self.interaction = None
-    ...
-    ...     def getApplicationURL(self):
-    ...         return "http://api.example.org"
-
     >>> class BookSetOnSteroids(BookSet):
     ...     implements(IBookSetOnSteroids)
     ...
@@ -886,6 +880,7 @@ The call() method calls the underlying method and return its result.
     ...     def new(self, author, base_price, title):
     ...         return Book(author, title, base_price, "unknown")
 
+    >>> from canonical.lazr.testing.webservice import FakeRequest
     >>> request = FakeRequest()
     >>> read_method_adapter = read_method_adapter_factory(
     ...     BookSetOnSteroids(), request)
@@ -896,10 +891,11 @@ The call() method calls the underlying method and return its result.
     >>> print read_method_adapter.call(text='')
     []
 
-When the method returns a string, it is encoded using JSON and the
-content-type is set to application/json. (That is done because the API
-framework expects that when a string is returned, it's the actual result
-and that the caller took care of setting the content type.)
+When the method returns one of the basic python scalar type, it is
+encoded using JSON and the content-type is set to application/json.
+(That is done because the API framework expects either a string where
+it means that the response was properly encoded, an object adaptable to
+IEntry or a list of such objects.)
 
     >>> read_method_adapter.context.result = "A string."
     >>> print read_method_adapter.call(text='')
@@ -908,6 +904,29 @@ and that the caller took care of setting the content type.)
     200
     >>> print request.response.headers['Content-Type']
     application/json
+
+    >>> read_method_adapter.context.result = True
+    >>> read_method_adapter.call(text='')
+    'true'
+
+    >>> read_method_adapter.context.result = 10
+    >>> read_method_adapter.call(text='')
+    '10'
+
+    >>> read_method_adapter.context.result = None
+    >>> read_method_adapter.call(text='')
+    'null'
+
+    >>> read_method_adapter.context.result = 1.3
+    >>> read_method_adapter.call(text='')
+    '1.3'
+
+Other results are passed untransformed.
+
+    >>> read_method_adapter.context.result = [object()]
+    >>> print read_method_adapter.call(text='')
+    [<object...>]
+
 
 Methods exported as a write operations generates an adapter providing
 IResourcePOSTOperation.
@@ -948,6 +967,7 @@ REQUEST_USER specification is replaced by the current user.
 
     >>> write_method_adapter.call()
     A user did a normal check out of 'The Doors of Perception'.
+    'null'
 
 Methods exported as a factory also generate an adapter providing
 IResourcePOSTOperation.
@@ -1022,26 +1042,6 @@ IMethod marked for export:
     TypeError: 'getAllBooks' isn't tagged for webservice export.
 
 
-=== Exceptions ===
-
-There is a generic view class that can handle exceptions during web
-service requests.
-
-    >>> from canonical.lazr.rest.declarations import WebServiceExceptionView
-
-That view returns the exception message as content, and sets the
-result code to the one specified using the webservice_error() directive.
-
-    >>> exception = InvalidEmail("foo@bar isn't a valid email address")
-    >>> error_view = WebServiceExceptionView(exception, FakeRequest())
-    >>> error_view()
-    "foo@bar isn't a valid email address"
-    >>> error_view.request.response.headers['Content-Type']
-    'text/plain'
-    >>> error_view.request.response.status
-    400
-
-
 === Security ===
 
 The adapters have checkers defined for them that grant access to all
@@ -1059,7 +1059,7 @@ the underlying content security checker will still apply.)
 
     >>> print debug_proxy(ProxyFactory(collection_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
-        public: find
+        public: entry_schema, find
 
     >>> print debug_proxy(ProxyFactory(read_method_adapter))
     zope.security._proxy._Proxy (using zope.security.checker.Checker)
@@ -1154,7 +1154,5 @@ InvalidEmail exception.
 
 (Clean-up.)
 
-    >>> from zope.testing.cleanup import cleanUp
-    >>> cleanUp()
     >>> del bookexample
     >>> del sys.modules['canonical.lazr.bookexample']

@@ -441,6 +441,10 @@ codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
+codereviewmessage_index = 'Code review comment'
+
+codereviewmessage_reply = 'Reply to code review comment'
+
 cveset_all = 'All CVE entries registered in Launchpad'
 
 cveset_index = 'Launchpad CVE tracker'
@@ -504,8 +508,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 distribution_index = ContextTitle('%s in Launchpad')
 
 distribution_builds = ContextTitle('%s builds')
-
-distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
 distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
@@ -685,7 +687,9 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 
 launchpad_requestexpired = 'Error: Timeout'
 
-launchpad_search = 'Search projects in Launchpad'
+def launchpad_search(context, view):
+    """Return the page title corresponding to the user's search."""
+    return view.page_title
 
 launchpad_translationunavailable = 'Translation page is not available'
 
@@ -952,6 +956,8 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
+person_translations_relicensing = "Relicense your translations"
+
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
@@ -1002,7 +1008,7 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_add = 'Register a project in Launchpad'
+product_add_from_project = 'Register a project in your project group'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -1024,9 +1030,16 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_new = 'Register a project in Launchpad'
 
+product_new_guided = 'Before you register your project...'
+
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_purchase_subscription = ContextDisplayName(
+    'Purchase Subscription for %s')
+
 product_files = ContextDisplayName('%s project files')
+
+product_review_license = ContextTitle('Review licensing for %s')
 
 product_series = ContextDisplayName('%s timeline')
 
