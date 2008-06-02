@@ -141,7 +141,7 @@ Verify if the job (BuildQueue) was updated appropriately:
     >>> job.build.buildstate.name
     'BUILDING'
     >>> job.buildstart
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    datetime.datetime(...)
 
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
@@ -168,7 +168,7 @@ Create BuildQueue record and inspect some parameters:
 
     >>> ppa_job = ppa_build.createBuildQueueEntry()
     >>> ppa_job.id
-    3L
+    3
     >>> ppa_job.builder == None
     True
     >>> ppa_job.buildstart == None
@@ -236,7 +236,7 @@ PPA job is building.
     >>> ppa_job.build.buildstate.name
     'BUILDING'
     >>> ppa_job.buildstart
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    datetime.datetime(...)
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
 buildqueue record and make 'bob' builder non-virtual again,  so the
@@ -268,7 +268,7 @@ Create BuildQueue record and inspect some parameters:
 
     >>> sec_job = sec_build.createBuildQueueEntry()
     >>> sec_job.id
-    4L
+    4
     >>> print sec_job.builder
     None
     >>> print sec_job.buildstart
