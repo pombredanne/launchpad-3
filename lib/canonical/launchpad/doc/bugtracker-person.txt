@@ -32,3 +32,16 @@ linkPersonToBugTracker() method of IBugTrackerPersonSet.
 
     >>> print bugtracker_person.bugtracker.name
     bugzilla-checkwatches-1
+
+The BugTrackerPerson record for a given name on a given bugtracker can
+be retreived by calling IBugTrackerPersonSet.getByNameAndBugTracker().
+
+    >>> bugtracker_person_for_bugtracker = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'some-name-i-made-up', bugtracker)
+
+    >>> print bugtracker_person_for_bugtracker.name
+    some-name-i-made-up
+
+    >>> print bugtracker_person_for_bugtracker.person.name
+    name12

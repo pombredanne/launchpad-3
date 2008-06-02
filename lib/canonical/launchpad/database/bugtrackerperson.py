@@ -36,8 +36,9 @@ class BugTrackerPersonSet:
 
     implements(IBugTrackerPersonSet)
 
-    def getByNameAndBugTracker(name, bugtracker):
+    def getByNameAndBugTracker(self, name, bugtracker):
         """Return the Person with a given name on a given bugtracker."""
+        return BugTrackerPerson.selectOneBy(name=name, bugtracker=bugtracker)
 
     def linkPersonToBugTracker(self, person, bugtracker, name):
         """See `IBugTrackerPersonSet`."""
