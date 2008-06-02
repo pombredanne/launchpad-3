@@ -366,7 +366,7 @@ class IBranchMergeProposal(Interface):
             BranchMergeProposal.root_message.
         """
 
-    def createCommentFromMessage(self, message, vote, vote_tag):
+    def createCommentFromMessage(message, vote, vote_tag):
         """Create an `ICodeReviewComment` from an IMessage.
 
         :param message: The IMessage to use.
