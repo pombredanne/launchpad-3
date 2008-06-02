@@ -63,7 +63,7 @@ class TestCodeHandler(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
         self.code_handler = CodeHandler()
 
     def test_get(self):
@@ -110,7 +110,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('subject', notification['Subject'])
         expected_body = ('Vote: Abstain EBALIWICK\n'
                          ' vote Abstain EBALIWICK\n'
-                         '--\n'
+                         '-- \n'
                          'You are subscribed to branch %s.' %
                          bmp.source_branch.unique_name)
         self.assertEqual(expected_body, notification.get_payload(decode=True))

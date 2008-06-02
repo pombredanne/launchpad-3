@@ -456,6 +456,9 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
     def test_get(self):
         """Ensure the correct merge proposal is returned."""
         merge_proposal = self.factory.makeBranchMergeProposal()
