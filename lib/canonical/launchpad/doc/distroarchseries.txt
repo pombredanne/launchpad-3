@@ -173,6 +173,12 @@ pockets:
     ...     pub_main_proposed_published,
     ...     pub_main_release_published,
     ...     ]
+
+    >>> import operator
+    >>> all_published_main_pubs = sorted(
+    ...    all_published_main_pubs, key=operator.attrgetter('id'),
+    ...    reverse=True)
+
     >>> result = bt_i386.getReleasedPackages('at')
     >>> soyuz_helper.checkPubList(all_published_main_pubs, result)
     True
@@ -186,6 +192,11 @@ pockets.
     ...     pub_main_release_published,
     ...     pub_main_release_pending,
     ...     ]
+
+    >>> all_main_pubs = sorted(
+    ...    all_main_pubs, key=operator.attrgetter('id'),
+    ...    reverse=True)
+
     >>> result = bt_i386.getReleasedPackages('at', include_pending=True)
     >>> soyuz_helper.checkPubList(all_main_pubs, result)
     True
@@ -210,6 +221,10 @@ Using 'exclude_pocket' filter, to exclude publications to RELEASE pocket:
     ...     pub_main_updates_pending,
     ...     ]
 
+    >>> non_release_main_pubs = sorted(
+    ...    non_release_main_pubs, key=operator.attrgetter('id'),
+    ...    reverse=True)
+
     >>> result = bt_i386.getReleasedPackages(
     ...     'at', include_pending=True,
     ...     exclude_pocket=PackagePublishingPocket.RELEASE)
@@ -226,6 +241,10 @@ pockets.
     ...     pub_ppa_release_published,
     ...     pub_ppa_release_pending,
     ...     ]
+
+    >>> all_ppa_pubs = sorted(
+    ...    all_ppa_pubs, key=operator.attrgetter('id'), reverse=True)
+
     >>> result = bt_i386.getReleasedPackages(
     ...    'at', include_pending=True, archive=cprov_archive)
     >>> soyuz_helper.checkPubList(all_ppa_pubs, result)
