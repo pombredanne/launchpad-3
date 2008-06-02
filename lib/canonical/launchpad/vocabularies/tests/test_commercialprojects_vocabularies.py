@@ -90,11 +90,13 @@ class TestCommProjVocabulary(TestCase):
         """Search for projects that are not commercial projects we own."""
         results = self.vocab.searchForTerms('openwidget')
         self.assertEqual(0, len(results),
-                         "Expected %d results but got %d." % (0, len(results)))
+                         "Expected %d results but got %d." %
+                         (0, len(results)))
 
         results = self.vocab.searchForTerms('firefox')
         self.assertEqual(0, len(results),
-                         "Expected %d results but got %d." % (0, len(results)))
+                         "Expected %d results but got %d." %
+                         (0, len(results)))
 
     def test_TransitionedProjectsSearch(self):
         """Search for a project that changes from commercial to open."""
@@ -107,13 +109,14 @@ class TestCommProjVocabulary(TestCase):
         # Now change the license for the widget.
         widget = getUtility(IProductSet).getByName(project_name)
         naked_widget = removeSecurityProxy(widget)
-        naked_widget.licenses =[License.GNU_GPL_V3]
+        naked_widget.licenses = [License.GNU_GPL_V3]
         syncUpdate(naked_widget)
 
         # The project is no longer commercial so it is not found.
         results = self.vocab.searchForTerms(project_name)
         self.assertEqual(0, len(results),
-                         "Expected %d results but got %d." % (0, len(results)))
+                         "Expected %d results but got %d." %
+                         (0, len(results)))
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
