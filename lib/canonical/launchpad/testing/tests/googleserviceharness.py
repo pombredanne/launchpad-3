@@ -37,16 +37,19 @@ class GoogleServiceTestSetup:
     >>> assert GoogleServiceTestSetup.service is None
 
     The fixture can be started and stopped multiple time in succession:
+
     >>> GoogleServiceTestSetup().setUp()
     >>> assert service_is_available()
 
     Having a service instance already running doesn't prevent a new
     service from starting.  The old instance is killed off and replaced
     by the new one.
+
     >>> old_pid = GoogleServiceTestSetup.service.pid
     >>> GoogleServiceTestSetup().setUp()
-    >>> assert GoogleServiceTestSetup.service.pid != old_pid
-    
+    >>> GoogleServiceTestSetup.service.pid != old_pid
+    True
+
     Tidy up.
 
     >>> GoogleServiceTestSetup().tearDown()
