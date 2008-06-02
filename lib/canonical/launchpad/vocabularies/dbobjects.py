@@ -1357,12 +1357,11 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""
-        filtered = []
-        for project in sorted(projects,
-                              key=attrgetter('displayname')):
-            if not project.qualifies_for_free_hosting:
-                filtered.append(project)
-        return filtered
+        return [
+            project for project in sorted(projects,
+                                          key=attrgetter('displayname'))
+            if not project.qualifies_for_free_hosting
+            ]
 
     def _doSearch(self, query):
         """Return terms where query is in the text of name
@@ -1372,22 +1371,12 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         if user is None:
             return self.emptySelectResults()
 
-        if not query:
-            sql_query = None
-        else:
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
-            quoted_query = quote_like(query)
-            sql_query = ("""
-                (Product.name LIKE %s OR
-                 Product.displayname LIKE %s OR
-                 fti @@ ftq(%s))
-                """
-                % (like_query, like_query, quoted_query))
-        projects = user.getOwnedProjects(extra_clause=sql_query)
+        projects = user.getOwnedProjects(match_name=query)
         commercial_projects = self._filter_projs(projects)
         return commercial_projects
 
     def toTerm(self, project):
+        """Return the term for this object."""
         if project.commercial_subscription is not None:
             date_formatter = DateTimeFormatterAPI(
                 project.commercial_subscription.date_expires)
@@ -1399,6 +1388,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
                           sub_status)
 
     def getTermByToken(self, token):
+        """Return the term for the given token."""
         search_results = self._doSearch(token)
         for search_result in search_results:
             if search_result.name == token:
@@ -1406,19 +1396,24 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
         raise LookupError(token)
 
     def searchForTerms(self, query=None):
+        """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
         return CountableIterator(len(results), results, self.toTerm)
 
     def _commercial_projects(self):
+        """Return the list of commercial project owned by this user."""
         user = self.context
         if user is None:
             return self.emptySelectResults()
         return self._filter_projs(user.getOwnedProjects())
 
     def __iter__(self):
-        return (self.toTerm(proj) for proj in self._commercial_projects())
+        """See `IVocabulary`."""
+        for proj in self._commercial_projects():
+            yield self.toTerm(proj)
 
     def __contains__(self, obj):
+        """See `IVocabulary`."""
         return obj in self._commercial_projects()
 
 

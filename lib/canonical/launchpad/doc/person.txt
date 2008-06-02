@@ -931,6 +931,17 @@ projects ordered by displayname.
     >>> for project in ddaa.getOwnedProjects():
     ...     print project.displayname
 
+The results returned can be filtered by providing a token to refine
+the search.
+
+    >>> for project in sabdfl.getOwnedProjects(match_name='gnome'):
+    ...     print project.displayname
+    Gnome Applets
+    gnomebaker
+
+    >>> for project in sabdfl.getOwnedProjects(match_name='nosuchthing'):
+    ...     print project.displayname
+
 == Translations ==
 
 Users can set their preferred languages, retrievable as Person.languages.

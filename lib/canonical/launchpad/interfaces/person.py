@@ -887,11 +887,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         owns or drives.
         """
 
-    def getOwnedProjects(extra_clause=None):
+    def getOwnedProjects(match_name=None):
         """Projects owned by this person or teams to which she belongs.
 
-        :param extra_clause: string SQL clause to be AND'ed into the normal
-        query.
+        :param match_name: string optional project name to screen the results.
         """
 
     def assignKarma(action_name, product=None, distribution=None,

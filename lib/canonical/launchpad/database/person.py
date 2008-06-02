@@ -981,18 +981,27 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=['PillarName.distribution', 'PillarName.project',
                      'PillarName.product'])
 
-    def getOwnedProjects(self, extra_clause=None):
+    def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
         # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
-        query = """
+        clauses = ["""
             SELECT DISTINCT Product.id
-            FROM product, teamparticipation
-            WHERE teamparticipation.person = %(person)s
-                AND owner = teamparticipation.team
-            """ % sqlvalues(person=self, extra_clause=extra_clause)
-        if extra_clause is not None:
-            query += " AND " + extra_clause
+            FROM Product, TeamParticipation
+            WHERE TeamParticipation.person = %(person)s
+            AND owner = TeamParticipation.team
+            """ % sqlvalues(person=self)]
+        if match_name is not None:
+
+            like_query = "'%%' || %s || '%%'" % quote_like(match_name)
+            quoted_query = quote(match_name)
+            clauses.append(
+                """(Product.name LIKE %s OR
+                    Product.displayname LIKE %s OR
+                    fti @@ ftq(%s))""" % (like_query,
+                                          like_query,
+                                          quoted_query))
+        query = " AND ".join(clauses)
         results = Product.select("""id IN (%s)""" % query,
                                  orderBy=['displayname'])
         return results
