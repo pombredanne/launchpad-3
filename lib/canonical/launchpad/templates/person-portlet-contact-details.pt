@@ -24,7 +24,7 @@
                 <tal:can-view-hidden-emails condition="context/required:launchpad.Edit">
                   <td title="This email address is not disclosed to others.">
                     <span style="white-space: nowrap">
-                      <img src="/@@/private" alt="" /> 
+                      <img src="/@@/private" alt="" />
                       <tal:email replace="context/preferredemail/email">foo@bar.com</tal:email>
                     </span>
                     <br />
@@ -121,7 +121,6 @@
 	    <th>OpenID login:<br/>
 	      <span class="help">
 		(<a href="https://help.launchpad.net/OpenID"
-		    target="help"
 		    >What&rsquo;s&nbsp;this?</a>)</span>
 	    </th>
             <td title="This URL is not disclosed to others.">
