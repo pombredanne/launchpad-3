@@ -45,9 +45,9 @@ _repr_key_chars = set(string.letters + string.digits + '-_+=*')
 def _repr_key(key):
     """Return a pretty representation of simple keys.
 
-    If the key, as a string, contains only a small set of characters,
-    we can return it bare (without quotes). Otherwise, we just return
-    the result of `repr`.
+    If the key, as a string, contains only characters from a small
+    selected set, it is returned without quotes. Otherwise, the result
+    of `repr` is returned.
     """
     as_string = str(key)
     if _repr_key_chars.issuperset(as_string):
@@ -126,10 +126,10 @@ class LookupTree(tuple):
         for branch in self:
             if key in branch or branch.is_default:
                 if branch.is_leaf:
-                    return branch.next
+                    return branch.result
                 elif len(more) >= 1:
                     try:
-                        return branch.next(*more)
+                        return branch.result(*more)
                     except KeyError, ex:
                         raise KeyError((key,) + ex.args)
                 else:
@@ -148,9 +148,9 @@ class LookupTree(tuple):
         """
         for branch in self:
             if branch.is_leaf:
-                yield branch, branch.next
+                yield branch, branch.result
             else:
-                for path in branch.next.flattened:
+                for path in branch.result.flattened:
                     yield (branch,) + path
 
     @property
@@ -182,7 +182,7 @@ class LookupTree(tuple):
 
 
 class LookupBranch(tuple):
-    """A branch point during a lookup, containing keys and a next step."""
+    """A branch point during a lookup, containing keys and a result."""
 
     def __new__(cls, *args):
         """Split out the keys from the result.
@@ -199,7 +199,7 @@ class LookupBranch(tuple):
         """See `__new__`."""
         super(LookupBranch, self).__init__()
         # The last args is the result of this branch.
-        self.next = args[-1]
+        self.result = args[-1]
 
     @property
     def is_leaf(self):
@@ -209,7 +209,7 @@ class LookupBranch(tuple):
         is a leaf... as well as a branch... the terminology is a
         little confused :)
         """
-        return not isinstance(self.next, LookupTree)
+        return not isinstance(self.result, LookupTree)
 
     @property
     def is_default(self):
@@ -235,7 +235,7 @@ class LookupBranch(tuple):
             format = format % '*'
         else:
             format = format % ', '.join(_repr_key(key) for key in self)
-        if isinstance(self.next, LookupTree):
-            return format % self.next.__repr__(level)
+        if isinstance(self.result, LookupTree):
+            return format % self.result.__repr__(level)
         else:
-            return format % repr(self.next)
+            return format % repr(self.result)

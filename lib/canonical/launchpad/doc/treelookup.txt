@@ -42,8 +42,8 @@ easier, and means they can be customised.
 
 Behind the scenes, `LookupTree` promotes plain tuples (or any
 iterable) into `LookupBranch` instances. This means that the last
-member of the tuple is the result (or next step) of the branch. All
-the other members are keys.
+member of the tuple is the result of the branch. All the other members
+are keys.
 
 Tuples/branches without keys are default choices. They must come
 last. It doesn't make sense for a default to appear in any other
