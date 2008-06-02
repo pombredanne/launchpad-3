@@ -50,8 +50,8 @@ rendered in the layout.
 
 
 The actions menu is deprecated. Some of the links are moved inline,
-others are shown as navigation tabs. The navigationtabs feature that
-aspect. Two layouts show these, default2.0 and onecolumn.
+others are shown as navigation tabs. The navigationtabs page feature
+controls that aspect. Two layouts show these, default2.0 and onecolumn.
 
     >>> from canonical.launchpad.webapp.tales import PageMacroDispatcher
     >>> for layout in sorted(PageMacroDispatcher._pagetypes):
