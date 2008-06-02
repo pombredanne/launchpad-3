@@ -1947,7 +1947,7 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
-    (IPersonEditRestricted['join'], 'team'), 
+    (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),

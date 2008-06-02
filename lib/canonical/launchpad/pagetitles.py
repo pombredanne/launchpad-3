@@ -1011,7 +1011,7 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-product_add = 'Register a project in Launchpad'
+product_add_from_project = 'Register a project in your project group'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -1032,6 +1032,8 @@ product_edit = 'Change project details'
 product_index = ContextTitle('%s in Launchpad')
 
 product_new = 'Register a project in Launchpad'
+
+product_new_guided = 'Before you register your project...'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
