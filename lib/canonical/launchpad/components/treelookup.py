@@ -33,8 +33,8 @@ position.
 
 __metaclass__ = type
 __all__ = [
-    'Lookup',
-    'Node',
+    'LookupTree',
+    'LookupBranch',
     ]
 
 import string
@@ -43,7 +43,12 @@ import string
 _repr_key_chars = set(string.letters + string.digits + '-_+=*')
 
 def _repr_key(key):
-    """Return a pretty representation of simple keys, otherwise `repr`."""
+    """Return a pretty representation of simple keys.
+
+    If the key, as a string, contains only a small set of characters,
+    we can return it bare (without quotes). Otherwise, we just return
+    the result of `repr`.
+    """
     as_string = str(key)
     if _repr_key_chars.issuperset(as_string):
         return as_string
@@ -51,61 +56,61 @@ def _repr_key(key):
         return repr(key)
 
 
-class Lookup(tuple):
+class LookupTree(tuple):
     """A searchable tree."""
 
     def __new__(cls, *args):
-        """Flatten and/or promote the given arguments into `Node`s.
+        """Flatten and/or promote the given arguments into `LookupBranch`s.
 
         Because tuples are read-only, we have to manipulate the
         constructor arguments here, just before the instance is
         actually made.
 
-        :param args: `Node`s, `Lookup`s, or iterables to be attached
-          to this tree. Iterable arguments will be promoted to `Node`
-          by calling it with all the values from the iterator as
-          positional arguments.
+        :param args: `LookupBranch`s, `LookupTree`s, or iterables to
+          be attached to this tree. Iterable arguments will be
+          promoted to `LookupBranch` by calling it with all the values
+          from the iterator as positional arguments.
         """
-        nodes = []
+        branches = []
         for arg in args:
-            if isinstance(arg, Lookup):
+            if isinstance(arg, LookupTree):
                 # Extend this tree with the branches from the given
                 # tree.
-                nodes.extend(arg)
-            elif isinstance(arg, Node):
+                branches.extend(arg)
+            elif isinstance(arg, LookupBranch):
                 # Append this branch.
-                nodes.append(arg)
+                branches.append(arg)
             else:
                 # Promote a tuple or other iterable into a branch. The
                 # last value from the iterable is the result of the
                 # branch, and all the preceeding values are keys.
-                nodes.append(Node(*arg))
-        return super(Lookup, cls).__new__(cls, nodes)
+                branches.append(LookupBranch(*arg))
+        return super(LookupTree, cls).__new__(cls, branches)
 
-    def __init__(self, *nodes):
+    def __init__(self, *branches):
         """See `__new__`.
 
         As a last step, the tree is verified by calling `_verify`.
         """
-        super(Lookup, self).__init__()
+        super(LookupTree, self).__init__()
         self._verify()
 
     def _verify(self):
         """Check the validity of the tree.
 
-        Every branch in the tree must be an instance of `Node`. In
-        addition, only one default branch can exist, and it must be
-        the last branch.
+        Every branch in the tree must be an instance of
+        `LookupBranch`. In addition, only one default branch can
+        exist, and it must be the last branch.
 
         :raises TypeError: If the tree is invalid.
         """
         default = False
-        for node in self:
-            if not isinstance(node, Node):
-                raise TypeError('Not a Node: %r' % (node,))
+        for branch in self:
+            if not isinstance(branch, LookupBranch):
+                raise TypeError('Not a LookupBranch: %r' % (branch,))
             if default:
-                raise TypeError('Default node must be last')
-            default = node.is_default
+                raise TypeError('Default branch must be last.')
+            default = branch.is_default
 
     def __call__(self, key, *more):
         """Search this tree.
@@ -118,13 +123,13 @@ class Lookup(tuple):
 
         :raises KeyError: If a result is not found.
         """
-        for node in self:
-            if key in node or node.is_default:
-                if node.is_leaf:
-                    return node.next
+        for branch in self:
+            if key in branch or branch.is_default:
+                if branch.is_leaf:
+                    return branch.next
                 elif len(more) >= 1:
                     try:
-                        return node.next(*more)
+                        return branch.next(*more)
                     except KeyError, ex:
                         raise KeyError((key,) + ex.args)
                 else:
@@ -141,12 +146,12 @@ class Lookup(tuple):
         This can be useful for generating documentation, because it is
         a compact, flat representation of the tree.
         """
-        for node in self:
-            if node.is_leaf:
-                yield node, node.next
+        for branch in self:
+            if branch.is_leaf:
+                yield branch, branch.next
             else:
-                for path in node.next.flattened:
-                    yield (node,) + path
+                for path in branch.next.flattened:
+                    yield (branch,) + path
 
     @property
     def min_depth(self):
@@ -171,13 +176,13 @@ class Lookup(tuple):
         """
         indent = '    ' * level
         format = indent + '%s'
-        return 'lookup(\n%s\n%s)' % (
-            '\n'.join(format % node.__repr__(level + 1) for node in self),
+        return 'tree(\n%s\n%s)' % (
+            '\n'.join(format % branch.__repr__(level + 1) for branch in self),
             indent)
 
 
-class Node(tuple):
-    """A node point during a lookup, containing keys and a next step."""
+class LookupBranch(tuple):
+    """A branch point during a lookup, containing keys and a next step."""
 
     def __new__(cls, *args):
         """Split out the keys from the result.
@@ -188,11 +193,11 @@ class Node(tuple):
         """
         # Only pass the first len(args)-1 elements to the superclass,
         # because args[-1] is the result of this branch.
-        return super(Node, cls).__new__(cls, args[:-1])
+        return super(LookupBranch, cls).__new__(cls, args[:-1])
 
     def __init__(self, *args):
         """See `__new__`."""
-        super(Node, self).__init__()
+        super(LookupBranch, self).__init__()
         # The last args is the result of this branch.
         self.next = args[-1]
 
@@ -200,11 +205,11 @@ class Node(tuple):
     def is_leaf(self):
         """Whether or not this is a leaf.
 
-        If the result of this branch is not a `Lookup`, then this is a
-        leaf... as well as a branch... the terminology is all over the
-        place :)
+        If the result of this branch is not a `LookupTree`, then this
+        is a leaf... as well as a branch... the terminology is a
+        little confused :)
         """
-        return not isinstance(self.next, Lookup)
+        return not isinstance(self.next, LookupTree)
 
     @property
     def is_default(self):
@@ -218,19 +223,19 @@ class Node(tuple):
     def __repr__(self, level=1):
         """A representation of this branch.
 
-        If the result of this branch is a `Lookup` instance, it is
+        If the result of this branch is a `LookupTree` instance, it's
         asked for a representation at a specific `level`, which
         corresponds to its position in the tree. This allows for
         pretty indentation to aid human comprehension.
 
         If the result is any other object, `repr` is used.
         """
-        format = 'node(%s => %%s)'
+        format = 'branch(%s => %%s)'
         if self.is_default:
             format = format % '*'
         else:
-            format = format % ', '.join(_repr_key(node) for node in self)
-        if isinstance(self.next, Lookup):
+            format = format % ', '.join(_repr_key(key) for key in self)
+        if isinstance(self.next, LookupTree):
             return format % self.next.__repr__(level)
         else:
             return format % repr(self.next)

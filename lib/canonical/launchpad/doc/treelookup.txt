@@ -1,11 +1,11 @@
 = Doing lookups in a tree =
 
   >>> from canonical.launchpad.components.treelookup import (
-  ...     Lookup, Node)
+  ...     LookupTree, LookupBranch)
 
-`Lookup` encapsulated a simple tree structure that can be used to do
-lookups using one or more keys. This was originally created to support
-mapping statuses from remote bug trackers into Launchpad
+`LookupTree` encapsulated a simple tree structure that can be used to
+do lookups using one or more keys. This was originally created to
+support mapping statuses from remote bug trackers into Launchpad
 statuses.
 
 Another main criteria was documentation. We want to be able to
@@ -21,43 +21,48 @@ Secondly, a structure of tuples was attempted, and this proved easier
 to construct. However, it proved difficult to see what was going on,
 with brackets everywhere!
 
-The final design is a compromise. The `Lookup` class and helper class
-`Node` both inherit from `tuple`, but also encapsulate the searching
-algorithm and a few other conveniences. This makes the generation of
-lookup trees quite pleasant on the eye, makes debugging easier, and
-means they can be customised.
+The final design is a compromise. The `LookupTree` class and helper
+class `LookupBranch` both inherit from `tuple`, but also encapsulate
+the searching algorithm and a few other conveniences. This makes the
+generation of lookup trees quite pleasant on the eye, makes debugging
+easier, and means they can be customised.
 
 
 == Creation ==
 
-  >>> tree = Lookup(
-  ...     ('Snack', Lookup(
+  >>> tree = LookupTree(
+  ...     ('Snack', LookupTree(
   ...             ('Mars Bar', 'Snickers', 'Bad'),
   ...             ('Apple', 'Banana', 'Good'))),
-  ...     Node('Lunch', 'Dinner', Lookup(
+  ...     LookupBranch('Lunch', 'Dinner', LookupTree(
   ...             ('Fish and chips', "Penne all'arrabbiata", 'Nice'),
   ...             ('Raw liver', 'Not so nice'))),
   ...     ('Make up your mind!',),
   ...     )
 
-Behind the scenes, `Lookup` promotes plain tuples (or any iterable)
-into `Node` instances. This means that the last member of the tuple is
-the result (or next step) of the node. All the other members are keys.
+Behind the scenes, `LookupTree` promotes plain tuples (or any
+iterable) into `LookupBranch` instances. This means that the last
+member of the tuple is the result (or next step) of the branch. All
+the other members are keys.
 
-Tuples/nodes without keys are default choices. They must come last.
+Tuples/branches without keys are default choices. They must come
+last. It doesn't make sense for a default to appear in any other
+position, because it would completely obscure the subsequent branches
+in the tree. Hence, attempting to specify a default branch before the
+last position is treated as an error.
 
-  >>> broken_tree = Lookup(
+  >>> broken_tree = LookupTree(
   ...     ('Free agents',),
   ...     ('Alice', 'Bob', 'Allies of Schneier'))
   Traceback (most recent call last):
   ...
-  TypeError: Default node must be last
+  TypeError: Default branch must be last.
 
-To help when constructing more complex trees, an existing `Lookup`
-instance can be passed in when constructing a new one. Its nodes are
-copied into the new `Lookup` at that point.
+To help when constructing more complex trees, an existing `LookupTree`
+instance can be passed in when constructing a new one. Its branches
+are copied into the new `LookupTree` at that point.
 
-  >>> breakfast_tree = Lookup(
+  >>> breakfast_tree = LookupTree(
   ...     ('Breakfast', 'Corn flakes'),
   ...     tree,
   ...     )
@@ -75,13 +80,13 @@ Just call the tree.
   >>> tree('Snack', 'Banana')
   'Good'
 
-If you specify more keys than you need to reach a leaf node, you still
-get the result.
+If you specify more keys than you need to reach a leaf, you still get
+the result.
 
   >>> tree('Snack', 'Banana', 'Big', 'Yellow', 'Taxi')
   'Good'
 
-But an exception is raised if it does not reach a leaf node.
+But an exception is raised if it does not reach a leaf.
 
   >>> tree('Snack')
   Traceback (most recent call last):
@@ -91,41 +96,41 @@ But an exception is raised if it does not reach a leaf node.
 
 == Development ==
 
-`Lookup` makes development easy, because __repr__ gives a complete
+`LookupTree` makes development easy, because __repr__ gives a complete
 description of the tree you've created.
 
   >>> print repr(tree)
-  lookup(
-      node(Snack => lookup(
-          node('Mars Bar', Snickers => 'Bad')
-          node(Apple, Banana => 'Good')
+  tree(
+      branch(Snack => tree(
+          branch('Mars Bar', Snickers => 'Bad')
+          branch(Apple, Banana => 'Good')
           ))
-      node(Lunch, Dinner => lookup(
-          node('Fish and chips', "Penne all'arrabbiata" => 'Nice')
-          node('Raw liver' => 'Not so nice')
+      branch(Lunch, Dinner => tree(
+          branch('Fish and chips', "Penne all'arrabbiata" => 'Nice')
+          branch('Raw liver' => 'Not so nice')
           ))
-      node(* => 'Make up your mind!')
+      branch(* => 'Make up your mind!')
       )
 
 We can also see that the result of constructing a new lookup using an
 existing one is the as if we had constructed it independently.
 
   >>> print repr(breakfast_tree)
-  lookup(
-      node(Breakfast => 'Corn flakes')
-      node(Snack => lookup(
-          node('Mars Bar', Snickers => 'Bad')
-          node(Apple, Banana => 'Good')
+  tree(
+      branch(Breakfast => 'Corn flakes')
+      branch(Snack => tree(
+          branch('Mars Bar', Snickers => 'Bad')
+          branch(Apple, Banana => 'Good')
           ))
-      node(Lunch, Dinner => lookup(
-          node('Fish and chips', "Penne all'arrabbiata" => 'Nice')
-          node('Raw liver' => 'Not so nice')
+      branch(Lunch, Dinner => tree(
+          branch('Fish and chips', "Penne all'arrabbiata" => 'Nice')
+          branch('Raw liver' => 'Not so nice')
           ))
-      node(* => 'Make up your mind!')
+      branch(* => 'Make up your mind!')
       )
 
 Simple keys are shown without quotes, to aid readability, and default
-nodes are shown with '*' as the key.
+branches are shown with '*' as the key.
 
 
 == Documentation ==
@@ -137,9 +142,9 @@ You can discover the minimum and maximum depth of a tree.
   >>> tree.max_depth
   2
 
-`Lookup` has a `flattened` property that may be useful when generating
-documentation. It yields tuples of nodes that represent paths to
-leaves.
+`LookupTree` has a `flattened` property that may be useful when
+generating documentation. It yields tuples of keys that represent
+paths to leaves.
 
   >>> for elems in tree.flattened:
   ...     path, result = elems[:-1], elems[-1]
