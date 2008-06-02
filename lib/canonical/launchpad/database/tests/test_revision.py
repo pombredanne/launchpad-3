@@ -34,11 +34,12 @@ class TestTipRevisionsForBranches(TestCase):
         branches = [factory.makeBranch() for count in range(5)]
         branch_ids = [branch.id for branch in branches]
         transaction.commit()
+        launchpad_dbuser = config.launchpad.dbuser
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         for branch in branches:
             factory.makeRevisionsForBranch(branch)
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         # Retrieve the updated branches (due to transaction boundaries).
         branch_set = getUtility(IBranchSet)
         self.branches = [branch_set.get(id) for id in branch_ids]
@@ -66,6 +67,8 @@ class TestTipRevisionsForBranches(TestCase):
         revisions = list(
             self.revision_set.getTipRevisionsForBranches(
                 self.branches[:1]))
+        # XXX jamesh 2008-06-02: ensure that branch[0] is loaded
+        self.branches[0].last_scanned_id
         self._breakTransaction()
         self.assertEqual(1, len(revisions))
         revision = revisions[0]

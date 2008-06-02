@@ -153,6 +153,7 @@ class TestBranchDeletion(TestCase):
         # We want the changes done in the setup to stay around, and by
         # default the switchDBUser aborts the transaction.
         transaction.commit()
+        launchpad_dbuser = config.launchpad.dbuser
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         revision = RevisionSet().new(
             revision_id='some-unique-id', log_body='commit message',
@@ -160,7 +161,7 @@ class TestBranchDeletion(TestCase):
             parent_ids=[], properties=None)
         self.branch.createBranchRevision(0, revision)
         transaction.commit()
-        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+        LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")
         unique_name = self.branch.unique_name

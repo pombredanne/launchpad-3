@@ -476,7 +476,7 @@ languages...
     1
     >>> sorted(suggestions.submissions[0].items())
     [('date_created', ...),
-     ('id', 703L),
+     ('id', 703),
      ('language', ...), ('person', ...),
      ('plural_index', 0),
      ('pofile', ...), ('potmsgset', ...),
