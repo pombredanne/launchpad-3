@@ -113,7 +113,7 @@ description of the tree you've created.
       )
 
 We can also see that the result of constructing a new lookup using an
-existing one is the as if we had constructed it independently.
+existing one is the same as if we had constructed it independently.
 
   >>> print repr(breakfast_tree)
   tree(
