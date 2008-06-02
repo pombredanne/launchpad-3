@@ -2502,14 +2502,6 @@ class PageMacroDispatcher:
                 portlets=True,
                 structuralheaderobject=True,
                 navigationtabs=True),
-        'defaultnomenu':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True,
-                actionsmenu=False),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(
