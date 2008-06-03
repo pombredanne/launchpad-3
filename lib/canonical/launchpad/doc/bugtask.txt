@@ -1143,7 +1143,7 @@ constraints will be violated.
 note that DatabaseError is a superclass of both IntegrityError and
 ProgrammingError
 
-    >>> from psycopg import DatabaseError
+    >>> from psycopg2 import DatabaseError
     >>> import sys
     >>> try: bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
