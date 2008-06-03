@@ -644,13 +644,18 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-        if self.productID is not None:
+
+        # We check both the foreign key column and the reference so we
+        # can detect unflushed references.  The reference check will
+        # only be made if the FK is None, so no additional queries
+        # will be executed.
+        if self.productID is not None or self.product is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self.productseriesID is not None:
+        elif self.productseriesID is not None or self.productseries is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self.distroseriesID is not None:
+        elif self.distroseriesID is not None or self.distroseries is not None:
             alsoProvides(self, IDistroSeriesBugTask)
-        elif self.distributionID is not None:
+        elif self.distributionID is not None or self.distribution is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
