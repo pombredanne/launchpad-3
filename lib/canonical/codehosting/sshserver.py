@@ -92,60 +92,6 @@ class LaunchpadAvatar(avatar.ConchUser):
         # ...and set the only subsystem to be SFTP.
         self.subsystemLookup = {'sftp': BazaarFileTransferServer}
 
-    def fetchProductID(self, productName):
-        """Fetch the product ID for productName.
-
-        Returns a Deferred of the result, which may be None if no product by
-        that name exists.
-
-        This method guarantees repeatable reads: on a particular instance of
-        LaunchpadAvatar, fetchProductID will always return the same value for a
-        given productName.
-        """
-        productID = self._productIDs.get(productName)
-        if productID is not None:
-            # XXX: Andrew Bennetts 2005-12-13: Should the None result
-            # (i.e. not found) be remembered too, to ensure repeatable reads?
-            return defer.succeed(productID)
-        deferred = self._launchpad.fetchProductID(productName)
-        deferred.addCallback(self._cbRememberProductID, productName)
-        return deferred
-
-    def createBranch(self, loginID, userName, productName, branchName):
-        """Register a new branch in Launchpad.
-
-        Returns a Deferred with the new branch ID.
-        """
-        self.logger.info(
-            'Creating branch: (%r, %r, %r)', userName, productName,
-            branchName)
-        return self._launchpad.createBranch(
-            loginID, userName, productName, branchName)
-
-    def _cbRememberProductID(self, productID, productName):
-        if productID is None:
-            return None
-        # XXX: Andrew Bennetts 2007-01-26:
-        # Why convert the number to a string here?
-        productID = str(productID)
-        self._productIDs[productName] = productID
-        self._productNames[productID] = productName
-        return productID
-
-    def _runAsUser(self, f, *args, **kwargs):
-        # Version of UnixConchUser._runAsUser with the setuid bits stripped
-        # out -- we don't need them.
-        try:
-            f = iter(f)
-        except TypeError:
-            f = [(f, args, kwargs)]
-        for i in f:
-            func = i[0]
-            args = len(i)>1 and i[1] or ()
-            kw = len(i)>2 and i[2] or {}
-            r = func(*args, **kw)
-        return r
-
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
 
