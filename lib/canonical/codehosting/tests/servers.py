@@ -448,7 +448,8 @@ class _TestBazaarFileTransferServer(filetransfer.FileTransferServer):
     first connection.
     """
     def __init__(self, data=None, avatar=None):
-        BazaarFileTransferServer.__init__(self, data=data, avatar=avatar)
+        filetransfer.FileTransferServer.__init__(
+            self, data=data, avatar=avatar)
         self.avatar = avatar
 
     def getConnectionLostEvent(self):

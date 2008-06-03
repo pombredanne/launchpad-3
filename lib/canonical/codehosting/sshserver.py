@@ -68,17 +68,6 @@ class LaunchpadAvatar(avatar.ConchUser):
         logging.getLogger('codehosting.ssh').info('%r logged in', self.lpname)
         self.logger = logging.getLogger('codehosting.sftp.%s' % self.lpname)
 
-        # Extract the initial branches from the user dict.
-        branches_by_team = dict(userDict['initialBranches'])
-        self.branches = {}
-        for team in self.teams:
-            branches_by_product = branches_by_team.get(team['id'], [])
-            self.branches[team['id']] = team_branches = []
-            for (product_id, product_name), branches in branches_by_product:
-                team_branches.append((product_id, product_name, branches))
-        self._productIDs = {}
-        self._productNames = {}
-
         # Set the only channel as a session that only allows requests for
         # subsystems...
         self.channelLookup = {'session': SubsystemOnlySession}
