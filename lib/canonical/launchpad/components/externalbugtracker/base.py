@@ -264,9 +264,8 @@ class LookupBranch(treelookup.LookupBranch):
 
         :raises TypeError: If the branch is invalid.
         """
-        if isinstance(self.result, treelookup.LookupTree):
-            pass # Expected.
-        elif self.result not in BugTaskStatus:
+        if (not isinstance(self.result, treelookup.LookupTree) and
+            self.result not in BugTaskStatus):
             raise TypeError(
                 'Result is not a member of BugTaskStatus: %r' % (
                     self.result,))
@@ -281,10 +280,8 @@ class LookupBranch(treelookup.LookupBranch):
 class LookupTree(treelookup.LookupTree):
     """A lookup tree customised for documenting external bug trackers."""
 
-    @staticmethod
-    def _create_branch(arg):
-        """See `treelookup.LookupTree._create_branch`."""
-        return LookupBranch(*arg)
+    # See `treelookup.LookupTree`.
+    _branch_factory = LookupBranch
 
     def moinmoin_table(self, titles=None):
         """Return lines of a MoinMoin table that documents self."""
