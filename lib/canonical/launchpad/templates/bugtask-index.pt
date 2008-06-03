@@ -17,7 +17,6 @@
       <div tal:replace="structure context/bug/@@+portlet-questions" />
       <div tal:replace="structure context/bug/@@+portlet-specs" />
       <div tal:replace="structure context/bug/@@+portlet-attachments" />
-      <div tal:replace="structure context/bug/@@+portlet-cve" />
       <div tal:replace="structure context/bug/@@+portlet-watch" />
       <div tal:replace="structure context/@@+portlet-search" />
 
@@ -186,6 +185,30 @@
       <p>
         <tal:addbranch
             define="link context/menu:context/addbranch"
+            condition="link/enabled"
+            replace="structure link/render" />
+      </p>
+
+      <tal:cve-references define="cves context/bug/cves"
+                          condition="cves">
+        <h2>CVE references</h2>
+        <ul>
+          <li class="cve" tal:repeat="cve cves">
+            <a tal:attributes="href cve/fmt:url;
+                               title cve/description/fmt:shorten/40"
+               tal:content="cve/sequence"
+               >2002-1342</a>
+          </li>
+        </ul>
+      </tal:cve-references>
+
+      <p>
+        <tal:linktocve
+            define="link context/menu:context/linktocve"
+            condition="link/enabled"
+            replace="structure link/render" />
+        <tal:unlinkcve
+            define="link context/menu:context/unlinkcve"
             condition="link/enabled"
             replace="structure link/render" />
       </p>

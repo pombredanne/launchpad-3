@@ -53,15 +53,5 @@
         condition="link/enabled"
         replace="structure link/render" />
   </div>
-  <div style="text-align: right; float: right;">
-    <tal:linktocve
-        define="link context/menu:context/linktocve"
-        condition="link/enabled"
-        replace="structure link/render" />
-    <tal:unlinkcve
-        define="link context/menu:context/unlinkcve"
-        condition="link/enabled"
-        replace="structure link/render" />
-  </div>
 </div>
 </tal:root>
