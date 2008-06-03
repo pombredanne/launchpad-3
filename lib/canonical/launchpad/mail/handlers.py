@@ -5,6 +5,7 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse
 
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
@@ -487,9 +488,14 @@ class AnswerTrackerHandler:
             question.addComment(message.owner, message)
 
 
-class InvalidBranchMergeProposalAddress(Exception):
+class BadBranchMergeProposalAddress(Exception):
     """The user-supplied address is not an acceptable value."""
 
+class InvalidBranchMergeProposalAddress(BadBranchMergeProposalAddress):
+    """The user-supplied address is not an acceptable value."""
+
+class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
+    """The BranchMergeProposal specified by the address does not exist."""
 
 class InvalidVoteString(Exception):
     """The user-supplied vote is not an acceptable value."""
@@ -508,7 +514,10 @@ class CodeHandler:
         any CodeReviewVote item value, case-insensitively.
         :return: True.
         """
-        merge_proposal = self.getBranchMergeProposal(email_addr)
+        try:
+            merge_proposal = self.getBranchMergeProposal(email_addr)
+        except BadBranchMergeProposalAddress:
+            return False
         messageset = getUtility(IMessageSet)
         vote, vote_tag = self._getVote(mail)
         plain_message = messageset.fromEmail(
@@ -566,7 +575,11 @@ class CodeHandler:
             merge_proposal_id = int(match.group(2))
         except ValueError:
             raise InvalidBranchMergeProposalAddress(email_addr)
-        return getUtility(IBranchMergeProposalGetter).get(merge_proposal_id)
+        getter = getUtility(IBranchMergeProposalGetter)
+        try:
+            return getter.get(merge_proposal_id)
+        except SQLObjectNotFound:
+            raise NonExistantBranchMergeProposalAddress(email_addr)
 
 
 class SpecificationHandler:

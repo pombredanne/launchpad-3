@@ -74,8 +74,10 @@ class IMailHandler(Interface):
         The 'filealias' is an ILibraryFileAlias.
         The 'log' is the logger to be used.
 
-        Return True if the mesage was processed.  Should raise an exception on
-        failure, but some existing implementations return False.
+        Return False if to_address does not exist/is bad.
+        Return True if the mesage was processed, successfully or
+        unsuccessfully.  This includes user or input errors.
+        Programming errors should cause exceptions to be raised.
         """
 
 

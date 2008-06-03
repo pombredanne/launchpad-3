@@ -79,11 +79,30 @@ class TestCodeHandler(TestCaseWithFactory):
             mail, email_addr, None), "Succeeded, but didn't return True")
         message = MessageSet().get('<my-id>')
 
+    def test_processBadAddress(self):
+        """When a bad address is supplied, it returns False."""
+        mail = self.factory.makeSignedMessage('<my-id>')
+        self.assertFalse(self.code_handler.process(mail,
+            'foo@code.launchpad.dev', None))
+
+    def test_processNonExistantAddress(self):
+        """When a non-existant address is supplied, it returns False."""
+        mail = self.factory.makeSignedMessage('<my-id>')
+        self.assertFalse(self.code_handler.process(mail,
+            'mp+0@code.launchpad.dev', None))
+
     def test_processFailure(self):
         """When process fails, it returns False."""
+        code_handler = CodeHandler()
+        # Induce unexpected failure
+        def raise_value_error(*args, **kwargs):
+            raise ValueError('Bad value')
+        code_handler._getVote = raise_value_error
         mail = self.factory.makeSignedMessage('<my-id>')
-        self.assertRaises(InvalidBranchMergeProposalAddress,
-            self.code_handler.process, mail, 'foo@bar.com', None)
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.assertRaises(ValueError, code_handler.process, mail,
+            email_addr, None)
 
     def test_processVote(self):
         """Process respects the vote command."""
