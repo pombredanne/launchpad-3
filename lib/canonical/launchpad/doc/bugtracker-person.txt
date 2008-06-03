@@ -14,15 +14,13 @@ linkPersonToBugTracker() method of IBugTrackerPersonSet.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
 
     >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
-    >>> name = 'some-name-i-made-up'
     >>> bugtracker_person = getUtility(
     ...     IBugTrackerPersonSet).linkPersonToBugTracker(
-    ...         sample_person, bugtracker, name)
+    ...         'some-name-i-made-up', bugtracker, sample_person)
 
     >>> print bugtracker_person.name
     some-name-i-made-up
@@ -32,6 +30,18 @@ linkPersonToBugTracker() method of IBugTrackerPersonSet.
 
     >>> print bugtracker_person.bugtracker.name
     bugzilla-checkwatches-1
+
+A name can only be registered with a bugtracker once. Trying to link a
+new person to a bugtracker using an existing name will cause an error.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).linkPersonToBugTracker(
+    ...         'some-name-i-made-up', bugtracker, foo_bar)
+    Traceback (most recent call last):
+      ...
+    BugTrackerNameAlreadyTaken: Name 'some-name-i-made-up' is already in
+    use for bugtracker 'bugzilla-checkwatches-1'.
 
 The BugTrackerPerson record for a given name on a given bugtracker can
 be retreived by calling IBugTrackerPersonSet.getByNameAndBugTracker().
@@ -45,3 +55,4 @@ be retreived by calling IBugTrackerPersonSet.getByNameAndBugTracker().
 
     >>> print bugtracker_person_for_bugtracker.person.name
     name12
+

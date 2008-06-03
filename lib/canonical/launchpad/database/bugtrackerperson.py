@@ -15,7 +15,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.bugtrackerperson import (
-    IBugTrackerPerson, IBugTrackerPersonSet)
+    IBugTrackerPerson, IBugTrackerPersonSet, BugTrackerNameAlreadyTaken)
 
 
 class BugTrackerPerson(SQLBase):
@@ -40,9 +40,16 @@ class BugTrackerPersonSet:
         """Return the Person with a given name on a given bugtracker."""
         return BugTrackerPerson.selectOneBy(name=name, bugtracker=bugtracker)
 
-    def linkPersonToBugTracker(self, person, bugtracker, name):
+    def linkPersonToBugTracker(self, name, bugtracker, person):
         """See `IBugTrackerPersonSet`."""
+        # Check that this name isn't already in use for the given
+        # bugtracker.
+        if self.getByNameAndBugTracker(name, bugtracker) is not None:
+            raise BugTrackerNameAlreadyTaken(
+                "Name '%s' is already in use for bugtracker '%s'." %
+                (name, bugtracker.name))
+
         bugtracker_person = BugTrackerPerson(
-            bugtracker=bugtracker, name=name, person=person)
+            name=name, bugtracker=bugtracker, person=person)
 
         return bugtracker_person
