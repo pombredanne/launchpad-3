@@ -69,13 +69,13 @@ def main(options, databases):
         rv = call(cmd, stdin=subprocess.PIPE)
         if rv != 0:
             log.critical("Failed to backup %s (%d)" % (database, rv))
-            exit_code = rv # The most recent failure is our scripts exit code
             continue
         size = os.stat(dest)[stat.ST_SIZE]
 
         log.info("Backed up %s (%0.2fMB)" % (database, size/MB))
 
-    return exit_code
+    global return_code
+    return return_code
 
 if __name__ == '__main__':
     parser = OptionParser(
@@ -114,5 +114,5 @@ if __name__ == '__main__':
     elif verbosity < -1:
         log.setLevel(logging.ERROR)
 
-    main(options, databases)
-    sys.exit(return_code)
+    sys.exit(main(options, databases))
+
