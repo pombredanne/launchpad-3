@@ -2,33 +2,29 @@
 
 """Construct and search simple tree structures.
 
-A tree contains multiple branches. To find something in a tree, one or
-more keys are passed in. The second and subsequent keys are used if a
-branch off the tree leads to another tree... which breaks the analogy
-somewhat, but you get the picture :)
+`LookupTree` encapsulates a simple tree structure that can be used to
+do lookups using one or more keys. This was originally created to
+support mapping statuses from remote bug trackers into Launchpad
+statuses.
 
-For a given key, each branch in the tree is checked, in order, to see
-if it contains that key. If it does, the branch result is looked
-at.
+Another main criteria was documentation. We want to be able to
+automatically generate documentation from the lookup trees that are
+specified.
 
-If the result is a tree, it is searched in the same way, but using the
-next key that was originally passed in.
+Originally a simple dictionary lookup was attempted, but it proved
+difficult to create some of the moderately complex mapping rules we
+needed. Supporting defaults and such required additional logic, and
+ordering was lost, which may be useful to document.
 
-If the result is any other object, it is returned as the result of the
-search.
+Secondly, a structure of tuples was attempted, and this proved easier
+to construct. However, it proved difficult to see what was going on,
+with brackets everywhere!
 
-Two things arise from this:
-
- * There can be more than one path through the tree to the same
-   result.
-
- * A search of the tree may return a result without consuming all of
-   the given keys.
-
-It is also possible to specify a default branch. This is done by
-creating a branch with no keys. This must be the last branch in the
-tree, because it would not make sense for it to appear in any other
-position.
+The final design is a compromise. The `LookupTree` class and helper
+class `LookupBranch` both inherit from `tuple`, but also encapsulate
+the searching algorithm and a few other conveniences. This makes the
+generation of lookup trees quite pleasant on the eye, makes debugging
+easier, and means they can be customised.
 """
 
 __metaclass__ = type
