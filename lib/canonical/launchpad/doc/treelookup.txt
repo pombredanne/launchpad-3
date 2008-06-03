@@ -75,20 +75,20 @@ are copied into the new `LookupTree` at that point.
 
 == Searching ==
 
-Just call the tree.
+Just call `tree.find`.
 
-  >>> tree('Snack', 'Banana')
+  >>> tree.find('Snack', 'Banana')
   'Good'
 
 If you specify more keys than you need to reach a leaf, you still get
 the result.
 
-  >>> tree('Snack', 'Banana', 'Big', 'Yellow', 'Taxi')
+  >>> tree.find('Snack', 'Banana', 'Big', 'Yellow', 'Taxi')
   'Good'
 
 But an exception is raised if it does not reach a leaf.
 
-  >>> tree('Snack')
+  >>> tree.find('Snack')
   Traceback (most recent call last):
   ...
   KeyError: 'Snack'

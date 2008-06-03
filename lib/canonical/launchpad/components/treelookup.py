@@ -204,7 +204,7 @@ class LookupTree(tuple):
                 raise TypeError('Default branch must be last.')
             default = branch.is_default
 
-    def __call__(self, key, *more):
+    def find(self, key, *more):
         """Search this tree.
 
         Searches in the tree for `key`. If the result is another tree,
@@ -221,7 +221,7 @@ class LookupTree(tuple):
                     return branch.result
                 elif len(more) >= 1:
                     try:
-                        return branch.result(*more)
+                        return branch.result.find(*more)
                     except KeyError, ex:
                         raise KeyError((key,) + ex.args)
                 else:
