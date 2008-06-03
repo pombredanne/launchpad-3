@@ -34,6 +34,11 @@ Registering a new email address works -- and preserves case -- though:
     >>> emailaddress.email
     u'oink@Canonical.com'
 
+Generating SHA1 hashes for RDF output is easy:
+
+    >>> emailaddress.rdf_sha1
+    '3738A7C5FB02B103FEF1F3CDAA9B086B6C382F6E'
+
 There's a convenience method on IEmailAddressSet to pull preferred email
 addresses for a set of people:
 
@@ -43,4 +48,5 @@ addresses for a set of people:
     [u'colin.watson@ubuntulinux.com',
      u'foo.bar@canonical.com',
      u'support@ubuntu.com']
+
 

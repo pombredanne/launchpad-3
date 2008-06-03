@@ -20,7 +20,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
-import sha
 
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -1950,16 +1949,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return self.preferredemail.email
         else:
             return ''
-
-    @property
-    def preferredemail_sha1(self):
-        """See `IPerson`."""
-        preferredemail = self.preferredemail
-        if preferredemail:
-            return sha.new(
-                'mailto:' + preferredemail.email).hexdigest().upper()
-        else:
-            return None
 
     @property
     def validatedemails(self):

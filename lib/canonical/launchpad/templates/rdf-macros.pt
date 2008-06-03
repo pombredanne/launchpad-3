@@ -13,7 +13,7 @@
                 </foaf:name>
                 <foaf:mbox_sha1sum
                     tal:condition="context/owner/preferredemail"
-                    tal:content="context/owner/preferredemail_sha1">
+                    tal:content="context/owner/preferredemail/rdf_sha1">
                     0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33
                 </foaf:mbox_sha1sum>
                 <metal:block tal:define="context member"
@@ -31,7 +31,7 @@
                         </foaf:name>
                         <foaf:mbox_sha1sum
                             tal:condition="member/preferredemail"
-                            tal:content="member/preferredemail_sha1"
+                            tal:content="member/preferredemail/rdf_sha1"
                             >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33
                         </foaf:mbox_sha1sum>
                         <metal:block tal:define="owner member"

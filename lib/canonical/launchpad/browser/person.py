@@ -80,7 +80,6 @@ __all__ = [
     ]
 
 import cgi
-import sha
 import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
@@ -1412,7 +1411,6 @@ class PersonWithGPGKeysAndPreferredEmail:
     # (i.e. no proxying of __set__).
     gpgkeys = None
     preferredemail = None
-    preferredemail_sha1 = None
     decorates(IPerson, 'person')
 
     def __init__(self, person):
@@ -1424,8 +1422,6 @@ class PersonWithGPGKeysAndPreferredEmail:
 
     def setPreferredEmail(self, email):
         self.preferredemail = email
-        self.preferredemail_sha1 = sha.new(
-            'mailto:' + email.email).hexdigest().upper()
 
 
 class PersonRdfView:

@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = ['EmailAddress', 'EmailAddressSet']
 
+import sha
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
@@ -33,6 +34,12 @@ class EmailAddress(SQLBase):
             email_address=self):
             subscription.destroySelf()
         super(EmailAddress, self).destroySelf()
+
+    @property
+    def rdf_sha1(self):
+        """See `IPerson`."""
+        return sha.new(
+            'mailto:' + self.email).hexdigest().upper()
 
 
 class EmailAddressSet:

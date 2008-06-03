@@ -15,7 +15,7 @@
                     tal:attributes="rdf:resource person/mugshot/http_url" />
           <foaf:mbox_sha1sum
               tal:condition="person/preferredemail"
-              tal:content="person/preferredemail_sha1"
+              tal:content="person/preferredemail/rdf_sha1"
               >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33</foaf:mbox_sha1sum>
 
           <wot:hasKey tal:repeat="gpgkey person/gpgkeys">

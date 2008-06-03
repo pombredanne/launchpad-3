@@ -91,6 +91,13 @@ class IEmailAddress(Interface):
                   schema=Interface))
     personID = Int(title=_('PersonID'), required=True, readonly=True)
 
+    rdf_sha1 = TextLine(
+        title=_("RDF-ready SHA-1 Hash"),
+        description=_("The SHA-1 hash of the preferred email address and "
+                      "a mailto: prefix as a hexadecimal string. This is "
+                      "used as a key by FOAF RDF spec"),
+        readonly=True)
+
     def destroySelf():
         """Delete this email from the database."""
 
