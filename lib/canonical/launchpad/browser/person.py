@@ -114,12 +114,12 @@ from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BranchPersonSearchContext,
     BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
     CannotUnsubscribe, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-    EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet, IPasswordEncryptor,
-    IPerson, IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
-    IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry,
+    IEmailAddress, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet,
+    INewPerson, IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet,
+    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
     ISalesforceVoucherProxy, ISignedCodeOfConductSet, ITeam, ITeamMembership,
     ITeamMembershipSet, ITeamReassignment, IWikiNameSet, LoginTokenType,
     MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
@@ -1892,7 +1892,7 @@ class PersonVouchersView(LaunchpadFormView):
     def owned_commercial_projects(self):
         commercial_projects = []
         for project in self.context.getOwnedProjects():
-            if project.requires_commercial_subscription:
+            if not project.qualifies_for_free_hosting:
                 commercial_projects.append(project)
         return commercial_projects
 
