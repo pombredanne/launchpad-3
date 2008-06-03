@@ -353,7 +353,7 @@
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
               | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.2.5</a> | build
+              Version 1.2.6</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
