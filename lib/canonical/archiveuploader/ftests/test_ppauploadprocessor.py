@@ -450,6 +450,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
          * The modified PPA is found by getPendingPublicationPPA() lookup.
         """
         hoary = self.ubuntu['hoary']
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        hoary['i386'].addOrUpdateChroot(fake_chroot)
 
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")

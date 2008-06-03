@@ -972,7 +972,7 @@ class PackageUploadBuild(SQLBase):
                     % (binary.component.name, distroseries.name))
             if binary.section not in distroseries.sections:
                 raise QueueBuildAcceptError(
-                    'Section "q%s" is not allowed in %s' %
+                    'Section "%s" is not allowed in %s' %
                         (binary.section.name,
                          distroseries.name))
 
