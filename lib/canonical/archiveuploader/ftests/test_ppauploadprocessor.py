@@ -933,7 +933,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.uploadHigherBarToUbuntu()
 
     def testNoPublishingOverrides(self):
-        """Make sure that publishing overrides are not applied for PPA uploads."""
+        """Make sure publishing overrides are not applied for PPA uploads."""
         # Create a fake "bar" package and publish it in section "web".
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
