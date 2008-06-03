@@ -91,8 +91,8 @@ class TestCodeHandler(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
         self.code_handler.process(mail, email_addr, None)
-        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_messages[0].vote)
-        self.assertEqual('EBAILIWICK', bmp.all_messages[0].vote_tag)
+        self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
+        self.assertEqual('EBAILIWICK', bmp.all_comments[0].vote_tag)
 
     def test_processSendsMail(self):
         """Processing mail causes mail to be sent."""
