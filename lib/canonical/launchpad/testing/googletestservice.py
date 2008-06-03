@@ -9,13 +9,14 @@ when given certain user-configurable URLs.
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.pidfile import make_pidfile, get_pid
-import subprocess
-import os
-import time
-import socket
-import signal
+from canonical.pidfile import make_pidfile, get_pid, pidfile_path
+import errno
 import logging
+import os
+import signal
+import socket
+import subprocess
+import time
 
 
 # Set up basic logging.
@@ -163,8 +164,18 @@ def kill_running_process():
         return
     else:
         if pid is not None:
-            os.kill(pid, signal.SIGTERM)
-            os.waitpid(pid, 0)
+            try:
+                os.kill(pid, signal.SIGTERM)
+                os.waitpid(pid, 0)
+            except os.error, err:
+                if err.errno == errno.ESRCH:
+                    # Whoops, we got a 'No such process' error. The PID file
+                    # is probably stale, so we'll remove it to prevent trash
+                    # from lying around in the test environment.
+                    # See bug #237086.
+                    os.unlink(pidfile_path(service_name))
+                else:
+                    raise
 
 
 def main():
