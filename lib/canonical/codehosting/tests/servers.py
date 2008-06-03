@@ -21,6 +21,7 @@ from zope.component import getUtility
 from bzrlib.transport import get_transport, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
+from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 from twisted.internet.protocol import connectionDone
 from twisted.python.util import sibpath
@@ -34,8 +35,7 @@ from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
-from canonical.codehosting.sshserver import (
-    BazaarFileTransferServer, LaunchpadAvatar)
+from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.transport import BlockingProxy, LaunchpadServer
 
 from canonical.codehosting.tests.helpers import FakeLaunchpad
@@ -443,7 +443,7 @@ class _TestLaunchpadAvatar(LaunchpadAvatar):
         return _TestBazaarFileTransferServer(data, avatar)
 
 
-class _TestBazaarFileTransferServer(BazaarFileTransferServer):
+class _TestBazaarFileTransferServer(filetransfer.FileTransferServer):
     """BazaarFileTransferServer that sets a threading event when it loses its
     first connection.
     """

@@ -17,9 +17,6 @@ from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 
-from twisted.internet import defer
-from twisted.internet.protocol import connectionDone
-
 from twisted.python import components, failure
 
 from canonical.codehosting import sftp
@@ -82,15 +79,11 @@ class LaunchpadAvatar(avatar.ConchUser):
         self._productIDs = {}
         self._productNames = {}
 
-        # XXX: Andrew Bennetts 2007-01-26:
-        # See AdaptFileSystemUserToISFTP below.
-        self.filesystem = None
-
         # Set the only channel as a session that only allows requests for
         # subsystems...
         self.channelLookup = {'session': SubsystemOnlySession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': BazaarFileTransferServer}
+        self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
 
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
@@ -253,13 +246,3 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         raise UnauthorizedLogin(
             "Your SSH key does not match any key registered for Launchpad "
             "user %s" % credentials.username)
-
-
-class BazaarFileTransferServer(filetransfer.FileTransferServer):
-
-    def __init__(self, data=None, avatar=None):
-        filetransfer.FileTransferServer.__init__(self, data, avatar)
-        self.logger = avatar.logger
-
-    def connectionLost(self, reason=connectionDone):
-        self.logger.info('Connection lost: %s', reason)
