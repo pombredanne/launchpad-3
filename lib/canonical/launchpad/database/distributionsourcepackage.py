@@ -88,6 +88,42 @@ class DistributionSourcePackage(BugTargetBase,
     def __getitem__(self, version):
         return self.getVersion(version)
 
+    @property
+    def latest_overall_publication(self):
+        """See IDistributionSourcePackage."""
+        # This is magical code that finds the latest relevant
+        # publication. It relies on ordering of status and pocket enum
+        # values, which is arguably evil but much faster than CASE
+        # sorting; at any rate this can be fixed when
+        # https://bugs.edge.launchpad.net/soyuz/+bug/236922 is.
+        spph = SourcePackagePublishingHistory.selectFirst("""
+            SourcePackagePublishingHistory.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
+            pocket NOT IN (30, 40) AND
+            status in (2,5)""" %
+                sqlvalues(self.distribution, self.sourcepackagename,
+                          self.distribution.all_distro_archive_ids),
+            clauseTables=["SourcePackagePublishingHistory",
+                          "SourcePackageRelease", 
+                          "DistroSeries"],
+            orderBy=["-status",
+                     SQLConstant(
+                        "to_number(DistroSeries.version, '99.99') DESC"),
+                     "-pocket"])
+        return spph
+
+    @property
+    def latest_overall_component(self):
+        """See IDistributionSourcePackage."""
+        spph = self.latest_overall_publication
+        if spph:
+            return spph.component
+        return None
+
     def getVersion(self, version):
         """See IDistributionSourcePackage."""
         spph = SourcePackagePublishingHistory.select("""
@@ -280,3 +316,4 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
