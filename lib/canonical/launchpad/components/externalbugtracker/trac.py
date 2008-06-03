@@ -246,7 +246,7 @@ class Trac(ExternalBugTracker):
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`"""
         try:
-            return self._status_lookup(remote_status)
+            return self._status_lookup.find(remote_status)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
 

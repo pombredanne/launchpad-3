@@ -318,6 +318,6 @@ class Roundup(ExternalBugTracker):
 
         host = URI(self.baseurl).host
         try:
-            return self._status_lookup(host, *remote_status_key)
+            return self._status_lookup.find(host, *remote_status_key)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)

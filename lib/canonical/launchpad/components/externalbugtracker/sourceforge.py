@@ -197,6 +197,6 @@ class SourceForge(ExternalBugTracker):
             resolution = None
 
         try:
-            return self._status_lookup(status, resolution)
+            return self._status_lookup.find(status, resolution)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)

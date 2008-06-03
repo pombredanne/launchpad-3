@@ -139,7 +139,7 @@ class Bugzilla(ExternalBugTracker):
         the last part is the resolution. The resolution is optional.
         """
         try:
-            return self._status_lookup(*remote_status.split())
+            return self._status_lookup.find(*remote_status.split())
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
 

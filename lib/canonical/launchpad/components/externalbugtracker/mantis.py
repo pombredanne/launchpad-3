@@ -480,6 +480,6 @@ class Mantis(ExternalBugTracker):
     def convertRemoteStatus(self, status_and_resolution):
         status, importance = status_and_resolution.split(": ", 1)
         try:
-            return self._status_lookup(status, importance)
+            return self._status_lookup.find(status, importance)
         except KeyError:
             raise UnknownRemoteStatusError(status_and_resolution)
