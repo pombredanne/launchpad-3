@@ -529,7 +529,7 @@ class LaunchpadObjectFactory:
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None):
         if sender is None:
-            sender = self.makePerson()
+            sender = self.makePerson(password='password')
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:

@@ -52,7 +52,7 @@ class TestParseCommands(TestCase):
         self.assertEqual(
             [('command', [])],
             parse_commands(' command\n done\n command', ['command']))
-        # done brooks no arguments.
+        # done takes no arguments.
         self.assertEqual(
             [('command', []), ('command', [])],
             parse_commands(' command\n done commands\n command', ['command']))
@@ -87,17 +87,17 @@ class TestCodeHandler(TestCaseWithFactory):
 
     def test_processVote(self):
         """Process respects the vote command."""
-        mail = self.factory.makeSignedMessage(body=' vote Abstain EBALIWICK')
+        mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
         self.code_handler.process(mail, email_addr, None)
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_messages[0].vote)
-        self.assertEqual('EBALIWICK', bmp.all_messages[0].vote_tag)
+        self.assertEqual('EBAILIWICK', bmp.all_messages[0].vote_tag)
 
     def test_processSendsMail(self):
         """Processing mail causes mail to be sent."""
         mail = self.factory.makeSignedMessage(
-            body=' vote Abstain EBALIWICK')
+            body=' vote Abstain EBAILIWICK')
         mail['Subject'] = 'subject'
         bmp = self.factory.makeBranchMergeProposal()
         subscriber = self.factory.makePerson(password='password')
@@ -108,8 +108,8 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler.process(mail, email_addr, None)
         notification = pop_notifications()[0]
         self.assertEqual('subject', notification['Subject'])
-        expected_body = ('Vote: Abstain EBALIWICK\n'
-                         ' vote Abstain EBALIWICK\n'
+        expected_body = ('Vote: Abstain EBAILIWICK\n'
+                         ' vote Abstain EBAILIWICK\n'
                          '-- \n'
                          'You are subscribed to branch %s.' %
                          bmp.source_branch.unique_name)

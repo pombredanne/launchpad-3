@@ -6,6 +6,8 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+from zope.component import getUtility
+
 from canonical.launchpad.database import BranchMergeProposalGetter
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -13,7 +15,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus)
+    EmailAddressStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.testing import (
      LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
@@ -464,6 +466,13 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         merge_proposal = self.factory.makeBranchMergeProposal()
         self.assertEqual(merge_proposal,
             BranchMergeProposalGetter().get(merge_proposal.id))
+
+    def test_get_as_utility(self):
+        """Ensure the correct merge proposal is returned."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        utility = getUtility(IBranchMergeProposalGetter)
+        retrieved = utility.get(merge_proposal.id)
+        self.assertEqual(merge_proposal, retrieved)
 
 
 def test_suite():

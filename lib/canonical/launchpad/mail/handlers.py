@@ -150,10 +150,10 @@ def reformat_wiki_text(text):
     return text
 
 def parse_commands(content, command_names):
-    """Extract commands from a bug-style string.
+    """Extract indented commands from email body.
 
     All commands must be indented using either spaces or tabs.  They must be
-    listed in command_names-- if not, they are silently ignored.
+    listed in command_names -- if not, they are silently ignored.
 
     The special command 'done' terminates processing.  It takes no arguments.
     Any commands that follow it will be ignored.  'done' should not be listed

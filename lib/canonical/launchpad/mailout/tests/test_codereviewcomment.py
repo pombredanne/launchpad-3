@@ -4,6 +4,7 @@
 """Test CodeReviewComment emailing functionality."""
 
 
+from textwrap import dedent
 from unittest import TestLoader
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -48,7 +49,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             notification_level)
         return comment, subscriber
 
-    def makeMailer(self, as_reply=False, vote=None, vote_tag=None, body=None):
+    def makeMailer(self, body=None, as_reply=False, vote=None, vote_tag=None):
         """Return a CodeReviewCommentMailer and the sole subscriber."""
         comment, subscriber = self.makeCommentAndSubscriber(
             body=body, as_reply=as_reply, vote=vote, vote_tag=vote_tag)
@@ -118,9 +119,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_appendToFooter(self):
         """If there is an existing footer, we append to it."""
         mailer, subscriber = self.makeMailer(
-            body='Hi!\n'
-            '-- \n'
-            'I am a wacky guy.\n')
+            body=dedent("""\
+            Hi!
+            -- 
+            I am a wacky guy.
+            """))
         branch_name = mailer.merge_proposal.source_branch.displayname
         body = mailer._getBody(subscriber)
         self.assertEqual(body.splitlines()[1:],
