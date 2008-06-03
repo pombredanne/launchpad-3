@@ -158,7 +158,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -1145,6 +1145,60 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
+
+
+class IPersonEditMenu(Interface):
+    """A marker interface for the 'Edit Profile' navigation menu."""
+
+
+class PersonOverviewNavigationMenu(NavigationMenu):
+
+    usedfor = IPerson
+
+    def profile(self):
+        target = '+index'
+        text = 'Profile'
+        return Link(target, text)
+
+    def related_software(self):
+        target = '+related-software'
+        text = 'Related Software'
+        return Link(target, text)
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        return Link(target, text)
+
+    def show_ppa(self):
+        target = '+archive'
+        text = 'Personal Package Archive'
+        return Link(target, text)
+
+
+class PersonEditNavigationMenu(NavigationMenu):
+
+    usedfor = IPersonEditMenu
+
+    def personal(self):
+        target='+edit'
+        text='Personal'
+        return Link(target, text)
+
+    def contact_details(self):
+        target = '+contactaddress'
+        text = 'Contact Details'
+        return Link(target, text)
+
+    def email_settings(self):
+        target = '+editemail'
+        text = 'E-mail Settings'
+        return Link(target, text)
+
+    def keys_and_password(self):
+        target = '+edit'
+        text = 'Keys and Password'
+        return Link(target, text)
 
 
 class BaseListView:
