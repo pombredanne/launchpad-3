@@ -46,6 +46,10 @@ _time_regex = re.compile(r"""
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 
+# See include/linux/pci_ids.h in the Linux kernel sources for a complete
+# list of PCI class and subclass codes.
+PCI_CLASS_SERIALBUS_CONTROLLER = 12
+PCI_SUBCLASS_USB_CONTROLLER = 3
 
 class RelaxNGValidator:
     """A validator for Relax NG schemas."""
@@ -1092,7 +1096,7 @@ class HALDevice:
             return None
         else:
             return HWBus.SCSI
-        
+
     def translatePciBus(self):
         # Cardbus (aka PCCard, sometimes also incorrectly called
         # PCMCIA) devices are treated as PCI devices by the kernel.
@@ -1148,7 +1152,7 @@ class HALDevice:
         aspects of them.
 
         For example, the HAL device node hiearchy for a SATA disk and
-        its host controllerlooks like this:
+        its host controller looks like this:
 
         HAL device node of the host controller
             udi: .../pci_8086_27c5
@@ -1198,7 +1202,6 @@ class HALDevice:
         detail for us is that the sd driver is involved in accesses to the
         disk.
 
-
         Heuristics:
 
         - Most real devices have the property info.bus; we consider only
@@ -1206,7 +1209,7 @@ class HALDevice:
 
         - As written above, the SCSI bus often appears as an artifact;
           for PCI host controllers, their properties pci.device_class
-          and pci.device_subclass tell us, if we have a real SCSI host
+          and pci.device_subclass tell us if we have a real SCSI host
           controller: pci.device_class == 1 means a storage controller,
           pci.device_subclass == 0 means a SCSI controller. This works
           too for PCCard controllers, which use the PCI device class
@@ -1220,17 +1223,17 @@ class HALDevice:
           parent and by their USB vendor/product IDs, which are 0:0.
         """
         bus = self.getProperty('info.bus')
-        if bus is None or bus in ('platform', 'pnp', 'usb'):
+        if bus in (None, 'platform', 'pnp', 'usb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
             # we ignore them. (The real sound devices appear with
             # other UDIs in HAL.)
-            # 
+            #
             # XXX Abel Deuring 20080425: This ignores a few components
             # like laptop batteries or the CPU, where info.bus is None.
             # Since these components are not the most important ones
-            # for the HWDB, we'll ignore them for now.
+            # for the HWDB, we'll ignore them for now. Bug 237038.
             #
             # info.bus == 'platform' is used for devices like the i8042
             # which controls keyboard and mouse; HAL has no vendor
@@ -1238,26 +1241,27 @@ class HALDevice:
             # treat them as real devices.
             #
             # info.bus == 'pnp' is used for components like the ancient
-            # AT DMA controller or or the keyboard. Like for the bus
+            # AT DMA controller or the keyboard. Like for the bus
             # 'platform', HAL does not provide any vendor data.
             #
             # info.bus == 'usb' is used for end points of USB devices;
             # the root node of a USB device has info.bus == 'usb_device'.
             return False
-        if bus == 'usb_device':
+        elif bus == 'usb_device':
             vendor_id = self.getProperty('usb_device.vendor_id')
             product_id = self.getProperty('usb_device.product_id')
             if vendor_id == 0 and product_id == 0:
                 # double-check: The parent device should be a PCI host
                 # controller, identifiable by its device class and subclass.
                 # XXX Abel Deuring 20080428: This ignores other possible
-                # bridges, like ISA->USB.
+                # bridges, like ISA->USB. Bug 237039.
                 parent = self.parent
                 parent_bus = parent.getProperty('info.bus')
                 parent_class = parent.getProperty('pci.device_class')
                 parent_subclass = parent.getProperty('pci.device_subclass')
-                if (parent_bus == 'pci' and parent_class == 12 and
-                    parent_subclass == 3):
+                if (parent_bus == 'pci'
+                    and parent_class == PCI_CLASS_SERIALBUS_CONTROLLER
+                    and parent_subclass == PCI_SUBCLASS_USB_CONTROLLER):
                     return False
                 else:
                     self.parser._logWarning(
@@ -1279,7 +1283,7 @@ class HALDevice:
         The list of real child devices consists of the direct child
         devices of this device where child.is_real_device == True, and
         of the (recursively collected) list of real sub-devices of
-        those child devices where child.is_real_device == False.        
+        those child devices where child.is_real_device == False.
         """
         result = []
         for sub_device in self.children:
@@ -1294,7 +1298,7 @@ class HALDevice:
                 # that could be used as the product ID, so IEEE1394
                 # devices are at present simply dropped from the list of
                 # devices. Otherwise, we'd pollute the HWDB with
-                # unreliable data.
+                # unreliable data. Bug 237044.
                 if sub_device.getProperty('info.bus') != 'ieee1394':
                     result.append(sub_device)
             else:

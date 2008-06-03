@@ -12,8 +12,8 @@ from canonical.launchpad.scripts.hwdbsubmissions import (
 from canonical.testing import BaseLayer
 
 
-class TestHWDBSubmissionProcessing(TestCase):
-    """Tests for the HWDB submission processing."""
+class TestCaseHWDB(TestCase):
+    """Common base class for HWDB processing tests."""
 
     layer = BaseLayer
 
@@ -67,6 +67,10 @@ class TestHWDBSubmissionProcessing(TestCase):
             if candidate == expected_message:
                 return
         raise AssertionError('No log message found: %s' % expected_message)
+
+
+class TestHWDBSubmissionProcessing(TestCaseHWDB):
+    """Tests for processing of HWDB submissions."""
 
     def testBuildDeviceList(self):
         """Test the creation of list HALDevice instances for a submission."""
@@ -491,10 +495,9 @@ class TestHWDBSubmissionProcessing(TestCase):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
         device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
-        self.assertEqual(device.is_real_device, True,
-                         'Device with info.bus property not treated as a '
-                         'real device')
-
+        self.failUnless(device.is_real_device,
+                        'Device with info.bus property not treated as a '
+                        'real device')
 
     def testHALDeviceRealDeviceNoBus(self):
         """Test of HALDevice.is_real_device: No info.bus property."""
@@ -516,19 +519,21 @@ class TestHWDBSubmissionProcessing(TestCase):
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
         device = parser.hal_devices[UDI_HAL_STORAGE_DEVICE]
-        self.assertEqual(device.is_real_device, False,
-                         'Device without info.bus property treated as a '
-                         'real device')
+        self.failIf(device.is_real_device,
+                    'Device without info.bus property treated as a '
+                    'real device')
 
-    def testHALDeviceRealDeviceUSB(self):
-        """Test of HALDevice.is_real_device: info.bus == 'usb'."""
+    def testHALDeviceRealDeviceHALBusValueIgnored(self):
+        """Test of HALDevice.is_real_device: ignored values of info.bus.
+
+        A HAL device is considered to not be a real device, if its
+        info.bus proerty is 'platform', 'pnp' or 'usb'.
+        """
         devices = [
             {
                 'id': 1,
                 'udi': self.UDI_USB_HUB_IF0,
-                'properties': {
-                    'info.bus': ('usb', 'str'),
-                    },
+                'properties': {},
                 },
             ]
         parsed_data = {
@@ -538,106 +543,16 @@ class TestHWDBSubmissionProcessing(TestCase):
                 },
             }
 
+        properties = devices[0]['properties']
         parser = SubmissionParser(self.log)
-        parser.buildDeviceList(parsed_data)
-        device = parser.hal_devices[self.UDI_USB_HUB_IF0]
-        self.assertEqual(device.is_real_device, False,
-                         'Device without info.bus property treated as a '
-                         'real device')
 
-    def testHALDeviceRealDeviceUSBDevice(self):
-        """Test of HALDevice.is_real_device: info.bus == 'usb_device'."""
-        devices = [
-            {
-                'id': 1,
-                'udi': self.UDI_USB_CONTROLLER_PCI_SIDE,
-                'properties': {
-                    'info.bus': ('pci', 'str'),
-                    'pci.device_class': (12, 'int'),
-                    'pci.device_subclass': (3, 'int'),
-                    },
-                },
-            {
-                'id': 2,
-                'udi': self.UDI_USB_CONTROLLER_USB_SIDE,
-                'properties': {
-                    'info.parent': (self.UDI_USB_CONTROLLER_PCI_SIDE, 'str'),
-                    'info.bus': ('usb_device', 'str'),
-                    'usb_device.vendor_id': (0, 'int'),
-                    'usb_device.product_id': (0, 'int'),
-                    },
-                },
-            ]
-        parsed_data = {
-            'hardware': {
-                'hal': {'devices': devices,
-                    },
-                },
-            }
-
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'USB device test 1'
-        parser.buildDeviceList(parsed_data)
-        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.assertEqual(device.is_real_device, False,
-                         'USB Device with vendor/product ID 0:0 property '
-                         'treated as a real device.')
-
-        # If the PCI device class of a USB device with vendor/product ID
-        # 0:0 is not 12 ("bridge"), HALDevice.is_real_device logs a warning.
-        devices[0]['properties']['pci.device_class'] = (1, 'int')
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'USB device test 2'
-        parser.buildDeviceList(parsed_data)
-        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.assertEqual(device.is_real_device, False,
-                         'USB Device with vendor/product ID 0:0 property '
-                         'treated as a real device.')
-        self.assertWarningMessage(
-            parser.submission_key,
-            'USB device found with vendor ID==0, product ID==0, where the '
-            'parent device does not look like a USB host controller: '
-            + self.UDI_USB_CONTROLLER_USB_SIDE)
-
-        # Similary, the PCI device subclass must be 3 (PCI->USB bridge)
-        devices[0]['properties']['pci.device_class'] = (12, 'int')
-        devices[0]['properties']['pci.device_subclass'] = (1, 'int')
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'USB device test 3'
-        parser.buildDeviceList(parsed_data)
-        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.assertEqual(device.is_real_device, False,
-                         'USB Device with vendor/product ID 0:0 property '
-                         'treated as a real device.')
-        self.assertWarningMessage(
-            parser.submission_key,
-            'USB device found with vendor ID==0, product ID==0, where the '
-            'parent device does not look like a USB host controller: '
-            +  self.UDI_USB_CONTROLLER_USB_SIDE)
-
-        # Similary, info.bus of the parent device must be 'pci'.
-        devices[0]['properties']['pci.device_subclass'] = (3, 'int')
-        devices[0]['properties']['info.bus'] = ('pcmcia', 'int')
-        parser = SubmissionParser(self.log)
-        parser.submission_key = 'USB device test 4'
-        parser.buildDeviceList(parsed_data)
-        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
-        self.assertEqual(device.is_real_device, False,
-                         'USB Device with vendor/product ID 0:0 property '
-                         'treated as a real device.')
-        self.assertWarningMessage(
-            parser.submission_key,
-            'USB device found with vendor ID==0, product ID==0, where the '
-            'parent device does not look like a USB host controller: '
-            + self.UDI_USB_CONTROLLER_USB_SIDE)
-
-        # All other devices which have an info.bus property return True
-        # for HALDevice.is_real_device. The USB host controller in the
-        # test data is an example.
-        device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
-        self.assertEqual(device.is_real_device, True,
-                         'Device with existing info.bus proerty not treated '
-                         'as a real device.')
+        for bus in ('platform', 'pnp', 'usb'):
+            properties['info.bus'] = (bus, 'str')
+            parser.buildDeviceList(parsed_data)
+            device = parser.hal_devices[self.UDI_USB_HUB_IF0]
+            self.failIf(device.is_real_device,
+                        'Device with info.bus=%r treated as a real device'
+                        % bus)
 
     def testHALDeviceRealDeviceScsiDevicesPciController(self):
         """Test of HALDevice.is_real_device: info.bus == 'scsi'.
@@ -759,10 +674,9 @@ class TestHWDBSubmissionProcessing(TestCase):
         parser.buildDeviceList(parsed_data)
 
         scsi_device = parser.hal_devices[self.UDI_USB_STORAGE_SCSI_DEVICE]
-        found_is_real = scsi_device.is_real_device
-        self.assertEqual(found_is_real, False,
+        self.failIf(scsi_device.is_real_device,
             'Unexpected result of HWDevice.is_real_device for a HAL SCSI '
-            'device as a subdevice of a USB storage device:')
+            'device as a subdevice of a USB storage device.')
 
     def testHALDeviceRealChildren(self):
         """Test of HALDevice.getRealChildren."""
@@ -826,7 +740,7 @@ class TestHWDBSubmissionProcessing(TestCase):
                     },
                 },
             }
-        
+
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
 
@@ -846,6 +760,168 @@ class TestHWDBSubmissionProcessing(TestCase):
         self.assertEqual(pci_usb_bridge.getRealChildren(), [usb_device],
                          'Unexpected list of real children of the PCI-> '
                          'USB bridge')
+
+
+class TestHALDeviceUSBDevices(TestCaseHWDB):
+    """Tests for HALDevice.is_real_device: USB devices."""
+
+    def setUp(self):
+        """Setup the test environment."""
+        super(TestHALDeviceUSBDevices, self).setUp()
+        self.usb_controller_pci_side = {
+            'id': 1,
+            'udi': self.UDI_USB_CONTROLLER_PCI_SIDE,
+            'properties': {
+                'info.bus': ('pci', 'str'),
+                'pci.device_class': (12, 'int'),
+                'pci.device_subclass': (3, 'int'),
+                },
+            }
+        self.usb_controller_usb_side = {
+            'id': 2,
+            'udi': self.UDI_USB_CONTROLLER_USB_SIDE,
+            'properties': {
+                'info.parent': (self.UDI_USB_CONTROLLER_PCI_SIDE, 'str'),
+                'info.bus': ('usb_device', 'str'),
+                'usb_device.vendor_id': (0, 'int'),
+                'usb_device.product_id': (0, 'int'),
+                },
+            }
+        self.usb_storage_device = {
+            'id': 3,
+            'udi': self.UDI_USB_STORAGE,
+            'properties': {
+                'info.parent': (self.UDI_USB_CONTROLLER_USB_SIDE, 'str'),
+                'info.bus': ('usb_device', 'str'),
+                'usb_device.vendor_id': (0x1307, 'int'),
+                'usb_device.product_id': (0x0163, 'int'),
+                },
+            }
+        self.parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': [
+                        self.usb_controller_pci_side,
+                        self.usb_controller_usb_side,
+                        self.usb_storage_device,
+                        ],
+                    },
+                },
+            }
+
+    def assertWarningMessage(self, submission_key, log_message):
+        """Search for message in the log entries for submission_key.
+
+        :raise: AssertionError if no log message exists that starts with
+            "Parsing submission <submission_key>:" and that contains
+            the text passed as the parameter message.
+        """
+        expected_message = ('Parsing submission %s: %s'
+                            % (submission_key, log_message))
+        last_log_messages = []
+        for record in self.handler.records:
+            if record.levelno != logging.WARNING:
+                continue
+            candidate = record.getMessage()
+            if candidate == expected_message:
+                return
+        raise AssertionError('No log message found: %s' % expected_message)
+
+    def testUSBDeviceRegularCase(self):
+        """Test of HALDevice.is_real_device: info.bus == 'usb_device'."""
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_STORAGE]
+        self.failUnless(device.is_real_device,
+                        'Regular USB Device not treated as a real device.')
+
+    def testUSBHostController(self):
+        """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
+
+        Special case: vendor ID and product ID of the device are zero;
+        the parent device is a PCI/USB host controller.
+        """
+
+        parser = SubmissionParser(self.log)
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(device.is_real_device,
+                    'USB Device with vendor/product ID 0:0 property '
+                    'treated as a real device.')
+
+    def testUSBHostControllerInvalidParentClass(self):
+        """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
+
+        Special case: vendor ID and product ID of the device are zero;
+        the parent device cannot be identified as a PCI/USB host
+        controller: Wrong PCI device class of the parent device.
+        """
+        parent_properties = self.usb_controller_pci_side['properties']
+        parent_properties['pci.device_class'] = (1, 'int')
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device test 1'
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(device.is_real_device,
+                    'USB Device with vendor/product ID 0:0 property '
+                    'treated as a real device.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, where the '
+            'parent device does not look like a USB host controller: '
+            + self.UDI_USB_CONTROLLER_USB_SIDE)
+
+    def testUSBHostControllerInvalidParentSubClass(self):
+        """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
+
+        Special case: vendor ID and product ID of the device are zero;
+        the parent device cannot be identified as a PCI/USB host
+        controller: Wrong PCI device subclass of the parent device.
+        """
+        parent_properties = self.usb_controller_pci_side['properties']
+        parent_properties['pci.device_subclass'] = (1, 'int')
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device test 2'
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(device.is_real_device,
+                    'USB Device with vendor/product ID 0:0 property '
+                    'treated as a real device.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, where the '
+            'parent device does not look like a USB host controller: '
+            +  self.UDI_USB_CONTROLLER_USB_SIDE)
+
+    def testUSBHostControllerUnexpectedParentBus(self):
+        """Test of HALDevice.is_real_device: info.bus == 'usb_device'.
+
+        Special case: vendor ID and product ID of the device are zero;
+        the parent device cannot be identified as a PCI/USB host
+        controller: Wrong PCI device subclass of the parent device.
+        """
+        parent_properties = self.usb_controller_pci_side['properties']
+        parent_properties['info.bus'] = ('not pci', 'str')
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device test 3'
+        parser.buildDeviceList(self.parsed_data)
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_USB_SIDE]
+        self.failIf(device.is_real_device,
+                    'USB Device with vendor/product ID 0:0 property '
+                    'treated as a real device.')
+        self.assertWarningMessage(
+            parser.submission_key,
+            'USB device found with vendor ID==0, product ID==0, where the '
+            'parent device does not look like a USB host controller: '
+            + self.UDI_USB_CONTROLLER_USB_SIDE)
+
+        # All other devices which have an info.bus property return True
+        # for HALDevice.is_real_device. The USB host controller in the
+        # test data is an example.
+        device = parser.hal_devices[self.UDI_USB_CONTROLLER_PCI_SIDE]
+        self.failUnless(device.is_real_device,
+                        'Device with existing info.bus property not treated '
+                        'as a real device.')
 
 
 def test_suite():
