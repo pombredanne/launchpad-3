@@ -65,9 +65,6 @@ class AvatarTestCase(TrialTestCase):
             'initialBranches': [(2, []), (3, [])]
         }
 
-    def tearDown(self):
-        pass
-
 
 def exception_names(exceptions):
     """Return a list of exception names for the given exception list."""
