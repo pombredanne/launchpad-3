@@ -203,7 +203,7 @@ def _get_transport_for_dir(directory):
 
 def avatar_to_sftp_server(avatar):
     user_id = avatar.lpid
-    authserver = avatar._launchpad
+    authserver = avatar.authserver
     hosted_transport = _get_transport_for_dir(
         config.codehosting.branches_root)
     mirror_transport = _get_transport_for_dir(

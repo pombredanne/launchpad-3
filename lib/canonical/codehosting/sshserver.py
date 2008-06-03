@@ -50,21 +50,22 @@ class SubsystemOnlySession(session.SSHSession, object):
 class LaunchpadAvatar(avatar.ConchUser):
     """An account on the SSH server, corresponding to a Launchpad person.
 
+    :ivar authserver: A Twisted XML-RPC client for the authserver. The server
+        must implement `IUserDetailsStorageV2` and `IHostedBranchStorage`.
     :ivar channelLookup: See `avatar.ConchUser`.
     :ivar subsystemLookup: See `avatar.ConchUser`.
     :ivar username: The Launchpad username for this account.
     """
 
-    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
-        # Double-check that we don't get unicode -- directory names on the
-        # file system are a sequence of bytes as far as we're concerned. We
-        # don't want any tricky login names turning into a security problem.
-        # (I'm reasonably sure twisted.cred guarantees this will be str, but
-        # in the meantime let's make sure).
+    def __init__(self, avatarId, homeDirsRoot, userDict, authserver):
+        # Double-check that we don't get unicode. We don't want any tricky
+        # login names turning into a security problem. (I'm reasonably sure
+        # twisted.cred guarantees this will be str, but in the meantime let's
+        # make sure).
         assert type(avatarId) is str
 
         self.avatarId = avatarId
-        self._launchpad = launchpad
+        self.authserver = authserver
         self.lpid = userDict['id']
 
         self.username = userDict['name']
