@@ -5,40 +5,41 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductNavigation',
-    'ProductDynMenu',
-    'ProductShortLink',
-    'ProductSOP',
-    'ProductFacets',
-    'ProductOverviewMenu',
-    'ProductBugsMenu',
-    'ProductSpecificationsMenu',
-    'ProductBountiesMenu',
-    'ProductBranchesMenu',
-    'ProductTranslationsMenu',
-    'ProductView',
-    'ProductDownloadFileMixin',
-    'ProductDownloadFilesView',
+    'PillarSearchItem',
+    'ProductAddSeriesView',
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
+    'ProductBountiesMenu',
     'ProductBranchListingView',
+    'ProductBranchOverviewView',
+    'ProductBranchesMenu',
+    'ProductBranchesView',
     'ProductBrandingView',
-    'ProductEditView',
+    'ProductBugsMenu',
     'ProductChangeTranslatorsView',
     'ProductCodeIndexView',
-    'ProductReviewLicenseView',
-    'ProductAddSeriesView',
-    'ProductReassignmentView',
+    'ProductDownloadFileMixin',
+    'ProductDownloadFilesView',
+    'ProductDynMenu',
+    'ProductEditView',
+    'ProductFacets',
+    'ProductNavigation',
+    'ProductOverviewMenu',
     'ProductRdfView',
-    'ProductSetFacets',
-    'ProductSetSOP',
-    'ProductSetNavigation',
+    'ProductReassignmentView',
+    'ProductReviewLicenseView',
+    'ProductSOP',
     'ProductSetContextMenu',
+    'ProductSetFacets',
+    'ProductSetNavigation',
+    'ProductSetReviewLicensesView',
+    'ProductSetSOP',
     'ProductSetView',
-    'ProductBranchOverviewView',
-    'ProductBranchesView',
-    'PillarSearchItem',
+    'ProductShortLink',
+    'ProductSpecificationsMenu',
+    'ProductTranslationsMenu',
+    'ProductView',
     ]
 
 from operator import attrgetter
@@ -50,7 +51,9 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.formlib import form
 from zope.interface import alsoProvides, implements
+from zope.schema import Date, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -92,6 +95,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
+from canonical.widgets.bugtask import NewLineToSpacesWidget
+from canonical.widgets.date import DateWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -1133,6 +1138,101 @@ class ProductSetView(LaunchpadView):
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
+
+
+class ProductSetReviewLicensesView(LaunchpadFormView):
+    """View for searching products to be reviewed."""
+
+    schema = IProduct
+    product = None
+    field_names = [
+        'license_reviewed',
+        'licenses',
+        'active',
+        ]
+    custom_widget('search_text', NewLineToSpacesWidget)
+    custom_widget(
+        'licenses', LicenseWidget, column_count=3, orientation='vertical')
+    custom_widget('created_after', DateWidget)
+    custom_widget('created_before', DateWidget)
+    custom_widget('subscription_date_expires', DateWidget)
+    custom_widget('subscription_date_last_modified', DateWidget)
+
+    def setUpFields(self):
+        """See `LaunchpadViewForm`.
+
+        Add fields that are not part of IProduct.
+        """
+        super(ProductSetReviewLicensesView, self).setUpFields()
+        self.form_fields = (
+            form.Fields(self._getSearchTextField())
+            + self.form_fields
+            + form.FormFields(
+                self._getCreatedAfter(),
+                self._getCreatedBefore(),
+                self._getSubscriptionDateExpiresField(),
+                self._getSubscriptionDateLastModifiedField()))
+
+    def _getSearchTextField(self):
+        return form.FormField(
+            TextLine(__name__='search_text',
+                     title=_("Search text"),
+                     required=False),
+            custom_widget=self.custom_widgets['search_text'])
+
+    def _getCreatedAfter(self):
+        return form.FormField(
+            Date(__name__='created_after',
+                     title=_("Created after"),
+                     required=False),
+            custom_widget=self.custom_widgets['created_after'])
+
+    def _getCreatedBefore(self):
+        return form.FormField(
+            Date(__name__='created_before',
+                     title=_("Created before"),
+                     required=False),
+            custom_widget=self.custom_widgets['created_before'])
+
+    def _getSubscriptionDateExpiresField(self):
+        widget = self.custom_widgets['subscription_date_expires']
+        return form.FormField(
+            Date(__name__='subscription_date_expires',
+                     title=_("Date subscription expires"),
+                     required=False),
+            custom_widget=widget)
+
+    def _getSubscriptionDateLastModifiedField(self):
+        widget = self.custom_widgets['subscription_date_last_modified']
+        return form.FormField(
+            Date(__name__='subscription_date_last_modified',
+                     title=_("Date subscription modified"),
+                     required=False),
+            custom_widget=widget)
+
+    @action(_('Search'), name='search')
+    def nothing(self, action, data):
+        pass
+
+    def forReviewBatched(self):
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
+        data = {}
+        self._validate(None, data)
+        search_params = {
+            'search_text': data.get('search_text'),
+            'license_reviewed': data.get('license_reviewed', False),
+            'licenses': data.get('licenses'),
+            'active': data.get('active', False),
+            'created_after': data.get('created_after'),
+            'created_before': data.get('created_before'),
+            'subscription_date_expires':
+                data.get('subscription_date_expires'),
+            'subscription_date_last_modified':
+                data.get('subscription_date_last_modified'),
+            }
+        return BatchNavigator(self.context.forReview(**search_params),
+                              self.request)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):

@@ -884,9 +884,31 @@ class ProductSet:
 
         return product
 
-    def forReview(self):
+    def forReview(self, search_text, license_reviewed, licenses,
+                  active, created_after, created_before,
+                  subscription_date_expires,
+                  subscription_date_last_modified):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product.select("reviewed IS FALSE")
+
+        conditions = [
+            Product.q.license_reviewed == license_reviewed,
+            Product.q.active == active,
+            ]
+        if created_after is not None:
+            conditions.append(Product.q.datecreated > created_after)
+        if created_before is not None:
+            conditions.append(Product.q.datecreated < created_before)
+        if subscription_date_expires is not None:
+            conditions.append(CommercialSubscription.q.date_expires
+                              == subscription_date_expires)
+        if subscription_date_last_modified is not None:
+            conditions.append(CommercialSubscription.q.date_last_modified
+                              == subscription_date_last_modified)
+        if licenses is not None:
+            for license in licenses:
+                conditions.append(ProductLicense.q.license == license)
+        result = Product.select(AND(*conditions))
+        return result
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,

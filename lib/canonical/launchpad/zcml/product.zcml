@@ -271,6 +271,10 @@
       template="../templates/product-distros.pt"
       />
     <browser:page
+      name="+listing-for-review"
+      template="../templates/product-listing-for-review.pt"
+      />
+    <browser:page
       name="+listing-detailed"
       template="../templates/product-listing-detailed.pt"
       />
@@ -574,12 +578,12 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProductSet"
-    class="canonical.launchpad.browser.ProductSetView"
+    class="canonical.launchpad.browser.ProductSetReviewLicensesView"
     facet="overview"
     permission="launchpad.Admin">
     <browser:page
-      name="+review"
-      template="../templates/registry-review.pt"
+      name="+review-licenses"
+      template="../templates/products-review-licenses.pt"
       />
   </browser:pages>
 
