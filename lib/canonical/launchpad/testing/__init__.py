@@ -5,6 +5,7 @@ import unittest
 
 from canonical.database.sqlbase import cursor
 import zope.event
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing.factory import *
@@ -57,7 +58,7 @@ class TestCase(unittest.TestCase):
         instance and assert_class have the same semantics as the parameters
         to isinstance.
         """
-        self.assertTrue(isinstance(instance, assert_class),
+        self.assertTrue(zope_isinstance(instance, assert_class),
             '%r is not an instance of %r' % (instance, assert_class))
 
 
