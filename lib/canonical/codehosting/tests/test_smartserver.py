@@ -301,7 +301,7 @@ class TestSessionIntegration(AvatarTestCase):
             os.path.abspath(get_bzr_plugins_path()),
             session.environment['BZR_PLUGIN_PATH'])
         self.assertEqual(
-            '%s@bazaar.launchpad.dev' % self.avatar.lpname,
+            '%s@bazaar.launchpad.dev' % self.avatar.username,
             session.environment['BZR_EMAIL'])
 
         executable, arguments = session.getCommandToRun(

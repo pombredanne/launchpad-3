@@ -149,7 +149,7 @@ def launch_smart_server(avatar):
 
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
-    environment['BZR_EMAIL'] = '%s@%s' % (avatar.lpname, hostname)
+    environment['BZR_EMAIL'] = '%s@%s' % (avatar.username, hostname)
     return RestrictedExecOnlySession(
         avatar,
         reactor,

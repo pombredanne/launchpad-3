@@ -48,6 +48,12 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class LaunchpadAvatar(avatar.ConchUser):
+    """An account on the SSH server, corresponding to a Launchpad person.
+
+    :ivar channelLookup: See `avatar.ConchUser`.
+    :ivar subsystemLookup: See `avatar.ConchUser`.
+    :ivar username: The Launchpad username for this account.
+    """
 
     def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
         # Double-check that we don't get unicode -- directory names on the
@@ -58,15 +64,12 @@ class LaunchpadAvatar(avatar.ConchUser):
         assert type(avatarId) is str
 
         self.avatarId = avatarId
-        self.homeDirsRoot = homeDirsRoot
         self._launchpad = launchpad
-
         self.lpid = userDict['id']
-        self.lpname = userDict['name']
-        self.teams = userDict['teams']
 
-        logging.getLogger('codehosting.ssh').info('%r logged in', self.lpname)
-        self.logger = logging.getLogger('codehosting.sftp.%s' % self.lpname)
+        self.username = userDict['name']
+        logging.getLogger('codehosting.ssh').info(
+            '%r logged in', self.username)
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
