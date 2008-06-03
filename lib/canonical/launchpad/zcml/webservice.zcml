@@ -49,36 +49,10 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        provides="canonical.launchpad.rest.IBugEntry"
-        factory="canonical.launchpad.rest.BugEntry"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMaloneApplication"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.BugCollection"
-        />
-
-    <adapter
         for="canonical.launchpad.interfaces.IBugComment"
         provides="canonical.lazr.interfaces.rest.IEntry"
         factory="canonical.launchpad.rest.bugcomment_to_entry"
         />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
-        provides="canonical.launchpad.rest.IBugTaskEntry"
-        factory="canonical.launchpad.rest.BugTaskEntry"
-        />
-
-     <adapter
-       for="canonical.launchpad.interfaces.IBugTask
-            canonical.lazr.interfaces.rest.WebServiceLayer"
-       provides="canonical.lazr.interfaces.IResourcePOSTOperation"
-       factory="canonical.launchpad.rest.ChangeBugTaskStatusOperation"
-       name="change_status"
-       />
 
    <webservice:register module="canonical.launchpad.interfaces" />
 

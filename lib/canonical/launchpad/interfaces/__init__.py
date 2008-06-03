@@ -8,6 +8,7 @@ __metaclass__ = type
 # file, one file for each interface type: person, project, bug, etc.
 
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes

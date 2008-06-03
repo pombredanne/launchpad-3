@@ -13,10 +13,12 @@ At the top level we provide a collection of bugs.
   >>> bugs['total_size']
   15
   >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
-  >>> sorted(bug_entries[0].items())
+  >>> from pprint import pprint
+  >>> pprint(sorted(bug_entries[0].items()))
   [(u'bugtasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bugtasks'),
    (u'can_expire', False),
+   (u'date_created', u'2004-01-10T19:42:21.890299+00:00'),
    (u'date_last_message', None),
    (u'date_last_updated', u'2007-03-15T20:37:51.603369+00:00'),
    (u'date_made_private', None),
@@ -107,18 +109,20 @@ data in a bug task is derived from the bug.
   >>> len(bug_one_bugtasks)
   3
 
-  >>> sorted(bug_one_bugtasks[0].items())
+  >>> pprint(sorted(bug_one_bugtasks[0].items()))
   [(u'assignee_link', None),
    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
    (u'bug_target_name', u'mozilla-firefox (Debian)'),
-   (u'conjoined_master_link', None),
-   (u'conjoined_slave_link', None),
    (u'date_assigned', u'2005-01-04T11:07:20.584746+00:00'),
    (u'date_closed', None),
    (u'date_confirmed', None),
    (u'date_created', u'2004-01-04T03:49:22.790240+00:00'),
-   (u'date_inprogress', None),
+   (u'date_fix_committed', None),
+   (u'date_fix_released', None),
+   (u'date_in_progress', None),
+   (u'date_left_new', None),
+   (u'date_triaged', None),
    (u'importance', u'Low'),
    (u'is_complete', False),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
@@ -127,10 +131,10 @@ data in a bug task is derived from the bug.
    (u'self_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
-   (u'status_explanation', u''),
-   (u'title', u'Bug #1 in mozilla-firefox (Debian):...')]
+   (u'title',
+    u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"')]
 
-  >>> bugtask_path = urlsplit(bug_one_bugtasks[0]['self_link'])[2]
+  >>> bugtask_path = str(urlsplit(bug_one_bugtasks[0]['self_link'])[2])
   >>> bugtask = webservice.get(bugtask_path).jsonBody()
   >>> bugtask == bug_one_bugtasks[0]
   True
@@ -139,4 +143,30 @@ The collection of bug tasks is not exposed as a resource:
 
   >>> webservice.get("/beta/bugtasks").getStatus()
   404
+
+It's possible to change the task's assignee.
+
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'change_assignee', {}, assignee='http://api.launchpad.dev/beta/~cprov')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  <BLANKLINE>
+  null
+
+  >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
+  http://api.launchpad.dev/beta/~cprov
+
+Let's try modifying the importance of a task.
+
+  >>> body = webservice.get(bugtask_path).jsonBody()
+  >>> body['importance']
+  u'Low'
+  >>> body = {'importance': 'High'}
+  >>> from simplejson import dumps
+  >>> response = webservice.patch(
+  ...     bugtask_path, 'application/json', dumps(body))
+  >>> body = webservice.get(bugtask_path).jsonBody()
+  >>> body['importance']
+  u'High'
 

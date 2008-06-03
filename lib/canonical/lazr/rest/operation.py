@@ -48,6 +48,7 @@ class ResourceOperation:
         # and that will be useful when the operation is invoked.
         missing = object()
         for field in self.params:
+            field = field.bind(self.context)
             name = field.__name__
             if (self.request.get(name, missing) is missing
                 and not field.required):
