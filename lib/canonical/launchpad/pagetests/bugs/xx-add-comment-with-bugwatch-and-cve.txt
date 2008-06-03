@@ -18,15 +18,11 @@ added to the bugwatches resp CVEs related to this bug
   >>> user_browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
-  >>> cve_portlet = find_portlet(user_browser.contents, 'CVE references')
-  >>> added_cve_link = cve_portlet('a',
-  ...     title='This CVEwas automatically created fro...')[0]
-  >>> print added_cve_link['href']
-  /bugs/cve/1991-9911
-  >>> print extract_text(added_cve_link)
-  1991-9911
+  >>> added_cve_link = user_browser.getLink('1991-9911')
+  >>> print added_cve_link
+  <.../bugs/cve/1991-9911'>
 
-  >>> bugwatch_portlet = find_portlet(user_browser.contents, 
+  >>> bugwatch_portlet = find_portlet(user_browser.contents,
   ...    'Remote bug watches')
   >>> added_bugwatch_link = bugwatch_portlet('a')[-1]
   >>> print added_bugwatch_link['href']

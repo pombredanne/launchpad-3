@@ -10,10 +10,7 @@ them.
 
 Let's follow the link and specify some tags:
 
-    >>> user_browser.getLink(text="Edit description").click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
-
+    >>> user_browser.open(user_browser.url + '/+edit')
     >>> tags = user_browser.getControl('Tags')
     >>> tags.value
     ''
@@ -57,10 +54,7 @@ Now the tags will be displayed on the bug page:
 Simply changing the ordering of the bug tags won't cause anything to
 happen.
 
-    >>> user_browser.getLink(text="Edit description").click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
-
+    >>> user_browser.open(user_browser.url + '/+edit')
     >>> tags = user_browser.getControl('Tags')
     >>> tags.value
     'bar foo'
@@ -72,7 +66,7 @@ happen.
 
 Let's delete the tags we added.
 
-    >>> user_browser.getLink(text="Edit description").click()
+    >>> user_browser.open(user_browser.url + '/+edit')
     >>> user_browser.getControl('Tags').value
     'bar foo'
     >>> user_browser.getControl('Tags').value = ''
@@ -93,6 +87,6 @@ to the list of all bugs having that tag in this context.
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-    2 Blackhole Trash folder 
+    2 Blackhole Trash folder
       &mdash; Medium New
 

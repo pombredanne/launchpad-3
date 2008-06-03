@@ -142,7 +142,7 @@ class CveSet:
             cve = self[sequence]
             if cve is None:
                 cve = Cve(sequence=sequence, status=CveStatus.DEPRECATED,
-                    description="This CVEwas automatically created from "
+                    description="This CVE was automatically created from "
                     "a reference found in an email or other text. If you "
                     "are reading this, then this CVE entry is probably "
                     "erroneous, since this text should be replaced by "
