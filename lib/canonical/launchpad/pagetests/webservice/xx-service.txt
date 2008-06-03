@@ -37,7 +37,7 @@ a member of the 'admins' team.
 Now 'no-priv' can no longer make web service requests.
 
   >>> print user_webservice.get("/beta/~launchpad").getOutput()
-  HTTP/1.1 403 Forbidden
+  HTTP/1.1 401 Unauthorized
   ...
   no-priv is not a member of the beta test team.
   ...
@@ -61,7 +61,7 @@ access to the web service will be cut off altogether.
   >>> config.push('test', test_data)
 
   >>> print webservice.get("/beta/~launchpad").getOutput()
-  HTTP/1.1 403 Forbidden
+  HTTP/1.1 401 Unauthorized
   ...
   salgado is not a member of the beta test team.
   ...
