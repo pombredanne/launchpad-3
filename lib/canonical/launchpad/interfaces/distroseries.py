@@ -28,45 +28,42 @@ from canonical.launchpad import _
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
-class DistroSeriesStatus(DBEnumeratedType):
-    """Distribution Release Status
 
-    A DistroSeries (warty, hoary, or grumpy for example) changes state
+# XXX: salgado, 2008-06-02: We should use a more generic term here as this is
+# the vocabulary used in ProductSeries.status as well.
+class DistroSeriesStatus(DBEnumeratedType):
+    """Distro/Product Series Status
+
+    A Distro or Product series (warty, hoary, 1.4 for example) changes state
     throughout its development. This schema describes the level of
-    development of the distroseries. The typical sequence for a
-    distroseries is to progress from experimental to development to
-    frozen to current to supported to obsolete, in a linear fashion.
+    development of the series.
     """
 
     EXPERIMENTAL = DBItem(1, """
         Experimental
 
-        This distroseries contains code that is far from active
-        release planning or management. Typically, distroseriess
-        that are beyond the current "development" release will be
-        marked as "experimental". We create those so that people
-        have a place to upload code which is expected to be part
-        of that distant future release, but which we do not want
-        to interfere with the current development release.
+        This series contains code that is far from active release planning or
+        management.
+
+        In the case of Ubuntu, series that are beyond the current
+        "development" release will be marked as "experimental". We create
+        those so that people have a place to upload code which is expected to
+        be part of that distant future release, but which we do not want to
+        interfere with the current development release.
         """)
 
     DEVELOPMENT = DBItem(2, """
         Active Development
 
-        The distroseries that is under active current development
-        will be tagged as "development". Typically there is only
-        one active development release at a time. When that freezes
-        and releases, the next release along switches from "experimental"
-        to "development".
+        The series that is under active development.
         """)
 
     FROZEN = DBItem(3, """
         Pre-release Freeze
 
-        When a distroseries is near to release the administrators
-        will freeze it, which typically means that new package uploads
-        require significant review before being accepted into the
-        release.
+        When a series is near to release the administrators will freeze it,
+        which typically means all changes require significant review before
+        being accepted.
         """)
 
     CURRENT = DBItem(4, """
@@ -79,16 +76,22 @@ class DistroSeriesStatus(DBEnumeratedType):
     SUPPORTED = DBItem(5, """
         Supported
 
-        This distroseries is still supported, but it is no longer
-        the current stable release. In Ubuntu we normally support
-        a distroseries for 2 years from release.
+        This series is still supported, but it is no longer the current stable
+        release.
         """)
 
     OBSOLETE = DBItem(6, """
         Obsolete
 
-        This distroseries is no longer supported, it is considered
-        obsolete and should not be used on production systems.
+        This series is no longer supported, it is considered obsolete and
+        should not be used on production systems.
+        """)
+
+    FUTURE = DBItem(7, """
+        Future
+
+        This is a future series of this product/distro in which the developers
+        haven't started working yet.
         """)
 
 
