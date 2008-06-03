@@ -1,4 +1,4 @@
-= Email Address =
+= Email Addresses =
 
 In Launchpad we use email addresses to uniquely identify a person. This is why
 email addresses must be unique.
@@ -33,3 +33,14 @@ Registering a new email address works -- and preserves case -- though:
     >>> emailaddress = emailset.new('oink@Canonical.com', foobar)
     >>> emailaddress.email
     u'oink@Canonical.com'
+
+There's a convenience method on IEmailAddressSet to pull preferred email
+addresses for a set of people:
+
+    >>> guadamen = personset.getByName('guadamen')
+    >>> [emailaddress.email for emailaddress in
+    ...  emailset.getPreferredEmailForPeople(guadamen.allmembers)]
+    [u'colin.watson@ubuntulinux.com',
+     u'foo.bar@canonical.com',
+     u'support@ubuntu.com']
+

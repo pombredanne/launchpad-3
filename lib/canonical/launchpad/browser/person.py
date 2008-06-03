@@ -80,6 +80,7 @@ __all__ = [
     ]
 
 import cgi
+import sha
 import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
@@ -99,6 +100,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
+from canonical.lazr import decorates
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -1402,6 +1404,30 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
+class PersonWithGPGKeysAndPreferredEmail:
+    """A decorated person that includes GPG keys and preferred emails."""
+
+    # These need to be predeclared to avoid decorates taking them over.
+    # Would be nice if there was a way of allowing writes to just work
+    # (i.e. no proxying of __set__).
+    gpgkeys = None
+    preferredemail = None
+    preferredemail_sha1 = None
+    decorates(IPerson, 'person')
+
+    def __init__(self, person):
+        self.person = person
+        self.gpgkeys = []
+
+    def addKey(self, key):
+        self.gpgkeys.append(key)
+
+    def setPreferredEmail(self, email):
+        self.preferredemail = email
+        self.preferredemail_sha1 = sha.new(
+            'mailto:' + email.email).hexdigest().upper()
+
+
 class PersonRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
 
@@ -1411,6 +1437,21 @@ class PersonRdfView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    def buildMemberData(self):
+        members = []
+        members_by_id = {}
+        for member in self.context.allmembers:
+            member = PersonWithGPGKeysAndPreferredEmail(member)
+            members.append(member)
+            members_by_id[member.id] = member
+        gpgkeyset = getUtility(IGPGKeySet)
+        emailset = getUtility(IEmailAddressSet)
+        for key in gpgkeyset.getGPGKeysForPeople(members):
+            members_by_id[key.ownerID].addKey(key)
+        for email in emailset.getPreferredEmailForPeople(members):
+            members_by_id[email.personID].setPreferredEmail(email)
+        return members
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.

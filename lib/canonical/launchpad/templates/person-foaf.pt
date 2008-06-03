@@ -41,7 +41,7 @@
                   tal:attributes="rdf:resource context/logo/http_url" />
         <foaf:img tal:condition="context/mugshot"
                   tal:attributes="rdf:resource context/mugshot/http_url" />
-        <foaf:member tal:repeat="person context/allmembers">
+        <foaf:member tal:repeat="person view/buildMemberData">
           <metal:display-person use-macro="template/macros/display_person" />
         </foaf:member>
     </foaf:Group>

@@ -8,7 +8,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from canonical.database.sqlbase import quote, SQLBase
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.mailinglist import MailingListSubscription
@@ -39,16 +39,24 @@ class EmailAddressSet:
     implements(IEmailAddressSet)
 
     def getByPerson(self, person):
-        """See IEmailAddressSet."""
+        """See `IEmailAddressSet`."""
         return EmailAddress.selectBy(person=person, orderBy='email')
 
+    def getPreferredEmailForPeople(self, people):
+        """See `IEmailAddressSet`."""
+        return EmailAddress.select("""
+            EmailAddress.status = %s AND
+            EmailAddress.person IN %s
+            """ % sqlvalues(EmailAddressStatus.PREFERRED,
+                            [person.id for person in people]))
+
     def getByEmail(self, email):
-        """See IEmailAddressSet."""
+        """See `IEmailAddressSet`."""
         return EmailAddress.selectOne(
             "lower(email) = %s" % quote(email.strip().lower()))
 
     def new(self, email, person, status=EmailAddressStatus.NEW):
-        """See IEmailAddressSet."""
+        """See `IEmailAddressSet`."""
         email = email.strip()
         if self.getByEmail(email) is not None:
             raise EmailAddressAlreadyTaken(

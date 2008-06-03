@@ -114,6 +114,9 @@ class IEmailAddressSet(Interface):
     def getByPerson(person):
         """Return all email addresses for the given person."""
 
+    def getPreferredEmailForPeople(self, people):
+        """Return preferred email addresses for the people provided."""
+
     def getByEmail(email):
         """Return the EmailAddress object for the given email.
 
