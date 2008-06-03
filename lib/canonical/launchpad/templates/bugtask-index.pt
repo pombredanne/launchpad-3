@@ -26,23 +26,25 @@
     </metal:portlets>
 
     <div metal:fill-slot="main">
-      <div style="float: right; width: 45%; text-align: right">
-        <tal:activitylog
-            define="link context/menu:context/activitylog"
-            condition="link/enabled"
-            replace="structure link/render" />
-        &mdash;
-        reported
-        <span
-            tal:attributes="title context/bug/datecreated/fmt:datetime"
-            tal:content="context/bug/datecreated/fmt:displaydate" />
-        by <tal:reporter replace="structure context/bug/owner/fmt:link" />
-      </div>
-      <div style="float: left; width: 45%;">
-        <tal:icon replace="structure context/image:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
-        condition="context/bug/name">
-        (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>
+      <div style="clear: both">
+        <div style="float: right; width: 65%; text-align: right">
+          <tal:activitylog
+              define="link context/menu:context/activitylog"
+              condition="link/enabled"
+              replace="structure link/render" />
+          &mdash;
+          reported
+          <span
+              tal:attributes="title context/bug/datecreated/fmt:datetime"
+              tal:content="context/bug/datecreated/fmt:displaydate" />
+          by <tal:reporter replace="structure context/bug/owner/fmt:link" />
+        </div>
+        <div style="float: left; width: 25%;">
+          <tal:icon replace="structure context/image:icon" />
+          Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
+          condition="context/bug/name">
+          (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>
+        </div>
       </div>
       <h1 style="clear: left;">
         <tal:summary replace="context/bug/title" />
