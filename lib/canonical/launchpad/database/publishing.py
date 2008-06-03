@@ -135,7 +135,7 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     @property
     def publishing_record(self):
         """See `IFilePublishing`."""
-        return self.sourcepackagepublishing
+        return self.sourcepackagepublishing.secure_record
 
     @property
     def file_type_name(self):
@@ -204,7 +204,7 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
     @property
     def publishing_record(self):
         """See `ArchiveFilePublisherBase`."""
-        return self.binarypackagepublishing
+        return self.binarypackagepublishing.secure_record
 
 
 class ArchiveSafePublisherBase:
