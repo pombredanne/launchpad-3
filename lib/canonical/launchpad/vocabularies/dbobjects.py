@@ -1377,12 +1377,12 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     def toTerm(self, project):
         """Return the term for this object."""
-        if project.commercial_subscription is not None:
+        if project.commercial_subscription is None:
+            sub_status = "(unsubscribed)"
+        else:
             date_formatter = DateTimeFormatterAPI(
                 project.commercial_subscription.date_expires)
             sub_status = "(expires %s)" % date_formatter.displaydate()
-        else:
-            sub_status = "(unsubscribed)"
         return SimpleTerm(project,
                           project.name,
                           sub_status)

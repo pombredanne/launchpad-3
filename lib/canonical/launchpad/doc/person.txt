@@ -928,8 +928,10 @@ projects ordered by displayname.
     ...     print project.displayname
     Tomcat
 
-    >>> for project in ddaa.getOwnedProjects():
-    ...     print project.displayname
+David does not own any projects.
+
+    >>> list(ddaa.getOwnedProjects())
+    []
 
 The results returned can be filtered by providing a token to refine
 the search.
@@ -939,8 +941,10 @@ the search.
     Gnome Applets
     gnomebaker
 
-    >>> for project in sabdfl.getOwnedProjects(match_name='nosuchthing'):
-    ...     print project.displayname
+Searching for a non-existent project returns no matches.
+
+    >>> list(sabdfl.getOwnedProjects(match_name='nosuchthing'))
+    []
 
 == Translations ==
 
