@@ -22,9 +22,6 @@ from twisted.internet.protocol import connectionDone
 
 from twisted.python import components, failure
 
-from twisted.vfs.pathutils import FileSystem
-
-from canonical.codehosting.bazaarfs import SFTPServerRoot
 from canonical.codehosting import sftp
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.config import config
@@ -148,9 +145,6 @@ class LaunchpadAvatar(avatar.ConchUser):
             kw = len(i)>2 and i[2] or {}
             r = func(*args, **kw)
         return r
-
-    def makeFileSystem(self):
-        return FileSystem(SFTPServerRoot(self))
 
 
 components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
