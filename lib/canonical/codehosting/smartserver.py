@@ -110,8 +110,8 @@ class RestrictedExecOnlySession(ExecOnlySession):
         :param reactor: See `ExecOnlySession`.
         :param allowed_command: The sole command that can be executed.
         :param executed_command_template: A Python format string for the actual
-            command that will be run. '%(avatarId)s' will be replaced with the
-            current avatar's id (generally a username).
+            command that will be run. '%(username)s' will be replaced with the
+            'username' attribute of the current avatar.
         """
         ExecOnlySession.__init__(self, avatar, reactor, environment)
         self.allowed_command = allowed_command
@@ -134,7 +134,7 @@ class RestrictedExecOnlySession(ExecOnlySession):
             raise ForbiddenCommand("Not allowed to execute %r." % (command,))
         return ExecOnlySession.getCommandToRun(
             self, self.executed_command_template
-            % {'avatarId': self.avatar.avatarId})
+            % {'username': self.avatar.username})
 
 
 def launch_smart_server(avatar):
@@ -154,5 +154,5 @@ def launch_smart_server(avatar):
         avatar,
         reactor,
         'bzr serve --inet --directory=/ --allow-writes',
-        command + ' %(avatarId)s',
+        command + ' %(username)s',
         environment=environment)

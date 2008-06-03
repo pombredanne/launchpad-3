@@ -54,6 +54,7 @@ class LaunchpadAvatar(avatar.ConchUser):
         must implement `IUserDetailsStorageV2` and `IHostedBranchStorage`.
     :ivar channelLookup: See `avatar.ConchUser`.
     :ivar subsystemLookup: See `avatar.ConchUser`.
+    :ivar user_id: The Launchpad database ID of the Person for this account.
     :ivar username: The Launchpad username for this account.
     """
 
@@ -64,10 +65,8 @@ class LaunchpadAvatar(avatar.ConchUser):
         # make sure).
         assert type(avatarId) is str
 
-        self.avatarId = avatarId
         self.authserver = authserver
-        self.lpid = userDict['id']
-
+        self.user_id = userDict['id']
         self.username = userDict['name']
         logging.getLogger('codehosting.ssh').info(
             '%r logged in', self.username)
