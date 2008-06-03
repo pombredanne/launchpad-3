@@ -1,7 +1,2 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
-
-Unit tests:
-* for "can execute bzr serve" command
-* for "cannot execute anything else"
-* for "can get sftp"

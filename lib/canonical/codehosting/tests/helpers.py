@@ -10,7 +10,6 @@ __all__ = [
     'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
-import shutil
 import threading
 import unittest
 
