@@ -931,8 +931,23 @@ projects ordered by displayname.
     ...     print project.displayname
     Tomcat
 
-    >>> for project in ddaa.getOwnedProjects():
+David does not own any projects.
+
+    >>> list(ddaa.getOwnedProjects())
+    []
+
+The results returned can be filtered by providing a token to refine
+the search.
+
+    >>> for project in sabdfl.getOwnedProjects(match_name='gnome'):
     ...     print project.displayname
+    Gnome Applets
+    gnomebaker
+
+Searching for a non-existent project returns no matches.
+
+    >>> list(sabdfl.getOwnedProjects(match_name='nosuchthing'))
+    []
 
 == Translations ==
 
