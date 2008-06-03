@@ -58,13 +58,8 @@ class LaunchpadAvatar(avatar.ConchUser):
     :ivar username: The Launchpad username for this account.
     """
 
-    def __init__(self, avatarId, homeDirsRoot, userDict, authserver):
-        # Double-check that we don't get unicode. We don't want any tricky
-        # login names turning into a security problem. (I'm reasonably sure
-        # twisted.cred guarantees this will be str, but in the meantime let's
-        # make sure).
-        assert type(avatarId) is str
-
+    def __init__(self, userDict, authserver):
+        avatar.ConchUser.__init__(self)
         self.authserver = authserver
         self.user_id = userDict['id']
         self.username = userDict['name']
@@ -93,31 +88,16 @@ class Realm:
 
     avatarFactory = LaunchpadAvatar
 
-    def __init__(self, homeDirsRoot, authserver):
-        self.homeDirsRoot = homeDirsRoot
+    def __init__(self, authserver):
         self.authserver = authserver
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
         deferred = self.authserver.getUser(avatarId)
 
-        # Then fetch more details: the branches owned by this user (and the
-        # teams they are a member of).
-        def getInitialBranches(userDict):
-            # XXX: Andrew Bennetts 2005-12-13: This makes many XML-RPC
-            #      requests where a better API could require only one
-            #      (or include it in the team dict in the first place).
-            deferred = self.authserver.getBranchesForUser(userDict['id'])
-            def _gotBranches(branches):
-                userDict['initialBranches'] = branches
-                return userDict
-            return deferred.addCallback(_gotBranches)
-        deferred.addCallback(getInitialBranches)
-
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = self.avatarFactory(avatarId, self.homeDirsRoot, userDict,
-                                        self.authserver.proxy)
+            avatar = self.avatarFactory(userDict, self.authserver.proxy)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 

@@ -418,18 +418,16 @@ class _TestSSHService(SSHService):
         realm.avatarFactory = self.makeAvatar
         return realm
 
-    def makeAvatar(self, avatarId, homeDirsRoot, userDict, launchpad):
-        self.avatar = _TestLaunchpadAvatar(self, avatarId, homeDirsRoot,
-                                           userDict, launchpad)
+    def makeAvatar(self, userDict, launchpad):
+        self.avatar = _TestLaunchpadAvatar(self, userDict, launchpad)
         return self.avatar
 
 
 class _TestLaunchpadAvatar(LaunchpadAvatar):
     """SSH avatar that uses the _TestBazaarFileTransferServer."""
 
-    def __init__(self, service, avatarId, homeDirsRoot, userDict, launchpad):
-        LaunchpadAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
-                                 launchpad)
+    def __init__(self, service, userDict, launchpad):
+        LaunchpadAvatar.__init__(self, userDict, launchpad)
         self.service = service
         self.subsystemLookup = {'sftp': self.makeFileTransferServer}
 

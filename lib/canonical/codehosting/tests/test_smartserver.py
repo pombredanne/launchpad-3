@@ -70,8 +70,7 @@ class TestExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = smartserver.ExecOnlySession(self.avatar, self.reactor)
 
@@ -220,8 +219,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = smartserver.RestrictedExecOnlySession(
             self.avatar, self.reactor, 'foo', 'bar baz %(username)s')
@@ -285,8 +283,7 @@ class TestSessionIntegration(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
         # When Conch tries to adapt the supermirror avatar to ISession, it
