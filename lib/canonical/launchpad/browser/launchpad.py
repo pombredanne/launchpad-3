@@ -192,7 +192,7 @@ class NavigationMenuTabs(LaunchpadView):
             # There are no menu entries.
             self.links = []
             return
-
+        self.title = menu.title
         # We are only interested on enabled links in non development mode.
         menu.request = self.request
         self.links = sorted([

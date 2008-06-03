@@ -36,6 +36,8 @@ from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr import EnumeratedType, Item
 
+from canonical.widgets.bugtask import (
+    BugTaskAlsoAffectsSourcePackageNameWidget)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
 
@@ -425,6 +427,9 @@ class BugTaskCreationStep(AlsoAffectsStep):
 class DistroBugTaskCreationStep(BugTaskCreationStep):
     """Specialized BugTaskCreationStep for reporting a bug in a distribution.
     """
+
+    custom_widget(
+        'sourcepackagename', BugTaskAlsoAffectsSourcePackageNameWidget)
 
     template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
 

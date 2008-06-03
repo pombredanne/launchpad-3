@@ -1,11 +1,12 @@
 = Downloadable Files =
 
-Launchpad can show you a product's downloadable files, by series, with links to each.
+Launchpad can show you a product's downloadable files, by series, with
+links to each.
 
 Look at a project with no releases and ensure the download page does
 not show any files.
 
-    >>> anon_browser.open('http://launchpad.dev/aptoncd/')
+    >>> anon_browser.open('http://launchpad.dev/aptoncd')
     >>> anon_browser.getLink('Download project files').click()
     >>> anon_browser.url
     'http://launchpad.dev/aptoncd/+download'
@@ -17,10 +18,10 @@ not show any files.
     >>> print para.string.strip()
     No download files exist for this project.
 
-Look at a project with a release but no download files.  Ensure the download
-page does not show any files.
+Look at a project with a release but no download files.  Ensure the
+download page does not show any files.
 
-    >>> anon_browser.open('http://launchpad.dev/thunderbird/')
+    >>> anon_browser.open('http://launchpad.dev/thunderbird')
     >>> anon_browser.getLink('Download project files').click()
     >>> anon_browser.url
     'http://launchpad.dev/thunderbird/+download'
@@ -79,7 +80,7 @@ A project owner should not see the delete button when there are no files.
 
     >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
-    >>> tbird_owner.open('http://launchpad.dev/thunderbird/')
+    >>> tbird_owner.open('http://launchpad.dev/thunderbird')
     >>> tbird_owner.getLink('Download project files').click()
     >>> tbird_owner.title
     'Mozilla Thunderbird project files'
@@ -146,7 +147,8 @@ series should not show up in the list.
     Add download file for release:
     1.0.0
 
-If a release is added to the new series the series will appear in the list.
+If a release is added to the new series the series will appear in
+the list.
 
     >>> # Add a release to the empty series.
     >>> firefox_owner.open('http://launchpad.dev/firefox')
@@ -198,7 +200,7 @@ To add a download file the release version link is used.
 Ensure a non-owner doesn't see the 'Add download file' link after
 navigating to the product release page.
 
-    >>> non_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+    >>> non_owner.open('http://launchpad.dev/firefox/1.0/1.0.0')
     >>> non_owner.getLink('Add download file')
     Traceback (most recent call last):
     ...
@@ -206,7 +208,7 @@ navigating to the product release page.
 
 To add a download file the +adddownloadfile page is accessed.
 
-    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0')
     >>> firefox_owner.getLink('Add download file').click()
 
 The maximum size of the upload file is shown on the page.
@@ -227,8 +229,8 @@ Uploading file signatures is optional, so we'll just try it this once.
     >>> firefox_owner.getControl(name='field.signature').add_file(
     ...    foo_signature, 'text/plain', 'foo.txt.asc')
     >>> firefox_owner.getControl('Description').value="Foo installer"
-    >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
-    ...    ["Installer file"]
+    >>> firefox_owner.getControl(
+    ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo.txt' has been uploaded."]
@@ -247,7 +249,7 @@ the md5 digest of the file, and the signature that we uploaded.
 
 Try to add a file with no description.
 
-    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0')
     >>> firefox_owner.getLink('Add download file').click()
 
 Create a file to upload.
@@ -255,8 +257,8 @@ Create a file to upload.
     >>> foo_file = StringIO('Foo installer package...')
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
     ...    'text/plain', 'foo.txt')
-    >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
-    ...    ["Installer file"]
+    >>> firefox_owner.getControl(
+    ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> for msg in get_feedback_messages(firefox_owner.contents):
     ...     print msg
@@ -265,7 +267,7 @@ Create a file to upload.
 
 Try to add a file that is empty.
 
-    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0')
     >>> firefox_owner.getLink('Add download file').click()
 
 Create a file to upload.
@@ -274,8 +276,8 @@ Create a file to upload.
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
     ...    'text/plain', 'foo.txt')
     >>> firefox_owner.getControl('Description').value="Foo installer"
-    >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
-    ...    ["Installer file"]
+    >>> firefox_owner.getControl(
+    ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> for msg in get_feedback_messages(firefox_owner.contents):
     ...     print msg
@@ -284,26 +286,26 @@ Create a file to upload.
 
 Now let's successfully upload two more files.
 
-    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0')
     >>> firefox_owner.getLink('Add download file').click()
     >>> foo_file = StringIO('Foo2 installer package...')
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
     ...    'text/plain', 'foo2.txt')
     >>> firefox_owner.getControl('Description').value="Foo2 installer"
-    >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
-    ...    ["Installer file"]
+    >>> firefox_owner.getControl(
+    ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo2.txt' has been uploaded."]
 
-    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0')
     >>> firefox_owner.getLink('Add download file').click()
     >>> foo_file = StringIO('Foo installer package...')
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
     ...    'text/plain', 'foo3.txt')
     >>> firefox_owner.getControl('Description').value="Foo3 installer"
-    >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
-    ...    ["Installer file"]
+    >>> firefox_owner.getControl(
+    ...     name="field.contenttype").displayValue = ["Installer file"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo3.txt' has been uploaded."]
@@ -316,8 +318,8 @@ Add a file to a different release on the same project.
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
     ...    'text/plain', 'foo09.txt')
     >>> firefox_owner.getControl('Description').value="Foo09 installer"
-    >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
-    ...    ["README File"]
+    >>> firefox_owner.getControl(
+    ...     name="field.contenttype").displayValue = ["README File"]
     >>> firefox_owner.getControl("Upload").click()
     >>> get_feedback_messages(firefox_owner.contents)
     [u"Your file 'foo09.txt' has been uploaded."]
@@ -455,7 +457,8 @@ which has downloadable files, only the 3.0 release files will be shown.
 If there are no releases that have download files then the portlet
 is not displayed.
 
-The latest release for "ALSA-utils" with download files is version 1.0.9a.
+The latest release for "ALSA-utils" with download files is
+version 1.0.9a.
 
     >>> anon_browser.open('http://launchpad.dev/alsa-utils')
     >>> downloads = find_tag_by_id(anon_browser.contents,
@@ -504,11 +507,13 @@ then the files for the next release will be shown.
       alsa-1.0.8.exe (md5...)...
     &raquo; See all downloads&#8230;...
 
-A product with no download files will not even have the portlet displayed.
+A product with no download files will not even have the portlet
+displayed.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
     >>> main = find_main_content(anon_browser.contents)
-    >>> 'Latest downloads' in extract_text(main).encode('ascii', 'backslashreplace')
+    >>> 'Latest downloads' in extract_text(main).encode(
+    ...     'ascii', 'backslashreplace')
     False
 
 == Scheme redirection ==

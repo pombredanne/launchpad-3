@@ -336,6 +336,7 @@ class TracLPPlugin(Trac):
         server = xmlrpclib.ServerProxy(
             endpoint, transport=self.xmlrpc_transport)
         time_zone, local_time, utc_time = server.launchpad.time_snapshot()
+
         # Return the UTC time, so we don't have to care about the time
         # zone for now.
         trac_time = datetime.utcfromtimestamp(utc_time)

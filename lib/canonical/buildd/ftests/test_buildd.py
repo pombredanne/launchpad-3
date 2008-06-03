@@ -1,6 +1,6 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-"""Build log sanitization (removal of passwords from buildlog URLs) tests."""
+"""Buildd tests."""
 
 __metaclass__ = type
 __all__ = ['BuildlogSecurityTests']
@@ -9,6 +9,7 @@ import difflib
 import os
 import shutil
 import tempfile
+import urllib2
 import unittest
 
 from ConfigParser import SafeConfigParser
@@ -31,7 +32,7 @@ class MockBuildManager(object):
 
 
 class BuildlogSecurityTests(unittest.TestCase):
-    """Unit tests for scrubbing (removal of passwords) of buildlog files."""
+    """Unit tests for the buildd slave."""
 
     def setUp(self):
         self.here = os.path.abspath(os.path.dirname(__file__))
@@ -45,6 +46,23 @@ class BuildlogSecurityTests(unittest.TestCase):
     def tearDown(self):
         if os.path.isdir(self.cache_path):
             shutil.rmtree(self.cache_path)
+
+    def testBasicAuth(self):
+        """Test that the auth handler is installed with the right details."""
+        url = "http://fakeurl/"
+        user = "myuser"
+        password = "fakepassword"
+
+        opener = self.slave.setupAuthHandler(url, user, password)
+
+        # Inspect the opener.
+        for handler in opener.handlers:
+            if isinstance(handler, urllib2.HTTPBasicAuthHandler):
+                break
+        password_mgr = handler.passwd
+        stored_user, stored_pass = password_mgr.find_user_password(None, url)
+        self.assertEqual(user, stored_user)
+        self.assertEqual(password, stored_pass)
 
     def testBuildlogScrubbing(self):
         """Tests the buildlog scrubbing (removal of passwords from URLs)."""

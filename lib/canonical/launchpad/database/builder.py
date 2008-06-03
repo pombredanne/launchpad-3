@@ -30,6 +30,7 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.database.publishing import makePoolPath
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
@@ -106,16 +107,40 @@ class Builder(SQLBase):
     active = BoolCol(dbName='active', default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
-        """See IBuilder."""
+        """See `IBuilder`."""
         url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
+        self._sendFileToSlave(url, libraryfilealias.content.sha1)
+
+    def cachePrivateSourceOnSlave(self, logger, build_queue_item):
+        """See `IBuilder`."""
+        # The URL to the file in the archive consists of these parts:
+        # archive_url / makePoolPath() / filename
+        # Once this is constructed we add the http basic auth info.
+        build = build_queue_item.build
+        archive = build.archive
+        archive_url = archive.archive_url
+        component_name = build.current_component.name
+        for source_file in build_queue_item.files:
+            file_name = source_file.libraryfile.filename
+            sha1 = source_file.libraryfile.content.sha1
+            source_name = build.sourcepackagerelease.sourcepackagename.name
+            poolpath = makePoolPath(source_name, component_name)
+            url = urlappend(archive_url, poolpath)
+            url = urlappend(url, file_name)
+            logger.debug("Asking builder on %s to ensure it has file %s "
+                         "(%s, %s)" % (self.url, file_name, url, sha1))
+            self._sendFileToSlave(url, sha1, "buildd", archive.buildd_secret)
+
+    def _sendFileToSlave(self, url, sha1, username="", password=""):
+        """Helper to send the file at 'url' with 'sha1' to this builder."""
         if not self.builderok:
             raise BuildDaemonError("Attempted to give a file to a known-bad"
                                    " builder")
         present, info = self.slave.ensurepresent(
-            libraryfilealias.content.sha1, url)
+            sha1, url, username, password)
         if not present:
             message = """Slave '%s' (%s) was unable to fetch file.
             ****** URL ********
@@ -366,10 +391,18 @@ class Builder(SQLBase):
 
         # Build filemap structure with the files required in this build
         # and send them to the slave.
+        # If the build is private we tell the slave to get the files from the
+        # archive instead of the librarian because the slaves cannot
+        # access the restricted librarian.
+        private = build_queue_item.build.archive.private
+        if private:
+            self.cachePrivateSourceOnSlave(logger, build_queue_item)
         filemap = {}
-        for f in build_queue_item.files:
-            filemap[f.libraryfile.filename] = f.libraryfile.content.sha1
-            self.cacheFileOnSlave(logger, f.libraryfile)
+        for source_file in build_queue_item.files:
+            lfa = source_file.libraryfile
+            filemap[lfa.filename] = lfa.content.sha1
+            if not private:
+                self.cacheFileOnSlave(logger, source_file.libraryfile)
 
         chroot_sha1 = chroot.content.sha1
         try:
@@ -442,22 +475,21 @@ class Builder(SQLBase):
     @property
     def status(self):
         """See IBuilder"""
-        if self.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
         if not self.builderok:
-            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
+            if self.failnotes is not None:
+                return self.failnotes
+            return 'Disabled'
+        # Cache the 'currentjob', so we don't have to hit the database
+        # more than once.
+        currentjob = self.currentjob
+        if currentjob is None:
+            return 'Idle'
 
-        if self.currentjob:
-            current_build = self.currentjob.build
-            msg = 'BUILDING %s' % current_build.title
-            if current_build.archive.purpose == ArchivePurpose.PPA:
-                archive_name = current_build.archive.owner.name
-                return '%s [%s] (%s)' % (msg, archive_name, mode)
-            return '%s (%s)' % (msg, mode)
-        return 'IDLE (%s)' % mode
+        msg = 'Building %s' % currentjob.build.title
+        if currentjob.build.archive.purpose != ArchivePurpose.PPA:
+            return msg
+
+        return '%s [%s]' % (msg, currentjob.build.archive.owner.name)
 
     def failbuilder(self, reason):
         """See IBuilder"""
@@ -556,14 +588,33 @@ class Builder(SQLBase):
         processorfamily with the highest lastscore or None if there
         is no one available.
         """
+        # If a private build does not yet have its source published then
+        # we temporarily skip it because we want to wait for the publisher
+        # to place the source in the archive, which is where builders
+        # download the source from in the case of private builds (because
+        # it's a secure location).
         clauses = ["""
+            ((archive.private IS TRUE AND
+              EXISTS (
+                  SELECT SourcePackagePublishingHistory.id
+                  FROM SourcePackagePublishingHistory
+                  WHERE
+                      SourcePackagePublishingHistory.distroseries =
+                         DistroArchSeries.distroseries AND
+                      SourcePackagePublishingHistory.sourcepackagerelease =
+                         Build.sourcepackagerelease AND
+                      SourcePackagePublishingHistory.archive = Archive.id AND
+                      SourcePackagePublishingHistory.status = %s))
+              OR
+              archive.private IS FALSE) AND
             buildqueue.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
-        """ % sqlvalues(BuildStatus.NEEDSBUILD, self.processor.family)]
+        """ % sqlvalues(PackagePublishingStatus.PUBLISHED,
+                        BuildStatus.NEEDSBUILD, self.processor.family)]
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
@@ -600,21 +651,31 @@ class Builder(SQLBase):
         # and the latter could not be built in DAK.
         while candidate is not None:
             if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+                # We never build anything in the security pocket.
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
                 candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
-            elif candidate.is_last_version:
-                return candidate
-            else:
+                candidate.destroySelf()
+                candidate = self._findBuildCandidate()
+                continue
+
+            publication = candidate.build.getCurrentPublication()
+
+            if publication is None:
+                # The build should be superseded if it no longer has a
+                # current publishing record.
                 logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
                 candidate.build.buildstate = BuildStatus.SUPERSEDED
-            candidate.destroySelf()
-            candidate = self._findBuildCandidate()
+                candidate.destroySelf()
+                candidate = self._findBuildCandidate()
+                continue
 
-        # No candidate was found
+            return candidate
+
+        # No candidate was found.
         return None
 
     def dispatchBuildCandidate(self, candidate):
