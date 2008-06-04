@@ -122,9 +122,12 @@ def wait_for_service(timeout=10.0):
             try:
                 sock.connect((host, port))
             except socket.error, err:
-                elapsed = (time.time() - start)
-                if elapsed > timeout:
-                    raise RuntimeError("Socket poll time exceeded.")
+                if err.args[0] == errno.ECONNREFUSED:
+                    elapsed = (time.time() - start)
+                    if elapsed > timeout:
+                        raise RuntimeError("Socket poll time exceeded.")
+                else:
+                    raise
             else:
                 break
     finally:
