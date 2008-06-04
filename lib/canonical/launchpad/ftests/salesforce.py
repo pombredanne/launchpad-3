@@ -83,8 +83,25 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
                 return voucher
         return None
 
+    def createResponse(self, status, results=None, errors=None):
+        """Create the correct response dictionary
+
+        The 'success' key must always be present and a Boolean.
+        """
+        response = dict(success=status,
+                        results=results,
+                        errors=errors)
+        return [response]
+
     def getServerStatus(self):
-        return "Server is running normally"
+        """Get the server status.  If it responds it is healthy.
+
+        Included here for completeness though it is never called by
+        Launchpad.
+        """
+        return self.createResponse(status=True,
+                                   results="Server is running normally"
+                                   )
 
     def getUnredeemedVouchers(self, lp_openid):
         """Return the list of unredeemed vouchers for a given id.
@@ -95,7 +112,7 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         vouchers = [voucher.asDict() for voucher in self.vouchers
                     if (voucher.owner == lp_openid and
                         voucher.status == 'UNREDEEMED')]
-        return vouchers
+        return self.createResponse(status=True, results=vouchers)
 
     def getAllVouchers(self, lp_openid):
         """Return the complete list of vouchers for a given id.
@@ -105,7 +122,7 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         """
         vouchers = [voucher.asDict() for voucher in self.vouchers
                     if voucher.owner == lp_openid]
-        return vouchers
+        return self.createResponse(status=True, results=vouchers)
 
     def getVoucher(self, voucher_id):
         """Return the voucher."""
@@ -113,7 +130,7 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         voucher = self._findVoucher(voucher_id)
         if voucher is not None:
             voucher = voucher.asDict()
-        return [voucher]
+        return self.createResponse(status=True, results=voucher)
 
     def redeemVoucher(self, voucher_id, lp_openid,
                       lp_project_id, lp_project_name):
@@ -128,19 +145,29 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         :return: Boolean representing the success or failure of the operation.
         """
         voucher = self._findVoucher(voucher_id)
-        if (voucher is None or
-            voucher.status != 'UNREDEEMED' or
-            voucher.owner != lp_openid):
-            return [False]
-        voucher.status = 'REDEEMED'
-        voucher.project_id = lp_project_id
-        voucher.project_name = lp_project_name
-        product = voucher.id.split('-')[0]
-        term = PRODUCT_TERM_MAP.get(product)
-        if term is None:
-            return [False]
+        errors = []
+        status = True
+
+        if voucher is None:
+            errors.append('ERROR: No such voucher %s' % voucher_id)
+            status = False
         else:
-            return [True]
+            if voucher.status != 'UNREDEEMED':
+                errors.append('ERROR: Voucher %s is already redeemed' % voucher_id)
+                status = False
+
+            if voucher.owner != lp_openid:
+                errors.append("Voucher is not owned by named user")
+                status = False
+
+        if status:
+            voucher.status = 'REDEEMED'
+            voucher.project_id = lp_project_id
+            voucher.project_name = lp_project_name
+            product = voucher.id.split('-')[0]
+            status = True
+
+        return self.createResponse(status=status, errors=errors)
 
     def updateProjectName(self, lp_project_id, lp_project_name):
         """Set the project name for the given project id."""
@@ -149,7 +176,18 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
             if voucher.project_id == lp_project_id:
                 voucher.project_name = lp_project_name
                 num_updated += 1
-        return [num_updated]
+        if num_updated == 0:
+            status = False
+            results = None
+            errors = ['ERROR: No vouchers matching product id %s' % lp_project_id]
+        else:
+            status = True
+            results = num_updated
+            errors = []
+
+        return self.createResponse(status=status,
+                                   results=results,
+                                   errors=errors)
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.

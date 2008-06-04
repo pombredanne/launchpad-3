@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = ['SalesforceVoucherProxy',
+           'SalesforceVoucherProxyException',
            'Voucher']
 
 
@@ -15,6 +16,15 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IProductSet, ISalesforceVoucherProxy)
+
+
+class SalesforceVoucherProxyException(Exception):
+    """Exception raised on failed call to the SalesforceVoucherProxy."""
+    def __init__(self, errors):
+        self.message = ", ".join(errors)
+
+    def __str__(self):
+        return repr(self.message)
 
 
 class Voucher:
@@ -66,40 +76,55 @@ class SalesforceVoucherProxy:
         # This is not a cachedproperty as each use needs a new proxy.
         return xmlrpclib.ServerProxy(self.url,
                                      transport=self.xmlrpc_transport)
+
+    def parseResponse(self, response):
+        success = response.get('success')
+        results = response.get('results', [])
+        errors = response.get('errors', [])
+        if not success:
+            raise SalesforceVoucherProxyException, errors
+        return results
+
     def getUnredeemedVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
         server = self.server_proxy
-        vouchers = server.getUnredeemedVouchers(user.openid_identifier)
-        return [Voucher(voucher) for voucher in vouchers]
+        response = server.getUnredeemedVouchers(user.openid_identifier)
+        results = self.parseResponse(response)
+        return [Voucher(voucher) for voucher in results]
 
     def getAllVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
         server = self.server_proxy
-        vouchers = server.getAllVouchers(user.openid_identifier)
-        return [Voucher(voucher) for voucher in vouchers]
+        response = server.getAllVouchers(user.openid_identifier)
+        results = self.parseResponse(response)
+        return [Voucher(voucher) for voucher in results]
 
     def getServerStatus(self):
         """See `ISalesforceVoucherProxy`."""
-        return self.server_proxy.getServerStatus()
+        response = self.server_proxy.getServerStatus()
+        return self.parseResponse(response)
 
     def getVoucher(self, voucher_id):
         """See `ISalesforceVoucherProxy`."""
-        voucher = self.server_proxy.getVoucher(voucher_id)
+        response = self.server_proxy.getVoucher(voucher_id)
+        voucher = self.parseResponse(response)
         if voucher is not None:
             voucher = Voucher(voucher)
         return voucher
 
     def redeemVoucher(self, voucher_id, user, project):
         """See `ISalesforceVoucherProxy`."""
-        result = self.server_proxy.redeemVoucher(
+        response = self.server_proxy.redeemVoucher(
             voucher_id,
             user.openid_identifier,
             project.id,
             project.displayname)
-        return result
+        self.parseResponse(response)
+        return True
 
     def updateProjectName(self, project):
         """See `ISalesforceVoucherProxy`."""
-        return self.server_proxy.updateProjectName(
+        response = self.server_proxy.updateProjectName(
             project.id,
             project.displayname)
+        return self.parseResponse(response)

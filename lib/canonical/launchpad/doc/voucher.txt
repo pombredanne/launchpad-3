@@ -41,7 +41,10 @@ We can retrieve all unredeemed vouchers for a person.
     ...     IPersonSet, IProductSet)
     >>> mark = getUtility(IPersonSet).getByName('sabdfl')
 
-    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> response = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> response['success']
+    True
+    >>> vouchers = response['results']
     >>> print_vouchers(vouchers)
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
@@ -51,18 +54,24 @@ A single voucher can be retrieved using the `getVoucher` method.
 Unlike the other retrieval methods this one does the lookup based on
 the voucher id, not the owner's id.
 
-    >>> voucher = server.getVoucher(
+    >>> response = server.getVoucher(
     ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000001')
+    >>> response['success']
+    True
+    >>> voucher = response['results']
     >>> print_vouchers([voucher])
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
 
 Attempting to retrieve a non-existent voucher returns no results.
 Note that the XMLRPC library requires that return values be
-encapuslated in a list, so the server actually returns [None] but the
+encapsulated in a list, so the server actually returns [None] but the
 transport converts lists of length one to the scalar value.
 
-    >>> voucher = server.getVoucher(
+    >>> response = server.getVoucher(
     ...     'LPCS12-f78df324-0cc2-11dd-8b6b-nonexistent1')
+    >>> response['success']
+    True
+    >>> voucher = response['results']
     >>> print voucher
     None
 
@@ -70,11 +79,14 @@ A single voucher can be redeemed, but must be associated with a project.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> voucher = vouchers[0]['voucher']
-    >>> result = server.redeemVoucher(voucher, mark.openid_identifier,
+    >>> response = server.redeemVoucher(voucher, mark.openid_identifier,
     ...                               firefox.id, firefox.displayname)
-    >>> print result
+    >>> response['success']
     True
-    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> response = server.getUnredeemedVouchers(mark.openid_identifier)
+    >>> response['success']
+    True
+    >>> vouchers = response['results']
     >>> print_vouchers(vouchers)
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
@@ -93,7 +105,8 @@ the Salesforce proxy.
 
 The status of the proxy server can be checked.
 
-    >>> print sfv.getServerStatus()
+    >>> response = sfv.getServerStatus()
+    >>> print response
     Server is running normally
 
 All of the unredeemed vouchers for a Launchpad user can be retrieved.
@@ -105,7 +118,7 @@ If the user has no matching vouchers an empty list is returned.
     >>> len(vouchers)
     0
 
-The user mark has some vouchers and they can be retrieved.
+Mark has some vouchers and they can be retrieved.
 
     >>> vouchers = sfv.getUnredeemedVouchers(mark)
     >>> for voucher in vouchers:
@@ -152,15 +165,17 @@ If we get all of the vouchers the redeemed one is shown.
 Attempting to redeem an already redeemed voucher is unsuccessful.
 
     >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
-    >>> print result
-    False
+    Traceback (most recent call last):
+      ...
+    SalesforceVoucherProxyException: 'ERROR: Voucher LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 is already redeemed'
 
 Attempting to redeem a bogus voucher is also unsuccessful.
 
     >>> voucher_id = "hownowbrowncow"
     >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
-    >>> print result
-    False
+    Traceback (most recent call last):
+      ...
+    SalesforceVoucherProxyException: 'ERROR: No such voucher hownowbrowncow'
 
 Using None for the project results in an error.
 
@@ -188,3 +203,12 @@ If a project's name changes we can communicate that to Salesforce.
     >>> result = sfv.updateProjectName(naked_firefox)
     >>> print result
     1
+
+Attempting to rename a project that does not exist in the Salesforce
+voucher data results in an error.
+
+    >>> jokosher = getUtility(IProductSet).getByName('jokosher')
+    >>> result = sfv.updateProjectName(jokosher)
+    Traceback (most recent call last):
+      ...
+    SalesforceVoucherProxyException: 'ERROR: No vouchers matching product id...
