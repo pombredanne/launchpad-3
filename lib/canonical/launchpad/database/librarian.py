@@ -119,8 +119,11 @@ class LibraryFileAlias(SQLBase):
             return self._datafile.read(chunksize)
 
     def close(self):
-        self._datafile.close()
-        self._datafile = None
+        # Don't die with an AttributeError if the '_datafile' property
+        # is not set.
+        if self._datafile:
+            self._datafile.close()
+            self._datafile = None
 
     def updateLastAccessed(self):
         """Update last_accessed if it has not been updated recently.
