@@ -45,9 +45,8 @@ class SSHService(service.Service):
 
     def makeRealm(self):
         """Create and return an authentication realm for the authserver."""
-        homedirs = config.codehosting.branches_root
         authserver = TwistedAuthServer(config.codehosting.authserver)
-        return sshserver.Realm(homedirs, authserver)
+        return sshserver.Realm(authserver)
 
     def makeFactory(self, hostPublicKey, hostPrivateKey):
         """Create and return an SFTP server that uses the given public and
