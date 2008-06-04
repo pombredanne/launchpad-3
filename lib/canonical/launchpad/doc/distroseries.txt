@@ -314,8 +314,9 @@ Check the content IDRSPR binaries & builds attributes:
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchseries.title
-   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
    27 mozilla-firefox-data-0.9 The Warty Warthog Release for i386 (x86)
+   12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
+
 
 'builds' should be empty since it was built in parent (warty), not in this
 distroseries (bumby.
@@ -472,7 +473,7 @@ Supersede previous netapplet publication:
    SUPERSEDED
 
    >>> superseded_netapplet.datesuperseded
-   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+   datetime.datetime(...)
 
 
 == DistroSeries Translations migration ==

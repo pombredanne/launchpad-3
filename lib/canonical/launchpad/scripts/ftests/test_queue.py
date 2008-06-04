@@ -362,14 +362,16 @@ class TestQueueTool(TestQueueBase):
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         queue_action = self.execute_command('accept 1 pmount 3')
+
         self.assertEqual(3, queue_action.items_size)
+
         self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.ACCEPTED, 'mozilla-firefox')
         self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.ACCEPTED, 'pmount')
+        # Single-source upload went straight to DONE queue.
         self.assertQueueLength(1, breezy_autotest,
-            PackageUploadStatus.ACCEPTED, 'netapplet')
-
+            PackageUploadStatus.DONE, 'netapplet')
 
     def testRemovedPublishRecordDoesNotAffectQueueNewness(self):
         """Check if REMOVED published record does not affect file NEWness.
@@ -438,11 +440,16 @@ class TestQueueTool(TestQueueBase):
 
         Further details in bug #59443
         """
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+
         # Make breezy-autotest CURRENT in order to accept upload
         # to BACKPORTS.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         breezy_autotest.status = DistroSeriesStatus.CURRENT
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser("queued")
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
@@ -481,11 +488,16 @@ class TestQueueTool(TestQueueBase):
 
         Further details in bug #57708
         """
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+
         # Make breezy-autotest CURRENT in order to accept upload
         # to PROPOSED.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         breezy_autotest.status = DistroSeriesStatus.CURRENT
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser("queued")
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
@@ -511,9 +523,8 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(0, len(stub.test_emails))
 
     def assertQueueLength(self, expected_length, distro_series, status, name):
-        self.assertEqual(
-            expected_length,
-            distro_series.getQueueItems(status=status, name=name).count())
+        queue_items = distro_series.getQueueItems(status=status, name=name)
+        self.assertEqual(expected_length, queue_items.count())
 
     def assertErrorAcceptingDuplicate(self):
         self.assertTrue(
@@ -565,9 +576,10 @@ class TestQueueTool(TestQueueBase):
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
 
-        # The first is in accepted.
+        # The first item, being a single source upload, is automatically
+        # published when it's accepted.
         self.assertQueueLength(
-            1, breezy_autotest, PackageUploadStatus.ACCEPTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # The last can't be accepted and remains in UNAPPROVED.
         self.assertErrorAcceptingDuplicate()
@@ -581,12 +593,6 @@ class TestQueueTool(TestQueueBase):
         self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
-
-        # The item, being a single source upload, is automatically published
-        # when it's accepted.
-        LaunchpadZopelessLayer.txn.commit()
-        self.assertQueueLength(
-            1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE.

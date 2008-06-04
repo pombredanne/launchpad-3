@@ -173,13 +173,13 @@ and one binary) and the date removed properly set up:
   >>> source_publishing_record.status.name
   'DELETED'
   >>> source_publishing_record.dateremoved
-  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+  datetime.datetime(...)
 
   >>> binary_publishing_record = SBPPH.get(17)
   >>> binary_publishing_record.status.name
   'SUPERSEDED'
   >>> binary_publishing_record.dateremoved
-  CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+  datetime.datetime(...)
 
 Source publication 20 (has a future 'scheduled deletion date') and
 binary publication 19 (file hold by another active publication), of

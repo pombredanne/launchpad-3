@@ -99,12 +99,9 @@ XXX cprov 20051209: need to build a broken upload to test it properly
   >>> for item in new_queue:
   ...     try:
   ...         item.setAccepted()
+  ...         item.syncUpdate()
   ...     except QueueInconsistentStateError, info:
   ...         print info
-
-Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
-
-  >>> flush_database_updates()
 
   >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
 
@@ -161,8 +158,8 @@ Counter, optionally by status (informally named "queue") and or distroseries:
   >>> qset.count()
   16
 
-  >>> qset.count(PackageUploadStatus.ACCEPTED)
-  1
+  >>> qset.count(PackageUploadStatus.DONE)
+  5
 
   >>> qset.count(PackageUploadStatus.REJECTED)
   0
@@ -181,31 +178,32 @@ Retrieve some data from DB to play more with counter.
   ...            distroseries=breezy_autotest)
   0
 
-  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
+  >>> qset.count(status=PackageUploadStatus.DONE,
   ...            distroseries=hoary)
   1
 
 
 Check the behaviour of @cachedproperty  attributes:
+
   >>> qitem = qset.get(1)
 
   >>> qitem.datecreated
   datetime.datetime(...)
 
-  >>> qitem.changesfile.filename
-  u'mozilla-firefox_0.9_i386.changes'
+  >>> print qitem.changesfile.filename
+  mozilla-firefox_0.9_i386.changes
 
-  >>> qitem.sourcepackagerelease.name
-  u'mozilla-firefox'
+  >>> print qitem.sourcepackagerelease.name
+  mozilla-firefox
 
-  >>> qitem.displayname
-  u'mozilla-firefox'
+  >>> print qitem.displayname
+  mozilla-firefox
 
-  >>> qitem.displayversion
-  u'0.9'
+  >>> print qitem.displayversion
+  0.9
 
-  >>> qitem.displayarchs
-  u'i386'
+  >>> print qitem.displayarchs
+  i386
 
   >>> qitem.sourcepackagerelease
   <SourcePackageRelease at ...>
@@ -218,17 +216,17 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   >>> custom_item.datecreated
   datetime.datetime(...)
 
-  >>> custom_item.changesfile.filename
-  u'netapplet-1.0.0.tar.gz'
+  >>> print custom_item.changesfile.filename
+  netapplet-1.0.0.tar.gz
 
-  >>> custom_item.displayname
-  u'netapplet-1.0.0.tar.gz'
+  >>> print custom_item.displayname
+  netapplet-1.0.0.tar.gz
 
-  >>> custom_item.displayversion
-  '-'
+  >>> print custom_item.displayversion
+  -
 
-  >>> custom_item.displayarchs
-  'raw-translations'
+  >>> print custom_item.displayarchs
+  raw-translations
 
   >>> custom_item.sourcepackagerelease
   Traceback (most recent call last):
@@ -355,16 +353,16 @@ Got 'pmount_0.1-1'.
 
 Look for every queue entry which package name is like 'mo'
 
-  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-  ...                                            name='mo')
+  >>> items = breezy_autotest.getQueueItems(
+  ...     PackageUploadStatus.NEW, name='mo')
   >>> items.count()
   2
 
   >>> for item in items:
-  ...     (item.builds[0].build.binarypackages[0].name,
-  ...      item.builds[0].build.binarypackages[0].version)
-  (u'mozilla-firefox', u'0.9')
-  (u'pmount', u'0.1-1')
+  ...     a_binary = item.builds[0].build.binarypackages[0]
+  ...     print item.displayname
+  pmount
+  mozilla-firefox
 
 Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
 
@@ -441,6 +439,7 @@ Check State Machine over PackageUploadBuilds:
 
 Performing full acceptance:
 
+  >>> from canonical.launchpad.ftests import syncUpdate
   >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
   >>> for item in items:
   ...      try:
@@ -448,7 +447,8 @@ Performing full acceptance:
   ...      except QueueInconsistentStateError, e:
   ...          print item.displayname, e
   ...      else:
-  ...          print item.displayname, 'ACCEPTED'
+  ...          print item.displayname, item.status.name
+  ...      syncUpdate(item)
   netapplet-1.0.0.tar.gz ACCEPTED
   netapplet-1.0.0.tar.gz ACCEPTED
   alsa-utils ACCEPTED
@@ -456,13 +456,23 @@ Performing full acceptance:
   pmount ACCEPTED
   mozilla-firefox ACCEPTED
 
-Move the PackageUpload items back to NEW
+Move the ACCEPTED items back to NEW.
 
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.ACCEPTED)
   >>> for item in items:
   ...     item.setNew()
+  ...     print item.displayname, item.status.name
+  ...     syncUpdate(item)
+  netapplet-1.0.0.tar.gz NEW
+  netapplet-1.0.0.tar.gz NEW
+  alsa-utils NEW
+  netapplet NEW
+  pmount NEW
+  mozilla-firefox NEW
 
 Check if the state machine methods raise when trying to set the same state:
 
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
   >>> for item in items:
   ...      try:
   ...          item.setNew()
@@ -593,8 +603,8 @@ Override the pmount section to fresh created 'heaven' section.
 
 XXX cprov 20060118: remove proxy magic is required for BPR instances.
 
-  >>> naked_bin = removeSecurityProxy(
-  ...       item.builds[0].build.binarypackages[0])
+  >>> pmount_binary = item.builds[0].build.binarypackages[0]
+  >>> naked_bin = removeSecurityProxy(pmount_binary)
   >>> naked_bin.section = getUtility(ISectionSet).new('heaven')
 
 Try to perform single acceptance of pmount with not allowed section:
@@ -733,7 +743,7 @@ Similarly for binaries:
     ...     binary_package.component.name,
     ...     binary_package.section.name,
     ...     binary_package.priority.title)
-    main/heaven/Important
+    main/base/Important
 
     >>> from canonical.launchpad.interfaces import PackagePublishingPriority
     >>> print item.overrideBinaries(

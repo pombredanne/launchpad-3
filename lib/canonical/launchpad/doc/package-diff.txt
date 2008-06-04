@@ -385,7 +385,12 @@ getPendingDiffs() results can optionally be limited.
     >>> packagediff_set.getPendingDiffs().count()
     6
 
-    >>> packagediff_set.getPendingDiffs(limit=2).count()
+XXX cprov 20070530: storm doesn't go well with  limited count()s
+See bug #217644. For now we have to listify the results and used
+the list length.
+
+    >>> r = packagediff_set.getPendingDiffs(limit=2)
+    >>> len(list(r))
     2
 
 A arbitrary PackageDiff object can be easily retrieved by database ID

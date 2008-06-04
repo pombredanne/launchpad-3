@@ -43,7 +43,7 @@ Create a distribution release and an arch release for breezy:
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> drs = getUtility(IDistroSeriesSet)
-    >>> hoary = ubuntu["hoary"]
+    >>> hoary = ubuntu.getSeries("hoary")
     >>> breezy = drs.new(ubuntu, "breezy", "Breezy Badger", "My title",
     ...                  "My summary", "My description", "5.10",
     ...                  hoary, celebs.launchpad_developers)

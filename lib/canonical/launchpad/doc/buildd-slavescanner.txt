@@ -5,8 +5,6 @@ processed in the current BuildFarm and collect information about the
 status of the process, collect the results of finished jobs and
 automatically dispatch new jobs to idle slaves.
 
-    >>> from canonical.buildmaster.master import BuilddMaster
-
 The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', as in all test the
 transaction should be retrieved.
@@ -30,7 +28,7 @@ standard output with noisily output.
 
     >>> import logging
 
-First let's test an essential part of the BuilddMaster class, the
+First let's test an essential part of the Build-master class, the
 BuilderGroup() class, by creating an empty BuilderGroup object
 
     >>> from canonical.buildmaster.buildergroup import BuilderGroup
@@ -97,14 +95,15 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     >>> lostbuilding_builder = MockBuilder(
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
-    WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
+    WARNING:root:Builder 'Lost Building Slave' rescued from
+    '1000-10000: 'Object not found''
 
 Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: 'Object not found''
 
 Both got rescued, as expected.
 
@@ -214,9 +213,12 @@ Get a builder from the sample data:
 
 Make sure that a_builder has no active builds:
 
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> if a_builder.currentjob is not None:
-    ...     a_builder.currentjob.buildstart = None
-    ...     a_builder.currentjob.builder = None
+    ...     currentjob = a_builder.currentjob
+    ...     currentjob.buildstart = None
+    ...     currentjob.builder = None
+    ...     syncUpdate(currentjob)
 
 Force the test builder to be 'ok' as the code required to do this
 automatically is not yet factored into the content class.
@@ -249,7 +251,7 @@ Do the test execution:
 
 Cleanup in preparation for the next test:
 
-    >>> bqItem3.destroySelf()
+    bqItem3.destroySelf()
 
 WAITING - DEPWAIT -> a required dependency is missing, again notice
 from builder, but Build.buildstate has the right state:
@@ -285,7 +287,7 @@ Do the test execution:
 
 Cleanup in preparation for the next test:
 
-    >>> bqItem4.destroySelf()
+    bqItem4.destroySelf()
 
 WAITING - CHROOTFAIL -> the Chroot for this distroseries is damage, nor
 builder, but right state stored in Build entry:
@@ -315,7 +317,7 @@ builder, but right state stored in Build entry:
 
 Cleanup in preparation for the next test:
 
-    >>> bqItem5.destroySelf()
+    bqItem5.destroySelf()
 
 WAITING - BUILDERFAIL -> builder has failed by internal error, job is
 available for next build round:
@@ -497,7 +499,7 @@ inside Buildergroup.buildStatus_OK method.
 
 Cleanup in preparation for the next test:
 
-    >>> bqItem10.destroySelf()
+     bqItem10.destroySelf()
 
 
 === Successfully collected and uploaded  (FULLYBUILT) ===
@@ -551,7 +553,7 @@ notification and updating the build information:
 
 Cleanup in preparation for the next test:
 
-    >>> bqItem10.destroySelf()
+    bqItem10.destroySelf()
 
 WAITING -> GIVENBACK - slave requested build record to be rescheduled.
 
@@ -697,9 +699,7 @@ Remove build upload results root
 
     >>> shutil.rmtree(config.builddmaster.root)
 
-== BuilddMaster class ==
-
-    >>> bm = BuilddMaster(logging.getLogger(), local_transaction)
+== Setup chroots ==
 
 Retrieve a known DistroArchSeries
 
@@ -714,32 +714,6 @@ Create a totally bogus CHROOT
     >>> unused = hoary_i386.addOrUpdateChroot(fake_chroot)
     >>> unused = warty_i386.addOrUpdateChroot(fake_chroot)
 
-Setup a buildd-slave instance for a successful 'scan' procedure.
-
-    >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
-    >>> BuilddSlaveTestSetup().setUp()
-
-Initialise the BuildMaster with all available distroarchseries.
-Because the sampledata builders are busy we issue and warning stating that.
-
-    >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
-    >>> for dar in sorted(getUtility(IDistroArchSeriesSet),
-    ...                   key=lambda dar: (dar.distroseries.distribution.name,
-    ...                                    dar.distroseries.name,
-    ...                                    dar.architecturetag)):
-    ...     bm.addDistroArchSeries(dar)
-    ...     bm.setupBuilders(dar)
-
-Scan active builders looking for information about current jobs,
-collect result of finished jobs, everything is stored directly in
-the Launchpad DB. (simply check if it doesn't explode)
-
-    >>> bm.scanActiveBuilders()
-    WARNING:root.builders.x86:Builder http://localhost:8221/ forgot about build i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE -- resetting buildqueue record
-
-We are done here, let's stop the buildd-slave instance:
-
-    >>> BuilddSlaveTestSetup().tearDown()
 
 == Build Dispatching ==
 
@@ -1241,10 +1215,11 @@ passed to the slave.
 
 A build in the updates pocket:
 
+    >>> a_builder.currentjob.destroySelf()
+
     >>> bqItem3 = a_build.createBuildQueueEntry()
     >>> removeSecurityProxy(bqItem3.build).pocket = (
     ...     PackagePublishingPocket.UPDATES)
-    >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
     ensurepresent called, url=...
@@ -1261,10 +1236,11 @@ A build in the updates pocket:
 
 A build in the proposed pocket:
 
+    >>> a_builder.currentjob.destroySelf()
+
     >>> bqItem3 = a_build.createBuildQueueEntry()
     >>> removeSecurityProxy(bqItem3.build).pocket = (
     ...     PackagePublishingPocket.PROPOSED)
-    >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
     ensurepresent called, url=...
@@ -1282,10 +1258,11 @@ A build in the proposed pocket:
 
 A build in the backports pocket:
 
+    >>> a_builder.currentjob.destroySelf()
+
     >>> bqItem3 = a_build.createBuildQueueEntry()
     >>> removeSecurityProxy(bqItem3.build).pocket = (
     ...     PackagePublishingPocket.BACKPORTS)
-    >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
     ensurepresent called, url=...
@@ -1303,12 +1280,13 @@ A build in the backports pocket:
 
 A build in the security pocket:
 
+    >>> a_builder.currentjob.destroySelf()
+
     >>> bqItem3 = a_build.createBuildQueueEntry()
     >>> removeSecurityProxy(bqItem3.build).buildstate = (
     ...     BuildStatus.NEEDSBUILD)
     >>> removeSecurityProxy(bqItem3.build).pocket = (
     ...     PackagePublishingPocket.SECURITY)
-    >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
 The pocket-dependency infrastructure is ready to deal with SECURITY
@@ -1357,3 +1335,4 @@ the current slave state. This tuple should contain, in this order:
     >>> a_builder.setSlaveForTesting(AbortedSlave())
     >>> a_builder.slaveStatus()
     ('BuilderStatus.ABORTED', '1-1', None, None, None, None)
+

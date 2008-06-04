@@ -457,6 +457,13 @@ In order to test build notifications for sources that were not copied,
 we will change the 'failed_candidate' source, setting its
 'upload_archive' to the same archive was built, Celso's PPA.
 
+  >>> from canonical.database.sqlbase import commit
+  >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+  >>> from zope.security.proxy import removeSecurityProxy
   >>> naked_candidate = removeSecurityProxy(failed_candidate)
   >>> naked_sourcepackagerelease = naked_candidate.sourcepackagerelease
   >>> naked_sourcepackagerelease.upload_archive = failed_candidate.archive
@@ -468,6 +475,9 @@ We also make 'Foo Bar' the source signer.
   >>> print gpgkey.owner.name
   name16
   >>> naked_sourcepackagerelease.dscsigningkey = gpgkey
+
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 Since 'sabdlf' is the 'creator' it makes the failed-to-build source to
 look like a 'sponsored' upload.

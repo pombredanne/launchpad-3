@@ -42,7 +42,7 @@ Let's check the complex properties of a build object.
     <LibraryFileAlias ...>
 
     >>> firefox_build.calculated_buildstart
-    datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
+    datetime.datetime(...)
 
     >>> firefox_build.is_virtualized
     False
