@@ -45,7 +45,7 @@ class IFieldMarshaller(Interface):
     def unmarshall(entry, value):
         """Transform an object value into a value suitable for JSON.
 
-        :param entry: The entry whose field this is.
+        :param entry: The `IEntry` whose field this is.
         :value: The object value of the field.
 
         :return: A value that can be serialized as part of a JSON hash.
