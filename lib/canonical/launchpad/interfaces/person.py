@@ -1939,8 +1939,13 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
              'invited_members', 'deactivatedmembers', 'expiredmembers']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
+IPersonPublic['sub_teams'].value_type.schema = ITeam
+IPersonPublic['super_teams'].value_type.schema = ITeam
+
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
+    (IPersonPublic['findPathToTeam'], 'team'), 
+    (IPersonPublic['inTeam'], 'team'), 
     (IPersonEditRestricted['join'], 'team'), 
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
