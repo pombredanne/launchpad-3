@@ -42,6 +42,8 @@ def main(options, databases):
 
     # Check for existing files now. Also check later just in case
     # there are two copies of this script running or something crazy.
+    # Better to bomb out now rather than to bomb out later, as later might
+    # be several hours away.
     for database in databases:
         dest =  os.path.join(backup_dir, '%s.%s.dump' % (database, today))
         if os.path.exists(dest):
