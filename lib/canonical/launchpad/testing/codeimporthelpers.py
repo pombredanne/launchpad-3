@@ -36,7 +36,7 @@ def get_import_for_branch_name(branch_unique_name):
 
 
 def make_running_import(code_import=None, machine=None, date_started=None,
-                        factory=None):
+                        factory=None, logtail=None):
     """Return a code import with a running job.
 
     :param code_import: The code import to create the job for.  If None, an
@@ -47,6 +47,7 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         of the newly started job.
     :param factory: The LaunchpadObjectFactory to use for the creation of
         the objects.  If None, one is created.
+    :param logtail: XXX.
     """
     if factory is None:
         factory = LaunchpadObjectFactory()
@@ -59,6 +60,9 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         code_import.approve({}, code_import.registrant)
 
     CodeImportJobWorkflow().startJob(code_import.import_job, machine)
+    if logtail:
+        CodeImportJobWorkflow().updateHeartbeat(
+            code_import.import_job, logtail)
 
     assert code_import.import_job.state == CodeImportJobState.RUNNING
 
