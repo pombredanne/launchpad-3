@@ -1,0 +1,58 @@
+= The BugTrackerPerson interface =
+
+The IBugTrackerPerson interfaces allows Launchpad to link Persons to
+bugtrackers. BugTrackerPersons are created using the
+linkPersonToBugTracker() method of IBugTrackerPersonSet.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.bugtracker import (
+    ...     BugTrackerType)
+    >>> from canonical.launchpad.interfaces.bugtrackerperson import (
+    ...     IBugTrackerPersonSet)
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     IPersonSet)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+
+    >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
+
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).linkPersonToBugTracker(
+    ...         'some-name-i-made-up', bugtracker, sample_person)
+
+    >>> print bugtracker_person.name
+    some-name-i-made-up
+
+    >>> print bugtracker_person.person.name
+    name12
+
+    >>> print bugtracker_person.bugtracker.name
+    bugzilla-checkwatches-1
+
+A name can only be registered with a bugtracker once. Trying to link a
+new person to a bugtracker using an existing name will cause an error.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).linkPersonToBugTracker(
+    ...         'some-name-i-made-up', bugtracker, foo_bar)
+    Traceback (most recent call last):
+      ...
+    BugTrackerNameAlreadyTaken: Name 'some-name-i-made-up' is already in
+    use for bugtracker 'bugzilla-checkwatches-1'.
+
+The BugTrackerPerson record for a given name on a given bugtracker can
+be retreived by calling IBugTrackerPersonSet.getByNameAndBugTracker().
+
+    >>> bugtracker_person_for_bugtracker = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'some-name-i-made-up', bugtracker)
+
+    >>> print bugtracker_person_for_bugtracker.name
+    some-name-i-made-up
+
+    >>> print bugtracker_person_for_bugtracker.person.name
+    name12
+
