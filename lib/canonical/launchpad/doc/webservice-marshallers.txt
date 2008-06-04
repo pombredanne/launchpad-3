@@ -200,6 +200,18 @@ Integers are encoded using strings when in a request.
     >>> marshaller.marshall_from_request(u"-4")
     -4
 
+It raises a ValueError if the value cannot be converted to an integer.
+
+    >>> marshaller.marshall_from_request("foo")
+    Traceback (most recent call last):
+    ...
+    ValueError: not an integer: u'foo'
+
+    >>> marshaller.marshall_from_request("4.62")
+    Traceback (most recent call last):
+    ...
+    ValueError:  not an integer: 4.62...
+
 Note that python octal and hexadecimal syntax isn't supported.
 
 (This would 13 in octal notation.)
