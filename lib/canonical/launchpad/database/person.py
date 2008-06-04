@@ -177,12 +177,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
    
-    # XXX: The openid_identifier, password, account_status and
-    # account_status_comment properties should go. Note that they override
-    # the current strict controls on Account, allowing access via Person to
-    # use the less strinct controls on that interface. Part of the process
-    # of removing these methods from Person will be losening the permissions
-    # on Account or fixing the callsites -- StuartBishop 20080513
+    # XXX StuartBishop 2008-05-13 bug=237280: The openid_identifier, password,
+    # account_status and account_status_comment properties should go. Note
+    # that they override # the current strict controls on Account, allowing
+    # access via Person to use the less strinct controls on that interface.
+    # Part of the process of removing these methods from Person will be
+    # losening the permissions on Account or fixing the callsites.
     @property
     def openid_identifier(self):
         if self.account is not None:
@@ -2283,9 +2283,9 @@ class PersonSet:
 
         if name is None:
             name = nickname.generate_nick(email)
-        elif not valid_name(name):
+        if not valid_name(name):
             raise InvalidName("%s is not a valid name for a person." % name)
-        elif self.getByName(name, ignore_merged=False) is not None:
+        if self.getByName(name, ignore_merged=False) is not None:
             raise NameAlreadyTaken("The name '%s' is already taken." % name)
 
         if not displayname:
@@ -2346,9 +2346,10 @@ class PersonSet:
 
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None.
-        
-        XXX: This method no longer makes sense. The only things we need to
-        lookup by openid identifier are Accounts -- StuartBishop 20080516
+
+        XXX StuartBishop 2008-05-16 bug=237283: This method no longer makes
+        sense. The only things we need to lookup by openid identifier are
+        Accounts.
         """
         return Person.selectOne(
                 AND(
@@ -2404,7 +2405,7 @@ class PersonSet:
         text = text.lower()
 
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
+        # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
         args = (quote_like(text),) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
         person_email_query = """
@@ -2450,7 +2451,6 @@ class PersonSet:
             self, text="", orderBy=None, exclude_inactive_accounts=True,
             must_have_email=False):
         """See `IPersonSet`."""
-        
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()

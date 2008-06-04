@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Implementation classes for an Account and associates."""
+"""Implementation classes for Account and associates."""
 
 __metaclass__ = type
 __all__ = ['Account', 'AccountPassword', 'AccountSet']
@@ -45,10 +45,10 @@ class Account(SQLBase):
     # reasons, so use a property to hide this implementation detail.
     def _get_password(self):
         password = AccountPassword.selectOneBy(account=self)
-        if password is not None:
-            return password.password
-        else:
+        if password is None:
             return None
+        else:
+            return password.password
 
     def _set_password(self, value):
         password = AccountPassword.selectOneBy(account=self)
@@ -65,6 +65,8 @@ class Account(SQLBase):
         elif value is None and password is None:
             # Nothing to do
             pass
+        else:
+            assert False, "This should not be reachable."
 
     password = property(_get_password, _set_password)
 
@@ -74,32 +76,32 @@ class AccountSet:
 
     def new(self, rationale, displayname,
             password=None, password_is_encrypted=False):
-        """See IAccountSet."""
+        """See `IAccountSet`."""
 
         account = Account(
                 displayname=displayname, creation_rationale=rationale)
 
         # Create the password record
-        if not password_is_encrypted and password is not None:
-            password = getUtility(IPasswordEncryptor).encrypt(password)
         if password is not None:
+            if not password_is_encrypted:
+                password = getUtility(IPasswordEncryptor).encrypt(password)
             AccountPassword(account=account, password=password)
 
         return account
 
     def getByEmail(self, email):
-        """See IAccountSet."""
+        """See `IAccountSet`."""
         return Account.selectOne('''
             EmailAddress.account = Account.id
-            AND lower(EmailAddress.email) = %s
-            ''' % sqlvalues(email.strip().lower()),
+            AND lower(EmailAddress.email) = lower(trim(%s))
+            ''' % sqlvalues(email),
             clauseTables=['EmailAddress'])
 
 
 class AccountPassword(SQLBase):
     """SQLObject wrapper to the AccountPassword table.
 
-    Note that this class is not exported, as the existance of the
+    Note that this class is not exported, as the existence of the
     AccountPassword table only needs to be known by this module.
     """
     account = ForeignKey(

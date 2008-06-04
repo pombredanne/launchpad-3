@@ -80,8 +80,12 @@ def apply_patch(con, major, minor, patch, patch_file):
     full_sql = re.sub('(?xms) \/\* .*? \*\/', '', full_sql)
     full_sql = re.sub('(?xm) ^\s*-- .*? $', '', full_sql)
 
+    # Regular expression to extract a single statement.
+    # A statement may contain semicolons if it is a stored procedure
+    # definition, which requires a disgusting regexp or a parser for
+    # PostgreSQL specific SQL.
     statement_re = re.compile(
-            r"( (?: [^; \$] | \$ (?! \$) | \$\$.*? \$\$ | \s)+ )",
+            r"( (?: [^;$] | \$ (?! \$) | \$\$.*? \$\$)+ )",
             re.DOTALL | re.MULTILINE | re.VERBOSE
             )
     for sql in statement_re.split(full_sql):

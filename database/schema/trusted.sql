@@ -716,10 +716,10 @@ LANGUAGE plpythonu VOLATILE AS
 $$
     from random import choice
 
-    # Non display confusing characters
+    # Non display confusing characters.
     chars = '34678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXY'
 
-    # character length of tokens. Can be increased, decreased or even made
+    # Character length of tokens. Can be increased, decreased or even made
     # random - Launchpad does not care. 7 means it takes 40 bytes to store
     # a null-terminated Launchpad identity URL on the current domain name.
     length=7

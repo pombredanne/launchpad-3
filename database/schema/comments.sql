@@ -1043,7 +1043,7 @@ COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a p
 COMMENT ON TABLE Account IS 'An account that may be used for authenticating to Canonical or other systems.';
 COMMENT ON COLUMN Account.status IS 'The status of the account.';
 COMMENT ON COLUMN Account.status_comment IS 'The comment on the status of the account.';
-COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a dbschema value.';
+COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a PersonCreationRationale value.';
 COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
 COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
 COMMENT ON COLUMN Account.openid_identifier IS 'The key used to construct an OpenID identity URL for this account.';

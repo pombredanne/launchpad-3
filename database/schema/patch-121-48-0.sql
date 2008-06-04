@@ -81,7 +81,7 @@ ALTER TABLE Person
 ALTER TABLE Person
     ADD CONSTRAINT person__account__id__key UNIQUE(account, id);
 
-UPDATE Person SET account=Person.id
+UPDATE Person SET account=Account.id
     FROM Account WHERE Person.id = Account.id;
 
 --
@@ -98,7 +98,9 @@ ALTER TABLE EmailAddress
     ADD CONSTRAINT emailaddress__account__person__fk
         FOREIGN KEY (account, person) REFERENCES Person(account, id)
         ON DELETE SET NULL
-        DEFERRABLE INITIALLY DEFERRED;
+        DEFERRABLE INITIALLY DEFERRED,
+    ADD CONSTRAINT emailaddress__is_linked__chk
+        CHECK (person IS NOT NULL OR account IS NOT NULL);
 
 -- Rebuild this index with a better name
 DROP INDEX idx_emailaddress_email;
