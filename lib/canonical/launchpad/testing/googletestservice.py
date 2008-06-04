@@ -162,6 +162,10 @@ def kill_running_process():
     except IOError:
         # We could not find an existing pidfile.
         return
+    except ValueError:
+        # The file contained a mangled and invalid PID number, so we should
+        # clean the file up.
+        os.unlink(pidfile_path(service_name))
     else:
         if pid is not None:
             try:
