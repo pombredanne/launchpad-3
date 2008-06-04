@@ -593,7 +593,6 @@ the given distroseries/pocket. Anytime it happens we need to manually
 investigate why this build end up built. (should never happen in real
 cases, and even so should be refused when we try to upload it.)
 
-
     >>> bqItem12 = getUtility(IBuildSet).getByBuildID(
     ...     2).createBuildQueueEntry()
     >>> setupBuildQueue(bqItem12, a_builder)
@@ -752,6 +751,17 @@ Helper function to create binary publications in this test.
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
     ...     login(ANONYMOUS)
+
+We will reset the sampledata building job before continue with the
+tests.
+
+    >>> current_job = a_builder.currentjob
+    >>> resurrect_build = current_job.build
+    >>> resurrect_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> syncUpdate(resurrect_build)
+    >>> current_job.builder = None
+    >>> current_job.buildstart = None
+    >>> syncUpdate(current_job)
 
 IBuilder.findCandidate also identifies if there are builds for
 superseded source package releases in the queue and marks the
