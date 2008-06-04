@@ -77,6 +77,7 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.assertTrue(self.code_handler.process(
             mail, email_addr, None), "Succeeded, but didn't return True")
+        # if the message has not been created, this raises SQLObjectNotFound
         message = MessageSet().get('<my-id>')
 
     def test_processBadAddress(self):
