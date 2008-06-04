@@ -280,7 +280,8 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson()
+            registrant = self.makePerson(
+                password=self.getUniqueString('password'))
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
@@ -516,13 +517,20 @@ class LaunchpadObjectFactory:
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
             source_product_series_id)
 
-    def makeCodeReviewMessage(self, subject=None, body=None, vote=None):
+    def makeCodeReviewMessage(self, sender=None, subject=None, body=None,
+                              vote=None, vote_tag=None, parent=None):
+        if sender is None:
+            sender = self.makePerson(password='password')
         if subject is None:
-            subject = self.getUniqueString()
+            subject = self.getUniqueString('subject')
         if body is None:
-            body = self.getUniqueString()
-        return self.makeBranchMergeProposal().createMessage(
-            self.makePerson(), subject, body, vote)
+            body = self.getUniqueString('content')
+        if parent:
+            merge_proposal = parent.branch_merge_proposal
+        else:
+            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        return merge_proposal.createMessage(
+            sender, subject, body, vote, vote_tag, parent)
 
     def makeMessage(self, subject=None, content=None, parent=None):
         if subject is None:
