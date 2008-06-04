@@ -42,11 +42,14 @@ status accordingly and also update the decider and the date_decided.
 It is possible to revise your choice, declining the spec. This should update
 the date_decided.
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
+
     >>> sl.date_decided = None
     >>> sl.declineBy(jblack)
     >>> print sl.status.title, sl.decider.name, sl.date_decided is not None
     Declined jblack True
-    >>> print sl.date_decided
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> print sl.date_decided == transaction_timestamp
+    True
 
 

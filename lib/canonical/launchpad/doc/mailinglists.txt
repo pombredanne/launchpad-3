@@ -192,13 +192,16 @@ participate in the Mailing List Experts team.
 
 A mailing list expert is required to approve the registration.
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
+
     >>> lpadmin = list(mailing_list_experts.allmembers)[0]
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> syncUpdate(list_one)
     >>> list_one.status.name
     'APPROVED'
-    >>> list_one.date_reviewed
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> list_one.date_reviewed == transaction_timestamp
+    True
 
 
 If Dirk becomes a member of the Mailing List Experts, he'll be able to approve
@@ -323,8 +326,8 @@ team's contact address.
     'ACTIVE'
     >>> email_set.getByEmail(list_one.address).status.name
     'VALIDATED'
-    >>> list_one.date_activated
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    >>> list_one.date_activated == transaction_timestamp
+    True
 
 
 Some list constructions may fail.
