@@ -57,7 +57,7 @@ class UpdateMachineStateForm(Interface):
 
     reason = TextLine(
         title=_('Reason'), required=False, description=_(
-            "Why the machine state changing."))
+            "Why the machine state is changing."))
 
 
 class DecoratedEvent:

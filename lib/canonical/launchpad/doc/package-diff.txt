@@ -102,17 +102,22 @@ error:
 When a source package upload is processed, the upload-processor
 already requests a package diff against the immediate ancestry.
 
-Before starting let's enable the universe component in hoary in order
-to be able to accept the NEW packages.
+Before starting let's enable the universe component and add the i386
+chroot in hoary in order to be able to accept the NEW packages.
 
     >>> from canonical.launchpad.database.component import (
     ...     ComponentSelection)
     >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from canonical.launchpad.database import LibraryFileAlias
 
     >>> hoary = ubuntu.getSeries('hoary')
     >>> universe = getUtility(IComponentSet)['universe']
     >>> selection = ComponentSelection(
     ...     distroseries=hoary, component=universe)
+
+    >>> fake_chroot = LibraryFileAlias.get(1)
+    >>> hoary_i386 = hoary['i386']
+    >>> unused = hoary_i386.addOrUpdateChroot(fake_chroot)
 
 `FakePackager` (see fakepackager.txt) handles the packaging and upload
 of a new source series for us. We can use this to avoid messing with

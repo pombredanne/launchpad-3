@@ -524,9 +524,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def getPackageComponent():
         """Return the task's package's component or None.
 
-        Returns the component associated to the latest package published
-        in that distribution. If the task is not a package task, returns
-        None.
+        Returns the component associated to the current published
+        package in that distribution's current series. If the task is
+        not a package task, returns None.
         """
 
 
