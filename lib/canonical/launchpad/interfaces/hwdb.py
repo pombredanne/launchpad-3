@@ -462,7 +462,7 @@ class IHWDriverSet(Interface):
     def getByPackageAndName(package_name, name):
         """Return an IHWDriver instance for the given parameters.
 
-        :return: An IHWDriver instance or None,if no record exists for
+        :return: An IHWDriver instance or None, if no record exists for
             the given parameters.
         :param package_name: The name of the packages containing the driver.
         :param name: The name of the driver.
@@ -471,7 +471,7 @@ class IHWDriverSet(Interface):
     def getOrCreate(package_name, name, license=None):
         """Return an IHWDriver instance or create one.
 
-        :return: An IHWDriver instance or None,if no record exists for
+        :return: An IHWDriver instance or None, if no record exists for
             the given parameters.
         :param package_name: The name of the packages containing the driver.
         :param name: The name of the driver.

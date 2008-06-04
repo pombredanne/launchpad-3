@@ -382,8 +382,8 @@ class HWVendorIDSet:
     def getByBusAndVendorID(self, bus, vendor_id):
         """See `IHWVendorIDSet`."""
         if not isValidVendorID(bus, vendor_id):
-            raise ValueError('%s is not a valid vendor ID for %s'
-                             % (repr(vendor_id), bus.title))
+            raise ValueError('%s is not a valid vendor ID for %s' % (
+                repr(vendor_id), bus.title))
         return HWVendorID.selectOneBy(bus=bus, vendor_id_for_bus=vendor_id)
 
 
@@ -450,8 +450,8 @@ class HWDeviceSet:
     def getByDeviceID(self, bus, vendor_id, product_id, variant=None):
         """See `IHWDeviceSet`."""
         if not isValidProductID(bus, product_id):
-            raise ValueError('%s is not a valid product ID for %s'
-                             % (repr(product_id), bus.title))
+            raise ValueError('%s is not a valid product ID for %s' % (
+                repr(product_id), bus.title))
         bus_vendor = HWVendorIDSet().getByBusAndVendorID(bus, vendor_id)
         return HWDevice.selectOneBy(bus_vendor=bus_vendor,
                                     bus_product_id=product_id,
@@ -531,7 +531,7 @@ class HWDriverSet:
 
 
 class HWDeviceDriverLink(SQLBase):
-    """See `IHWDeviceDriverLinkSet`."""
+    """See `IHWDeviceDriverLink`."""
 
     implements(IHWDeviceDriverLink)
     _table = 'HWDeviceDriverLink'
@@ -541,7 +541,7 @@ class HWDeviceDriverLink(SQLBase):
 
 
 class HWDeviceDriverLinkSet:
-    """The set of device driver links."""
+    """See `IHWDeviceDriverLinkSet`."""
 
     implements(IHWDeviceDriverLinkSet)
 

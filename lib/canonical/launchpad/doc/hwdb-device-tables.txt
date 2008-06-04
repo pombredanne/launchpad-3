@@ -28,7 +28,7 @@ row with the same name raises an IntegrityError error.
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
-Existing record IHWVendorName are retrieved by IHWVendorName.getByName().
+Existing IHWVendorName records are retrieved by IHWVendorName.getByName().
 
     >>> intel_name = vendor_name_set.getByName('Intel')
     >>> print intel_name.name
@@ -51,8 +51,8 @@ hexadecimal digits, prepended by '0x'.
     >>> from canonical.launchpad.interfaces import HWBus, IHWVendorIDSet
     >>> vendor_id_set = getUtility(IHWVendorIDSet)
     >>> intel_pci_id = vendor_id_set.create(bus=HWBus.PCI,
-    ...                                 vendor_id='0x8086',
-    ...                                 vendor_name=intel_name)
+    ...                                     vendor_id='0x8086',
+    ...                                     vendor_name=intel_name)
     >>> print intel_pci_id.bus.title, intel_pci_id.vendor_id_for_bus
     PCI 0x8086
     >>> print intel_pci_id.vendor_name.name
@@ -84,8 +84,8 @@ cases characters. Other ID values raise a ValueError.
 The characters a..f are accepted as digits.
 
     >>> another_pci_vendor_id = vendor_id_set.create(bus=HWBus.PCI,
-    ...                                          vendor_id='0x10ae',
-    ...                                          vendor_name=intel_name)
+    ...                                              vendor_id='0x10ae',
+    ...                                              vendor_name=intel_name)
     >>> print another_pci_vendor_id.bus.title
     PCI
     >>> print another_pci_vendor_id.vendor_id_for_bus
@@ -94,8 +94,8 @@ The characters a..f are accepted as digits.
     Intel
 
     >>> another_pci_vendor_id = vendor_id_set.create(bus=HWBus.PCCARD,
-    ...                                          vendor_id='0x10ae',
-    ...                                          vendor_name=intel_name)
+    ...                                              vendor_id='0x10ae',
+    ...                                              vendor_name=intel_name)
     >>> print another_pci_vendor_id.bus.title
     PC Card (32 bit)
     >>> print another_pci_vendor_id.vendor_id_for_bus
@@ -104,8 +104,8 @@ The characters a..f are accepted as digits.
     Intel
 
     >>> another_usb_vendor_id = vendor_id_set.create(bus=HWBus.USB,
-    ...                                          vendor_id='0x10ae',
-    ...                                          vendor_name=intel_name)
+    ...                                              vendor_id='0x10ae',
+    ...                                              vendor_name=intel_name)
     >>> print another_usb_vendor_id.bus.title
     USB
     >>> print another_usb_vendor_id.vendor_id_for_bus
@@ -322,16 +322,16 @@ HWVendorIDSet.getByBusAndVendorID() is used to look up a HWVendorID record.
     >>> print vendor_id.vendor_name.name
     Intel
 
-If no record exists for the given bus and vendor ID, 
+If no record exists for the given bus and vendor ID,
 HWVendorIDSet.getByBusAndVendorID() returns None.
 
-    >>> vendor_id = vendor_id_set.getByBusAndVendorID(bus=HWBus.PCI, 
+    >>> vendor_id = vendor_id_set.getByBusAndVendorID(bus=HWBus.PCI,
     ...                                               vendor_id='0xffff')
     >>> print vendor_id
     None
 
 HWVendorIDSet.getByBusAndVendorID() performs the same validity tests of
-the vendor ID as HWVendorSet.create(): The vendor ID passed to 
+the vendor ID as HWVendorSet.create(): The vendor ID passed to
 HWVendorIDSet.getByBusAndVendorID() must be a valid ID for the given bus.
 
     >>> vendor_id_set.getByBusAndVendorID(bus=HWBus.PCI, vendor_id='8086')
@@ -392,8 +392,8 @@ USB and PCI product IDs are 16 bit integers; SCSI IDs are strings
 with 16 characters. (Note that the IEEE1394 does _not_ define a product
 ID.)
 
-USB, PCI and PCCard IDs are represented as strings with a four-digit 
-hexadecimal number, prefixed by '0x'; the digits a..f must be lower 
+USB, PCI and PCCard IDs are represented as strings with a four-digit
+hexadecimal number, prefixed by '0x'; the digits a..f must be lower
 cases characters. Other ID values raise a ValueError.
 
     >>> another_pci_product = device_set.create(bus=HWBus.PCI,
@@ -707,7 +707,7 @@ IntegrityError error.
 
 === Retrieving HWDevice records ===
 
-Existing HWDevice records can be retrieved by calling 
+Existing HWDevice records can be retrieved by calling
 HWDeviceSet.getByDeviceID()
 
     >>> device = device_set.getByDeviceID(HWBus.USB, '0x07b3', '0x0017')
@@ -720,7 +720,7 @@ HWDeviceSet.getByDeviceID()
     >>> print device.name
     some scanner
 
-The call of HWDeviceSet.getByDeviceID() above did not specify a product 
+The call to HWDeviceSet.getByDeviceID() above did not specify a product
 variant. In such a case, the record having variant==None is returned
 
     >>> print device.variant
@@ -776,7 +776,7 @@ parameters or creates a new one, if no existing record matches.
     >>> device2 = device_set.getOrCreate(bus=HWBus.USB,
     ...                                  vendor_id='0x07b3',
     ...                                  product_id='0x0017',
-    ...                                  product_name='OpticPro UT16', 
+    ...                                  product_name='OpticPro UT16',
     ...                                  variant='OpticPro UT16')
     >>> print device2.bus_vendor.bus.title
     USB
@@ -800,7 +800,7 @@ parameters or creates a new one, if no existing record matches.
     >>> device3 = device_set.getOrCreate(bus=HWBus.USB,
     ...                                  vendor_id='0x07b3',
     ...                                  product_id='0x0017',
-    ...                                  product_name='Some other scanner', 
+    ...                                  product_name='Some other scanner',
     ...                                  variant='Some other scanner')
     >>> print device3.bus_vendor.bus.title
     USB
@@ -861,11 +861,11 @@ IntegrityError error.
 
 == HWDriver ==
 
-If a device is reported as having problems, then we are more 
+If a device is reported as having problems, then we are more
 interested in which drivers are involved rather than the fact that
-there are problems. The table HWDriver stores minimal data about 
+there are problems. The table HWDriver stores minimal data about
 drivers: its package name, the driver name itself and the driver's
-license. This data is linked to HWDevice records via the table 
+license. This data is linked to HWDevice records via the table
 HWDeviceDriverLink (see below).
 
 The driver is not in every case a kernel driver, it may also be for
@@ -933,7 +933,7 @@ The tuple (driver name, package name) must be unique.
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
-An IHWDriver record is retrieved by calling 
+An IHWDriver record is retrieved by calling
 IHWDriverSet.getByPackageAndName().
 
     >>> driver = driver_set.getByPackageAndName('linux-image-generic', 'usb')
@@ -948,7 +948,7 @@ IHWDriverSet.getByPackageAndName().
     >>> print driver.name
     whatever
 
-If no existing record matches the parameters of the 
+If no existing record matches the parameters of the
 IHWDriverSet.getByPackageAndName() call, None is returned.
 
     >>> driver = driver_set.getByPackageAndName('nonsense', 'more nonsense')
@@ -1071,7 +1071,7 @@ The tuple (device, driver) must be unique.
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
-An IHWDeviceDriverLink record is retrieved by 
+An IHWDeviceDriverLink record is retrieved by
 IHWDeviceDriverSet.getByDeviceAndDriver().
 
     >>> link = device_driver_link_set.getByDeviceAndDriver(optic_pro_ut12,
@@ -1081,7 +1081,7 @@ IHWDeviceDriverSet.getByDeviceAndDriver().
     >>> print link.driver.name
     ut12
 
-If no record exists for the given tuple (device, driver), 
+If no record exists for the given tuple (device, driver),
 IHWDeviceDriverSet.getByDeviceAndDriver() returns None.
 
     >>> link = device_driver_link_set.getByDeviceAndDriver(optic_pro_ut12,
@@ -1092,7 +1092,7 @@ IHWDeviceDriverSet.getByDeviceAndDriver() returns None.
 HWDeviceDriverLinkSet.getOrCreate() returns an existing record matching
 the given parameters or creates a new one, if no existing record matches.
 
-    >>> link = device_driver_link_set.getOrCreate(optic_pro_ut12, 
+    >>> link = device_driver_link_set.getOrCreate(optic_pro_ut12,
     ...                                           closed_driver)
     >>> print link.device.name
     OpticPro UT12
@@ -1113,7 +1113,7 @@ the given parameters or creates a new one, if no existing record matches.
 
 == HWSubmissionDevice ==
 
-This table links devices listed in a submission to the 
+This table links devices listed in a submission to the
 HWDeviceDriverLink table. Additionally it links a device of a
 submission to its parent device, as modeled by HAL.
 
