@@ -41,6 +41,7 @@ __all__ = [
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
     'PersonRdfView',
+    'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
     'PersonRelatedProjectsView',
@@ -1425,10 +1426,38 @@ class PersonWithGPGKeysAndPreferredEmail:
 
 
 class PersonRdfView:
-    """A view that sets its mime-type to application/rdf+xml"""
+    """A view that embeds PersonRdfContentsView in a page."""
 
     template = ViewPageTemplateFile(
         '../templates/person-foaf.pt')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('content-type',
+                                        'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s.rdf' %
+                                            self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
+
+
+class PersonRdfContentsView:
+    """A view for the contents of Person FOAF RDF."""
+
+    # We need to set the content_type here explicitly in order to
+    # preserve the case of the elements (which is not preserved in the
+    # parsing of the default text/html content-type.)
+    template = ViewPageTemplateFile(
+        '../templates/person-foaf-contents.pt',
+        content_type="application/rdf+xml")
 
     def __init__(self, context, request):
         self.context = context
@@ -1450,18 +1479,7 @@ class PersonRdfView:
         return members
 
     def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8.
-
-        Render the page template to produce RDF output.
-        The return value is string data encoded in UTF-8.
-
-        As a side-effect, HTTP headers are set for the mime type
-        and filename for download."""
-        self.request.response.setHeader('content-type',
-                                        'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' %
-                                            self.context.name)
+        """Render RDF output, and return it as a string encoded in UTF-8."""
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
