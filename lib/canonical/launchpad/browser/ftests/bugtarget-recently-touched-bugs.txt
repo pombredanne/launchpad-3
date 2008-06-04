@@ -95,8 +95,8 @@ a custom limit.
 
     >>> for index in range(6):
     ...     bug = filebug(bugtarget, 'Bug %s' % index)
-    >>> portlet_view.getMostRecentlyUpdatedBugTasks().count()
+    >>> len(portlet_view.getMostRecentlyUpdatedBugTasks())
     5
 
-    >>> portlet_view.getMostRecentlyUpdatedBugTasks(limit=2).count()
+    >>> len(portlet_view.getMostRecentlyUpdatedBugTasks(limit=2))
     2
