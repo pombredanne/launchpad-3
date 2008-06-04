@@ -22,7 +22,7 @@
       <p>You can choose not to relicense your translations,
         and they will be <strong>removed</strong> when we migrate to
         BSD licensed translations completely.  You will be able to change
-        your opinion at least until end of June, through your
+        your opinion at least until end of July, through your
         <a tal:attributes="href string:${context/fmt:url}/+relicensing">
          relicensing translations</a> page.</p>
 
