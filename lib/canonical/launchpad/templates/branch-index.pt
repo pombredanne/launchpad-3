@@ -176,10 +176,18 @@
                      condition="job">
           <div>
           <tal:is-running condition="job/state/enumvalue:RUNNING">
-            An import is currently running, and was started
+            An import is currently running on
+            <tal:machine content="structure job/machine/fmt:link" />,
+            and was started
             <tal:date-started replace="job/date_started/fmt:displaydate">
               2 hours ago
             </tal:date-started>.
+            <tal:is-logtail condition="job/logtail">
+              The last few lines of the job's output were:
+              <pre tal:content="job/logtail" style="padding-left: 2ex">
+                Logtail.
+              </pre>
+            </tal:is-logtail>
           </tal:is-running>
           <tal:not-running condition="not: job/state/enumvalue:RUNNING">
             The next import is scheduled to run
