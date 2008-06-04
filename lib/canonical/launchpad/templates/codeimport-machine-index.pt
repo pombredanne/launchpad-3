@@ -41,8 +41,15 @@
           <tal:jobs repeat="job jobs">
             <tr>
               <td><tal:branch replace="structure job/code_import/branch/fmt:link"/></td>
-              <td>Started: <tal:branch replace="job/date_started/fmt:approximatedate"/></td>
-              <td>Last heartbeat: <tal:branch replace="job/heartbeat/fmt:approximatedate"/></td>
+              <td>Started: <tal:started replace="job/date_started/fmt:approximatedate"/></td>
+              <td>Last heartbeat: <tal:heartbeat replace="job/heartbeat/fmt:approximatedate"/></td>
+            </tr>
+            <tr tal:condition="job/logtail">
+              <td colspan="3">
+                <pre tal:content="job/logtail" style="padding-left: 4ex; margin-top: 0ex;">
+                  Bob.
+                </pre>
+              </td>
             </tr>
           </tal:jobs>
         </table>
