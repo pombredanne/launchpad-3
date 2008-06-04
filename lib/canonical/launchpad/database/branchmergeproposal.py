@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     WrongBranchMergeProposal,)
 from canonical.launchpad.mailout.notificationrecipientset import \
     NotificationRecipientSet
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 VALID_TRANSITION_GRAPH = {
