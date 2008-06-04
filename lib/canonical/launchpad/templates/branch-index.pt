@@ -11,7 +11,7 @@
 >
 
 <style type="text/css" metal:fill-slot="head_epilogue">
-  div.logtail {
+  .logtail {
     padding-left: 2em;
   }
 </style>

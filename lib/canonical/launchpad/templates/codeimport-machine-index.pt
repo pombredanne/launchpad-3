@@ -10,7 +10,7 @@
   i18n:domain="launchpad">
 
 <style type="text/css" metal:fill-slot="head_epilogue">
-  td.logtail {
+  .logtail {
     padding-left: 2em;
     margin-top: 0em;
   }
