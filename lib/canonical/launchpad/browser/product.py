@@ -63,7 +63,8 @@ from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
     ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
+    IPersonSet, IPillarNameSet, IProduct,
+    IProductReviewSearch, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
@@ -97,6 +98,7 @@ from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.date import DateWidget
+from canonical.widgets.itemswidgets import CheckBoxMatrixWidget
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -1143,72 +1145,18 @@ class ProductSetView(LaunchpadView):
 class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
-    schema = IProduct
-    product = None
-    field_names = [
-        'license_reviewed',
-        'licenses',
-        'active',
-        ]
+    schema = IProductReviewSearch
+
     custom_widget('search_text', NewLineToSpacesWidget)
     custom_widget(
-        'licenses', LicenseWidget, column_count=3, orientation='vertical')
+        'licenses', CheckBoxMatrixWidget, column_count=4,
+        orientation='vertical')
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
-    custom_widget('subscription_date_expires', DateWidget)
-    custom_widget('subscription_date_last_modified', DateWidget)
-
-    def setUpFields(self):
-        """See `LaunchpadViewForm`.
-
-        Add fields that are not part of IProduct.
-        """
-        super(ProductSetReviewLicensesView, self).setUpFields()
-        self.form_fields = (
-            form.Fields(self._getSearchTextField())
-            + self.form_fields
-            + form.FormFields(
-                self._getCreatedAfter(),
-                self._getCreatedBefore(),
-                self._getSubscriptionDateExpiresField(),
-                self._getSubscriptionDateLastModifiedField()))
-
-    def _getSearchTextField(self):
-        return form.FormField(
-            TextLine(__name__='search_text',
-                     title=_("Search text"),
-                     required=False),
-            custom_widget=self.custom_widgets['search_text'])
-
-    def _getCreatedAfter(self):
-        return form.FormField(
-            Date(__name__='created_after',
-                     title=_("Created after"),
-                     required=False),
-            custom_widget=self.custom_widgets['created_after'])
-
-    def _getCreatedBefore(self):
-        return form.FormField(
-            Date(__name__='created_before',
-                     title=_("Created before"),
-                     required=False),
-            custom_widget=self.custom_widgets['created_before'])
-
-    def _getSubscriptionDateExpiresField(self):
-        widget = self.custom_widgets['subscription_date_expires']
-        return form.FormField(
-            Date(__name__='subscription_date_expires',
-                     title=_("Date subscription expires"),
-                     required=False),
-            custom_widget=widget)
-
-    def _getSubscriptionDateLastModifiedField(self):
-        widget = self.custom_widgets['subscription_date_last_modified']
-        return form.FormField(
-            Date(__name__='subscription_date_last_modified',
-                     title=_("Date subscription modified"),
-                     required=False),
-            custom_widget=widget)
+    custom_widget('subscription_expires_after', DateWidget)
+    custom_widget('subscription_expires_before', DateWidget)
+    custom_widget('subscription_modified_after', DateWidget)
+    custom_widget('subscription_modified_before', DateWidget)
 
     @action(_('Search'), name='search')
     def nothing(self, action, data):
@@ -1219,18 +1167,13 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         # of validation.
         data = {}
         self._validate(None, data)
-        search_params = {
-            'search_text': data.get('search_text'),
-            'license_reviewed': data.get('license_reviewed', False),
-            'licenses': data.get('licenses'),
-            'active': data.get('active', False),
-            'created_after': data.get('created_after'),
-            'created_before': data.get('created_before'),
-            'subscription_date_expires':
-                data.get('subscription_date_expires'),
-            'subscription_date_last_modified':
-                data.get('subscription_date_last_modified'),
-            }
+        # Get default values from the schema since the form defaults
+        # aren't available until the search button is pressed.
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        # Override the defaults with the form values if available.
+        search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
                               self.request)
 

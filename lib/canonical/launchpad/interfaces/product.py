@@ -8,11 +8,14 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'IProductReviewSearch',
     'License',
     ]
 
+import sets
+
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Set, Text, TextLine
+from zope.schema import Bool, Choice, Date, Int, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -508,3 +511,37 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
+
+
+class IProductReviewSearch(Interface):
+    """A search form for products being reviewed."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    active = Bool(title=_('Active'), required=False, default=True)
+
+    license_reviewed = Bool(
+        title=_('License Reviewed'), required=False, default=False)
+
+    # Zope requires sets.Set() instead of the builtin set().
+    licenses = Set(
+        title=_('Licenses'),
+        value_type=Choice(vocabulary=License),
+        required=False,
+        default=sets.Set([License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+
+    created_after = Date(title=_("Created after"), required=False)
+
+    created_before = Date(title=_("Created before "), required=False)
+
+    subscription_expires_after = Date(
+        title=_("Subscription expires after"), required=False)
+
+    subscription_expires_before = Date(
+        title=_("Subscription expires before"), required=False)
+
+    subscription_modified_after = Date(
+        title=_("Subscription modified after"), required=False)
+
+    subscription_modified_before = Date(
+        title=_("Subscription modified before"), required=False)

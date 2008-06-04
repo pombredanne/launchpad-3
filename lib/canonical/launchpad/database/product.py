@@ -13,7 +13,7 @@ import calendar
 import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+    SQLObjectNotFound, AND, OR)
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -886,8 +886,10 @@ class ProductSet:
 
     def forReview(self, search_text, license_reviewed, licenses,
                   active, created_after, created_before,
-                  subscription_date_expires,
-                  subscription_date_last_modified):
+                  subscription_expires_after,
+                  subscription_expires_before,
+                  subscription_modified_after,
+                  subscription_modified_before):
         """See canonical.launchpad.interfaces.product.IProductSet."""
 
         conditions = [
@@ -895,19 +897,41 @@ class ProductSet:
             Product.q.active == active,
             ]
         if created_after is not None:
-            conditions.append(Product.q.datecreated > created_after)
+            conditions.append(Product.q.datecreated >= created_after)
         if created_before is not None:
-            conditions.append(Product.q.datecreated < created_before)
-        if subscription_date_expires is not None:
+            conditions.append(Product.q.datecreated <= created_before)
+
+        need_join = False
+        if subscription_expires_after is not None:
             conditions.append(CommercialSubscription.q.date_expires
-                              == subscription_date_expires)
-        if subscription_date_last_modified is not None:
+                              >= subscription_expires_after)
+            need_join = True
+        if subscription_expires_before is not None:
+            conditions.append(CommercialSubscription.q.date_expires
+                              <= subscription_expires_before)
+            need_join = True
+
+        if subscription_modified_after is not None:
             conditions.append(CommercialSubscription.q.date_last_modified
-                              == subscription_date_last_modified)
-        if licenses is not None:
+                              >= subscription_modified_after)
+            need_join = True
+        if subscription_modified_before is not None:
+            conditions.append(CommercialSubscription.q.date_last_modified
+                              <= subscription_modified_before)
+            need_join = True
+
+        if need_join:
+            conditions.append(
+                CommercialSubscription.q.productID == Product.q.id)
+
+        if licenses is not None and len(licenses) > 0:
+            or_conditions = []
             for license in licenses:
-                conditions.append(ProductLicense.q.license == license)
-        result = Product.select(AND(*conditions))
+                or_conditions.append(ProductLicense.q.license == license)
+            conditions.append(OR(*or_conditions))
+            conditions.append(ProductLicense.q.productID == Product.q.id)
+
+        result = Product.select(AND(*conditions), orderBy=['displayname'])
         return result
 
     def search(self, text=None, soyuz=None,

@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -17,12 +17,13 @@
 
   <h1>Projects for review</h1>
 
-  <p>Please review these items.</p>
   <div metal:use-macro="context/@@launchpad_form/form" />
+  <h3>Please review these items.</h3>
   <tal:navigation replace="structure batch/@@+navigation-links-upper" />
   <div tal:repeat="product batch/currentBatch"
        tal:replace="structure product/@@+listing-for-review" />
   <tal:navigation replace="structure batch/@@+navigation-links-lower" />
 </div>
+
 </body>
 </html>
