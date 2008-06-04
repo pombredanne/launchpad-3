@@ -69,25 +69,24 @@ class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):
         # max_jobs_per_machine jobs running, then we should look for a job.
         self.assertTrue(self.machine.shouldLookForJob())
 
+    def test_noHeartbeatWhenCreated(self):
+        # Machines are created with a NULL heartbeat.
+        self.assertTrue(self.machine.heartbeat is None)
+
     def test_noHeartbeatUpdateWhenOffline(self):
         # When the machine is offline, the heartbeat is not updated.
-        # Guardedly check that the machine was created with a NULL heartbeat.
-        self.assertTrue(self.machine.heartbeat is None)
         self.machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
         self.machine.shouldLookForJob()
+        self.assertTrue(self.machine.heartbeat is None)
 
     def test_heartbeatUpdateWhenQuiescing(self):
         # When the machine is quiescing, the heartbeat is updated.
-        # Guardedly check that the machine was created with a NULL heartbeat.
-        self.assertTrue(self.machine.heartbeat is None)
         self.machine.setQuiescing(self.factory.makePerson())
         self.machine.shouldLookForJob()
         self.assertSqlAttributeEqualsDate(self.machine, 'heartbeat', UTC_NOW)
 
     def test_heartbeatUpdateWhenOnline(self):
         # When the machine is online, the heartbeat is updated.
-        # Guardedly check that the machine was created with a NULL heartbeat.
-        self.assertTrue(self.machine.heartbeat is None)
         self.machine.shouldLookForJob()
         self.assertSqlAttributeEqualsDate(self.machine, 'heartbeat', UTC_NOW)
 

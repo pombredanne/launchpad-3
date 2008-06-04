@@ -38,7 +38,7 @@ class TestCaseWithFactory(TestCase):
         sql_object.syncUpdate()
         sql_class = type(sql_object)
         found_object = sql_class.selectOne(
-            'id=%%s AND %s=%%s' % (attribute_name,)
+            ('id=%s AND ' + attribute_name + '=%s')
             % sqlvalues(sql_object.id, date))
         if found_object is None:
             self.fail(
