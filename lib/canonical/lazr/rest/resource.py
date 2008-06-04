@@ -768,10 +768,21 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
     @property
     def type_url(self):
         "The URL to the resource type for the object."
-        return "%s#%s" % (
-            canonical_url(self.request.publication.getApplication(
-                    self.request)),
-            self.collection.__class__.__name__)
+        if IScopedCollection.providedBy(self.collection):
+            # Scoped collection. The type URL depends on what type of
+            # entry the collection holds.
+            # Import here is necessary to avoid recursive import.
+            from canonical.lazr.rest.tales import entry_adapter_for_schema
+            adapter = entry_adapter_for_schema(
+                self.context.relationship.value_type.schema)
+            return adapter.entry_page_type_link
+        else:
+            # Top-level collection.
+            base_url = canonical_url(
+                self.request.publication.getApplication(self.request))
+            class_name = self.collection.__class__.__name__
+            return "%s#%s" % (base_url, class_name)
+
 
 
 class ServiceRootResource(HTTPResource):

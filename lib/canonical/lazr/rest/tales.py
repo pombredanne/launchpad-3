@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+all = ['entry_adapter_for_schema']
+
 import textwrap
 import urllib
 
@@ -25,6 +27,17 @@ from canonical.lazr.interfaces import (
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import CollectionResource
 
+def entry_adapter_for_schema(model_schema):
+    """Retrieve an entry adapter for a model interface.
+
+    This method locates the IEntry subclass corresponding to the
+    model interface, and creates a WadlEntryAdapterAPI for it.
+    """
+    entry_class = getGlobalSiteManager().adapters.lookup(
+        (model_schema,), IEntry)
+    return WadlEntryAdapterAPI(entry_class)
+
+
 class WadlAPI:
     """Base class for WADL-related function namespaces."""
 
@@ -32,16 +45,6 @@ class WadlAPI:
         """Return the URL to the service root."""
         request = get_current_browser_request()
         return canonical_url(request.publication.getApplication(request))
-
-    def _entry_adapter_for_schema(self, model_schema):
-        """Retrieve an entry adapter for a model interface.
-
-        This method locates the IEntry subclass corresponding to the
-        model interface, and creates a WadlEntryAdapterAPI for it.
-        """
-        entry_class = getGlobalSiteManager().adapters.lookup(
-            (model_schema,), IEntry)
-        return WadlEntryAdapterAPI(entry_class)
 
     def docstringToXHTML(self, doc):
         """Convert an epydoc docstring to XHTML."""
@@ -115,12 +118,7 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
     @property
     def type_link(self):
         "The URL to the resource type for the object."
-        if IScopedCollection.providedBy(self.resource.collection):
-            adapter = self._entry_adapter_for_schema(
-                self.context.relationship.value_type.schema)
-            return adapter.entry_page_type_link
-        else:
-            return self.resource.type_url
+        return self.resource.type_url
 
 
 class WadlByteStorageResourceAPI(WadlResourceAPI):
@@ -376,7 +374,7 @@ class WadlFieldAPI(WadlAPI):
             schema = self.field.schema
         else:
             raise AssertionError("Field is not a link to another resource.")
-        adapter = self._entry_adapter_for_schema(schema)
+        adapter = entry_adapter_for_schema(schema)
 
         if ICollectionField.providedBy(self.field):
             return adapter.entry_page_type_link

@@ -169,9 +169,11 @@ The elements of a collection can be looked up by unique identifier:
 
 A collection may be scoped to an element:
 
-  >>> result = webservice.get("/beta/~admins/members")
+  >>> result = webservice.get("/beta/~admins/members").jsonBody()
+  >>> result['resource_type_link']
+  u'http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource'
   >>> team_members = sorted(
-  ...     result.jsonBody()['entries'], key=itemgetter('name'))
+  ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)
   5
   >>> team_members[0]['name']
