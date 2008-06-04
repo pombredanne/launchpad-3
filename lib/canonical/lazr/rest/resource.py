@@ -244,7 +244,7 @@ class WebServiceBatchNavigator(BatchNavigator):
     This batch navigator differs from others in the names of the query
     variables it expects. This class expects the starting point to be
     contained in the query variable "ws.start" and the size of the
-    batch to be contained in the query variable ""ws.size". When this
+    batch to be contained in the query variable "ws.size". When this
     navigator serves links, it includes query variables by those
     names.
     """
@@ -418,6 +418,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         """
         data = {}
         data['self_link'] = canonical_url(self.context)
+        data['resource_type_link'] = self.type_link
         for name, field in getFields(self.entry.schema).items():
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
@@ -533,6 +534,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             return error
         return self._applyChanges(changeset)
 
+    @property
+    def type_url(self):
+        "The URL to the resource type for this resource."
+        return "%s#%s" % (
+            canonical_url(self.request.publication.getApplication(
+                    self.request)),
+            self.entry.__class__.__name__)
+
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
 
@@ -545,13 +554,20 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         validated_changeset = {}
         errors = []
 
-        # The self link isn't part of the schema, so it's
-        # handled separately.
+        # The self link and resource type link aren't part of the
+        # schema, so they're handled separately.
+        modified_read_only_attribute = ("%s: You tried to modify a "
+                                        "read-only attribute.")
         if 'self_link' in changeset:
             if changeset['self_link'] != canonical_url(self.context):
-                errors.append("self_link: You tried to modify "
-                              "a read-only attribute.")
-            del(changeset['self_link'])
+                errors.append(modified_read_only_attribute % 'self_link')
+            del changeset['self_link']
+
+        if 'resource_type_link' in changeset:
+            if changeset['resource_type_link'] != self.type_link:
+                errors.append(modified_read_only_attribute %
+                              'resource_type_link')
+            del changeset['resource_type_link']
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
@@ -586,7 +602,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # value) move it from the client changeset to the
             # validated changeset.
             original_value = changeset[repr_name]
-            del(changeset[repr_name])
+            del changeset[repr_name]
             if original_value == current_value == self.REDACTED_VALUE:
                 # The client can't see the field's current value, and
                 # isn't trying to change it. Skip to the next field.
@@ -613,8 +629,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # change them.
                 if value != current_value:
                     if field.readonly:
-                        errors.append("%s: You tried to modify a read-only "
-                                      "attribute." % repr_name)
+                        errors.append(modified_read_only_attribute
+                                      % repr_name)
                     else:
                         errors.append(
                             "%s: To modify this field you need to send a PUT "
@@ -647,8 +663,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             if field.readonly:
                 change_this_field = False
                 if value != current_value:
-                    errors.append("%s: You tried to modify a read-only "
-                                  "attribute." % repr_name)
+                    errors.append(modified_read_only_attribute
+                                  % repr_name)
                     continue
 
             if change_this_field is True and value != current_value:

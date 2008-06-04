@@ -32,6 +32,7 @@ for teams (as they're defined in the ITeam interface).
     participants_collection_link: http://.../~salgado/participants
     preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
     proposed_members_collection_link: http://.../~salgado/proposed_members
+    resource_type_link: http://api.launchpad.dev/beta/#PersonEntryAdapter
     self_link: http://.../~salgado
     team_memberships_collection_link: http://.../~salgado/team_memberships
     team_owner_link: None
@@ -71,6 +72,7 @@ for teams (as they're defined in the ITeam interface).
     preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
     proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
     renewal_policy: invite them to apply for renewal
+    resource_type_link: http://api.launchpad.dev/beta/#TeamEntryAdapter
     self_link: http://.../~ubuntu-team
     subscription_policy: Moderated Team
     team_description: This Team is responsible for the Ubuntu Distribution
@@ -170,7 +172,7 @@ Team memberships also have data fields.
     >>> sorted(salgado_landscape)
     [u'date_expires', u'date_joined',
      u'last_change_comment', u'last_changed_by_link', u'member_link',
-     u'self_link', u'status', u'team_link']
+     u'resource_type_link', u'self_link', u'status', u'team_link']
 
 Each team membership links to the person who approved the link.
 
@@ -285,6 +287,7 @@ representations too.
     >>> for key, value in sorted(wiki_name.items()):
     ...     print "%s: %s" % (key, value)
     person_link: http://.../~name12
+    resource_type_link: http://api.launchpad.dev/beta/#WikiNameEntryAdapter
     self_link: http://.../~name12/+wikiname/12
     url: https://wiki.ubuntu.com/SamplePerson
     wiki: https://wiki.ubuntu.com/
@@ -315,11 +318,12 @@ representations too.
     >>> jabber_id = sorted(
     ...     webservice.get(jabber_ids_link).jsonBody()['entries'])[0]
     >>> sorted(jabber_id)
-    [u'jabberid', u'person_link', u'self_link']
+    [u'jabberid', u'person_link', u'resource_type_link', u'self_link']
     >>> for key, value in sorted(jabber_id.items()):
     ...     print "%s: %s" % (key, value)
     jabberid: markshuttleworth@jabber.org
     person_link: http://.../~sabdfl
+    resource_type_link: http://api.launchpad.dev/beta/#JabberIDEntryAdapter
     self_link: http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
 
 One can only traverse to the Jabber IDs of the person already traversed
@@ -346,7 +350,8 @@ too.
 
     >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
     >>> sorted(irc_id)
-    [u'network', u'nickname', u'person_link', u'self_link']
+    [u'network', u'nickname', u'person_link', u'resource_type_link',
+     u'self_link']
     >>> for key, value in sorted(irc_id.items()):
     ...     print "%s: %s" % (key, value)
     network: irc.freenode.net

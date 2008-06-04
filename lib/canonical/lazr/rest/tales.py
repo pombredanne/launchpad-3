@@ -85,9 +85,7 @@ class WadlEntryResourceAPI(WadlResourceAPI):
 
     @property
     def type_link(self):
-        "The URL to the resource type for the object."
-        return "%s#%s" % (self._service_root_url(),
-                          self.entry.__class__.__name__)
+        return self.resource.type_url
 
 
 class WadlCollectionResourceAPI(WadlResourceAPI):

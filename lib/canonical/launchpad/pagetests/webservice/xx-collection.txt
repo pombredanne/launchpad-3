@@ -151,6 +151,7 @@ The elements of a collection can be looked up by unique identifier:
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
+  resource_type_link: http://api.launchpad.dev/beta/#TeamEntryAdapter
   self_link: http://.../~admins
   subscription_policy: Moderated Team
   team_description: Launchpad Administrators

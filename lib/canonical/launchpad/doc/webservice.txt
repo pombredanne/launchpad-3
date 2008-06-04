@@ -1104,6 +1104,8 @@ value (Brazilian) specified in CookbookFactoryOperation for it.
      (u'name', u'Feijoada'),
      (u'recipes_collection_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/recipes'),
+     (u'resource_type_link',
+      u'http://api.launchpad.dev/beta/#CookbookEntry'),
      (u'self_link', u'http://api.launchpad.dev/beta/cookbooks/Feijoada')]
 
 You can also traverse from an entry to an item in a scoped collection:
@@ -1138,7 +1140,8 @@ Another example traversing to a comment:
     >>> comment_one_resource = request.traverse(app)
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
-    [(u'self_link',
+    [(u'resource_type_link', u'http://api.launchpad.dev/beta/#CommentEntry'),
+     (u'self_link',
       u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]
 
