@@ -409,8 +409,10 @@ conjoined_master and conjoined_slave properties.
 A distroseries/productseries task that isn't the current development
 focus, doesn't have any conjoined masters or slaves.
 
+    >>> from storm.store import Store
     >>> alsa_utils_stable = alsa_utils.newSeries(
     ...     launchbag.user, 'stable', 'The stable series.')
+    >>> Store.of(alsa_utils_stable).flush()
     >>> alsa_utils.development_focus == alsa_utils_stable
     False
     >>> stable_netapplet_task = bugtaskset.createTask(
@@ -549,6 +551,7 @@ require extra privileges.)
 4. Milestone
 
     >>> test_milestone = alsa_utils.development_focus.newMilestone("test")
+    >>> Store.of(test_milestone).flush()
 
     >>> generic_alsa_utils_task.milestone is None
     True
@@ -1140,16 +1143,11 @@ distribution column set. In fact, a task must have exactly one of its product,
 distribution or distroseries fields set, otherwise the database integrity
 constraints will be violated.
 
-note that DatabaseError is a superclass of both IntegrityError and
-ProgrammingError
-
-    >>> from psycopg2 import DatabaseError
-    >>> import sys
-    >>> try: bad_task = bugtaskset.createTask(
+    >>> bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
     ...     owner=sabdfl, status=STATUS_NEW,
     ...     importance=IMPORTANCE_MEDIUM)
-    ... except DatabaseError: print sys.exc_value
-    ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
-    <BLANKLINE>
-    INSERT INTO BugTask ...
+    Traceback (most recent call last):
+    ...
+    IntegrityError: new row for relation "bugtask" violates check
+                    constraint "bugtask_assignment_checks"
