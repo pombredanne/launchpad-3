@@ -115,8 +115,8 @@ class LaunchpadSearchView(LaunchpadFormView):
     def focusedElementScript(self):
         """Focus the first widget when there are no matches."""
         if self.has_matches:
-            return super(LaunchpadSearchView, self).focusedElementScript()
-        return None
+            return None
+        return super(LaunchpadSearchView, self).focusedElementScript()
 
     @property
     def bug(self):
