@@ -1180,6 +1180,41 @@ Branches with revisions are deletable.
     >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     None
+    >>> logout()
+
+A user without launchpad.Edit cannot delete a branch.
+
+    >>> login('no-priv@canonical.com')
+    >>> message = factory.makeCodeReviewMessage()
+    >>> branch = message.branch_merge_proposal.target_branch
+    >>> branch.destroySelf(break_references=True)
+    Traceback (most recent call last):
+    Unauthorized: (<Branch ...>, 'destroySelf', 'launchpad.Edit')
+
+Even if users with no delete rights on the branch could somehow access
+the page, they still wouldn't be able to delete the message.  The message
+is listed as not "allowed":
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, LaunchpadTestRequest()), name="+delete")
+    >>> for req in branch_delete_view.display_deletion_requirements:
+    ...     print req[0], 'allowed:', req[3]
+    <...CodeReviewMessage...> allowed: False
+
+The "allowed: False" status is mirrored in the display.
+
+    >>> request = LaunchpadTestRequest(
+    ...   method='POST',
+    ...   form={'field.actions.delete_branch': 'Delete'})
+    >>> branch_delete_view = getMultiAdapter(
+    ...   (branch, request), name="+delete")
+    >>> branch_delete_view.delete_branch_action.success({})
+    >>> for notice in request.response.notifications:
+    ...     print notice.message
+    This branch cannot be deleted.
+    >>> logout()
 
 
 == Branch references ==
