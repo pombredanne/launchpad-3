@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from itertools import chain
 import optparse
 
 from os import curdir, listdir, sep, symlink
@@ -98,12 +99,11 @@ if __name__ == '__main__':
         abspath(join(options.target, 'opensource')),
         abspath(join(options.target, 'sourcecode')))
 
-    for generator in [missing_files, missing_opensource_files]:
-        for target, link in generator:
-            symlink(target, link)
-            if options.verbose:
-                stdout.write('%s -> %s\n' % (
-                        sep.join(link.rsplit(sep, 3)[-3:]), target))
+    for target, link in chain(missing_files, missing_opensource_files):
+        symlink(target, link)
+        if options.verbose:
+            stdout.write('%s -> %s\n' % (
+                    sep.join(link.rsplit(sep, 3)[-3:]), target))
 
 
 # End
