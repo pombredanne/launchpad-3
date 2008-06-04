@@ -118,11 +118,13 @@ representations too.
     >>> email = webservice.get(
     ...     sample_person['preferred_email_address_link']).jsonBody()
     >>> sorted(email)
-    [u'email', u'person_link', u'self_link']
+    [u'email', u'person_link', u'resource_type_link', u'self_link']
     >>> for key, value in sorted(email.items()):
     ...     print "%s: %s" % (key, value)
     email: test@canonical.com
     person_link: http://.../~name12
+    resource_type_link:
+      http://api.launchpad.dev/beta/#EmailAddressEntryAdapter
     self_link: http://.../~name12/+email/test@canonical.com
 
 One can only traverse to the email addresses of the person already
@@ -283,7 +285,8 @@ representations too.
 
     >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
     >>> sorted(wiki_name)
-    [u'person_link', u'self_link', u'url', u'wiki', u'wikiname']
+    [u'person_link', u'resource_type_link', u'self_link', u'url',
+     u'wiki', u'wikiname']
     >>> for key, value in sorted(wiki_name.items()):
     ...     print "%s: %s" % (key, value)
     person_link: http://.../~name12
@@ -357,6 +360,7 @@ too.
     network: irc.freenode.net
     nickname: mark
     person_link: http://.../~sabdfl
+    resource_type_link: http://api.launchpad.dev/beta/#IrcIDEntryAdapter
     self_link: http://.../~sabdfl/+ircnick/1
 
 One can only traverse to the IRC IDs of the person already traversed

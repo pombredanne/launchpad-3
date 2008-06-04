@@ -12,6 +12,8 @@ A collection responds to GET by serving one page of the objects in the
 collection.
 
   >>> people_collection = webservice.get("/beta/people").jsonBody()
+  >>> people_collection['resource_type_link']
+  u'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
   >>> people_collection['total_size']
   63
   >>> people_collection['next_collection_link']

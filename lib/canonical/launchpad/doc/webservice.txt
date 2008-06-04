@@ -917,6 +917,9 @@ Calling the collection resource yields a JSON document, which can be
 parsed with standard tools.
 
     >>> representation = simplejson.loads(collection())
+    >>> representation['resource_type_link']
+    u'http://api.launchpad.dev/beta/#CookbookCollection'
+
 
 === Pagination ===
 
@@ -925,7 +928,7 @@ particular collection is small enough to fit on one page; it's only
 got three entries.
 
     >>> sorted(representation.keys())
-    [u'entries', u'start', u'total_size']
+    [u'entries', u'resource_type_link', u'start', u'total_size']
     >>> len(representation['entries'])
     3
     >>> representation['total_size']
@@ -940,7 +943,8 @@ works. Here's page one, with two cookbooks on it.
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
-    [u'entries', u'next_collection_link', u'start', u'total_size']
+    [u'entries', u'next_collection_link', u'resource_type_link', 
+     u'start', u'total_size']
     >>> representation['next_collection_link']
     u'http://api.launchpad.dev/beta/cookbooks?ws.start=2&ws.size=2'
     >>> len(representation['entries'])
@@ -958,7 +962,8 @@ has the last cookbook on it.
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
-    [u'entries', u'prev_collection_link', u'start', u'total_size']
+    [u'entries', u'prev_collection_link', u'resource_type_link',
+     u'start', u'total_size']
     >>> representation['prev_collection_link']
     u'http://api.launchpad.dev/beta/cookbooks?ws.start=0&ws.size=2'
     >>> len(representation['entries'])

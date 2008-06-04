@@ -418,7 +418,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         """
         data = {}
         data['self_link'] = canonical_url(self.context)
-        data['resource_type_link'] = self.type_link
+        data['resource_type_link'] = self.type_url
         for name, field in getFields(self.entry.schema).items():
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
@@ -564,7 +564,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             del changeset['self_link']
 
         if 'resource_type_link' in changeset:
-            if changeset['resource_type_link'] != self.type_link:
+            if changeset['resource_type_link'] != self.type_url:
                 errors.append(modified_read_only_attribute %
                               'resource_type_link')
             del changeset['resource_type_link']
@@ -760,9 +760,18 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
                     'Content-Type', self.WADL_TYPE)
                 return result
             result = self.batch(entries, self.request)
+            result['resource_type_link'] = self.type_url
 
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
+
+    @property
+    def type_url(self):
+        "The URL to the resource type for the object."
+        return "%s#%s" % (
+            canonical_url(self.request.publication.getApplication(
+                    self.request)),
+            self.collection.__class__.__name__)
 
 
 class ServiceRootResource(HTTPResource):

@@ -120,9 +120,7 @@ class WadlCollectionResourceAPI(WadlResourceAPI):
                 self.context.relationship.value_type.schema)
             return adapter.entry_page_type_link
         else:
-            collection_class = self.resource.collection.__class__
-            adapter = WadlCollectionAdapterAPI(collection_class)
-            return adapter.type_link
+            return self.resource.type_url
 
 
 class WadlByteStorageResourceAPI(WadlResourceAPI):
