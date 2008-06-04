@@ -29,8 +29,8 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
-# XXX: salgado, 2008-06-02: We should use a more generic term here as this is
-# the vocabulary used in ProductSeries.status as well.
+# XXX: salgado, 2008-06-02: We should use a more generic name here as this
+# enum is used in ProductSeries.status as well.
 class DistroSeriesStatus(DBEnumeratedType):
     """Distro/Product Series Status
 
