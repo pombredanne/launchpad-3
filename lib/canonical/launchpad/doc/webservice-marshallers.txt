@@ -37,15 +37,15 @@ implement that interface.
 
 The representation_name attribute is used to retrieve the name under
 which the field should be stored in the JSON representation. In the
-simple case, it's the same name than the field.
+simple case, it's the same name as the field.
 
     >>> marshaller.representation_name
     'field_name'
 
 The marshall_from_json_data() method is used during PUT and PATCH
-requests to transform the value provided in the JSON representation to
-a value the underlying schema field. In the simple case, the value is
-returned unchanged.
+requests to transform the value provided in the JSON representation to a
+value the underlying schema field. In SimpleFieldMarshaller
+implementation, the value in is returned unchanged.
 
     >>> marshaller.marshall_from_json_data("foo")
     'foo'
@@ -58,11 +58,12 @@ returned unchanged.
     >>> print marshaller.marshall_from_json_data(None)
     None
 
-The marshall_from_request() method is used during operatio invocation to
-transform a value submitted via the query string or form-encoded POST
-data into a value the will be accepted by the underlying schema field.
-In the simple case, that's the same value than provided in the request,
-except that the empty string is converted to None.
+The marshall_from_request() method is used during operation invocation
+to transform a value submitted via the query string or form-encoded POST
+data into a value that will be accepted by the underlying schema field.
+In the SimpleFieldMarshaller implementation, that's the same value as
+provided in the request, except that the empty string is converted to
+None.
 
     >>> marshaller.marshall_from_request("foo")
     'foo'
@@ -76,8 +77,10 @@ except that the empty string is converted to None.
 The unmarshall() method is used to convert the field's value to a value
 that can be serialized to JSON as part of an entry representation.  The
 first parameter is the entry that the value is part of (for fields that
-will transform the value into a URL for example), the second on is the
-value to convert.  In the simple case, the value is returned unchanged.
+will transform the value into a URL for example--see the CollectionField
+marshaller for an example). The second one is the value to convert.  In
+the SimpleFieldMarshaller implementation, the value is returned
+unchanged.
 
     >>> marshaller.unmarshall(None, 'foo')
     'foo'
