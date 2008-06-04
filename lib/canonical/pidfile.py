@@ -10,14 +10,25 @@ from signal import signal, SIGTERM
 
 from canonical.config import config
 
-def pidfile_path(service_name):
+def pidfile_path(service_name, use_config=None):
     """Return the full pidfile path for the given service
 
-    >>> pidfile_path('nuts') == '/tmp/%s-nuts.pid' % config.instance_name
+    >>> pidfile_path('nuts') == '/var/tmp/%s-nuts.pid' % config.instance_name
     True
+
+    You can pass in your own config instance to use.
+
+    >>> class MyConfig:
+    ...     class canonical:
+    ...         pid_dir = '/var/tmp'
+    ...     instance_name = 'blah'
+    >>> pidfile_path('beans', MyConfig)
+    '/var/tmp/blah-beans.pid'
     """
-    return os.path.join(config.canonical.pid_dir, '%s-%s.pid' % (
-        config.instance_name, service_name
+    if use_config is None:
+        use_config = config
+    return os.path.join(use_config.canonical.pid_dir, '%s-%s.pid' % (
+        use_config.instance_name, service_name
         ))
 
 
@@ -96,26 +107,21 @@ def make_pidfile(service_name):
     os.rename(tempname, pidfile)
 
 
-def remove_pidfile(service_name):
+def remove_pidfile(service_name, use_config=None):
     """Remove the PID file.
 
     This should only be needed if you are overriding the default SIGTERM
     signal handler.
     """
-    pidfile = pidfile_path(service_name)
-    if os.path.exists(pidfile):
-        # Check that the PID is actually ours in case something overwrote
-        # it or we are forked.
-        pid = open(pidfile).read()
-        try:
-            pid = int(pid)
-        except ValueError:
-            raise ValueError("Invalid PID %s" % repr(pid))
-        if pid == os.getpid():
-            os.unlink(pidfile)
+    pidfile = pidfile_path(service_name, use_config)
+    pid = get_pid(service_name, use_config)
+    if pid is None:
+        return
+    if use_config is not None or pid == os.getpid():
+        os.unlink(pidfile)
 
 
-def get_pid(service_name):
+def get_pid(service_name, use_config=None):
     """Return the PID for the given service as an integer, or None
 
     May raise a ValueError if the PID file is corrupt.
@@ -134,8 +140,26 @@ def get_pid(service_name):
     >>> remove_pidfile('nuts')
     >>> get_pid('nuts') is None
     True
+
+    You can also pass in your own config instance.
+
+    >>> class MyConfig:
+    ...     class canonical:
+    ...         pid_dir = '/var/tmp'
+    ...     instance_name = 'blah'
+    >>> path = pidfile_path('beans', MyConfig)
+    >>> path
+    '/var/tmp/blah-beans.pid'
+    >>> file = open(path, 'w')
+    >>> try:
+    ...     print >> file, 72
+    ... finally:
+    ...     file.close()
+    >>> get_pid('beans', MyConfig)
+    72
+    >>> os.remove(path)
     """
-    pidfile = pidfile_path(service_name)
+    pidfile = pidfile_path(service_name, use_config)
     try:
         pid = open(pidfile).read()
         return int(pid)
