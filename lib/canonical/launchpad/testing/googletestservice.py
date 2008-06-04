@@ -146,12 +146,12 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
         open up.
     """
     host, port = get_service_endpoint()
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(5.0) # Block for at most X seconds.
 
     start = time.time()  # Record when we started polling.
     try:
         while True:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5.0) # Block for at most X seconds.
             try:
                 sock.connect((host, port))
                 sock.close()
