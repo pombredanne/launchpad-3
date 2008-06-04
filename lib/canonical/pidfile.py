@@ -112,6 +112,34 @@ def remove_pidfile(service_name, use_config=None):
 
     This should only be needed if you are overriding the default SIGTERM
     signal handler.
+
+    >>> path = pidfile_path('legumes')
+    >>> file = open(path, 'w')
+    >>> try:
+    ...     print >> file, os.getpid()
+    ... finally:
+    ...     file.close()
+    >>> remove_pidfile('legumes')
+    >>> os.path.exists(path)
+    False
+
+    You can also pass in your own config instance, in which case the pid does
+    not need to match the current process's pid.
+
+    >>> class MyConfig:
+    ...     class canonical:
+    ...         pid_dir = '/var/tmp'
+    ...     instance_name = 'blah'
+    >>> path = pidfile_path('pits', MyConfig)
+
+    >>> file = open(path, 'w')
+    >>> try:
+    ...     print >> file, os.getpid() + 1
+    ... finally:
+    ...     file.close()
+    >>> remove_pidfile('pits', MyConfig)
+    >>> os.path.exists(path)
+    False
     """
     pidfile = pidfile_path(service_name, use_config)
     pid = get_pid(service_name, use_config)
