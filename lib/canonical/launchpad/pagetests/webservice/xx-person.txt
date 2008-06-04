@@ -33,6 +33,8 @@ for teams (as they're defined in the ITeam interface).
     preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
     proposed_members_collection_link: http://.../~salgado/proposed_members
     self_link: http://.../~salgado
+    sub_teams_collection_link: http://.../~salgado/sub_teams
+    super_teams_collection_link: http://.../~salgado/super_teams
     team_memberships_collection_link: http://.../~salgado/team_memberships
     team_owner_link: None
     teams_indirectly_participated_in_collection_link: http://.../~salgado/teams_indirectly_participated_in
@@ -72,7 +74,9 @@ for teams (as they're defined in the ITeam interface).
     proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
     renewal_policy: invite them to apply for renewal
     self_link: http://.../~ubuntu-team
+    sub_teams_collection_link: http://.../~ubuntu-team/sub_teams
     subscription_policy: Moderated Team
+    super_teams_collection_link: http://.../~ubuntu-team/super_teams
     team_description: This Team is responsible for the Ubuntu Distribution
     team_memberships_collection_link: http://.../~ubuntu-team/team_memberships
     team_owner_link: http://.../~sabdfl
@@ -265,6 +269,21 @@ members.
     http://.../~karl
 
 
+=== Subteams and superteams ===
+
+Teams can be members of other teams, and sometimes it's useful to know
+which teams are members of any given team as well as the ones it is a
+member of.
+
+    >>> print_self_link_of_entries(webservice.get(
+    ...     ubuntu_team['sub_teams_collection_link']).jsonBody())
+    http://api.launchpad.dev/beta/~warty-gnome
+
+    >>> print_self_link_of_entries(webservice.get(
+    ...     ubuntu_team['super_teams_collection_link']).jsonBody())
+    http://api.launchpad.dev/beta/~guadamen
+
+
 === Wiki names ===
 
 All wiki names associated to a person/team are also linked to that
@@ -364,6 +383,11 @@ to, obviously.
 
 == Custom operations ==
 
+IPerson supports a bunch of operations.
+
+
+=== Team membership operations ===
+
 Joining and leaving teams:
 
     >>> from urllib import quote
@@ -415,3 +439,27 @@ Accepting or declining a membership invitation:
     ...
     >>> webservice.get("/beta/~ubuntu-team/+member/name20").jsonBody()['status']
     u'Invitation declined'
+
+Checking whether or not a given person is a participant in a team.
+
+    >>> print webservice.get(
+    ...     '/beta/~salgado?ws.op=inTeam&team=%s'
+    ...     % quote(ubuntu_team['self_link'])).jsonBody()
+    False
+
+    >>> print webservice.get(
+    ...     '/beta/~cprov?ws.op=inTeam&team=%s'
+    ...     % quote(ubuntu_team['self_link'])).jsonBody()
+    True
+
+Finding the path from a given person to a team that person is an
+indirect member.
+
+    >>> ml_experts = webservice.get("/beta/~mailing-list-experts").jsonBody()
+    >>> json = webservice.get(
+    ...     '/beta/~salgado?ws.op=findPathToTeam&team=%s'
+    ...     % quote(ml_experts['self_link'])).jsonBody()
+    >>> for entry in json['entries']:
+    ...     print entry['self_link']
+    http://api.launchpad.dev/beta/~admins
+    http://api.launchpad.dev/beta/~mailing-list-experts

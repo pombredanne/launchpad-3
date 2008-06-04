@@ -1212,7 +1212,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     #
     # ITeam methods
     #
-    def getSuperTeams(self):
+    @property
+    def super_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.team AND
@@ -1221,7 +1222,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
-    def getSubTeams(self):
+    @property
+    def sub_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.person AND

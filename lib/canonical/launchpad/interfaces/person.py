@@ -755,6 +755,43 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         title=_("Whether person agrees to relicense their translations"),
         readonly=False)
 
+    sub_teams = exported(
+        CollectionField(
+            title=_("All subteams of this team."),
+            description=_("""
+                A subteam is any team that is a member (either directly or
+                indirectly) of this team. As an example, let's say we have
+                this hierarchy of teams:
+
+                Rosetta Translators
+                    Rosetta pt Translators
+                        Rosetta pt_BR Translators
+
+                In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
+                Translators' are subteams of the 'Rosetta Translators' team,
+                and all members of both subteams are considered members of
+                "Rosetta Translators".
+                """),
+            readonly=True, required=False,
+            value_type=Object(schema=Interface)))
+
+    super_teams = exported(
+        CollectionField(
+            title=_("All superteams of this team."),
+            description=_("""
+                A superteam is any team that this team is a member of. For
+                example, let's say we have this hierarchy of teams, and we are
+                the "Rosetta pt_BR Translators":
+
+                Rosetta Translators
+                    Rosetta pt Translators
+                        Rosetta pt_BR Translators
+
+                In this case, we will return both 'Rosetta pt Translators' and
+                'Rosetta Translators', because we are member of both of them.
+                """),
+            readonly=True, required=False,
+            value_type=Object(schema=Interface)))
 
     @invariant
     def personCannotHaveIcon(person):
@@ -844,6 +881,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The product_name may be None.
         """
 
+    @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
         given team.
@@ -909,6 +948,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         Iterate no more than the given limit.
         """
 
+    @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @export_read_operation()
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 
@@ -1025,38 +1066,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.
-        """
-
-    def getSubTeams():
-        """Return all subteams of this team.
-
-        A subteam is any team that is (either directly or indirectly) a
-        member of this team. As an example, let's say we have this hierarchy
-        of teams:
-
-        Rosetta Translators
-            Rosetta pt Translators
-                Rosetta pt_BR Translators
-
-        In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
-        Translators' are subteams of the 'Rosetta Translators' team, and all
-        members of both subteams are considered members of "Rosetta
-        Translators".
-        """
-
-    def getSuperTeams():
-        """Return all superteams of this team.
-
-        A superteam is any team that this team is a member of. For example,
-        let's say we have this hierarchy of teams, and we are the
-        "Rosetta pt_BR Translators":
-
-        Rosetta Translators
-            Rosetta pt Translators
-                Rosetta pt_BR Translators
-
-        In this case, we will return both 'Rosetta pt Translators' and
-        'Rosetta Translators', because we are member of both of them.
         """
 
     def getLatestApprovedMembershipsForPerson(limit=5):
