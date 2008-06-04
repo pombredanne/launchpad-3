@@ -1426,7 +1426,7 @@ class PersonWithGPGKeysAndPreferredEmail:
 
 
 class PersonRdfView:
-    """A view that embeds PersonRdfContentsView in a page."""
+    """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
         '../templates/person-foaf.pt')
