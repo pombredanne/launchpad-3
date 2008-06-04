@@ -150,6 +150,7 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
         while True:
             try:
                 sock.connect((host, port))
+                sock.close()
             except socket.error, err:
                 if err.args[0] == errno.ECONNREFUSED:
                     # Success!  The socket is closed.
