@@ -108,11 +108,14 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
 
     def test_outReceivedUpdatesTail(self):
         # outReceived updates the tail of the log, currently and arbitarily
-        # defined to be the last 100 bytes of the output.
-        self.protocol.outReceived('a' * 150)
-        self.assertEqual(self.protocol._tail, 'a'*100)
-        self.protocol.outReceived('b' * 50)
-        self.assertEqual(self.protocol._tail, 'a'*50 + 'b'*50)
+        # defined to be the last 5 lines of the log.
+        lines = ['line %d'%number for number in range(1, 11)]
+        self.protocol.outReceived('\n'.join(lines[:3]))
+        self.assertEqual(
+            self.protocol._tail, 'line 1\nline 2\nline 3')
+        self.protocol.outReceived('\n'.join(lines[3:]))
+        self.assertEqual(
+            self.protocol._tail, 'line 6\nline 7\nline 8\nline 9\nline 10')
 
 
 class TestWorkerMonitorUnit(TestCase):
