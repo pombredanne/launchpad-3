@@ -130,6 +130,7 @@ def wait_for_service(timeout=10.0):
                     raise
             else:
                 break
+            time.sleep(0.1)
     finally:
         sock.close()  # Clean up.
 
@@ -165,6 +166,7 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
                 if elapsed > seconds_to_wait:
                     raise RuntimeError(
                         "The service did not shut down in the allotted time.")
+            time.sleep(0.1)
     finally:
         sock.close()  # Clean up.
 
