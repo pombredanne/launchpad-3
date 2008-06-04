@@ -34,7 +34,7 @@ And we should be able to propose the spec for the agenda:
 
 Now, it should be possible to accept the proposal. That should set the
 status accordingly and also update the decider and the date_decided.
-    
+
     >>> sl.acceptBy(danner)
     >>> print sl.status.title, sl.decider.name, sl.date_decided is not None
     Accepted danner True
@@ -42,7 +42,6 @@ status accordingly and also update the decider and the date_decided.
 It is possible to revise your choice, declining the spec. This should update
 the date_decided.
 
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
     >>> sl.date_decided = None
