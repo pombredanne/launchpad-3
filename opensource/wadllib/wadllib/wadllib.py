@@ -51,7 +51,7 @@ class WADLMayBeReference(WADLBase):
             assumed to be relative to this object's URL.
         """
         self._definition = None
-        self.wadl_url = application.markup_url
+        self.application = application
 
     def dereference(self):
         """Return the definition of this object, wherever it is.
@@ -75,24 +75,12 @@ class WADLMayBeReference(WADLBase):
             return self
         # The object makes reference to some other object. Resolve
         # its URL and return it.
-        if (object_url.startswith('#')
-            or object_url.startswith(self.wadl_url + '#')):
-            # The reference is defined in the same document as the
-            # originator. Look it up.
-            id = object_url[object_url.index('#')+1:]
-            description = self._objectFactory(id)
-            if description is None:
-                raise KeyError('No such XML ID: "%s"' % object_url)
-            self._definition = description
-            return description
-
-        # XXX leonardr 2008-05-28:
-        # This needs to be implemented eventually for Launchpad so
-        # that a script using this client can navigate from a WADL
-        # representation of a non-root resource to its definition at
-        # the server root.
-        raise NotImplementedError("Can't look up definition in another "
-                                  "url (%s)" % object_url)
+        xml_id = self.application.lookupXMLID(object_url)
+        description = self._objectFactory(xml_id)
+        if description is None:
+            raise KeyError('No such XML ID: "%s"' % object_url)
+        self._definition = description
+        return description
 
     def _objectFactory(self, id):
         """Transform an XML ID into a wadllib wrapper object.
@@ -112,12 +100,12 @@ class WADLMayBeReference(WADLBase):
 class Resource(WADLMayBeReference):
     """A resource, possibly bound to a representation."""
 
-    def __init__(self, application, url, resource_tag, representation=None,
-                 media_type=None, _definition=None):
+    def __init__(self, application, url, resource_type,
+                 representation=None, media_type=None, _definition=None):
         """
         :param application: A WADLDefinition.
         :param url: The URL to this resource.
-        :param resource_tag: An ElementTree <resource> or <resource_type> tag.
+        :param resource_type: An ElementTree <resource> or <resource_type> tag.
         :param representation: A string representation.
         :param media_type: The media type of the representation.
         :param _definition: A precached value for _definition. Used to
@@ -126,9 +114,16 @@ class Resource(WADLMayBeReference):
             resource.
         """
         WADLMayBeReference.__init__(self, application)
-        self.application = application
         self._url = url
-        self.tag = resource_tag
+        if isinstance(resource_type, basestring):
+            # We were passed the URL to a resource type. Look up the
+            # type object itself
+            self.tag = self.application.getResourceType(resource_type).tag
+        else:
+            # We were passed an XML tag that describes a resource or
+            # resource type.
+            self.tag = resource_type
+
         self.representation = None
         if representation != None:
             if media_type == 'application/json':
@@ -284,7 +279,6 @@ class RepresentationDefinition(WADLMayBeReference):
 
     def __init__(self, application, representation_tag):
         WADLMayBeReference.__init__(self, application)
-        self.application = application
         self.tag = representation_tag
 
     def _objectFactory(self, id):
@@ -369,8 +363,7 @@ class Link(WADLMayBeReference):
         :param parameter: A Parameter.
         :param link_tag: An ElementTree <link> tag.
         """
-        self.application = parameter.application
-        WADLMayBeReference.__init__(self, self.application)
+        WADLMayBeReference.__init__(self, parameter.application)
         self.parameter = parameter
         self.tag = link_tag
 
@@ -429,6 +422,37 @@ class Application(WADLBase):
             id = resource_type.attrib.get('id')
             if id is not None:
                 self.resource_types[id] = ResourceType(resource_type)
+
+    def getResourceType(self, resource_type_url, default=None):
+        """Retrieve a resource type by the URL of its description."""
+        xml_id = self.lookupXMLID(resource_type_url)
+        resource_type = self.resource_types.get(xml_id, default)
+        if resource_type is None:
+            raise KeyError('No such XML ID: "%s"' % resource_type_url)
+        return resource_type
+
+        # XXX leonardr 2008-05-28:
+        # This needs to be implemented eventually for Launchpad so
+        # that a script using this client can navigate from a WADL
+        # representation of a non-root resource to its definition at
+        # the server root.
+        raise NotImplementedError("Can't look up definition in another "
+                                  "url (%s)" % resource_type_url)
+
+    def lookupXMLID(self, url):
+        if (url.startswith('#') or url.startswith(self.markup_url + '#')):
+            # The reference is defined in the same document as the
+            # originator. Look it up.
+            id = url[url.index('#')+1:]
+            return id
+
+        # XXX leonardr 2008-05-28:
+        # This needs to be implemented eventually for Launchpad so
+        # that a script using this client can navigate from a WADL
+        # representation of a non-root resource to its definition at
+        # the server root.
+        raise NotImplementedError("Can't look up definition in another "
+                                  "url (%s)" % url)
 
     def findResourceByPath(self, path):
         """Locate one of the resources described by this document.

@@ -18,13 +18,15 @@ object.
    >>> print wadl.findResourceByPath('nosuchresource')
    None
 
-We start at the root resource.
+
+== Link navigation ==
+
+The preferred technique for finding a resource is to start at the root
+resource and follow links.
 
    >>> service_root = wadl.findResourceByPath('')
    >>> service_root.url()
    'http://api.launchpad.dev/beta/'
-   >>> service_root.tag.tag
-   '...resource'
 
 The service root resource supports GET.
 
@@ -97,7 +99,8 @@ description of the person set resource.
    >>> bound_personset.findParam("total_size").value()
    63
 
-We can keep following links:
+We can keep following links indefinitely so long as we bind to a
+representation each time to find the next link.
 
    >>> next_page_link = bound_personset.findParam("next_collection_link")
    >>> next_page_link.value()
@@ -110,6 +113,22 @@ We can keep following links:
    5
    >>> bound_page_two.findParam("next_collection_link").value()
    u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
+
+
+== Resource instantiation ==
+
+If you happen to have the URL to an object lying around, and you know
+its type, you can construct a Resource object directly instead of
+by following links.
+
+   >>> from wadllib import Resource
+   >>> limi_person = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
+   ...     "http://api.launchpad.dev/beta/#PersonEntryAdapter")
+
+   >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
+   >>> languages_link = bound_limi.findParam("languages_collection_link")
+   >>> languages_link.value()
+   u'http://api.launchpad.dev/beta/~limi/languages'
 
 """
 
