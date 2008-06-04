@@ -472,8 +472,8 @@ Supersede previous netapplet publication:
    >>> print superseded_netapplet.status.name
    SUPERSEDED
 
-   >>> superseded_netapplet.datesuperseded
-   datetime.datetime(...)
+   >>> superseded_netapplet.datesuperseded == get_transaction_timestamp()
+   True
 
 
 == DistroSeries Translations migration ==
