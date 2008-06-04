@@ -73,12 +73,12 @@ class Build(SQLBase):
     @property
     def current_component(self):
         """See `IBuild`."""
-        pub = self._currentPublication()
+        pub = self.getCurrentPublication()
         if pub is not None:
             return pub.component
         return self.sourcepackagerelease.component
 
-    def _currentPublication(self):
+    def getCurrentPublication(self):
         """See `IBuild`."""
         allowed_status = (
             PackagePublishingStatus.PENDING,

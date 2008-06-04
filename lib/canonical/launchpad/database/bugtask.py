@@ -839,17 +839,13 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        component = None
+        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
-            component = self.target.latest_published_component
+            return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
-            # Pull the component from the package published in the
-            # latest distribution series.
-            packages = self.target.get_distroseries_packages()
-            if packages:
-                component = packages[0].latest_published_component
-        if component:
-            return component
+            spph = self.target.latest_overall_publication
+            if spph:
+                return spph.component
         return None
 
     def asEmailHeaderValue(self):

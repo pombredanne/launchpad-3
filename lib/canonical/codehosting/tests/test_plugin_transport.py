@@ -249,7 +249,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             'user/product/.bzr/foo')
 
 
-class TestVirtualTransport(TestCaseInTempDir):
+class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
 
     class VirtualServer(Server):
         """Very simple server that provides a VirtualTransport."""
@@ -284,23 +284,51 @@ class TestVirtualTransport(TestCaseInTempDir):
         self.transport = get_transport(self.server.get_url())
 
     def test_writeChunk(self):
-        self.transport.writeChunk('foo', 0, 'content')
-        self.assertEqual('content', open('prefix_foo').read())
+        deferred = self.transport.writeChunk('foo', 0, 'content')
+        return deferred.addCallback(
+            lambda ignored:
+            self.assertEqual('content', open('prefix_foo').read()))
 
     def test_realPath(self):
         # local_realPath returns the real, absolute path to a file, resolving
         # any symlinks.
-        self.transport.mkdir('baz')
-        os.symlink('prefix_foo', 'prefix_baz/bar')
-        t = self.transport.clone('baz')
-        self.assertEqual('/baz/bar', t.local_realPath('bar'))
+        deferred = self.transport.mkdir('baz')
+
+        def symlink_and_clone(ignored):
+            os.symlink('prefix_foo', 'prefix_baz/bar')
+            return self.transport.clone('baz')
+
+        def check_real_path(transport):
+            self.assertEqual('/baz/bar', transport.local_realPath('bar'))
+
+        deferred.addCallback(symlink_and_clone)
+        return deferred.addCallback(check_real_path)
 
     def test_realPathEscaping(self):
         # local_realPath returns an escaped path to the file.
         escaped_path = escape('~baz')
-        self.transport.mkdir(escaped_path)
-        self.assertEqual(
-            '/' + escaped_path, self.transport.local_realPath(escaped_path))
+        deferred = self.transport.mkdir(escaped_path)
+
+        def check_real_path(ignored):
+            self.assertEqual(
+                '/' + escaped_path,
+                self.transport.local_realPath(escaped_path))
+
+        return deferred.addCallback(check_real_path)
+
+    def test_canAccessEscapedPathsOnDisk(self):
+        # Sometimes, the paths to files on disk are themselves URL-escaped.
+        # The VirtualTransport can access these files.
+        #
+        # This test added in response to https://launchpad.net/bugs/236380.
+        escaped_disk_path = 'prefix_%43razy'
+        content = 'content\n'
+        escaped_file = open(escaped_disk_path, 'w')
+        escaped_file.write(content)
+        escaped_file.close()
+
+        deferred = self.transport.get_bytes(escape('%43razy'))
+        return deferred.addCallback(self.assertEqual, content)
 
 
 class LaunchpadTransportTests:
