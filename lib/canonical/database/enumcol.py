@@ -23,8 +23,8 @@ class DBEnumVariable(Variable):
         self._enum = kwargs.pop("enum")
         if not issubclass(self._enum, DBEnumeratedType):
             raise TypeError(
-                '%s must be a DBEnumeratedType: %r'
-                % (source, type(self._enum)))
+                '%r must be a DBEnumeratedType: %r'
+                % (self._enum, type(self._enum)))
         super(DBEnumVariable, self).__init__(*args, **kwargs)
 
     def parse_set(self, value, from_db):
@@ -55,6 +55,9 @@ class DBSchemaEnumCol(sqlobject.PropertyAdapter, DBEnum):
             enum = kw.pop('enum')
         except KeyError:
             enum = kw.pop('schema')
+        if not issubclass(enum, DBEnumeratedType):
+            raise TypeError(
+                '%r must be a DBEnumeratedType: %r' % (enum, type(enum)))
         self._kwargs = {
             'enum': enum
             }
