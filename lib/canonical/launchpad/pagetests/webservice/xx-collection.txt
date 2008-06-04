@@ -235,7 +235,7 @@ the collection of people.
 
   >>> def create_team(name, display_name):
   ...     return webservice.named_post(
-  ...         "/beta/people", "create_team", {},
+  ...         "/beta/people", "newTeam", {},
   ...         name=name, display_name=display_name)
 
   >>> print webservice.get('/beta/~serviceteam')

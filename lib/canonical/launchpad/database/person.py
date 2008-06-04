@@ -2333,15 +2333,6 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
-            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
-            )
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2403,7 +2394,7 @@ class PersonSet:
 
         return results.orderBy(orderBy)
 
-    def findTeam(self, text, orderBy=None):
+    def findTeam(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations

@@ -74,6 +74,7 @@ from canonical.launchpad.interfaces.teammembership import (
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
+from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -1596,7 +1597,6 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    @export_operation_as('create_team')
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
@@ -1618,6 +1618,9 @@ class IPersonSet(Interface):
     def get(personid):
         """Return the person with the given id or None if it's not found."""
 
+    @operation_parameters(
+        email=TextLine(required=True, constraint=email_validator))
+    @export_read_operation()
     def getByEmail(email):
         """Return the person with the given email address.
 
@@ -1634,6 +1637,7 @@ class IPersonSet(Interface):
     def getByOpenIdIdentifier(openid_identity):
         """Return the person with the given OpenID identifier, or None."""
 
+    @export_read_operation()
     def getAllTeams(orderBy=None):
         """Return all Teams, ignoring the merged ones.
 
@@ -1653,19 +1657,9 @@ class IPersonSet(Interface):
         current will not appear in the returned list.
         """
 
+    @export_read_operation()
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
-        """
-
-    def getAllValidPersons(orderBy=None):
-        """Return all valid persons, but not teams.
-
-        A valid person is any person with a preferred email address.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -1704,6 +1698,9 @@ class IPersonSet(Interface):
         address.
         """
 
+    @operation_parameters(
+        text=TextLine(title=_("Search text"), default=u""))
+    @export_read_operation()
     def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
@@ -1725,7 +1722,10 @@ class IPersonSet(Interface):
         address.
         """
 
-    def findTeam(text, orderBy=None):
+    @operation_parameters(
+        text=TextLine(title=_("Search text"), default=u""))
+    @export_read_operation()
+    def findTeam(text="", orderBy=None):
         """Return all Teams whose name, displayname or email address
         match <text>.
 
