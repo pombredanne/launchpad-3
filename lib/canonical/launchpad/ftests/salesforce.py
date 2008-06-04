@@ -149,15 +149,15 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         status = True
 
         if voucher is None:
-            errors.append('ERROR: No such voucher %s' % voucher_id)
+            errors.append('NotFound: No such voucher %s' % voucher_id)
             status = False
         else:
             if voucher.status != 'UNREDEEMED':
-                errors.append('ERROR: Voucher %s is already redeemed' % voucher_id)
+                errors.append('AlreadyRedeemed: Voucher %s is already redeemed' % voucher_id)
                 status = False
 
             if voucher.owner != lp_openid:
-                errors.append("Voucher is not owned by named user")
+                errors.append('NotAllowed: Voucher is not owned by named user')
                 status = False
 
         if status:
@@ -179,7 +179,7 @@ class SalesforceXMLRPCTestTransport(xmlrpclib.Transport):
         if num_updated == 0:
             status = False
             results = None
-            errors = ['ERROR: No vouchers matching product id %s' % lp_project_id]
+            errors = ['NotFound: No vouchers matching product id %s' % lp_project_id]
         else:
             status = True
             results = num_updated

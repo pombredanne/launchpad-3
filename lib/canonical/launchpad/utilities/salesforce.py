@@ -27,6 +27,28 @@ class SalesforceVoucherProxyException(Exception):
         return repr(self.message)
 
 
+class SFDCError(SalesforceVoucherProxyException):
+    pass
+
+
+class SVPNotFoundException(SalesforceVoucherProxyException):
+    pass
+
+
+class SVPAlreadyRedeemedException(SalesforceVoucherProxyException):
+    pass
+
+
+class SVPNotAllowedException(SalesforceVoucherProxyException):
+    pass
+
+
+ERRORCODE_MAP = dict(SFDCError=SFDCError,
+                     NotFound=SVPNotFoundException,
+                     AlreadyRedeemed=SVPAlreadyRedeemedException,
+                     NotAllowed=SVPNotAllowedException)
+
+
 class Voucher:
     """A Commercial Subscription voucher."""
     def __init__(self, values):
@@ -78,11 +100,21 @@ class SalesforceVoucherProxy:
                                      transport=self.xmlrpc_transport)
 
     def parseResponse(self, response):
+        """Given a response from the SVP break it up and check for errors.
+
+        If an error code is sent it will be mapped to an exception that will
+        be raised.
+        """
         success = response.get('success')
         results = response.get('results', [])
         errors = response.get('errors', [])
         if not success:
-            raise SalesforceVoucherProxyException, errors
+            if len(errors) > 0:
+                errorcode, reason = [term.strip()
+                                     for term in errors[0].split(':')]
+                raise ERRORCODE_MAP[errorcode], [reason]
+            else:
+                raise SalesforceVoucherProxyException, errors
         return results
 
     def getUnredeemedVouchers(self, user):

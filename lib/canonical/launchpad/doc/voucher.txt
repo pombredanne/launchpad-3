@@ -167,7 +167,7 @@ Attempting to redeem an already redeemed voucher is unsuccessful.
     >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
     Traceback (most recent call last):
       ...
-    SalesforceVoucherProxyException: 'ERROR: Voucher LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 is already redeemed'
+    SVPAlreadyRedeemedException: 'Voucher LPCS12-f78df324-0cc2-11dd-8b6b-000000000001 is already redeemed'
 
 Attempting to redeem a bogus voucher is also unsuccessful.
 
@@ -175,7 +175,17 @@ Attempting to redeem a bogus voucher is also unsuccessful.
     >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
     Traceback (most recent call last):
       ...
-    SalesforceVoucherProxyException: 'ERROR: No such voucher hownowbrowncow'
+    SVPNotFoundException: 'No such voucher hownowbrowncow'
+
+A user cannot redeem a voucher if it is owned by someone else.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> vouchers = sfv.getUnredeemedVouchers(cprov)
+    >>> voucher = vouchers[0]
+    >>> result = sfv.redeemVoucher(voucher.id, mark, firefox)
+    Traceback (most recent call last):
+      ...
+    SVPNotAllowedException: 'Voucher is not owned by named user'
 
 Using None for the project results in an error.
 
@@ -211,4 +221,4 @@ voucher data results in an error.
     >>> result = sfv.updateProjectName(jokosher)
     Traceback (most recent call last):
       ...
-    SalesforceVoucherProxyException: 'ERROR: No vouchers matching product id...
+    SVPNotFoundException: 'No vouchers matching product id...
