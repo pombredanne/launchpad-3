@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
-from unittest import TestCase
+import unittest
 
 import zope.event
 from zope.security.proxy import removeSecurityProxy
@@ -11,14 +11,30 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing.factory import *
 
 
-class TestCaseWithFactory(TestCase):
+class TestCase(unittest.TestCase):
+    """Provide Launchpad-specific test facilities."""
 
-    def setUp(self):
-        login(ANONYMOUS)
-        self.factory = LaunchpadObjectFactory()
+    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
+        """Assert that a callable performs a given notification.
 
-    def tearDown(self):
-        logout()
+        :param event_type: The type of event that notification is expected
+            for.
+        :param callable_obj: The callable to call.
+        :param *args: The arguments to pass to the callable.
+        :param **kwargs: The keyword arguments to pass to the callable.
+        :return: (result, event), where result was the return value of the
+            callable, and event is the event emitted by the callable.
+        """
+        result, events = capture_events(callable_obj, *args, **kwargs)
+        if len(events) == 0:
+            raise AssertionError('No notification was performed.')
+        elif len(events) > 1:
+            raise AssertionError('Too many (%d) notifications performed.'
+                % len(events))
+        elif not isinstance(events[0], event_type):
+            raise AssertionError('Wrong event type: %r (expected %r).' %
+                (events[0], event_type))
+        return result, events[0]
 
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
@@ -44,6 +60,16 @@ class TestCaseWithFactory(TestCase):
             self.fail(
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
+
+
+class TestCaseWithFactory(TestCase):
+
+    def setUp(self, user=ANONYMOUS):
+        login(user)
+        self.factory = LaunchpadObjectFactory()
+
+    def tearDown(self):
+        logout()
 
 
 def capture_events(callable_obj, *args, **kwargs):
