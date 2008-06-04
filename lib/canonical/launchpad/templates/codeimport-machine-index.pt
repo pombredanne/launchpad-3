@@ -9,6 +9,13 @@
   metal:use-macro="view/macro:page/applicationhome"
   i18n:domain="launchpad">
 
+<style type="text/css" metal:fill-slot="head_epilogue">
+  td.logtail {
+    padding-left: 2em;
+    margin-top: 0em;
+  }
+</style>
+
 <body>
 
   <h1 metal:fill-slot="heading">Code Import Machine</h1>
@@ -45,10 +52,8 @@
               <td>Last heartbeat: <tal:heartbeat replace="job/heartbeat/fmt:approximatedate"/></td>
             </tr>
             <tr tal:condition="job/logtail">
-              <td colspan="3">
-                <pre tal:content="job/logtail" style="padding-left: 4ex; margin-top: 0ex;">
-                  Bob.
-                </pre>
+              <td class="logtail" colspan="3"
+                  tal:content="structure job/logtail/fmt:nice_pre">
               </td>
             </tr>
           </tal:jobs>

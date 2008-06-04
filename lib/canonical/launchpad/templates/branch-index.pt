@@ -9,6 +9,13 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
+
+<style type="text/css" metal:fill-slot="head_epilogue">
+  div.logtail {
+    padding-left: 2em;
+  }
+</style>
+
 <body>
 
 <metal:leftportlets fill-slot="portlets">
@@ -184,9 +191,9 @@
             </tal:date-started>.
             <tal:is-logtail condition="job/logtail">
               The last few lines of the job's output were:
-              <pre tal:content="job/logtail" style="padding-left: 2ex">
-                Logtail.
-              </pre>
+              <div class="logtail">
+                <tal:logtail content="structure job/logtail/fmt:nice_pre" />
+              </div>
             </tal:is-logtail>
           </tal:is-running>
           <tal:not-running condition="not: job/state/enumvalue:RUNNING">
