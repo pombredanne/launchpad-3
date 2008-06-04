@@ -3,10 +3,11 @@
 
 import unittest
 
-from canonical.database.sqlbase import cursor
 import zope.event
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
 
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.testing.factory import *
 
@@ -36,21 +37,30 @@ class TestCase(unittest.TestCase):
                 (events[0], event_type))
         return result, events[0]
 
-    def assertIsDBNow(self, value):
-        """Assert supplied value equals database time.
+    def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
+        """Fail unless the value of the attribute is equal to the date.
 
-        The database time is the same for the whole transaction, and may
-        not match the current time exactly.
-        :param value: A datetime that is expected to match the current
-            database time.
+        Use this method to test that date value that may be UTC_NOW is equal
+        to another date value. Trickery is required because SQLBuilder truth
+        semantics cause UTC_NOW to appear equal to all dates.
+
+        :param sql_object: a security-proxied SQLObject instance.
+        :param attribute_name: the name of a database column in the table
+            associated to this object.
+        :param date: `datetime.datetime` object or `UTC_NOW`.
         """
         # XXX Probably does not belong here, but better location not clear.
         # Used primarily for testing ORM objects, which ought to use factory.
-        cur = cursor()
-        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';")
-        [database_now] = cur.fetchone()
-        self.assertEqual(
-            database_now.utctimetuple(), value.utctimetuple())
+        sql_object = removeSecurityProxy(sql_object)
+        sql_object.syncUpdate()
+        sql_class = type(sql_object)
+        found_object = sql_class.selectOne(
+            ('id=%s AND ' + attribute_name + '=%s')
+            % sqlvalues(sql_object.id, date))
+        if found_object is None:
+            self.fail(
+                "Expected %s to be %s, but it was %s."
+                % (attribute_name, date, getattr(sql_object, attribute_name)))
 
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
