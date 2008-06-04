@@ -44,9 +44,9 @@ from canonical.lazr.rest.resource import (
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
-    OAuthPermission, NonceAlreadyUsed)
+    IFeedsApplication, IPrivateApplication, IOpenIdApplication, IPerson,
+    IPersonSet, IShipItApplication, IWebServiceApplication,
+    IOAuthConsumerSet, OAuthPermission, NonceAlreadyUsed)
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -219,18 +219,16 @@ class VirtualHostRequestPublicationFactory:
         # places; either it's on the SERVER_PORT environment variable
         # or, as is the case with the test suite, it's on the
         # HTTP_HOST variable after a colon.
-        # Check the former first.
-        host = environment.get('HTTP_HOST')
+        # The former takes precedence, the port from the host variable is
+        # only checked because the test suite doesn't set SERVER_PORT.
+        host = environment.get('HTTP_HOST', '')
         port = environment.get('SERVER_PORT')
         if ":" in host:
             assert len(host.split(':')) == 2, (
                 "Having a ':' in the host name isn't allowed.")
             host, new_port = host.split(':')
-            if port is not None:
-                assert str(port) == new_port, (
-                    "Port specified in SERVER_PORT does not match "
-                    "port specified in HTTP_HOST")
-            port = new_port
+            if port is None:
+                port = new_port
 
         if host == '':
             if not self.handle_default_host:
@@ -275,7 +273,7 @@ class VirtualHostRequestPublicationFactory:
             publication_factory = self.publication_factory
 
 
-        host = environment.get('HTTP_HOST').split(':')[0]
+        host = environment.get('HTTP_HOST', '').split(':')[0]
         if host in ['', 'localhost']:
             # Sometimes requests come in to the default or local host.
             # If we set the application server for these requests,
@@ -356,18 +354,6 @@ class WebServiceRequestPublicationFactory(
         super(WebServiceRequestPublicationFactory, self).__init__(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
-
-    def canHandle(self, environment):
-        """See `IRequestPublicationFactory`.
-
-        XXX: This factory only accepts calls if the web service is
-        exposed. Once we launch the web service this method will be
-        removed.-- Leonard Richardson 2008-01-04
-        (https://launchpad.net/launchpad/+spec/api-bugs-remote)
-        """
-        result = super(WebServiceRequestPublicationFactory, self).canHandle(
-            environment)
-        return result and config.vhosts.expose_webservice
 
 
 class NotFoundRequestPublicationFactory:
@@ -1057,8 +1043,22 @@ class WebServicePublication(LaunchpadBrowserPublication):
         else:
             # Everything is fine, let's return the principal.
             pass
-        return getUtility(IPlacelessLoginSource).getPrincipal(
+        principal = getUtility(IPlacelessLoginSource).getPrincipal(
             token.person.id, access_level=token.permission)
+
+        # Make sure the principal is a member of the beta test team.
+        # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
+        # Once we launch the web service this code will be removed.
+        people = getUtility(IPersonSet)
+        webservice_beta_team_name = config.vhost.api.beta_test_team
+        if webservice_beta_team_name is not None:
+            webservice_beta_team = people.getByName(
+                webservice_beta_team_name)
+            person = IPerson(principal)
+            if not person.inTeam(webservice_beta_team):
+                raise Unauthorized(person.name +
+                                   " is not a member of the beta test team.")
+        return principal
 
 
 class WebServiceRequestTraversal:
