@@ -527,6 +527,7 @@ class HWDriverSet:
                                     name=name)
         if link is None:
             return self.create(package_name, name, license)
+        return link
 
 
 class HWDeviceDriverLink(SQLBase):

@@ -958,6 +958,12 @@ IHWDriverSet.getByPackageAndName() call, None is returned.
 IHWDriverSet.getOrCreate() returns an existing record matching
 the given parameters or creates a new one, if no existing record matches.
 
+    >>> driver = driver_set.getOrCreate('linux-image-generic', 'usb')
+    >>> print driver.package_name
+    linux-image-generic
+    >>> print driver.name
+    usb
+
     >>> driver = driver_set.getByPackageAndName('linux-image-generic', 'foo')
     >>> print driver
     None
