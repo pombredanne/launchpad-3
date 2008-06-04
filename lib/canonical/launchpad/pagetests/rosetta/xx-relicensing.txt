@@ -69,3 +69,22 @@ Karl can now browse to a +translate page without being forwarded.
     ...              '+pots/alsa-utils/es/+translate')
     >>> browser.url
     'http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/+translate'
+
+== Permissions ==
+
+If another logged-in user comes across Karl's translations page, he sees
+no link to relicense Karl's translations.
+
+    >>> user_browser.open('http://translations.launchpad.dev/~karl/')
+    >>> user_browser.getLink('Relicense translations')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Typing in URL directly doesn't work either.
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/~karl/+relicensing')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
