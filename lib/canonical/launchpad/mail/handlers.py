@@ -519,7 +519,18 @@ class CodeHandler:
         except BadBranchMergeProposalAddress:
             return False
         messageset = getUtility(IMessageSet)
-        vote, vote_tag = self._getVote(mail)
+        try:
+            vote, vote_tag = self._getVote(mail)
+        except InvalidVoteString, e:
+            valid_strings = ', '.join(
+                sorted(v.name.lower() for v in CodeReviewVote.items.items))
+            simple_sendmail(
+                'noreply@launchpad.net', [self._getReplyAddress(mail)],
+                'Unsupported vote',
+                'Your comment was not accepted because the string "%s" is not'
+                ' a supported voting value.  The following values are'
+                ' supported: %s.' % (e.args[0], valid_strings))
+            return True
         plain_message = messageset.fromEmail(
             mail.parsed_string,
             owner=getUtility(ILaunchBag).user,
@@ -547,17 +558,22 @@ class CodeHandler:
         if len(args) == 0:
             return None, None
         else:
-            vote_text = args[0]
+            vote_string = args[0]
         vote_tag_list = args[1:]
         try:
-            vote = CodeReviewVote.items[vote_text.upper()]
+            vote = CodeReviewVote.items[vote_string.upper()]
         except KeyError:
-            raise InvalidVoteString
+            raise InvalidVoteString(vote_string)
         if len(vote_tag_list) == 0:
             vote_tag = None
         else:
             vote_tag = ' '.join(vote_tag_list)
         return vote, vote_tag
+
+    @staticmethod
+    def _getReplyAddress(mail):
+        """The address to use for automatic replies."""
+        return mail.get('Reply-to', mail['From'])
 
     @classmethod
     def getBranchMergeProposal(klass, email_addr):
