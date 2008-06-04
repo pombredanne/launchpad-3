@@ -31,6 +31,7 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.security.interfaces import Unauthorized
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BugTaskStatus,
     BugTaskSearchParams,
@@ -40,6 +41,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet,
     ICveSet,
     IFrontPageBugTaskSearch,
+    IDistributionSourcePackage,
     ILaunchBag,
     NotFoundError,
     )
@@ -538,13 +540,20 @@ class DeprecatedAssignedBugsView:
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
 
+
 normalize_mime_type = re.compile(r'\s+')
 
 class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
+    @cachedproperty
+    def bugtasks(self):
+        """Cache bugtasks and avoid hitting the DB twice."""
+        return list(self.context.bugtasks)
 
-    def bug_text(self, bug):
+    def bug_text(self):
         """Return the bug information for text display."""
+        bug = self.context
+
         text = []
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
@@ -648,7 +657,7 @@ class BugTextView(LaunchpadView):
 
         # XXX: for some reason, get_comments_for_bugtask takes a task,
         # not a bug. For now live with it. -- kiko, 2007-10-31
-        first_task = self.context.bugtasks[0]
+        first_task = self.bugtasks[0]
         all_comments = get_comments_for_bugtask(first_task)
         comments = get_visible_comments(all_comments[1:])
 
@@ -667,11 +676,10 @@ class BugTextView(LaunchpadView):
         return comment_mime.as_string().decode('utf-8')
 
     def render(self):
-        """Return a text representation of the Bug."""
+        """Return a text representation of the bug."""
         self.request.response.setHeader('Content-type', 'text/plain')
-        texts = [self.bug_text(self.context)]
-        texts.extend(self.bugtask_text(task)
-                     for task in self.context.bugtasks)
+        texts = [self.bug_text()]
+        texts.extend(self.bugtask_text(task) for task in self.bugtasks)
         texts.append(self.comment_text())
         return "\n".join(texts)
 
