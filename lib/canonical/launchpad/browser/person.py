@@ -2616,6 +2616,11 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         return { "allow_relicensing" : default }
 
     @property
+    def relicensing_url(self):
+        """Return an URL for this view."""
+        return canonical_url(self.context, view_name='+relicensing')
+
+    @property
     def next_url(self):
         """Successful form submission should send to this URL."""
         referrer = self.request.getHeader('referer')
