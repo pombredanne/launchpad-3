@@ -111,6 +111,13 @@ class LaunchpadSearchView(LaunchpadFormView):
             return 'Pages matching "%s" in Launchpad' % self.text
 
     @property
+    def focusedElementScript(self):
+        """Focus the first widget when there are no matches."""
+        if self.has_matches:
+            return super(LaunchpadSearchView, self).focusedElementScript()
+        return None
+
+    @property
     def bug(self):
         """Return the bug that matched the terms, or None."""
         return self._bug
@@ -155,6 +162,16 @@ class LaunchpadSearchView(LaunchpadFormView):
             if kind is not None:
                 return True
         return False
+
+    def validate(self, data):
+        """See `LaunchpadFormView`"""
+        errors = list(self.errors)
+        for error in errors:
+            if (error.field_name == 'text'
+                and error.doc() == 'Value is too long'):
+                self.setFieldError(
+                    'text', ('The search text is limited to 10 terms, '
+                             'and cannot exceed 250 characters.'))
 
     @safe_action
     @action(u'Search', name='search')
