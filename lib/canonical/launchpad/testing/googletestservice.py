@@ -131,6 +131,38 @@ def wait_for_service(timeout=10.0):
         sock.close()  # Clean up.
 
 
+def wait_for_service_shutdown(seconds_to_wait=10.0):
+    """Poll the service until it shuts down.
+
+    Raises a RuntimeError if the service doesn't shut down within the allotted
+    time, under normal operation.  It may also raise various socket errors if
+    there are issues connecting to the service (host lookup, etc.)
+
+    :param seconds_to_wait: The number of seconds to wait for the socket to
+        open up.
+    """
+    host, port = get_service_endpoint()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(5.0) # Block for at most X seconds.
+
+    start = time.time()  # Record when we started polling.
+    try:
+        while True:
+            try:
+                sock.connect((host, port))
+            except socket.error, err:
+                if err.args[0] == errno.ECONNREFUSED:
+                    # Success!  The socket is closed.
+                    return
+            else:
+                elapsed = (time.time() - start)
+                if elapsed > seconds_to_wait:
+                    raise RuntimeError(
+                        "The service did not shut down in the allotted time.")
+    finally:
+        sock.close()  # Clean up.
+
+
 def hostpair(url):
     """Parse the host and port number out of a URL string."""
     parts  = urlsplit(url)
@@ -165,7 +197,7 @@ def kill_running_process():
     except ValueError:
         # The file contained a mangled and invalid PID number, so we should
         # clean the file up.
-        os.unlink(pidfile_path(service_name))
+        safe_unlink(pidfile_path(service_name))
     else:
         if pid is not None:
             try:
@@ -174,16 +206,25 @@ def kill_running_process():
                 # becomes available.  Failing to do so causes a race condition
                 # between freeing the socket in the killed process, and
                 # opening it in the current one.
-                wait_for_service()
+                wait_for_service_shutdown()
             except os.error, err:
                 if err.errno == errno.ESRCH:
                     # Whoops, we got a 'No such process' error. The PID file
                     # is probably stale, so we'll remove it to prevent trash
                     # from lying around in the test environment.
                     # See bug #237086.
-                    os.unlink(pidfile_path(service_name))
+                    safe_unlink(pidfile_path(service_name))
                 else:
                     raise
+
+
+def safe_unlink(filepath):
+    """Unlink a file, but don't raise an error if the file is missing."""
+    try:
+        os.unlink(filepath)
+    except os.error, err:
+        if err.errno != errno.ENOENT:
+            raise
 
 
 def main():
