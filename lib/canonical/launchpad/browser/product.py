@@ -57,8 +57,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
-    ICountry, IDistribution,
+    IBranchSet, IBugTracker, ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
     IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
@@ -1426,7 +1425,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         series_branches = self._getSeriesBranches()
         branch_query = getUtility(IBranchSet).getBranchesForContext(
             context=self.context, visible_by_user=self.user,
-            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            lifecycle_statuses=self.selected_lifecycle_status,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch listing to be batched, so only get
         # the batch size - the number of series_branches.
@@ -1506,7 +1505,12 @@ class ProductBranchesView(ProductBranchListingView):
         """
         ProductBranchListingView.initialize(self)
         if self.sort_by == BranchListingSort.DEFAULT:
-            self.request.response.redirect(canonical_url(self.context))
+            redirect_url = canonical_url(self.context)
+            widget = self.widgets['lifecycle']
+            if widget.hasValidInput():
+                redirect_url += '?field.lifecycle=' + \
+                    widget.getInputValue().name
+            self.request.response.redirect(redirect_url)
 
     @property
     def initial_values(self):
