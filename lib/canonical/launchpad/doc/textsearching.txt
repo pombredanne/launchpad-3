@@ -593,6 +593,11 @@ So firefox will be removed from the final query:
     >>> nl_phrase_search('system is slow when running firefox', Question)
     'system|slow|run'
 
+    >>> nl_term_candidates('how do I do this?')
+    []
+    >>> nl_phrase_search('how do I do this?', Question)
+    ''
+
 
 ==== Using other constraints ====
 
