@@ -5,10 +5,11 @@ can't test it properly, since we don't yet have a mock HTTP server we
 can use for testing, so let's just make sure that it doesn't try to
 contact any external servers.
 
-    >>> from canonical.database.sqlbase import cursor
+    >>> from canonical.database.sqlbase import cursor, sqlvalues
     >>> from canonical.database.constants import UTC_NOW
     >>> cur = cursor()
-    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" % UTC_NOW)
+    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" % 
+    ...     sqlvalues(UTC_NOW))
     >>> import transaction
     >>> transaction.commit()
 
@@ -170,6 +171,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...         bugtrackertype.name, bugtracker.name)
 
     >>> login(ANONYMOUS)
+    >>> example_bugwatch.lastchecked = None
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
@@ -199,13 +201,10 @@ We need to add some bug watches again since
 BugWatchUpdate.updateBugTracker() automatically rolls back the
 transaction if something goes wrong.
 
-    >>> from canonical.launchpad.ftests import sync
     >>> login('test@canonical.com')
     >>> for bug_id in range(1, 10):
     ...     example_bugwatch = example_bug.addWatch(
     ...         example_bug_tracker, str(bug_id), sample_person)
-    >>> for bug_watch in example_bug_tracker.watches:
-    ...     sync(bug_watch)
 
 Since we know how many bugwatches example_bug has we will be able to see
 when checkwatches only updates a subset of them.

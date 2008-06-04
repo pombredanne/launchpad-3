@@ -65,7 +65,7 @@ Add watch for external bug to the bug:
     >>> from canonical.launchpad.database import BugWatch
     >>> debbugs = getUtility(IBugTrackerSet)['debbugs']
     >>> bugwatch = BugWatch(
-    ...     bug=bug,bugtracker=debbugs, remotebug=42, owner=foo_bar)
+    ...     bug=bug,bugtracker=debbugs, remotebug=u'42', owner=foo_bar)
     >>> notify(SQLObjectCreatedEvent(bugwatch))
     Karma added: action=bugwatchadded, distribution=debian
 

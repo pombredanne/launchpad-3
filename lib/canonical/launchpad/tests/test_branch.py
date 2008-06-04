@@ -48,10 +48,10 @@ class TestListingToSortOrder(unittest.TestCase):
         the rest the same.
         """
         self.assertColumnNotReferenced(
-            'owner_name', DEFAULT_BRANCH_LISTING_SORT)
+            'owner.name', DEFAULT_BRANCH_LISTING_SORT)
         registrant_order = BranchSet._listingSortToOrderBy(
             BranchListingSort.REGISTRANT)
-        self.assertEquals(registrant_order[0], 'owner_name')
+        self.assertEquals(registrant_order[0], 'owner.name')
         self.assertEquals(registrant_order[1:], DEFAULT_BRANCH_LISTING_SORT)
 
 def test_suite():

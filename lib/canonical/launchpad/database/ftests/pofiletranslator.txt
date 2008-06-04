@@ -5,11 +5,9 @@ to a particular pofile.
 This table is read only to most users, but for this test we connect
 as a superuser so we can poke at it directly.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-    >>> LaunchpadFunctionalTestSetup().setUp(dbuser='testadmin')
-
-    >>> from canonical.database.sqlbase import cursor
-    >>> cur = cursor()
+    >>> from canonical.database.sqlbase import connect
+    >>> connection = connect('testadmin')
+    >>> cur = connection.cursor()
     >>> def pofiletranslator(person_id, pofile_id):
     ...     cur.execute("""
     ...         SELECT latest_message, date_last_touched

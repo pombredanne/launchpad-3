@@ -9,6 +9,7 @@ import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE)
+import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
 import storm.sqlobject
@@ -33,6 +34,7 @@ __all__ = [
     'expire_from_cache',
     'flush_database_caches',
     'flush_database_updates',
+    'get_transaction_timestamp',
     'ISOLATION_LEVEL_AUTOCOMMIT',
     'ISOLATION_LEVEL_DEFAULT',
     'ISOLATION_LEVEL_READ_COMMITTED',
@@ -265,6 +267,14 @@ def clear_current_connection_cache():
 def expire_from_cache(obj):
     """Expires a single object from the SQLObject cache."""
     getUtility(IZStorm).get('main').invalidate(obj)
+
+
+def get_transaction_timestamp():
+    """Get the timestamp for the current transaction."""
+    store = getUtility(IZStorm).get('main')
+    timestamp = store.execute(
+        "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'").get_one()[0]
+    return timestamp.replace(tzinfo=pytz.timezone('UTC'))
 
 
 def quote(x):

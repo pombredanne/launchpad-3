@@ -644,13 +644,18 @@ class BugTask(SQLBase, BugTaskMixin):
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-        if self.productID is not None:
+
+        # We check both the foreign key column and the reference so we
+        # can detect unflushed references.  The reference check will
+        # only be made if the FK is None, so no additional queries
+        # will be executed.
+        if self.productID is not None or self.product is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self.productseriesID is not None:
+        elif self.productseriesID is not None or self.productseries is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self.distroseriesID is not None:
+        elif self.distroseriesID is not None or self.distroseries is not None:
             alsoProvides(self, IDistroSeriesBugTask)
-        elif self.distributionID is not None:
+        elif self.distributionID is not None or self.distribution is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
@@ -834,17 +839,13 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        component = None
+        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
-            component = self.target.latest_published_component
+            return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
-            # Pull the component from the package published in the
-            # latest distribution series.
-            packages = self.target.get_distroseries_packages()
-            if packages:
-                component = packages[0].latest_published_component
-        if component:
-            return component
+            spph = self.target.latest_overall_publication
+            if spph:
+                return spph.component
         return None
 
     def asEmailHeaderValue(self):

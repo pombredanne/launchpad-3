@@ -2371,7 +2371,7 @@ class BugTargetView(LaunchpadView):
         """Return the most recently updated bugtasks for this target."""
         params = BugTaskSearchParams(
             orderby="-date_last_updated", omit_dupes=True, user=self.user)
-        return self.context.searchTasks(params)[:limit]
+        return list(self.context.searchTasks(params)[:limit])
 
 
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):

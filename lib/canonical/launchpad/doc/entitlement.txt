@@ -5,6 +5,8 @@ Launchpad users have been assigned.  The business model for these
 assignments is not important, but it could be through a commercial
 arrangement or through a grant that applies to everyone.
 
+    >>> from datetime import datetime
+    >>> import pytz
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     EntitlementQuota, EntitlementState, EntitlementType,
@@ -35,12 +37,13 @@ entitlement_type is the feature being enabled.  The 'person' is the
 person or team being granted the right.  The state for a granted
 entitlement is ACTIVE and the expiration and start dates can be specified.
 
+    >>> UTC = pytz.timezone('UTC')
     >>> entitlement = getUtility(IEntitlementSet).new(
     ...     quota=5,
     ...     entitlement_type=EntitlementType.PRIVATE_BUGS,
     ...     person=ubuntu_team,
     ...     state=EntitlementState.ACTIVE,
-    ...     date_expires="2038-06-11 00:00:00",
+    ...     date_expires=datetime(2038, 6, 11, tzinfo=UTC),
     ...     amount_used=0)
     >>> verifyObject(IEntitlement, entitlement)
     True
@@ -311,7 +314,7 @@ number of valid entitlements.
     ...     entitlement_type=EntitlementType.PRIVATE_BRANCHES,
     ...     person=ubuntu_team,
     ...     state=EntitlementState.ACTIVE,
-    ...     date_expires="2038-06-11 00:00:00",
+    ...     date_expires=datetime(2038, 6, 11, tzinfo=UTC),
     ...     amount_used=0)
     >>> valid_list = getUtility(IEntitlementSet).getValidForPerson(ubuntu_team)
     >>> len(valid_list)

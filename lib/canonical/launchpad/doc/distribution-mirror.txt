@@ -472,6 +472,16 @@ On the warty release, component 'main' and pocket RELEASE , we had two
 uploads between 2005-09-15 and 2005-09-17, so at that time we could've
 checked if that mirror's last sync was in the last one or two days.
 
+    # XXX 2008-06-4 jamesh:
+    # The warty_mirror and warty_i386_mirror objects had previously
+    # been deleted from the database around line 95.  They seem to
+    # still be usable with SQLObject here, but not with Storm.  Adding
+    # the following statement did not seem to be enough to fix the
+    # test.
+
+    #>>> warty_mirror = new_mirror.ensureMirrorDistroSeriesSource(
+    #...     warty, pocket, warty_component)
+
     >>> when = datetime(2005, 9, 17, tzinfo=utc)
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(freshness.name, url) for (freshness, url) in urls.items()]
