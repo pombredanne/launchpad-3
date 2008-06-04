@@ -23,7 +23,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
-    PackagePublishingPocket, PackagePublishingStatus, SourcePackageUrgency)
+    PackagePublishingPocket, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -92,16 +92,6 @@ class BuildQueue(SQLBase):
     def is_virtualized(self):
         """See `IBuildQueue`."""
         return self.build.is_virtualized
-
-    @property
-    def is_last_version(self):
-        """See `IBuildQueue`."""
-        spr = self.build.sourcepackagerelease
-        if (spr.publishings and spr.publishings[0].status >
-            PackagePublishingStatus.PUBLISHED):
-            return False
-
-        return True
 
     def score(self):
         """See `IBuildQueue`."""

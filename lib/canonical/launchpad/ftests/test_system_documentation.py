@@ -18,8 +18,6 @@ from canonical.database.sqlbase import (
     commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.ftests import mailinglists_helper
-from canonical.launchpad.ftests.bug import (
-    create_old_bug, summarize_bugtasks, sync_bugtasks)
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)
@@ -198,9 +196,6 @@ def bugLinkedToQuestionSetUp(test):
 def bugtaskExpirationSetUp(test):
     """Setup globs for bug expiration."""
     setUp(test)
-    test.globs['create_old_bug'] = create_old_bug
-    test.globs['summarize_bugtasks'] = summarize_bugtasks
-    test.globs['sync_bugtasks'] = sync_bugtasks
     test.globs['commit'] = commit
     login('test@canonical.com')
 
@@ -566,6 +561,13 @@ special = {
     'externalbugtracker-bugzilla.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-bugzilla-lp-plugin.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bugzilla-lp-plugin.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
