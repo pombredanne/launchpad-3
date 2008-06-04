@@ -570,8 +570,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         build_candidate = self.sourcepackagerelease.getBuildByArch(
             arch, self.archive)
 
+        # Check DistroArchSeries database IDs because the objected belongs
+        # to different transactions (architecture_available is cached).
         if (build_candidate is not None and
-            (build_candidate.distroarchseries == arch or
+            (build_candidate.distroarchseries.id == arch.id or
              build_candidate.buildstate == BuildStatus.FULLYBUILT)):
             return None
 
