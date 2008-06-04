@@ -127,8 +127,6 @@ Now we'll create another branch, and subscribe to it.
 
     >>> login(ANONYMOUS)
     >>> b2 = factory.makeBranch(owner=eric)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
     >>> ignored = b2.unsubscribe(eric)
     >>> logout()
 
