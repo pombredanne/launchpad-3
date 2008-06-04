@@ -771,8 +771,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         Make sure that the files are placed in the restricted librarian.
         """
-        self.name16.archive.private = True
         self.name16.archive.buildd_secret = "secret"
+        self.name16.archive.private = True
         queue_item = self.doCustomUploadToPPA()
         self.checkFilesRestrictedInLibrarian(queue_item, True)
 
@@ -781,8 +781,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         Make sure that the files are placed in the restricted librarian.
         """
-        self.name16.archive.private = True
         self.name16.archive.buildd_secret = "secret"
+        self.name16.archive.private = True
 
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
