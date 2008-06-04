@@ -1147,6 +1147,19 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
 
     schema = IProductReviewSearch
 
+    full_row_field_names = [
+        'search_text',
+        'active',
+        'license_reviewed',
+        'licenses',
+        ]
+
+    side_by_side_field_names = [
+        ('created_after', 'created_before'),
+        ('subscription_expires_after', 'subscription_expires_before'),
+        ('subscription_modified_after', 'subscription_modified_before'),
+        ]
+
     custom_widget('search_text', NewLineToSpacesWidget)
     custom_widget(
         'licenses', CheckBoxMatrixWidget, column_count=4,
@@ -1159,8 +1172,24 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('subscription_modified_before', DateWidget)
 
     @action(_('Search'), name='search')
-    def nothing(self, action, data):
+    def action_search(self, action, data):
+        """Provide search button in form.
+
+        forReviewBatched() actually does all the work, and
+        it is not dependent on the search button which hasn't
+        been pressed when the page first loads.
+        """
         pass
+
+    def setUpWidgets(self):
+        super(ProductSetReviewLicensesView, self).setUpWidgets()
+        self.full_row_widgets = []
+        self.side_by_side_widgets = []
+        for left, right in self.side_by_side_field_names:
+            self.side_by_side_widgets.append(
+                [self.widgets.get(left), self.widgets.get(right)])
+        for field_name in self.full_row_field_names:
+            self.full_row_widgets.append(self.widgets[field_name])
 
     def forReviewBatched(self):
         # Calling _validate populates the data dictionary as a side-effect

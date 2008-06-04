@@ -17,7 +17,59 @@
 
   <h1>Projects for review</h1>
 
-  <div metal:use-macro="context/@@launchpad_form/form" />
+  <form action="."
+        tal:attributes="action view/action_url"
+        name="launchpadform"
+        method="GET"
+        accept-charset="UTF-8">
+
+    <div metal:use-macro="context/@@launchpad_form/formbody">
+
+      <metal:widgets fill-slot="widgets">
+        <table class="form">
+          <tal:block define="widgets view/full_row_widgets"
+                    repeat="widget widgets">
+            <metal:block use-macro="context/@@launchpad_form/widget_row"/>
+          </tal:block>
+          <tr>
+            <td colspan="2">
+            <table>
+              <tr><td>
+              <table class="form">
+              <tal:block define="widgets view/side_by_side_widgets"
+                        repeat="widget_pair widgets">
+                  <tal:block tal:define="widget python: widget_pair[0]">
+                    <metal:block
+                      tal:condition="widget"
+                      use-macro="context/@@launchpad_form/widget_row"/>
+                  </tal:block>
+              </tal:block>
+              </table>
+            </td>
+            <td>
+              <table class="form">
+              <tal:block define="widgets view/side_by_side_widgets"
+                        repeat="widget_pair widgets">
+                  <tal:block tal:define="widget python: widget_pair[1]">
+                    <metal:block
+                      tal:condition="widget"
+                      use-macro="context/@@launchpad_form/widget_row"/>
+                  </tal:block>
+              </tal:block>
+              </table>
+            </td></tr>
+            </table>
+            </td>
+          </tr>
+        </table>
+      </metal:widgets>
+
+    </div>
+
+    <input type="submit" name="search" value="Search" class="button" />
+
+  </form>
+
   <h3>Please review these items.</h3>
   <tal:navigation replace="structure batch/@@+navigation-links-upper" />
   <div tal:repeat="product batch/currentBatch"

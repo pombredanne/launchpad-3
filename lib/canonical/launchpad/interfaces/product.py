@@ -530,18 +530,18 @@ class IProductReviewSearch(Interface):
         required=False,
         default=sets.Set([License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
 
-    created_after = Date(title=_("Created after"), required=False)
+    created_after = Date(title=_("Created between"), required=False)
 
-    created_before = Date(title=_("Created before "), required=False)
+    created_before = Date(title=_("and"), required=False)
 
     subscription_expires_after = Date(
-        title=_("Subscription expires after"), required=False)
+        title=_("Subscription expires between"), required=False)
 
     subscription_expires_before = Date(
-        title=_("Subscription expires before"), required=False)
+        title=_("and"), required=False)
 
     subscription_modified_after = Date(
-        title=_("Subscription modified after"), required=False)
+        title=_("Subscription modified between"), required=False)
 
     subscription_modified_before = Date(
-        title=_("Subscription modified before"), required=False)
+        title=_("and"), required=False)
