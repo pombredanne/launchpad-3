@@ -207,7 +207,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Step 2: Upload a new version of bar to component universe (see
         # changesfile encoded in the upload notification). It should be
         # auto-accepted, auto-published and have its component overridden
-        # to 'main'.
+        # to 'main' in the publishing record.
         #
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -218,7 +218,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "OK: bar_1.0.orig.tar.gz",
             "OK: bar_1.0-10.diff.gz",
             "OK: bar_1.0-10.dsc",
-            "-> Component: main Section: devel",
+            "-> Component: universe Section: devel",
             "universe/devel optional bar_1.0-10.dsc",
             "universe/devel optional bar_1.0-10.diff.gz",
             "You are receiving this email because you are the uploader of "
@@ -972,6 +972,34 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Upload a higher version of bar that relies on the official
         # orig.tar.gz availability.
         self.uploadHigherBarToUbuntu()
+
+    def testNoPublishingOverrides(self):
+        """Make sure publishing overrides are not applied for PPA uploads."""
+        # Create a fake "bar" package and publish it in section "web".
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        pub_src = publisher.getPubSource(
+            sourcename="bar", version="1.0-1", section="web",
+            archive=self.name16_ppa, distroseries=self.breezy,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Now upload bar 1.0-3, which has section "devel".
+        # (I am using this version because it's got a .orig required for
+        # the upload).
+        upload_dir = self.queueUpload("bar_1.0-3_valid", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-3 (source)"]
+        self.assertEmail(contents)
+
+        # The published section should be "devel" and not "web".
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar2, pub_bar1] = pub_sources
+
+        section = pub_bar2.section.name
+        self.assertEqual(
+            section, 'devel',
+            "Expected a section of 'devel', actually got '%s'" % section)
 
     def testPPAOrigGetsPrecedence(self):
         """When available, the PPA overridden 'orig.tar.gz' gets precedence.
