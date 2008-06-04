@@ -155,6 +155,8 @@ def wait_for_service_shutdown(seconds_to_wait=10.0):
                 if err.args[0] == errno.ECONNREFUSED:
                     # Success!  The socket is closed.
                     return
+                else:
+                    raise
             else:
                 elapsed = (time.time() - start)
                 if elapsed > seconds_to_wait:
