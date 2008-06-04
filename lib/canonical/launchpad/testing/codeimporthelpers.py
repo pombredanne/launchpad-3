@@ -47,7 +47,7 @@ def make_running_import(code_import=None, machine=None, date_started=None,
         of the newly started job.
     :param factory: The LaunchpadObjectFactory to use for the creation of
         the objects.  If None, one is created.
-    :param logtail: XXX.
+    :param logtail: An optional string to put in the logtail field of the job.
     """
     if factory is None:
         factory = LaunchpadObjectFactory()
