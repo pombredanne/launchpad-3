@@ -62,9 +62,6 @@ class IServiceRootResource(IHTTPResource):
     def getTopLevelPublications(request):
         """Return a mapping of top-level link names to published objects."""
 
-    type_url = Attribute("The URL to the definition of "
-                          "this type of resource.")
-
 
 class IEntryResource(IHTTPResource):
     """A resource that represents an individual object."""
@@ -89,9 +86,6 @@ class IEntryResource(IHTTPResource):
     def getContext():
         """Return the underlying entry for this resource."""
 
-    type_url = Attribute("The URL to the definition of "
-                          "this type of resource.")
-
 
 class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
@@ -101,9 +95,6 @@ class ICollectionResource(IHTTPResource):
 
         :return: A string representation.
         """
-
-    type_url = Attribute("The URL to the definition of "
-                          "this type of resource.")
 
 
 class IResourceOperation(Interface):
@@ -206,6 +197,3 @@ class IByteStorageResource(IHTTPResource):
 
     def do_DELETE():
         """Delete the stored bytestream."""
-
-    type_url = Attribute("The URL to the definition of "
-                          "this type of resource.")
