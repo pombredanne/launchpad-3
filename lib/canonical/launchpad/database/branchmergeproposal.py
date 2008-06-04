@@ -11,10 +11,12 @@ __all__ = [
 from email.Utils import make_msgid
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -24,6 +26,7 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -31,8 +34,6 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,)
-from canonical.launchpad.mailout.notificationrecipientset import \
-    NotificationRecipientSet
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -64,16 +65,6 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
-
-
-class BranchNotificationReason:
-    '''A reason for being notified about a branch.'''
-
-    def __init__(self, person, branch, rationale, subscription=None):
-        self.person = person
-        self.branch = branch
-        self.rationale = rationale
-        self.subscription = subscription
 
 
 class BranchMergeProposal(SQLBase):
@@ -127,6 +118,10 @@ class BranchMergeProposal(SQLBase):
         default=None)
 
     @property
+    def address(self):
+        return 'mp+%d@%s' % (self.id, config.vhost.code.hostname)
+
+    @property
     def supersedes(self):
         return BranchMergeProposal.selectOneBy(superseded_by=self)
 
@@ -169,10 +164,7 @@ class BranchMergeProposal(SQLBase):
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
-        dont_email_me = set()
-
         branches = [self.source_branch, self.target_branch]
-
         if self.dependent_branch is not None:
             branches.append(self.dependent_branch)
         for branch in branches:
@@ -181,29 +173,8 @@ class BranchMergeProposal(SQLBase):
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
-                    dont_email_me.add(recipient)
                     continue
-                recipients[recipient] = BranchNotificationReason(
-                    person=recipient,
-                    branch=subscription.branch,
-                    rationale=rationale,
-                    subscription=subscription)
-
-        owner_recipients = NotificationRecipientSet()
-        owner_recipients.add(
-            self.source_branch.owner, self.source_branch, 'Owner')
-        owner_recipients.add(
-            self.target_branch.owner, self.target_branch, 'Owner')
-        if self.dependent_branch is not None:
-            owner_recipients.add(
-                self.dependent_branch.owner, self.dependent_branch, 'Owner')
-        for recipient in owner_recipients:
-            if recipient in dont_email_me:
-                branch, rationale = owner_recipients.getReason(recipient)
-                recipients[recipient] = BranchNotificationReason(
-                    person=recipient,
-                    branch=branch,
-                    rationale=rationale)
+                recipients[recipient] = (subscription, rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -437,6 +408,8 @@ class BranchMergeProposal(SQLBase):
         msg = Message(parent=parent_message, owner=owner,
                       rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        return CodeReviewMessage(
+        code_review_message = CodeReviewMessage(
             branch_merge_proposal=self, message=msg, vote=vote,
             vote_tag=vote_tag)
+        notify(SQLObjectCreatedEvent(code_review_message))
+        return code_review_message

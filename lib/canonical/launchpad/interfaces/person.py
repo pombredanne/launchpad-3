@@ -887,6 +887,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         owns or drives.
         """
 
+    def getOwnedProjects(match_name=None):
+        """Projects owned by this person or teams to which she belongs.
+
+        :param match_name: string optional project name to screen the results.
+        """
+
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """Assign karma for the action named <action_name> to this person.
@@ -1161,11 +1167,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         consider using `IMailinglist.subscribe()` directly.
 
         :param mailinglist: The list to subscribe to.  No action is
-        	taken if the list is None, or in an unusable state.
+                taken if the list is None, or in an unusable state.
 
         :param requester: The person requesting the list subscription,
-        	if not the user himself.  The default assumes the user
-        	themself is making the request.
+                if not the user himself.  The default assumes the user
+                themself is making the request.
 
         :return: True if the user was subscribed, false if they weren't.
         """
@@ -1848,7 +1854,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner', 
+    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1932,7 +1938,7 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
-    (IPersonEditRestricted['join'], 'team'), 
+    (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),
