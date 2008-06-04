@@ -269,7 +269,7 @@ members.
     http://.../~karl
 
 
-=== Subteams and superteams ===
+=== Sub-teams and super-teams ===
 
 Teams can be members of other teams, and sometimes it's useful to know
 which teams are members of any given team as well as the ones it is a
@@ -440,25 +440,26 @@ Accepting or declining a membership invitation:
     >>> webservice.get("/beta/~ubuntu-team/+member/name20").jsonBody()['status']
     u'Invitation declined'
 
-Checking whether or not a given person is a participant in a team.
+To check whether or not a given person is a participant in a team, use the
+'inTeam' custom operation.
 
-    >>> print webservice.get(
-    ...     '/beta/~salgado?ws.op=inTeam&team=%s'
-    ...     % quote(ubuntu_team['self_link'])).jsonBody()
+    >>> print webservice.named_get(
+    ...     '/beta/~salgado', 'inTeam', team=ubuntu_team['self_link']
+    ...     ).jsonBody()
     False
 
-    >>> print webservice.get(
-    ...     '/beta/~cprov?ws.op=inTeam&team=%s'
-    ...     % quote(ubuntu_team['self_link'])).jsonBody()
+    >>> print webservice.named_get(
+    ...     '/beta/~cprov', 'inTeam', team=ubuntu_team['self_link']
+    ...     ).jsonBody()
     True
 
-Finding the path from a given person to a team that person is an
-indirect member.
+To find the path from a given person to a team that person is a
+participant, use the 'findPathToTeam' custom operation.
 
     >>> ml_experts = webservice.get("/beta/~mailing-list-experts").jsonBody()
-    >>> json = webservice.get(
-    ...     '/beta/~salgado?ws.op=findPathToTeam&team=%s'
-    ...     % quote(ml_experts['self_link'])).jsonBody()
+    >>> json = webservice.named_get(
+    ...     '/beta/~salgado', 'findPathToTeam', team=ml_experts['self_link']
+    ...     ).jsonBody()
     >>> for entry in json['entries']:
     ...     print entry['self_link']
     http://api.launchpad.dev/beta/~admins

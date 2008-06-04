@@ -46,10 +46,10 @@ from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_factory_operation, export_operation_as,
+   export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
    operation_parameters, rename_parameters_as, REQUEST_USER, webservice_error)
-from canonical.lazr.rest.schema import CollectionField
+from canonical.lazr.rest.schema import CollectionField, Reference
 
 from canonical.launchpad import _
 
@@ -774,7 +774,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 "Rosetta Translators".
                 """),
             readonly=True, required=False,
-            value_type=Object(schema=Interface)))
+            value_type=Reference(schema=Interface)))
 
     super_teams = exported(
         CollectionField(
@@ -792,7 +792,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                 'Rosetta Translators', because we are member of both of them.
                 """),
             readonly=True, required=False,
-            value_type=Object(schema=Interface)))
+            value_type=Reference(schema=Interface)))
 
     @invariant
     def personCannotHaveIcon(person):
