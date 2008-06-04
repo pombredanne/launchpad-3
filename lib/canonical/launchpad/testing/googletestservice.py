@@ -170,7 +170,11 @@ def kill_running_process():
         if pid is not None:
             try:
                 os.kill(pid, signal.SIGTERM)
-                os.waitpid(pid, 0)
+                # We need to use a busy-wait to find out when the socket
+                # becomes available.  Failing to do so causes a race condition
+                # between freeing the socket in the killed process, and
+                # opening it in the current one.
+                wait_for_service()
             except os.error, err:
                 if err.errno == errno.ESRCH:
                     # Whoops, we got a 'No such process' error. The PID file
