@@ -9,6 +9,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
     CodeImportMachineOfflineReason, CodeImportMachineState,
@@ -81,14 +82,14 @@ class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):
         self.assertTrue(self.machine.heartbeat is None)
         self.machine.setQuiescing(self.factory.makePerson())
         self.machine.shouldLookForJob()
-        self.assertTrue(self.machine.heartbeat is not None)
+        self.assertSqlAttributeEqualsDate(self.machine, 'heartbeat', UTC_NOW)
 
     def test_heartbeatUpdateWhenOnline(self):
         # When the machine is online, the heartbeat is updated.
         # Guardedly check that the machine was created with a NULL heartbeat.
         self.assertTrue(self.machine.heartbeat is None)
         self.machine.shouldLookForJob()
-        self.assertTrue(self.machine.heartbeat is not None)
+        self.assertSqlAttributeEqualsDate(self.machine, 'heartbeat', UTC_NOW)
 
 
 def test_suite():
