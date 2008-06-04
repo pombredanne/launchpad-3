@@ -59,7 +59,7 @@ class CodeReviewCommentMailer(BMPMailer):
                 self.code_review_comment.vote.title, vote_tag)
         main = self.message.text_contents
         if '\n-- \n' in main:
-            footer_separator = ''
+            footer_separator = '\n'
         else:
             footer_separator = '\n-- \n'
         return ''.join((

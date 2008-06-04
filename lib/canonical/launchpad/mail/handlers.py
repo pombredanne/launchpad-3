@@ -5,6 +5,7 @@ __metaclass__ = type
 import re
 from urlparse import urlunparse
 
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
@@ -487,9 +488,14 @@ class AnswerTrackerHandler:
             question.addComment(message.owner, message)
 
 
-class InvalidBranchMergeProposalAddress(Exception):
+class BadBranchMergeProposalAddress(Exception):
     """The user-supplied address is not an acceptable value."""
 
+class InvalidBranchMergeProposalAddress(BadBranchMergeProposalAddress):
+    """The user-supplied address is not an acceptable value."""
+
+class NonExistantBranchMergeProposalAddress(BadBranchMergeProposalAddress):
+    """The BranchMergeProposal specified by the address does not exist."""
 
 class InvalidVoteString(Exception):
     """The user-supplied vote is not an acceptable value."""
@@ -508,9 +514,23 @@ class CodeHandler:
         any CodeReviewVote item value, case-insensitively.
         :return: True.
         """
-        merge_proposal = self.getBranchMergeProposal(email_addr)
+        try:
+            merge_proposal = self.getBranchMergeProposal(email_addr)
+        except BadBranchMergeProposalAddress:
+            return False
         messageset = getUtility(IMessageSet)
-        vote, vote_tag = self._getVote(mail)
+        try:
+            vote, vote_tag = self._getVote(mail)
+        except InvalidVoteString, e:
+            valid_strings = ', '.join(
+                sorted(v.name.lower() for v in CodeReviewVote.items.items))
+            simple_sendmail(
+                'noreply@launchpad.net', [self._getReplyAddress(mail)],
+                'Unsupported vote',
+                'Your comment was not accepted because the string "%s" is not'
+                ' a supported voting value.  The following values are'
+                ' supported: %s.' % (e.args[0], valid_strings))
+            return True
         message = messageset.fromEmail(
             mail.parsed_string,
             owner=getUtility(ILaunchBag).user,
@@ -538,17 +558,22 @@ class CodeHandler:
         if len(args) == 0:
             return None, None
         else:
-            vote_text = args[0]
+            vote_string = args[0]
         vote_tag_list = args[1:]
         try:
-            vote = CodeReviewVote.items[vote_text.upper()]
+            vote = CodeReviewVote.items[vote_string.upper()]
         except KeyError:
-            raise InvalidVoteString
+            raise InvalidVoteString(vote_string)
         if len(vote_tag_list) == 0:
             vote_tag = None
         else:
             vote_tag = ' '.join(vote_tag_list)
         return vote, vote_tag
+
+    @staticmethod
+    def _getReplyAddress(mail):
+        """The address to use for automatic replies."""
+        return mail.get('Reply-to', mail['From'])
 
     @classmethod
     def getBranchMergeProposal(klass, email_addr):
@@ -566,7 +591,11 @@ class CodeHandler:
             merge_proposal_id = int(match.group(2))
         except ValueError:
             raise InvalidBranchMergeProposalAddress(email_addr)
-        return getUtility(IBranchMergeProposalGetter).get(merge_proposal_id)
+        getter = getUtility(IBranchMergeProposalGetter)
+        try:
+            return getter.get(merge_proposal_id)
+        except SQLObjectNotFound:
+            raise NonExistantBranchMergeProposalAddress(email_addr)
 
 
 class SpecificationHandler:

@@ -77,13 +77,58 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.assertTrue(self.code_handler.process(
             mail, email_addr, None), "Succeeded, but didn't return True")
+        # if the message has not been created, this raises SQLObjectNotFound
         message = MessageSet().get('<my-id>')
+
+    def test_processBadAddress(self):
+        """When a bad address is supplied, it returns False."""
+        mail = self.factory.makeSignedMessage('<my-id>')
+        self.assertFalse(self.code_handler.process(mail,
+            'foo@code.launchpad.dev', None))
+
+    def test_processNonExistantAddress(self):
+        """When a non-existant address is supplied, it returns False."""
+        mail = self.factory.makeSignedMessage('<my-id>')
+        self.assertFalse(self.code_handler.process(mail,
+            'mp+0@code.launchpad.dev', None))
 
     def test_processFailure(self):
         """When process fails, it returns False."""
+        code_handler = CodeHandler()
+        # Induce unexpected failure
+        def raise_value_error(*args, **kwargs):
+            raise ValueError('Bad value')
+        code_handler._getVote = raise_value_error
         mail = self.factory.makeSignedMessage('<my-id>')
-        self.assertRaises(InvalidBranchMergeProposalAddress,
-            self.code_handler.process, mail, 'foo@bar.com', None)
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.assertRaises(ValueError, code_handler.process, mail,
+            email_addr, None)
+
+    def test_processBadVote(self):
+        """process handles bad votes properly."""
+        mail = self.factory.makeSignedMessage(body=' vote badvalue')
+        bmp = self.factory.makeBranchMergeProposal()
+        email_addr = bmp.address
+        self.assertTrue(self.code_handler.process(
+            mail, email_addr, None), "Didn't return True")
+        notification = pop_notifications()[0]
+        self.assertEqual('Unsupported vote', notification['subject'])
+        self.assertEqual(
+            'Your comment was not accepted because the string "badvalue" is'
+            ' not a supported voting value.  The following values are'
+            ' supported: abstain, approve, disapprove.',
+            notification.get_payload(decode=True))
+        self.assertEqual(mail['From'], notification['To'])
+
+    def test_getReplyAddress(self):
+        """getReplyAddress should return From or Reply-to address."""
+        mail = self.factory.makeSignedMessage()
+        self.assertEqual(
+            mail['From'], self.code_handler._getReplyAddress(mail))
+        mail['Reply-to'] = self.factory.getUniqueEmailAddress()
+        self.assertEqual(
+            mail['Reply-to'], self.code_handler._getReplyAddress(mail))
 
     def test_processVote(self):
         """Process respects the vote command."""

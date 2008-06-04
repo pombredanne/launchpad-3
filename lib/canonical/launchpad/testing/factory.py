@@ -101,6 +101,9 @@ class LaunchpadObjectFactory:
         # Initialise the unique identifier.
         self._integer = 0
 
+    def getUniqueEmailAddress(self):
+        return "%s@example.com" % self.getUniqueString('email')
+
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
         self._integer += 1
@@ -140,7 +143,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = "%s@example.com" % self.getUniqueString('email')
+            email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
@@ -382,6 +385,7 @@ class LaunchpadObjectFactory:
 
     def makeSignedMessage(self, msgid=None, body=None):
         mail = SignedMessage()
+        mail['From'] = self.getUniqueEmailAddress()
         if msgid is None:
             msgid = make_msgid('launchpad')
         if body is None:
