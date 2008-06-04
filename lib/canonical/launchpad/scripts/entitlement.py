@@ -15,11 +15,14 @@ __all__ = [
     'UnsupportedVersion',
     ]
 
-from zope.component import getUtility
-
 import cStringIO
 import csv
+import datetime
 import re
+import time
+
+import pytz
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     EntitlementState, EntitlementType, IEntitlementSet, IPersonSet,
@@ -178,6 +181,23 @@ class EntitlementImporter:
         for field in ['id', 'quota', 'entitlement_type', 'state', 'amount_used']:
             if entitlement[field]:
                 entitlement[field] = int(entitlement[field])
+
+        # Convert strings to dates.
+        for field in ['date_starts', 'date_expires', 'date_created']:
+            if entitlement[field]:
+                date_string = entitlement[field]
+                if len(date_string) == len('YYYY-mm-dd'):
+                    year, month, day, hour, minute, second = time.strptime(
+                        date_string, '%Y-%m-%d')[:6]
+                elif len(date_string) == len('YYYY-mm-dd HH:MM:SS'):
+                    year, month, day, hour, minute, second = time.strptime(
+                        date_string, '%Y-%m-%d %H:%M:%S')[:6]
+                else:
+                    raise AssertionError(
+                        'Unknown date format: %s' % date_string)
+                entitlement[field] = datetime.datetime(
+                    year, month, day, hour, minute, second,
+                    tzinfo=pytz.timezone('UTC'))
 
         # Convert the entitlement_type and state to the corresponding
         # database objects.
