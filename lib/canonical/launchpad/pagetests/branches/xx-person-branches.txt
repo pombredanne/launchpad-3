@@ -121,7 +121,7 @@ Let's add a branch.
 The summary is now shown.
 
     >>> open_page_and_print_tag('page-summary')
-    Related branches: 1 (1 registered, 1 owned, 0 subscribed)
+    Related branches: 1 (1 registered, 1 owned, 1 subscribed)
 
 Now we'll create another branch, and subscribe to it.
 
@@ -129,9 +129,7 @@ Now we'll create another branch, and subscribe to it.
     >>> b2 = factory.makeBranch(owner=eric)
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-    >>> ignored = b2.subscribe(
-    ...     eric, BranchSubscriptionNotificationLevel.NOEMAIL,
-    ...     None, CodeReviewNotificationLevel.NOEMAIL)
+    >>> ignored = b2.unsubscribe(eric)
     >>> logout()
 
     >>> open_page_and_print_tag('page-summary')

@@ -196,6 +196,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
             branch into the mainline branch.
         :return: (db_trunk, trunk_tree), (db_branch, branch_tree).
         """
+
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
         trunk_tree = self.makeBzrBranchAndTree(db_branch)
@@ -213,6 +216,10 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # Merge branch into trunk.
         trunk_tree.merge_from_branch(branch_tree.branch)
         trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.txn = LaunchpadZopelessLayer.txn
 
         return (db_branch, trunk_tree), (new_db_branch, branch_tree)
 
