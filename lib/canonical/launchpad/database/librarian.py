@@ -121,7 +121,7 @@ class LibraryFileAlias(SQLBase):
     def close(self):
         # Don't die with an AttributeError if the '_datafile' property
         # is not set.
-        if self._datafile:
+        if self._datafile is not None:
             self._datafile.close()
             self._datafile = None
 
