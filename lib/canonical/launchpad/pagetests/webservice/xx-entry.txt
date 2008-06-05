@@ -283,6 +283,14 @@ You can't directly change an entry's URL address.
   ...
   self_link: You tried to modify a read-only attribute.
 
+You can't change an entry's resource type.
+
+  >>> print modify_person('salgado',
+  ...                    {'resource_type_link' : 'dummy'}, 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  resource_type_link: You tried to modify a read-only attribute.
+
 You can't refer to a link to an associated object or collection as
 though it were the actual object:
 
