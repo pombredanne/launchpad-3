@@ -156,7 +156,7 @@ leaves.
   >>> for elems in tree.flatten():
   ...     path, result = elems[:-1], elems[-1]
   ...     print ' => '.join(
-  ...         [repr(tuple(node)) for node in path] + [repr(result)])
+  ...         [repr(node.keys) for node in path] + [repr(result)])
   ('Snack',) => ('Mars Bar', 'Snickers') => 'Bad'
   ('Snack',) => ('Apple', 'Banana') => 'Good'
   ('Lunch', 'Dinner') => ('Fish and chips', "Penne all'arrabbiata") => 'Nice'

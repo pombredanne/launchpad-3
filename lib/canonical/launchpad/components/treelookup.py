@@ -36,27 +36,20 @@ __all__ = [
 import string
 
 
-class LookupBranch(tuple):
+class LookupBranch:
     """A branch point during a lookup, containing keys and a result."""
 
-    def __new__(cls, *args):
-        """Split out the keys from the result.
-
-        The last argument specified is the result of this branch, and
-        all the other arguments are keys. The keys are stored as tuple
-        elements (and are therefore passed to the superclass).
-        """
-        # Only pass the first len(args)-1 elements to the superclass,
-        # because args[-1] is the result of this branch.
-        return super(LookupBranch, cls).__new__(cls, args[:-1])
-
     def __init__(self, *args):
-        """See `__new__`.
+        """Construct a new `LookupBranch`.
+
+        Split out the keys from the result.  The last argument
+        specified is the result of this branch, and all the other
+        arguments are keys.
 
         As an extra step, the branch is verified by calling `_verify`.
         """
         super(LookupBranch, self).__init__()
-        # The last arg is the result of this branch.
+        self.keys = args[:-1]
         self.result = args[-1]
         self._verify()
 
@@ -86,7 +79,7 @@ class LookupBranch(tuple):
         If there are no keys for this branch, then this is a default
         branch.
         """
-        return len(self) == 0
+        return len(self.keys) == 0
 
     def describe(self, _level=1):
         """A representation of this branch.
@@ -107,7 +100,7 @@ class LookupBranch(tuple):
             format = format % '*'
         else:
             format = format % ', '.join(
-                self._describe_key(key) for key in self)
+                self._describe_key(key) for key in self.keys)
         if self.is_leaf:
             return format % self._describe_result(self.result)
         else:
@@ -139,7 +132,7 @@ class LookupBranch(tuple):
         """A machine-readable representation of this branch."""
         return '%s(%s)' % (
             self.__class__.__name__,
-            ', '.join(repr(item) for item in (self + (self.result,))))
+            ', '.join(repr(item) for item in (self.keys + (self.result,))))
 
 
 class LookupTree(tuple):
@@ -212,7 +205,7 @@ class LookupTree(tuple):
         :raises KeyError: If a result is not found.
         """
         for branch in self:
-            if key in branch or branch.is_default:
+            if key in branch.keys or branch.is_default:
                 if branch.is_leaf:
                     return branch.result
                 elif len(more) >= 1:
