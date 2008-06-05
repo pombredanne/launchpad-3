@@ -420,12 +420,30 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
 
-    def getConjoinedMaster(bugtasks):
+    def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
+
+        :param bugtasks: The bugtasks to be considered when looking for
+            the conjoined master.
+        :param bugtasks_by_package: A cache, mapping a
+            `ISourcePackageName` to a list of bug tasks targeted to such
+            a package name. Both distribution and distro series tasks
+            should be included in this list.
 
         This method exists mainly to allow calculating the conjoined
         master from a cached list of bug tasks, reducing the number of
         db queries needed.
+        """
+
+    def getBugTasksByPackageName(bugtasks):
+        """Return a mapping from `ISourcePackageName` to its bug tasks.
+
+        This mapping is suitable to pass ass the bugtasks_by_package
+        cache to getConjoinedMaster().
+
+        The mapping is from a `ISourcePackageName` to all the bug tasks
+        that are targeted to such a package name, no matter which
+        distribution or distro series it is.
         """
 
     def subscribe(person, subscribed_by):
