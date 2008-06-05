@@ -15,8 +15,9 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IProductSet, ISalesforceVoucherProxy)
+from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces.salesforce import (
+    ISalesforceVoucher, ISalesforceVoucherProxy)
 
 
 class SalesforceVoucherProxyException(Exception):
@@ -58,18 +59,21 @@ def map_fault(fault):
 
 class Voucher:
     """A Commercial Subscription voucher."""
+
+    implements(ISalesforceVoucher)
+
     def __init__(self, values):
         """Initialize using the values as returned from the SF proxy.
-        :param values['voucher']: voucher id.
+        :param values['voucher_id']: voucher id.
         :param values['status']: string representing the redemption status.
         :param values['term']: integer representing number of months of
             subscription the voucher enables.
         :param values['project_id']: integer id for the project this voucher
             has been redeemed  against.  If unredeemed this entry is absent.
         """
-        self.id = values.get('voucher')
+        self.voucher_id = values.get('voucher_id')
         self.status = values.get('status')
-        self.term = values.get('term')
+        self.term_months = values.get('term_months')
         project_id = values.get('project_id')
         if project_id is not None:
             self.project = getUtility(IProductSet).get(project_id)
@@ -81,9 +85,9 @@ class Voucher:
             project_name = "unassigned"
         else:
             project_name = self.project.displayname
-        return "%s,%s,%s,%s" % (self.id,
+        return "%s,%s,%s,%s" % (self.voucher_id,
                                 self.status,
-                                self.term,
+                                self.term_months,
                                 project_name)
 
 

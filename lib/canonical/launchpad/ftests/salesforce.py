@@ -20,8 +20,9 @@ from canonical.launchpad.utilities import SalesforceVoucherProxy
 from canonical.launchpad.interfaces import ISalesforceVoucherProxy
 
 
-STATUSES = ['UNREDEEMED',
-            'REDEEMED']
+STATUSES = ['Unredeemed',
+            'Redeemed',
+            'Reserved']
 
 
 PRODUCT_TERM_MAP = dict(LPCS12=12,
@@ -31,21 +32,21 @@ PRODUCT_TERM_MAP = dict(LPCS12=12,
 class Voucher:
     """Test data for a single voucher."""
     def __init__(self, voucher_id, owner):
-        self.id = voucher_id
+        self.voucher_id = voucher_id
         self.owner = owner
-        self.status = 'UNREDEEMED'
+        self.status = 'Reserved'
         self.project_id = None
         self.project_name = None
-        product = self.id.split('-')[0]
-        self.term = PRODUCT_TERM_MAP.get(product)
+        product = self.voucher_id.split('-')[0]
+        self.term_months = PRODUCT_TERM_MAP.get(product)
 
     def __str__(self):
-        return "%s,%s" % (self.id, self.status)
+        return "%s,%s" % (self.voucher_id, self.status)
 
     def asDict(self):
-        return dict(voucher=self.id,
+        return dict(voucher_id=self.voucher_id,
                     status=self.status,
-                    term=self.term,
+                    term_months=self.term_months,
                     project_id=self.project_id)
 
 
@@ -79,7 +80,7 @@ class SalesforceXMLRPCTestTransport(Transport):
 
     def _findVoucher(self, voucher_id):
         for voucher in self.vouchers:
-            if voucher.id == voucher_id:
+            if voucher.voucher_id == voucher_id:
                 return voucher
         return None
 
@@ -99,7 +100,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         """
         vouchers = [voucher.asDict() for voucher in self.vouchers
                     if (voucher.owner == lp_openid and
-                        voucher.status == 'UNREDEEMED')]
+                        voucher.status == 'Reserved')]
         return vouchers
 
     def getAllVouchers(self, lp_openid):
@@ -139,16 +140,16 @@ class SalesforceXMLRPCTestTransport(Transport):
         if voucher is None:
             raise Fault('NotFound', 'No such voucher %s' % voucher_id)
         else:
-            if voucher.status != 'UNREDEEMED':
+            if voucher.status != 'Reserved':
                 raise Fault('AlreadyRedeemed', 'Voucher %s is already redeemed' % voucher_id)
 
             if voucher.owner != lp_openid:
                 raise Fault('NotAllowed', 'Voucher is not owned by named user')
 
-        voucher.status = 'REDEEMED'
+        voucher.status = 'Redeemed'
         voucher.project_id = lp_project_id
         voucher.project_name = lp_project_name
-        product = voucher.id.split('-')[0]
+        product = voucher.voucher_id.split('-')[0]
         return [True]
 
     def updateProjectName(self, lp_project_id, lp_project_name):

@@ -20,7 +20,7 @@ which are just dictionaries in the transport.
 
     >>> def print_vouchers(vouchers):
     ...     for voucher in vouchers:
-    ...         print "%s,%s" % (voucher['voucher'], voucher['status'])
+    ...         print "%s,%s" % (voucher['voucher_id'], voucher['status'])
 
 
 == Test the XMLRPC transport ==
@@ -29,11 +29,11 @@ All of the sample voucher data in the transport can be shown.
 
     >>> for voucher in test_transport.vouchers:
     ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000004,UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000005,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,Reserved
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000004,Reserved
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000005,Reserved
 
 We can retrieve all unredeemed vouchers for a person.
 
@@ -43,9 +43,9 @@ We can retrieve all unredeemed vouchers for a person.
 
     >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
     >>> print_vouchers(vouchers)
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,Reserved
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved
 
 A single voucher can be retrieved using the `getVoucher` method.
 Unlike the other retrieval methods this one does the lookup based on
@@ -54,7 +54,7 @@ the voucher id, not the owner's id.
     >>> voucher = server.getVoucher(
     ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000001')
     >>> print_vouchers([voucher])
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,Reserved
 
 Attempting to retrieve a non-existent voucher raises a `NotFound` fault.
 
@@ -66,15 +66,15 @@ Attempting to retrieve a non-existent voucher raises a `NotFound` fault.
 A single voucher can be redeemed, but must be associated with a project.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> voucher = vouchers[0]['voucher']
+    >>> voucher = vouchers[0]['voucher_id']
     >>> result = server.redeemVoucher(voucher, mark.openid_identifier,
     ...                               firefox.id, firefox.displayname)
     >>> print result
     True
     >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
     >>> print_vouchers(vouchers)
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved
 
 
 == Test the wrapper ==
@@ -82,7 +82,8 @@ A single voucher can be redeemed, but must be associated with a project.
 The interface `ISalesforceVoucherProxy` defines the interaction with
 the Salesforce proxy.
 
-    >>> from canonical.launchpad.interfaces import ISalesforceVoucherProxy
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISalesforceVoucher, ISalesforceVoucherProxy)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> sfv = getUtility(ISalesforceVoucherProxy)
     >>> verifyObject(ISalesforceVoucherProxy, sfv)
@@ -110,21 +111,23 @@ list when she has none.
     >>> len(vouchers)
     0
 
-Mark has some vouchers and they can be retrieved.
-
-    >>> vouchers = sfv.getUnredeemedVouchers(mark)
-    >>> for voucher in vouchers:
-    ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED,12,unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
-
 Get a single voucher by id.
 
     >>> voucher = sfv.getVoucher(
     ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000003')
     >>> print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved,12,unassigned
+    >>> verifyObject(ISalesforceVoucher, voucher)
+    True
+
+Mark has some vouchers and they can be retrieved.
+
+    >>> vouchers = sfv.getUnredeemedVouchers(mark)
+    >>> for voucher in vouchers:
+    ...     print voucher
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,Reserved,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved,12,unassigned
 
 Get a single voucher with an invalid id.
 
@@ -135,24 +138,24 @@ Get a single voucher with an invalid id.
 
 Redeem the first voucher for firefox.
 
-    >>> voucher_id = vouchers[0].id
+    >>> voucher_id = vouchers[0].voucher_id
     >>> result = sfv.redeemVoucher(voucher_id, mark, firefox)
     >>> print result
     True
     >>> vouchers = sfv.getUnredeemedVouchers(mark)
     >>> for voucher in vouchers:
     ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved,12,unassigned
 
 If we get all of the vouchers the redeemed one is shown.
 
     >>> vouchers = sfv.getAllVouchers(mark)
     >>> for voucher in vouchers:
     ...     print voucher
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,REDEEMED,12,Mozilla Firefox
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED,12,unassigned
-    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,Redeemed,12,Mozilla Firefox
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,Reserved,12,unassigned
+    LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,Reserved,12,unassigned
 
 Attempting to redeem an already redeemed voucher is unsuccessful.
 
@@ -174,7 +177,7 @@ A user cannot redeem a voucher if it is owned by someone else.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> vouchers = sfv.getUnredeemedVouchers(cprov)
     >>> voucher = vouchers[0]
-    >>> result = sfv.redeemVoucher(voucher.id, mark, firefox)
+    >>> result = sfv.redeemVoucher(voucher.voucher_id, mark, firefox)
     Traceback (most recent call last):
       ...
     SVPNotAllowedException: 'Voucher is not owned by named user'
