@@ -20,7 +20,8 @@ from canonical.archiveuploader.tests import (
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.database import PackageUploadBuild
+from canonical.launchpad.database import (
+    LibraryFileAlias, PackageUploadBuild)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
     IDistributionSet, ILibraryFileAliasSet, IPackageUploadSet, IPersonSet,
@@ -99,6 +100,17 @@ class TestQueueTool(TestQueueBase):
         # but that doesn't matter as only email addresses are parsed out
         # of it.
         insertFakeChangesFileForAllPackageUploads()
+        fake_chroot = LibraryFileAlias.get(1)
+
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        breezy_autotest = ubuntu.getSeries('breezy-autotest')
+        breezy_autotest['i386'].addOrUpdateChroot(fake_chroot)
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+
         TestQueueBase.setUp(self)
 
     def tearDown(self):
