@@ -9,10 +9,10 @@ __all__ = [
     ]
 
 
-from urllib2 import HTTPError
 from urlparse import urljoin
 
 from launchpadlib.collection import Collection, Entry
+from launchpadlib.errors import HTTPError
 
 
 class Person(Entry):
@@ -22,17 +22,9 @@ class Person(Entry):
 class People(Collection):
     """The set of all Launchpad people or teams."""
 
-    def __init__(self, browser, base_url):
-        """See `Collection`."""
-        super(People, self).__init__(browser, base_url)
-        # For random access, keep track of entries by name.
-        self._peopleByName = {}
-
     def _entry(self, entry_dict):
         """Return a new entry subclass."""
-        person = Person(entry_dict)
-        self._peopleByName[person.name] = person
-        return person
+        return Person(entry_dict)
 
     def __getitem__(self, name):
         """Return the named person or team.
@@ -58,20 +50,12 @@ class People(Collection):
             person
         :rtype: `Person` or None
         """
-        # Fast track: we've already seen the person being requested.
-        try:
-            return self._peopleByName[name]
-        except KeyError:
-            pass
-        # The selected person either hasn't been seen yet or isn't in the
-        # collection.  For indexing by name, we can go directly to the person
-        # through our seekrit magick URL.
+        # For indexing by name, we can go directly to the person through our
+        # seekrit magick URL.
         try:
             data = self._browser.get(urljoin(self._base_url, '~' + name))
         except HTTPError, error:
-            if error.code == 404:
+            if error.status == 404:
                 return default
             raise
-        person = Person(data)
-        self._peopleByName[person.name] = person
-        return person
+        return Person(data)

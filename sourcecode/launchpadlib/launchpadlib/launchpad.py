@@ -8,13 +8,12 @@ __all__ = [
     ]
 
 
-from urllib2 import HTTPError
 from urlparse import urljoin
 
 from launchpadlib._browser import Browser
 from launchpadlib.collection import Collection, Entry
-from launchpadlib.errors import UnexpectedResponseError
-from launchpadlib.person import People
+from launchpadlib.errors import HTTPError, UnexpectedResponseError
+from launchpadlib.person import People, Person
 
 
 class _FakeBugCollection(Collection):
@@ -48,7 +47,6 @@ class Launchpad:
 
     @property
     def people(self):
-        # XXX Temporary
         if self._person_set_link is None:
             return None
         return People(self._browser, self._person_set_link)
@@ -72,18 +70,14 @@ class Launchpad:
         :raises ResponseError: when an unexpected response occurred.
         """
         url = urljoin(self.SERVICE_ROOT + '/', 'people')
-        # If the team got created, a 201 status will be returned.  This is not
-        # caught by the default error handler so urllib2 turns this into an
-        # exception, even those it's the expected response.  When that
-        # happens, we dig the 'Location' header out of the exception headers
-        # and create a new Person instance with that base url.  If we get any
-        # other return code, we re-raise the exception.
-        try:
-            response = self._browser.post(
-                url, 'create_team', name=name, display_name=display_name)
-        except HTTPError, error:
-            if error.code == 201:
-                return self._browser.get(error.hdrs['location'])
-            raise
-        else:
-            raise UnexpectedResponseError(response)
+        # If the team got created, a 201 status will be returned.  When that
+        # happens, we dig the 'Location' header out of the response and create
+        # a new Person instance with that base url.
+        response, content = self._browser.post(
+            url, 'create_team', name=name, display_name=display_name)
+        if response.status == 201:
+            # We know this has to be a person, so create and return the
+            # appropriate instance.
+            data = self._browser.get(response['location'])
+            return Person(data)
+        raise UnexpectedResponseError(response, content)

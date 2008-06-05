@@ -79,23 +79,29 @@ You also access teams using the same interface.
 You can create a new team through the web interface.  The simplest case of
 this requires only the new team's name, owner and display name.
 
-    >>> launchpad.people['guitarists']
+    >>> launchpad.people['bassists']
     Traceback (most recent call last):
     ...
-    KeyError: 'guitarists'
+    KeyError: 'bassists'
 
-    >>> launchpad.create_team(
-    ...     'guitarists', 'Awesome Rock Guitar Gods')
-    >>> guitarists.name
-    u'guitarists'
-    >>> guitarists.display_name
-    u'Awesome Rock Guitar Gods'
-    >>> guitarists.owner.name
-    u'salgado'
+    >>> bassists = launchpad.create_team(
+    ...     'bassists', 'Awesome Rock Bass Players')
+    >>> bassists.name
+    u'bassists'
+    >>> bassists.display_name
+    u'Awesome Rock Bass Players'
+
+And of course, that team is now accessible directly.
+    
+    >>> bassists = launchpad.people['bassists']
+    >>> bassists.name
+    u'bassists'
+    >>> bassists.display_name
+    u'Awesome Rock Bass Players'
 
 You cannot create the same team twice.
 
-    >>> launchpad.create_team('guitarists', '')
+    >>> launchpad.create_team('bassists', '')
     Traceback (most recent call last):
     ...
-    XXX
+    HTTPError: HTTP Error 400: Bad Request

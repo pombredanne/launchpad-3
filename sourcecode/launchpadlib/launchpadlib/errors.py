@@ -30,3 +30,21 @@ class ResponseError(LaunchpadError):
 
 class UnexpectedResponseError(ResponseError):
     """An unexpected response was received."""
+
+    def __init__(self, response, content):
+        self.response = response
+        self.content = content
+
+    def __str__(self):
+        return '%s: %s' % (self.response.status, self.response.reason)
+
+
+class HTTPError(ResponseError):
+    """An HTTP non-2xx response code was received."""
+
+    def __init__(self, status, reason):
+        self.status = status
+        self.reason = reason
+
+    def __str__(self):
+        return 'HTTP Error %s: %s' % (self.status, self.reason)
