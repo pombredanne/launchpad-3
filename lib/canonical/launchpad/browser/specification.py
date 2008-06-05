@@ -296,7 +296,7 @@ class SpecificationContextMenu(ContextMenu):
     def givefeedback(self):
         text = 'Give feedback'
         enabled = (self.user is not None and
-                   self.context.getFeedbackRequests(self.user))
+                   bool(self.context.getFeedbackRequests(self.user)))
         return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
