@@ -715,8 +715,8 @@ class BinaryPackageHandler:
                       quote(architecture))
 
         try:
-            bpr = BinaryPackageRelease.selectOne(query,
-                                                 clauseTables=clauseTables)
+            bpr = BinaryPackageRelease.selectOne(
+                query, clauseTables=clauseTables)
         except SQLObjectMoreThanOneResultError:
             # XXX kiko 2005-10-27: Untested
             raise MultiplePackageReleaseError("Found more than one "

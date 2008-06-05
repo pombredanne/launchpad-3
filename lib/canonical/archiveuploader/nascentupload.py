@@ -702,6 +702,10 @@ class NascentUpload:
 
         Override target component and section.
         """
+        if self.is_ppa:
+            # There are no overrides for PPAs.
+            return
+
         self.logger.debug("%s (source) exists in %s" % (
             override.sourcepackagerelease.title,
             override.pocket.name))
@@ -714,6 +718,10 @@ class NascentUpload:
 
         Override target component, section and priority.
         """
+        if self.is_ppa:
+            # There are no overrides for PPAs.
+            return
+
         self.logger.debug("%s (binary) exists in %s/%s" % (
             override.binarypackagerelease.title,
             override.distroarchseries.architecturetag,

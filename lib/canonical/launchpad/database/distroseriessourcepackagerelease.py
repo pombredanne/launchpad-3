@@ -127,7 +127,7 @@ class DistroSeriesSourcePackageRelease:
                         self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
-                query, prejoinClauseTables=['Build'],
+                query, prejoinClauseTables=['Build'], orderBy=['-id'],
                 clauseTables=clauseTables, distinct=True)
 
     @property

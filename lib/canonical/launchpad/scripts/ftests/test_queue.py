@@ -20,7 +20,8 @@ from canonical.archiveuploader.tests import (
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.database import PackageUploadBuild
+from canonical.launchpad.database import (
+    LibraryFileAlias, PackageUploadBuild)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
     IDistributionSet, ILibraryFileAliasSet, IPackageUploadSet, IPersonSet,
@@ -32,18 +33,6 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
-
-
-def upload_bar_source():
-    """Convenience function to upload a source, 'bar'."""
-    sync_policy = getPolicy(
-        name='sync', distro='ubuntu', distroseries='breezy-autotest')
-    bar_src = NascentUpload(
-        datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-        sync_policy, mock_logger_quiet)
-    bar_src.process()
-    bar_src.do_accept()
-    return bar_src
 
 
 class TestQueueBase(TestCase):
@@ -99,6 +88,17 @@ class TestQueueTool(TestQueueBase):
         # but that doesn't matter as only email addresses are parsed out
         # of it.
         insertFakeChangesFileForAllPackageUploads()
+        fake_chroot = LibraryFileAlias.get(1)
+
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        breezy_autotest = ubuntu.getSeries('breezy-autotest')
+        breezy_autotest['i386'].addOrUpdateChroot(fake_chroot)
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+
         TestQueueBase.setUp(self)
 
     def tearDown(self):
@@ -108,7 +108,7 @@ class TestQueueTool(TestQueueBase):
     def uploadPackage(self,
             changesfile="suite/bar_1.0-1/bar_1.0-1_source.changes"):
         """Helper function to upload a package."""
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        LaunchpadZopelessLayer.switchDbUser("uploader")
         sync_policy = getPolicy(
             name='sync', distro='ubuntu', distroseries='breezy-autotest')
         bar_src = NascentUpload(
@@ -117,7 +117,7 @@ class TestQueueTool(TestQueueBase):
         bar_src.process()
         bar_src.do_accept()
         LaunchpadZopelessLayer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
         return bar_src
 
     def testBrokenAction(self):
@@ -239,13 +239,24 @@ class TestQueueTool(TestQueueBase):
         # We need to upload a new source package to do this because the
         # sample data is horribly broken with published sources also in
         # the NEW queue.  Doing it this way guarantees a nice set of data.
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
-        upload_bar_source()
+        bar_src = self.uploadPackage()
+
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
-        LaunchpadZopelessLayer.txn.commit()
 
-        LaunchpadZopelessLayer.switchDbUser("queued")
+        # Add a chroot to breezy-autotest/i386, so the system can create
+        # builds for it.
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
+
+        a_file = getUtility(ILibraryFileAliasSet)[1]
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest['i386'].addOrUpdateChroot(a_file)
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
+
         queue_action = self.execute_command(
             'accept bar', no_mail=False)
         self.assertEqual(1, queue_action.items_size)
@@ -257,21 +268,24 @@ class TestQueueTool(TestQueueBase):
 
     def testAcceptingSourceCreateBuilds(self):
         """Check if accepting a source package creates build records."""
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
-        upload_bar_source()
+        bar_src = self.uploadPackage()
+
         # Swallow email generated at the upload stage.
         stub.test_emails.pop()
 
         # Add a chroot to breezy-autotest/i386, so the system can create
         # builds for it.
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
+
         a_file = getUtility(ILibraryFileAliasSet)[1]
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         breezy_autotest['i386'].addOrUpdateChroot(a_file)
 
         LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
-        LaunchpadZopelessLayer.switchDbUser("queued")
         queue_action = self.execute_command(
             'accept bar', no_mail=False)
         self.assertEqual(1, queue_action.items_size)
@@ -306,6 +320,9 @@ class TestQueueTool(TestQueueBase):
         bar_src.queue_root.realiseUpload()
 
         # Now make a new bugtask for the "bar" package.
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
+
         the_bug_id = 6
         bugtask_owner = getUtility(IPersonSet).getByName('kinnison')
         ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -314,7 +331,9 @@ class TestQueueTool(TestQueueBase):
         bugtask = getUtility(IBugTaskSet).createTask(
             bug=the_bug, owner=bugtask_owner, distribution=ubuntu,
             sourcepackagename=ubuntu_bar.sourcepackagename)
+
         LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
         # The bugtask starts life as NEW.
         the_bug = getUtility(IBugSet).get(the_bug_id)
@@ -362,14 +381,16 @@ class TestQueueTool(TestQueueBase):
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         queue_action = self.execute_command('accept 1 pmount 3')
+
         self.assertEqual(3, queue_action.items_size)
+
         self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.ACCEPTED, 'mozilla-firefox')
         self.assertQueueLength(1, breezy_autotest,
             PackageUploadStatus.ACCEPTED, 'pmount')
+        # Single-source upload went straight to DONE queue.
         self.assertQueueLength(1, breezy_autotest,
-            PackageUploadStatus.ACCEPTED, 'netapplet')
-
+            PackageUploadStatus.DONE, 'netapplet')
 
     def testRemovedPublishRecordDoesNotAffectQueueNewness(self):
         """Check if REMOVED published record does not affect file NEWness.
@@ -438,11 +459,16 @@ class TestQueueTool(TestQueueBase):
 
         Further details in bug #59443
         """
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
+
         # Make breezy-autotest CURRENT in order to accept upload
         # to BACKPORTS.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         breezy_autotest.status = DistroSeriesStatus.CURRENT
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
@@ -481,11 +507,16 @@ class TestQueueTool(TestQueueBase):
 
         Further details in bug #57708
         """
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
+
         # Make breezy-autotest CURRENT in order to accept upload
         # to PROPOSED.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         breezy_autotest.status = DistroSeriesStatus.CURRENT
+
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
@@ -511,9 +542,8 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(0, len(stub.test_emails))
 
     def assertQueueLength(self, expected_length, distro_series, status, name):
-        self.assertEqual(
-            expected_length,
-            distro_series.getQueueItems(status=status, name=name).count())
+        queue_items = distro_series.getQueueItems(status=status, name=name)
+        self.assertEqual(expected_length, queue_items.count())
 
     def assertErrorAcceptingDuplicate(self):
         self.assertTrue(
@@ -544,7 +574,7 @@ class TestQueueTool(TestQueueBase):
         Step 4: the remaining duplicated cnews item in UNAPPROVED queue can
         only be rejected.
         """
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
 
         # Add a chroot to breezy-autotest/i386, so the system can create
         # builds for it.
@@ -554,7 +584,7 @@ class TestQueueTool(TestQueueBase):
         breezy_autotest['i386'].addOrUpdateChroot(a_file)
 
         LaunchpadZopelessLayer.txn.commit()
-        LaunchpadZopelessLayer.switchDbUser("queued")
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
         # Certify we have a 'cnews' upload duplication in UNAPPROVED.
         self.assertQueueLength(
@@ -565,9 +595,10 @@ class TestQueueTool(TestQueueBase):
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
 
-        # The first is in accepted.
+        # The first item, being a single source upload, is automatically
+        # published when it's accepted.
         self.assertQueueLength(
-            1, breezy_autotest, PackageUploadStatus.ACCEPTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # The last can't be accepted and remains in UNAPPROVED.
         self.assertErrorAcceptingDuplicate()
@@ -581,12 +612,6 @@ class TestQueueTool(TestQueueBase):
         self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
-
-        # The item, being a single source upload, is automatically published
-        # when it's accepted.
-        LaunchpadZopelessLayer.txn.commit()
-        self.assertQueueLength(
-            1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE.
@@ -731,14 +756,16 @@ class TestQueueTool(TestQueueBase):
         When overriding the component, the archive may change to a
         non-existent one so ensure if fails.
         """
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
 
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
         proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
             ubuntu, ArchivePurpose.PARTNER)
         comm_archive = removeSecurityProxy(proxied_archive)
         comm_archive.purpose = ArchivePurpose.EMBARGOED
         LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
+
         self.assertRaises(CommandRunnerError,
                           self.execute_command,
                           'override source alsa-utils',
@@ -799,7 +826,8 @@ class TestQueueTool(TestQueueBase):
         """
         # Start off by setting up a packageuploadbuild that points to
         # a build with two binaries.
-        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        LaunchpadZopelessLayer.switchDbUser("launchpad")
+
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         [mozilla_queue_item] = breezy_autotest.getQueueItems(
@@ -808,10 +836,10 @@ class TestQueueTool(TestQueueBase):
         # The build with ID '2' is for mozilla-firefox, which produces
         # binaries for 'mozilla-firefox' and 'mozilla-firefox-data'.
         PackageUploadBuild(packageupload=mozilla_queue_item, build=2)
-        LaunchpadZopelessLayer.txn.commit()
 
         # Switching db users starts a new transaction.  We must re-fetch
         # breezy-autotest.
+        LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser("queued")
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']

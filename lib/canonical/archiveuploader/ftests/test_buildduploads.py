@@ -51,7 +51,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
             name='powerpc', title='PowerPC', description='not yet',
             family=ppc_family)
         breezy_ppc = self.breezy.newArch(
-            'powerpc', ppc_proc, True, self.breezy.owner)
+            'powerpc', ppc_family, True, self.breezy.owner)
 
     def setUp(self):
         """Setup environment for binary uploads.

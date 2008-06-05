@@ -126,14 +126,20 @@ removal_comment argument.
 
 Inspecting the modified record shows it's ready for domination:
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
+    >>> transaction_timestamp = get_transaction_timestamp()
+
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
-    >>> modified_spph.datesuperseded
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-    >>> modified_spph.removed_by.name
-    u'sabdfl'
-    >>> modified_spph.removal_comment
-    u'testing deletion'
+
+    >>> modified_spph.datesuperseded == transaction_timestamp
+    True
+
+    >>> print modified_spph.removed_by.name
+    sabdfl
+
+    >>> print modified_spph.removal_comment
+    testing deletion
 
 requstObsolescence takes no additional arguments:
 
@@ -145,8 +151,9 @@ pockets for stable distroseries):
 
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.OBSOLETE, (5) Obsolete>
-    >>> modified_spph.scheduleddeletiondate
-    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
+    >>> modified_spph.scheduleddeletiondate == transaction_timestamp
+    True
 
 
 == Copying and published binarypackages lookup ==

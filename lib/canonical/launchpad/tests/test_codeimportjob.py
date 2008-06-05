@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
 
@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.testing.codeimporthelpers import (
     make_finished_import)
 from canonical.launchpad.testing.pages import (
@@ -71,7 +71,7 @@ class TestCodeImportJobSet(unittest.TestCase):
         self.assertEqual(no_job, None)
 
 
-class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
+class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
     """Tests for the CodeImportJobSet.getJobForMachine method.
 
     For brevity, these test cases describe jobs using specs: a 2- or 3-tuple:
@@ -88,10 +88,10 @@ class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
     def setUp(self):
         # Login so we can access the code import system, delete all jobs in
         # the sample data and set up some objects.
+        super(TestCodeImportJobSetGetJobForMachine, self).setUp()
         login_for_code_imports()
         for job in CodeImportJob.select():
             job.destroySelf()
-        self.factory = LaunchpadObjectFactory()
         self.machine = self.factory.makeCodeImportMachine(set_online=True)
 
     def makeJob(self, state, date_due_delta, requesting_user=None):
@@ -220,33 +220,6 @@ class AssertFailureMixin:
             self.fail("AssertionError was not raised")
 
 
-class AssertSqlDateMixin:
-    """Helper to test SQL date values."""
-
-    def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
-        """Fail unless the value of the attribute is equal to the date.
-
-        Use this method to test that date value that may be UTC_NOW is equal
-        to another date value. Trickery is required because SQLBuilder truth
-        semantics cause UTC_NOW to appear equal to all dates.
-
-        :param sql_object: a security-proxied SQLObject instance.
-        :param attribute_name: the name of a database column in the table
-            associated to this object.
-        :param date: `datetime.datetime` object or `UTC_NOW`.
-        """
-        sql_object = removeSecurityProxy(sql_object)
-        sql_object.syncUpdate()
-        sql_class = type(sql_object)
-        found_object = sql_class.selectOne(
-            'id=%%s AND %s=%%s' % (attribute_name,)
-            % sqlvalues(sql_object.id, date))
-        if found_object is None:
-            self.fail(
-                "Expected %s to be %s, but it was %s."
-                % (attribute_name, date, getattr(sql_object, attribute_name)))
-
-
 class NewEvents(object):
     """Help in testing the creation of CodeImportEvent objects.
 
@@ -306,13 +279,14 @@ class AssertEventMixin:
         self.assertEqual(import_event.person, person)
 
 
-class TestCodeImportJobWorkflowNewJob(unittest.TestCase,
-        AssertFailureMixin, AssertSqlDateMixin):
+class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
+    AssertFailureMixin):
     """Unit tests for the CodeImportJobWorkflow.newJob method."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestCodeImportJobWorkflowNewJob, self).setUp()
         login_for_code_imports()
 
     def test_wrongReviewStatus(self):
@@ -423,6 +397,7 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestCodeImportJobWorkflowDeletePendingJob, self).setUp()
         login_for_code_imports()
 
     def test_wrongReviewStatus(self):
@@ -482,15 +457,15 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
             reviewed_import)
 
 
-class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
-        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
+        AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.requestJob."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestCodeImportJobWorkflowRequestJob, self).setUp()
         login_for_code_imports()
-        self.factory = LaunchpadObjectFactory()
 
     def test_wrongJobState(self):
         # CodeImportJobWorkflow.requestJob fails if the state of the
@@ -569,15 +544,15 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
             pending_job.code_import, person=person)
 
 
-class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
-        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
+        AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.startJob."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestCodeImportJobWorkflowStartJob, self).setUp()
         login_for_code_imports()
-        self.factory = LaunchpadObjectFactory()
 
     def test_wrongJobState(self):
         # Calling startJob with a job whose state is not PENDING is an error.
@@ -609,15 +584,15 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
             job, machine)
 
 
-class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
-        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
+        AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.updateHeartbeat."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestCodeImportJobWorkflowUpdateHeartbeat, self).setUp()
         login_for_code_imports()
-        self.factory = LaunchpadObjectFactory()
 
     def test_wrongJobState(self):
         # Calling updateHeartbeat with a job whose state is not RUNNING is an
@@ -632,15 +607,15 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
             job, u'')
 
 
-class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
-        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
+        AssertFailureMixin, AssertEventMixin):
     """Unit tests for CodeImportJobWorkflow.finishJob."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        super(TestCodeImportJobWorkflowFinishJob, self).setUp()
         login_for_code_imports()
-        self.factory = LaunchpadObjectFactory()
         self.machine = self.factory.makeCodeImportMachine()
         self.machine.setOnline()
 
@@ -887,7 +862,7 @@ def logged_in_as(email):
 logged_in_for_code_imports = logged_in_as('david.allouche@canonical.com')
 
 
-class TestRequestJobUIRaces(unittest.TestCase):
+class TestRequestJobUIRaces(TestCaseWithFactory):
     """What does the 'Import Now' button do when things have changed?
 
     All these tests load up a view of a code import that shows the 'Import
@@ -896,9 +871,6 @@ class TestRequestJobUIRaces(unittest.TestCase):
     """
 
     layer = PageTestLayer
-
-    def setUp(self):
-        self.factory = LaunchpadObjectFactory()
 
     def getUserBrowserAtPage(self, url):
         """Return a Browser object for a logged in user opened at `url`."""

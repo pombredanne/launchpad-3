@@ -325,7 +325,7 @@ class Bug(SQLBase):
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
         # Ensure that the subscription has been flushed.
-        sub_id = sub.id
+        Store.of(sub).flush()
         return sub
 
     def unsubscribe(self, person):
