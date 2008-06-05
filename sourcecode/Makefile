@@ -7,7 +7,7 @@ PYTHON=python${PYTHON_VERSION}
 # test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
 build_dirs:=buildbot bzr cscvs pygettextpo pygpgme storm twisted zope
 test_dirs:=buildbot bzr cscvs pygettextpo storm twisted zope
-launchpad_test_dirs:=buildbot pygettextpo storm zope
+launchpad_test_dirs:=buildbot
 
 all:
 

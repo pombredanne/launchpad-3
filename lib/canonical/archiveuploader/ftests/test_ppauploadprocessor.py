@@ -23,7 +23,9 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PackageUploadStatus,
-    PackagePublishingStatus, PackagePublishingPocket)
+    PackagePublishingStatus, PackagePublishingPocket,
+    NonBuildableSourceUploadError)
+from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.mail import stub
 
@@ -205,7 +207,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Step 2: Upload a new version of bar to component universe (see
         # changesfile encoded in the upload notification). It should be
         # auto-accepted, auto-published and have its component overridden
-        # to 'main'.
+        # to 'main' in the publishing record.
         #
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
@@ -216,7 +218,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "OK: bar_1.0.orig.tar.gz",
             "OK: bar_1.0-10.diff.gz",
             "OK: bar_1.0-10.dsc",
-            "-> Component: main Section: devel",
+            "-> Component: universe Section: devel",
             "universe/devel optional bar_1.0-10.dsc",
             "universe/devel optional bar_1.0-10.diff.gz",
             "You are receiving this email because you are the uploader of "
@@ -448,6 +450,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
          * The modified PPA is found by getPendingPublicationPPA() lookup.
         """
         hoary = self.ubuntu['hoary']
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        hoary['i386'].addOrUpdateChroot(fake_chroot)
 
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")
@@ -860,6 +864,43 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.assertTrue(
                 binary.component not in self.breezy.upload_components)
 
+    def testPPAUploadResultingInNoBuilds(self):
+        """Source uploads resulting in no builds are rejected.
+
+        If a PPA source upload results in no builds, it will be rejected.
+
+        It usually happens for sources targeted to architectures not
+        supported in the PPA subsystem.
+
+        This way we don't create false expectations accepting sources that
+        won't be ever built.
+        """
+        # First upload gets in because breezy/i386 is supported in PPA.
+        packager = FakePackager(
+            'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+        packager.buildUpstream(suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        biscuit_pub = packager.uploadSourceVersion(
+            '1.0-1', archive=self.name16.archive)
+        self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
+
+        # Remove breezy/i386 PPA support.
+        self.breezy['i386'].supports_virtualized = False
+        self.layer.commit()
+
+        # Next version can't be accepted because it can't be built.
+        packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        upload = packager.uploadSourceVersion(
+            '1.0-2', archive=self.name16.archive, auto_accept=False)
+
+        error = self.assertRaisesAndReturnError(
+            NonBuildableSourceUploadError,
+            upload.storeObjectsInDatabase)
+        self.assertEqual(
+            str(error),
+            "Cannot build any of the architectures requested: i386")
+
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
     """Functional test for uploadprocessor.py file-lookups in PPA."""
@@ -931,6 +972,34 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Upload a higher version of bar that relies on the official
         # orig.tar.gz availability.
         self.uploadHigherBarToUbuntu()
+
+    def testNoPublishingOverrides(self):
+        """Make sure publishing overrides are not applied for PPA uploads."""
+        # Create a fake "bar" package and publish it in section "web".
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        pub_src = publisher.getPubSource(
+            sourcename="bar", version="1.0-1", section="web",
+            archive=self.name16_ppa, distroseries=self.breezy,
+            status=PackagePublishingStatus.PUBLISHED)
+
+        # Now upload bar 1.0-3, which has section "devel".
+        # (I am using this version because it's got a .orig required for
+        # the upload).
+        upload_dir = self.queueUpload("bar_1.0-3_valid", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+        contents = [
+            "Subject: [PPA name16] Accepted: bar 1.0-3 (source)"]
+        self.assertEmail(contents)
+
+        # The published section should be "devel" and not "web".
+        pub_sources = self.name16.archive.getPublishedSources(name='bar')
+        [pub_bar2, pub_bar1] = pub_sources
+
+        section = pub_bar2.section.name
+        self.assertEqual(
+            section, 'devel',
+            "Expected a section of 'devel', actually got '%s'" % section)
 
     def testPPAOrigGetsPrecedence(self):
         """When available, the PPA overridden 'orig.tar.gz' gets precedence.
