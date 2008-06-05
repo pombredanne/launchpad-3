@@ -8,6 +8,7 @@ import unittest
 import stat
 
 from bzrlib import errors
+from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import escape
 
@@ -16,7 +17,7 @@ from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-
+from canonical.config import config
 from canonical.testing import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
 
@@ -154,6 +155,30 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('~testuser/+junk/banana')
         # See comment in test_make_branch_directory.
         self.assertTrue(transport.has('~testuser/+junk/banana'))
+
+    @defer_to_thread
+    def test_get_stacking_policy(self):
+        # A stacking policy control file is served underneath product
+        # directories for products that have a default stacked-on branch.
+        transport = self.getTransport()
+        control_file = transport.get_bytes(
+            '~testuser/evolution/.bzr/control.conf')
+        self.assertEqual(
+            'default_stack_on=%s~vcs-imports/evolution/main'
+            % config.codehosting.supermirror_root.replace('http', 'sftp'),
+            control_file.strip())
+
+    @defer_to_thread
+    def test_can_open_product_control_dir(self):
+        # The stacking policy lives in a bzrdir in the product directory.
+        # Bazaar needs to be able to open this bzrdir.
+        transport = self.getTransport().clone('~testuser/evolution')
+        found_bzrdir = BzrDir.open_from_transport(transport)
+        # We really just want to test that the above line doesn't raise an
+        # exception. However, we'll also check that we get the bzrdir that we
+        # expected.
+        expected_url = transport.clone('.bzr').base
+        self.assertEqual(expected_url, found_bzrdir.transport.base)
 
     @defer_to_thread
     @wait_for_disconnect
