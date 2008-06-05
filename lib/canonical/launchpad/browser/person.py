@@ -891,8 +891,8 @@ class CommonMenuLinks:
         text = 'Activate Personal Package Archive'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
-        enable_link = bool(self.context.archive)
-        return Link(target, text, summary, icon='edit', enabled=enable_link)
+        enabled = not bool(self.context.archive)
+        return Link(target, text, summary, icon='edit', enabled=enabled)
 
     def show_ppa(self):
         target = '+archive'
