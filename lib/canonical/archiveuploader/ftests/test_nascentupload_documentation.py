@@ -11,7 +11,8 @@ from zope.component import getUtility
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, mock_logger_quiet)
-from canonical.launchpad.database import ComponentSelection
+from canonical.launchpad.database import (
+    ComponentSelection, LibraryFileAlias)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IComponentSet, IDistributionSet)
@@ -58,6 +59,10 @@ def prepareHoaryForUploads(test):
     # Hoary needs to allow uploads for universe.
     universe = getUtility(IComponentSet)['universe']
     ComponentSelection(distroseries=hoary, component=universe)
+    # Create a fake hoary/i386 chroot.
+    fake_chroot = LibraryFileAlias.get(1)
+    hoary['i386'].addOrUpdateChroot(fake_chroot)
+
     LaunchpadZopelessLayer.txn.commit()
 
 
