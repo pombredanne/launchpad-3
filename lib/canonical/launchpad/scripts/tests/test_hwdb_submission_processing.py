@@ -8,7 +8,9 @@ from zope.testing.loghandler import Handler
 
 from canonical.launchpad.interfaces.hwdb import HWBus
 from canonical.launchpad.scripts.hwdbsubmissions import (
-    HALDevice, SubmissionParser)
+    HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
+    PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
+    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA, SubmissionParser)
 from canonical.testing import BaseLayer
 
 
@@ -43,6 +45,12 @@ class TestCaseHWDB(TestCase):
     UDI_PCI_PCCARD_BRIDGE = '/org/freedesktop/Hal/devices/pci_1217_7134'
     UDI_PCCARD_DEVICE = '/org/freedesktop/Hal/devices/pci_9004_6075'
 
+    USB_VENDOR_ID_NEC = 0x0409
+    USB_PROD_ID_NEC_HUB = 0x005a
+
+    USB_VENDOR_ID_USBEST = 0x1307
+    USB_PROD_ID_USBBEST_MEMSTICK = 0x0163
+
     def setUp(self):
         """Setup the test environment."""
         self.log = logging.getLogger('test_hwdb_submission_parser')
@@ -57,9 +65,9 @@ class TestCaseHWDB(TestCase):
             "Parsing submission <submission_key>:" and that contains
             the text passed as the parameter message.
         """
-        expected_message = ('Parsing submission %s: %s'
-                            % (submission_key, log_message))
-        last_log_messages = []
+        expected_message = 'Parsing submission %s: %s' % (
+            submission_key, log_message)
+
         for record in self.handler.records:
             if record.levelno != logging.WARNING:
                 continue
@@ -309,8 +317,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'udi': self.UDI_SATA_CONTROLLER,
                 'properties': {
                     'info.bus': ('pci', 'str'),
-                    'pci.device_class': (1, 'int'),
-                    'pci.device_subclass': (6, 'int'),
+                    'pci.device_class': (PCI_CLASS_STORAGE, 'int'),
+                    'pci.device_subclass': (PCI_SUBCLASS_STORAGE_SATA,
+                                            'int'),
                     },
                 },
             # The fake SCSI host of the storage device. Note that HAL does
@@ -385,8 +394,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'properties': {
                     'info.parent': (self.UDI_COMPUTER, 'str'),
                     'info.bus': ('pci', 'str'),
-                    'pci.device_class': (6, 'int'),
-                    'pci.device_subclass': (4, 'int'),
+                    'pci.device_class': (PCI_CLASS_BRIDGE, 'int'),
+                    'pci.device_subclass': (PCI_SUBCLASS_BRIDGE_PCI, 'int'),
                     },
                 },
             # A PCI->PCCard bridge.
@@ -396,8 +405,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'properties': {
                     'info.parent': (self.UDI_PCI_PCI_BRIDGE, 'str'),
                     'info.bus': ('pci', 'str'),
-                    'pci.device_class': (6, 'int'),
-                    'pci.device_subclass': (7, 'int'),
+                    'pci.device_class': (PCI_CLASS_BRIDGE, 'int'),
+                    'pci.device_subclass': (PCI_SUBCLASS_BRIDGE_CARDBUS,
+                                            'int'),
                     },
                 },
         ]
@@ -481,8 +491,10 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'udi': self.UDI_USB_CONTROLLER_PCI_SIDE,
                 'properties': {
                     'info.bus': ('pci', 'str'),
-                    'pci.device_class': (12, 'int'),
-                    'pci.device_subclass': (3, 'int'),
+                    'pci.device_class': (PCI_CLASS_SERIALBUS_CONTROLLER,
+                                         'int'),
+                    'pci.device_subclass': (PCI_SUBCLASS_SERIALBUS_USB,
+                                            'int'),
                     },
                 },
             ]
@@ -568,8 +580,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'udi': self.UDI_SATA_CONTROLLER,
                 'properties': {
                     'info.bus': ('pci', 'str'),
-                    'pci.device_class': (1, 'int'),
-                    'pci.device_subclass': (6, 'int'),
+                    'pci.device_class': (PCI_CLASS_STORAGE, 'int'),
+                    'pci.device_subclass': (PCI_SUBCLASS_STORAGE_SATA, 'int'),
                     },
                 },
             # The (possibly fake) SCSI host of the storage device.
@@ -697,8 +709,10 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'properties': {
                     'info.parent': (self.UDI_COMPUTER, 'str'),
                     'info.bus': ('pci', 'str'),
-                    'pci.device_class': (12, 'int'),
-                    'pci.device_subclass': (3, 'int'),
+                    'pci.device_class': (PCI_CLASS_SERIALBUS_CONTROLLER,
+                                         'int'),
+                    'pci.device_subclass': (PCI_SUBCLASS_SERIALBUS_USB,
+                                            'int'),
                  }
             },
             # The "output aspect" of the PCI->USB bridge. Not a real
@@ -729,8 +743,9 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 'properties': {
                     'info.parent': (self.UDI_USB_CONTROLLER_USB_SIDE, 'str'),
                     'info.bus': ('usb_device', 'str'),
-                    'usb_device.vendor_id': (0x409, 'int'),
-                    'usb_device.product_id': (0x5a, 'int'),
+                    'usb_device.vendor_id': (self.USB_VENDOR_ID_NEC, 'int'),
+                    'usb_device.product_id': (self.USB_PROD_ID_NEC_HUB,
+                                              'int'),
                     },
                 },
             ]
@@ -773,8 +788,8 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
             'udi': self.UDI_USB_CONTROLLER_PCI_SIDE,
             'properties': {
                 'info.bus': ('pci', 'str'),
-                'pci.device_class': (12, 'int'),
-                'pci.device_subclass': (3, 'int'),
+                'pci.device_class': (PCI_CLASS_SERIALBUS_CONTROLLER, 'int'),
+                'pci.device_subclass': (PCI_SUBCLASS_SERIALBUS_USB, 'int'),
                 },
             }
         self.usb_controller_usb_side = {
@@ -793,8 +808,9 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
             'properties': {
                 'info.parent': (self.UDI_USB_CONTROLLER_USB_SIDE, 'str'),
                 'info.bus': ('usb_device', 'str'),
-                'usb_device.vendor_id': (0x1307, 'int'),
-                'usb_device.product_id': (0x0163, 'int'),
+                'usb_device.vendor_id': (self.USB_VENDOR_ID_USBEST, 'int'),
+                'usb_device.product_id': (self.USB_PROD_ID_USBBEST_MEMSTICK,
+                                          'int'),
                 },
             }
         self.parsed_data = {
@@ -857,7 +873,7 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
         controller: Wrong PCI device class of the parent device.
         """
         parent_properties = self.usb_controller_pci_side['properties']
-        parent_properties['pci.device_class'] = (1, 'int')
+        parent_properties['pci.device_class'] = (PCI_CLASS_STORAGE, 'int')
         parser = SubmissionParser(self.log)
         parser.submission_key = 'USB device test 1'
         parser.buildDeviceList(self.parsed_data)
@@ -898,7 +914,7 @@ class TestHALDeviceUSBDevices(TestCaseHWDB):
 
         Special case: vendor ID and product ID of the device are zero;
         the parent device cannot be identified as a PCI/USB host
-        controller: Wrong PCI device subclass of the parent device.
+        controller: Wrong bus of the parent device.
         """
         parent_properties = self.usb_controller_pci_side['properties']
         parent_properties['info.bus'] = ('not pci', 'str')

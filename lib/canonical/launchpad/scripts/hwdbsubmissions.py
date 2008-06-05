@@ -48,8 +48,15 @@ ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 
 # See include/linux/pci_ids.h in the Linux kernel sources for a complete
 # list of PCI class and subclass codes.
+PCI_CLASS_STORAGE = 1
+PCI_SUBCLASS_STORAGE_SATA = 6
+
+PCI_CLASS_BRIDGE = 6
+PCI_SUBCLASS_BRIDGE_PCI = 4
+PCI_SUBCLASS_BRIDGE_CARDBUS = 7
+
 PCI_CLASS_SERIALBUS_CONTROLLER = 12
-PCI_SUBCLASS_USB_CONTROLLER = 3
+PCI_SUBCLASS_SERIALBUS_USB = 3
 
 class RelaxNGValidator:
     """A validator for Relax NG schemas."""
@@ -1044,7 +1051,8 @@ class HALDevice:
 
         grandparent_bus = grandparent.getProperty('info.bus')
         if grandparent_bus == 'pci':
-            if grandparent.getProperty('pci.device_class') != 1:
+            if (grandparent.getProperty('pci.device_class')
+                != PCI_CLASS_STORAGE):
                 # This is not a storage class PCI device? This
                 # indicates a bug somewhere in HAL or in the hwdb
                 # client, or a fake submission.
@@ -1105,8 +1113,10 @@ class HALDevice:
         # subclass 7).
         # XXX Abel Deuring 2005-05-14 How can we detect ExpressCards?
         # I do not have any such card at present...
-        if (self.parent.getProperty('pci.device_class') == 6
-            and self.parent.getProperty('pci.device_subclass') == 7):
+        parent_class = self.parent.getProperty('pci.device_class')
+        parent_subclass = self.parent.getProperty('pci.device_subclass')
+        if (parent_class == PCI_CLASS_BRIDGE
+            and parent_subclass == PCI_SUBCLASS_BRIDGE_CARDBUS):
             return HWBus.PCCARD
         else:
             return HWBus.PCI
@@ -1261,7 +1271,7 @@ class HALDevice:
                 parent_subclass = parent.getProperty('pci.device_subclass')
                 if (parent_bus == 'pci'
                     and parent_class == PCI_CLASS_SERIALBUS_CONTROLLER
-                    and parent_subclass == PCI_SUBCLASS_USB_CONTROLLER):
+                    and parent_subclass == PCI_SUBCLASS_SERIALBUS_USB):
                     return False
                 else:
                     self.parser._logWarning(
