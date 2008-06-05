@@ -6,6 +6,12 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+from storm.zope.interfaces import IZStorm
+
+from zope.interface import implements
+from zope.testing.cleanup import cleanUp
+from zope.component import provideUtility
+
 from canonical.launchpad.mailnotification import (
     QuestionModifiedDefaultNotification)
 
@@ -33,6 +39,25 @@ class StubQuestion:
         self.id = id
         self.title = title
 
+
+class FakeZStorm:
+    """Fake ZStorm utility.
+
+    This is required because QuestionNotification as a @block_implicit_flushes
+    decorator.
+    """
+    implements(IZStorm)
+
+    def get(self, name):
+        return self
+
+    def block_implicit_flushes(self):
+        pass
+
+    def unblock_implicit_flushes(self):
+        pass
+
+
 class StubQuestionMessage:
     """Question message with only a subject attribute."""
 
@@ -44,9 +69,17 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
     """Test cases for mail notifications about modified questions."""
 
     def setUp(self):
-        # Create the notification with a StubQuestion.
+        """Setup
+
+        Registers a fake ZStorm utility and create a notification with
+        a fake question.
+        """
+        provideUtility(FakeZStorm())
         self.notification = TestQuestionModifiedNotification(
             StubQuestion(), object())
+
+    def tearDown(self):
+        cleanUp()
 
     def test_getSubject_no_new_message(self):
         """Test getSubject() when there is no message added to the question."""
