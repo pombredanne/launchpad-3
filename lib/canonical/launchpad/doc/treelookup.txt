@@ -74,9 +74,9 @@ are copied into the new `LookupTree` at that point.
   ...     tree,
   ...     )
 
-  >>> len(tree)
+  >>> len(tree.branches)
   3
-  >>> len(breakfast_tree)
+  >>> len(breakfast_tree.branches)
   4
 
 

@@ -40,7 +40,7 @@ class LookupBranch:
     """A branch point during a lookup, containing keys and a result."""
 
     def __init__(self, *args):
-        """Construct a new `LookupBranch`.
+        """Construct a new `LookupBranch` from the given keys and result.
 
         Split out the keys from the result.  The last argument
         specified is the result of this branch, and all the other
@@ -135,29 +135,30 @@ class LookupBranch:
             ', '.join(repr(item) for item in (self.keys + (self.result,))))
 
 
-class LookupTree(tuple):
+class LookupTree:
     """A searchable tree."""
 
     _branch_factory = LookupBranch
 
-    def __new__(cls, *args):
-        """Flatten and/or promote the given arguments into `LookupBranch`s.
+    def __init__(self, *args):
+        """Construct a new `LookupTree`.
 
-        The constructor arguments must be manipulated here, just
-        before the instance is actually made, because tuples are
-        read-only.
+        Flatten or promote the given arguments into `LookupBranch`s.
+
+        As an extra step, the branch is verified by calling `_verify`.
 
         :param args: `LookupBranch`s, `LookupTree`s, or iterables to
-          be attached to this tree. Iterable arguments will be
-          promoted to `LookupBranch` by calling it with all the values
-          from the iterator as positional arguments.
+            be attached to this tree. Iterable arguments will be
+            promoted to `LookupBranch` by calling `_branch_factory`
+            with all the values from the iterator as positional
+            arguments.
         """
         branches = []
         for arg in args:
             if isinstance(arg, LookupTree):
                 # Extend this tree with the branches from the given
                 # tree.
-                branches.extend(arg)
+                branches.extend(arg.branches)
             elif isinstance(arg, LookupBranch):
                 # Append this branch.
                 branches.append(arg)
@@ -165,15 +166,8 @@ class LookupTree(tuple):
                 # Promote a tuple or other iterable into a branch. The
                 # last value from the iterable is the result of the
                 # branch, and all the preceeding values are keys.
-                branches.append(cls._branch_factory(*arg))
-        return super(LookupTree, cls).__new__(cls, branches)
-
-    def __init__(self, *branches):
-        """See `__new__`.
-
-        As an extra step, the tree is verified by calling `_verify`.
-        """
-        super(LookupTree, self).__init__()
+                branches.append(self._branch_factory(*arg))
+        self.branches = tuple(branches)
         self._verify()
 
     def _verify(self):
@@ -186,7 +180,7 @@ class LookupTree(tuple):
         :raises TypeError: If the tree is invalid.
         """
         default = False
-        for branch in self:
+        for branch in self.branches:
             if not isinstance(branch, LookupBranch):
                 raise TypeError('Not a LookupBranch: %r' % (branch,))
             if default:
@@ -204,7 +198,7 @@ class LookupTree(tuple):
 
         :raises KeyError: If a result is not found.
         """
-        for branch in self:
+        for branch in self.branches:
             if key in branch.keys or branch.is_default:
                 if branch.is_leaf:
                     return branch.result
@@ -226,7 +220,7 @@ class LookupTree(tuple):
         This can be useful for generating documentation, because it is
         a compact, flat representation of the tree.
         """
-        for branch in self:
+        for branch in self.branches:
             if branch.is_leaf:
                 yield branch, branch.result
             else:
@@ -260,11 +254,11 @@ class LookupTree(tuple):
         format = indent + '%s'
         return 'tree(\n%s\n%s)' % (
             '\n'.join(format % branch.describe(_level + 1)
-                      for branch in self),
+                      for branch in self.branches),
             indent)
 
     def __repr__(self):
         """A machine-readable representation of this tree."""
         return '%s(%s)' % (
             self.__class__.__name__,
-            ', '.join(repr(branch) for branch in self))
+            ', '.join(repr(branch) for branch in self.branches))
