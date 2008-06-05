@@ -61,8 +61,6 @@ def close_account(con, log, username):
         WHERE Person.account = Account.id AND Person.id = %s
         """ % sqlvalues(person_id))
 
-    import time; time.sleep(15)
-
     # Clean out personal details from the Person table
     table_notification('Person')
     unknown_rationale = PersonCreationRationale.UNKNOWN.value
