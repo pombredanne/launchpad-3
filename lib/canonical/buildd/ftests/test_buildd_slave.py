@@ -138,16 +138,15 @@ class LaunchpadBuilddSlaveTests(BuilddTestCase):
         log_tail = self.slave.getLogTail()
         self.assertEqual(len(log_tail), 2048)
 
-
     def testLogtalWhenLogFileVanishes(self):
         """Slave.getLogTail doesn't get hurt if the logfile has vanished.
 
         This is a common race-condition in our slaves, since they get
         pooled all the time when they are building.
 
-        Sometimes the getLogTail calls coincides with the job-clean up, so
-        there is no buildlog to inspect and thus we expect a empty string
-        to be returned, instead of a explosion.
+        Sometimes the getLogTail calls coincides with the job
+        cleanup/snitization, so there is no buildlog to inspect and thus
+        we expect a empty string to be returned, instead of a explosion.
         """
         # Create some log content and read it.
         self.makeLog(2048)

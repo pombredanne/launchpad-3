@@ -372,7 +372,8 @@ class BuildDSlave(object):
         string.
 
         It safely tries to open the 'buildlog', if it doesn't exist, due to
-        job cleanup race-conditions, it also returns a empty string.
+        job cleanup or buildlog snitization race-conditions, it also returns
+        an empty string.
 
         When the 'buildlog' is present it return up to 2 KiB character of
         the end of the file.
