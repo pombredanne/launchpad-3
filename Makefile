@@ -106,7 +106,10 @@ check_storm: build
 	  --module canonical.lazr \
 	  --module canonical.librarian \
 	  --module canonical.lp \
-	  --module canonical.testing
+	  --module canonical.poppy \
+	  --module canonical.testing \
+	  --module canonical.widgets \
+	  --module canonical.zeca
 
 lint:
 	@bash ./utilities/lint.sh
