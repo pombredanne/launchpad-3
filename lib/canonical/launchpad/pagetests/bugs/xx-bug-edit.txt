@@ -1,8 +1,10 @@
-Sample person tries to change the bug's nickname to an existing one
-and gets a nice error message.
+Sample person tries to change the bug's nickname to a existing one and gets a nice error message. 
 
   >>> user_browser.open(
-  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit')
+  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
+  >>> user_browser.getLink(text="Update description").click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
   >>> user_browser.getControl('Nickname').value = 'blackhole'
   >>> user_browser.getControl('Change').click()
   >>> print user_browser.contents
@@ -15,7 +17,10 @@ And now we show that any logged-in user can edit public bugs.
 
   >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> browser.open(
-  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit')
+  ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
+  >>> browser.getLink(text="Update description").click()
+  >>> browser.url
+  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
   >>> browser.getControl('Summary').value = 'New Summary'
   >>> browser.getControl('Nickname').value = 'testbug'
   >>> browser.getControl('Description').value = 'New description.'
@@ -36,7 +41,11 @@ tags. Therefore, if you try to add a tag that hasn't been used in the
 current context before, you have to confirm that you indeed want to add
 the tag.
 
-  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
+  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+  >>> user_browser.getLink(text="Update description").click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
+
   >>> user_browser.getControl('Tags').value = 'new-tag'
   >>> user_browser.getControl('Change').click()
   >>> user_browser.url
@@ -69,7 +78,7 @@ Now we are back at the bug page, and the tag has been added.
 
 Now, let's add 'new-tag' again, and confirm it this time.
 
-  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
+  >>> user_browser.getLink(text="Update description").click()
   >>> user_browser.getControl('Tags').value = 'new-tag'
   >>> user_browser.getControl('Change').click()
 

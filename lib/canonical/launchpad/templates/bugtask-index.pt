@@ -234,11 +234,6 @@
       </p>
 
       <div class="report">
-        <h2>Bug description
-        <a href="+edit"
-           ><img src="/@@/edit" alt="[edit]" title="Edit description and tags"
-           /></a></h2>
-
         <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags">
           <b>Tags:</b>
           <a tal:repeat="tag tags"
@@ -258,7 +253,10 @@
 
         <div id="bug-description"
              tal:content="structure description" />
-
+        <tal:editdescription
+            define="link context/menu:context/editdescription"
+            condition="link/enabled"
+            replace="structure link/render" />
       </div>
 
       <div style="margin-bottom: 1em; text-align: center">
@@ -283,26 +281,12 @@
           </p>
         </tal:block>
       </tal:mentors>
-      <table style="width: 100%">
-        <tr>
-          <td tal:define="link context/menu:context/offermentoring"
-              tal:condition="link/enabled"
-              style="text-align: left; width: 50%">
-            &raquo; <a tal:attributes="href link/url">
-            Offer to mentor someone fixing this bug</a>
-          </td>
-          <td style="text-align: right; width: 50%">
-            <tal:subscribe-yourself
-                define="link context/menu:context/subscription"
-                condition="link/enabled"
-                replace="structure link/render" />
-            <tal:subscribe-yourself
-                define="link context/menu:context/addsubscriber"
-                condition="link/enabled"
-                replace="structure link/render" />
-          </td>
-        </tr>
-      </table>
+      <div tal:define="link context/menu:context/offermentoring"
+           tal:condition="link/enabled"
+           style="text-align: left; width: 100%">
+        &raquo; <a tal:attributes="href link/url">
+        Offer to mentor someone fixing this bug</a>
+      </div>
       <tal:comment repeat="comment view/getBugCommentsForDisplay">
         <tal:comment-box condition="comment/can_be_shown">
           <metal:comment-box

@@ -124,7 +124,7 @@ class BugContextMenu(ContextMenu):
 
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
-        text = 'Edit description/tags'
+        text = 'Update description'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
@@ -193,7 +193,7 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if len(list(self.context.bug.bug_branches)) > 0:
+        if self.context.bug.bug_branches.count() > 0:
             text = 'Link another branch'
         else:
             text = 'Link a related branch'
