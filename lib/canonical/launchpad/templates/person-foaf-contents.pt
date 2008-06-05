@@ -26,9 +26,9 @@
                 tal:attributes="rdf:resource gpgkey/keyserverURL" />
           </wot:PubKey>
         </wot:hasKey>
-        <tal:keys repeat="sshkey person/sshkeys">
+        <tal:sshkeys repeat="sshkey person/sshkeys">
           <lp:sshPubKey tal:content="sshkey/keytext"></lp:sshPubKey>
-        </tal:keys>
+        </tal:sshkeys>
       </foaf:Person>
     </metal:display-person>
   </tal:is-person>
