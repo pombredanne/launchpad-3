@@ -447,8 +447,7 @@ class BugTask(SQLBase, BugTaskMixin):
         if IDistroBugTask.providedBy(self):
             if bugtasks_by_package is None:
                 bugtasks_by_package = self.getBugTasksByPackageName(bugtasks)
-            if bugtasks_by_package.get(self.sourcepackagename) is not None:
-                bugtasks = bugtasks_by_package[self.sourcepackagename]
+            bugtasks = bugtasks_by_package[self.sourcepackagename]
             possible_masters = [
                 bugtask for bugtask in bugtasks
                 if (bugtask.distroseries is not None and
@@ -480,9 +479,6 @@ class BugTask(SQLBase, BugTaskMixin):
         """See IBugTask."""
         bugtasks_by_package = {}
         for bugtask in bugtasks:
-            if bugtask.sourcepackagename is None:
-                # We're only interested in tasks with packages.
-                continue
             bugtasks_by_package.setdefault(bugtask.sourcepackagename, [])
             bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
         return bugtasks_by_package

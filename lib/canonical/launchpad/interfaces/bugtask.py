@@ -444,6 +444,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         The mapping is from a `ISourcePackageName` to all the bug tasks
         that are targeted to such a package name, no matter which
         distribution or distro series it is.
+
+        All the tasks that don't have a package will be available under
+        None.
         """
 
     def subscribe(person, subscribed_by):
