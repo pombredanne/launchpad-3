@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet,
     ICveSet,
     IFrontPageBugTaskSearch,
-    IDistributionSourcePackage,
     ILaunchBag,
     NotFoundError,
     )

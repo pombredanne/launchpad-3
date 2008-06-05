@@ -48,7 +48,8 @@ class Cve(SQLBase, BugLinkTargetMixin):
     bugs = SQLRelatedJoin('Bug', intermediateTable='BugCve',
         joinColumn='cve', otherColumn='bug', orderBy='id')
     bug_links = SQLMultipleJoin('BugCve', joinColumn='cve', orderBy='id')
-    references = SQLMultipleJoin('CveReference', joinColumn='cve', orderBy='id')
+    references = SQLMultipleJoin(
+        'CveReference', joinColumn='cve', orderBy='id')
 
     @property
     def url(self):
