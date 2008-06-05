@@ -41,6 +41,7 @@ __all__ = [
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
     'PersonRdfView',
+    'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
     'PersonRelatedProjectsView',
@@ -99,6 +100,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
+from canonical.lazr import decorates
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -1402,15 +1404,32 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
+class PersonWithGPGKeysAndPreferredEmail:
+    """A decorated person that includes GPG keys and preferred emails."""
+
+    # These need to be predeclared to avoid decorates taking them over.
+    # Would be nice if there was a way of allowing writes to just work
+    # (i.e. no proxying of __set__).
+    gpgkeys = None
+    preferredemail = None
+    decorates(IPerson, 'person')
+
+    def __init__(self, person):
+        self.person = person
+        self.gpgkeys = []
+
+    def addKey(self, key):
+        self.gpgkeys.append(key)
+
+    def setPreferredEmail(self, email):
+        self.preferredemail = email
+
+
 class PersonRdfView:
-    """A view that sets its mime-type to application/rdf+xml"""
+    """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
         '../templates/person-foaf.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
@@ -1425,6 +1444,42 @@ class PersonRdfView:
         self.request.response.setHeader('Content-Disposition',
                                         'attachment; filename=%s.rdf' %
                                             self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
+
+
+class PersonRdfContentsView:
+    """A view for the contents of Person FOAF RDF."""
+
+    # We need to set the content_type here explicitly in order to
+    # preserve the case of the elements (which is not preserved in the
+    # parsing of the default text/html content-type.)
+    template = ViewPageTemplateFile(
+        '../templates/person-foaf-contents.pt',
+        content_type="application/rdf+xml")
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def buildMemberData(self):
+        members = []
+        members_by_id = {}
+        for member in self.context.allmembers:
+            member = PersonWithGPGKeysAndPreferredEmail(member)
+            members.append(member)
+            members_by_id[member.id] = member
+        gpgkeyset = getUtility(IGPGKeySet)
+        emailset = getUtility(IEmailAddressSet)
+        for key in gpgkeyset.getGPGKeysForPeople(members):
+            members_by_id[key.ownerID].addKey(key)
+        for email in emailset.getPreferredEmailForPeople(members):
+            members_by_id[email.personID].setPreferredEmail(email)
+        return members
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8."""
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
