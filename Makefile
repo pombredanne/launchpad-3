@@ -99,6 +99,7 @@ check_storm: build
 	  --module canonical.launchpad.interfaces \
 	  --module canonical.launchpad.pagetests \
 	  --module canonical.launchpad.webapp \
+	  --module canonical.archivepublisher \
 	  --module canonical.authserver \
 	  --module canonical.config \
 	  --module canonical.database \
