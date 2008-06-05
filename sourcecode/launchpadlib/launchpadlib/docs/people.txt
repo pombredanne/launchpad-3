@@ -63,6 +63,41 @@ But if no person by that name is registered, you get the expected KeyError...
     >>> launchpad.people.get('not-a-registered-person', 'missing')
     'missing'
 
+Besides a name and a display name, a person has many other attributes that you
+can read.
+
+    XXX 05-Jun-2008 BarryWarsaw Some of these attributes are links to further
+    collections and are not yet tested.  Tests will be added in future
+    branches.
+
+    >>> salgado.karma
+    0
+    >>> print salgado.homepage_content
+    None
+    >>> #salgado.mugshot
+    >>> #salgado.languages
+    >>> salgado.hide_email_addresses
+    False
+    >>> salgado.date_created
+    u'2005-06-06T08:59:51.596025+00:00'
+    >>> print salgado.timezone
+    None
+    >>> salgado.is_valid
+    True
+    >>> #salgado.wiki_names
+    >>> #salgado.irc_nicknames
+    >>> #salgado.jabber_ids
+    >>> #salgado.team_memberships
+    >>> #salgado.open_membership_invitations
+    >>> #salgado.teams_participated_in
+    >>> #salgado.teams_indirectly_participated_in
+    >>> #salgado.confirmed_email_addresses
+    >>> #salgado.preferred_email_address
+    >>> salgado.mailing_list_auto_subscribe_policy
+    u'Ask me when I join a team'
+    >>> salgado.visibility
+    u'Public'
+
 
 == Teams ==
 
@@ -90,9 +125,11 @@ this requires only the new team's name, owner and display name.
     u'bassists'
     >>> bassists.display_name
     u'Awesome Rock Bass Players'
+    >>> bassists.is_team
+    True
 
 And of course, that team is now accessible directly.
-    
+
     >>> bassists = launchpad.people['bassists']
     >>> bassists.name
     u'bassists'
@@ -105,3 +142,46 @@ You cannot create the same team twice.
     Traceback (most recent call last):
     ...
     HTTPError: HTTP Error 400: Bad Request
+
+Besides a name and a display name, a team has many other attributes that you
+can read.
+
+    >>> bassists.karma
+    0
+    >>> print bassists.homepage_content
+    None
+    >>> bassists.hide_email_addresses
+    False
+    >>> bassists.date_created
+    u'...'
+    >>> print bassists.timezone
+    None
+    >>> bassists.is_valid
+    True
+    >>> #bassists.team_memberships
+    >>> #bassists.open_membership_invitations
+    >>> #bassists.teams_participated_in
+    >>> #bassists.teams_indirectly_participated_in
+    >>> #bassists.confirmed_email_addresses
+    >>> #bassists.team_owner
+    >>> #bassists.preferred_email_address
+    >>> #bassists.members
+    >>> #bassists.admins
+    >>> #bassists.participants
+    >>> #bassists.deactivated_members
+    >>> #bassists.expired_members
+    >>> #bassists.invited_members
+    >>> #bassists.member_memberships
+    >>> #bassists.proposed_members
+    >>> bassists.visibility
+    u'Public'
+    >>> print bassists.team_description
+    None
+    >>> bassists.subscription_policy
+    u'Moderated Team'
+    >>> bassists.renewal_policy
+    u'invite them to apply for renewal'
+    >>> print bassists.default_membership_period
+    None
+    >>> print bassists.default_renewal_period
+    None

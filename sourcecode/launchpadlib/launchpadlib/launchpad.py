@@ -12,7 +12,7 @@ from urlparse import urljoin
 
 from launchpadlib._browser import Browser
 from launchpadlib.collection import Collection, Entry
-from launchpadlib.errors import HTTPError, UnexpectedResponseError
+from launchpadlib.errors import UnexpectedResponseError
 from launchpadlib.person import People, Person
 
 
