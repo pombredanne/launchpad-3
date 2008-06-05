@@ -19,8 +19,8 @@
           <strong tal:content="context/batch/endNumber">10</strong>
         </tal:block>
         of
-        <span tal:replace="total">42</span> result<span
-            tal:omit-tag="" tal:condition="python: total != 1">s</span>
+        <tal:total replace="total">42</tal:total>
+        <tal:heading content="context/heading">results</tal:heading>
       </td>
       <td style="text-align: right; white-space: nowrap" 
           class="batch-navigation-links">

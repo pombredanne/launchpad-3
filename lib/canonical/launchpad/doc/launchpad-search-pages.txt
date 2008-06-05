@@ -233,6 +233,72 @@ search, when the start param is 0.
     >>> print search_view.pillar
     None
 
+Deactivated pillars and non-valid persons and teams cannot be exact
+matches. For example, the python-gnome2-dev product will not match a
+pillar, nor will nsv match Nicolas Velin's unclaimed account.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+
+    >>> python_gnome2 = getUtility(IProductSet).getByName('python-gnome2-dev')
+    >>> python_gnome2.active
+    False
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'python-gnome2-dev',
+    ...           'start': '0'})
+    >>> search_view._getNameToken(search_view.text)
+    u'python-gnome2-dev'
+    >>> print search_view.pillar
+    None
+
+    >>> nsv = getUtility(IPersonSet).getByName('nsv')
+    >>> nsv.displayname
+    u'Nicolas Velin'
+    >>> nsv.is_valid_person_or_team
+    False
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'nsv',
+    ...           'start': '0'})
+    >>> search_view._getNameToken(search_view.text)
+    u'nsv'
+    >>> print search_view.person_or_team
+    None
+
+
+== Shipit CD searches ==
+
+The has_shipit property will be True when the search looks like the user
+is searching for Shipit CDs. There is no correct object in Launchpad to
+display. The page template decides how to handle when has_shipit is
+True.
+
+The match is based on an intersection to the words in the search text
+and the shipit_keywords. The comparison is case-insensitive, has_shipit
+is True when 2 or more words match.
+
+    >>> sorted(search_view.shipit_keywords)
+    ['cd', 'cds', 'disc', 'dvd', 'dvds', 'edubuntu', 'get', 'kubuntu',
+     'mail', 'send', 'ship', 'shipit', 'ubuntu']
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'ubuntu CDs',
+    ...           'start': '0'})
+    >>> search_view.has_shipit
+    True
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'shipit',
+    ...           'start': '0'})
+    >>> search_view.has_shipit
+    False
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'get Kubuntu cds',
+    ...           'start': '0'})
+    >>> search_view.has_shipit
+    True
+
 
 == Page searches ==
 
@@ -247,6 +313,25 @@ search terms.
     True
     >>> search_view.pages
     <...GoogleBatchNavigator ...>
+
+The batch navigation heading is created by the view. The heading
+property returns a 2-tuple of singular and plural heading. There
+is a heading when there are only Google page matches...
+
+    >>> search_view.has_exact_matches
+    False
+    >>> search_view.batch_heading
+    (u'page matching "bug"', u'pages matching "bug"')
+
+...and a heading for when there are exact matches and Google page
+matches.
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': " launchpad"})
+    >>> search_view.has_exact_matches
+    True
+    >>> search_view.batch_heading
+    (u'other page matching "launchpad"', u'other pages matching "launchpad"')
 
 The GoogleBatchNavigator behaves like most BatchNavigators, except that
 its batch size is always 20. The size restriction conforms to Google's

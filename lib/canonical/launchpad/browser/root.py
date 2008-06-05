@@ -50,6 +50,11 @@ class LaunchpadSearchView(LaunchpadFormView):
     schema = ILaunchpadSearch
     field_names = ['text']
 
+    shipit_keywords = set([
+        'ubuntu', 'kubuntu', 'edubuntu',
+        'ship', 'shipit', 'send', 'get', 'mail',
+        'cd', 'cds', 'dvd', 'dvds', 'disc'])
+
     def __init__(self, context, request):
         """Initialize the view.
 
@@ -111,6 +116,16 @@ class LaunchpadSearchView(LaunchpadFormView):
             return 'Pages matching "%s" in Launchpad' % self.text
 
     @property
+    def batch_heading(self):
+        """Heading to display in the batch navigation."""
+        if self.has_exact_matches:
+            return ('other page matching "%s"' % self.text,
+                    'other pages matching "%s"' % self.text)
+        else:
+            return ('page matching "%s"' % self.text,
+                    'pages matching "%s"' % self.text)
+
+    @property
     def focusedElementScript(self):
         """Focus the first widget when there are no matches."""
         if self.has_matches:
@@ -143,23 +158,32 @@ class LaunchpadSearchView(LaunchpadFormView):
         return self._pages
 
     @property
+    def has_shipit(self):
+        """Return True is the search text contains shipit keywords."""
+        if self.text is None:
+            return False
+        terms = set(self.text.lower().split())
+        matches = self.shipit_keywords.intersection(terms)
+        return len(matches) >= 2
+
+    @property
     def has_exact_matches(self):
         """Return True if something exactly matched the search terms."""
-        kinds = (self.bug, self.question, self.pillar, self.person_or_team)
+        kinds = (self.bug, self.question, self.pillar,
+                 self.person_or_team, self.has_shipit)
         return self.containsMatchingKind(kinds)
 
     @property
     def has_matches(self):
         """Return True if something matched the search terms, or False."""
         kinds = (self.bug, self.question, self.pillar,
-                 self.person_or_team, self.pages)
+                 self.person_or_team, self.has_shipit, self.pages)
         return self.containsMatchingKind(kinds)
-
 
     def containsMatchingKind(self, kinds):
         """Return True if one of the items in kinds is not None, or False."""
         for kind in kinds:
-            if kind is not None:
+            if kind is not None and kind is not False:
                 return True
         return False
 
@@ -197,8 +221,7 @@ class LaunchpadSearchView(LaunchpadFormView):
 
             name_token = self._getNameToken(self.text)
             if name_token is not None:
-                self._person_or_team = getUtility(IPersonSet).getByName(
-                    name_token)
+                self._person_or_team = self._getPersonOrTeam(name_token)
                 self._pillar = self._getDistributionOrProductOrProject(
                     name_token)
 
@@ -221,6 +244,14 @@ class LaunchpadSearchView(LaunchpadFormView):
         hypen_pattern = re.compile(r'[ _]')
         name = hypen_pattern.sub('-', text.strip().lower())
         return sanitize_name(name)
+
+    def _getPersonOrTeam(self, name):
+        """Return the matching active person or team."""
+        person_or_team = getUtility(IPersonSet).getByName(name)
+        if (person_or_team is not None
+            and person_or_team.is_valid_person_or_team):
+            return person_or_team
+        return None
 
     def _getDistributionOrProductOrProject(self, name):
         """Return the matching distribution, product or project, or None."""
@@ -245,7 +276,10 @@ class LaunchpadSearchView(LaunchpadFormView):
         page_matches = google_search.search(terms=query_terms, start=start)
         if page_matches.total == 0:
             return None
-        return GoogleBatchNavigator(page_matches, self.request, start=start)
+        navigator = GoogleBatchNavigator(
+            page_matches, self.request, start=start)
+        navigator.setHeadings(*self.batch_heading)
+        return navigator
 
 
 class WindowedList:
@@ -311,6 +345,9 @@ class GoogleBatchNavigator(BatchNavigator):
     # good chance of getting over 100,000 results.
     show_last_link = False
 
+    singular_heading = 'page'
+    plural_heading = 'pages'
+
     def __init__(self, results, request, start=0, size=20, callback=None):
         """See `BatchNavigator`.
 
@@ -339,4 +376,6 @@ class GoogleBatchNavigator(BatchNavigator):
         self.default_size = 20
         self.batch = WindowedListBatch(
             results, start=self.start, size=self.default_size)
+        self.setHeadings(
+            self.default_singular_heading, self.default_plural_heading)
 

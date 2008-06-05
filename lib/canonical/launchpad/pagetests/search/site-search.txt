@@ -4,17 +4,20 @@ Launchpad features a site-wide search that combines Google's
 site-specific search with Launchpad's prominent objects (projects,
 bugs, teams, etc.).
 
+    >>> from canonical.encoding import ascii_smash
+
     # Our very helpful function for printing all the page results.
     >>> def print_search_results():
     ...     tag = find_tag_by_id(anon_browser.contents, 'search-results')
     ...     if tag:
-    ...         print extract_text(tag)
+    ...         print ascii_smash(extract_text(tag))
 
     # Another helper to make searching convenient
     >>> def search_for(terms):
-    ...     search_text = anon_browser.getControl(name='field.text')
+    ...     search_text = anon_browser.getControl(name='field.text', index=0)
     ...     search_text.value = terms
-    ...     anon_browser.getControl(name='field.actions.search').click()
+    ...     anon_browser.getControl(
+    ...         name='field.actions.search', index=0).click()
 
 Search is accessible to any user via the root +search url:
 
@@ -38,7 +41,7 @@ sees a result for that exact match in Launchpad.
     >>> print anon_browser.title
     Pages matching "firefox" in Launchpad
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     Mozilla Firefox
     The Mozilla Firefox web browser
     Registered by Sample Person
@@ -52,7 +55,7 @@ user sees that a bug matched.
     >>> print anon_browser.title
     Pages matching "3" in Launchpad
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     Bug #3: Bug Title Test
     ...
     3: Firefox is slow and consumes too much RAM
@@ -68,8 +71,7 @@ results.
     >>> print anon_browser.title
     Pages matching "bug" in Launchpad
     >>> print_search_results()
-    Matching pages
-    1 &rarr; 20 of 25 results...
+    1 &rarr; 20 of 25 pages matching "bug"...
     Launchpad Bugs...
     Bugs in Ubuntu Linux...
     Bugs related to Sample Person...
@@ -97,6 +99,26 @@ has 5 page matches.
     >>> in_both
     []
 
+A search may return exact matches and matching pages. The batch
+navigation text changes from "pages matching ..." to "other pages
+matching ...".
+
+    # Use our pre-defined search results for the 'launchpad' search.
+    >>> search_for('launchpad')
+    >>> print anon_browser.title
+    Pages matching "launchpad" in Launchpad
+    >>> print_search_results()
+    Exact matches
+    Launchpad
+    Launchpad is a catalogue of libre software projects and products.
+    ...
+    Registered by Sample Person  on 2006-11-24
+    Launchpad Developers (launchpad)
+    Launchpad developers
+    Created on 2005-10-13...
+    1 &rarr; 20 of 25 other pages matching "launchpad"...
+    Launchpad Bugs...
+
 
 == Specific searches ==
 
@@ -108,7 +130,7 @@ as the most relevant match.
 
     >>> search_for('firefox')
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     Mozilla Firefox
     The Mozilla Firefox web browser
     Registered by Sample Person
@@ -119,19 +141,19 @@ Projects can appear too. For example, when the user searches for
 
     >>> search_for('gnome')
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     GNOME
     The GNOME Project is an initiative to ...
     applications to work together in a harmonious desktop-ish way.
     Registered by Sample Person
     on 2004-09-24
 
-Distributions also appear in the 'Most relevant matches' section.
+Distributions also appear in the 'Exact matches' section.
 The user searches for 'ubuntu' and sees it listed..
 
     >>> search_for('ubuntu')
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     Ubuntu
     Ubuntu is a new approach to Linux Distribution that includes regular
     releases, and a simplified single-CD installation system.
@@ -139,11 +161,11 @@ The user searches for 'ubuntu' and sees it listed..
     on 2006-10-16
 
 The user enters the number 1, and he sees a bug and a question in the
-"Most relevant matches" section.
+"Exact matches" section.
 
     >>> search_for('1')
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     Bug #1: Firefox does not support SVG
     in Mozilla Firefox, Ubuntu, Debian, reported on ...
     1: Firefox cannot render Bank Site
@@ -154,19 +176,33 @@ The user searches for the rosetta admins team and it is listed.
 
     >>> search_for('rosetta admins')
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     Rosetta Administrators (rosetta-admins)
     Rosetta Administrators
     Created on 2005-06-06
 
 Search for a user's launchpad name, a user will find the user in the
-"Most relevant matches" section.
+"Exact matches" section.
 
     >>> search_for('sabdfl')
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     Mark Shuttleworth (sabdfl)
     joined on 2005-06-06, with 130 karma
+
+The exact matches section will contain information about Shipit when the
+searches looks like the user is looking to get CDs sent from shipit.
+
+    >>> search_for('ubuntu cds')
+    >>> print_search_results()
+    Exact matches
+    Shipit Questions | ubuntu
+    Ubuntu is available free of charge and we can send you a CD
+    of the latest version with no extra cost, but the delivery
+    may take up to ten weeks, so you should consider downloading
+    the CD image if you have a fast Internet connection.
+    >>> anon_browser.getLink('Shipit Questions | ubuntu').url
+    'http://www.ubuntu.com/getubuntu/shipit-faq'
 
 
 == Searches with no results ==
@@ -177,6 +213,7 @@ user.
     >>> search_for('fnord')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Pages matching "fnord" in Launchpad
+    ...
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
@@ -227,7 +264,7 @@ in the page he is viewing and submit the form to see the results.
     >>> print anon_browser.url
     http://launchpad.dev/+search?...
     >>> print_search_results()
-    Most relevant matches
+    Exact matches
     the Mozilla Project
     The Mozilla Project is the largest open source web browser collaborati...
     browser technology.

@@ -38,8 +38,16 @@ You can create a batch and a batch navigator like so:
   >>> reindeer_batch_navigator = BatchNavigator(
   ...     reindeer, build_request(), size=3)
 
-You can ask the navigator for the chunk of results currently being shown (e.g.
-to iterate over them for rendering in ZPT):
+The BatchNavigator implements IBatchNavigator.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
+
+    >>> verifyObject(IBatchNavigator, reindeer_batch_navigator)
+    True
+
+You can ask the navigator for the chunk of results currently being shown
+(e.g. to iterate over them for rendering in ZPT):
 
   >>> list(reindeer_batch_navigator.currentBatch())
   ['Dasher', 'Dancer', 'Prancer']
@@ -149,7 +157,6 @@ TODO:
   - blowing up when start is beyond end
   - orphans
   - overlap
-
 
 == Performance with SQLObject ==
 
@@ -270,3 +277,75 @@ InvalidBatchSizeError is raised.
 
     >>> ignored = config.pop('max-batch-size')
 
+
+== Batch views ==
+
+A view is often used with a BatchNavigator to determine when to
+display the current batch.
+
+If the current batch is empty, nothing is rendered for the
+upper and lower navigation link views.
+
+    >>> from zope.component import getMultiAdapter
+
+    >>> request = build_request({"start": "0", "batch": "10"})
+    >>> navigator = BatchNavigator([], request=request)
+    >>> upper_view = getMultiAdapter(
+    ...     (navigator, request), name='+navigation-links-upper')
+    >>> upper_view.render()
+    u''
+
+    >>> lower_view = getMultiAdapter(
+    ...     (navigator, request), name='+navigation-links-lower')
+    >>> lower_view.render()
+    u''
+
+When there is a current batch, but there are no previous or next
+batches, only the upper navigation links view will render.
+
+    >>> navigator = BatchNavigator(reindeer, request=request)
+    >>> upper_view = getMultiAdapter(
+    ...     (navigator, request), name='+navigation-links-upper')
+    >>> print upper_view.render()
+    <table...
+    ...<strong>1</strong>...&rarr;...<strong>9</strong>...results...
+    ...<span class="unavailable">...First...
+    ...<span class="unavailable">...Previous...
+    ...<span class="unavailable">...Next...
+    ...<span class="unavailable">...Last...
+
+    >>> lower_view = getMultiAdapter(
+    ...     (navigator, request), name='+navigation-links-lower')
+    >>> lower_view.render()
+    u''
+
+
+== Batch headings ==
+
+The batched values are usually one kind of object such as bugs. The
+BatchNavigator's heading property contains a description of the objects
+for display.
+
+    >>> navigator.heading
+    'results'
+
+There is a special case for when on there is only one item in the batch,
+the singular version of the heading is returned.
+
+    >>> navigator = BatchNavigator(['only-one'], request=request)
+    >>> navigator.heading
+    'result'
+
+The heading can be set by passing a singular and a plural version of
+the heading. The batch navigation will return the appropriate
+header based on the total items in the batch.
+
+    >>> navigator = BatchNavigator(reindeer, request=request)
+    >>> navigator.setHeadings('bug', 'bugs')
+    >>> navigator.heading
+    'bugs'
+
+    >>> navigator = BatchNavigator(['only-one'], request=request)
+    >>> navigator.setHeadings('bug', 'bugs')
+    >>> navigator.heading
+    'bug'
