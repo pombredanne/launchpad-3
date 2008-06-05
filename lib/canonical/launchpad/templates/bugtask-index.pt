@@ -129,7 +129,14 @@
 
       </form>
 
-      <div style="text-align: right; margin-bottom: 0.33em; width: 100%;">
+      <div style="text-align: left; margin-bottom: 0.33em; width: 45%; float: left;">
+        <tal:markduplicate
+            define="link context/menu:context/markduplicate"
+            condition="link/enabled"
+            replace="structure link/render" />
+      </div>
+
+      <div style="text-align: right; margin-bottom: 0.33em; width: 45%; float: right;">
         <tal:createquestion
             define="link context/menu:context/createquestion"
             condition="link/enabled"
