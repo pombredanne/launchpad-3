@@ -35,18 +35,19 @@ from canonical.testing import (
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-def lobotomizeSteveA():
-    """
-    Set SteveA's email address' status to NEW.
+def lobotomize_stevea():
+    """Set SteveA's email address' status to NEW.
 
-    Call this method first in a tests setUp where needed.
+    Call this method first in a test's setUp where needed. Tests
+    using this function should be refactored to use the unaltered
+    sample data and this function eventually removed.
 
-    SteveA's account erroneously appeared in the old ValidPersonOrTeamCache
-    materialized view. The code being tested didn't use this view,
-    and correctly determined that the account was invalid. Now SteveA is
-    valid again so we adjust the data to keep the test valid.
-    This also exposed a bug in bug notifications, where invalid users
-    where happily being emailed.
+    In the past, SteveA's account erroneously appeared in the old
+    ValidPersonOrTeamCache materialized view. This materialized view
+    has since been replaced and now SteveA is correctly listed as
+    invalid in the sampledata. This fix broke some tests testing
+    code that did not use the ValidPersonOrTeamCache to determine
+    validity.
     """
     from canonical.launchpad.database import EmailAddress
     from canonical.launchpad.interfaces import EmailAddressStatus

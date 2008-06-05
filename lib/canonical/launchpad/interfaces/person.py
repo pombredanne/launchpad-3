@@ -1658,7 +1658,7 @@ class IPersonSet(Interface):
         """
 
     def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
-            must_have_email=False):
+                   must_have_email=False):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 

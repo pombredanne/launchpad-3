@@ -1,4 +1,4 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 """Security policies for using content objects."""
 
@@ -112,8 +112,8 @@ class EditAccount(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
-    # XXX: This is wrong as we need to give an Account rather than a
-    # Person ability to edit an account. -- StuartBishop 20080514
+    # This is wrong as we need to give an Account rather than a
+    # Person ability to edit an account.
     def checkAuthenticated(self, user):
         return ((user.account is not None and user.account.id == self.obj.id)
                 or user.inTeam(getUtility(ILaunchpadCelebrities).admin))

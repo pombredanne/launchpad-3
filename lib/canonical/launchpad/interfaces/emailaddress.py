@@ -109,7 +109,7 @@ class IEmailAddressSet(Interface):
 
     def new(email, person=None, status=EmailAddressStatus.NEW, account=None):
         """Create a new EmailAddress with the given email.
-        
+
         The newly created EmailAddress will point to the person
         and/or account.
 

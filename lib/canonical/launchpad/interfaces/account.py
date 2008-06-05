@@ -177,12 +177,12 @@ class AccountCreationRationale(DBEnumeratedType):
 
 
 class IAccountPublic(Interface):
-    """Public information on an IAccount."""
+    """Public information on an `IAccount`."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
 
 class IAccountPrivate(Interface):
-    """Private information on an IAccount."""
+    """Private information on an `IAccount`."""
     date_created = Datetime(
             title=_('Date Created'), required=True, readonly=True)
 
@@ -213,32 +213,31 @@ class IAccountPrivate(Interface):
 
 
 class IAccount(IAccountPublic, IAccountPrivate):
-    """Interface describing an Account."""
+    """Interface describing an `Account`."""
 
 
 class IAccountSet(Interface):
-    """Creation of and access to IAccount providers."""
+    """Creation of and access to `IAccount` providers."""
 
-    def new(
-            rationale, displayname,
+    def new(rationale, displayname,
             password=None, password_is_encrypted=False):
-        """Create a new IAccount.
-       
-        :param rationale: An AccountStatus value.
+        """Create a new `IAccount`.
+
+        :param rationale: An `AccountStatus` value.
         :param password: A password.
         :param password_is_encrypted: If True, the password parameter has
-            already been encrypted using the IPasswordEncryptor utility.
+            already been encrypted using the `IPasswordEncryptor` utility.
             If False, the password will be encrypted automatically.
 
-        :return: The newly created IAccount provider.
+        :return: The newly created `IAccount` provider.
         """
 
     def getByEmail(email):
-        """Return the IAccount linked to the given email address.
+        """Return the `IAccount` linked to the given email address.
 
-        :param email: A string, not an IEmailAddress provider.
+        :param email: A string, not an `IEmailAddress` provider.
 
-        :return: An IAccount, or None if the given email address does nto
-        exist in the database or is not linked to an IAccount.
+        :return: An `IAccount`, or None if the given email address
+        does not exist in the database or is not linked to an `IAccount`.
         """
 

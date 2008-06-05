@@ -17,11 +17,12 @@ True
 None
 
 
-Only admins or the person attached to an account can see or edit Account
-details. This is obviously wrong, as the account should have access rather
-than the (optional) attached person. In particular, it means Accounts without
-Person records cannot be managed by the Account owner. Fixing this involves
-more surgery to Launchpad's security systems.
+Only admins or the person attached to an account can see or edit
+Account details. This is obviously wrong, as the account should have
+access rather than the (optional) attached person. In particular,
+it means Accounts without Person records cannot be managed by the
+Account owner. Fixing this involves more surgery to Launchpad's
+security systems.
 
 >>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
 >>> stub_account.date_created
@@ -31,8 +32,8 @@ Unauthorized...
 >>> del stub_account
 
 
-An Account has an encrypted password and an OpenID identifier used to generate
-the OpenID identity URL
+An Account has an encrypted password and an OpenID identifier used
+to generate the OpenID identity URL
 
 >>> account.openid_identifier
 u'no-priv_oid'
@@ -40,8 +41,8 @@ u'no-priv_oid'
 >>> account.password
 u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
 
-Ensure the password changes are sticky, as this is a property hiding the
-AccountPassword table.
+Ensure the password changes are sticky, as this is a property hiding
+the AccountPassword table.
 
 >>> account.password = None
 >>> account.password
@@ -54,11 +55,10 @@ And other account metadata
 
 >>> account.date_created
 datetime.datetime(...)
->>> account.creation_rationale == (
-...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD)
-True
->>> account.status == AccountStatus.ACTIVE
-True
+>>> print account.creation_rationale.name
+OWNER_CREATED_LAUNCHPAD
+>>> print account.status.name
+ACTIVE
 
 >>> account.date_status_set >= account.date_created
 True
@@ -68,22 +68,21 @@ None
 u'No Privileges Person'
 
 
-When the status is changed, the date_status_set is updated in the database.
-XXX: With Storm, this should be fixed so we don't need the sync() call
-    -- StuartBishop 20080515
+When the status is changed, the date_status_set is updated in the
+database.
 
 >>> original_date_status_set = account.date_status_set
 >>> account.status = AccountStatus.SUSPENDED
 >>> from zope.security.proxy import removeSecurityProxy
->>> removeSecurityProxy(account).sync()
+>>> removeSecurityProxy(account).sync() # Shouldn't be necessary with Storm!
 >>> account.date_status_set > original_date_status_set
 True
 >>> account.status = AccountStatus.ACTIVE
 
 
-The Account's displayname is synced to the Person's displayname if there is
-one. If the Person.displayname is changed, the Account.displayname is changed
-too.
+The Account's displayname is synced to the Person's displayname
+if there is one. If the Person.displayname is changed, the
+Account.displayname is changed too.
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)
@@ -92,10 +91,12 @@ too.
 >>> account.displayname
 u'Something New'
 
+
 However, the reverse is not true. If we change the Account.displayname,
-the linked Person.displayname (if there is one) is not updated immediately.
-Instead, a cron job will sync this information later. This allows displayname
-changes to happen even when the Person table is unavailable.
+the linked Person.displayname (if there is one) is not updated
+immediately.  Instead, a cron job will sync this information
+later. This allows displayname changes to happen even when the Person
+table is unavailable.
 
 >>> account.displayname = 'No Privileges Account'
 >>> person.displayname

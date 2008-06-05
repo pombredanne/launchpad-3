@@ -110,7 +110,7 @@ class BugJanitor:
         janitor_email = self.janitor.preferredemail.email
         setupInteraction(
             auth_utility.getPrincipalByLogin(
-                janitor_email,want_password=False),
+                janitor_email, want_password=False),
             login=janitor_email)
 
     def _logout(self):

@@ -214,18 +214,19 @@ class LaunchpadLoginSource:
     def getPrincipals(self, name):
         raise NotImplementedError
 
-    def getPrincipalByLogin(
-            self, login, access_level=AccessLevel.WRITE_PRIVATE,
-            want_password=True):
+    def getPrincipalByLogin(self, login,
+                            access_level=AccessLevel.WRITE_PRIVATE,
+                            want_password=True):
         """Return a principal based on the person with the email address
         signified by "login".
 
-        If want_password is False, the pricipal will have None for a password.
-        Use this when trying to retrieve a principal in contexts where we
-        don't need the password and the database connection does not have
-        access to the Account or AccountPassword tables.
+        :param want_password: If want_password is False, the pricipal
+        will have None for a password. Use this when trying to retrieve a
+        principal in contexts where we don't need the password and the
+        database connection does not have access to the Account or
+        AccountPassword tables.
 
-        Return None if there is no person with the given email address.
+        :return: None if there is no person with the given email address.
 
         The `access_level` can be used for further restricting the capability
         of the principal.  By default, no further restriction is added.
@@ -281,6 +282,7 @@ class LaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
+
 
 def get_oauth_authorization(request):
     """Retrieve OAuth authorization information from a request.

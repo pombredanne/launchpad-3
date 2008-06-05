@@ -2455,40 +2455,43 @@ class PersonSet:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
 
-        base_query = "Person.teamowner IS NULL AND Person.merged IS NULL "
+        base_query = [
+                'Person.teamowner IS NULL',
+                'Person.merged IS NULL',
+                ]
         clause_tables = []
 
         if exclude_inactive_accounts:
             clause_tables.append('Account')
-            base_query += """
-                AND Person.account = Account.id
-                AND Account.status NOT IN (%s)
-                """ % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES))
+            base_query.append('Person.account = Account.id')
+            base_query.append(
+                'Account.status NOT IN (%s)'
+                % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
 
         email_clause_tables = clause_tables + ['EmailAddress']
         if must_have_email:
             clause_tables = email_clause_tables
-            base_query += "AND EmailAddress.person = Person.id"
+            base_query.append('EmailAddress.person = Person.id')
 
         # Short circuit for returning all users in order
         if not text:
-            return Person.select(base_query, clauseTables=clause_tables)
+            return Person.select(
+                    ' AND'.join(base_query), clauseTables=clause_tables)
 
         # We use a UNION here because this makes things *a lot* faster
         # than if we did a single SELECT with the two following clauses
         # ORed.
-        email_query = """
-            %s
-            AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
-            """ % (base_query, quote_like(text))
-        name_query = """
-            %s AND Person.fti @@ ftq(%s)
-            """ % (base_query, quote(text))
+        email_query = base_query + [
+                'EmailAddress.person = Person.id',
+                "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text)
+                ]
+        name_query = base_query + ["Person.fti @@ ftq(%s)" % quote(text)]
 
-        results = Person.select(email_query, clauseTables=email_clause_tables)
+        results = Person.select(
+                ' AND '.join(email_query), clauseTables=email_clause_tables)
         results = results.union(
-            Person.select(name_query, clauseTables=clause_tables))
+                Person.select(
+                    ' AND '.join(name_query), clauseTables=clause_tables))
 
         return results.orderBy(orderBy)
 
