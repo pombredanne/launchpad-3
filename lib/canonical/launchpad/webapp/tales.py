@@ -1116,6 +1116,14 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                 'branch': branch_title,
                }
 
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        # The url of a code import is the associated branch.
+        url = canonical_url(
+            self._context.branch, path_only_if_possible=True,
+            view_name=view_name)
+        return url
+
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""

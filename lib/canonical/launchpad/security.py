@@ -12,7 +12,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportSet,
+    ICodeImportJobWorkflow, ICodeImportMachine,
     ICodeReviewMessage, IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
     IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
@@ -909,17 +909,6 @@ class OnlyVcsImportsAndAdmins(AuthorizationBase):
 class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IBazaarApplication
-
-
-class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImport listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportSet
 
 
 class EditCodeImport(OnlyVcsImportsAndAdmins):

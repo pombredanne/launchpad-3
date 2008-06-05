@@ -370,12 +370,13 @@ site:
     http://code.launchpad.dev/+code-imports
 
 The code imports themselves are viewed under the branch's URL,
-however.
+and are not traversable in themselves.
 
     >>> print canonical_url(svn_import.branch)
     http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
     >>> print canonical_url(svn_import)
-    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
+    Traceback (most recent call last):
+    NoCanonicalUrl: ...
 
 
 == Modifying CodeImports ==

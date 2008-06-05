@@ -55,7 +55,6 @@ from canonical.launchpad.interfaces import (
     IBranchSubscription,
     IBugBranch,
     IBugSet,
-    ICodeImportSet,
     ICodeImportJobWorkflow,
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
@@ -157,11 +156,6 @@ class BranchNavigation(Navigation):
         for proposal in self.context.landing_targets:
             if proposal.id == id:
                 return proposal
-
-    @stepto("+code-import")
-    def traverse_code_import(self):
-        """Traverses to an `ICodeImport`."""
-        return getUtility(ICodeImportSet).getByBranch(self.context)
 
 
 class BranchContextMenu(ContextMenu):
