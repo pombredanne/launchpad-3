@@ -1314,3 +1314,100 @@ class HALDevice:
             else:
                 result.extend(sub_device.getRealChildren())
         return result
+
+    def getVendorOrProduct(self, type_):
+        """Return the vendor or product of this device.
+
+        :return: The vendor or product data for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        # HAL does not store vendor data very consistently. Try to find
+        # the data in several places.
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.getProperty('info.bus')
+        if self.udi == '/org/freedesktop/Hal/devices/computer':
+            # HAL sets info.product to "Computer", provides no property
+            # info.vendor and info.bus is "unknown", hence the logic
+            # below does not work properly.
+            return self.getProperty('system.' + type_)
+        elif bus == 'scsi':
+            if type_ == 'vendor':
+                result = self.getProperty('scsi.vendor').strip()
+                if result == 'ATA':
+                    # A weirdness of the kernel's SCSI emulation layer
+                    # for the IDE and SATA busses: The HAL property
+                    # scsi.vendor is always 'ATA', and the vendor name
+                    # is stored as the first part of the SCSI model
+                    # string.
+                    #
+                    # The assumption below that the vendor name does not
+                    # contain any spaces is not necessarily correct, but
+                    # it is hard to find a better heuristic to separate
+                    # the vendor name from the product name.
+                    return self.getProperty('scsi.model').split(' ', 1)[0]
+                return result
+            else:
+                # What is called elsewhere "product", is called "model"
+                # for the SCSI bus.
+                result = self.getProperty('scsi.model').strip()
+                if self.getProperty('scsi.vendor') == 'ATA':
+                    return result.split(' ', 1)[1]
+                return result
+        else:
+            result = self.getProperty('info.' + type_)
+            if result is None:
+                if bus is None:
+                    return None
+                return self.getProperty('%s.%s' % (bus, type_))
+            return result
+
+    @property
+    def vendor(self):
+        """The vendor of this device."""
+        return self.getVendorOrProduct('vendor')
+
+
+    @property
+    def product(self):
+        """The vendor of this device."""
+        return self.getVendorOrProduct('product')
+
+
+    def getVendorOrProductID(self, type_):
+        """Return the vendor or product ID for this device.
+
+        :return: The vendor or product ID for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+        bus = self.getProperty('info.bus')
+        if bus is None:
+            return None
+        elif (bus == 'scsi'
+              or self.udi == '/org/freedesktop/Hal/devices/computer'):
+            # The SCSI specification does not distinguish between a
+            # vendor/model ID and vendor/model name: the SCSI INQUIRY
+            # command returns an 8 byte string as the vendor name and
+            # a 16 byte string as the model name. We use these strings
+            # as the vendor/product name as well as the vendor/product
+            # ID.
+            #
+            # Similary, HAL does not provide a vendor or product ID
+            # for the host system itself, so we use the vendor resp.
+            # product name as the vendor/product ID for systems too.
+            return self.getVendorOrProduct(type_)
+        else:
+            return self.getProperty('%s.%s_id' % (bus, type_))
+
+    @property
+    def vendor_id(self):
+        """The vendor ID of this device."""
+        return self.getVendorOrProductID('vendor')
+
+    @property
+    def product_id(self):
+        """The product ID of this device."""
+        return self.getVendorOrProductID('product')
