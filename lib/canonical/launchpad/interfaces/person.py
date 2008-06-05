@@ -695,13 +695,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       "the empty string."),
         readonly=True)
 
-    preferredemail_sha1 = TextLine(
-        title=_("SHA-1 Hash of Preferred Email"),
-        description=_("The SHA-1 hash of the preferred email address and "
-                      "a mailto: prefix as a hexadecimal string. This is "
-                      "used as a key by FOAF RDF spec"),
-        readonly=True)
-
     verbose_bugnotifications = Bool(
         title=_("Include bug descriptions when sending me bug notifications"),
         required=False, default=True)
