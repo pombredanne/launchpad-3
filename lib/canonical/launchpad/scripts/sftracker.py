@@ -29,6 +29,8 @@ import time
 
 import pytz
 
+from storm.store import Store
+
 # use cElementTree if it is available ...
 try:
     import xml.elementtree.cElementTree as ET
@@ -306,7 +308,9 @@ class TrackerImporter:
         else:
             series = self.product.serieses[0]
 
-        return series.newMilestone(name)
+        milestone = series.newMilestone(name)
+        Store.of(milestone).flush()
+        return milestone
 
     def createMessage(self, subject, date, userid, text):
         """Create an IMessage for a particular comment."""
