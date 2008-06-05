@@ -283,9 +283,9 @@ Merge proposals also have a link formatter, which displays branch titles:
 === Code imports ===
 
     >>> login('foo.bar@canonical.com')
-    >>> code_import = factory.makeCodeImport()
+    >>> code_import = factory.makeCodeImport(branch_name="trunk")
     >>> test_tales("code_import/fmt:link", code_import=code_import)
-    u'<a href="...+code-import">Import of...</a>'
+    u'<a href=".../trunk">Import of...</a>'
 
 
 === Product series ===
