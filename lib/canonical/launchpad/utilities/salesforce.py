@@ -3,6 +3,7 @@
 """Utilities for accessing the external Salesforce proxy."""
 
 __metaclass__ = type
+
 __all__ = ['SalesforceVoucherProxy',
            'SalesforceVoucherProxyException',
            'Voucher']
@@ -22,27 +23,22 @@ from canonical.launchpad.interfaces.salesforce import (
 
 class SalesforceVoucherProxyException(Exception):
     """Exception raised on failed call to the SalesforceVoucherProxy."""
-    def __init__(self, message):
-        self.message = message
-
-    def __str__(self):
-        return repr(self.message)
 
 
 class SFDCError(SalesforceVoucherProxyException):
-    pass
+    """An exception was reported by salesforce.com."""
 
 
 class SVPNotFoundException(SalesforceVoucherProxyException):
-    pass
+    """A named object was not found."""
 
 
 class SVPAlreadyRedeemedException(SalesforceVoucherProxyException):
-    pass
+    """The voucher has already been redeemed."""
 
 
 class SVPNotAllowedException(SalesforceVoucherProxyException):
-    pass
+    """The operation is not allowed by the current user."""
 
 
 ERRORCODE_MAP = dict(SFDCError=SFDCError,
@@ -53,7 +49,8 @@ ERRORCODE_MAP = dict(SFDCError=SFDCError,
 
 def map_fault(fault):
     """Map the XMLRPC Fault to one of our defined exceptions."""
-    exception = ERRORCODE_MAP.get(fault.faultCode, SalesforceVoucherProxyException)
+    exception = ERRORCODE_MAP.get(fault.faultCode,
+                                  SalesforceVoucherProxyException)
     return exception(fault.faultString)
 
 

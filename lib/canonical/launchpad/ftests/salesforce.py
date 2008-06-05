@@ -119,7 +119,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         voucher = self._findVoucher(voucher_id)
         if voucher is None:
             raise Fault('NotFound',
-                                  'The voucher %s was not found.' % voucher_id)
+                        'The voucher %s was not found.' % voucher_id)
         voucher = voucher.asDict()
         return voucher
 
@@ -141,10 +141,12 @@ class SalesforceXMLRPCTestTransport(Transport):
             raise Fault('NotFound', 'No such voucher %s' % voucher_id)
         else:
             if voucher.status != 'Reserved':
-                raise Fault('AlreadyRedeemed', 'Voucher %s is already redeemed' % voucher_id)
+                raise Fault('AlreadyRedeemed',
+                            'Voucher %s is already redeemed' % voucher_id)
 
             if voucher.owner != lp_openid:
-                raise Fault('NotAllowed', 'Voucher is not owned by named user')
+                raise Fault('NotAllowed',
+                            'Voucher is not owned by named user')
 
         voucher.status = 'Redeemed'
         voucher.project_id = lp_project_id
@@ -163,7 +165,8 @@ class SalesforceXMLRPCTestTransport(Transport):
                 voucher.project_name = lp_project_name
                 num_updated += 1
         if num_updated == 0:
-            raise Fault('NotFound', 'No vouchers matching product id %s' % lp_project_id)
+            raise Fault('NotFound',
+                        'No vouchers matching product id %s' % lp_project_id)
         return [num_updated]
 
     def request(self, host, handler, request, verbose=None):
