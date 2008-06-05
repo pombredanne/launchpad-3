@@ -189,7 +189,7 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     """
 
     p = subprocess.Popen(
-            command, shell=True, stdin=subprocess.PIPE,
+            command, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT
             )
     (output, nothing) = p.communicate(input)
