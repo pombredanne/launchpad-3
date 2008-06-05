@@ -7,10 +7,12 @@ __all__ = [
     'Collection',
     'CollectionResource',
     'Entry',
+    'EntryAdapterUtility',
     'EntryResource',
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'RESTUtilityBase',
     'ScopedCollection',
     'ServiceRootResource',
     'URLDereferencingMixin',
@@ -771,9 +773,7 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
         if IScopedCollection.providedBy(self.collection):
             # Scoped collection. The type URL depends on what type of
             # entry the collection holds.
-            # Import here is necessary to avoid recursive import.
-            from canonical.lazr.rest.tales import entry_adapter_for_schema
-            adapter = entry_adapter_for_schema(
+            adapter = EntryAdapterUtility.forSchemaInterface(
                 self.context.relationship.value_type.schema)
             return adapter.entry_page_type_link
         else:
@@ -948,3 +948,57 @@ class ScopedCollection:
     def find(self):
         """See `ICollection`."""
         return self.collection
+
+
+class RESTUtilityBase:
+
+    def _service_root_url(self):
+        """Return the URL to the service root."""
+        request = get_current_browser_request()
+        return canonical_url(request.publication.getApplication(request))
+
+
+class EntryAdapterUtility(RESTUtilityBase):
+    """Useful information about an entry's presence in the web service.
+
+    This includes the links to entry's WADL resource type, and the
+    resource type for a page of these entries.
+    """
+
+    @classmethod
+    def forSchemaInterface(cls, model_schema):
+        """Retrieve an entry adapter for a model interface.
+
+        This method locates the IEntry subclass corresponding to the
+        model interface, and creates an EntryAdapterUtility for it.
+        """
+        entry_class = zapi.getGlobalSiteManager().adapters.lookup(
+            (model_schema,), IEntry)
+        return EntryAdapterUtility(entry_class)
+
+    def __init__(self, entry_class):
+        """Initialize with a class that implements IEntry."""
+        self.entry_class = entry_class
+
+    @property
+    def singular_type(self):
+        """Return the singular name for this object type."""
+        return self.entry_class.__name__
+
+    @property
+    def type_link(self):
+        """The URL to the type definition for this kind of entry."""
+        return "%s#%s" % (
+            self._service_root_url(), self.singular_type)
+
+    @property
+    def entry_page_type(self):
+        """The definition of a collection of this kind of object."""
+        return "%s-page-resource" % self.singular_type
+
+    @property
+    def entry_page_type_link(self):
+        "The URL to the definition of a collection of this kind of object."
+        return "%s#%s" % (
+            self._service_root_url(), self.entry_page_type)
+
