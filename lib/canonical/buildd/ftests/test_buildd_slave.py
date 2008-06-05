@@ -42,14 +42,17 @@ class LaunchpadBuilddSlaveTests(BuilddTestCase):
 
         opener = self.slave.setupAuthHandler(url, user, password)
 
-        # Inspect the opener.
+        # Inspect the openers and ensure the wanted handler is installed.
+        basic_auth_handler = None
         for handler in opener.handlers:
             if isinstance(handler, urllib2.HTTPBasicAuthHandler):
+                basic_auth_handler = handler
                 break
-        else:
-            self.fail("No open handler available.")
+        self.assertTrue(
+            basic_auth_handler is not None,
+            "No basic auth handler installed.")
 
-        password_mgr = handler.passwd
+        password_mgr = basic_auth_handler.passwd
         stored_user, stored_pass = password_mgr.find_user_password(None, url)
         self.assertEqual(user, stored_user)
         self.assertEqual(password, stored_pass)
