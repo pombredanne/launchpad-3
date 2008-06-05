@@ -169,6 +169,7 @@ the transaction when that flag is set.
 Look at the results of our actions. Two packages removed (one source
 and one binary) and the date removed properly set up:
 
+  >>> from canonical.database.sqlbase import get_transaction_timestamp
   >>> transaction_timestamp = get_transaction_timestamp()
 
   >>> source_publishing_record = SSPPH.get(15)

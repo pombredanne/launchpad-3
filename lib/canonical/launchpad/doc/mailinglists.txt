@@ -192,6 +192,7 @@ participate in the Mailing List Experts team.
 
 A mailing list expert is required to approve the registration.
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
     >>> lpadmin = list(mailing_list_experts.allmembers)[0]

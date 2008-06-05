@@ -142,6 +142,7 @@ Verify if the job (BuildQueue) was updated appropriately:
     >>> job.build.buildstate.name
     'BUILDING'
 
+    >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> job.buildstart == get_transaction_timestamp()
     True
 

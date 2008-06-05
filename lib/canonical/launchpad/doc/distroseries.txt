@@ -472,6 +472,7 @@ Supersede previous netapplet publication:
    >>> print superseded_netapplet.status.name
    SUPERSEDED
 
+   >>> from canonical.database.sqlbase import get_transaction_timestamp
    >>> superseded_netapplet.datesuperseded == get_transaction_timestamp()
    True
 
@@ -980,6 +981,7 @@ set.
             automatically.
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
@@ -989,6 +991,7 @@ set.
 It succeeds, however, when we pass the --force option.  The script then
 sets the defer_translation_imports flag itself before copying.
 
+    >>> transaction.abort()
     >>> returnvalue, output, error_output = run_script(
     ...     'cronscripts/copy-missing-translations-from-parent.py',
     ...     ['--distribution=ubuntu', '--series=testing', '-v', '--force'])
@@ -1004,6 +1007,7 @@ sets the defer_translation_imports flag itself before copying.
 After completing, the script restores the defer_translation_imports
 flag to its previous value (off).
 
+    >>> transaction.abort()
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
