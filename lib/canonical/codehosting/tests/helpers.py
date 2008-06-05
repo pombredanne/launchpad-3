@@ -10,7 +10,6 @@ __all__ = [
     'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
-import shutil
 import threading
 import unittest
 
@@ -47,8 +46,6 @@ class AvatarTestCase(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
         # A basic user dict, 'alice' is a member of no teams (aside from the
         # user themself).
         self.aliceUserDict = {
@@ -67,15 +64,6 @@ class AvatarTestCase(TrialTestCase):
                       {'id': 3, 'name': 'test-team'}],
             'initialBranches': [(2, []), (3, [])]
         }
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-
-        # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test
-        # runner.
-        tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
-        shutil.rmtree(tmpdir_root)
 
 
 def exception_names(exceptions):

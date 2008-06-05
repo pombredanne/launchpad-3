@@ -14,5 +14,20 @@ Check that the product RDF export works.
            xmlns:lp="https://launchpad.net/rdf/launchpad#"
            xmlns:wot="http://xmlns.com/wot/0.1/"
            xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <lp:Product>
+      <lp:specifiedAt rdf:resource="/firefox/+rdf"/>
+      <lp:name>firefox</lp:name>
+      <lp:displayName>Mozilla Firefox</lp:displayName>
+      <lp:title>Mozilla Firefox</lp:title>
   ...
+      <lp:owner>
+        <foaf:Person>
+          <foaf:name>Sample Person</foaf:name>
+          <foaf:nick>name12</foaf:nick>
+          <foaf:mbox_sha1sum>AF55D387F22F761CB32EC2A9C81F66220452C081</foaf:mbox_sha1sum>
+        </foaf:Person>
+      </lp:owner>
+  ...
+     </lp:Product>
+   </rdf:RDF>
 

@@ -4,6 +4,71 @@ Some standard behavior is defined by the web service itself, not by
 the individual resources.
 
 
+== Authorization ==
+
+  # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
+  # Once we launch the web service this test will be removed
+  # because all users will have access to the web service.
+
+In a development environment, any Launchpad person with an OAuth token
+can make a request of the web service. Here's the 'no-priv' user
+making a request.
+
+  >>> print user_webservice.get("/beta/~launchpad").getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+But in production, only Launchpad people who belong to a particular
+team of beta testers are allowed to make requests. This code
+configures that team so that web service clients must be authorized as
+a member of the 'admins' team.
+
+  >>> from canonical.config import config
+  >>> print config.vhost.api.beta_test_team
+  None
+
+  >>> from textwrap import dedent
+  >>> test_data = dedent("""
+  ...     [vhost.api]
+  ...     beta_test_team: admins
+  ...     """)
+  >>> config.push('test', test_data)
+
+Now 'no-priv' can no longer make web service requests.
+
+  >>> print user_webservice.get("/beta/~launchpad").getOutput()
+  HTTP/1.1 401 Unauthorized
+  ...
+  no-priv is not a member of the beta test team.
+  ...
+
+But 'salgado' belongs to the 'admins' team, and so can make web
+service requests.
+
+  >>> print webservice.get("/beta/~launchpad").getOutput()
+  HTTP/1.1 200 Ok
+  ...
+
+If for some reason the variable's value is set to a nonsensical value,
+access to the web service will be cut off altogether.
+
+  >>> test_config = config.pop('test')
+  >>> from textwrap import dedent
+  >>> test_data = dedent("""
+  ...     [vhost.api]
+  ...     beta_test_team: nosuchteam
+  ...     """)
+  >>> config.push('test', test_data)
+
+  >>> print webservice.get("/beta/~launchpad").getOutput()
+  HTTP/1.1 401 Unauthorized
+  ...
+  salgado is not a member of the beta test team.
+  ...
+
+  >>> test_config = config.pop('test')
+
+
 == Nonexistent resources ==
 
 An attempt to access a nonexistent resource yields a 404 error.

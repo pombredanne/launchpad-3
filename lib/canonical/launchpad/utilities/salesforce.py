@@ -82,6 +82,13 @@ class SalesforceVoucherProxy:
         """See `ISalesforceVoucherProxy`."""
         return self.server_proxy.getServerStatus()
 
+    def getVoucher(self, voucher_id):
+        """See `ISalesforceVoucherProxy`."""
+        voucher = self.server_proxy.getVoucher(voucher_id)
+        if voucher is not None:
+            voucher = Voucher(voucher)
+        return voucher
+
     def redeemVoucher(self, voucher_id, user, project):
         """See `ISalesforceVoucherProxy`."""
         result = self.server_proxy.redeemVoucher(

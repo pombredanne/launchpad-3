@@ -9,6 +9,7 @@ import stat
 
 from bzrlib import errors
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.urlutils import escape
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.helpers import (
@@ -236,45 +237,72 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('~testuser/thunderbird/banana')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
 
+    def _getBzrDirTransport(self):
+        """Make a .bzr directory in a branch and return a transport for it.
+
+        We use this to test filesystem behaviour beneath the .bzr directory of
+        a branch, which generally has fewer constraints and exercises
+        different code paths.
+        """
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        return transport.clone('branch/.bzr')
+
     @defer_to_thread
     @wait_for_disconnect
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.mkdir('branch/.bzr/dir2')
-        transport.mkdir('branch/.bzr/dir2/bar')
+        transport = self._getBzrDirTransport()
+        transport.mkdir('dir1')
+        transport.mkdir('dir1/foo')
+        transport.mkdir('dir2')
+        transport.mkdir('dir2/bar')
         self.assertRaises(
-            (errors.FileExists, IOError),
-            transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
+            (errors.FileExists, IOError), transport.rename, 'dir1', 'dir2')
 
     @defer_to_thread
     @wait_for_disconnect
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
-        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+        transport = self._getBzrDirTransport()
+        transport.mkdir('dir1')
+        transport.mkdir('dir1/foo')
+        transport.rename('dir1', 'dir2')
+        self.assertEqual(['dir2'], transport.list_dir('.'))
 
     @defer_to_thread
     @wait_for_disconnect
     def test_make_directory_twice(self):
         # The transport raises a `FileExists` error if we try to make a
         # directory that already exists.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        self.assertRaises(
-            errors.FileExists, transport.mkdir, 'branch/.bzr/dir1')
+        transport = self._getBzrDirTransport()
+        transport.mkdir('dir1')
+        self.assertRaises(errors.FileExists, transport.mkdir, 'dir1')
+
+    @defer_to_thread
+    @wait_for_disconnect
+    def test_url_escaping(self):
+        # Transports accept and return escaped URL segments. The literal path
+        # we use should be preserved, even if it can be unescaped itself.
+        transport = self._getBzrDirTransport()
+
+        # The bug we are checking only occurs if
+        # unescape(path).encode('utf-8') != path.
+        path = '%41%42%43'
+        escaped_path = escape(path)
+        content = 'content'
+        transport.put_bytes(escaped_path, content)
+
+        # We can use the escaped path to reach the file.
+        self.assertEqual(content, transport.get_bytes(escaped_path))
+
+        # We can also use the value that list_dir returns, which may be
+        # different from our original escaped path. Note that in this case,
+        # returned_path is equivalent but not equal to escaped_path.
+        [returned_path] = list(transport.list_dir('.'))
+        self.assertEqual(content, transport.get_bytes(returned_path))
 
 
 def test_suite():
