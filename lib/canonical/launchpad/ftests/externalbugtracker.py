@@ -327,6 +327,47 @@ class TestOldBugzilla(TestBugzilla):
                 123543: ('ASSIGNED', '')}
 
 
+class TestBugzillaXMLRPCTransport:
+    """A test implementation of the Bugzilla XML-RPC interface."""
+
+    seconds_since_epoch = None
+    timezone = 'UTC'
+    utc_offset = 0
+
+    def request(self, host, handler, request, verbose=None):
+        """Call the corresponding XML-RPC method.
+
+        The method name and arguments are extracted from `request`. The
+        method on this class with the same name as the XML-RPC method is
+        called, with the extracted arguments passed on to it.
+        """
+        args, method_name = xmlrpclib.loads(request)
+        prefix = 'Launchpad.'
+        assert method_name.startswith(prefix), (
+            'All methods should be in the Launchpad namespace')
+
+        method_name = method_name[len(prefix):]
+        method = getattr(self, method_name)
+        return method(*args)
+
+    def time(self):
+        """Return a dict of the local time, UTC time and the timezone."""
+        seconds_since_epoch = self.seconds_since_epoch
+        if seconds_since_epoch is None:
+            remote_datetime = datetime(2008, 5, 1, 1, 1, 1)
+            seconds_since_epoch = time.mktime(remote_datetime.timetuple())
+
+        # We return xmlrpc dateTimes rather than doubles since that's
+        # what BugZilla will return.
+        local_time = xmlrpclib.DateTime(seconds_since_epoch)
+        utc_time = xmlrpclib.DateTime(seconds_since_epoch - self.utc_offset)
+        return {
+            'local_time': local_time,
+            'utc_time': utc_time,
+            'tz_name': self.timezone,
+            }
+
+
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
 

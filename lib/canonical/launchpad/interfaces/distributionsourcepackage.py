@@ -71,6 +71,20 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         published.
         """
 
+    latest_overall_publication = Attribute(
+        """The latest publication for this package across its distribution.
+
+        The criteria for determining the publication are:
+            - Only PUBLISHED or OBSOLETE publications
+            - Only updates, security or release pockets
+            - PUBLISHED wins over OBSOLETE
+            - The latest distroseries wins
+            - updates > security > release
+
+        See https://bugs.edge.launchpad.net/soyuz/+bug/236922 for a plan
+        on how this criteria will be centrally encoded.
+        """)
+
     def bugtasks(quantity=None):
         """Bug tasks on this source package, sorted newest first.
 
@@ -91,3 +105,4 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
+

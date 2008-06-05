@@ -23,10 +23,23 @@ row with the same name raises an IntegrityError error.
     >>> vendor_name_set.create('Intel')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwvendorname_name_key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
+
+Existing IHWVendorName records are retrieved by IHWVendorName.getByName().
+
+    >>> intel_name = vendor_name_set.getByName('Intel')
+    >>> print intel_name.name
+    Intel
+
+If no record matching the given name exists, IHWVendorName.getByName()
+returns None.
+
+    >>> print vendor_name_set.getByName('Babbage Computers')
+    None
+
 
 == HWVendorID ==
 
@@ -38,8 +51,8 @@ hexadecimal digits, prepended by '0x'.
     >>> from canonical.launchpad.interfaces import HWBus, IHWVendorIDSet
     >>> vendor_id_set = getUtility(IHWVendorIDSet)
     >>> intel_pci_id = vendor_id_set.create(bus=HWBus.PCI,
-    ...                                 vendor_id='0x8086',
-    ...                                 vendor_name=intel_name)
+    ...                                     vendor_id='0x8086',
+    ...                                     vendor_name=intel_name)
     >>> print intel_pci_id.bus.title, intel_pci_id.vendor_id_for_bus
     PCI 0x8086
     >>> print intel_pci_id.vendor_name.name
@@ -53,7 +66,7 @@ The tuple (bus, vendor id, vendor name) must be unique.
     ...                      vendor_name=intel_name)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwvendorid__bus_vendor_id__vendor_name__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -64,15 +77,15 @@ have stricter constraints for their vendor ID. The PCI and USB busses use
 uses ASCII strings with exactly 8 characters. The constructor of
 HWVendorID ensures that the vendor IDs match the bus-specific format.
 
-USB and PCI IDs are represented as strings with a four-digit hexadecimal
-number, prefixed by '0x'; the digits a..f must be lower cases characters.
-Other ID values raise a ValueError.
+USB, PCI and PCCard IDs are represented as strings with a four-digit
+hexadecimal number, prefixed by '0x'; the digits a..f must be lower
+cases characters. Other ID values raise a ValueError.
 
 The characters a..f are accepted as digits.
 
     >>> another_pci_vendor_id = vendor_id_set.create(bus=HWBus.PCI,
-    ...                                          vendor_id='0x10ae',
-    ...                                          vendor_name=intel_name)
+    ...                                              vendor_id='0x10ae',
+    ...                                              vendor_name=intel_name)
     >>> print another_pci_vendor_id.bus.title
     PCI
     >>> print another_pci_vendor_id.vendor_id_for_bus
@@ -80,9 +93,19 @@ The characters a..f are accepted as digits.
     >>> print another_pci_vendor_id.vendor_name.name
     Intel
 
+    >>> another_pci_vendor_id = vendor_id_set.create(bus=HWBus.PCCARD,
+    ...                                              vendor_id='0x10ae',
+    ...                                              vendor_name=intel_name)
+    >>> print another_pci_vendor_id.bus.title
+    PC Card (32 bit)
+    >>> print another_pci_vendor_id.vendor_id_for_bus
+    0x10ae
+    >>> print another_pci_vendor_id.vendor_name.name
+    Intel
+
     >>> another_usb_vendor_id = vendor_id_set.create(bus=HWBus.USB,
-    ...                                          vendor_id='0x10ae',
-    ...                                          vendor_name=intel_name)
+    ...                                              vendor_id='0x10ae',
+    ...                                              vendor_name=intel_name)
     >>> print another_usb_vendor_id.bus.title
     USB
     >>> print another_usb_vendor_id.vendor_id_for_bus
@@ -98,6 +121,13 @@ A..F is rejected.
     Traceback (most recent call last):
     ...
     ValueError: '0x10AE' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.PCCARD,
+    ...                      vendor_id='0x10AE',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x10AE' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x10AE',
@@ -115,6 +145,13 @@ The ID must have the prefix "0x".
     ...
     ValueError: '8086' is not a valid vendor ID for PCI
 
+    >>> vendor_id_set.create(bus=HWBus.PCCARD,
+    ...                      vendor_id='8086',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '8086' is not a valid vendor ID for PC Card (32 bit)
+
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='8086',
     ...                      vendor_name=intel_name)
@@ -131,6 +168,13 @@ The number must have four digits.
     ...
     ValueError: '0x123' is not a valid vendor ID for PCI
 
+    >>> vendor_id_set.create(bus=HWBus.PCCARD,
+    ...                      vendor_id='0x123',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x123' is not a valid vendor ID for PC Card (32 bit)
+
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x123',
     ...                      vendor_name=intel_name)
@@ -144,6 +188,13 @@ The number must have four digits.
     Traceback (most recent call last):
     ...
     ValueError: '0x12345' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.PCCARD,
+    ...                      vendor_id='0x12345',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x12345' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0x12345',
@@ -160,6 +211,13 @@ Only hex digits are allowed.
     Traceback (most recent call last):
     ...
     ValueError: '0xblah' is not a valid vendor ID for PCI
+
+    >>> vendor_id_set.create(bus=HWBus.PCCARD,
+    ...                      vendor_id='0xblah',
+    ...                      vendor_name=intel_name)
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xblah' is not a valid vendor ID for PC Card (32 bit)
 
     >>> vendor_id_set.create(bus=HWBus.USB,
     ...                      vendor_id='0xblah',
@@ -255,6 +313,32 @@ Strings with less than eight characters are not allowed as SCSI vendor IDs...
     ...
     ValueError: '123456789' is not a valid vendor ID for SCSI
 
+HWVendorIDSet.getByBusAndVendorID() is used to look up a HWVendorID record.
+
+    >>> vendor_id = vendor_id_set.getByBusAndVendorID(bus=HWBus.PCI,
+    ...                                               vendor_id='0x8086')
+    >>> print vendor_id.bus.title
+    PCI
+    >>> print vendor_id.vendor_name.name
+    Intel
+
+If no record exists for the given bus and vendor ID,
+HWVendorIDSet.getByBusAndVendorID() returns None.
+
+    >>> vendor_id = vendor_id_set.getByBusAndVendorID(bus=HWBus.PCI,
+    ...                                               vendor_id='0xffff')
+    >>> print vendor_id
+    None
+
+HWVendorIDSet.getByBusAndVendorID() performs the same validity tests of
+the vendor ID as HWVendorSet.create(): The vendor ID passed to
+HWVendorIDSet.getByBusAndVendorID() must be a valid ID for the given bus.
+
+    >>> vendor_id_set.getByBusAndVendorID(bus=HWBus.PCI, vendor_id='8086')
+    Traceback (most recent call last):
+    ...
+    ValueError: '8086' is not a valid vendor ID for PCI
+
 
 == HWDevice ==
 
@@ -308,14 +392,21 @@ USB and PCI product IDs are 16 bit integers; SCSI IDs are strings
 with 16 characters. (Note that the IEEE1394 does _not_ define a product
 ID.)
 
-USB and PCI IDs are represented as strings with a four-digit hexadecimal
-number, prefixed by '0x'; the digits a..f must be lower cases characters.
-Other ID values raise a ValueError.
+USB, PCI and PCCard IDs are represented as strings with a four-digit
+hexadecimal number, prefixed by '0x'; the digits a..f must be lower
+cases characters. Other ID values raise a ValueError.
 
     >>> another_pci_product = device_set.create(bus=HWBus.PCI,
     ...                                         vendor_id='0x8086',
     ...                                         product_id='0xabcd',
     ...                                         product_name='A PCI card')
+    >>> print another_pci_product.bus_product_id
+    0xabcd
+
+    >>> another_pci_product = device_set.create(bus=HWBus.PCCARD,
+    ...                                         vendor_id='0x8086',
+    ...                                         product_id='0xabcd',
+    ...                                         product_name='A PC Card')
     >>> print another_pci_product.bus_product_id
     0xabcd
 
@@ -336,6 +427,14 @@ A..F is rejected.
     ...
     ValueError: '0xABCD' is not a valid product ID for PCI
 
+    >>> device_set.create(bus=HWBus.PCCARD,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0xABCD',
+    ...                   product_name='A PC Card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xABCD' is not a valid product ID for PC Card (32 bit)
+
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
     ...                   product_id='0xABCD',
@@ -353,6 +452,14 @@ The ID must have the prefix "0x".
     Traceback (most recent call last):
     ...
     ValueError: '1234' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.PCCARD,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='1234',
+    ...                   product_name='A PC Card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '1234' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -372,6 +479,14 @@ The number must have four digits.
     ...
     ValueError: '0x123' is not a valid product ID for PCI
 
+    >>> device_set.create(bus=HWBus.PCCARD,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0x123',
+    ...                   product_name='A PC Card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x123' is not a valid product ID for PC Card (32 bit)
+
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
     ...                   product_id='0x123',
@@ -387,6 +502,14 @@ The number must have four digits.
     Traceback (most recent call last):
     ...
     ValueError: '0x12345' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.PCCARD,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0x12345',
+    ...                   product_name='A PC Card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0x12345' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -405,6 +528,14 @@ Only hex digits are allowed.
     Traceback (most recent call last):
     ...
     ValueError: '0xblah' is not a valid product ID for PCI
+
+    >>> device_set.create(bus=HWBus.PCCARD,
+    ...                   vendor_id='0x8086',
+    ...                   product_id='0xblah',
+    ...                   product_name='A PC Card')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0xblah' is not a valid product ID for PC Card (32 bit)
 
     >>> device_set.create(bus=HWBus.USB,
     ...                   vendor_id='0x8086',
@@ -557,7 +688,7 @@ IntegrityError error.
     ...                                     product_name='some scanner')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwdevice__bus_vendor_id__bus_product_id__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -569,10 +700,118 @@ IntegrityError error.
     ...                                     product_name='OpticPro UT16')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwdevice__bus_vendor_id__bus_product_id__variant__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
+
+=== Retrieving HWDevice records ===
+
+Existing HWDevice records can be retrieved by calling
+HWDeviceSet.getByDeviceID()
+
+    >>> device = device_set.getByDeviceID(HWBus.USB, '0x07b3', '0x0017')
+    >>> print device.bus_vendor.bus.title
+    USB
+    >>> print device.bus_vendor.vendor_id_for_bus
+    0x07b3
+    >>> print device.bus_product_id
+    0x0017
+    >>> print device.name
+    some scanner
+
+The call to HWDeviceSet.getByDeviceID() above did not specify a product
+variant. In such a case, the record having variant==None is returned
+
+    >>> print device.variant
+    None
+
+If a variant name is given, we get the HWDevice record of that variant.
+
+    >>> device = device_set.getByDeviceID(HWBus.USB, '0x07b3', '0x0017',
+    ...                                   'OpticPro UT16')
+    >>> print device.bus_vendor.bus.title
+    USB
+    >>> print device.bus_vendor.vendor_id_for_bus
+    0x07b3
+    >>> print device.bus_product_id
+    0x0017
+    >>> print device.name
+    OpticPro UT16
+    >>> print device.variant
+    OpticPro UT16
+
+If the given parameters do not match any existing record, None is
+returned.
+
+    >>> print device_set.getByDeviceID(HWBus.PCI, '0x07b3', '0x0017',
+    ...                                'OpticPro UT16')
+    None
+    >>> print device_set.getByDeviceID(HWBus.USB, '0xffff', '0x0017',
+    ...                                'OpticPro UT16')
+    None
+    >>> print device_set.getByDeviceID(HWBus.PCI, '0x07b3', '0xffff',
+    ...                                'OpticPro UT16')
+    None
+    >>> print device_set.getByDeviceID(HWBus.PCI, '0x07b3', '0x0017',
+    ...                                'nonsense')
+    None
+
+The parameters vendor_id and product_id must be valid IDs for the
+given bus.
+
+    >>> device_set.getByDeviceID(HWBus.USB, '07b3', '0x0017')
+    Traceback (most recent call last):
+    ...
+    ValueError: '07b3' is not a valid vendor ID for USB
+
+    >>> device_set.getByDeviceID(HWBus.USB, '0x07b3', '0017')
+    Traceback (most recent call last):
+    ...
+    ValueError: '0017' is not a valid product ID for USB
+
+HWDeviceSet.getOrCreate() returns an existing record matching the given
+parameters or creates a new one, if no existing record matches.
+
+    >>> device2 = device_set.getOrCreate(bus=HWBus.USB,
+    ...                                  vendor_id='0x07b3',
+    ...                                  product_id='0x0017',
+    ...                                  product_name='OpticPro UT16',
+    ...                                  variant='OpticPro UT16')
+    >>> print device2.bus_vendor.bus.title
+    USB
+    >>> print device2.bus_vendor.vendor_id_for_bus
+    0x07b3
+    >>> print device2.bus_product_id
+    0x0017
+    >>> print device2.name
+    OpticPro UT16
+    >>> print device2.variant
+    OpticPro UT16
+    >>> print device2.id == device.id
+    True
+
+    >>> device3 = device_set.getByDeviceID(bus=HWBus.USB,
+    ...                                    vendor_id='0x07b3',
+    ...                                    product_id='0x0017',
+    ...                                    variant='Some other scanner')
+    >>> print device3
+    None
+    >>> device3 = device_set.getOrCreate(bus=HWBus.USB,
+    ...                                  vendor_id='0x07b3',
+    ...                                  product_id='0x0017',
+    ...                                  product_name='Some other scanner',
+    ...                                  variant='Some other scanner')
+    >>> print device3.bus_vendor.bus.title
+    USB
+    >>> print device3.bus_vendor.vendor_id_for_bus
+    0x07b3
+    >>> print device3.bus_product_id
+    0x0017
+    >>> print device3.name
+    Some other scanner
+    >>> print device3.variant
+    Some other scanner
 
 
 == HWDeviceNameVariant ==
@@ -614,7 +853,7 @@ IntegrityError error.
     ...                                               product_name='MD 1234')
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwdevicenamevariant__vendor_name__product_name__device__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -622,11 +861,11 @@ IntegrityError error.
 
 == HWDriver ==
 
-If a device is reported as having problems, then we are more 
+If a device is reported as having problems, then we are more
 interested in which drivers are involved rather than the fact that
-there are problems. The table HWDriver stores minimal data about 
+there are problems. The table HWDriver stores minimal data about
 drivers: its package name, the driver name itself and the driver's
-license. This data is linked to HWDevice records via the table 
+license. This data is linked to HWDevice records via the table
 HWDeviceDriverLink (see below).
 
 The driver is not in every case a kernel driver, it may also be for
@@ -679,7 +918,7 @@ The tuple (driver name, package name) must be unique.
     ...                            license=License.GNU_GPL_V2)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwdriver__package_name__name__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -689,10 +928,51 @@ The tuple (driver name, package name) must be unique.
     ...                            license=License.GNU_GPL_V2)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwdriver__name__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
+
+An IHWDriver record is retrieved by calling
+IHWDriverSet.getByPackageAndName().
+
+    >>> driver = driver_set.getByPackageAndName('linux-image-generic', 'usb')
+    >>> print driver.package_name
+    linux-image-generic
+    >>> print driver.name
+    usb
+
+    >>> driver = driver_set.getByPackageAndName(None, 'whatever')
+    >>> print driver.package_name
+    None
+    >>> print driver.name
+    whatever
+
+If no existing record matches the parameters of the
+IHWDriverSet.getByPackageAndName() call, None is returned.
+
+    >>> driver = driver_set.getByPackageAndName('nonsense', 'more nonsense')
+    >>> print driver
+    None
+
+IHWDriverSet.getOrCreate() returns an existing record matching
+the given parameters or creates a new one, if no existing record matches.
+
+    >>> driver = driver_set.getOrCreate('linux-image-generic', 'usb')
+    >>> print driver.package_name
+    linux-image-generic
+    >>> print driver.name
+    usb
+
+    >>> driver = driver_set.getByPackageAndName('linux-image-generic', 'foo')
+    >>> print driver
+    None
+    >>> driver = driver_set.getOrCreate('linux-image-generic', 'foo')
+    >>> print driver.name
+    foo
+    >>> print driver.package_name
+    linux-image-generic
+
 
 == HWDeviceDriverLink ==
 
@@ -778,7 +1058,7 @@ The tuple (device, driver) must be unique.
     ...                               driver=closed_driver)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwdevicedriverlink__device__driver__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
@@ -786,15 +1066,54 @@ The tuple (device, driver) must be unique.
     >>> device_driver_link_set.create(device=tuffbook_2600, driver=None)
     Traceback (most recent call last):
     ...
-    IntegrityError: ERROR:  duplicate key violates unique
+    IntegrityError: ERROR:  duplicate key... violates unique
     constraint "hwdevicedriverlink__device__key"
     ...
     >>> LaunchpadZopelessLayer.txn.abort()
 
+An IHWDeviceDriverLink record is retrieved by
+IHWDeviceDriverSet.getByDeviceAndDriver().
+
+    >>> link = device_driver_link_set.getByDeviceAndDriver(optic_pro_ut12,
+    ...                                                    closed_driver)
+    >>> print link.device.name
+    OpticPro UT12
+    >>> print link.driver.name
+    ut12
+
+If no record exists for the given tuple (device, driver),
+IHWDeviceDriverSet.getByDeviceAndDriver() returns None.
+
+    >>> link = device_driver_link_set.getByDeviceAndDriver(optic_pro_ut12,
+    ...                                                    ehci_hcd_driver)
+    >>> print link
+    None
+
+HWDeviceDriverLinkSet.getOrCreate() returns an existing record matching
+the given parameters or creates a new one, if no existing record matches.
+
+    >>> link = device_driver_link_set.getOrCreate(optic_pro_ut12,
+    ...                                           closed_driver)
+    >>> print link.device.name
+    OpticPro UT12
+    >>> print link.driver.name
+    ut12
+    >>> print link.id == link3.id
+    True
+    >>> link = device_driver_link_set.getByDeviceAndDriver(optic_pro_ut12,
+    ...                                                    None)
+    >>> print link
+    None
+    >>> link = device_driver_link_set.getOrCreate(optic_pro_ut12, None)
+    >>> print link.device.name
+    OpticPro UT12
+    >>> print link.driver
+    None
+
 
 == HWSubmissionDevice ==
 
-This table links devices listed in a submission to the 
+This table links devices listed in a submission to the
 HWDeviceDriverLink table. Additionally it links a device of a
 submission to its parent device, as modeled by HAL.
 
