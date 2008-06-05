@@ -1,20 +1,25 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+"""Buildd Slave tests.
 
-"""Buildd tests."""
+This file contains the follwoing tests:
+
+ * Basic authentication handling (used to download private sources);
+ * Build log sanitization (removal of passwords from private buildlog);
+ * Build log(tail) mechanisms (limited output from the end of the buildlog).
+
+"""
 
 __metaclass__ = type
-__all__ = ['BuildlogSecurityTests']
+
+__all__ = ['LaunchpadBuilddSlaveTests']
 
 import difflib
 import os
 import shutil
-import tempfile
 import urllib2
 import unittest
 
-from ConfigParser import SafeConfigParser
-
-from canonical.buildd.slave import BuildDSlave
+from canonical.buildd.ftests.harness import BuilddTestCase
 
 
 def read_file(path):
@@ -26,26 +31,8 @@ def read_file(path):
         file_object.close()
 
 
-class MockBuildManager(object):
-    """Mock BuildManager class."""
-    is_archive_private = False
-
-
-class BuildlogSecurityTests(unittest.TestCase):
-    """Unit tests for the buildd slave."""
-
-    def setUp(self):
-        self.here = os.path.abspath(os.path.dirname(__file__))
-        conffile = os.path.join(self.here, 'buildd-slave-test.conf')
-        conf = SafeConfigParser()
-        conf.read(conffile)
-        self.cache_path = tempfile.mkdtemp()
-        conf.set("slave", "filecache", self.cache_path)
-        self.slave = BuildDSlave(conf)
-
-    def tearDown(self):
-        if os.path.isdir(self.cache_path):
-            shutil.rmtree(self.cache_path)
+class LaunchpadBuilddSlaveTests(BuilddTestCase):
+    """Unit tests for scrubbing (removal of passwords) of buildlog files."""
 
     def testBasicAuth(self):
         """Test that the auth handler is installed with the right details."""
@@ -59,6 +46,9 @@ class BuildlogSecurityTests(unittest.TestCase):
         for handler in opener.handlers:
             if isinstance(handler, urllib2.HTTPBasicAuthHandler):
                 break
+        else:
+            self.fail("No open handler available.")
+
         password_mgr = handler.passwd
         stored_user, stored_pass = password_mgr.find_user_password(None, url)
         self.assertEqual(user, stored_user)
@@ -67,12 +57,11 @@ class BuildlogSecurityTests(unittest.TestCase):
     def testBuildlogScrubbing(self):
         """Tests the buildlog scrubbing (removal of passwords from URLs)."""
         # This is where the buildlog file lives.
-        log_path = os.path.join(self.cache_path, 'buildlog')
+        log_path = self.slave.cachePath('buildlog')
 
         # This is where the slave leaves the original/unsanitized
         # buildlog file after scrubbing.
-        unsanitized_path = os.path.join(self.cache_path,
-                                        'buildlog.unsanitized')
+        unsanitized_path = self.slave.cachePath('buildlog.unsanitized')
 
         # Copy the fake buildlog file to the cache path.
         shutil.copy(os.path.join(self.here, 'buildlog'), log_path)
@@ -98,19 +87,16 @@ class BuildlogSecurityTests(unittest.TestCase):
         """Test the scrubbing of the slave's getLogTail() output."""
 
         # This is where the buildlog file lives.
-        log_path = os.path.join(self.cache_path, 'buildlog')
+        log_path = self.slave.cachePath('buildlog')
 
         # Copy the prepared, longer buildlog file so we can test lines
         # that are chopped off in the middle.
         shutil.copy(os.path.join(self.here, 'buildlog.long'), log_path)
 
-        # Make slave believe that logging is turned on.
-        self.slave._log = tempfile.TemporaryFile()
-
         # First get the unfiltered log tail output (which is the default
         # behaviour because the BuildManager's 'is_archive_private'
         # property is initialized to False).
-        self.slave.manager = MockBuildManager()
+        self.slave.manager.is_archive_private = False
         unsanitized = self.slave.getLogTail().splitlines()
 
         # Make the slave believe we are building in a private archive to
@@ -126,6 +112,58 @@ class BuildlogSecurityTests(unittest.TestCase):
 
         # Finally make sure what we got is what we expected.
         self.assertEqual(differences, expected)
+
+    def testLogtail(self):
+        """Tests the logtail mechanisms.
+
+        'getLogTail' return up to 2 KiB text from the current 'buildlog' file.
+        """
+        self.makeLog(0)
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 0)
+
+        self.makeLog(1)
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 1)
+
+        self.makeLog(2048)
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 2048)
+
+        self.makeLog(2049)
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 2048)
+
+        self.makeLog(4096)
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 2048)
+
+
+    def testLogtalWhenLogFileVanishes(self):
+        """Slave.getLogTail doesn't get hurt if the logfile has vanished.
+
+        This is a common race-condition in our slaves, since they get
+        pooled all the time when they are building.
+
+        Sometimes the getLogTail calls coincides with the job-clean up, so
+        there is no buildlog to inspect and thus we expect a empty string
+        to be returned, instead of a explosion.
+        """
+        # Create some log content and read it.
+        self.makeLog(2048)
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 2048)
+
+        # Read it again for luck.
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 2048)
+
+        # Remove the buildlog file
+        os.remove(self.slave.cachePath('buildlog'))
+
+        # Instead of shocking the getLogTail call return an empty string.
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 0)
 
 
 def test_suite():

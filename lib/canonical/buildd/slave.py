@@ -366,24 +366,42 @@ class BuildDSlave(object):
         print "Build log: " + data
 
     def getLogTail(self):
-        """Return the tail of the log."""
-        ret = ""
-        if self._log is not None:
-            rlog = None
+        """Return the tail of the log.
+
+        If the builder is not logging (self._log is False) return a empty
+        string.
+
+        It safely tries to open the 'buildlog', if it doesn't exist, due to
+        job cleanup race-conditions, it also returns a empty string.
+
+        When the 'buildlog' is present it return up to 2 KiB character of
+        the end of the file.
+
+        The returned content will be 'sanitized', see `_sanitizeURLs` for
+        further information.
+        """
+        if self._log is None:
+            return ""
+
+        rlog = None
+        try:
             try:
-                try:
-                    rlog = open(self.cachePath("buildlog"), "r")
-                    rlog.seek(0, 2)
-                    count = rlog.tell()
-                    if count > 2048:
-                        count = 2048
-                    rlog.seek(-count, 2)
-                    ret = rlog.read(count)
-                except IOError: 
-                    ret = ""
-            finally:
-                if rlog is not None:
-                    rlog.close()
+                rlog = open(self.cachePath("buildlog"), "r")
+            except IOError:
+                ret = ""
+            else:
+                # We rely on good OS pratices that keep the file handler
+                # usable once it's oppened. So if open() is ok, subsequent
+                # seek/tell/read will be safe.
+                rlog.seek(0, 2)
+                count = rlog.tell()
+                if count > 2048:
+                    count = 2048
+                rlog.seek(-count, 2)
+                ret = rlog.read(count)
+        finally:
+            if rlog is not None:
+                rlog.close()
 
         if self.manager.is_archive_private:
             # This is a build in a private archive. We need to scrub
