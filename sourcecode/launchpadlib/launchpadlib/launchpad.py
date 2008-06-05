@@ -8,8 +8,12 @@ __all__ = [
     ]
 
 
+from urllib2 import HTTPError
+from urlparse import urljoin
+
 from launchpadlib._browser import Browser
 from launchpadlib.collection import Collection, Entry
+from launchpadlib.errors import UnexpectedResponseError
 from launchpadlib.person import People
 
 
@@ -55,3 +59,31 @@ class Launchpad:
         if self._bug_set_link is None:
             return None
         return _FakeBugCollection(self._browser, self._bug_set_link)
+
+    def create_team(self, name, display_name):
+        """Create a new team.
+
+        :param name: The name of the team
+        :type name: string
+        :param display_name: The 'display name' of the team
+        :type display_name: string
+        :return: the new team
+        :rtype: `Person`
+        :raises ResponseError: when an unexpected response occurred.
+        """
+        url = urljoin(self.SERVICE_ROOT + '/', 'people')
+        # If the team got created, a 201 status will be returned.  This is not
+        # caught by the default error handler so urllib2 turns this into an
+        # exception, even those it's the expected response.  When that
+        # happens, we dig the 'Location' header out of the exception headers
+        # and create a new Person instance with that base url.  If we get any
+        # other return code, we re-raise the exception.
+        try:
+            response = self._browser.post(
+                url, 'create_team', name=name, display_name=display_name)
+        except HTTPError, error:
+            if error.code == 201:
+                return self._browser.get(error.hdrs['location'])
+            raise
+        else:
+            raise UnexpectedResponseError(response)

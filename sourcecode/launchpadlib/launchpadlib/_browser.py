@@ -20,6 +20,7 @@ from launchpadlib._oauth.oauth import (
     OAuthRequest, OAuthSignatureMethod_PLAINTEXT)
 
 OAUTH_REALM = 'https://api.launchpad.net'
+JOINER = '&'
 
 
 class SocketClosingOnErrorHandler(urllib2.BaseHandler):
@@ -46,8 +47,8 @@ class Browser:
         self.credentials = credentials
         self._opener = urllib2.build_opener(SocketClosingOnErrorHandler)
 
-    def get(self, url):
-        """Get the resource at the requested url."""
+    def _request(self, url, data=None):
+        """Create an authenticated request object."""
         oauth_request = OAuthRequest.from_consumer_and_token(
             self.credentials.consumer,
             self.credentials.access_token,
@@ -62,13 +63,25 @@ class Browser:
             hostname, port = netloc.split(':', 1)
         else:
             hostname = netloc
-        full_headers = dict(Host=hostname)
-        full_headers.update(oauth_request.to_header(OAUTH_REALM))
+        headers = dict(Host=hostname)
+        headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
-        url_request = urllib2.Request(url, headers=full_headers)
-        f = self._opener.open(url_request)
+        request = urllib2.Request(url, data, headers)
+        f = self._opener.open(request)
         try:
             data = f.read()
         finally:
             f.close()
+        return data
+
+    def get(self, url):
+        """Get the resource at the requested url."""
+        data = self._request(url)
         return simplejson.loads(data)
+
+    def post(self, url, method_name, **kws):
+        """Post a request to the web service."""
+        kws['ws.op'] = method_name
+        data = JOINER.join('%s=%s' % (key, value)
+                           for key, value in kws.items())
+        return self._request(url, data)

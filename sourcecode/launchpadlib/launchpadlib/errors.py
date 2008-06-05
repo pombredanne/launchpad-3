@@ -7,6 +7,8 @@ __all__ = [
     'CredentialsError',
     'CredentialsFileError',
     'LaunchpadError',
+    'ResponseError',
+    'UnexpectedResponseError',
     ]
 
 
@@ -20,3 +22,11 @@ class CredentialsError(LaunchpadError):
 
 class CredentialsFileError(CredentialsError):
     """Error in credentials file."""
+
+
+class ResponseError(LaunchpadError):
+    """Error in response."""
+
+
+class UnexpectedResponseError(ResponseError):
+    """An unexpected response was received."""

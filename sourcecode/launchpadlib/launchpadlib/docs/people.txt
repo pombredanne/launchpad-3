@@ -1,4 +1,12 @@
-= People =
+= People and Teams =
+
+Just as with Launchpad, the web service exposes a uniform interface to people
+and teams.  In other words, people and teams occupy the same namespace.  You
+treat people and teams as the same type of object, and need to inspect the
+object to know whether you're dealing with a person or a team.
+
+
+== People ==
 
 You can access Launchpad people, and the set of all people, through the web
 service interface.  The set of people is available from the service root.
@@ -25,6 +33,8 @@ You can find a person by name.
     u'salgado'
     >>> salgado.display_name
     u'Guilherme Salgado'
+    >>> salgado.is_team
+    False
 
 You can iterate through all the people in the set.
 
@@ -52,3 +62,40 @@ But if no person by that name is registered, you get the expected KeyError...
     None
     >>> launchpad.people.get('not-a-registered-person', 'missing')
     'missing'
+
+
+== Teams ==
+
+You also access teams using the same interface.
+
+    >>> team = launchpad.people['ubuntu-team']
+    >>> team.name
+    u'ubuntu-team'
+    >>> team.display_name
+    u'Ubuntu Team'
+    >>> team.is_team
+    True
+
+You can create a new team through the web interface.  The simplest case of
+this requires only the new team's name, owner and display name.
+
+    >>> launchpad.people['guitarists']
+    Traceback (most recent call last):
+    ...
+    KeyError: 'guitarists'
+
+    >>> launchpad.create_team(
+    ...     'guitarists', 'Awesome Rock Guitar Gods')
+    >>> guitarists.name
+    u'guitarists'
+    >>> guitarists.display_name
+    u'Awesome Rock Guitar Gods'
+    >>> guitarists.owner.name
+    u'salgado'
+
+You cannot create the same team twice.
+
+    >>> launchpad.create_team('guitarists', '')
+    Traceback (most recent call last):
+    ...
+    XXX
