@@ -144,7 +144,7 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers)
 
-    def named_post(self, path, operation_name, headers=None, **kwargs):
+    def named_post(self, path, operation_name, headers, **kwargs):
         kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, value)
                          for key, value in kwargs.items()])
