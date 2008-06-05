@@ -48,9 +48,8 @@ class XMLValidator:
         xml_file = NamedTemporaryFile()
         xml_file.write(xml)
         xml_file.flush()
-        command = 'xmllint -noout -%s %s %s'% (self.SCHEMA_ARGUMENT,
-                                               self.schema_filename,
-                                               xml_file.name)
+        command = ['xmllint', '--noout', '--%s' % self.SCHEMA_ARGUMENT,
+                   self.schema_filename, xml_file.name]
         result = simple_popen2(command, '').strip()
 
         # The output consists of lines describing possible errors; the
