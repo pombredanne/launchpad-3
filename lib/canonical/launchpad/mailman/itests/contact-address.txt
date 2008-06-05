@@ -127,8 +127,8 @@ Here is the message to Anne, a member of the mailing list.
     Reply-To: question...@answers.launchpad.net
     List-Id: <itest-one.lists.launchpad.dev>
     List-Help: <http://help.launchpad.dev/ListHelp>
-    List-Subscribe: <http://launchpad.dev/people/+me/+editemails>
-    List-Unsubscribe: <http://launchpad.dev/people/+me/+editemails>
+    List-Subscribe: <http://launchpad.dev/~itest-one>
+    List-Unsubscribe: <http://launchpad.dev/~itest-one>
     List-Post: <mailto:itest-one@lists.launchpad.dev>
     List-Archive: <http://lists.launchpad.dev/itest-one>
     List-Owner: <http://launchpad.dev/~itest-one>
@@ -149,7 +149,7 @@ Here is the message to Anne, a member of the mailing list.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -202,7 +202,7 @@ This one gets sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -229,7 +229,7 @@ This one gets sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -352,7 +352,7 @@ address both get copies of the message.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -372,7 +372,7 @@ address both get copies of the message.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>

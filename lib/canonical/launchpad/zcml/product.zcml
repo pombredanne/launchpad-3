@@ -593,6 +593,15 @@
     />
 
   <browser:page
+    name="+new-guided"
+    for="canonical.launchpad.interfaces.IProductSet"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/product-new-guided.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IProduct"
     name="+shortlink"
     permission="zope.Public"
