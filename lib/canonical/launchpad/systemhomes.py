@@ -112,7 +112,7 @@ class MaloneApplication:
             user=user, orderBy='-datecreated', limit=5)
 
     def default_bug_list(self):
-        return getUtility(IBugSet).searchAsUser(None)
+        return getUtility(IBugSet).searchAsUser(getUtility(ILaunchBag).user)
 
 
 class BazaarApplication:
