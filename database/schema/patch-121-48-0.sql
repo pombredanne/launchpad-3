@@ -74,7 +74,9 @@ ALTER TABLE Person
     DROP COLUMN openid_identifier,
     DROP COLUMN password,
     -- account FK constraint will go with replication
-    ADD COLUMN account integer REFERENCES Account ON DELETE SET NULL;
+    ADD COLUMN account integer REFERENCES Account ON DELETE SET NULL,
+    ADD CONSTRAINT teams_have_no_account CHECK (
+        account IS NULL OR teamowner IS NULL);
 
     -- This index for EmailAddress foreign key constraint, ensuring
     -- all EmailAddresses for a given Account reference the same Person.

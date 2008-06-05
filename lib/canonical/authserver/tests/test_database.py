@@ -253,7 +253,7 @@ class UserDetailsStorageTest(DatabaseTest):
                 (SELECT account FROM EmailAddress
                 WHERE email='justdave@bugzilla.org'), %s
                 )
-            """, (ssha,))
+            """ % sqlvalues(ssha))
         userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
@@ -275,8 +275,7 @@ class UserDetailsStorageTest(DatabaseTest):
             "  1, "
             "  '%s', "
             "  2)"  # 2 == Validated
-            % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
-        )
+            % sqlvalues(u'm\xe3rk@hbd.com'))
         userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
         goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
         self.assertEqual(goodDict, userDict)

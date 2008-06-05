@@ -7,16 +7,78 @@ from reviewers noticing and prompting developers to update this script.
 See Bug #120506 for more details.
 
 
->>> import os.path, subprocess
+Get Mark's account and person entries.
+>>> from canonical.launchpad.interfaces.account import IAccountSet
+>>> from canonical.launchpad.interfaces.person import IPersonSet
+>>> from zope.security.proxy import removeSecurityProxy
+>>> mark_person = getUtility(IPersonSet).getByEmail('mark@hbd.com')
+>>> mark_account = removeSecurityProxy(mark_person.account)
+
+
+Mark's account is active and contains personal information.
+
+>>> print mark_account.status.name
+ACTIVE
+>>> print mark_account.displayname
+Mark Shuttleworth
+>>> print mark_person.name
+sabdfl
+>>> print mark_person.displayname
+Mark Shuttleworth
+
+
+Store the id's so we can retrieve the records later.
+
+>>> mark_person_id = mark_person.id
+>>> mark_account_id = mark_account.id
+
+
+Lets close his account.
+
+>>> import os.path
 >>> from canonical.config import config
+>>> from canonical.launchpad.ftests.script import run_script
 >>> script = os.path.join(config.root, 'scripts', 'close-account.py')
->>> proc = subprocess.Popen(
-...     [script, 'mark@hbd.com'],
-...     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
->>> out, err = proc.communicate()
+>>> (result, out, err) = run_script(script, args=['mark@hbd.com'])
+>>> print result
+0
 >>> print out
+>>> print err
 INFO...Closing sabdfl's account
+
+
+Now, start a new transaction so we can see the changes the script made.
+
+>>> from canonical.testing.layers import LaunchpadZopelessLayer
+>>> LaunchpadZopelessLayer.abort()
+
+
+We can't just set the account to DEACTIVATED, as the close-account.py
+script is used to satisty people who insist on us removing all their
+personal details from our system. The Account has been removed entirely.
+
+>>> from canonical.launchpad.database.account import Account
+>>> Account.get(mark_account_id)
+Traceback (most recent call last):
+...
+SQLObjectNotFound: ...
+
+
+The Person record still exists to maintain links with information that won't
+be removed, such as bug comments, but has been anonymized.
+
+>>> from canonical.launchpad.database.person import Person
+>>> mark_person = Person.get(mark_person_id)
+>>> print mark_person.name
+removed...
+>>> print mark_person.displayname
+Removed by request
+
+
+Flag the database as dirty since it has been modified without the test suite
+knowing.
 
 >>> from canonical.testing import DatabaseLayer
 >>> DatabaseLayer.force_dirty_database()
+
 

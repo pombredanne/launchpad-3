@@ -324,6 +324,10 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
     'Trigger maintaining the PillarName table';
 
 
+-- XXX StuartBishop 20080605 bug=237576: The stored procedures
+-- maintaining the ValidPersonOrTeamCache materialized view can go
+-- once we have made a new baseline. They only still exist to stop the
+-- dev database build procedure from breaking.
 CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
 LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
     # This trigger function could be simplified by simply issuing
