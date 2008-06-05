@@ -126,12 +126,17 @@ removal_comment argument.
 
 Inspecting the modified record shows it's ready for domination:
 
+    >>> transaction_timestamp = get_transaction_timestamp()
+
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
-    >>> modified_spph.datesuperseded
-    datetime.datetime(...)
+
+    >>> modified_spph.datesuperseded == transaction_timestamp
+    True
+
     >>> print modified_spph.removed_by.name
     sabdfl
+
     >>> print modified_spph.removal_comment
     testing deletion
 
@@ -145,8 +150,9 @@ pockets for stable distroseries):
 
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.OBSOLETE, (5) Obsolete>
-    >>> modified_spph.scheduleddeletiondate
-    datetime.datetime(...)
+
+    >>> modified_spph.scheduleddeletiondate == transaction_timestamp
+    True
 
 
 == Copying and published binarypackages lookup ==

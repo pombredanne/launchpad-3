@@ -169,17 +169,21 @@ the transaction when that flag is set.
 Look at the results of our actions. Two packages removed (one source
 and one binary) and the date removed properly set up:
 
+  >>> transaction_timestamp = get_transaction_timestamp()
+
   >>> source_publishing_record = SSPPH.get(15)
   >>> source_publishing_record.status.name
   'DELETED'
-  >>> source_publishing_record.dateremoved
-  datetime.datetime(...)
+
+  >>> source_publishing_record.dateremoved == transaction_timestamp
+  True
 
   >>> binary_publishing_record = SBPPH.get(17)
   >>> binary_publishing_record.status.name
   'SUPERSEDED'
-  >>> binary_publishing_record.dateremoved
-  datetime.datetime(...)
+
+  >>> binary_publishing_record.dateremoved == transaction_timestamp
+  True
 
 Source publication 20 (has a future 'scheduled deletion date') and
 binary publication 19 (file hold by another active publication), of

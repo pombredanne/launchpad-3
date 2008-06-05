@@ -138,10 +138,12 @@ Verify if the job (BuildQueue) was updated appropriately:
 
     >>> job.builder.id == bob_builder.id
     True
+
     >>> job.build.buildstate.name
     'BUILDING'
-    >>> job.buildstart
-    datetime.datetime(...)
+
+    >>> job.buildstart == get_transaction_timestamp()
+    True
 
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
@@ -243,10 +245,12 @@ PPA job is building.
 
     >>> ppa_job.builder.name
     u'bob'
+
     >>> ppa_job.build.buildstate.name
     'BUILDING'
-    >>> ppa_job.buildstart
-    datetime.datetime(...)
+
+    >>> ppa_job.buildstart == get_transaction_timestamp()
+    True
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
 buildqueue record and make 'bob' builder non-virtual again,  so the

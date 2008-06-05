@@ -21,7 +21,7 @@ Let's get one from the database:
    >>> spr.version
    u'0.9'
    >>> spr.dateuploaded
-   datetime.datetime(...)
+   datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>)
 
 published_archives returns a set of all the archives that this
 SourcePackageRelease is published in.

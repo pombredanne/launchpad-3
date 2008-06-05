@@ -23,7 +23,8 @@ from zope.testing.loggingsupport import Handler
 
 from canonical.chunkydiff import elided_source
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import (
+    flush_database_updates, get_transaction_timestamp)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
@@ -175,6 +176,7 @@ def setGlobs(test):
     test.globs['flush_database_updates'] = flush_database_updates
     test.globs['create_view'] = create_view
     test.globs['LaunchpadObjectFactory'] = LaunchpadObjectFactory
+    test.globs['get_transaction_timestamp'] = get_transaction_timestamp
 
 
 def setUp(test):
