@@ -66,6 +66,7 @@ from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 
+from canonical import pidfile
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
@@ -77,6 +78,7 @@ from canonical.launchpad.testing.tests.googleserviceharness import (
     GoogleServiceTestSetup)
 from canonical.launchpad.webapp.servers import (
     LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+from canonical.lazr.config import ImplicitTypeSchema
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
@@ -1153,6 +1155,23 @@ class AppServerLayer(LaunchpadLayer):
     @classmethod
     @profiled
     def setUp(cls):
+        cls.stopAllServices()
+        # Get the child process's pid file.
+        path = os.path.join(config.root, 'configs', cls.LPCONFIG,
+                            'launchpad-lazr.conf')
+        schema = ImplicitTypeSchema(config.schema.filename)
+        child_config = schema.load(path)
+        # lazr.config doesn't set this attribute.
+        child_config.instance_name = cls.LPCONFIG
+        pid = pidfile.get_pid('launchpad', child_config)
+        if pid is not None:
+            # Don't worry if the process no longer exists.
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except OSError, error:
+                if error.errno != errno.ESRCH:
+                    raise
+            pidfile.remove_pidfile('launchpad', child_config)
         pid = os.fork()
         if pid == 0:
             # The child.

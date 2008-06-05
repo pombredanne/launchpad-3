@@ -54,6 +54,7 @@
       <h3>Changelog</h3>
         <tal:changelog
            replace="structure context/sourcepackagerelease/@@+changelog"/>
+      <tal:diffs replace="structure context/sourcepackagerelease/@@+diffs" />
       <h3>Builds</h3>
       <ul style="margin-top: 0; margin-bottom: 0">
         <li tal:repeat="build view/builds">
