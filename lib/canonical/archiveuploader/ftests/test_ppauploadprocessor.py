@@ -23,7 +23,9 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet, NotFoundError, PackageUploadStatus,
-    PackagePublishingStatus, PackagePublishingPocket)
+    PackagePublishingStatus, PackagePublishingPocket,
+    NonBuildableSourceUploadError)
+from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.launchpad.mail import stub
 
@@ -448,6 +450,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
          * The modified PPA is found by getPendingPublicationPPA() lookup.
         """
         hoary = self.ubuntu['hoary']
+        fake_chroot = self.addMockFile('fake_chroot.tar.gz')
+        hoary['i386'].addOrUpdateChroot(fake_chroot)
 
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")
@@ -859,6 +863,43 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         for binary in build.build.binarypackages:
             self.assertTrue(
                 binary.component not in self.breezy.upload_components)
+
+    def testPPAUploadResultingInNoBuilds(self):
+        """Source uploads resulting in no builds are rejected.
+
+        If a PPA source upload results in no builds, it will be rejected.
+
+        It usually happens for sources targeted to architectures not
+        supported in the PPA subsystem.
+
+        This way we don't create false expectations accepting sources that
+        won't be ever built.
+        """
+        # First upload gets in because breezy/i386 is supported in PPA.
+        packager = FakePackager(
+            'biscuit', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+        packager.buildUpstream(suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        biscuit_pub = packager.uploadSourceVersion(
+            '1.0-1', archive=self.name16.archive)
+        self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
+
+        # Remove breezy/i386 PPA support.
+        self.breezy['i386'].supports_virtualized = False
+        self.layer.commit()
+
+        # Next version can't be accepted because it can't be built.
+        packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
+        packager.buildSource()
+        upload = packager.uploadSourceVersion(
+            '1.0-2', archive=self.name16.archive, auto_accept=False)
+
+        error = self.assertRaisesAndReturnError(
+            NonBuildableSourceUploadError,
+            upload.storeObjectsInDatabase)
+        self.assertEqual(
+            str(error),
+            "Cannot build any of the architectures requested: i386")
 
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):

@@ -130,8 +130,14 @@ class PackageDiff(SQLBase):
     @property
     def title(self):
         """See `IPackageDiff`."""
-        return 'Package diff from %s to %s' % (
-            self.from_source.title, self.to_source.title)
+        ancestry_archive = self.from_source.upload_archive
+        if ancestry_archive == self.to_source.upload_archive:
+            ancestry_identifier = self.from_source.version
+        else:
+            ancestry_identifier = "%s (in %s)" % (
+                self.from_source.version,
+                ancestry_archive.distribution.name.capitalize())
+        return '%s to %s' % (ancestry_identifier, self.to_source.version)
 
     def performDiff(self):
         """See `IPackageDiff`.
@@ -175,10 +181,9 @@ class PackageDiff(SQLBase):
 
             # All downloads are done. Construct the name of the resulting
             # diff file.
-            result_filename = '%s-%s.%s-%s.diff' % (
+            result_filename = '%s_%s_%s.diff' % (
                 self.from_source.sourcepackagename.name,
                 self.from_source.version,
-                self.to_source.sourcepackagename.name,
                 self.to_source.version)
 
             # Perform the actual diff operation.

@@ -449,29 +449,6 @@ application/json.
     WebServiceClientRequest
     WebServicePublication
 
-XXX: We don't want to expose the web service until it's ready, so
-we've defined a config variable which controls its availability. This
-test will go away when we decide to deploy the web service on
-production. -- Leonard Richardson 2008-01-04
-(https://launchpad.net/launchpad/+spec/api-bugs-remote)
-
-    >>> from canonical.config import config
-    >>> config.vhosts.expose_webservice
-    True
-
-    >>> from textwrap import dedent
-    >>> test_data = dedent("""
-    ...     [vhosts]
-    ...     expose_webservice: false
-    ...     """)
-    >>> config.push('test', test_data)
-
-    >>> print_request_and_publication('api.launchpad.dev', method='GET')
-    ProtocolErrorRequest
-    ProtocolErrorPublication: status=404
-
-    >>> test_config_data = config.pop('test')
-
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
 
@@ -697,6 +674,15 @@ the pageid.
 
     >>> view.__name__ = '+test'
     >>> publication.callObject(request, view)
+    u'Result'
+    >>> print request._orig_env['launchpad.pageid']
+    TestContext:+test
+
+Views registered through ZCML using the attribute property, are really a
+bounded method. These views have the same pageid as their class.
+
+    >>> del request._orig_env['launchpad.pageid']
+    >>> publication.callObject(request, view.__call__)
     u'Result'
     >>> print request._orig_env['launchpad.pageid']
     TestContext:+test
