@@ -312,12 +312,12 @@ class LookupTree(treelookup.LookupTree):
         for elems in self.flatten():
             path, result = elems[:-1], elems[-1]
             columns = []
-            for keys in path:
-                if len(keys) == 0: # Default
+            for branch in path:
+                if branch.is_default:
                     columns.append("* (''any'')")
                 else:
                     columns.append(
-                        " '''or''' ".join(str(key) for key in keys))
+                        " '''or''' ".join(str(key) for key in branch.keys))
             columns.extend(["- (''ignored'')"] * (max_depth - len(path)))
             columns.append(result.title)
             if last_columns is None:
