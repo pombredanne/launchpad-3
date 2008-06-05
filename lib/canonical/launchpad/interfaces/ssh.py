@@ -42,6 +42,7 @@ class ISSHKey(Interface):
     """SSH public key"""
     id = Int(title=_("Database ID"), required=True, readonly=True)
     person = Int(title=_("Owner"), required=True, readonly=True)
+    personID = Int(title=_('Owner ID'), required=True, readonly=True)
     keytype = Choice(title=_("Key type"), required=True, vocabulary=SSHKeyType)
     keytext = TextLine(title=_("Key text"), required=True)
     comment = TextLine(title=_("Comment describing this key"), required=True)
@@ -61,4 +62,7 @@ class ISSHKeySet(Interface):
 
         Return the given default if there's now object with the given id.
         """
+
+    def getByPeople(people):
+        """Return SSHKey object associated to the people provided."""
 
