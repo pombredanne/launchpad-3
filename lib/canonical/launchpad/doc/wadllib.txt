@@ -4,6 +4,17 @@ wadllib is a soon-to-be-open-source library for relating a web
 service's resources to WADL files. Its code is currently kept in
 Launchpad.
 
+    >>> import os
+    >>> launchpad_root = os.path.dirname(__file__) + '/../../../../'
+    >>> os.listdir(os.path.join(launchpad_root, 'sourcecode'))
+
+    'Debugging test--this will fail.'
+    >>> os.listdir(os.path.join(launchpad_root, 'lib'))
+    'Debugging test--this will fail.'
+    >>> os.listdir(os.path.join(launchpad_root, 'lib/wadllib'))
+    'Debugging test--this will fail.'
+    >>> os.listdir(os.path.join(launchpad_root, 'opensource'))
+    'Debugging test--this will fail.'
     >>> import wadllib
     >>> wadllib.__version__
     '0.1'
