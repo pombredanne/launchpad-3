@@ -1,5 +1,4 @@
-Distribution Source Packages
-============================
+= Distribution Source Packages =
 
 A distribution source package represents a named source package in a
 distribution, independant of any particular release of that source
@@ -9,44 +8,37 @@ This is useful for, among other things, tracking bugs in source
 packages, ensuring that bug reports automatically carry forward from one
 distribution series to the next.
 
-Fetching a Distribution Source Package
-======================================
+== Fetching a Distribution Source Package ==
 
 A common way to fetch a distribution source package is to start with the
 distribution object:
 
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IDistributionSourcePackage)
-
     >>> debian = getUtility(IDistributionSet).getByName("debian")
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
 
-Call IDistribution.getSourcePackage to get a specific package by name:
+Use IDistribution.getSourcePackage to get a specific package by name:
 
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
     >>> debian_firefox.name
     u'mozilla-firefox'
+    >>> IDistributionSourcePackage.providedBy(debian_firefox)
+    True
+    >>> verifyObject(IDistributionSourcePackage, debian_firefox)
+    True
 
-Test more advanced features of IDistributionSourcePackage:
+== Useful features ==
 
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> dsp = ubuntu.getSourcePackage("pmount")
-    >>> IDistributionSourcePackage.providedBy(dsp)
-    True
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> verifyObject(IDistributionSourcePackage, dsp)
-    True
-
-Useful properties:
-
     >>> dsp.displayname
     u'pmount in ubuntu'
+    >>> dsp.bugtasks().count()
+    0
 
-List of current 'pmount in Ubuntu' as ISourcePackage:
-
-    >>> [(sp.name, sp.distroseries.name)
-    ...     for sp in dsp.get_distroseries_packages()]
-    [(u'pmount', u'hoary')]
+=== Publishing-related properties ===
 
 Publishing history of 'pmount in Ubuntu':
 
@@ -64,6 +56,41 @@ Current publishing records for 'pmount in Ubuntu':
     ...                     p.sourcepackagerelease.version,
     ...                     p.distroseries.name))
     pmount 0.1-2 hoary
+
+Current overall publications:
+
+    >>> alsa_utils = ubuntu.getSourcePackage("alsa-utils")
+    >>> pub = alsa_utils.latest_overall_publication
+    >>> (pub.sourcepackagerelease.sourcepackagename.name,
+    ...  pub.sourcepackagerelease.version,
+    ...  pub.distroseries.name,
+    ...  pub.status)
+    (u'alsa-utils',
+     u'1.0.9a-4ubuntu1',
+     u'hoary',
+     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
+    >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
+    >>> pub = linux_source.latest_overall_publication
+    >>> (pub.sourcepackagerelease.sourcepackagename.name,
+    ...  pub.sourcepackagerelease.version,
+    ...  pub.distroseries.name,
+    ...  pub.status)
+    (u'linux-source-2.6.15',
+     u'2.6.15.3',
+     u'hoary',
+     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
+    >>> commercial = ubuntu.getSourcePackage("commercialpackage")
+    >>> pub = linux_source.latest_overall_publication
+    >>> (pub.sourcepackagerelease.sourcepackagename.name,
+    ...  pub.sourcepackagerelease.version,
+    ...  pub.distroseries.name,
+    ...  pub.status)
+    (u'linux-source-2.6.15',
+     u'2.6.15.3',
+     u'hoary',
+     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
+
+=== Release-related properties ===
 
 Releases of 'pmount in Ubuntu':
 
@@ -91,13 +118,18 @@ Check if 'currentrelease' works with version containing letters
     >>> dsp3.currentrelease.version
     u'cr.g7-37'
 
-Useful methods:
+=== Grabbing DSPRs ===
 
-    >>> dsp.bugtasks().count()
-    0
+To list the current 'pmount in Ubuntu' ISourcePackages, use
+get_distroseries_packages():
 
-Retrieve a version of 'pmount in Ubuntu' as a
-IDistributionSourcePackageRelease (IDSPR) or None if not found:
+    >>> [(sp.name, sp.distroseries.name)
+    ...     for sp in dsp.get_distroseries_packages()]
+    [(u'pmount', u'hoary')]
+
+To retrieve a version of 'pmount in Ubuntu' as an
+IDistributionSourcePackageRelease (IDSPR) or None if not found, use
+getVersion():
 
     >>> dsp.getVersion('1.0') is None
     True
@@ -110,7 +142,7 @@ IDistributionSourcePackageRelease (IDSPR) or None if not found:
     ...     print pub.distroseries.name, pub.status.name
     hoary SUPERSEDED
 
-'getVersion' also return IDSPRs for REMOVED version which allows
+'getVersion' also returns IDSPRs for REMOVED versions which allows
 developers to investigate history of files already removed from the
 archive (bug #60440):
 
@@ -124,3 +156,4 @@ archive (bug #60440):
     ...     is_removed = pub.dateremoved is not None
     ...     print pub.distroseries.name, pub.status.name, is_removed
     breezy-autotest DELETED True
+
