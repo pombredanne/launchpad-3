@@ -36,7 +36,7 @@
 
   <div class="queue_list" tal:condition="not: error">
 
-    <tal:batch define="batch view/batchnav/currentBatch|nothing">
+    <tal:batch define="batch view/decoratedQueueBatch|nothing">
 
     <form name="queue_items_state" action="" method="GET">
 
@@ -237,8 +237,12 @@
     </tal:source>
 
     <tal:build repeat="queuebuild packageupload/builds">
-      <tal:binary repeat="binary queuebuild/build/binarypackages">
-        <tr tal:repeat="file binary/files"
+      <tal:binary repeat="binary python:list(queuebuild.build.binarypackages)">
+        <tal:define define="is_new binary/is_new;
+                            component_name binary/component/name/lower;
+                            section_name binary/section/name/lower;
+                            version binary/version">
+        <tr tal:repeat="file python:list(binary.files)"
             tal:attributes="class string:${filelist_class}"
             style="display:none">
           <td/>
@@ -248,19 +252,19 @@
               <tal:filename content="file/libraryfile/filename"/>
             </a>
             (<tal:size replace="file/libraryfile/content/filesize/fmt:bytes" />)
-            <span style="color: red" tal:condition="binary/is_new">NEW</span>
+            <span style="color: red" tal:condition="is_new">NEW</span>
           </td>
-          <td tal:content="binary/version"/>
-          <td tal:content="binary/component/name/lower"/>
-          <td tal:content="binary/section/name/lower"/>
+          <td tal:content="version"/>
+          <td tal:content="component_name"/>
+          <td tal:content="section_name"/>
           <td tal:content="binary/priority/name/lower"/>
           <td colspan="2"/>
         </tr>
+        </tal:define>
       </tal:binary>
     </tal:build>
 
-    <tal:custom define="customfiles packageupload/customfiles"
-                condition="customfiles">
+    <tal:custom define="customfiles packageupload/customfiles">
       <tr tal:repeat="custom customfiles"
           tal:attributes="class string:${filelist_class}"
           style="display:none">

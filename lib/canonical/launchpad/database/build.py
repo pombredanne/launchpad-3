@@ -152,8 +152,13 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See `IBuild`."""
-        bpklist = BinaryPackageRelease.selectBy(build=self, orderBy=['id'])
-        return sorted(bpklist, key=lambda a: a.binarypackagename.name)
+        return BinaryPackageRelease.select("""
+            BinaryPackageRelease.build = %s AND
+            BinaryPackageRelease.binarypackagename = BinaryPackageName.id
+            """ % sqlvalues(self),
+            clauseTables=["BinaryPackageName"],
+            orderBy=["BinaryPackageName.name", "BinaryPackageRelease.id"],
+            prejoins=["binarypackagename", "component", "section"])
 
     @property
     def distroarchseriesbinarypackages(self):

@@ -11,15 +11,21 @@ __all__ = [
 import operator
 
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IArchivePermissionSet, IComponentSet, IHasQueueItems, IPackageUploadSet,
-    ISectionSet, NotFoundError, PackagePublishingPriority,
-    QueueInconsistentStateError, UnexpectedFormData, PackageUploadStatus)
+    IArchivePermissionSet, IComponentSet, IHasQueueItems,
+    IPackageUpload, IPackageUploadSet, ISectionSet, NotFoundError,
+    PackagePublishingPriority, QueueInconsistentStateError,
+    UnexpectedFormData, PackageUploadStatus)
+from canonical.launchpad.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseSet)
 from canonical.launchpad.scripts.queue import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+
+from canonical.lazr import decorates
 
 QUEUE_SIZE = 30
 
@@ -81,6 +87,18 @@ class QueueItemsView(LaunchpadView):
             status=self.state, name=self.name_filter)
         self.batchnav = BatchNavigator(queue_items, self.request,
                                        size=QUEUE_SIZE)
+
+    def decoratedQueueBatch(self):
+        """Return the current batch, converted to decorated objects.
+
+        Each batch item, a PackageUpload, is converted to a
+        PackageUploadWithSourcesBuildsAndPackages.
+        """
+        if not self.batchnav.currentBatch:
+            return None
+
+        return [PackageUploadWithSourcesBuildsAndPackages(item)
+                for item in self.batchnav.currentBatch()]
 
     def availableActions(self):
         """Return the available actions according to the selected queue state.
@@ -258,3 +276,38 @@ class QueueItemsView(LaunchpadView):
     def priorities(self):
         """An iterable of priorities from PackagePublishingPriority."""
         return (priority for priority in PackagePublishingPriority)
+
+
+class PackageUploadWithSourcesBuildsAndPackages:
+    "A decorated `PackageUpload` including sources, builds and packages."""
+    sources = None
+    builds = None
+    customfiles = None
+    contains_source = None
+    contains_build = None
+    decorates(IPackageUpload)
+
+    def __init__(self, packageupload):
+        self.context = packageupload
+        self.sources = list(packageupload.sources)
+        self.contains_source = len(self.sources) > 0
+        self.builds = list(packageupload.builds)
+        self.contains_build = len(self.builds) > 0
+        self.customfiles = list(packageupload.customfiles)
+        self.package_dict = {}
+
+       # if self.contains_build:
+       #     # Get all the binary packages for this upload, in one go.
+       #     build_ids = [build.id for build in self.builds]
+       #     binarypackages = getUtility(
+       #         IBinaryPackageReleaseSet).getByBuildIDs(build_ids)
+       #     for binarypackage in binarypackages:
+       #         # Make a dictionary where the build is the key and the
+       #         # value is a list of binary packages.
+       #         build_id = binarypackage.build.id
+       #         if build_id not in self.package_dict:
+       #             self.package_dict[build_id] = []
+       #         self.package_dict[build_id].append(binarypackage)
+       #     self.packages = []
+       #     for (k,v) in self.package_dict.items():
+       #         self.packages.append(v)
