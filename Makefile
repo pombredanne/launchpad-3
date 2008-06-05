@@ -100,6 +100,7 @@ check_storm: build
 	  --module canonical.launchpad.pagetests \
 	  --module canonical.launchpad.webapp \
 	  --module canonical.authserver \
+	  --module canonical.config \
 	  --module canonical.database \
 	  --module canonical.ftests \
 	  --module canonical.lazr \
