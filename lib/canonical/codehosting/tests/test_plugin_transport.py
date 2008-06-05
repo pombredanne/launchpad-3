@@ -18,7 +18,8 @@ from bzrlib.transport import (
     get_transport, _get_protocol_handlers, register_transport, Server,
     unregister_transport)
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase as BzrTestCase, TestCaseInTempDir
+from bzrlib.tests import (
+    TestCase as BzrTestCase, TestCaseInTempDir, TestCaseWithTransport)
 from bzrlib.urlutils import escape, local_path_to_url
 
 from twisted.internet import defer
@@ -603,29 +604,6 @@ class LaunchpadTransportTests:
             errors.PermissionDenied, message,
             transport.mkdir, '~testuser/thunderbird/explode!')
 
-    def lockBranch(self, unique_name):
-        """Simulate locking a branch."""
-        transport = get_transport(self.server.get_url() + unique_name)
-        transport = transport.clone('.bzr/branch/lock')
-        transport.mkdir('temporary')
-        # It's this line that actually locks the branch.
-        transport.rename('temporary', 'held')
-
-    def unlockBranch(self, unique_name):
-        """Simulate unlocking a branch."""
-        transport = get_transport(self.server.get_url() + unique_name)
-        transport = transport.clone('.bzr/branch/lock')
-        # Actually unlock the branch.
-        transport.rename('held', 'temporary')
-        transport.rmdir('temporary')
-
-    def test_unlock_requests_mirror(self):
-        # Unlocking a branch requests a mirror.
-        self.lockBranch('~testuser/firefox/baz')
-        self.unlockBranch('~testuser/firefox/baz')
-        self.assertEqual(
-            [(self.user_id, 1)], self.authserver._request_mirror_log)
-
     def test_rmdir(self):
         transport = self.getTransport()
         self.assertFiresFailure(
@@ -670,6 +648,41 @@ class TestLaunchpadTransportAsync(LaunchpadTransportTests, TrialTestCase):
     def getTransport(self):
         url = self.server.get_url()
         return AsyncLaunchpadTransport(self.server, url)
+
+
+class TestRequestMirror(TestCaseWithTransport):
+    """Test request mirror behaviour."""
+
+    def setUp(self):
+        self._server = None
+        self.authserver = FakeLaunchpad()
+        self.user_id = 1
+        self.backing_transport = MemoryTransport()
+        self.mirror_transport = MemoryTransport()
+
+    def get_server(self):
+        if self._server is None:
+            self._server = LaunchpadServer(
+                BlockingProxy(self.authserver), self.user_id,
+                self.backing_transport, self.mirror_transport)
+            self._server.setUp()
+            self.addCleanup(self._server.tearDown)
+        return self._server
+
+    def test_creating_branch_requests_mirror(self):
+        # Creating a branch requests a mirror.
+        branch = self.make_branch('~testuser/firefox/baz')
+        self.assertEqual(
+            [(self.user_id, 1)], self.authserver._request_mirror_log)
+
+    def test_branch_unlock_requests_mirror(self):
+        # Unlocking a branch requests a mirror.
+        branch = self.make_branch('~testuser/firefox/baz')
+        self.authserver._request_mirror_log = []
+        branch.lock_write()
+        branch.unlock()
+        self.assertEqual(
+            [(self.user_id, 1)], self.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TrialTestCase, BzrTestCase):

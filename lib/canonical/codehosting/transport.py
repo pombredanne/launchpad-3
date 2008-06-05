@@ -92,7 +92,7 @@ FORBIDDEN_DIRECTORY_ERROR = (
 
 def is_lock_directory(absolute_path):
     """Is 'absolute_path' a Bazaar branch lock directory?"""
-    return os.path.basename(absolute_path) == 'held'
+    return absolute_path.endswith('/.bzr/branch/lock/held')
 
 
 def get_path_segments(path, maximum_segments=-1):
