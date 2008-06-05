@@ -30,22 +30,25 @@ class PackageLocation(object):
     distribution = None
     distroseries = None
     pocket = None
-    architecture = None
+    distroarchseries = None
+    component = None
 
     def __init__(self, archive, distribution, distroseries, pocket,
-                 architecture=None):
+                 distroarchseries=None, component=None):
         """Initialize the PackageLocation from the given parameters."""
         self.archive = archive
         self.distribution = distribution
         self.distroseries = distroseries
         self.pocket = pocket
-        self.architecture = architecture
+        self.distroarchseries = distroarchseries
+        self.component = component
 
     def __eq__(self, other):
         if (self.distribution == other.distribution and
             self.archive == other.archive and
             self.distroseries == other.distroseries and
-            self.architecture == other.architecture and
+            self.distroarchseries == other.distroarchseries and
+            self.component == other.component and
             self.pocket == other.pocket):
             return True
         return False
@@ -153,9 +156,9 @@ class PubHistoryCopier(object):
             AND
                 bpph.pocket = %s and bpph.archive = %s
             ''' % sqlvalues(
-                destination.architecture, destination.archive,
+                destination.distroarchseries, destination.archive,
                 UTC_NOW, UTC_NOW, destination.pocket,
-                origin.architecture,
+                origin.distroarchseries,
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
@@ -189,3 +192,4 @@ class PubHistoryCopier(object):
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
+
