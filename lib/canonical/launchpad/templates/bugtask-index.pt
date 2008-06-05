@@ -129,24 +129,35 @@
 
       </form>
 
-      <div style="text-align: left; margin-bottom: 0.33em; width: 45%; float: left;">
-        <tal:markduplicate
-            define="link context/menu:context/markduplicate"
-            condition="link/enabled"
-            replace="structure link/render" />
-      </div>
+      <table style="width: 100%; margin-bottom: 0.33em;">
+        <tr>
+          <td style="text-align: left; width: 33%;">
+            <tal:markduplicate
+                define="link context/menu:context/markduplicate"
+                condition="link/enabled"
+                replace="structure link/render" />
+          </td>
 
-      <div style="text-align: right; margin-bottom: 0.33em; width: 45%; float: right;">
-        <tal:createquestion
-            define="link context/menu:context/createquestion"
-            condition="link/enabled"
-            replace="structure link/render" />
+          <td style="text-align: center; width: 34%;">
+            <tal:visibility
+                define="link context/menu:context/visibility"
+                condition="link/enabled"
+                replace="structure link/render" />
+          </td>
 
-        <tal:removequestion
-            define="link context/menu:context/removequestion"
-            condition="link/enabled"
-            replace="structure link/render" />
-      </div>
+          <td style="text-align: right; width: 33%;">
+            <tal:createquestion
+                define="link context/menu:context/createquestion"
+                condition="link/enabled"
+                replace="structure link/render" />
+
+            <tal:removequestion
+                define="link context/menu:context/removequestion"
+                condition="link/enabled"
+                replace="structure link/render" />
+          </td>
+        </tr>
+      </table>
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 

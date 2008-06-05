@@ -131,7 +131,7 @@ class BugContextMenu(ContextMenu):
     def visibility(self):
         """Return the 'Set privacy/security' Link."""
         text = 'Set privacy/security'
-        return Link('+secrecy', text, icon='edit')
+        return Link('+secrecy', text)
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
