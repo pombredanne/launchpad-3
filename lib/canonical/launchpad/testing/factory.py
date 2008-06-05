@@ -199,13 +199,16 @@ class LaunchpadObjectFactory:
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
 
-    def makeProduct(self, name=None, project=None, displayname=None):
+    def makeProduct(self, name=None, project=None, displayname=None,
+                    licenses=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
             displayname = self.getUniqueString('displayname')
+        if licenses is None:
+            licenses = [License.GNU_GPL_V2]
         return getUtility(IProductSet).createProduct(
             owner,
             name,
@@ -213,7 +216,8 @@ class LaunchpadObjectFactory:
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GNU_GPL_V2], project=project)
+            licenses=licenses,
+            project=project)
 
     def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
@@ -276,7 +280,8 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson()
+            registrant = self.makePerson(
+                password=self.getUniqueString('password'))
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
@@ -512,13 +517,20 @@ class LaunchpadObjectFactory:
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
             source_product_series_id)
 
-    def makeCodeReviewMessage(self, subject=None, body=None, vote=None):
+    def makeCodeReviewMessage(self, sender=None, subject=None, body=None,
+                              vote=None, vote_tag=None, parent=None):
+        if sender is None:
+            sender = self.makePerson(password='password')
         if subject is None:
-            subject = self.getUniqueString()
+            subject = self.getUniqueString('subject')
         if body is None:
-            body = self.getUniqueString()
-        return self.makeBranchMergeProposal().createMessage(
-            self.makePerson(), subject, body, vote)
+            body = self.getUniqueString('content')
+        if parent:
+            merge_proposal = parent.branch_merge_proposal
+        else:
+            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        return merge_proposal.createMessage(
+            sender, subject, body, vote, vote_tag, parent)
 
     def makeMessage(self, subject=None, content=None, parent=None):
         if subject is None:
