@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
@@ -13,7 +14,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus)
 from canonical.launchpad.testing import (
-     capture_events, LaunchpadObjectFactory, time_counter)
+     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -302,37 +303,64 @@ class TestRootMessage(TestCase):
         self.assertEqual(message3, self.merge_proposal.root_message)
 
 
-class TestMergeProposalNotification(TestCase):
-    """Test that events are created when merge proposals are manipulated"""
+class TestMergeProposalAllMessages(TestCase):
+    """Tester for `BranchMergeProposal.all_messages`."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
+        # Testing behavior, not permissions here.
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
 
-    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
-        """Assert that a callable performs a given notification.
+    def test_all_messages(self):
+        """Ensure all messages associated with the proposal are returned."""
+        message1 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+        message2 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+        message3 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+        self.assertEqual(
+            set([message1, message2, message3]),
+            set(self.merge_proposal.all_messages))
 
-        :param event_type: The type of event that notification is expected
-            for.
-        :param callable_obj: The callable to call.
-        :param *args: The arguments to pass to the callable.
-        :param **kwargs: The keyword arguments to pass to the callable.
-        :return: (result, event), where result was the return value of the
-            callable, and event is the event emitted by the callable.
-        """
-        result, events = capture_events(callable_obj, *args, **kwargs)
-        if len(events) == 0:
-            raise AssertionError('No notification was performed.')
-        elif len(events) > 1:
-            raise AssertionError('Too many (%d) notifications performed.'
-                % len(events))
-        elif not isinstance(events[0], event_type):
-            raise AssertionError('Wrong event type: %r (expected %r).' %
-                (events[0], event_type))
-        return result, events[0]
+
+class TestMergeProposalGetMessage(TestCase):
+    """Tester for `BranchMergeProposal.getMessage`."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        # Testing behavior, not permissions here.
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+        self.merge_proposal2 = self.factory.makeBranchMergeProposal()
+        self.message = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject")
+
+    def test_getMessage(self):
+        """Tests that we can get a message."""
+        self.assertEqual(
+            self.message, self.merge_proposal.getMessage(self.message.id))
+
+    def test_getMessageWrongBranchMergeProposal(self):
+        """Tests that we can get a message."""
+        self.assertRaises(WrongBranchMergeProposal,
+                          self.merge_proposal2.getMessage, self.message.id)
+
+
+class TestMergeProposalNotification(TestCaseWithFactory):
+    """Test that events are created when merge proposals are manipulated"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def test_notifyOnCreate(self):
         """Ensure that a notification is emitted on creation"""
@@ -406,6 +434,20 @@ class TestMergeProposalNotification(TestCase):
         self.assertEqual(
             set([source_subscriber, target_subscriber, dependent_subscriber]),
             set(recipients.keys()))
+
+
+class TestGetAddress(TestCaseWithFactory):
+    """Test that the address property gives expected results."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_address(self):
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
+        self.assertEqual(expected, merge_proposal.address)
 
 
 def test_suite():

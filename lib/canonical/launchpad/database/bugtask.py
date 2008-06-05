@@ -313,7 +313,8 @@ class BugTask(SQLBase, BugTaskMixin):
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
-        "date_closed", "date_incomplete")
+        "date_closed", "date_incomplete", "date_left_new",
+        "date_triaged", "date_fix_committed", "date_fix_released")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -556,6 +557,22 @@ class BugTask(SQLBase, BugTaskMixin):
     def _set_date_incomplete(self, value):
         """Set date_incomplete, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
+
+    def _set_date_left_new(self, value):
+        """Set date_left_new, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_left_new", value)
+
+    def _set_date_triaged(self, value):
+        """Set date_left_triaged, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_triaged", value)
+
+    def _set_date_fix_committed(self, value):
+        """Set date_left_fix_committed, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_fix_committed", value)
+
+    def _set_date_fix_released(self, value):
+        """Set date_left_fix_released, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_fix_released", value)
 
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
         """Set a value, and update conjoined BugTask."""
@@ -810,17 +827,13 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        component = None
+        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
-            component = self.target.latest_published_component
+            return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
-            # Pull the component from the package published in the
-            # latest distribution series.
-            packages = self.target.get_distroseries_packages()
-            if packages:
-                component = packages[0].latest_published_component
-        if component:
-            return component
+            spph = self.target.latest_overall_publication
+            if spph:
+                return spph.component
         return None
 
     def asEmailHeaderValue(self):
@@ -1040,6 +1053,36 @@ class BugTaskSet:
             raise NotFoundError("BugTask with ID %s does not exist." %
                                 str(task_id))
         return bugtask
+
+    def getBugTaskBadgeProperties(self, bugtasks):
+        """See `IBugTaskSet`."""
+        # Need to import Bug locally, to avoid circular imports.
+        from canonical.launchpad.database.bug import Bug
+        bugtask_ids = [bugtask.id for bugtask in bugtasks]
+        bugs_with_mentoring_offers = list(Bug.select(
+            """id IN (SELECT MentoringOffer.bug
+                      FROM MentoringOffer, BugTask
+                      WHERE MentoringOffer.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_specifications = list(Bug.select(
+            """id IN (SELECT SpecificationBug.bug
+                      FROM SpecificationBug, BugTask
+                      WHERE SpecificationBug.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        bugs_with_branches = list(Bug.select(
+            """id IN (SELECT BugBranch.bug
+                      FROM BugBranch, BugTask
+                      WHERE BugBranch.bug = BugTask.bug
+                        AND BugTask.id IN %s)""" % sqlvalues(bugtask_ids)))
+        badge_properties = {}
+        for bugtask in bugtasks:
+            badge_properties[bugtask] = {
+                'has_mentoring_offer':
+                    bugtask.bug in bugs_with_mentoring_offers,
+                'has_specification': bugtask.bug in bugs_with_specifications,
+                'has_branch': bugtask.bug in bugs_with_branches,
+                }
+        return badge_properties
 
     def getMultiple(self, task_ids):
         """See `IBugTaskSet`."""

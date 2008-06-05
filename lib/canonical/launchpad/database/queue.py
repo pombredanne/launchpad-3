@@ -41,9 +41,10 @@ from canonical.launchpad.interfaces import (
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
-    QueueInconsistentStateError, QueueStateWriteProtectedError,
-    QueueSourceAcceptError, SourcePackageFileType)
+    PackageUploadCustomFormat, pocketsuffix, NonBuildableSourceUploadError,
+    QueueBuildAcceptError, QueueInconsistentStateError,
+    QueueStateWriteProtectedError,QueueSourceAcceptError,
+    SourcePackageFileType)
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, simple_sendmail)
 from canonical.launchpad.scripts.processaccepted import (
@@ -175,6 +176,7 @@ class PackageUpload(SQLBase):
 
         for build in self.builds:
             # as before, but for QueueBuildAcceptError
+            build.verifyBeforeAccept()
             try:
                 build.checkComponentAndSection()
             except QueueBuildAcceptError, info:
@@ -215,6 +217,17 @@ class PackageUpload(SQLBase):
             self, changesfile_object=changesfile_object)
         changesfile_object.close()
 
+    def _validateBuildsForSource(self, sourcepackagerelease, builds):
+        """Check if the sourcepackagerelease generates at least one build.
+
+        :raise NonBuildableSourceUploadError: when the uploaded source
+            doesn't result in any builds in its targeted distroseries.
+        """
+        if len(builds) == 0:
+            raise NonBuildableSourceUploadError(
+                "Cannot build any of the architectures requested: %s" %
+                sourcepackagerelease.architecturehintlist)
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
         debug(logger, "Setting it to ACCEPTED")
@@ -231,7 +244,9 @@ class PackageUpload(SQLBase):
         [pub_source] = self.realiseUpload()
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, self.distroseries)
-        pub_source.createMissingBuilds(pas_verify=pas_verify, logger=logger)
+        builds = pub_source.createMissingBuilds(
+            pas_verify=pas_verify, logger=logger)
+        self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -247,7 +262,9 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            pub_source.createMissingBuilds()
+            builds = pub_source.createMissingBuilds()
+            self._validateBuildsForSource(
+                pub_source.sourcepackagerelease, builds)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
@@ -958,6 +975,31 @@ class PackageUploadBuild(SQLBase):
                     'Section "%s" is not allowed in %s' %
                         (binary.section.name,
                          distroseries.name))
+
+    def verifyBeforeAccept(self):
+        """See `IPackageUploadBuild`."""
+        distribution = self.packageupload.distroseries.distribution
+        known_filenames = []
+        # Check if the uploaded binaries are already published in the archive.
+        for binary_package in self.build.binarypackages:
+            for binary_file in binary_package.files:
+                try:
+                    published_binary = distribution.getFileByName(
+                        binary_file.libraryfile.filename, source=False,
+                        archive=self.packageupload.archive)
+                except NotFoundError:
+                    # Only unknown files are ok.
+                    continue
+
+                known_filenames.append(binary_file.libraryfile.filename)
+
+        # If any of the uploaded files are already present we have a problem.
+        if len(known_filenames) > 0:
+            filename_list = "\n\t%s".join(
+                [filename for filename in known_filenames])
+            raise QueueInconsistentStateError(
+                'The following files are already published in %s:\n%s' % (
+                    self.packageupload.archive.title, filename_list))
 
     def publish(self, logger=None):
         """See `IPackageUploadBuild`."""

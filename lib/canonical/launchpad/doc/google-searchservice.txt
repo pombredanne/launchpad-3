@@ -152,7 +152,7 @@ configuration may set a testing site.
     >>> config.google.site == google_search.site
     True
     >>> google_search.site
-    'http://launchpad.dev:8091/'
+    'http://launchpad.dev:.../cse'
 
 The client_id is the client-id issued by Google for the
 GoogleSearchService to connect to the Custom Search Engine service.
@@ -210,7 +210,7 @@ argument to the method. The argument is url encoded and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
-    'http://launchpad.dev:8091/?as_sitesearch=launchpad.net
+    'http://launchpad.dev:.../cse?as_sitesearch=launchpad.net
     client=google-csbe
     cx=011948274177882366108%3Aixpjdn21yfg
     ie=utf8
@@ -223,12 +223,12 @@ value for the 'q' (query) parameter.
 Unicode characters are escaped correctly in the google request URL.
 
     >>> google_search.create_search_url(terms=u'Carlos Perell\xf3 Mar\xedn')
-    'http://launchpad.dev:8091/...q=Carlos+Perell%C3%B3+Mar%C3%ADn&start=0'
+    'http://launchpad.dev:.../...q=Carlos+Perell%C3%B3+Mar%C3%ADn&start=0'
 
 The start parameter can be changed by passing a start int argument.
 
     >>> google_search.create_search_url(terms='svg +bugs', start=20)
-    'http://launchpad.dev:8091/...q=svg+%2Bbugs&start=20'
+    'http://launchpad.dev:.../...q=svg+%2Bbugs&start=20'
 
 
 == Google Search Protocol parsing ==
@@ -286,9 +286,135 @@ be raised.
                            GSP XML response.
 
 A PageMatch requires a title, url, and a summary. If those elements
-('<T>', '<U>', '<S>') cannot be found nested in an '<R>' element
-an error is raised. In this example, the 'U' element is replaced with
-a 'url' element.
+('<T>', '<U>', '<S>') cannot be found nested in an '<R>' a PageMatch
+cannot be made. A missing title (<T>) indicates a bad page on Launchpad,
+so it is ignored. In this example, The first match is missing a title,
+so only the second page is present in the PageMatches.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-missing-title.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="2">
+    <M>2</M>
+    ...
+    <R N="1">
+    <U>https://edge.launchpad.net/gc</U>
+    <UE>https://edge.launchpad.net/gc</UE>
+    <RK>0</RK>
+    <S>
+    </S>
+    <LANG>en</LANG>
+    <Label>_cse_ixpjdn21yfg</Label>
+    <HAS>
+    <L/>
+    <RT/>
+    </HAS>
+    </R>...
+    <R N="2">
+    <U>https://bugs.launchpad.net/bugs/205991</U>
+    <UE>https://bugs.launchpad.net/bugs/205991</UE>
+    <T>Bug #205991 in Ubuntu: ... pair Bluetooth Logitech ...</T>...
+
+    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> len(page_matches)
+    1
+    >>> page_matches[0].title
+    u'Bug #205991 in Ubuntu: ... Bluetooth Logitech ...'
+    >>> page_matches[0].url
+    'http://bugs.launchpad.dev/bugs/205991'
+
+When a match is missing a summary (<S>), the match is skipped because
+there is no information about why it matched. This appears to relate to
+pages that are in the index, but should be removed. In this example
+taken from real data, the links are to the same page on different
+vhosts. The edge vhost has no summary, so it is skipped.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-missing-summary.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="2">
+    <M>2</M>
+    ...
+    <R N="1">
+    <U>https://blueprints.edge.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
+    <UE>https://blueprints.edge.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <T>Blueprint: &lt;b&gt;gobuntu&lt;/b&gt; hardy</T>
+    <RK>0</RK>
+    <S></S>
+    <LANG>en</LANG>
+    <Label>_cse_ixpjdn21yfg</Label>
+    <HAS>
+    <L/>
+    <RT/>
+    </HAS>
+    </R>...
+    <R N="2">
+    <U>https://blueprints.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
+    <UE>https://blueprints.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <T>Blueprint: &lt;b&gt;Gobuntu&lt;/b&gt; 8.04</T>
+    <RK>0</RK>
+    <S>Discuss what needs to be done for &lt;b&gt;Gobuntu&lt;/b&gt;...
+
+    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> len(page_matches)
+    1
+    >>> page_matches[0].title
+    'Blueprint: <b>Gobuntu</b> 8.04'
+    >>> page_matches[0].url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/gobuntu-hardy'
+
+When the URL (<U>) cannot be found the match is skipped. There are no
+examples of this. We do not want this hypothetical situation to give
+users a bad experience.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-missing-url.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml
+    <...
+    <RES SN="1" EN="2">
+    <M>2</M>
+    ...
+    <R N="1">
+    <!-- Non public URL -->
+    <T>Blueprint: &lt;b&gt;gobuntu&lt;/b&gt; hardy</T>
+    <RK>0</RK>
+    <S>Discuss what needs to be done for &lt;b&gt;Gobuntu&lt;/b&gt;...</S>
+    <LANG>en</LANG>
+    <Label>_cse_ixpjdn21yfg</Label>
+    <HAS>
+    <L/>
+    <RT/>
+    </HAS>
+    </R>...
+    <R N="2">
+    <U>https://blueprints.launchpad.net/ubuntu/+spec/gobuntu-hardy</U>
+    <UE>https://blueprints.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
+    <T>Blueprint: &lt;b&gt;Gobuntu&lt;/b&gt; 8.04</T>...
+
+    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> len(page_matches)
+    1
+    >>> page_matches[0].title
+    'Blueprint: <b>Gobuntu</b> 8.04'
+    >>> page_matches[0].url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/gobuntu-hardy'
+
+If no matches are found in the response, an error is raised. It is
+possible that all the matches were missing a title or summary, but there
+is also a possibility that the GSP version is incompatible. As there is
+nothing to show the user, we treat this as an error. This example does
+not have any <R> tags.
 
     >>> gsp_xml_file_name = path.join(
     ...     base_path, 'googlesearchservice-incompatible-result.xml')
@@ -300,7 +426,7 @@ a 'url' element.
     <RES SN="1" EN="1">
     <M>1</M>
     ...
-    <R N="1">
+    <RESULT N="1">
       <url>https://bugs.launchpad.net/</url>
       <UE>https://bugs.launchpad.net/</UE>
       <T>Launchpad Bugs</T>
@@ -310,13 +436,44 @@ a 'url' element.
       <LANG>en</LANG>
       <Label>_cse_ixpjdn21yfg</Label>
       <HAS><L/><RT/></HAS>
-    </R>...
+    </RESULT>...
 
     >>> google_search._parse_google_search_protocol(gsp_xml)
     Traceback (most recent call last):
      ...
-    GoogleWrongGSPVersion: Could not get the 'title', 'url', and 'summary'
-                           from the GSP XML response.
+    GoogleWrongGSPVersion: Could not get any PageMatches from the
+                           GSP XML response.
+
+The parser removes escaped <br> tags from the summary (S tag) so that
+there are no layout instructions in the data. Google inserts the <br>
+tags about every 40 characters.
+
+    >>> gsp_xml_file_name = path.join(
+    ...     base_path, 'googlesearchservice-bugs-1.xml')
+    >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
+    >>> gsp_xml = gsp_xml_file.read()
+    >>> gsp_xml_file.close()
+    >>> print gsp_xml.replace('><', '> <')
+    <...
+    <R N="1">
+      <U>https://bugs.launchpad.net/</U>
+      <UE>https://bugs.launchpad.net/</UE>
+      <T>Launchpad Bugs</T>
+      <RK>0</RK>
+      <CRAWLDATE>17 hours ago</CRAWLDATE>
+      <S>&lt;b&gt;Bug&lt;/b&gt; tracking &lt;b&gt;...&lt;/b&gt;
+         Search &lt;b&gt;bugs&lt;/b&gt; reports &lt;b&gt;...&lt;/b&gt;
+         Launchpad’s &lt;b&gt;bug&lt;/b&gt;
+         &lt;br&gt;
+         tracker allows collaboration</S>...
+
+    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> page_match = page_matches[0]
+    >>> page_match.summary
+    u'<b>Bug</b> tracking <b>...</b> Search
+      <b>bugs</b> reports <b>...</b> Launchpad...s
+      <b>bug</b>
+      tracker allows collaboration'
 
 
 === URL rewriting ===
@@ -361,3 +518,32 @@ is only run in one environment, so links to that site will be preserved.
     >>> page_match.url
     'http://help.launchpad.net/OpenID'
 
+
+=== Graceful handling of timeouts ===
+
+The external service (Google Search Engine) may not be available, or
+is not responding quickly because there are network issues. In these
+cases a TimeoutError is issued.
+
+    >>> from socket import socket
+    >>> from textwrap import dedent
+    >>> from canonical.lazr.timeout import (
+    ...     get_default_timeout_function, set_default_timeout_function)
+
+    >>> server = socket()
+    >>> server.bind(('127.0.0.01', 0))
+    >>> server.listen(1)
+    >>> config.push('timeout_data', dedent("""
+    ...     [google]
+    ...     site: http://%s:%d/cse
+    ...     """ % server.getsockname()))
+    >>> old_timeout_function = get_default_timeout_function()
+    >>> set_default_timeout_function(lambda: 0.1)
+    >>> google_search.search(terms='bug')
+    Traceback (most recent call last):
+     ...
+    TimeoutError: ...
+
+    # Restore the configuration and the timeout state.
+    >>> timeout_data = config.pop('timeout_data')
+    >>> set_default_timeout_function(old_timeout_function)

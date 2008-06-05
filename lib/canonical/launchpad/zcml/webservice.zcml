@@ -44,7 +44,7 @@
     <view
         for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
         type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        factory="canonical.lazr.rest.error.WebServiceExceptionView"
         name="index.html"
         />
 

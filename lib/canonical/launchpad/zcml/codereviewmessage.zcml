@@ -9,4 +9,50 @@
         <allow interface="canonical.launchpad.interfaces.ICodeReviewMessage"
         />
     </content>
+    <subscriber
+      for="canonical.launchpad.interfaces.ICodeReviewMessage
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.mailout.codereviewmessage.send" />
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        path_expression="string:comments/${id}"
+        attribute_to_parent="branch_merge_proposal"
+        rootsite="code" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        name="+index" />
+    <browser:page
+        name="+index"
+        facet="branches"
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        class="canonical.launchpad.browser.CodeReviewMessageView"
+        permission="zope.Public"
+        template="../templates/codereviewmessage-index.pt"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        name="+fragment"
+        permission="zope.Public"
+        template="../templates/codereviewmessage-fragment.pt" />
+    <browser:page
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        class="canonical.launchpad.browser.CodeReviewMessageSummary"
+        name="+fragment-summary"
+        permission="zope.Public"
+        template="../templates/codereviewmessage-fragment-summary.pt" />
+    <browser:page
+        name="+reply"
+        facet="branches"
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        class="canonical.launchpad.browser.CodeReviewMessageAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/codereviewmessage-reply.pt"
+        />
+    <browser:page
+        name="+comment"
+        for="canonical.launchpad.interfaces.IBranchMergeProposal"
+        class="canonical.launchpad.browser.CodeReviewMessageAddView"
+        facet="branches"
+        permission="launchpad.AnyPerson"
+        template="../templates/codereviewmessage-reply.pt" />
 </configure>

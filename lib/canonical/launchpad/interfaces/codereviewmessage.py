@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Object, Choice
+from zope.schema import Object, Choice, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -47,8 +47,19 @@ class CodeReviewVote(DBEnumeratedType):
 class ICodeReviewMessage(Interface):
     """A link between a merge proposal and a message."""
 
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this message."))
+
     branch_merge_proposal = Object(
         schema=IBranchMergeProposal, title=_('The branch merge proposal'))
+
     message = Object(schema=IMessage, title=_('The message.'))
+
     vote = Choice(
         title=_('Reviewer says'), required=False, vocabulary=CodeReviewVote)
+
+    vote_tag = TextLine(
+        title=_('Vote tag'), required=False)
+
+    title = TextLine()

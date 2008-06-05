@@ -294,6 +294,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         vocabulary='FilteredProductSeries',
         description=_('The "trunk" series where development is focused'))
 
+    default_stacked_on_branch = Attribute(
+        _('The branch that new branches will be stacked on by default.'))
+
     name_with_project = Attribute(_("Returns the product name prefixed "
         "by the project name, if a project is associated with this "
         "product; otherwise, simply returns the product name."))
@@ -335,8 +338,12 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         An object which contains the timeframe and the voucher
         code of a subscription.""")
 
-    requires_commercial_subscription = Attribute("""
-        Whether the project's licensing requires a commercial
+    qualifies_for_free_hosting = Attribute("""
+        Whether the project's licensing qualifies it for free
+        use of launchpad.""")
+
+    commercial_subscription_is_due = Attribute("""
+        Whether the project's licensing requires a new commercial
         subscription to use launchpad.""")
 
     is_permitted = Attribute("""

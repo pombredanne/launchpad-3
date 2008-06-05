@@ -10,7 +10,6 @@ __all__ = [
     'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
-import shutil
 import threading
 import unittest
 
@@ -47,8 +46,6 @@ class AvatarTestCase(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
         # A basic user dict, 'alice' is a member of no teams (aside from the
         # user themself).
         self.aliceUserDict = {
@@ -67,15 +64,6 @@ class AvatarTestCase(TrialTestCase):
                       {'id': 3, 'name': 'test-team'}],
             'initialBranches': [(2, []), (3, [])]
         }
-
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-
-        # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test
-        # runner.
-        tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
-        shutil.rmtree(tmpdir_root)
 
 
 def exception_names(exceptions):
@@ -303,6 +291,19 @@ class FakeLaunchpad:
         new_id = max(item_set.keys() + [0]) + 1
         item_set[new_id] = item_dict
         return new_id
+
+    def getDefaultStackedOnBranch(self, product_name):
+        if product_name == '+junk':
+            return ''
+        elif product_name == 'evolution':
+            # This has to match the sample data. :(
+            return '~vcs-imports/evolution/main'
+        elif product_name == 'firefox':
+            return ''
+        else:
+            raise ValueError(
+                "The crappy mock authserver doesn't know how to translate: %r"
+                % (product_name,))
 
     def createBranch(self, login_id, user, product, branch_name):
         """See `IHostedBranchStorage.createBranch`.

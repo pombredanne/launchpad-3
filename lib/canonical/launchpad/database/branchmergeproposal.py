@@ -11,10 +11,12 @@ __all__ = [
 from email.Utils import make_msgid
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -24,12 +26,14 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus, IBranchMergeProposal,
     ILaunchpadCelebrities,
-    UserNotBranchReviewer)
+    UserNotBranchReviewer,
+    WrongBranchMergeProposal,)
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -114,6 +118,10 @@ class BranchMergeProposal(SQLBase):
         default=None)
 
     @property
+    def address(self):
+        return 'mp+%d@%s' % (self.id, config.vhost.code.hostname)
+
+    @property
     def supersedes(self):
         return BranchMergeProposal.selectOneBy(superseded_by=self)
 
@@ -135,6 +143,18 @@ class BranchMergeProposal(SQLBase):
                           CodeReviewMessage.message = Message.id
                     ORDER BY Message.datecreated LIMIT 1)
             """ % self.id)
+
+    @property
+    def all_messages(self):
+        """See `IBranchMergeProposal`."""
+        return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
+
+    def getMessage(self, id):
+        """See `IBranchMergeProposal`."""
+        message = CodeReviewMessage.get(id)
+        if message.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        return message
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -367,7 +387,7 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence')
 
     def createMessage(self, owner, subject, content=None, vote=None,
-                      parent=None, _date_created=None):
+                      vote_tag=None, parent=None, _date_created=None):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
@@ -388,5 +408,8 @@ class BranchMergeProposal(SQLBase):
         msg = Message(parent=parent_message, owner=owner,
                       rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        return CodeReviewMessage(
-            branch_merge_proposal=self, message=msg, vote=vote)
+        code_review_message = CodeReviewMessage(
+            branch_merge_proposal=self, message=msg, vote=vote,
+            vote_tag=vote_tag)
+        notify(SQLObjectCreatedEvent(code_review_message))
+        return code_review_message
