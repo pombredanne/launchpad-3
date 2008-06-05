@@ -57,8 +57,8 @@ def lobotomize_stevea():
 
 
 def lobotomizeSteveASetUp(test):
-    """Call lobotomizeSteveA() and standard setUp"""
-    lobotomizeSteveA()
+    """Call lobotomize_stevea() and standard setUp"""
+    lobotomize_stevea()
     setUp(test)
 
 
@@ -123,7 +123,7 @@ def branchStatusTearDown(test):
     test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
-    lobotomizeSteveA()
+    lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
     setUp(test)
 
@@ -154,7 +154,7 @@ def distroseriesqueueTearDown(test):
     tearDown(test)
 
 def uploadQueueSetUp(test):
-    lobotomizeSteveA()
+    lobotomize_stevea()
     test_dbuser = config.uploadqueue.dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
@@ -167,7 +167,7 @@ def uploaderBugsSetUp(test):
     In order to test that these functions work as expected from the uploader,
     we run them using the same db user used by the uploader.
     """
-    lobotomizeSteveA()
+    lobotomize_stevea()
     test_dbuser = config.uploader.dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
