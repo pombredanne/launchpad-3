@@ -8,7 +8,7 @@ someone else to the bug.
 Anonymous users should not be able to subscribe someone else to a bug.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> anon_browser.getLink('Subscribe someone else').click()
+    >>> anon_browser.getLink('Someone else').click()
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -17,7 +17,7 @@ No Privileges wants to subscribe David Allouche to the bug because he knows
 that he's interested in that feature.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> user_browser.getLink('Subscribe someone else').click()
+    >>> user_browser.getLink('Someone else').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
 
@@ -67,7 +67,7 @@ David got a notification, saying that he was subscribed to the bug.
 
 He subscribes the Landscape developers team.
 
-    >>> user_browser.getLink('Subscribe someone else').click()
+    >>> user_browser.getLink('Someone else').click()
     >>> user_browser.getControl("Person").value = 'landscape-developers'
     >>> user_browser.getControl("Add").click()
     >>> user_browser.url
