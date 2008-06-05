@@ -16,6 +16,7 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
+
 class TranslationUnavailable(Exception):
     """Translation objects are unavailable."""
 
@@ -33,6 +34,16 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 
     One example would be a URL containing uppercase letters.
     """
+
+
+class InvalidBatchSizeError(AssertionError):
+    """Received a batch parameter that exceed our configured max size."""
+
+    # XXX flacoste 2008/05/09 bug=185958:
+    # Ideally, we would use webservice_error, to set this up and
+    # register the view, but cyclic imports prevents us from doing
+    # so. This should be fixed once we move webapp stuff into LAZR.
+    __lazr_webservice_error__ = 400
 
 
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
@@ -131,6 +142,8 @@ class IContextMenu(IMenuBase):
 
 class INavigationMenu(IMenuBase):
     """Navigation menu for an object."""
+
+    title = Attribute("The title of the menu as it appears on the page.")
 
 
 class ILinkData(Interface):

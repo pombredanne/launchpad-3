@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
     IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
+from canonical.launchpad.interfaces.pillar import IPillar
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -44,7 +45,7 @@ class DistributionNameField(PillarNameField):
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, ISpecificationTarget):
+    ILaunchpadUsage, ISpecificationTarget, IPillar):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -144,16 +145,9 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     is_read_only = Attribute(
         "True if this distro is just monitored by Launchpad, rather than "
         "allowing you to use Launchpad to actually modify the distro.")
-    upload_sender = TextLine(
-        title=_("Uploader sender"),
-        description=_("The default upload processor sender name."),
-        required=False)
-    upload_admin = PublicPersonChoice(
-        title=_("Upload Manager"),
-        description=_("The distribution upload admin."),
-        required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
-        "DistroComponentUploader records associated with this distribution."))
+        "ArchivePermission records for uploaders with rights to upload to "
+        "this distribution."))
 
     # properties
     currentseries = Attribute(
@@ -289,7 +283,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         The file returned will be one of those published in the distribution.
 
         If searching both source and binary, and the file is found in the
-        source packages it'll return that over a file for a binary package.
+        binary packages it'll return that over a file for a source package.
 
         If 'archive' is not passed the distribution.main_archive is assumed.
 

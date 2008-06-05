@@ -8,12 +8,8 @@ __metaclass__ = type
 
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces import IBranchMergeProposal
-from canonical.launchpad.mail import simple_sendmail, format_address
-from canonical.launchpad.mailout import text_delta
-from canonical.launchpad.mailout.notificationrecipientset import (
-    NotificationRecipientSet)
+from canonical.launchpad.mail import format_address
+from canonical.launchpad.mailout.basemailer import BaseMailer
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.webapp import canonical_url
 
@@ -35,22 +31,17 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
         mailer.sendAll()
 
 
-class BMPMailer:
-    """Send mailings related to BranchMergeProposal events"""
+class BMPMailer(BaseMailer):
+    """Send mailings related to BranchMergeProposal events."""
 
     def __init__(self, subject, template_name, recipients, merge_proposal,
                  from_address, delta=None):
-        self._subject_template = subject
-        self._template_name = template_name
-        self._recipients = NotificationRecipientSet()
-        for recipient, (subscription, rationale) in recipients.iteritems():
-            self._recipients.add(recipient, subscription, rationale)
+        BaseMailer.__init__(self, subject, template_name, recipients,
+                            from_address, delta)
         self.merge_proposal = merge_proposal
-        self.from_address = from_address
-        self.delta = delta
 
-    @staticmethod
-    def forCreation(merge_proposal, from_user):
+    @classmethod
+    def forCreation(klass, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -63,7 +54,7 @@ class BMPMailer:
             'The sender must have an email address.')
         from_address = format_address(
             from_user.displayname, from_user.preferredemail.email)
-        return BMPMailer(
+        return klass(
             'Merge of %(source_branch)s into %(target_branch)s proposed',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address)
@@ -91,11 +82,6 @@ class BMPMailer:
                          'branch-merge-proposal-updated.txt', recipients,
                          merge_proposal, from_address, delta)
 
-    def textDelta(self):
-        """Return a textual version of the class delta."""
-        return text_delta(self.delta, self.delta.delta_values,
-            self.delta.new_values, IBranchMergeProposal)
-
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""
         entity = 'You are'
@@ -110,36 +96,22 @@ class BMPMailer:
         branch_name = subscription.branch.displayname
         return '%s subscribed to branch %s.' % (entity, branch_name)
 
-    def generateEmail(self, recipient):
-        """Generate the email for this recipient
-
-        :return: (headers, subject, body) of the email.
-        """
+    def _getHeaders(self, recipient):
+        """Return the mail headers to use."""
+        headers = BaseMailer._getHeaders(self, recipient)
         subscription, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
-        headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
-                   'X-Launchpad-Message-Rationale': rationale}
-        template = get_email_template(self._template_name)
-        reason = self.getReason(recipient)
-        params = {
+        headers['X-Launchpad-Branch'] = subscription.branch.unique_name
+        return headers
+
+    def _getTemplateParams(self, recipient):
+        """Return a dict of values to use in the body and subject."""
+        params = BaseMailer._getTemplateParams(self, recipient)
+        params.update({
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.displayname,
             'target_branch': self.merge_proposal.target_branch.displayname,
-            'reason': self.getReason(recipient),
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',
-            }
-        if self.delta is not None:
-            params['delta'] = self.textDelta()
-        subject = self._subject_template % params
-        body = template % params
-        return (headers, subject, body)
-
-    def sendAll(self):
-        """Send notifications to all recipients."""
-        for recipient in self._recipients.getRecipientPersons():
-            to_address = format_address(
-                recipient.displayname, recipient.preferredemail.email)
-            headers, subject, body = self.generateEmail(recipient)
-            simple_sendmail(
-                self.from_address, to_address, subject, body, headers)
+            })
+        return params

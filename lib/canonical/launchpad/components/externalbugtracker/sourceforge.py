@@ -200,12 +200,12 @@ class SourceForge(ExternalBugTracker):
             resolution = None
 
         if status not in status_map:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
 
         local_status = status_map[status].get(
             resolution, status_map['Open'].get(resolution))
         if local_status is None:
-            raise UnknownRemoteStatusError()
+            raise UnknownRemoteStatusError(remote_status)
         else:
             return local_status
 

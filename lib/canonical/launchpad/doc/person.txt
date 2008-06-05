@@ -78,6 +78,23 @@ followed by a description of the action that caused the entry to be created.
     >>> p.hide_email_addresses
     True
 
+Since this person has chosen to hide his email addresses they won't be visible
+to other users which are not admins.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(email.email)
+    >>> check_permission('launchpad.View', email)
+    True
+
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.View', email)
+    False
+
+    >>> login('guilherme.salgado@canonical.com')
+    >>> check_permission('launchpad.View', email)
+    True
+    >>> login(ANONYMOUS)
+
 By default, newly created Person entries will have AccountStatus.NOACCOUNT as
 their account_status.  This is only changed if/when we turn that entry into an
 actual user account. (Currently, we assume that a Person entry is turned into
@@ -280,6 +297,26 @@ account_status will always be NOACCOUNT.
     <DBItem AccountStatus.NOACCOUNT...
 
 
+=== Creating teams ===
+
+Teams are created by the IPersonSet.newTeam() method, which takes the team
+owner and some of the team's details, returning the newly created team.
+
+    >>> new_team = personset.newTeam(ddaa, 'new-team', 'Just a new team')
+    >>> new_team.name
+    u'new-team'
+    >>> new_team.teamowner.name
+    u'ddaa'
+
+If the given name is already in use by another team/person, an exception is
+raised.
+
+    >>> personset.newTeam(ddaa, 'ddaa', 'Just a new team')
+    Traceback (most recent call last):
+    ...
+    NameAlreadyTaken:...
+
+
 === Turning people into teams ===
 
 Launchpad may create Person entries automatically and it always assumes
@@ -399,7 +436,7 @@ We can also iterate over the TeamMemberships themselves, which is useful
 when we want to display details about them rather than just the member.
 
     >>> [(membership.person.displayname, membership.status.name)
-    ...  for membership in landscape_devs.getActiveMemberships()]
+    ...  for membership in landscape_devs.member_memberships]
     [(u'Guilherme Salgado', 'APPROVED'), (u'Sample Person', 'ADMIN')]
     >>> [(membership.person.displayname, membership.status.name)
     ...  for membership in landscape_devs.getInvitedMemberships()]
@@ -495,18 +532,18 @@ or PersonVisibility.PRIVATE_MEMBERSHIP. To prevent leaking of
 private membership information, private-membership teams are only
 allowed to be connected with a few different database objects. This is
 enforced in the model, but there are also checks in the form handling to
-provide clearer error messages. 
+provide clearer error messages.
 
 The PublicPersonChoice for interface classes and the public_person_validator
 for SQLObject classes only allow public teams to be assigned to the
 specified field.
 
-The SQLObject validators will raise an InvalidField exception if an 
-invalid team is passed to the constructor or is used to set one of 
+The SQLObject validators will raise an InvalidField exception if an
+invalid team is passed to the constructor or is used to set one of
 the attributes.
 
 myteam is a private-membership team, so public_person_validator
-will reject it for the BugSubscription.person and 
+will reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
@@ -542,11 +579,11 @@ list is actually sorted by date joined.
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
     >>> for membership in membership_list:
     ...     print membership.datejoined
+    2008-05-14 12:07:14.227450+00:00
     2007-01-17 14:13:39.692693+00:00
     2006-05-15 22:23:29.062603+00:00
     2005-10-13 13:03:41.668724+00:00
     2005-07-12 14:36:09.587753+00:00
-    2005-04-14 00:00:00+00:00
 
 == Deactivating user accounts ==
 
@@ -567,8 +604,9 @@ spec to be reassigned.
     >>> flush_database_updates()
 
     >>> [membership.team.name for membership in foobar.myactivememberships]
-    [u'guadamen', u'admins', u'launchpad-buildd-admins', u'launchpad',
-     u'testing-spanish-team', u'name18', u'ubuntu-team', u'vcs-imports']
+    [u'canonical-partner-dev', u'guadamen', u'admins',
+     u'launchpad-buildd-admins', u'launchpad', u'testing-spanish-team',
+     u'name18', u'ubuntu-team', u'vcs-imports']
     >>> [email.email for email in foobar.validatedemails]
     []
     >>> foobar.name
@@ -729,11 +767,10 @@ Searching only for People based on their names or email addresses:
 By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to include
 them as well.
-    
+
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> dave = personset.getByName('justdave')
-    >>> login('dave.miller@ubuntulinux.com')
-    >>> dave.account_status = AccountStatus.DEACTIVATED
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> flush_database_updates()
     >>> list(personset.findPerson('dave'))
     []
@@ -743,7 +780,7 @@ them as well.
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
-    >>> dave.account_status = AccountStatus.ACTIVE
+    >>> removeSecurityProxy(dave).account_status = AccountStatus.ACTIVE
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
@@ -872,6 +909,43 @@ projects.
     project: Tomcat (tomcat)
 
 
+== Project owned by a person or team ==
+
+To obtain all projects owned by a person or team, we can use the
+getOwnedProjects() method of IPerson.  This method returns
+projects ordered by displayname.
+
+    >>> for project in sabdfl.getOwnedProjects():
+    ...     print project.displayname
+    Derby
+    Gnome Applets
+    Tomcat
+    a52dec
+    alsa-utils
+    gnomebaker
+
+    >>> for project in ubuntu_team.getOwnedProjects():
+    ...     print project.displayname
+    Tomcat
+
+David does not own any projects.
+
+    >>> list(ddaa.getOwnedProjects())
+    []
+
+The results returned can be filtered by providing a token to refine
+the search.
+
+    >>> for project in sabdfl.getOwnedProjects(match_name='gnome'):
+    ...     print project.displayname
+    Gnome Applets
+    gnomebaker
+
+Searching for a non-existent project returns no matches.
+
+    >>> list(sabdfl.getOwnedProjects(match_name='nosuchthing'))
+    []
+
 == Translations ==
 
 Users can set their preferred languages, retrievable as Person.languages.
@@ -956,7 +1030,7 @@ We can get the list of translators that did some translation in Launchpad and
 expressed their interest for a concrete language.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
- 
+
     # Sample data is not complete for this test, so we need to note that
     # another Spanish translator expressed its interest on doing Spanish
     # translations.  That other person is Foo Bar (name16).

@@ -162,21 +162,23 @@
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch" xml:lang="en" lang="en" dir="ltr"
-        action="/projects/"
+        action=""
         method="get"
         accept-charset="UTF-8"
+        tal:attributes="action string:${rooturl}+search"
       >
         <div>
           <input
             type="text"
-            id="text"
-            name="text"
+            id="search-text"
+            name="field.text"
             value="Search"
             onfocus="if(this.value=='Search'){this.value='';};"
           />
           <input
             type="image"
             id="searchbutton"
+            name="field.actions.search"
             src="/+icing/but_search.gif"
             title="Search"
           />
@@ -259,7 +261,7 @@
                           <metal:block define-slot="main" />
                         </tal:noportlets>
                         <div id="navigation-tabs"
-                             tal:condition="not:view/macro:pagehas/actionsmenu">
+                             tal:condition="not:view/macro:show_actions_menu">
                           <div id="context-navigation-tabs"
                                tal:condition="context/menu:navigation">
                             <tal:menu
@@ -299,7 +301,7 @@
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
-                          <tal:menu condition="view/macro:pagehas/actionsmenu"
+                          <tal:menu condition="view/macro:show_actions_menu"
                                     replace="structure CONTEXTS/@@+menubox" />
                           <metal:portlets define-slot="portlets" />
                           <metal:portlets define-slot="portlets_two" />
@@ -351,7 +353,7 @@
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
               | <a href="https://help.launchpad.net/LaunchpadReleases">
-              Version 1.2.5</a> | build
+              Version 1.2.6</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>

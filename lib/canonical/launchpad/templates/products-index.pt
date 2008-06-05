@@ -87,7 +87,7 @@
 
       <ul class="rollover buttons">
         <li>
-          <a href="/projects/+new">
+          <a href="/projects/+new-guided">
             <img
               alt="Register a project"
               src="/+icing/but-lrg-registerproj.gif"

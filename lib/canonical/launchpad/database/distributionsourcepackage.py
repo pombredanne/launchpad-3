@@ -9,6 +9,7 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
+import operator
 from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
@@ -54,28 +55,28 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def name(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         return self.sourcepackagename.name
 
     @property
     def displayname(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         return '%s in %s' % (
             self.sourcepackagename.name, self.distribution.name)
 
     @property
     def bugtargetdisplayname(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return "%s (%s)" % (self.name, self.distribution.displayname)
 
     @property
     def bugtargetname(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return "%s (%s)" % (self.name, self.distribution.displayname)
 
     @property
     def title(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         return 'Source Package "%s" in %s' % (
             self.sourcepackagename.name, self.distribution.title)
 
@@ -87,8 +88,45 @@ class DistributionSourcePackage(BugTargetBase,
     def __getitem__(self, version):
         return self.getVersion(version)
 
+    @property
+    def latest_overall_publication(self):
+        """See `IDistributionSourcePackage`."""
+        # XXX kiko 2008-06-03: This is magical code that finds the
+        # latest relevant publication. It relies on ordering of status
+        # and pocket enum values, which is arguably evil but much faster
+        # than CASE sorting; at any rate this can be fixed when
+        # https://bugs.edge.launchpad.net/soyuz/+bug/236922 is.
+        spph = SourcePackagePublishingHistory.selectFirst("""
+            SourcePackagePublishingHistory.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
+            pocket NOT IN (30, 40) AND
+            status in (2,5)""" %
+                sqlvalues(self.distribution,
+                          self.sourcepackagename,
+                          self.distribution.all_distro_archive_ids),
+            clauseTables=["SourcePackagePublishingHistory",
+                          "SourcePackageRelease", 
+                          "DistroSeries"],
+            orderBy=["-status",
+                     SQLConstant(
+                        "to_number(DistroSeries.version, '99.99') DESC"),
+                     "-pocket"])
+        return spph
+
+    @property
+    def latest_overall_component(self):
+        """See `IDistributionSourcePackage`."""
+        spph = self.latest_overall_publication
+        if spph:
+            return spph.component
+        return None
+
     def getVersion(self, version):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         spph = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
@@ -114,7 +152,7 @@ class DistributionSourcePackage(BugTargetBase,
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def currentrelease(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         order_const = "debversion_sort_key(SourcePackageRelease.version) DESC"
         spr = SourcePackageRelease.selectFirst("""
             SourcePackageRelease.sourcepackagename = %s AND
@@ -140,7 +178,7 @@ class DistributionSourcePackage(BugTargetBase,
                 sourcepackagerelease=spr)
 
     def bugtasks(self, quantity=None):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         return BugTask.select("""
             distribution=%s AND
             sourcepackagename=%s
@@ -151,7 +189,7 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def binary_package_names(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         cache = DistributionSourcePackageCache.selectOne("""
             distribution = %s AND
             sourcepackagename = %s
@@ -161,7 +199,7 @@ class DistributionSourcePackage(BugTargetBase,
         return cache.binpkgnames
 
     def get_distroseries_packages(self, active_only=True):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         result = []
         for series in self.distribution.serieses:
             if active_only:
@@ -174,13 +212,13 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def publishing_history(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         return self._getPublishingHistoryQuery()
 
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def current_publishing_records(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         status = PackagePublishingStatus.PUBLISHED
         return self._getPublishingHistoryQuery(status)
 
@@ -209,7 +247,7 @@ class DistributionSourcePackage(BugTargetBase,
     # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def releases(self):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         ret = SourcePackagePublishingHistory.select("""
             sourcepackagepublishinghistory.distroseries = DistroSeries.id AND
             DistroSeries.distribution = %s AND
@@ -220,7 +258,7 @@ class DistributionSourcePackage(BugTargetBase,
             """ % sqlvalues(self.distribution,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagename),
-            orderBy='-datecreated',
+            orderBy=['-datecreated', '-id'],
             clauseTables=['distroseries', 'sourcepackagerelease'])
         result = []
         versions = set()
@@ -231,36 +269,36 @@ class DistributionSourcePackage(BugTargetBase,
                     distribution=self.distribution,
                     sourcepackagerelease=spp.sourcepackagerelease)
                 result.append(dspr)
-        return result
+        return sorted(result, key=operator.attrgetter('id'), reverse=True)
 
     def __eq__(self, other):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         return (
             (IDistributionSourcePackage.providedBy(other)) and
             (self.distribution.id == other.distribution.id) and
             (self.sourcepackagename.id == other.sourcepackagename.id))
 
     def __ne__(self, other):
-        """See IDistributionSourcePackage."""
+        """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
 
     def _getBugTaskContextWhereClause(self):
-        """See BugTargetBase."""
+        """See `BugTargetBase`."""
         return (
             "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
             self.distribution.id, self.sourcepackagename.id))
 
     def searchTasks(self, search_params):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return self.distribution.getUsedBugTags()
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return get_bug_tags_open_count(
             "BugTask.distribution = %s" % sqlvalues(self.distribution),
             user,
@@ -268,14 +306,15 @@ class DistributionSourcePackage(BugTargetBase,
                 sqlvalues(self.sourcepackagename)))
 
     def createBug(self, bug_params):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         bug_params.setBugTarget(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
 
     def _getBugTaskContextClause(self):
-        """See BugTargetBase."""
+        """See `BugTargetBase`."""
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+

@@ -6,7 +6,7 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
     >>> from canonical.launchpad.ftests.feeds_helper import (
-    ...     parse_entries, parse_ids, parse_links, validate_feed)
+    ...     parse_ids, parse_links, validate_feed)
 
 == Create some specific branches to use for this test ==
 
@@ -219,5 +219,9 @@ own <id>, which in the case of a single branch feed will be identical.
     >>> strainer = SoupStrainer('updated')
     >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
     ...                  parseOnlyThese=strainer)]
-    >>> assert updated_dates[0] == updated_dates[1]
-    ...     "Feed <update> value is not the same as latest entry.")
+
+The update date for the entire feed (updated_dates[0]) must be equal
+to the update_date of the first entry in the feed (updated_dates[1]).
+
+    >>> updated_dates[0] == updated_dates[1]
+    True

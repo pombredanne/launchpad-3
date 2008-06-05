@@ -42,20 +42,22 @@
         </tr>
       </tal:not-junk-branch>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
-        <tr><th>Location:</th><td tal:content="context/url" /></tr>
+        <tr><th>Location:</th><td tal:content="view/mirror_location" /></tr>
         <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
       </tal:mirrored-branch>
       <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
         <tr>
           <th>Location:</th>
-          <td tal:condition="context/url" tal:content="context/url" />
+          <td tal:condition="context/url" tal:content="view/mirror_location" />
           <td tal:condition="not: context/url" >Not specified</td>
         </tr>
       </tal:remote-branch>
       <tal:show-download-url condition="view/bzr_download_url">
         <tr>
           <th>Get this branch:</th>
-          <td>bzr branch <tal:url replace="view/bzr_download_url"/></td>
+          <td>
+            <tt>bzr branch <tal:url replace="view/bzr_download_url"/></tt>
+          </td>
         </tr>
       </tal:show-download-url>
 
@@ -117,7 +119,7 @@
             <tr>
               <th>Update this branch:</th>
               <td id="upload-directions">
-                bzr push <tal:url replace="view/bzr_upload_url"/>
+                <tt>bzr push <tal:url replace="view/bzr_upload_url"/></tt>
                 <tal:comment condition="nothing">
                   <!-- Directions to set the SSH key -->
                 </tal:comment>
@@ -172,7 +174,7 @@
 
         <tal:has-job define="job code_import/import_job"
                      condition="job">
-          <p>
+          <div>
           <tal:is-running condition="job/state/enumvalue:RUNNING">
             An import is currently running, and was started
             <tal:date-started replace="job/date_started/fmt:displaydate">
@@ -182,15 +184,24 @@
           <tal:not-running condition="not: job/state/enumvalue:RUNNING">
             The next import is scheduled to run
             <tal:overdue condition="job/isOverdue">
-              as soon as possible.
+              as soon as possible<tal:requested-by
+                condition="job/requesting_user">
+                (requested by
+                <tal:requested-by-user
+                   content="structure job/requesting_user/fmt:link">
+                  Some user.
+                </tal:requested-by-user>)</tal:requested-by>.
             </tal:overdue>
             <tal:not-overdue condition="not: job/isOverdue">
               <tal:date-started replace="job/date_due/fmt:displaydate">
                 in 2 hours
               </tal:date-started>.
+              <tal:button
+                 condition="view/user"
+                 replace="structure view/context/@@+request-import" />
             </tal:not-overdue>
           </tal:not-running>
-          </p>
+          </div>
         </tal:has-job>
 
         <tal:last-successful condition="code_import/date_last_successful">
@@ -201,6 +212,12 @@
             </tal:last-successful>.
           </p>
         </tal:last-successful>
+
+        <div id="import-results" tal:condition="view/latest_code_import_results">
+          <tal:result repeat="result view/latest_code_import_results">
+            <metal:result use-macro="code_import/@@+macros/show_result"/>
+          </tal:result>
+        </div>
 
         <tal:can-edit condition="code_import/required:launchpad.Edit">
           <p>

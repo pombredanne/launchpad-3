@@ -19,10 +19,9 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IDistroSeriesSourcePackageRelease, ISourcePackageRelease,
-    PackagePublishingStatus, PackageUploadStatus)
+    PackagePublishingStatus)
 from canonical.lazr import decorates
 
 
@@ -143,20 +142,8 @@ class DistroSeriesSourcePackageRelease:
     @property
     def changesfile(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        clauseTables = [
-            'PackageUpload',
-            'PackageUploadSource',
-            ]
-        query = """
-        PackageUpload.id = PackageUploadSource.packageupload AND
-        PackageUpload.distroseries = %s AND
-        PackageUploadSource.sourcepackagerelease = %s AND
-        PackageUpload.status = %s
-        """ % sqlvalues(self.distroseries, self.sourcepackagerelease,
-                        PackageUploadStatus.DONE)
-        queue_record = PackageUpload.selectOne(
-            query, clauseTables=clauseTables)
-
+        queue_record = self.sourcepackagerelease.getQueueRecord(
+            distroseries=self.distroseries)
         if not queue_record:
             return None
 

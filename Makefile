@@ -136,14 +136,20 @@ run: inplace stop bzr_version_info
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian -C $(CONFFILE)
+		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
 
 run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) \
-		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
+
+run_all_quickly_and_quietly: stop_quickly_and_quietly
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
 
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
@@ -182,6 +188,11 @@ start: inplace stop bzr_version_info
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
+
+stop_quickly_and_quietly:
+	LPCONFIG=${LPCONFIG} ${PYTHON} \
+	  utilities/killservice.py librarian buildsequencer launchpad mailman \
+	  > /dev/null 2>&1
 
 shutdown: scheduleoutage stop
 	rm -f +maintenancetime.txt

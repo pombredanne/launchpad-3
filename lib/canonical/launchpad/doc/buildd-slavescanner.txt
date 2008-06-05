@@ -705,16 +705,14 @@ Retrieve a known DistroArchSeries
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
+    >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
 
 Create a totally bogus CHROOT
 
     >>> from canonical.launchpad.database import LibraryFileAlias
-    >>> from canonical.launchpad.database import PocketChroot
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
-    >>> pocket = PackagePublishingPocket.RELEASE
-    >>> chroot = LibraryFileAlias.get(1)
-    >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
-    ...                  pocket=pocket, chroot=chroot)
+    >>> fake_chroot = LibraryFileAlias.get(1)
+    >>> unused = hoary_i386.addOrUpdateChroot(fake_chroot)
+    >>> unused = warty_i386.addOrUpdateChroot(fake_chroot)
 
 Setup a buildd-slave instance for a successful 'scan' procedure.
 
@@ -801,13 +799,11 @@ permissive database user.
 
     >>> from canonical.config import config
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
-    >>> from canonical.launchpad.database.publishing import (
-    ...     SecureSourcePackagePublishingHistory)
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> spr = old_candidate.build.sourcepackagerelease
-    >>> current_pub = spr.publishings[0]
-    >>> secure_pub = SecureSourcePackagePublishingHistory.get(current_pub.id)
+    >>> secure_pub = removeSecurityProxy(
+    ...     old_candidate).build.getCurrentPublication().secure_record
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
@@ -825,6 +821,54 @@ part of the candidates list anymore.
 
     >>> print old_candidate.build.buildstate.name
     SUPERSEDED
+
+If the candidate is for a private build whose source has not been
+published yet, it will be temporarily skipped until the source is
+published.  We need to tweak the status of the publishing record again
+to demonstrate this, and also make the archive private:
+
+    >>> source = new_candidate.build.sourcepackagerelease
+    >>> secure_pub = removeSecurityProxy(
+    ...     new_candidate).build.getCurrentPublication().secure_record
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> secure_pub.status = PackagePublishingStatus.PENDING
+    >>> secure_pub.archive.private = True
+    >>> secure_pub.archive.buildd_secret = "secret"
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+
+Let's try to find a new build candidate:
+
+    >>> another_candidate = a_builder.findBuildCandidate()
+
+Since there are no more candidates at all, findBuildCandidate()
+returned None:
+
+    >>> print another_candidate
+    None
+
+If we publish the source, the build candidate will be found again:
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> secure_pub.status = PackagePublishingStatus.PUBLISHED
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
+
+    >>> another_candidate = a_builder.findBuildCandidate()
+    >>> another_candidate.id == new_candidate.id
+    True
+
+We'll reset the archive back to non-private for further tests:
+
+    >>> source = new_candidate.build.sourcepackagerelease
+    >>> secure_pub = removeSecurityProxy(
+    ...     new_candidate).build.getCurrentPublication().secure_record
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> secure_pub.archive.private = False
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
 For building a candidate in the release pocket for the main component
 and the primary archive It will pass an 'archives' argument to the
@@ -1035,14 +1079,16 @@ on the updates pocket.  This will be replaced in the future by a
 proper solution that allows configurable pocket dependencies.
 
 Also note that when ensurepresent() is called, it receives a URL that
-points to the restricted librarian for the private firefox file (it
-differs from the normal librarian on the port, 58005 versus 58000
-respectively).
+points to the private archive rather than the librarian for the private
+firefox file.  This is because the build slaves are not allowed to
+access the restricted librarian as it cannot provide access via
+credentials, unlike the archive itself.
 
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58005/3/firefox-0.9.2.orig.tar.gz
+        url=http://private.ppa.launchpad.dev/cprov/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
+    URL authorisation with buildd/secret
     OkSlave BUILDING
     Archives:
      deb http://buildd:secret@private.ppa.launchpad.dev/cprov/ubuntu hoary main

@@ -116,11 +116,33 @@ check permissions.
 uploadersForComponent() returns ArchivePermission records where a person
 or team has permission to upload to the supplied component:
 
+    >>> import operator
     >>> uploaders = permission_set.uploadersForComponent(
     ...     ubuntu.main_archive, main_component)
-    >>> for uploader in sorted(uploaders):
+    >>> for uploader in sorted(uploaders, key=operator.attrgetter("id")):
     ...     print uploader.person.name
     ubuntu-team
+
+If the component argument is not passed, it will return
+ArchivePermission records for all matching components:
+
+    >>> uploaders = permission_set.uploadersForComponent(ubuntu.main_archive)
+    >>> for uploader in sorted(uploaders, key=operator.attrgetter("id")):
+    ...     print uploader.person.name, uploader.component.name
+    ubuntu-team universe
+    ubuntu-team restricted
+    ubuntu-team main
+
+componentsForUploader() returns ArchivePermission records for all the
+components that the supplied user has permission to upload to.
+
+    >>> permissions = permission_set.componentsForUploader(
+    ...     ubuntu.main_archive, sabdfl)
+    >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
+    ...     print permission.component.name
+    universe
+    restricted
+    main
 
 uploadersForPackage() returns the ArchivePermission records where a person
 or team has permission to upload to the supplied source package name:
@@ -153,6 +175,32 @@ queues in that component.
 
     >>> archive_admins = permission_set.queueAdminsForComponent(
     ...     ubuntu.main_archive, main_component)
-    >>> for archive_admin in sorted(archive_admins):
+    >>> for archive_admin in sorted(
+    ...     archive_admins, key=operator.attrgetter("id")):
     ...     print archive_admin.person.name
     ubuntu-team
+    name12
+
+componentsForQueueAdmin() returns the ArchivePermission records for all
+the components that the supplied user has permission to administer in
+the distroseries queue.
+
+    >>> name12 = getUtility(IPersonSet).getByName("name12")
+    >>> permissions = permission_set.componentsForQueueAdmin(
+    ...     ubuntu.main_archive, name12)
+    >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
+    ...     print permission.component.name
+    main
+    restricted
+    universe
+    multiverse
+
+    >>> no_team = getUtility(IPersonSet).getByName("no-team-memberships")
+    >>> permissions = permission_set.componentsForQueueAdmin(
+    ...     ubuntu.main_archive, no_team)
+    >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
+    ...     print permission.component.name
+    universe
+    multiverse
+
+

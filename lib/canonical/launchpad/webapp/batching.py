@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,7 +10,7 @@ from canonical.config import config
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.z3batching.batch import _Batch
 from canonical.launchpad.webapp.interfaces import (
-    IBatchNavigator, ITableBatchNavigator,
+    IBatchNavigator, ITableBatchNavigator, InvalidBatchSizeError
     )
 
 
@@ -41,24 +41,32 @@ class BatchNavigator:
     start_variable_name = 'start'
     batch_variable_name = 'batch'
 
+    # We want subclasses to be able to hide the 'Last' link from
+    # users.  They may want to do this for really large result sets;
+    # for example, batches with over a hundred thousand items.
+    show_last_link = True
+
     def __init__(self, results, request, start=0, size=None, callback=None):
         """Constructs a BatchNavigator instance.
 
-        results is an iterable of results. request is the web request
-        being processed. size is a default batch size which the callsite
-        can choose to provide.
+        :param results: is an iterable of results.
 
-        The request will be inspected for a start variable; if set, it
-        indicates which point we are currently displaying at. It will
-        also be inspected for a batch variable; if set, it will be used
-        instead of the size supplied in the callsite.
+        :param request: will be inspected for a start variable; if set,
+            it indicates which point we are currently displaying at. It
+            will also be inspected for a batch variable; if set, it will
+            be used instead of the size supplied in the callsite.
 
-        If no size can be divined from arguments or request, the
-        launchpad.default_batch_size config option is used.
+        :param size: is the default batch size, to fall back to if the
+            request does not specify one.  If no size can be determined
+            from arguments or request, the launchpad.default_batch_size
+            config option is used.
 
-        The callback function if defined is called at the end of
-        object construction with the defined batch as determined
-        by the start and request parameters.
+        :param callback: is called, if defined, at the end of object
+            construction with the defined batch as determined by the
+            start and request parameters.
+
+        :raises InvalidBatchSizeError: if the requested batch size is higher
+            than the maximum allowed.
         """
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We
@@ -80,6 +88,11 @@ class BatchNavigator:
                 size = int(request_size)
             except (ValueError, TypeError):
                 pass
+            if size > config.launchpad.max_batch_size:
+                raise InvalidBatchSizeError(
+                    'Maximum for "%s" parameter is %d.' %
+                    (self.batch_variable_name,
+                     config.launchpad.max_batch_size))
 
         if size is None:
             size = config.launchpad.default_batch_size

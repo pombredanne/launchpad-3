@@ -19,7 +19,7 @@ Here we see that the user 'salgado' has a display name of 'Guilherme
 Salgado'.
 
   >>> salgado = webservice.get('/beta/~salgado').jsonBody()
-  >>> salgado['displayname']
+  >>> salgado['display_name']
   u'Guilherme Salgado'
 
 
@@ -60,15 +60,37 @@ capabilities.
   'application/vd.sun.wadl+xml'
 
 
+== Partial visibility ==
+
+Some parts of an entry may not be visible. Here we see a public bug
+that's assigned to a private team. A non-privileged user can see the
+bug but not the team. Ordinarily this would cause a problem because
+the representation of the bug is supposed to contain a link to a
+team. Instead of denying access completely, that part of the
+representation is omitted from the team.
+
+   >>> authorized_view = webservice.get('/beta/~myteam').jsonBody()
+   >>> authorized_view['members_collection_link']
+   u'http://api.launchpad.dev/beta/~myteam/members'
+   >>> authorized_view['member_memberships_collection_link']
+   u'http://api.launchpad.dev/beta/~myteam/member_memberships'
+
+   >>> unauthorized_view = user_webservice.get('/beta/~myteam').jsonBody()
+   >>> unauthorized_view['members_collection_link']
+   u'tag:launchpad.net:2008:redacted'
+   >>> unauthorized_view['member_memberships_collection_link']
+   u'tag:launchpad.net:2008:redacted'
+
+
 == Custom operations ==
 
 Some entries support custom operations through GET. The custom
-operation to be invoked is named in the query string's 'ws_op'
+operation to be invoked is named in the query string's 'ws.op'
 argument. You can get a list of a team's active members by specifying
-the 'members_by_status' operation.
+the 'getMembersByStatus' operation.
 
   >>> active_members = webservice.get(
-  ...     "/beta/~admins?ws_op=members_by_status&status=Approved").jsonBody()
+  ...     "/beta/~admins?ws.op=getMembersByStatus&status=Approved").jsonBody()
   >>> sorted([m['name'] for m in active_members['entries']])
   [u'carlos', u'daf', u'debonzi', u'kinnison', u'spiv']
 
@@ -90,7 +112,7 @@ bug's status by invoking a custom operation.
 Custom operations may have error handling.
 
   >>> print webservice.get(
-  ...     "/beta/~admins?ws_op=members_by_status&status=NoSuchStatus")
+  ...     "/beta/~admins?ws.op=getMembersByStatus&status=NoSuchStatus")
   HTTP/1.1 400 Bad Request
   ...
   status: Invalid value "NoSuchStatus". Acceptable values are: ...
@@ -110,7 +132,7 @@ Custom operations may have error handling.
 Trying to invoke a nonexistent custom operation yields an error.
 
   >>> print webservice.get(
-  ...     "/beta/~admins?ws_op=no_such_operation")
+  ...     "/beta/~admins?ws.op=no_such_operation")
   HTTP/1.1 404 Not Found
   ...
 
@@ -133,14 +155,14 @@ entry's state, in which case the client should use PUT.
 Here we use the web service to change the user 'salgado' so that their
 display name is in uppercase.
 
-  >>> print modify_person('salgado', {'displayname' : 'GUILHERME SALGADO'},
+  >>> print modify_person('salgado', {'display_name' : 'GUILHERME SALGADO'},
   ...                     'PATCH')
   HTTP/1.1 200 Ok
   Content-Length: 0
   ...
 
   >>> salgado = webservice.get('/beta/~salgado').jsonBody()
-  >>> salgado['displayname']
+  >>> salgado['display_name']
   u'GUILHERME SALGADO'
 
 The modification might cause the person's address to change. Here we
@@ -173,16 +195,16 @@ We happen to have a full document from when we sent a GET request to
 the 'salgado' Person. Modifying that document and PUTting it back is
 less work than constructing a new document and sending it with PATCH.
 
-  >>> salgado['displayname']
+  >>> salgado['display_name']
   u'GUILHERME SALGADO'
 
-  >>> salgado['displayname'] = 'Guilherme Salgado'
+  >>> salgado['display_name'] = 'Guilherme Salgado'
   >>> print modify_person('salgado', salgado, 'PUT')
   HTTP/1.1 200 Ok
   ...
 
   >>> salgado = webservice.get('/beta/~salgado').jsonBody()
-  >>> salgado['displayname']
+  >>> salgado['display_name']
   u'Guilherme Salgado'
 
 Because our patch format is the same as our representation format (a
@@ -202,7 +224,7 @@ might not be acceptable as the payload of a PUT request.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  You didn't specify a value for the attribute 'displayname'.
+  You didn't specify a value for the attribute 'display_name'.
 
 A document that's not a valid JSON document is also unacceptable.
 
@@ -220,18 +242,16 @@ A document that's valid JSON but is not a JSON hash is unacceptable.
 
 An entry's read-only attributes can't be modified.
 
-  >>> print modify_person('salgado', {'datecreated' :
+  >>> print modify_person('salgado', {'date_created' :
   ...                                 u'2001-01-01T01:01:01+00:00Z'}, 'PATCH')
   HTTP/1.1 400 Bad Request
-  Content-Length: 55
-  Content-Type: text/plain;charset=utf-8
-  <BLANKLINE>
-  datecreated: You tried to modify a read-only attribute.
+  ...
+  date_created: You tried to modify a read-only attribute.
 
 You can send a document that includes a value for a read-only
 attribute, but it has to be the same as the current value.
 
-  >>> print modify_person('salgado', {'datecreated' : salgado['datecreated']},
+  >>> print modify_person('salgado', {'date_created' : salgado['date_created']},
   ...                     'PATCH')
   HTTP/1.1 200 Ok
   ...
@@ -300,9 +320,9 @@ relationships to other objects. Here we change the owner of the
 'admins' team from 'sabdfl' to 'salgado'.
 
   >>> admins = webservice.get('/beta/~admins').jsonBody()
-  >>> admins['teamowner_link']
+  >>> admins['team_owner_link']
   u'http://api.launchpad.dev/beta/~sabdfl'
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~salgado'
+  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~salgado'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 200 Ok
   ...
@@ -310,44 +330,44 @@ relationships to other objects. Here we change the owner of the
 Identification of the owner is done by specifying a URL; a random
 string won't work.
 
-  >>> admins['teamowner_link'] = u'A random string'
+  >>> admins['team_owner_link'] = u'A random string'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "A random string".
+  team_owner_link: No such object "A random string".
 
 But not just any URL will do. It has to identify an object in the web
 service.
 
-  >>> admins['teamowner_link'] = u'http://www.canonical.com/'
+  >>> admins['team_owner_link'] = u'http://www.canonical.com/'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "http://www.canonical.com/".
+  team_owner_link: No such object "http://www.canonical.com/".
 
-  >>> admins['teamowner_link'] = u'http://www.canonical.com/beta/~admins'
+  >>> admins['team_owner_link'] = u'http://www.canonical.com/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "http://www.canonical.com/beta/~admins".
+  team_owner_link: No such object "http://www.canonical.com/beta/~admins".
 
 This URL would be valid, but it uses the wrong protocol (HTTPS instead
 of HTTP).
 
-  >>> admins['teamowner_link'] = u'https://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = u'https://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: No such object "https://api.launchpad.dev/beta/~admins".
+  team_owner_link: No such object "https://api.launchpad.dev/beta/~admins".
 
 Even a URL that identifies an object in the web service won't work, if
 the object isn't the right kind of object. A bug can't own a team:
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
+  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/bugs/1'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: Expected a person.
+  team_owner_link: Expected a person.
 
 And a bug can't be a duplicate of a person:
 
@@ -363,11 +383,11 @@ And even if the URL identifies the right kind of object, it might
 violate some other constraint. For instance, a team can't be its own
 owner.
 
-  >>> admins['teamowner_link'] = u'http://api.launchpad.dev/beta/~admins'
+  >>> admins['team_owner_link'] = u'http://api.launchpad.dev/beta/~admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  teamowner_link: Constraint not satisfied.
+  team_owner_link: Constraint not satisfied.
 
 
 === Date formats ===
@@ -376,65 +396,65 @@ Launchpad's web service serves and parses dates in ISO 8601
 format. Only UTC dates are allowed.
 
 The tests that follow make a number of PATCH requests that include
-values for a person's 'datecreated' attribute.
+values for a person's 'date_created' attribute.
 
-  >>> salgado['datecreated']
+  >>> salgado['date_created']
   u'2005-06-06T08:59:51.596025+00:00'
 
-  >>> def patch_salgado_datecreated(date):
+  >>> def patch_salgado_date_created(date):
   ...     "A helper method to try and change a date field."
-  ...     return modify_person('salgado', {'datecreated' : date}, 'PATCH')
+  ...     return modify_person('salgado', {'date_created' : date}, 'PATCH')
 
-These requests aren't actually trying to modify 'datecreated', which
-is read-only. They're asserting that 'datecreated' is a certain
-value. If the assertion succeeds (because 'datecreated' does in fact
+These requests aren't actually trying to modify 'date_created', which
+is read-only. They're asserting that 'date_created' is a certain
+value. If the assertion succeeds (because 'date_created' does in fact
 have that value), the response code is 200. If the assertion could not
 be understood (because the date is in the wrong format), the response
 code is 400, and the body is an error message about the date
-format. If the assertion _fails_ (because 'datecreated' happens to be
+format. If the assertion _fails_ (because 'date_created' happens to be
 read-only), the response code is also 400, but the error message talks
 about an attempt to modify a read-only attribute.
 
 The two 400 error codes below are caused by a failure to understand
 the assertion. The string used in the assertion might not be a date.
 
-  >>> print patch_salgado_datecreated('dummy')
+  >>> print patch_salgado_date_created('dummy')
   HTTP/1.1 400 Bad Request
   ...
-  datecreated: Value doesn't look like a date.
+  date_created: Value doesn't look like a date.
 
 Or it might be a date that's not in UTC.
 
-  >>> print patch_salgado_datecreated(u'2005-06-06T13:59:51.596025+05:00')
+  >>> print patch_salgado_date_created(u'2005-06-06T13:59:51.596025+05:00')
   HTTP/1.1 400 Bad Request
   ...
-  datecreated: Time not in UTC.
+  date_created: Time not in UTC.
 
 There are five ways to specify UTC:
 
-  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025Z')
+  >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025Z')
   HTTP/1.1 200 Ok
   ...
 
-  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025+00:00')
+  >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025+00:00')
   HTTP/1.1 200 Ok
   ...
 
-  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025+0000')
+  >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025+0000')
   HTTP/1.1 200 Ok
   ...
 
-  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025-00:00')
+  >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025-00:00')
   HTTP/1.1 200 Ok
   ...
 
-  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025-0000')
+  >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025-0000')
   HTTP/1.1 200 Ok
   ...
 
 A value with a missing timezone is treated as UTC.
 
-  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025')
+  >>> print patch_salgado_date_created(u'2005-06-06T08:59:51.596025')
   HTTP/1.1 200 Ok
   ...
 

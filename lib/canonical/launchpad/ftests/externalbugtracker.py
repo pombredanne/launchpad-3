@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
-from canonical.launchpad.scripts import checkwatches, debbugs
+from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -129,35 +129,6 @@ def set_bugwatch_error_type(bug_watch, error_type):
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     logout()
-
-
-class OOPSHook:
-    def install(self):
-        self.reset()
-        self.original_report_oops = checkwatches.report_oops
-        checkwatches.report_oops = self.reportOOPS
-
-    def uninstall(self):
-        checkwatches.report_oops = self.original_report_oops
-        del self.original_report_oops
-
-    def reportOOPS(self, message=None, properties=None, info=None):
-        self.oops_info = self.original_report_oops(
-            message=message, properties=properties, info=info)
-        return self.oops_info
-
-    def reset(self):
-        if hasattr(self, 'oops_info'):
-            del self.oops_info
-
-    @property
-    def formatted_oops_info(self):
-        properties_string = '\n'.join(
-            '%s=%r' % (name, value) for name, value
-            in sorted(self.oops_info._data))
-        return '%s\n%s' % (self.oops_info.oopsid, properties_string)
-
-oops_hook = OOPSHook()
 
 
 class TestExternalBugTracker(ExternalBugTracker):
@@ -354,6 +325,47 @@ class TestOldBugzilla(TestBugzilla):
     def _getBugsToTest(self):
         return {42: ('RESOLVED', 'FIXED'),
                 123543: ('ASSIGNED', '')}
+
+
+class TestBugzillaXMLRPCTransport:
+    """A test implementation of the Bugzilla XML-RPC interface."""
+
+    seconds_since_epoch = None
+    timezone = 'UTC'
+    utc_offset = 0
+
+    def request(self, host, handler, request, verbose=None):
+        """Call the corresponding XML-RPC method.
+
+        The method name and arguments are extracted from `request`. The
+        method on this class with the same name as the XML-RPC method is
+        called, with the extracted arguments passed on to it.
+        """
+        args, method_name = xmlrpclib.loads(request)
+        prefix = 'Launchpad.'
+        assert method_name.startswith(prefix), (
+            'All methods should be in the Launchpad namespace')
+
+        method_name = method_name[len(prefix):]
+        method = getattr(self, method_name)
+        return method(*args)
+
+    def time(self):
+        """Return a dict of the local time, UTC time and the timezone."""
+        seconds_since_epoch = self.seconds_since_epoch
+        if seconds_since_epoch is None:
+            remote_datetime = datetime(2008, 5, 1, 1, 1, 1)
+            seconds_since_epoch = time.mktime(remote_datetime.timetuple())
+
+        # We return xmlrpc dateTimes rather than doubles since that's
+        # what BugZilla will return.
+        local_time = xmlrpclib.DateTime(seconds_since_epoch)
+        utc_time = xmlrpclib.DateTime(seconds_since_epoch - self.utc_offset)
+        return {
+            'local_time': local_time,
+            'utc_time': utc_time,
+            'tz_name': self.timezone,
+            }
 
 
 class TestMantis(Mantis):
@@ -821,7 +833,7 @@ class TestDebBugs(DebBugs):
     It allows you to pass in bugs to be used, instead of relying on an
     existing debbugs db.
     """
-    import_comments = False
+    sync_comments = False
 
     def __init__(self, baseurl, bugs):
         super(TestDebBugs, self).__init__(baseurl)

@@ -676,10 +676,10 @@ You can check a person's direct memberships by using myactivememberships:
      (u'admins', 'Administrator'), (u't4', 'Approved')]
 
 And you can check which direct memberships a team has by using
-getActiveMemberships():
+member_memberships:
 
     >>> [(membership.person.name, membership.status.title)
-    ...  for membership in t3.getActiveMemberships()]
+    ...  for membership in t3.member_memberships]
     [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
 
 A team has a number of other methods that return the people which are members
@@ -756,7 +756,7 @@ There is also the getAdministratedTeams() method that returns all the
 teams for which the person/team has admin rights.
 
     >>> [team.name for team in cprov.getAdministratedTeams()]
-    [u'guadamen', u'launchpad-buildd-admins']
+    [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 
 == Querying a person for team participation ==
 

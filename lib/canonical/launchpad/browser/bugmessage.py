@@ -9,7 +9,9 @@ __all__ = [
 
 from StringIO import StringIO
 
-from canonical.launchpad.interfaces import IBugMessageAddForm
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import IBugMessageAddForm, IBugWatchSet
 from canonical.launchpad.webapp import action, canonical_url
 from canonical.launchpad.webapp import LaunchpadFormView
 
@@ -58,9 +60,15 @@ class BugMessageAddFormView(LaunchpadFormView):
 
         message = None
         if data['comment'] or file_:
-            message = bug.newMessage(subject=data['subject'],
+            bugwatch_id = data.get('bugwatch_id')
+            if bugwatch_id is not None:
+                bugwatch = getUtility(IBugWatchSet).get(bugwatch_id)
+            else:
+                bugwatch = None
+            message = bug.newMessage(subject=data.get('subject'),
                                      content=data['comment'],
-                                     owner=self.user)
+                                     owner=self.user,
+                                     bugwatch=bugwatch)
 
             # A blank comment with only a subect line is always added
             # when the user attaches a file, so show the add comment

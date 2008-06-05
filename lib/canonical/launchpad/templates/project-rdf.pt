@@ -41,9 +41,7 @@
                                                 string:${product/fmt:url}/+rdf" />
             </lp:Product>
         </lp:product>
-        <lp:owner>
-            <metal:block metal:use-macro="context/@@rdf_macros/owner_foaf" />
-        </lp:owner>
+        <lp:owner tal:content="structure context/owner/@@+rdf-contents" />
         <lp:status tal:condition="context/active">Active</lp:status>
         <lp:status tal:condition="not:context/active">Inactive</lp:status>
     </lp:Project>

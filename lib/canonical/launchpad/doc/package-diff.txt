@@ -18,14 +18,14 @@ let's use 'pmount' sources.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
 
-    >>> pmount_from = pmount['0.1-2'].sourcepackagerelease
-    >>> pmount_to = pmount['0.1-1'].sourcepackagerelease
+    >>> pmount_from = pmount['0.1-1'].sourcepackagerelease
+    >>> pmount_to = pmount['0.1-2'].sourcepackagerelease
 
 A packageDiff can be created from the two packages by calling
 requestDiffTo(). It takes two arguments: the user requesting the
 packageDiff, and the sourcepackagerelease to that has the changes.
 
-Requesting a diff from pmount_0.1-2 to pmount_0.1-1.
+Requesting a diff from pmount_0.1-1 to pmount_0.1-2.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> package_diff = pmount_from.requestDiffTo(
@@ -59,7 +59,7 @@ Its main attributes are:
     True
 
     >>> print package_diff.from_source.title
-    pmount - 0.1-2
+    pmount - 0.1-1
 
  * 'to_source', which maps to a `ISourcePackageRelease`, the result
    source used in the diff.
@@ -69,7 +69,7 @@ Its main attributes are:
     True
 
     >>> print package_diff.to_source.title
-    pmount - 0.1-1
+    pmount - 0.1-2
 
 Since the PackageDiff was not yet performed, both, 'date_fulfilled'
 and 'diff_content' attributes are empty.
@@ -84,7 +84,7 @@ IPackageDiff offers a property that return the 'title' of the diff
 request.
 
     >>> print package_diff.title
-    Package diff from pmount - 0.1-2 to pmount - 0.1-1
+    0.1-1 to 0.1-2
 
 An attempt to record an already recorded DiffRequest will result in an
 error:
@@ -93,8 +93,8 @@ error:
     ...     requester=cprov, to_sourcepackagerelease=pmount_to)
     Traceback (most recent call last):
     ...
-    PackageDiffAlreadyRequested: Package diff from pmount - 0.1-2 to
-    pmount - 0.1-1 was already requested by Celso Providelo
+    PackageDiffAlreadyRequested: 0.1-1 to 0.1-2 was already requested
+    by Celso Providelo
 
 
 == Diff request for source uploads ==
@@ -102,17 +102,22 @@ error:
 When a source package upload is processed, the upload-processor
 already requests a package diff against the immediate ancestry.
 
-Before starting let's enable the universe component in hoary in order
-to be able to accept the NEW packages.
+Before starting let's enable the universe component and add the i386
+chroot in hoary in order to be able to accept the NEW packages.
 
     >>> from canonical.launchpad.database.component import (
     ...     ComponentSelection)
     >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from canonical.launchpad.database import LibraryFileAlias
 
     >>> hoary = ubuntu.getSeries('hoary')
     >>> universe = getUtility(IComponentSet)['universe']
     >>> selection = ComponentSelection(
     ...     distroseries=hoary, component=universe)
+
+    >>> fake_chroot = LibraryFileAlias.get(1)
+    >>> hoary_i386 = hoary['i386']
+    >>> unused = hoary_i386.addOrUpdateChroot(fake_chroot)
 
 `FakePackager` (see fakepackager.txt) handles the packaging and upload
 of a new source series for us. We can use this to avoid messing with
@@ -128,8 +133,8 @@ And setup the test_keys in order to build and upload signed packages.
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> import_public_test_keys()
 
-When the first version of 'biscuit' is uploaded no diff is requested,
-since there is no suitable ancestry.
+When the first version of 'biscuit' is uploaded, since there is no
+suitable ancentry, no diff is requested.
 
     >>> packager.buildUpstream()
     >>> packager.buildSource(signed=False)
@@ -149,7 +154,7 @@ requests a diff, since there is a suitable ancestry.
 
     >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-8 to biscuit - 1.0-1
+    1.0-1 to 1.0-8
 
 We will release ubuntu/hoary so we can upload to post-RELEASE pockets.
 
@@ -166,7 +171,7 @@ the last published version in the RELEASE pocket.
 
     >>> [diff] = biscuit_nine_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-9 to biscuit - 1.0-8
+    1.0-8 to 1.0-9
 
 The subsequent version uploaded to hoary-updates will get a diff
 against 1.0-9.
@@ -178,7 +183,7 @@ against 1.0-9.
 
     >>> [diff] = biscuit_ten_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-10 to biscuit - 1.0-9
+    1.0-9 to 1.0-10
 
 An upload to other pocket, in this case hoary-proposed, will get a diff
 against the last version in the RELEASE pocket.
@@ -190,7 +195,7 @@ against the last version in the RELEASE pocket.
 
     >>> [diff] = biscuit_eleven_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-11 to biscuit - 1.0-8
+    1.0-8 to 1.0-11
 
 For testing diffs in the PPA context we need to activate the PPA for
 Foo Bar.
@@ -212,7 +217,7 @@ version in the PRIMARY archive in the RELEASE pocket.
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-2 to biscuit - 1.0-8
+    1.0-8 (in Ubuntu) to 1.0-2
 
 A subsequent upload in the PPA context will get a diff against 1.0-2,
 the version found in its context.
@@ -224,14 +229,175 @@ the version found in its context.
 
     >>> [diff] = biscuit_three_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
-    Package diff from biscuit - 1.0-3 to biscuit - 1.0-2
+    1.0-2 to 1.0-3
 
 
 == Performing a Diff ==
 
+Now we will actually perform a package diff and look at the results.
+
+In order for the uploaded files to be flushed to the librarian we need
+to commit the transaction here.
+
+    >>> import transaction
+    >>> transaction.commit()
+
+The auxiliary function below will facilitate the viewing of diff results.
+
+    >>> import os
+    >>> import shutil
+    >>> import subprocess
+    >>> import tempfile
+
+    >>> from canonical.librarian.utils import copy_and_close
+
+    >>> def get_diff_results(diff):
+    ...     lfa = diff.diff_content
+    ...     if lfa is None:
+    ...         return None
+    ...     lfa.open()
+    ...     jail = tempfile.mkdtemp()
+    ...     local = os.path.abspath('')
+    ...     jail = tempfile.mkdtemp()
+    ...     fhandle = open(os.path.join(jail, "the.diff.gz"), 'w')
+    ...     copy_and_close(lfa, fhandle)
+    ...     os.chdir(jail)
+    ...     p = subprocess.Popen(
+    ...          ['gunzip', "the.diff.gz"], stdout=subprocess.PIPE)
+    ...     p.communicate()
+    ...     p = subprocess.Popen(
+    ...          ['splitdiff', "-a", "-d", "-p1", "the.diff"],
+    ...          stdout=subprocess.PIPE)
+    ...     p.communicate()
+    ...     diffs = [filename for filename in sorted(os.listdir('.'))
+    ...              if filename != 'the.diff']
+    ...     ordered_diff_contents = [open(diff).read() for diff in diffs]
+    ...     os.chdir(local)
+    ...     shutil.rmtree(jail)
+    ...     return "".join(ordered_diff_contents)
+
+Let's obtain the diff that was created when package "biscuit - 1.0-8"
+was uploaded.
+
+    >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
+
+The PackageDiff record is not yet 'performed', so both,
+'date_fullfiled' and 'diff_content' fields, are empty.
+
+    >>> print diff.date_fulfilled
+    None
+
+    >>> print diff.diff_content
+    None
+
+Performing the diff.
+
+    >>> diff.performDiff()
+
+The record is immediatelly updated, now the record contains a
+'date_fullfilled' and 'diff_content' points to a LibraryFileAlias
+with a proper mimetype.
+
+    >>> diff.date_fulfilled is not None
+    True
+
+    >>> print diff.diff_content.filename
+    biscuit_1.0-1_1.0-8.diff.gz
+
+    >>> print diff.diff_content.mimetype
+    application/gzipped-patch
+
+Since it stores the diff results in the librarian we need to commit the
+transaction before we can access the file.
+
+    >>> transaction.commit()
+
+Now we can compare the package diff outcome to the debdiff output
+(obtained manually on the shell) for the packages in question.
+
+    >>> print get_diff_results(diff)
+    --- biscuit-1.0/contents
+    +++ biscuit-1.0/contents
+    @@ -2,0 +3 @@
+    +1.0-8
+    --- biscuit-1.0/debian/changelog
+    +++ biscuit-1.0/debian/changelog
+    @@ -1,3 +1,9 @@
+    +biscuit (1.0-8) hoary; urgency=low
+    +
+    +  * cookies
+    +
+    + -- Foo Bar <foo.bar@canonical.com>  ...
+    +
+     biscuit (1.0-1) hoary; urgency=low
+    <BLANKLINE>
+       * Initial Upstream package
+    <BLANKLINE>
 
 
+== Dealing with all PackageDiff objects ==
 
-== Browsing Diffs ==
+The PackageDiffSet utility implements simple auxiliary methods to deal
+directly with PackageDiffs objects.
 
+Let's flush all the updates done.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+Those methods are useful when the callsites are not interested only in
+PackageDiffs attached to specific SourcePackageReleases.
+
+Using the utility it's possible to iterate over all PackageDiff
+stored.
+
+    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> packagediff_set = getUtility(IPackageDiffSet)
+
+    >>> def print_diffs(diff_set):
+    ...     diffs = list(diff_set)
+    ...     diff_first_id = diffs[0].id
+    ...     for diff in diff_set:
+    ...         id_diff = diff.id - diff_first_id
+    ...         print diff.from_source.name, diff.title, \
+    ...               diff.date_fulfilled is not None, id_diff
+
+    >>> print_diffs(packagediff_set)
+    biscuit 1.0-2 to 1.0-3               False   0
+    biscuit 1.0-8 (in Ubuntu) to 1.0-2   False  -1
+    biscuit 1.0-8 to 1.0-11              False  -2
+    biscuit 1.0-9 to 1.0-10              False  -3
+    biscuit 1.0-8 to 1.0-9               False  -4
+    biscuit 1.0-1 to 1.0-8               True   -5
+    pmount 0.1-1 to 0.1-2                False  -6
+
+Or only the PackageDiffs not yet fullfilled.
+
+    >>> print_diffs(packagediff_set.getPendingDiffs())
+    pmount 0.1-1 to 0.1-2                False   0
+    biscuit 1.0-8 to 1.0-9               False   2
+    biscuit 1.0-9 to 1.0-10              False   3
+    biscuit 1.0-8 to 1.0-11              False   4
+    biscuit 1.0-8 (in Ubuntu) to 1.0-2   False   5
+    biscuit 1.0-2 to 1.0-3               False   6
+
+Note that the iteration over all PackageDiffs is sorted by descending
+database ID, i.e. newest first, and getPendingDiffs() results are
+ordered by ascending database IDs, oldest first.
+
+getPendingDiffs() results can optionally be limited.
+
+    >>> packagediff_set.getPendingDiffs().count()
+    6
+
+    >>> packagediff_set.getPendingDiffs(limit=2).count()
+    2
+
+A arbitrary PackageDiff object can be easily retrieved by database ID
+if necessary.
+
+    >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
+    >>> candidate_diff = packagediff_set.get(diff.id)
+    >>> candidate_diff == diff
+    True
 

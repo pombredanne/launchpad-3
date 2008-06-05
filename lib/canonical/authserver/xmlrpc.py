@@ -2,10 +2,27 @@
 
 from twisted.web import xmlrpc
 
-class UserDetailsResource(xmlrpc.XMLRPC):
+from canonical.config import config
+
+
+class LoggingResource(xmlrpc.XMLRPC):
+    """Includes the original stack trace in unexpected Faults."""
+
+    def _ebRender(self, failure):
+        fault = xmlrpc.XMLRPC._ebRender(self, failure)
+        if (config.authserver.include_traceback_in_fault
+            and fault.faultCode == self.FAILURE):
+            return xmlrpc.Fault(
+                self.FAILURE,
+                'Original traceback:\n' + failure.getTraceback())
+        else:
+            return fault
+
+
+class UserDetailsResource(LoggingResource):
 
     def __init__(self, storage, debug=False):
-        xmlrpc.XMLRPC.__init__(self)
+        LoggingResource.__init__(self)
         self.storage = storage
         self.debug = debug
 
@@ -42,11 +59,11 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         return self.storage.getSSHKeys(loginID)
 
 
-class UserDetailsResourceV2(xmlrpc.XMLRPC):
+class UserDetailsResourceV2(LoggingResource):
     """A new (and simpler) version of the user details XML-RPC API."""
 
     def __init__(self, storage, debug=False):
-        xmlrpc.XMLRPC.__init__(self)
+        LoggingResource.__init__(self)
         self.storage = storage
         self.debug = debug
 
@@ -67,6 +84,9 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, password)
         return self.storage.authUser(loginID, password)
+
+    def xmlrpc_getDefaultStackedOnBranch(self, project_name):
+        return self.storage.getDefaultStackedOnBranch(project_name)
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
@@ -118,10 +138,10 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
             loginID, userName, productName, branchName)
 
 
-class BranchDetailsResource(xmlrpc.XMLRPC):
+class BranchDetailsResource(LoggingResource):
 
     def __init__(self, storage, debug=False):
-        xmlrpc.XMLRPC.__init__(self)
+        LoggingResource.__init__(self)
         self.storage = storage
         self.debug = debug
 

@@ -6,8 +6,7 @@ defining a model for managing recipes, and then publishing the model
 objects as resources through a web service.
 
 # XXX leonardr 2008-04-23 bug=221037: This test should be moved to
-# launchpad/doc and made to run without layers. It registers resource
-# classes that pollute generated WADL documents in the pagetests.
+# launchpad/doc and made to run without layers.
 
 == Example model objects ==
 
@@ -23,10 +22,13 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> __metaclass__ = type
 
     >>> from zope.interface import Interface, Attribute
-    >>> from zope.schema import Int, Text, TextLine, Object
+    >>> from zope.schema import Bool, Bytes, Int, Text, TextLine, Object
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
+    ...     # favorite_recipe.schema will be set to IRecipe once
+    ...     # IRecipe is defined.
+    ...     favorite_recipe = Object(schema=Interface)
 
     >>> class ICommentTarget(Interface):
     ...     comments = Attribute('List of comments about this object.')
@@ -40,6 +42,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     author = Object(schema=IAuthor)
     ...     cuisine = TextLine(title=u"Cuisine", required=False, default=None)
     ...     recipes = Attribute("List of recipes published in this cookbook.")
+    ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
 
     >>> class IDish(Interface):
     ...     name = TextLine(title=u"Name", required=True)
@@ -51,6 +54,10 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     cookbook = Object(schema=ICookbook)
     ...     instructions = Text(title=u"How to prepare the recipe.",
     ...         required=True)
+    ...     private = Bool(title=u"Whether the public can see this recipe.",
+    ...                    default=False)
+
+    >>> IAuthor['favorite_recipe'].schema = IRecipe
 
 Here's the interface for the 'set' objects that manage the authors,
 cookbooks, and dishes. The inconsistent naming is intentional.
@@ -83,14 +90,15 @@ cookbooks, and dishes. The inconsistent naming is intentional.
 Here are simple implementations of IAuthor, IComment, ICookbook, IDish,
 and IRecipe.
 
-    >>> from zope.interface import implements
     >>> from zope.security.checker import CheckerPublic
+    >>> from zope.interface import implements
     >>> from canonical.lazr.security import protect_schema
 
     >>> class Author:
     ...     implements(IAuthor)
     ...     def __init__(self, name):
     ...         self.name = name
+    ...         self.favorite_recipe = None
     >>> protect_schema(Author, IAuthor, write_permission=CheckerPublic)
 
     >>> class Comment(object):
@@ -109,6 +117,7 @@ and IRecipe.
     ...         self.recipes = []
     ...         self.comments = []
     ...         self.cuisine = cuisine
+    ...         self.cover = None
     >>> protect_schema(Cookbook, ICookbook, write_permission=CheckerPublic)
 
     >>> class Dish:
@@ -120,7 +129,8 @@ and IRecipe.
 
     >>> class Recipe:
     ...     implements(IRecipe)
-    ...     def __init__(self, id, cookbook, dish, instructions):
+    ...     def __init__(self, id, cookbook, dish, instructions,
+    ...                  private=False):
     ...         self.id = id
     ...         self.cookbook = cookbook
     ...         self.cookbook.recipes.append(self)
@@ -128,7 +138,9 @@ and IRecipe.
     ...         self.dish.recipes.append(self)
     ...         self.instructions = instructions
     ...         self.comments = []
-    >>> protect_schema(Recipe, IRecipe, write_permission=CheckerPublic)
+    ...         self.private = private
+    >>> protect_schema(Recipe, IRecipe, read_permission='launchpad.View',
+    ...                write_permission=CheckerPublic)
 
 Here are the "model objects" themselves:
 
@@ -149,7 +161,7 @@ Here are the "model objects" themselves:
 
     >>> D2 = Dish("Baked beans")
     >>> C2_D2 = Recipe(4, C2, D2, "Preheat oven to...")
-    >>> C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...")
+    >>> C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...", True)
 
     >>> D3 = Dish("Foies de voilaille en aspic")
     >>> C1_D3 = Recipe(6, C1, D3, "Chicken livers sauteed in butter...")
@@ -157,8 +169,13 @@ Here are the "model objects" themselves:
     >>> COM1 = Comment(C2_D1, "Clear and concise.")
     >>> COM2 = Comment(C2, "A kitchen staple.")
 
+    >>> A1.favorite_recipe = C1_D1
+    >>> A2.favorite_recipe = C2_D2
+    >>> A3.favorite_recipe = C3_D2
+
 Here's a simple CookbookSet with a predefined list of cookbooks.
 
+    >>> from zope.component import provideUtility
     >>> class CookbookSet:
     ...     implements(ICookbookSet)
     ...     def __init__(self):
@@ -196,6 +213,7 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...             raise ValueError("No matches for %s" % name)
     ...         return matches
     >>> protect_schema(CookbookSet, ICookbookSet)
+    >>> provideUtility(CookbookSet(), ICookbookSet)
 
 Here's a simple AuthorSet with predefined authors.
 
@@ -218,6 +236,7 @@ Here's a simple AuthorSet with predefined authors.
     ...             return match[0]
     ...         return None
     >>> protect_schema(AuthorSet, IAuthorSet)
+    >>> provideUtility(AuthorSet(), IAuthorSet)
 
 Finally, a simple DishSet with predefined dishes.
 
@@ -235,6 +254,54 @@ Finally, a simple DishSet with predefined dishes.
     ...             return match[0]
     ...         return None
     >>> protect_schema(DishSet, IDishSet)
+    >>> provideUtility(DishSet(), IDishSet)
+
+
+== Security ==
+
+Here's an IAuthorization implementation for our business objects. Its
+lenient policy makes it possible, in general, for users to see the
+objects.
+
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> from zope.component import provideAdapter
+    >>> class OpenAuthorization:
+    ...     implements(IAuthorization)
+    ...     def __init__(self, context):
+    ...         pass
+    ...
+    ...     def checkUnauthenticated(self):
+    ...         return True
+    ...
+    ...     def checkAuthenticated(self, user):
+    ...         return True
+    >>> provideAdapter(OpenAuthorization, [IAuthor],
+    ...                IAuthorization, name='launchpad.View')
+    >>> provideAdapter(OpenAuthorization, [IComment],
+    ...                IAuthorization, name='launchpad.View')
+    >>> provideAdapter(OpenAuthorization, [ICookbook],
+    ...                IAuthorization, name='launchpad.View')
+    >>> provideAdapter(OpenAuthorization, [IDish],
+    ...                IAuthorization, name='launchpad.View')
+
+Here's an different IAuthorization implementation for IRecipe. This
+will prevent unauthenticated users from seeing private recipes.
+
+    >>> class PublicOnlyAuthorization:
+    ...     implements(IAuthorization)
+    ...     def __init__(self, context):
+    ...         self.context = context
+    ...
+    ...     def checkUnauthenticated(self):
+    ...         return not self.context.private
+    ...
+    ...     def checkAuthenticated(self, user):
+    ...         return True
+    >>> provideAdapter(PublicOnlyAuthorization, [IRecipe],
+    ...                IAuthorization, name='launchpad.View')
+
+
+== Navigation ==
 
 The web service uses the standard Navigation components to map URLs to
 components to publish (see navigation.txt) and the standard
@@ -246,7 +313,6 @@ The navigation for these components:
     >>> from urllib import unquote
     >>> from canonical.launchpad.webapp.publisher import (
     ...     Navigation, stepthrough)
-    >>> from zope.component import provideAdapter
     >>> from zope.publisher.interfaces.browser import (
     ...     IBrowserPublisher, IDefaultBrowserLayer)
 
@@ -430,6 +496,7 @@ recipe to its cookbook.
     ...     author = Object(schema=IAuthor)
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
     ...     comments = CollectionField(value_type=Object(schema=IComment))
+    ...     cover = Bytes(0, 5000, title=u"An image of the cookbook's cover.")
 
 
 == Implementing the resources ==
@@ -538,6 +605,8 @@ collection.
     >>> class AuthorCollection(Collection):
     ...     """A collection of authors, as exposed through the web service."""
     ...
+    ...     entry_schema = IAuthorEntry
+    ...
     ...     def find(self):
     ...        """Find all the authors."""
     ...        return self.context.getAllAuthors()
@@ -551,6 +620,8 @@ collection.
     ...     """A collection of cookbooks, as exposed through the web service.
     ...     """
     ...
+    ...     entry_schema = ICookbookEntry
+    ...
     ...     def find(self):
     ...        """Find all the cookbooks."""
     ...        return self.context.getAll()
@@ -559,30 +630,53 @@ collection.
     >>> class DishCollection(Collection):
     ...     """A collection of dishes, as exposed through the web service."""
     ...
+    ...     entry_schema = IDishEntry
+    ...
     ...     def find(self):
     ...        """Find all the dishes."""
     ...        return self.context.getAll()
     >>> provideAdapter(DishCollection, [IDishSet], ICollection)
 
 Like Entry, Collection is a simple base class that defines a
-constructor.
+constructor. The 'entry_schema' attribute gives a Collection class
+knowledge about what kind of entry it's supposed to contain.
 
-We need to define a collection of the recipes associated with a
+    >>> DishCollection.entry_schema
+    <InterfaceClass __builtin__.IDishEntry>
+
+We also need to define a collection of the recipes associated with a
 cookbook. We say that the collection of recipes is scoped to a
 cookbook. Scoped collections adapters are looked for based on the type
 of the scope, and the type of the entries contained in the scoped
-collection. There is a default ScopedCollection adapter that work in all
-cases where the scoped collection is available as an iterable attribute
+collection. There is a default ScopedCollection adapter that works
+whenever the scoped collection is available as an iterable attribute
 of the context.
 
     >>> from zope.component import getMultiAdapter
     >>> from canonical.lazr.interfaces import IScopedCollection
 
-    >>> getMultiAdapter((C1, C1_D1), IScopedCollection)
+    >>> def scope_collection(parent, child, name):
+    ...     """A helper method that simulates a scoped collection lookup."""
+    ...     parent_entry = IEntry(parent)
+    ...     scoped = getMultiAdapter((parent_entry, IEntry(child)),
+    ...                               IScopedCollection)
+    ...     scoped.relationship = parent_entry.schema.get(name)
+    ...     return scoped
+
+The default adapter works just fine with the collection of recipes for
+a cookbook.
+
+    >>> scoped_collection = scope_collection(C1, C1_D1, 'recipes')
+    >>> scoped_collection
     <canonical.lazr.rest.resource.ScopedCollection...>
 
-The default adapter will also work just fine with the comments scoped
-collection.
+Like a regular collection, a scoped collection knows what kind of
+object is inside it. Recall that the 'recipes' collection of a
+cookbook was defined as one that contains Objects with a schema of
+IRecipe. This information is available to the ScopedCollection object.
+
+    >>> scoped_collection.entry_schema
+    <InterfaceClass __builtin__.IRecipeEntry>
 
 
 == Custom operations ==
@@ -646,7 +740,7 @@ a named factory operation for creating a new cookbook.
     ...         TextLine(
     ...             __name__='cuisine', default=u'Brazilian', required=False),
     ...     )
-    ...   
+    ...
     ...     def call(self, author_name, title, cuisine):
     ...         cookbook = CookbookSet().newCookbook(
     ...             author_name, title, cuisine)
@@ -739,16 +833,25 @@ will act as though you had performed a GET on the URL
     >>> request = create_web_service_request('/beta/')
     >>> ignore = request.traverse(app)
 
-The response document is a WADL description of the resource types
-defined earlier.
+The response document is a JSON document full of links to the
+top-level collections of authors, cookbooks, and dishes. It's the
+'home page' for the web service.
 
-    >>> print app(request)
-    <?xml version="1.0"?>
-    <application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns="http://research.sun.com/wadl/2006/10"
-      xsi:schemaLocation="http://research.sun.com/wadl/2006/10/wadl.xsd">
-      <!--Begin resource_type definitions for collection resources.-->
-    ...
+    # XXX leonardr 2008-04-24 bug=221037: It also includes top-level
+    # collections from the Launchpad web service. This part of the
+    # test can be simplified once the test is moved to another layer.
+    >>> import simplejson
+    >>> response = app(request)
+    >>> representation = simplejson.loads(response)
+
+    >>> representation["AuthorCollection_collection_link"]
+    u'http://api.launchpad.dev/beta/authors'
+
+    >>> representation["CookbookCollection_collection_link"]
+    u'http://api.launchpad.dev/beta/cookbooks'
+
+    >>> representation["DishCollection_collection_link"]
+    u'http://api.launchpad.dev/beta/dishes'
 
 The standard canonical_url() function can be used to generate URLs to
 content objects published on the web service. It works for the web
@@ -759,6 +862,38 @@ service root also.
     True
     >>> canonical_url(app)
     u'http://api.launchpad.dev/beta/'
+
+
+=== WADL documents ===
+
+Every resource can serve a WADL representation of itself. The main
+WADL document is the WADL representation of the server root. It
+describes the capabilities of the web service as a whole.
+
+    >>> wadl_headers = {'HTTP_ACCEPT' : 'application/vd.sun.wadl+xml'}
+    >>> wadl_request = create_web_service_request(
+    ...     '/beta/', environ=wadl_headers)
+    >>> wadl_resource = wadl_request.traverse(app)
+    >>> print wadl_resource(wadl_request)
+    <?xml version="1.0"?>
+    <application ...>
+    ...
+    </application>
+
+If the resources are improperly configured, the WADL can't be
+generated. Here's an example, where DishCollection is registered as an
+adapter twice. Earlier it was registered as the adapter for IDishSet;
+here it's also registered as the adapter for IAuthorSet. The WADL
+generation doesn't know whether to describe DishCollection using the
+named operations defined against IAuthorSet or the named operations
+defined against IDishSet, so there's an AssertionError.
+
+    >>> provideAdapter(DishCollection, [IAuthorSet], ICollection)
+    >>> print wadl_resource(wadl_request)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There must be one (and only one) adapter
+    from DishCollection to ICollection.
 
 
 == Collection resources ==
@@ -781,7 +916,6 @@ into a CollectionResource.
 Calling the collection resource yields a JSON document, which can be
 parsed with standard tools.
 
-    >>> import simplejson
     >>> representation = simplejson.loads(collection())
 
 === Pagination ===
@@ -801,14 +935,14 @@ But if we ask for a page size of two, we can see how pagination
 works. Here's page one, with two cookbooks on it.
 
     >>> request = create_web_service_request(
-    ...     '/beta/cookbooks', environ={'QUERY_STRING' : 'ws_size=2'})
+    ...     '/beta/cookbooks', environ={'QUERY_STRING' : 'ws.size=2'})
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
     [u'entries', u'next_collection_link', u'start', u'total_size']
     >>> representation['next_collection_link']
-    u'http://api.launchpad.dev/beta/cookbooks?ws_start=2&ws_size=2'
+    u'http://api.launchpad.dev/beta/cookbooks?ws.start=2&ws.size=2'
     >>> len(representation['entries'])
     2
     >>> representation['total_size']
@@ -819,14 +953,14 @@ has the last cookbook on it.
 
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks',
-    ...     environ={'QUERY_STRING' : 'ws_start=2&ws_size=2'})
+    ...     environ={'QUERY_STRING' : 'ws.start=2&ws.size=2'})
     >>> collection = request.traverse(app)
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
     [u'entries', u'prev_collection_link', u'start', u'total_size']
     >>> representation['prev_collection_link']
-    u'http://api.launchpad.dev/beta/cookbooks?ws_start=0&ws_size=2'
+    u'http://api.launchpad.dev/beta/cookbooks?ws.start=0&ws.size=2'
     >>> len(representation['entries'])
     1
 
@@ -841,7 +975,7 @@ cookbooks.
     >>> request = create_web_service_request(
     ...    '/beta/cookbooks',
     ...    environ={'QUERY_STRING' :
-    ...             'ws_op=find_recipes&name=Roast%20chicken'})
+    ...             'ws.op=find_recipes&name=Roast%20chicken'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
     >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
@@ -855,7 +989,7 @@ are passed along to the client.
     >>> request = create_web_service_request(
     ...    '/beta/cookbooks',
     ...    environ={'QUERY_STRING' :
-    ...             'ws_op=find_recipes&name=NoSuchRecipe'})
+    ...             'ws.op=find_recipes&name=NoSuchRecipe'})
     >>> operation_resource = request.traverse(app)
     >>> print operation_resource()
     No matches for NoSuchRecipe
@@ -864,7 +998,7 @@ Collections may also support named POST operations. These operations
 are often factory operations. Here we create a new cookbook for an
 existing author:
 
-    >>> body = ("ws_op=create_cookbook&title=Beard%20on%20Bread&"
+    >>> body = ("ws.op=create_cookbook&title=Beard%20on%20Bread&"
     ...         "author_name=James%20Beard")
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks', 'POST', body,
@@ -879,7 +1013,7 @@ existing author:
 
 Here we create a cookbook for a new author.
 
-    >>> body = ("ws_op=create_cookbook&title=Everyday%20Greens&"
+    >>> body = ("ws.op=create_cookbook&title=Everyday%20Greens&"
     ...         "author_name=Deborah%20Madison")
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks', 'POST', body,
@@ -918,10 +1052,13 @@ entry's resource), and possibly links to associated resources.
     >>> entries[0]['self_link']
     u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread'
 
-Each cookbook, for instance, has a link to its author.
+Each cookbook, for instance, has a link to its author and a link to a
+cover image.
 
     >>> entries[0]['author_link']
     u'http://api.launchpad.dev/beta/authors/James%20Beard'
+    >>> entries[0]['cover_link']
+    u'http://api.launchpad.dev/beta/cookbooks/Beard%20on%20Bread/cover'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -937,7 +1074,7 @@ EntryResource.
 For instance, creating a new cookbook and making a request to its URL
 will wrap it into an EntryResource.
 
-    >>> body = ("ws_op=create_cookbook&title=Feijoada&"
+    >>> body = ("ws.op=create_cookbook&title=Feijoada&"
     ...         "author_name=Fernando%20Yokota")
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks', 'POST', body,
@@ -961,6 +1098,8 @@ value (Brazilian) specified in CookbookFactoryOperation for it.
       u'http://api.launchpad.dev/beta/authors/Fernando%20Yokota'),
      (u'comments_collection_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/comments'),
+     (u'cover_link',
+      u'http://api.launchpad.dev/beta/cookbooks/Feijoada/cover'),
      (u'cuisine', u'Brazilian'),
      (u'name', u'Feijoada'),
      (u'recipes_collection_link',
@@ -1010,13 +1149,173 @@ across cookbooks.
 
     >>> request = create_web_service_request(
     ...     '/beta/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken',
-    ...     environ={'QUERY_STRING' : 'ws_op=find_similar_recipes'})
+    ...     environ={'QUERY_STRING' : 'ws.op=find_similar_recipes'})
     >>> operation_resource = request.traverse(app)
     >>> chicken_recipes = simplejson.loads(operation_resource())
     >>> sorted([c['instructions'] for c in chicken_recipes['entries']])
     [u'A perfectly roasted chicken is...',
      u'Draw, singe, stuff, and truss...',
      u'You can always judge...']
+
+
+== Resource Visibility ==
+
+Certain resources might not be visible to every user. In this example,
+certain recipes have been designated as private and can't be seen by
+unauthenticated users. For demonstration purposes, the recipe for
+"Baked beans" in "James Beard's American Cookery" has been marked as
+private. An unauthorized attempt to GET this resource will result in
+an error.
+
+    >>> private_recipe_url = quote(
+    ...     "/beta/cookbooks/James Beard's American Cookery/recipes/"
+    ...     "Baked beans")
+    >>> get_request = create_web_service_request(private_recipe_url)
+    >>> recipe_resource = get_request.traverse(app)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Recipe object...>, 'dish', 'launchpad.View')
+
+The recipe will not show up in collections:
+
+    >>> recipes_url = quote(
+    ...     "/beta/cookbooks/James Beard's American Cookery/recipes")
+    >>> get_request = create_web_service_request(recipes_url)
+    >>> collection_resource = get_request.traverse(app)
+    >>> collection = simplejson.loads(collection_resource())
+
+The web service knows about two recipes from James Beard's American
+Cookery, but an unauthorized user can only see one of them.
+
+    >>> len(collection['entries'])
+    1
+
+Note that the 'total_size' of the collection is slightly inaccurate,
+having been generated before invisible recipes were filtered out.
+
+    >>> collection['total_size']
+    2
+
+As it happens, the author "James Beard" has his 'favorite_recipe'
+attribute set to the "Baked beans" recipe. But an unauthorized user
+can't see anything about that recipe, not even its URL.
+
+    >>> beard_url = quote('/beta/authors/James Beard')
+    >>> get_request = create_web_service_request(beard_url)
+    >>> author_resource = get_request.traverse(app)
+    >>> author = simplejson.loads(author_resource())
+
+The author's name is public information, so it's visible. But the link
+to his favorite recipe has been redacted.
+
+    >>> author['name']
+    u'James Beard'
+    >>> author['favorite_recipe_link']
+    u'tag:launchpad.net:2008:redacted'
+
+It's possible to use a representation that contains redacted
+information when sending a PUT or PATCH request back to the
+server. The server will know that the client isn't actually trying to
+set the field value to 'tag:launchpad.net:2008:redacted'.
+
+    >>> headers = {'CONTENT_TYPE' : 'application/json'}
+    >>> body = simplejson.dumps(author)
+    >>> put_request = create_web_service_request(
+    ...     beard_url, body=body, environ=headers, method='PUT')
+    >>> put_request.traverse(app)()
+    ''
+
+And since no special permission is necessary to _change_ a person's
+'favorite_recipe', it's possible to set it to a visible recipe using
+PUT, even when its current value is redacted.
+
+    >>> author['favorite_recipe_link'] = 'http://' + quote(
+    ...     'api.launchpad.dev/beta/cookbooks/'
+    ...     'The Joy of Cooking/recipes/Roast chicken')
+    >>> body = simplejson.dumps(author)
+    >>> put_request = create_web_service_request(
+    ...     beard_url, body=body, environ=headers, method='PUT')
+    >>> put_request.traverse(app)()
+    ''
+
+After that PUT, James Beard's 'favorite_recipe' attribute is no longer
+redacted. It's the value set by the PUT request.
+
+    >>> get_request = create_web_service_request(beard_url)
+    >>> author_resource = get_request.traverse(app)
+    >>> author = simplejson.loads(author_resource())
+    >>> author['favorite_recipe_link']
+    u'http://api.launchpad.dev/beta/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken'
+
+Finally, you can't set an attribute to a value that you wouldn't have
+permission to see:
+
+    >>> author['favorite_recipe_link'] = (
+    ...     'http://api.launchpad.dev' + private_recipe_url)
+    >>> body = simplejson.dumps(author)
+    >>> put_request = create_web_service_request(
+    ...     beard_url, body=body, environ=headers, method='PUT')
+    >>> put_request.traverse(app)()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Recipe object...>, 'dish', 'launchpad.View')
+
+
+== Stored file resources ==
+
+Binary files, such as the covers of cookbooks, are stored on an
+external server, but they have addresses within the web service. A
+newly created cookbook has no cover.
+
+    >>> cover_url = quote('/beta/cookbooks/The Joy of Cooking/cover')
+    >>> get_request = create_web_service_request(cover_url)
+    >>> file_resource = get_request.traverse(app)
+    >>> file_resource()
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: 'cover'
+
+    >>> print C2.cover
+    None
+
+A cookbook can be given a cover with PUT.
+
+    >>> headers = {'CONTENT_TYPE' : 'image/png'}
+    >>> body = 'Pretend this is an image.'
+    >>> put_request = create_web_service_request(
+    ...     cover_url, body=body, environ=headers, method='PUT')
+    >>> file_resource = put_request.traverse(app)
+    >>> file_resource()
+
+    >>> C2.cover
+    <LibraryFileAlias ...>
+
+At this point it exists:
+
+    >>> get_request = create_web_service_request(cover_url)
+    >>> file_resource = get_request.traverse(app)
+    >>> file_resource()
+    >>> get_request.response.getStatus()
+    303
+    >>> print get_request.response.getHeader('Location')
+    http://localhost:58000/.../cover
+
+The cover can be deleted with DELETE.
+
+    >>> delete_request = create_web_service_request(
+    ...     cover_url, method='DELETE')
+    >>> file_resource = delete_request.traverse(app)
+    >>> file_resource()
+
+    >>> get_request = create_web_service_request(cover_url)
+    >>> file_resource = get_request.traverse(app)
+    >>> file_resource()
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: 'cover'
+
+    >>> print C2.cover
+    None
 
 
 == Requesting non available resources ==
@@ -1136,3 +1435,37 @@ their URLs, we make the change by modifying the cookbook's
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['author_link']
     u'http://api.launchpad.dev/beta/authors/Julia%20Child'
+
+
+= Cleanup =
+
+The final step is to unregister the adapters registered for this test,
+so that they don't show up in other tests as parts of the site.
+
+    >>> from zope.app import zapi
+    >>> def unregister(required, provided, name=''):
+    ...     manager = zapi.getGlobalSiteManager()
+    ...     manager.adapters.register(required, provided, name, None)
+    ...     del manager._registrations[(tuple(required), provided, name)]
+    >>> unregister([IAuthor], IAuthorEntry)
+    >>> unregister([ICookbook], ICookbookEntry)
+    >>> unregister([IDish], IDishEntry)
+    >>> unregister([IComment], ICommentEntry)
+    >>> unregister([IRecipe], IRecipeEntry)
+
+    >>> unregister([IAuthorSet], ICollection)
+    >>> unregister([ICookbookSet], ICollection)
+    >>> unregister([IDishSet], ICollection)
+
+    >>> unregister([IAuthor], IAuthorization, 'launchpad.View')
+    >>> unregister([ICookbook], IAuthorization, 'launchpad.View')
+    >>> unregister([IComment], IAuthorization, 'launchpad.View')
+    >>> unregister([IDish], IAuthorization, 'launchpad.View')
+    >>> unregister([IRecipe], IAuthorization, 'launchpad.View')
+
+    >>> unregister([ICookbookSet, IHTTPApplicationRequest],
+    ...                   IResourcePOSTOperation, 'create_cookbook')
+    >>> unregister([ICookbookSet, IHTTPApplicationRequest],
+    ...                    IResourceGETOperation, "find_recipes")
+    >>> unregister([IRecipe, IHTTPApplicationRequest],
+    ...                   IResourceGETOperation, "find_similar_recipes")

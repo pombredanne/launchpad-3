@@ -8,18 +8,18 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IArchive, IBazaarApplication, IBranch,
-    IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
-    IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
-    ICodeImport, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportResult,
-    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
-    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone,
-    IOAuthAccessToken, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
-    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
+    ArchivePurpose, IAnnouncement, IArchive, IArchivePermissionSet,
+    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
+    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
+    IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
+    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportSet,
+    ICodeReviewMessage, IDistribution, IDistributionMirror, IDistroSeries,
+    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
+    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
+    ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
+    IPOFile, IPOTemplate, IPOTemplateSubset, IPackageUpload,
+    IPackageUploadQueue, IPackaging, IPerson, IPillar, IPoll, IPollOption,
+    IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
     ISourcePackage, ISourcePackageRelease, ISpecification,
@@ -28,6 +28,7 @@ from canonical.launchpad.interfaces import (
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
     PersonVisibility)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -56,6 +57,20 @@ class AuthorizationBase:
         return False
 
 
+class ViewByLoggedInUser(AuthorizationBase):
+    """The default ruleset for the launchpad.View permission.
+
+    By default, any logged-in user can see anything. More restrictive
+    rulesets are defined in other IAuthorization implementations.
+    """
+    permission = 'launchpad.View'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        """Any authenticated user can see this object."""
+        return True
+
+
 class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = Interface
@@ -63,6 +78,33 @@ class AdminByAdminsTeam(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class AdminByCommercialTeamOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Commercial'
+    usedfor = Interface
+
+    def checkAuthenticated(self, user):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.admin))
+
+
+class ViewPillar(AuthorizationBase):
+    usedfor = IPillar
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        return self.obj.active
+
+    def checkAuthenticated(self, user):
+        """The Admins & Commercial Admins can see inactive pillars."""
+        if self.obj.active:
+            return True
+        else:
+            celebrities = getUtility(ILaunchpadCelebrities)
+            return (user.inTeam(celebrities.commercial_admin)
+                    or user.inTeam(celebrities.admin))
 
 
 class EditOAuthAccessToken(AuthorizationBase):
@@ -919,27 +961,6 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class SeeCodeImportResultSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImportResult listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportResultSet
-
-
-class SeeCodeImportResult(OnlyVcsImportsAndAdmins):
-    """Control who can see the object view of a CodeImportResult.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-    permission = 'launchpad.View'
-    usedfor = ICodeImportResult
-
-
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 
@@ -1026,16 +1047,13 @@ class DownloadFullSourcePackageTranslations(OnlyRosettaExpertsAndAdmins):
     def checkAuthenticated(self, user):
         """Define who may download these translations.
 
-        Admins and Translations admins have access, as do the owner of
-        the translation group (if applicable) and whoever is allowed to
-        upload new versions of the source package.
+        Admins and Translations admins have access, as does the owner of
+        the translation group (if applicable).
         """
         translation_group = self.obj.distribution.translationgroup
         return (
             # User is admin of some relevant kind.
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            # User has upload rights to this package.
-            user.inTeam(self.obj.distribution.upload_admin) or
             # User is owner of applicable translation group.
             (translation_group is not None and
              user.inTeam(translation_group.owner)))
@@ -1088,12 +1106,34 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        return user.inTeam(self.obj.distroseries.distribution.upload_admin)
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.obj.distroseries.main_archive, user)
+        return permissions.count() > 0
 
 
-class EditPackageUpload(EditPackageUploadQueue):
+class EditPackageUpload(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUpload
+
+    def checkAuthenticated(self, user):
+        """Return True if user has an ArchivePermission or is an admin."""
+        if AdminByAdminsTeam.checkAuthenticated(self, user):
+            return True
+
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.obj.archive, user)
+        if permissions.count() == 0:
+            return False
+        allowed_components = set(
+            permission.component for permission in permissions)
+        existing_components = self.obj.components
+        # The intersection of allowed_components and
+        # existing_components must be equal to existing_components
+        # to allow the operation to go ahead.
+        return (allowed_components.intersection(existing_components)
+                == existing_components)
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -1132,7 +1172,7 @@ class EditBuildRecord(AdminByBuilddAdmin):
     permission = 'launchpad.Edit'
     usedfor = IBuild
 
-    def checkAuthenticated(self, user):
+    def _ppaCheckAuthenticated(self, user):
         """Allow only BuilddAdmins and PPA owner."""
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
             return True
@@ -1141,6 +1181,28 @@ class EditBuildRecord(AdminByBuilddAdmin):
             return True
 
         return False
+
+    def checkAuthenticated(self, user):
+        """Check write access for user and different kinds of archives.
+
+        Allow
+        
+            * BuilddAdmins and PPA owner for PPAs
+            * users with upload permissions (for the respective distribution)
+              otherwise.
+        """
+        # Is this a PPA? Call the respective method if so.
+        if self.obj.archive.purpose == ArchivePurpose.PPA:
+            return self._ppaCheckAuthenticated(user)
+
+        # Primary or partner section here: is the user in question allowed
+        # to upload to the respective component? Allow user to retry build
+        # if so.
+        if self.obj.archive.canUpload(user, self.obj.current_component):
+            return True
+        else:
+            return self.obj.archive.canUpload(
+                user, self.obj.sourcepackagerelease.sourcepackagename)
 
 
 class ViewBuildRecord(EditBuildRecord):
@@ -1357,6 +1419,29 @@ class BranchMergeProposalView(AuthorizationBase):
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
 
 
+class CodeReviewMessageView(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = ICodeReviewMessage
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Are not-logged-in people able to view the code review message?
+
+        They can see a code review message if they can see the branch merge
+        proposal.
+        """
+        bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
+
+
 class BranchMergeProposalEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchMergeProposal
@@ -1540,3 +1625,20 @@ class MailingListApprovalByExperts(AuthorizationBase):
     def checkAuthenticated(self, user):
         experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
         return user.inTeam(experts)
+
+
+class ViewEmailAddress(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IEmailAddress
+
+    def checkAuthenticated(self, user):
+        """Can the user see the details of this email address?
+
+        If the email address' owner doesn't want his email addresses to be
+        hidden, anyone can see them.  Otherwise only the owner himself or
+        admins can see them.
+        """
+        if not self.obj.person.hide_email_addresses:
+            return True
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user == self.obj.person or user.inTeam(admins)

@@ -1,0 +1,24 @@
+<tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
+    <div class="boardCommentSummary">
+        <div class="boardCommentDetails">
+            <tal:owner tal:replace="structure context/message/owner/fmt:link:mainsite"
+                  />
+            <tal:voted tal:condition="context/vote"> voted
+              <strong tal:content="context/vote/title"
+                      tal:condition="context/vote" />
+              <strong tal:content="context/vote_tag"
+                      tal:condition="context/vote_tag" />
+            </tal:voted>
+            <tal:wrote tal:condition="not:context/vote">
+              wrote
+            </tal:wrote>
+            <tal:date
+             tal:content="context/message/datecreated/fmt:displaydate" />:
+            <tal:first_line tal:content="view/first_line" />
+            (<a tal:attributes="href context/fmt:url" >full message</a>)
+        </div>
+    </div>
+</tal:root>

@@ -34,7 +34,7 @@ import time
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility
+from zope.component import getUtility, queryAdapter
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
@@ -92,6 +92,7 @@ from canonical.launchpad.webapp.interfaces import (
     POSTToNonCanonicalURL, INavigationMenu)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import get_current_view, get_facet
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
@@ -184,12 +185,14 @@ class NavigationMenuTabs(LaunchpadView):
     """
 
     def initialize(self):
-        menu = INavigationMenu(self.context, None)
+        requested_view = get_current_view(self.request)
+        facet = get_facet(requested_view)
+        menu = queryAdapter(self.context, INavigationMenu, name=facet)
         if menu is None:
             # There are no menu entries.
             self.links = []
             return
-
+        self.title = menu.title
         # We are only interested on enabled links in non development mode.
         menu.request = self.request
         self.links = sorted([
@@ -541,15 +544,11 @@ class LaunchpadRootNavigation(Navigation):
                 canonical_url(self.context) + canonical_name(name),
                 status=301)
 
-        admins = getUtility(ILaunchpadCelebrities).admin
-        user = getUtility(ILaunchBag).user
-        ignore_inactive = True
-        if user and user.inTeam(admins):
-            # Admins should be able to access deactivated projects too.
-            ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
-            name, ignore_inactive=ignore_inactive)
-        return pillar
+            name, ignore_inactive=False)
+        if pillar is not None and check_permission('launchpad.View', pillar):
+            return pillar
+        return None
 
     def _getBetaRedirectionView(self):
         # If the inhibit_beta_redirect cookie is set, don't redirect.

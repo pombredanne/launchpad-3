@@ -348,6 +348,8 @@ class TestPullerWorker_SourceProblems(TestCaseWithTransport,
         # that we probably shouldn't be using. TODO: Ask author of this test
         # to better explain which particular repository corruption we are
         # trying to reproduce here.
+        tree.lock_write()
+        self.addCleanup(tree.unlock)
         tree.branch.repository.weave_store._put_weave(
             "myid", Weave(weave_name="myid"),
             tree.branch.repository.get_transaction())

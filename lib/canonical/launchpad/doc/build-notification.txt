@@ -383,6 +383,21 @@ Just to keep the config sane, as it was before:
 As for the normal (main archive) build candidates we are also able
 send notification about current (changed) PPA build record status.
 
+PPA build notifications should be as much as possible similar to those
+in the main archive, the important differences are:
+
+ * We do not include 'buildd-admins' celebrity in its recipients,
+   instead we include the Archive owner;
+
+ * We try to be explicit in the subject and in the body of the message
+   that it is about a PPA build candidate;
+
+ * We don't have a 'source package' page for PPA sources.
+
+ * We only warn the uploader (person specified in 'Changed-By'
+   changesfile) and the signer (person who owns the GPG key used to
+   signed the package) if the package was not copied.
+
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
@@ -392,13 +407,20 @@ send notification about current (changed) PPA build record status.
 
   >>> failed_candidate.notify()
 
-Check how many email the system have sent:
+Was this package copied?
+
+    >>> (failed_candidate.archive !=
+    ... failed_candidate.sourcepackagerelease.upload_archive)
+    True
+
+Since the package *was* copied, only the owner of the destination
+archive will get notified.
 
   >>> notifications = pop_notifications()
   >>> len(notifications)
-  2
+  1
 
-Checking the first message contents:
+Checking the message contents:
 
   >>> build_notification = notifications.pop(0)
   >>> notification_body = build_notification.get_payload()
@@ -416,11 +438,10 @@ Checking the first message contents:
    * Source: not available
   ...
 
-Checking if the second recipient:
+The notification went to the PPA owner.
 
-  >>> build_notification = notifications.pop(0)
   >>> build_notification['To']
-  'mark@hbd.com'
+  'celso.providelo@canonical.com'
 
 Checking subject and extra headers:
 
@@ -432,14 +453,48 @@ Checking subject and extra headers:
   X-Launchpad-Build-Arch: i386
   X-Launchpad-PPA: cprov
 
-PPA build notifications should be as much as possible similar to those
-in the main archive, the important differences are:
+In order to test build notifications for sources that were not copied,
+we will change the 'failed_candidate' source, setting its
+'upload_archive' to the same archive was built, Celso's PPA.
 
- * We do not include 'buildd-admins' celebrity in its recipients,
-   instead we include the Archive owner;
+  >>> naked_candidate = removeSecurityProxy(failed_candidate)
+  >>> naked_sourcepackagerelease = naked_candidate.sourcepackagerelease
+  >>> naked_sourcepackagerelease.upload_archive = failed_candidate.archive
 
- * We try to be explicit in the subject and in the body of the message
-   that it is about a PPA build candidate;
+We also make 'Foo Bar' the source signer.
 
- * We don't have a 'source package' page for PPA sources.
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> gpgkey = getUtility(IGPGKeySet).get(1)
+  >>> print gpgkey.owner.name
+  name16
+  >>> naked_sourcepackagerelease.dscsigningkey = gpgkey
+
+Since 'sabdlf' is the 'creator' it makes the failed-to-build source to
+look like a 'sponsored' upload.
+
+  >>> print failed_candidate.sourcepackagerelease.creator.name
+  sabdfl
+
+Finally we issue the notification.
+
+  >>> failed_candidate.notify()
+
+As expected for a 'not-copied and sponsored' PPA upload, all the three
+people involved with the source are notified.
+
+ * 'cprov' who owns the PPA where the source is being built;
+ * 'name16' who signed the source upload;
+ * 'sabdlf' who was listed as the creator of the source revision.
+
+  >>> notifications = pop_notifications()
+  >>> len(notifications)
+  3
+
+  >>> for notification in notifications:
+  ...     print notification['To']
+  celso.providelo@canonical.com
+  foo.bar@canonical.com
+  mark@hbd.com
+
+
 

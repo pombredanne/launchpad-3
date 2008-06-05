@@ -35,7 +35,7 @@ the DistroArchSeries index page.
 This search looks up binary packages by name, summary and description,
 considering partial string matches as well (fti).
 
-    >>> anon_browser.getControl(name="text", index=1).value = "firefox"
+    >>> anon_browser.getControl(name="text").value = "firefox"
     >>> anon_browser.getControl("Search Packages").click()
     >>> anon_browser.url
     'http://launchpad.dev/ubuntu/warty/i386/+search?text=firefox'
@@ -55,7 +55,7 @@ More details are available by clicking on the binary package name.
 A search may yield no result. In this case, we describe the search
 that was done, and explain that no matches were found.
 
-    >>> anon_browser.getControl(name="text", index=1).value = "biscoito"
+    >>> anon_browser.getControl(name="text").value = "biscoito"
     >>> anon_browser.getControl("Search").click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))

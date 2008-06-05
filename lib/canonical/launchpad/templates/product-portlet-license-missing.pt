@@ -1,0 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-missing-license"
+     tal:condition="not: context/licenses">
+  <img style="padding-top: 1em; float: right" alt="" src="/@@/warning-large" />
+  <h2>
+    Missing license information
+  </h2>
+  <div>
+    This project needs to have its licensing information entered.
+    Select the appropriate license checkboxes from
+    <a tal:attributes="href string:${context/fmt:url}/+edit">
+      Change details
+    </a>.
+  </div>
+</div>
+</tal:root>

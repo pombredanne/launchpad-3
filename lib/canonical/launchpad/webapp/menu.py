@@ -6,6 +6,7 @@ __all__ = [
     'enabled_with_permission',
     'escape',
     'get_current_view',
+    'get_facet',
     'nearest_context_with_adapter',
     'nearest_adapter',
     'structured',
@@ -27,7 +28,7 @@ from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
 from zope.component import getMultiAdapter, queryAdapter
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
+    isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
 
 from canonical.lazr import decorates
 
@@ -108,18 +109,24 @@ def get_current_view(request=None):
 
     :param request: A `IHTTPApplicationRequest`. If request is None, the
         current browser request is used.
-
-    Returns the view from requests that provide IHTTPApplicationRequest.
+    :return: The view from requests that provide IHTTPApplicationRequest.
     """
     request = request or get_current_browser_request()
     if request is None:
         return
-    view = request.traversed_objects[-1]
+    # The view is not in the list of traversed_objects, though it is listed
+    # among the traversed_names. We need to get it from a private attribute.
+    view = request._last_obj_traversed
     # Note: The last traversed object may be a view's instance method.
     if zope_isinstance(view, types.MethodType):
-        bare = removeSecurityProxy(view)
-        view = bare.im_self
+        bare =  removeSecurityProxy(view)
+        return ProxyFactory(bare.im_self)
     return view
+
+
+def get_facet(view):
+    """Return the view's facet name."""
+    return getattr(removeSecurityProxy(view), '__launchpad_facetname__', None)
 
 
 class LinkData:
@@ -356,6 +363,7 @@ class FacetMenu(MenuBase):
             if (selectedfacetname is not None and
                 selectedfacetname == link.name):
                 link.selected = True
+            link.url = link.url.ensureNoSlash()
             yield link
 
 
@@ -382,6 +390,8 @@ class NavigationMenu(MenuBase):
 
     _baseclassname = 'NavigationMenu'
 
+    title = None
+
     def _get_link(self, name):
         return IFacetLink(
             super(NavigationMenu, self)._get_link(name))
@@ -407,6 +417,7 @@ class NavigationMenu(MenuBase):
             # or because the menu for the current view is the link's menu.
             link.selected = (request_url.startswith(link_url)
                              or self._is_link_menu(link, submenu))
+            link.url = link.url.ensureNoSlash()
             yield link
 
     def _get_current_menu(self, request):
@@ -421,7 +432,10 @@ class NavigationMenu(MenuBase):
         menu is an instance of the link's menu
         """
         view = get_current_view(request)
-        return queryAdapter(view, INavigationMenu)
+        # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the facet
+        # name from the layer implemented by the request.
+        facet = get_facet(view)
+        return queryAdapter(view, INavigationMenu, name=facet)
 
     def _is_link_menu(self, link, menu):
         """Return True if menu is an instance of link's menu, otherwise False.

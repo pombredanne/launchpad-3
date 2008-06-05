@@ -147,6 +147,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.browser.BugTaskListingItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskListingItemImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IMilestone"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
@@ -380,6 +387,13 @@
         name="fmt"
         />
     <adapter
+        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeReviewMessageFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTracker"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTrackerFormatterAPI"
@@ -482,14 +496,6 @@
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
-    <!-- RDF page template macros -->
-    <browser:page
-        for="*"
-        name="rdf_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/rdf-macros.pt"
-        />
 <!--
     <content
         class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
@@ -577,6 +583,12 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.launchpad.webapp.publication.debug_references_startup_check"
+        />
+
+    <!-- Set the default timeout function. -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.servers.set_launchpad_default_timeout"
         />
 
     <subscriber

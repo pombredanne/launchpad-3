@@ -524,9 +524,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     def getPackageComponent():
         """Return the task's package's component or None.
 
-        Returns the component associated to the latest package published
-        in that distribution. If the task is not a package task, returns
-        None.
+        Returns the component associated to the current published
+        package in that distribution's current series. If the task is
+        not a package task, returns None.
         """
 
 
@@ -895,6 +895,12 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
+        """
+
+    def getBugTaskBadgeProperties(bugtasks):
+        """Return whether the bugtasks should have badges.
+
+        Return a mapping from a bug task, to a dict of badge properties.
         """
 
     def getMultiple(task_ids):
