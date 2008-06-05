@@ -65,9 +65,8 @@ class TestSFTPAdapter(TrialTestCase):
     def makeLaunchpadAvatar(self):
         fake_launchpad = FakeLaunchpad()
         user_dict = fake_launchpad.getUser(1)
-        user_dict['initialBranches'] = []
         authserver = BlockingProxy(fake_launchpad)
-        return LaunchpadAvatar(user_dict['name'], None, user_dict, authserver)
+        return LaunchpadAvatar(user_dict, authserver)
 
     def test_canAdaptToSFTPServer(self):
         server = ISFTPServer(self.makeLaunchpadAvatar())
