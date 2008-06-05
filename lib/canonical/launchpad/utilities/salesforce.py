@@ -8,7 +8,8 @@ __all__ = ['SalesforceVoucherProxy',
            'Voucher']
 
 
-import xmlrpclib
+from xmlrpclib import Fault, ServerProxy, SafeTransport
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -20,8 +21,8 @@ from canonical.launchpad.interfaces import (
 
 class SalesforceVoucherProxyException(Exception):
     """Exception raised on failed call to the SalesforceVoucherProxy."""
-    def __init__(self, errors):
-        self.message = ", ".join(errors)
+    def __init__(self, message):
+        self.message = message
 
     def __str__(self):
         return repr(self.message)
@@ -47,6 +48,12 @@ ERRORCODE_MAP = dict(SFDCError=SFDCError,
                      NotFound=SVPNotFoundException,
                      AlreadyRedeemed=SVPAlreadyRedeemedException,
                      NotAllowed=SVPNotAllowedException)
+
+
+def map_fault(fault):
+    """Map the XMLRPC Fault to one of our defined exceptions."""
+    exception = ERRORCODE_MAP.get(fault.faultCode, SalesforceVoucherProxyException)
+    return exception(fault.faultString)
 
 
 class Voucher:
@@ -85,7 +92,7 @@ class SalesforceVoucherProxy:
     implements(ISalesforceVoucherProxy)
 
     def __init__(self):
-        self.xmlrpc_transport = xmlrpclib.Transport
+        self.xmlrpc_transport = SafeTransport()
 
     @cachedproperty
     def url(self):
@@ -93,70 +100,64 @@ class SalesforceVoucherProxy:
         return "%s:%d" % (config.commercial.voucher_proxy_url,
                           config.commercial.voucher_proxy_port)
     @property
-    def server_proxy(self):
+    def server(self):
         """See `ISalesforceVoucherProxy`."""
         # This is not a cachedproperty as each use needs a new proxy.
-        return xmlrpclib.ServerProxy(self.url,
-                                     transport=self.xmlrpc_transport)
-
-    def parseResponse(self, response):
-        """Given a response from the SVP break it up and check for errors.
-
-        If an error code is sent it will be mapped to an exception that will
-        be raised.
-        """
-        success = response.get('success')
-        results = response.get('results', [])
-        errors = response.get('errors', [])
-        if not success:
-            if len(errors) > 0:
-                errorcode, reason = [term.strip()
-                                     for term in errors[0].split(':')]
-                raise ERRORCODE_MAP[errorcode], [reason]
-            else:
-                raise SalesforceVoucherProxyException, errors
-        return results
+        return ServerProxy(self.url,
+                           transport=self.xmlrpc_transport,
+                           allow_none=True)
 
     def getUnredeemedVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        server = self.server_proxy
-        response = server.getUnredeemedVouchers(user.openid_identifier)
-        results = self.parseResponse(response)
-        return [Voucher(voucher) for voucher in results]
+        try:
+            vouchers = self.server.getUnredeemedVouchers(
+                user.openid_identifier)
+        except Fault, fault:
+            raise map_fault(fault)
+        return [Voucher(voucher) for voucher in vouchers]
 
     def getAllVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        server = self.server_proxy
-        response = server.getAllVouchers(user.openid_identifier)
-        results = self.parseResponse(response)
-        return [Voucher(voucher) for voucher in results]
+        try:
+            vouchers = self.server.getAllVouchers(user.openid_identifier)
+        except Fault, fault:
+            raise map_fault(fault)
+        return [Voucher(voucher) for voucher in vouchers]
 
     def getServerStatus(self):
         """See `ISalesforceVoucherProxy`."""
-        response = self.server_proxy.getServerStatus()
-        return self.parseResponse(response)
+        try:
+            status = self.server.getServerStatus()
+        except Fault, fault:
+            raise map_fault(fault)
+        return status
 
     def getVoucher(self, voucher_id):
         """See `ISalesforceVoucherProxy`."""
-        response = self.server_proxy.getVoucher(voucher_id)
-        voucher = self.parseResponse(response)
+        try:
+            voucher = self.server.getVoucher(voucher_id)
+        except Fault, fault:
+            raise map_fault(fault)
         if voucher is not None:
             voucher = Voucher(voucher)
         return voucher
 
     def redeemVoucher(self, voucher_id, user, project):
         """See `ISalesforceVoucherProxy`."""
-        response = self.server_proxy.redeemVoucher(
-            voucher_id,
-            user.openid_identifier,
-            project.id,
-            project.displayname)
-        self.parseResponse(response)
-        return True
+        try:
+            status = self.server.redeemVoucher(voucher_id,
+                                               user.openid_identifier,
+                                               project.id,
+                                               project.displayname)
+        except Fault, fault:
+            raise map_fault(fault)
+        return status
 
     def updateProjectName(self, project):
         """See `ISalesforceVoucherProxy`."""
-        response = self.server_proxy.updateProjectName(
-            project.id,
-            project.displayname)
-        return self.parseResponse(response)
+        try:
+            num_updated = self.server.updateProjectName(project.id,
+                                                        project.displayname)
+        except Fault, fault:
+            raise map_fault(fault)
+        return num_updated

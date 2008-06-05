@@ -41,10 +41,7 @@ We can retrieve all unredeemed vouchers for a person.
     ...     IPersonSet, IProductSet)
     >>> mark = getUtility(IPersonSet).getByName('sabdfl')
 
-    >>> response = server.getUnredeemedVouchers(mark.openid_identifier)
-    >>> response['success']
-    True
-    >>> vouchers = response['results']
+    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
     >>> print_vouchers(vouchers)
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
@@ -54,39 +51,27 @@ A single voucher can be retrieved using the `getVoucher` method.
 Unlike the other retrieval methods this one does the lookup based on
 the voucher id, not the owner's id.
 
-    >>> response = server.getVoucher(
+    >>> voucher = server.getVoucher(
     ...     'LPCS12-f78df324-0cc2-11dd-8b6b-000000000001')
-    >>> response['success']
-    True
-    >>> voucher = response['results']
     >>> print_vouchers([voucher])
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000001,UNREDEEMED
 
-Attempting to retrieve a non-existent voucher returns no results.
-Note that the XMLRPC library requires that return values be
-encapsulated in a list, so the server actually returns [None] but the
-transport converts lists of length one to the scalar value.
+Attempting to retrieve a non-existent voucher raises a `NotFound` fault.
 
-    >>> response = server.getVoucher(
-    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-nonexistent1')
-    >>> response['success']
-    True
-    >>> voucher = response['results']
-    >>> print voucher
-    None
+    >>> voucher = server.getVoucher('LPCS12-nonexistent')
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault NotFound: 'The voucher LPCS12-nonexistent was not found.'>
 
 A single voucher can be redeemed, but must be associated with a project.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> voucher = vouchers[0]['voucher']
-    >>> response = server.redeemVoucher(voucher, mark.openid_identifier,
+    >>> result = server.redeemVoucher(voucher, mark.openid_identifier,
     ...                               firefox.id, firefox.displayname)
-    >>> response['success']
+    >>> print result
     True
-    >>> response = server.getUnredeemedVouchers(mark.openid_identifier)
-    >>> response['success']
-    True
-    >>> vouchers = response['results']
+    >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
     >>> print_vouchers(vouchers)
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000002,UNREDEEMED
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000003,UNREDEEMED
@@ -105,8 +90,8 @@ the Salesforce proxy.
 
 The status of the proxy server can be checked.
 
-    >>> response = sfv.getServerStatus()
-    >>> print response
+    >>> status = sfv.getServerStatus()
+    >>> print status
     Server is running normally
 
 All of the unredeemed vouchers for a Launchpad user can be retrieved.
@@ -115,6 +100,13 @@ If the user has no matching vouchers an empty list is returned.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> vouchers = sfv.getUnredeemedVouchers(foobar)
+    >>> len(vouchers)
+    0
+
+Similarly the call to get all of a user's vouchers returns the empty
+list when she has none.
+
+    >>> vouchers = sfv.getAllVouchers(foobar)
     >>> len(vouchers)
     0
 
@@ -136,10 +128,10 @@ Get a single voucher by id.
 
 Get a single voucher with an invalid id.
 
-    >>> voucher = sfv.getVoucher(
-    ...     'LPCS12-f78df324-0cc2-11dd-8b6b-nonexistent1')
-    >>> print voucher
-    None
+    >>> voucher = sfv.getVoucher('LPCS12-nonexistent')
+    Traceback (most recent call last):
+      ...
+    SVPNotFoundException: 'The voucher LPCS12-nonexistent was not found.'
 
 Redeem the first voucher for firefox.
 
@@ -187,6 +179,7 @@ A user cannot redeem a voucher if it is owned by someone else.
       ...
     SVPNotAllowedException: 'Voucher is not owned by named user'
 
+Getting al
 Using None for the project results in an error.
 
     >>> result = sfv.redeemVoucher(voucher_id, mark, None)
