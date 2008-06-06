@@ -180,10 +180,19 @@ used to create a Person based on the displayname alone.
     INFO:...:Imported 1 comments for remote bug 123456 on ...
 
     >>> bug.messages[-1].owner.name
-    u'noemail'
+    u'noemail-bugzilla-checkwatches-1'
 
     >>> print bug.messages[-1].owner.preferredemail
     None
+
+A BugTrackerPerson record will have been created to map the new Person
+to the name 'noemail' on our example bugtracker.
+
+    >>> from canonical.launchpad.interfaces.bugtrackerperson import (
+    ...     IBugTrackerPersonSet)
+    >>> getUtility(IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...     'noemail', bug_watch.bugtracker)
+    <BugTrackerPerson at ...>
 
 
 == BugWatch comment importing functionality ==

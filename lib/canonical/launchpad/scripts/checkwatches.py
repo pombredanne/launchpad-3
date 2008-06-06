@@ -27,11 +27,14 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.interfaces.bugtrackerperson import (
+    BugTrackerNameAlreadyTaken, IBugTrackerPersonSet)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
+from canonical.launchpad.validators.name import sanitize_name
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
@@ -559,6 +562,35 @@ class BugWatchUpdater(object):
 
         return bug
 
+    def _getPersonForBugTracker(
+        self, bugtracker, name, email, rationale, creation_comment):
+        """Return a Person that is linked to a given bug tracker."""
+        # First, see if there's already a BugTrackerPerson for this name
+        # on this bugtracker. If there is, return it.
+        bugtracker_person_set = getUtility(IBugTrackerPersonSet)
+        bugtracker_person = bugtracker_person_set.getByNameAndBugTracker(
+            name, bugtracker)
+
+        if bugtracker_person is not None:
+            return bugtracker_person.person
+
+        # If email is None, create a Person without an email address.
+        if email is None:
+            # Generate a valid Launchpad name for the Person.
+            canonical_name = (
+                "%s-%s" % (sanitize_name(name), bugtracker.name))
+            person = getUtility(IPersonSet).ensurePersonWithoutEmail(
+                canonical_name, name, rationale, creation_comment)
+        else:
+            person = getUtility(IPersonSet).ensurePerson(
+                email, name, rationale, creation_comment)
+
+        # Link the Person to the bugtracker for future reference.
+        bugtracker_person = bugtracker_person_set.linkPersonToBugTracker(
+            name, bugtracker, person)
+
+        return bugtracker_person.person
+
     def importBugComments(self, external_bugtracker, bug_watch):
         """Import all the comments from a remote bug.
 
@@ -581,9 +613,10 @@ class BugWatchUpdater(object):
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
-            poster = getUtility(IPersonSet).ensurePerson(
-                email, displayname, PersonCreationRationale.BUGIMPORT,
-                comment='when importing comments for %s.' % bug_watch.title)
+            poster = self._getPersonForBugTracker(
+                bug_watch.bugtracker, displayname, email,
+                PersonCreationRationale.BUGIMPORT,
+                "when importing comments for %s." % bug_watch.title)
 
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)
