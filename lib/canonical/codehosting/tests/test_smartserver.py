@@ -70,8 +70,7 @@ class TestExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = smartserver.ExecOnlySession(self.avatar, self.reactor)
 
@@ -220,11 +219,10 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = smartserver.RestrictedExecOnlySession(
-            self.avatar, self.reactor, 'foo', 'bar baz %(avatarId)s')
+            self.avatar, self.reactor, 'foo', 'bar baz %(username)s')
 
     def test_makeRestrictedExecOnlySession(self):
         # A RestrictedExecOnlySession is constructed with an avatar, a reactor
@@ -236,7 +234,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         self.assertEqual(self.avatar, self.session.avatar)
         self.assertEqual(self.reactor, self.session.reactor)
         self.assertEqual('foo', self.session.allowed_command)
-        self.assertEqual('bar baz %(avatarId)s',
+        self.assertEqual('bar baz %(username)s',
                          self.session.executed_command_template)
 
     def test_execCommandRejectsUnauthorizedCommands(self):
@@ -258,7 +256,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         executable, arguments = self.session.getCommandToRun('foo')
         self.assertEqual('bar', executable)
         self.assertEqual(
-            ['bar', 'baz', self.avatar.avatarId], list(arguments))
+            ['bar', 'baz', self.avatar.username], list(arguments))
 
     def test_getAvatarAdapter(self):
         # getAvatarAdapter is a convenience classmethod so that
@@ -285,8 +283,7 @@ class TestSessionIntegration(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = LaunchpadAvatar(
-            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.avatar = LaunchpadAvatar(self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
         # When Conch tries to adapt the supermirror avatar to ISession, it
@@ -301,7 +298,7 @@ class TestSessionIntegration(AvatarTestCase):
             os.path.abspath(get_bzr_plugins_path()),
             session.environment['BZR_PLUGIN_PATH'])
         self.assertEqual(
-            '%s@bazaar.launchpad.dev' % self.avatar.lpname,
+            '%s@bazaar.launchpad.dev' % self.avatar.username,
             session.environment['BZR_EMAIL'])
 
         executable, arguments = session.getCommandToRun(
@@ -309,7 +306,7 @@ class TestSessionIntegration(AvatarTestCase):
         self.assertEqual(sys.executable, executable)
         self.assertEqual(
             [sys.executable, smartserver.get_bzr_path(), 'lp-serve', '--inet',
-             self.avatar.avatarId],
+             self.avatar.username],
             list(arguments))
         self.assertRaises(smartserver.ForbiddenCommand,
                           session.getCommandToRun, 'rm -rf /')

@@ -206,6 +206,11 @@
     />
 
   <vocabulary
+    name="CommercialProjects"
+    factory="canonical.launchpad.vocabularies.CommercialProjectsVocabulary"
+    />
+
+  <vocabulary
     name="Sprint"
     factory="canonical.launchpad.vocabularies.SprintVocabulary"
     />

@@ -94,7 +94,7 @@ class CodeImportWorkerMonitorProtocol(ProcessMonitorProtocolWithTimeout):
         """
         self.resetTimeout()
         self._log_file.write(data)
-        self._tail = (self._tail + data)[-100:]
+        self._tail = '\n'.join((self._tail + data).splitlines()[-5:])
 
     errReceived = outReceived
 
