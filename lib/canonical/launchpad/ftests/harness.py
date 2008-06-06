@@ -23,7 +23,7 @@ from canonical.database.sqlbase import (
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.lp import initZopeless
-from canonical.testing import BaseLayer, FunctionalLayer, ZopelessLayer
+from canonical.testing import FunctionalLayer, ZopelessLayer
 
 
 __all__ = [

@@ -3,17 +3,14 @@
 """Test methods of the ProductSeries content class."""
 
 import datetime
-import pytz
 import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.productseries import (
-    DatePublishedSyncError, ProductSeries, NoImportBranchError)
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     IProductSeriesSet, IProductSet, ImportStatus, RevisionControlSystems)
