@@ -37,6 +37,10 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.validators.name import sanitize_name
 
 
+class InvalidRemotePerson(BugWatchUpdateWarning):
+    """Raised when _getPersonForBugTracker() is passed invalid data."""
+
+
 class TooMuchTimeSkew(BugWatchUpdateError):
     """Time difference between ourselves and the remote server is too much."""
 
@@ -565,6 +569,13 @@ class BugWatchUpdater(object):
     def _getPersonForBugTracker(
         self, bugtracker, name, email, rationale, creation_comment):
         """Return a Person that is linked to a given bug tracker."""
+        # We need to have a name or an email address to be able to
+        # create a new Person or retrieve an existing one.
+        if not name and not email:
+            raise InvalidRemotePerson(
+                "Either an email address or a name must be specified in "
+                "order to create a new Person.")
+
         # First, see if there's already a BugTrackerPerson for this name
         # on this bugtracker. If there is, return it.
         bugtracker_person_set = getUtility(IBugTrackerPersonSet)
@@ -613,16 +624,25 @@ class BugWatchUpdater(object):
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
-            poster = self._getPersonForBugTracker(
-                bug_watch.bugtracker, displayname, email,
-                PersonCreationRationale.BUGIMPORT,
-                "when importing comments for %s." % bug_watch.title)
+            try:
+                poster = self._getPersonForBugTracker(
+                    bug_watch.bugtracker, displayname, email,
+                    PersonCreationRationale.BUGIMPORT,
+                    "when importing comments for %s." % bug_watch.title)
+            except InvalidRemotePerson, error:
+                # If the remote person is invalid we log the error and
+                # then give up on this comment. We don't let one invalid
+                # remote person break all our comment imports.
+                self.warning(
+                    "Invalid remote person in imported comment.",
+                    self._getOOPSProperties(external_bugtracker),
+                    sys.exc_info())
+            else:
+                comment_message = external_bugtracker.getMessageForComment(
+                    bug_watch, comment_id, poster)
 
-            comment_message = external_bugtracker.getMessageForComment(
-                bug_watch, comment_id, poster)
-
-            bug_watch.addComment(comment_id, comment_message)
-            imported_comments += 1
+                bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
 
         if imported_comments > 0:
             self.log.info("Imported %(count)i comments for remote bug "

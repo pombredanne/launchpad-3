@@ -194,6 +194,93 @@ to the name 'noemail' on our example bugtracker.
     ...     'noemail', bug_watch.bugtracker)
     <BugTrackerPerson at ...>
 
+If the remote person is invalid (i.e. a Launchpad Person can't be
+created for them) an error will be logged and the comment will not be
+imported.
+
+    >>> external_bugtracker.poster_tuple = (None, None)
+    >>> external_bugtracker.remote_comments['invalid-person-comment'] = (
+    ...     "And yet another comment.")
+
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
+    WARNING:...:Invalid remote person in imported comment.
+
+Let's delete that comment now so that it doesn't break later tests.
+
+    >>> del external_bugtracker.remote_comments['invalid-person-comment']
+    >>> external_bugtracker.poster_tuple = (
+    ...     'No Priv', 'no-priv@canonical.com')
+
+
+== _getPersonForBugTracker() ==
+
+BugWatchUpdater has a method, _getPersonForBugTracker(), which is
+responsible for returning the correct Person for a given remote username
+on on a given bugtracker.
+
+Passing a new remote user's details to _getPersonForBugTracker() will
+return a new Person record.
+
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     PersonCreationRationale)
+
+    >>> print getUtility(IPersonSet).getByEmail('new.person@example.com')
+    None
+
+    >>> new_person = bugwatch_updater._getPersonForBugTracker(
+    ...     bugtracker=bug_watch.bugtracker, name='New Person',
+    ...     email='new.person@example.com',
+    ...     rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing _getPersonForBugTracker().')
+
+    >>> print new_person.displayname
+    New Person
+
+There will be a BugTrackerPerson record linking 'New Person' to the
+bugtracker.
+
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'New Person', bug_watch.bugtracker)
+
+    >>> bugtracker_person.person == new_person
+    True
+
+Calling _getPersonForBugTracker() with the same details will return the
+same person.
+
+    >>> other_person = bugwatch_updater._getPersonForBugTracker(
+    ...     bugtracker=bug_watch.bugtracker, name='New Person',
+    ...     email='new.person@example.com',
+    ...     rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing _getPersonForBugTracker().')
+
+    >>> other_person == new_person
+    True
+
+_getPersonForBugTracker() can also handle remote users whose email
+addresses aren't provided.
+
+    >>> noemail_person = bugwatch_updater._getPersonForBugTracker(
+    ...     bugtracker=bug_watch.bugtracker, name='no-email-person',
+    ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing _getPersonForBugTracker().')
+
+    >>> print noemail_person.name
+    no-email-person-bugzilla-checkwatches-1
+
+However, if a person with no email or name is passed to
+_getPersonForBugTracker() an error will be raised.
+
+    >>> bugwatch_updater._getPersonForBugTracker(
+    ...     bugtracker=bug_watch.bugtracker, name=None,
+    ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing _getPersonForBugTracker().')
+    Traceback (most recent call last):
+      ...
+    InvalidRemotePerson: Either an email address or a name must be
+    specified in order to create a new Person.
+
 
 == BugWatch comment importing functionality ==
 
