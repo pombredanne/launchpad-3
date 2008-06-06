@@ -258,7 +258,6 @@
                                 "context/@@+main-template-macros/notifications"
                             />
                           </tal:notifications>
-                          <metal:block define-slot="main" />
                         </tal:noportlets>
                         <div id="navigation-tabs"
                              tal:condition="view/macro:pagehas/navigationtabs">
@@ -275,6 +274,10 @@
                               />
                           </div>
                         </div>
+                        <tal:noportlets
+                          condition="not: view/macro:pagehas/portlets"
+                          metal:define-slot="main"
+                        />
                         <div
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
