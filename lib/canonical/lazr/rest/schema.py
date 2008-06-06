@@ -267,3 +267,4 @@ class Reference(Object):
         Field._validate(self, value)
         if not self.schema.providedBy(value):
             raise SchemaNotProvided()
+
