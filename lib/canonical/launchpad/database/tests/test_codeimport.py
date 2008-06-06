@@ -11,6 +11,9 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 
 from canonical.codehosting.codeimport.publish import ensure_series_branch
+from canonical.codehosting.codeimport.tests.test_worker_monitor import (
+    nuke_codeimport_sample_data)
+from canonical.database.sqlbase import flush_database_updates
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.codeimportevent import CodeImportEvent
@@ -23,8 +26,9 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
     IPersonSet, ImportStatus, RevisionControlSystems)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestCodeImportCreation(unittest.TestCase):
@@ -758,6 +762,134 @@ class TestNewFromProductSeries(unittest.TestCase):
             product=series.product, url=None)
         self.assertRaises(BranchCreationException,
                           self.code_import_set.newFromProductSeries, series)
+
+
+class TestGetActiveImports(TestCaseWithFactory):
+    """Tests for CodeImportSet.getActiveImports()."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Prepare by deleting all the import data in the sample data.
+
+        This means that the tests only have to care about the import
+        data they create.
+        """
+        super(TestGetActiveImports, self).setUp()
+        nuke_codeimport_sample_data()
+
+    def makeActiveImport(self, project_name=None, product_name=None,
+                         branch_name=None):
+        """Make a new CodeImport for a new Product, maybe in a new Project.
+        """
+        if project_name is not None:
+            project = self.factory.makeProject(name=project_name)
+        else:
+            project = None
+        product = self.factory.makeProduct(name=product_name, project=project)
+        code_import = self.factory.makeCodeImport(
+            product=product, branch_name=branch_name)
+        self.makeImportActive(code_import)
+        return code_import
+
+    def makeImportActive(self, code_import):
+        code_import.approve({}, self.factory.makePerson(password='xxx'))
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(code_import).date_last_successful = datetime(
+            2008, 1, 1, tzinfo=pytz.UTC)
+        flush_database_updates()
+
+    def testEmpty(self):
+        # We start out with no code imports, so getActiveImports() returns no
+        # results.
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(list(results), [])
+
+    def testOneSeries(self):
+        # When there is one active import, it is returned.
+        code_import = self.makeActiveImport()
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(list(results), [code_import])
+
+    def testOneSeriesWithProject(self):
+        # Code imports for products with a project should be returned too.
+        code_import = self.makeActiveImport(project_name="whatever")
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(list(results), [code_import])
+
+    def testExcludeDeactivatedProducts(self):
+        # Deactivating a product means that code imports associated to it are
+        # no longer returned.
+        code_import = self.makeActiveImport()
+        self.failUnless(code_import.product.active)
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(list(results), [code_import])
+        code_import.product.active = False
+        flush_database_updates()
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(list(results), [])
+
+    def testExcludeDeactivatedProjects(self):
+        # Deactivating a project means that code imports associated to
+        # products in it are no longer returned.
+        code_import = self.makeActiveImport(project_name="whatever")
+        self.failUnless(code_import.product.project.active)
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(list(results), [code_import])
+        code_import.product.project.active = False
+        flush_database_updates()
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(list(results), [])
+
+    def testSorting(self):
+        # Returned code imports are sorted by product name, then branch name.
+        prod1_a = self.makeActiveImport(product_name='prod1', branch_name='a')
+        prod2_a = self.makeActiveImport(product_name='prod2', branch_name='a')
+        prod1_b = self.factory.makeCodeImport(
+            product=prod1_a.product, branch_name='b')
+        self.makeImportActive(prod1_b)
+        results = getUtility(ICodeImportSet).getActiveImports()
+        self.assertEquals(
+            list(results), [prod1_a, prod1_b, prod2_a])
+
+    def testSearchByProduct(self):
+        # Searching can filter by product name and other texts.
+        code_import = self.makeActiveImport(product_name='product')
+        results = getUtility(ICodeImportSet).getActiveImports(
+            text='product')
+        self.assertEquals(
+            list(results), [code_import])
+
+    def testSearchByProductWithProject(self):
+        # Searching can filter by product name and other texts, and returns
+        # matching imports even if the associated product is in a project
+        # which does not match.
+        code_import = self.makeActiveImport(
+            project_name='whatever', product_name='product')
+        results = getUtility(ICodeImportSet).getActiveImports(
+            text='product')
+        self.assertEquals(
+            list(results), [code_import])
+
+    def testSearchByProject(self):
+        # Searching can filter by project name and other texts.
+        code_import = self.makeActiveImport(
+            project_name='project', product_name='product')
+        results = getUtility(ICodeImportSet).getActiveImports(
+            text='project')
+        self.assertEquals(
+            list(results), [code_import])
+
+    def testSearchByProjectWithNonMatchingProduct(self):
+        # If a project matches the text, it's an easy mistake to make to
+        # consider all the products with no project as matching too.
+        code_import_1 = self.makeActiveImport(product_name='product1')
+        code_import_2 = self.makeActiveImport(
+            project_name='thisone', product_name='product2')
+        results = getUtility(ICodeImportSet).getActiveImports(
+            text='thisone')
+        self.assertEquals(
+            list(results), [code_import_2])
 
 
 def test_suite():
