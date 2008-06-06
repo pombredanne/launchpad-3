@@ -138,10 +138,25 @@ And of course, that team is now accessible directly.
 
 You cannot create the same team twice.
 
-    >>> launchpad.create_team('bassists', '')
+    >>> launchpad.create_team('bassists', 'Bass Gods')
     Traceback (most recent call last):
     ...
     HTTPError: HTTP Error 400: Bad Request
+
+Actually, the exception contains other useful information.
+
+    >>> from launchpadlib.errors import HTTPError
+    >>> try:
+    ...     launchpad.create_team('bassists', 'Bass Gods')
+    ... except HTTPError, error:
+    ...     pass
+    >>> sorted(error.response.items())
+    [('connection', 'close'), ('content-length', '59'),
+     ('content-type', 'text/plain'), ('date', '...'),
+     ('server', 'zope.server.http (HTTP)'), ('status', '400'),
+     ('x-powered-by', 'Zope (www.zope.org), Python (www.python.org)')]
+    >>> error.content
+    'name: bassists is already in use by another person or team.'
 
 Besides a name and a display name, a team has many other attributes that you
 can read.

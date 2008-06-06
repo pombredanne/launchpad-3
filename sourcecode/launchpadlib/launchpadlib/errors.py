@@ -27,14 +27,14 @@ class CredentialsFileError(CredentialsError):
 class ResponseError(LaunchpadError):
     """Error in response."""
 
+    def __init__(self, response, content):
+        LaunchpadError.__init__(self)
+        self.response = response
+        self.content = content
+
 
 class UnexpectedResponseError(ResponseError):
     """An unexpected response was received."""
-
-    def __init__(self, response, content):
-        ResponseError.__init__(self)
-        self.response = response
-        self.content = content
 
     def __str__(self):
         return '%s: %s' % (self.response.status, self.response.reason)
@@ -43,10 +43,6 @@ class UnexpectedResponseError(ResponseError):
 class HTTPError(ResponseError):
     """An HTTP non-2xx response code was received."""
 
-    def __init__(self, status, reason):
-        ResponseError.__init__(self)
-        self.status = status
-        self.reason = reason
-
     def __str__(self):
-        return 'HTTP Error %s: %s' % (self.status, self.reason)
+        return 'HTTP Error %s: %s' % (
+            self.response.status, self.response.reason)

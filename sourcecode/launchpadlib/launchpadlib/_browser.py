@@ -56,7 +56,7 @@ class Browser:
             url, method=method, body=data, headers=headers)
         # Turn non-2xx responses into exceptions.
         if response.status // 100 != 2:
-            raise HTTPError(response.status, response.reason)
+            raise HTTPError(response, content)
         return response, content
 
     def get(self, url):

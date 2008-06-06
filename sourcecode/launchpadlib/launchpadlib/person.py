@@ -31,7 +31,7 @@ class People(Collection):
         try:
             data = self._browser.get(urljoin(self._base_url, '~' + name))
         except HTTPError, error:
-            if error.status == 404:
+            if error.response.status == 404:
                 return default
             raise
         return Entry(data)
