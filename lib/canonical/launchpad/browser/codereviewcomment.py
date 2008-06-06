@@ -1,9 +1,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeReviewMessageAddView',
-    'CodeReviewMessageView',
-    'CodeReviewMessageSummary',
+    'CodeReviewCommentAddView',
+    'CodeReviewCommentView',
+    'CodeReviewCommentSummary',
     ]
 
 from zope.interface import Interface
@@ -12,14 +12,14 @@ from zope.schema import Choice, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces import (
-    CodeReviewVote, ICodeReviewMessage)
+    CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 
 
-class CodeReviewMessageSummary(LaunchpadView):
-    """Standard view of a CodeReviewMessage"""
-    __used_for__ = ICodeReviewMessage
+class CodeReviewCommentSummary(LaunchpadView):
+    """Standard view of a CodeReviewComment"""
+    __used_for__ = ICodeReviewComment
 
     @property
     def first_line(self):
@@ -35,18 +35,18 @@ class CodeReviewMessageSummary(LaunchpadView):
             return lines[0].rstrip('.') + '...'
 
 
-class CodeReviewMessageView(LaunchpadView):
-    """Standard view of a CodeReviewMessage"""
-    __used_for__ = ICodeReviewMessage
+class CodeReviewCommentView(LaunchpadView):
+    """Standard view of a CodeReviewComment"""
+    __used_for__ = ICodeReviewComment
 
     @property
     def reply_link(self):
-        """Location of the page for replying to this message."""
+        """Location of the page for replying to this comment."""
         return canonical_url(self.context, view_name='+reply')
 
 
-class IEditCodeReviewMessage(Interface):
-    """Interface for use as a schema for CodeReviewMessage forms."""
+class IEditCodeReviewComment(Interface):
+    """Interface for use as a schema for CodeReviewComment forms."""
 
     subject = Title(title=_('Subject'), required=False)
 
@@ -58,15 +58,15 @@ class IEditCodeReviewMessage(Interface):
     vote_tag = TextLine(title=_('Tag'), required=False)
 
 
-class CodeReviewMessageAddView(LaunchpadFormView):
-    """View for adding a CodeReviewMessage."""
+class CodeReviewCommentAddView(LaunchpadFormView):
+    """View for adding a CodeReviewComment."""
 
-    schema = IEditCodeReviewMessage
+    schema = IEditCodeReviewComment
 
     @property
     def is_reply(self):
-        """True if this message is a reply to another message, else False."""
-        return ICodeReviewMessage.providedBy(self.context)
+        """True if this comment is a reply to another comment, else False."""
+        return ICodeReviewComment.providedBy(self.context)
 
     @property
     def branch_merge_proposal(self):
@@ -78,7 +78,7 @@ class CodeReviewMessageAddView(LaunchpadFormView):
 
     @property
     def reply_to(self):
-        """The message being replied to, or None."""
+        """The comment being replied to, or None."""
         if self.is_reply:
             return self.context
         else:
@@ -87,10 +87,10 @@ class CodeReviewMessageAddView(LaunchpadFormView):
     @action('Add')
     def add_action(self, action, data):
         """Create the comment..."""
-        message = self.branch_merge_proposal.createMessage(
+        comment = self.branch_merge_proposal.createComment(
             self.user, data['subject'], data['comment'], data['vote'],
             data['vote_tag'], self.reply_to)
-        self.next_url = canonical_url(message)
+        self.next_url = canonical_url(comment)
 
     @property
     def cancel_url(self):
