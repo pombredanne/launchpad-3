@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Utils import make_msgid
+from email.Utils import make_msgid, formatdate
 from StringIO import StringIO
 
 import pytz
@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
+from canonical.launchpad.mail.signedmessage import SignedMessage
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -100,6 +101,9 @@ class LaunchpadObjectFactory:
         # Initialise the unique identifier.
         self._integer = 0
 
+    def getUniqueEmailAddress(self):
+        return "%s@example.com" % self.getUniqueString('email')
+
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
         self._integer += 1
@@ -139,7 +143,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = "%s@example.com" % self.getUniqueString('email')
+            email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
@@ -383,6 +387,19 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
+    def makeSignedMessage(self, msgid=None, body=None):
+        mail = SignedMessage()
+        mail['From'] = self.getUniqueEmailAddress()
+        if msgid is None:
+            msgid = make_msgid('launchpad')
+        if body is None:
+            body = self.getUniqueString('body')
+        mail['Message-Id'] = msgid
+        mail['Date'] = formatdate()
+        mail.set_payload(body)
+        mail.parsed_string = mail.as_string()
+        return mail
+
     def makeSpecification(self, product=None):
         """Create and return a new, arbitrary Blueprint.
 
@@ -517,7 +534,7 @@ class LaunchpadObjectFactory:
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
             source_product_series_id)
 
-    def makeCodeReviewMessage(self, sender=None, subject=None, body=None,
+    def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None):
         if sender is None:
             sender = self.makePerson(password='password')
@@ -529,15 +546,17 @@ class LaunchpadObjectFactory:
             merge_proposal = parent.branch_merge_proposal
         else:
             merge_proposal = self.makeBranchMergeProposal(registrant=sender)
-        return merge_proposal.createMessage(
+        return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 
-    def makeMessage(self, subject=None, content=None, parent=None):
+    def makeMessage(self, subject=None, content=None, parent=None,
+                    owner=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         rfc822msgid = make_msgid("launchpad")
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)

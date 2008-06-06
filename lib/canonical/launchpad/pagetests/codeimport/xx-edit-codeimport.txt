@@ -194,7 +194,8 @@ should show this as 2 hours.
     >>> import pytz
     >>> date_started = datetime.now(pytz.UTC) - timedelta(hours=2, minutes=20)
     >>> code_import = make_running_import(
-    ...     code_import, date_started=date_started, factory=factory)
+    ...     code_import, date_started=date_started, factory=factory,
+    ...     logtail="Changeset 1\nChangeset 2")
     >>> # XXX thumper 2008-03-26, bug 3989
     >>> # flush_database_updates needed for test browser to see changes.
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -205,7 +206,10 @@ should show this as 2 hours.
     >>> print_import_details(import_browser)
     Status: Reviewed
     ...
-    An import is currently running, and was started 2 hours ago.
+    An import is currently running on machine-..., and was started 2 hours
+    ago.  The last few lines of the job's output were:
+        Changeset 1
+        Changeset 2
     ...
 
 
