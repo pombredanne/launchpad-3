@@ -20,13 +20,15 @@ You can fetch SSH keys by ID:
 Adding new keys is pretty easy:
 
     >>> foobar = personset.getByName('name16')
-    >>> sshkeyset.new(foobar, SSHKeyType.RSA, "zzzNOT-REALLY",
+    >>> key = sshkeyset.new(foobar, SSHKeyType.RSA, "zzzNOT-REALLY",
     ...     "This is just a test key.")
-    <SSHKey...>
+    >>> key, key.keytext
+    (<SSHKey at ...>, u'zzzNOT-REALLY')
 
-    >>> sshkeyset.new(name12, SSHKeyType.RSA, "zzzNOT-EITHER",
+    >>> key = sshkeyset.new(name12, SSHKeyType.RSA, "zzzNOT-EITHER",
     ...     "This is just a test key.")
-    <SSHKey...>
+    >>> key, key.keytext
+    (<SSHKey at ...>, u'zzzNOT-EITHER')
 
 There's also a convenience method for fetching multiple SSH keys at
 once:
@@ -35,6 +37,6 @@ once:
     >>> keys = sshkeyset.getByPeople([foobar, cprov, name12])
     >>> [(key.person.name, key.keytype, key.keytext) for key in keys]
     [(u'name12', <DBItem SSHKeyType.RSA, (1) RSA>, u'zzzNOT-EITHER'),
-     (u'name12', <DBItem SSHKeyType.DSA, (2) DSA>, u'AAAAB3...vz9SG1gBOiI='), 
+     (u'name12', <DBItem SSHKeyType.DSA, (2) DSA>, u'AAAAB3...vz9SG1gBOiI='),
      (u'name16', <DBItem SSHKeyType.RSA, (1) RSA>, u'zzzNOT-REALLY')]
 
