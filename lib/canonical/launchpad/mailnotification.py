@@ -1726,7 +1726,6 @@ def notify_specification_subscription_modified(specsub, event):
         simple_sendmail_from_person(user, address, subject, body)
 
 
-@block_implicit_flushes
 def notify_mailinglist_activated(mailinglist, event):
     """Notification that a mailng list is available.
 
