@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['CodeReviewMessage']
+__all__ = ['CodeReviewComment']
 
 from zope.interface import implements
 
@@ -11,14 +11,14 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeReviewVote,
-    ICodeReviewMessage,
+    ICodeReviewComment,
     )
 
 
-class CodeReviewMessage(SQLBase):
+class CodeReviewComment(SQLBase):
     """A table linking branch merge proposals and messages."""
 
-    implements(ICodeReviewMessage)
+    implements(ICodeReviewComment)
 
     _table = 'CodeReviewMessage'
 
