@@ -1,0 +1,18 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag=""
+  condition="nothing"
+>
+  <p class="discreet">
+    This template is <strong>open</strong> to anyone to translate.
+  </p>
+  <p class="discreet">
+    This template is <strong>restricted</strong>.
+    Your suggestions will be held for review by <a>Just a testing team</a>.
+  </p>
+  <p class="discreet">
+    This template is <strong>closed</strong>, translatable only by <a>Just a testing team</a>.
+  </p>  
+</tal:root>

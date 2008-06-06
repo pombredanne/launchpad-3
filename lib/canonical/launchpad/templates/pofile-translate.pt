@@ -206,6 +206,7 @@
                 tal:replace="context/language/englishname">Spanish</span>
           <span tal:replace="view/completeness">0 %</span>
         </p>
+        <tal:status replace="structure context/@@+access" />
         <tal:status replace="structure context/@@+portlet-details" />
         <div tal:replace="structure context/@@+portlet-contributors" />
       </tal:havepluralforms>

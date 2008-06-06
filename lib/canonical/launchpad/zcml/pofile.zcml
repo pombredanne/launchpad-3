@@ -69,6 +69,9 @@
             name="+portlet-details"
             template="../templates/pofile-portlet-details.pt" />
         <browser:page
+            name="+access"
+            template="../templates/pofile-translate-access.pt" />
+        <browser:page
             name="+portlet-translators"
             template="../templates/pofile-portlet-translators.pt" />
         <browser:page
