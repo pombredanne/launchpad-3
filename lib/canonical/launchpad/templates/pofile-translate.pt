@@ -6,20 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/default2.0"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
-
   <body>
-
-    <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </metal:leftportlets>
-
-    <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-contributors" />
-    </metal:rightportlets>
-
     <div metal:fill-slot="main">
 
       <tal:form-not-writeable condition="not:view/form_is_writeable">
@@ -216,6 +206,8 @@
                 tal:replace="context/language/englishname">Spanish</span>
           <span tal:replace="view/completeness">0 %</span>
         </p>
+        <tal:status replace="structure context/@@+portlet-details" />
+        <div tal:replace="structure context/@@+portlet-contributors" />
       </tal:havepluralforms>
     </div>
 
