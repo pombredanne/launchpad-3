@@ -108,14 +108,14 @@ From every distribution, you can easily get a list with its official
 ARCHIVE or RELEASE mirrors. This is available through the
 archive_mirrors and cdimage_mirrors properties of IDistribution.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name)
     ...  for mirror in ubuntu.archive_mirrors]
     [(u'canonical-archive', '100 Mbps', 'OFFICIAL'),
      (u'archive-404-mirror', '512 Kbps', 'OFFICIAL'),
      (u'archive-mirror', '128 Kbps', 'OFFICIAL'),
      (u'archive-mirror2', '128 Kbps', 'OFFICIAL')]
 
-    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name)
     ...  for mirror in ubuntu.cdimage_mirrors]
     [(u'canonical-releases', '100 Mbps', 'OFFICIAL'),
      (u'releases-mirror', '2 Mbps', 'OFFICIAL'),
@@ -125,13 +125,13 @@ archive_mirrors and cdimage_mirrors properties of IDistribution.
 The list of pending review mirrors can easily be obtained, so that the
 distribution owner can see all the ones that need to be reviewed.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name)
     ...  for mirror in ubuntu.pending_review_mirrors]
     [(u'random-releases-mirror', '100 Mbps', 'PENDING_REVIEW')]
 
 We also have a property which returns all unofficial mirrors.
 
-    >>> [(mirror.name, mirror.speed.title, mirror.status.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.status.name)
     ...  for mirror in ubuntu.unofficial_mirrors]
     [(u'invalid-mirror', '2 Mbps', 'UNOFFICIAL')]
 
@@ -149,7 +149,7 @@ It's possible to retrieve a mirror by its name:
 Or by any of its URLs (HTTP, FTP or Rsync)
 First we'll have to add some of this URLs to sample data:
 
-    >>> from canonical.launchpad.ftests import login 
+    >>> from canonical.launchpad.ftests import login
     >>> login("mark@hbd.com")
     >>> example_mirror.ftp_base_url = 'ftp://localhost/example-ftp'
     >>> example_mirror.rsync_base_url = 'rsync://localhost/example-rsync'
@@ -389,7 +389,7 @@ single notification to the distribution's mirror admins.
 
 After obtaining the list of mirrors that we need to probe, the script
 will then check what content is mirrored in each mirror. This is done by
-checking the existence of some control files on that mirror. 
+checking the existence of some control files on that mirror.
 
 For Archive mirrors, these files are Packages.gz (one file per
 [arch_series, component, pocket] tuple) and Sources.gz (one per [series,
@@ -398,7 +398,7 @@ getExpectedPackagesPaths() and getExpectedSourcesPaths() methods of
 IDistributionMirror.
 
     >>> paths = mirror.getExpectedPackagesPaths()
-    >>> [path for (series, pocket, component, path) in paths 
+    >>> [path for (series, pocket, component, path) in paths
     ...  if 'hoary' in path]
     [u'dists/hoary/main/binary-i386/Packages.gz',
      u'dists/hoary/restricted/binary-i386/Packages.gz',
@@ -458,11 +458,11 @@ config.distributionmirrorprober.releases_file_list_url option)
 === Checking how up-to-date the content is ===
 
 After knowing what content a mirror is expected to contain, we need to
-check when that mirror last synced its contents. 
+check when that mirror last synced its contents.
 
 To do that we use the getURLsToCheckUpdateness() of either
 MirrorDistroSeriesSource or MirrorDistroArchSeries. This method returns
-a dictionary mapping MirrorFreshnesses to URLs on that mirror. 
+a dictionary mapping MirrorFreshnesses to URLs on that mirror.
 
 The prober will then check, between all reachable URLs, which one has
 the freshness which corresponds to the most recent sync, and then set
@@ -503,7 +503,8 @@ If the mirror has no HTTP base url, we'll use the FTP one.
     >>> naked_mirror = removeSecurityProxy(warty_mirror)
     >>> http_url = naked_mirror.distribution_mirror.http_base_url
     >>> naked_mirror.distribution_mirror.http_base_url = None
-    >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
+    >>> naked_mirror.distribution_mirror.ftp_base_url = (
+    ...     'ftp://foo.bar.com/pub')
     >>> urls = warty_mirror.getURLsToCheckUpdateness()
     >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar-1.0.dsc')]
@@ -551,7 +552,8 @@ If the mirror has no HTTP base url, we'll use the FTP one.
     >>> naked_mirror = removeSecurityProxy(warty_i386_mirror)
     >>> http_url = naked_mirror.distribution_mirror.http_base_url
     >>> naked_mirror.distribution_mirror.http_base_url = None
-    >>> naked_mirror.distribution_mirror.ftp_base_url = 'ftp://foo.bar.com/pub'
+    >>> naked_mirror.distribution_mirror.ftp_base_url = (
+    ...     'ftp://foo.bar.com/pub')
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness()
     >>> [(freshness.name, url) for (freshness, url) in urls.items()]
     [('UP', u'ftp://foo.bar.com/pub/pool/main/c/cdrkit/foobar_1.0_all.deb')]
@@ -664,7 +666,7 @@ we'll enable them again.
     >>> http_server.tearDown()
     >>> transaction.commit()
 
-    >>> [(mirror.name, mirror.speed.title, mirror.country.name) 
+    >>> [(mirror.name, mirror.speed.title, mirror.country.name)
     ...  for mirror in ubuntu.disabled_mirrors]
     [(u'archive-404-mirror', '512 Kbps', u'France'),
      (u'unreachable-mirror', '512 Kbps', u'France')]
