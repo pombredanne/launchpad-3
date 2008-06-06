@@ -20,15 +20,16 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
-    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet,
-    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
-    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IPrivateMaloneApplication, IProductSet,
-    IRosettaApplication, IShipItApplication, ITranslationGroupSet,
-    ITranslationsOverview, IWebServiceApplication)
+    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
+    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
+    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
+    IPrivateMaloneApplication, IProductSet, IRosettaApplication,
+    IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
+    IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
+
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -109,6 +110,9 @@ class MaloneApplication:
         user = getUtility(ILaunchBag).user
         return getUtility(IBugSet).searchAsUser(
             user=user, orderBy='-datecreated', limit=5)
+
+    def default_bug_list(self):
+        return getUtility(IBugSet).searchAsUser(getUtility(ILaunchBag).user)
 
 
 class BazaarApplication:

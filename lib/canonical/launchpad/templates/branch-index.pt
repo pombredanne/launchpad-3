@@ -9,6 +9,13 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
+
+<style type="text/css" metal:fill-slot="head_epilogue">
+  .logtail {
+    padding-left: 2em;
+  }
+</style>
+
 <body>
 
 <metal:leftportlets fill-slot="portlets">
@@ -176,10 +183,18 @@
                      condition="job">
           <div>
           <tal:is-running condition="job/state/enumvalue:RUNNING">
-            An import is currently running, and was started
+            An import is currently running on
+            <tal:machine content="structure job/machine/fmt:link" />,
+            and was started
             <tal:date-started replace="job/date_started/fmt:displaydate">
               2 hours ago
             </tal:date-started>.
+            <tal:is-logtail condition="job/logtail">
+              The last few lines of the job's output were:
+              <div class="logtail">
+                <tal:logtail content="structure job/logtail/fmt:nice_pre" />
+              </div>
+            </tal:is-logtail>
           </tal:is-running>
           <tal:not-running condition="not: job/state/enumvalue:RUNNING">
             The next import is scheduled to run
