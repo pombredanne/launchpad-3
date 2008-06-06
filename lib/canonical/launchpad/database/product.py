@@ -160,7 +160,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
 
-    license_info = StringCol(dbName='license_info', default=None)
+    def _validate_license_info(self, attr, value):
+        if not self._SO_creating and value != self.license_info:
+            # Clear the license_reviewed flag if the license changes.
+            self.license_reviewed = False
+        return value
+
+    license_info = StringCol(dbName='license_info', default=None,
+                             storm_validator=_validate_license_info)
     license_approved = BoolCol(dbName='license_approved',
                                notNull=True, default=False)
 
@@ -325,12 +332,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductLicense(product=self, license=license)
 
     licenses = property(_getLicenses, _setLicenses)
-
-    def _set_license_info(self, value):
-        if not self._SO_creating and value != self.license_info:
-            # Clear the license_reviewed flag if the license changes.
-            self.license_reviewed = False
-        self._SO_set_license_info(value)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""

@@ -261,14 +261,16 @@ class DatabaseConfig:
     chosen config section over the base section:
 
         >>> from canonical.config import config, dbconfig
-        >>> print config.dbhost
+        >>> print config.database.dbhost
         localhost
-        >>> print config.dbuser
+        >>> print config.database.dbuser
         Traceback (most recent call last):
           ...
         AttributeError: ...
         >>> print config.launchpad.dbhost
-        None
+        Traceback (most recent call last):
+          ...
+        AttributeError: ...
         >>> print config.launchpad.dbuser
         launchpad
         >>> print config.librarian.dbuser

@@ -7,6 +7,9 @@ __metaclass__ = type
 import unittest
 
 from datetime import datetime
+
+from storm.store import Store
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (BugTaskSearchParams,
@@ -55,8 +58,10 @@ class ProjectMilestoneTest(unittest.TestCase):
         product_set = getUtility(IProductSet)
         product = product_set[product_name]
         series = product.getSeries('trunk')
-        return series.newMilestone(
+        milestone = series.newMilestone(
             name=milestone_name, dateexpected=date_expected)
+        Store.of(milestone).flush()
+        return milestone
 
     def test_milestone_name(self):
         """The names of project milestones.

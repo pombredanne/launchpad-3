@@ -99,13 +99,18 @@ check_storm: build
 	  --module canonical.launchpad.interfaces \
 	  --module canonical.launchpad.pagetests \
 	  --module canonical.launchpad.webapp \
+	  --module canonical.archivepublisher \
 	  --module canonical.authserver \
+	  --module canonical.config \
 	  --module canonical.database \
 	  --module canonical.ftests \
 	  --module canonical.lazr \
 	  --module canonical.librarian \
 	  --module canonical.lp \
-	  --module canonical.testing
+	  --module canonical.poppy \
+	  --module canonical.testing \
+	  --module canonical.widgets \
+	  --module canonical.zeca
 
 lint:
 	@bash ./utilities/lint.sh
@@ -164,6 +169,12 @@ run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecod
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
+run_all_quickly_and_quietly: stop_quickly_and_quietly
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
+
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
@@ -201,6 +212,11 @@ start: inplace stop bzr_version_info
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
+
+stop_quickly_and_quietly:
+	LPCONFIG=${LPCONFIG} ${PYTHON} \
+	  utilities/killservice.py librarian buildsequencer launchpad mailman \
+	  > /dev/null 2>&1
 
 shutdown: scheduleoutage stop
 	rm -f +maintenancetime.txt

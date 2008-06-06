@@ -11,7 +11,7 @@ from the sampledata which happens to be in FAILEDTOBUILD status.
     >>> hoary = ubuntu.getSeries('hoary')
     >>> hoary_pmount = hoary.getSourcePackage('pmount')
 
-    >>> failed_build = hoary_pmount.getBuildRecords(
+    >>> hoary_failed_build = hoary_pmount.getBuildRecords(
     ...      build_state=BuildStatus.FAILEDTOBUILD)[0]
 
 
@@ -28,8 +28,9 @@ As mentioned above, the build is targeted to the ubuntu PRIMARY
 archive, so the page header refers to the distribution (see
 browser.archive.archive_to_structuralheading).
 
-    >>> failed_build_shp = build_to_structuralheading(failed_build)
-    >>> print zope.i18n.translate(failed_build_shp.getMainHeading())
+    >>> hoary_failed_build_shp = build_to_structuralheading(
+    ...     hoary_failed_build)
+    >>> print zope.i18n.translate(hoary_failed_build_shp.getMainHeading())
     Ubuntu Linux
 
 In a similar way, the menu presented in the build page depends on the
@@ -37,7 +38,7 @@ targeted archive. For instance the 'PPA' action-menu link is not
 enabled for builds targeted to the PRIMARY archive.
 
     >>> from canonical.launchpad.browser import BuildContextMenu
-    >>> build_menu = BuildContextMenu(failed_build)
+    >>> build_menu = BuildContextMenu(hoary_failed_build)
 
     >>> print build_menu.links
     ['ppa', 'records', 'retry', 'rescore']
@@ -52,22 +53,20 @@ On the other hand, if we modify the build to be targeted to Celso's
 PPA, its header will refer to the PPA owner.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
-    >>> original_archive = failed_build.archive
+    >>> cprov_failed_build = cprov.archive.getBuildRecords(
+    ...      build_state=BuildStatus.FAILEDTOBUILD)[0]
 
-    >>> naked_failed_build = removeSecurityProxy(failed_build)
-    >>> naked_failed_build.archive = cprov.archive
-
-    >>> failed_build_shp = build_to_structuralheading(failed_build)
-    >>> print zope.i18n.translate(failed_build_shp.getMainHeading())
+    >>> cprov_failed_build_shp = build_to_structuralheading(
+    ...     cprov_failed_build)
+    >>> print zope.i18n.translate(cprov_failed_build_shp.getMainHeading())
     Celso Providelo
 
 Now we have a enabled 'PPA' action-menu item, since the build is
 targeted to a PPA.
 
-    >>> build_menu = BuildContextMenu(failed_build)
+    >>> build_menu = BuildContextMenu(cprov_failed_build)
 
     >>> print build_menu.links
     ['ppa', 'records', 'retry', 'rescore']
@@ -77,11 +76,6 @@ targeted to a PPA.
 
     >>> build_menu.ppa().enabled
     True
-
-We will restore the original 'failed_build' archive for the next
-tests.
-
-    >>> naked_failed_build.archive = original_archive
 
 
 == Build +index page ==
@@ -94,26 +88,26 @@ Setup an 'empty' request:
 Let's instantiate the view for +index:
 
     >>> from zope.component import getMultiAdapter
-    >>> failed_build_view = getMultiAdapter(
-    ...     (failed_build, empty_request), name="+index")
+    >>> hoary_failed_build_view = getMultiAdapter(
+    ...     (hoary_failed_build, empty_request), name="+index")
 
 'BuildView.user_can_retry_build' property checks not only the
 user's permissions to retry but also if a build is in a status that it
 can be retried.
 
 The build cannot be retried (see IBuild) because it's targeted to a
-stable distroseries. Re-targeting it to a unstable distroarchseries
-will allow the build to be retried.
+stable distroseries.
 
-    >>> failed_build.can_be_retried
+    >>> hoary_failed_build.can_be_retried
     False
 
-    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
-    >>> breezy_autotest_i386 = breezy_autotest['i386']
-    >>> naked_failed_build = removeSecurityProxy(failed_build)
-    >>> naked_failed_build.distroarchseries = breezy_autotest_i386
+    >>> hoary_failed_build_view.user_can_retry_build
+    False
 
-    >>> failed_build.can_be_retried
+The Celso's PPA failed-to-build build record can be retried, since PPA
+distroseries never freeze.
+
+    >>> cprov_failed_build.can_be_retried
     True
 
 While the build is now in a state to be rebuilt, the view property
@@ -121,7 +115,10 @@ still checks to ensure the user has the proper permission. Anonymous
 users, obviously, don't have 'launchpad.Edit' permission on this
 build.
 
-    >>> failed_build_view.user_can_retry_build
+    >>> cprov_failed_build_view = getMultiAdapter(
+    ...     (cprov_failed_build, empty_request), name="+index")
+
+    >>> cprov_failed_build_view.user_can_retry_build
     False
 
 If accessed by an user with the required permission, Foo Bar in this
@@ -129,10 +126,10 @@ case, the 'user_can_retry_build' property finally returns True.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> failed_build_view = getMultiAdapter(
-    ...     (failed_build, empty_request), name="+index")
+    >>> cprov_failed_build_view = getMultiAdapter(
+    ...     (cprov_failed_build, empty_request), name="+index")
 
-    >>> failed_build_view.user_can_retry_build
+    >>> cprov_failed_build_view.user_can_retry_build
     True
 
 See pagetests/soyuz/xx-build-record.txt for further information about
