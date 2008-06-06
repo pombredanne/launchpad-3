@@ -1126,7 +1126,6 @@ def notify_team_join(event):
         simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 
-@block_implicit_flushes
 def dispatch_linked_question_notifications(bugtask, event):
     """Send notifications to linked question subscribers when the bugtask
     status change.
@@ -1143,7 +1142,6 @@ class QuestionNotification:
     QuestionNotification can be registered as event subscribers.
     """
 
-    @block_implicit_flushes
     def __init__(self, question, event):
         """Base constructor.
 
