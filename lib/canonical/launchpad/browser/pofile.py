@@ -104,7 +104,7 @@ class POFileMenuMixin:
 
     def description(self):
         text = 'Description'
-        return Link('', text)
+        return Link('+index', text)
 
     def translate(self):
         text = 'Translate'
