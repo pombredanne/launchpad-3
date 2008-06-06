@@ -787,6 +787,10 @@ special = {
             '../doc/google-service-stub.txt',
             layer=GoogleServiceLayer,
             ),
+    'karmacache.txt': LayeredDocFileSuite(
+        '../doc/karmacache.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 
