@@ -17,7 +17,7 @@ class PackageCloner(object):
     """Used for copying of various publishing history data across archives.
     """
 
-    def copy_binary_publishing_data(self, origin, destination):
+    def clone_binary_packages(self, origin, destination):
         """Copy binary publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -49,7 +49,7 @@ class PackageCloner(object):
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
 
-    def copy_source_publishing_data(self, origin, destination):
+    def clone_source_packages(self, origin, destination):
         """Copy source publishing data from origin to destination.
 
         @type origin: PackageLocation

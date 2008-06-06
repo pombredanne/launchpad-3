@@ -1387,7 +1387,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             destination = PackageLocation(
                 target_archive, self.distribution, self,
                 PackagePublishingPocket.RELEASE, arch)
-            pkg_cloner.copy_binary_publishing_data(origin, destination)
+            pkg_cloner.clone_binary_packages(origin, destination)
 
     def _copy_source_publishing_records(self):
         """Copy the source publishing records from our parent distro series.
@@ -1415,7 +1415,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             destination = PackageLocation(
                 target_archive, self.distribution, self,
                 PackagePublishingPocket.RELEASE)
-            pkg_cloner.copy_source_publishing_data(origin, destination)
+            pkg_cloner.clone_source_packages(origin, destination)
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro
