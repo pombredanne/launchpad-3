@@ -56,7 +56,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
+    BranchLifecycleStatusFilter, BranchListingSort,
     IBranchSet, IBugTracker, ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
     IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
@@ -1407,7 +1407,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             if self.selected_lifecycle_status is None:
                 return True
             else:
-            	return branch.lifecycle_status in self.selected_lifecycle_status
+                return branch.lifecycle_status in \
+                    self.selected_lifecycle_status
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
