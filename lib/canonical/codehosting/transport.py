@@ -926,8 +926,11 @@ class AsyncLaunchpadTransport(VirtualTransport):
         # can request a mirror once a branch is unlocked.
         abs_from = self._abspath(rel_from)
         if is_lock_directory(abs_from):
-            self.server.requestMirror(abs_from)
-        return VirtualTransport.rename(self, rel_from, rel_to)
+            deferred = self.server.requestMirror(abs_from)
+        else:
+            deferred = defer.succeed(None)
+        return deferred.addCallback(
+            lambda ignored: VirtualTransport.rename(self, rel_from, rel_to))
 
     def rmdir(self, relpath):
         # We hook into rmdir in order to prevent users from deleting branches,
