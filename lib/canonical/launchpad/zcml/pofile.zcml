@@ -63,9 +63,6 @@
 
         <!-- POFile Portlets -->
         <browser:page
-            name="+portlet-about"
-            template="../templates/pofile-portlet-about.pt" />
-        <browser:page
             name="+portlet-contributors"
             template="../templates/pofile-portlet-contributors.pt" />
         <browser:page
