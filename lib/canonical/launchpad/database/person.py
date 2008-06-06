@@ -703,6 +703,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getBugSubscriberOpenBugCounts(self, user):
         """See `IPerson`."""
+        return self._getBugCountsForPackages(
+            user, self.getBugSubscriberPackages())
+
+    def _getBugCountsForPackages(self, user, packages):
+        """Return bug counts for a list of packages.
+
+        :param user: The `IPerson` doing the search.
+        :param packages: A list of `IDistributionSourcePackage` instances.
+        """
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
                 any(*UNRESOLVED_BUGTASK_STATUSES)))
@@ -719,13 +728,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 'BugTask.status %s' % search_value_to_where_condition(
                     BugTaskStatus.INPROGRESS), 'open_inprogress_bugs')]
 
+        package_names = [package.sourcepackagename.id for package in packages]
+        distributions = list(
+            set(package.distribution for package in packages))
+        #XXX: a test for len(distribution) > 1
+        assert len(distributions) == 1
         conditions = [
             'Bug.id = BugTask.bug',
             open_bugs_cond,
-            'StructuralSubscription.subscriber = %s' % sqlvalues(self),
-            'BugTask.sourcepackagename = '
-                'StructuralSubscription.sourcepackagename',
-            'BugTask.distribution = StructuralSubscription.distribution',
+            'BugTask.sourcepackagename IN %s' % sqlvalues(package_names),
+            'BugTask.distribution = %s' % sqlvalues(distributions[0]),
             'Bug.duplicateof is NULL']
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
@@ -734,7 +746,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = """SELECT BugTask.distribution,
                           BugTask.sourcepackagename,
                           %(sums)s
-                   FROM BugTask, Bug, StructuralSubscription
+                   FROM BugTask, Bug
                    WHERE %(conditions)s
                    GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
         cur = cursor()
