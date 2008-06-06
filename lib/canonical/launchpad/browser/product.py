@@ -1403,19 +1403,22 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
         sorted_series = self.sorted_series_list
-        IGNORE_STATUS = (
-            BranchLifecycleStatus.MERGED, BranchLifecycleStatus.ABANDONED)
+        def show_branch(branch):
+            if self.selected_lifecycle_status is None:
+                return True
+            else:
+            	return branch.lifecycle_status in self.selected_lifecycle_status
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
         result = []
-        if dev_focus_branch is not None:
+        if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
         for series in sorted_series[1:]:
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
-                branch.lifecycle_status not in IGNORE_STATUS):
+                show_branch(branch)):
                 result.append(branch)
         return result
 
