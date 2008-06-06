@@ -35,6 +35,14 @@ from canonical.testing import (
 here = os.path.dirname(os.path.realpath(__file__))
 
 
+def zopeless_setUp_factory(dbuser):
+    """Create a setup method that will switch the db user."""
+    def zopeless_setUp(test):
+        setUp(test)
+        LaunchpadZopelessLayer.switchDbUser(dbuser)
+    return zopeless_setUp
+
+
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
     setUp(test)
@@ -388,6 +396,10 @@ special = {
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'karmacache.txt': LayeredDocFileSuite(
+            '../doc/karmacache.txt',
+            setUp=zopeless_setUp_factory(config.karmacacheupdater.dbuser),
+            tearDown=tearDown, layer=LaunchpadZopelessLayer),
     'bugnotificationrecipients.txt-uploader': LayeredDocFileSuite(
             '../doc/bugnotificationrecipients.txt',
             setUp=uploaderBugsSetUp,
