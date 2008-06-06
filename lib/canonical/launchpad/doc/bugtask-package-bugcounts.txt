@@ -3,6 +3,11 @@
 BugTaskset has a method, getBugCountsForPackages(), which returns counts
 for open bugs on each package.
 
+    >>> from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+    >>> getUtility(IBugTaskSet).getBugCountsForPackages(
+    ...     user=None, packages=[])
+    []
+
 It's possible to get some basic statistics of the open bugs on each
 package using this method, which returns a list of dicts, containing the
 package, and the number of open bugs in various states.

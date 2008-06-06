@@ -1955,6 +1955,8 @@ class BugTaskSet:
         package_names = [package.sourcepackagename.id for package in packages]
         distributions = list(
             set(package.distribution for package in packages))
+        if len(package_names) == 0:
+            return []
         #XXX: a test for len(distribution) > 1
         assert len(distributions) == 1
         conditions = [
