@@ -8,6 +8,7 @@ __metaclass__ = type
 # file, one file for each interface type: person, project, bug, etc.
 
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
@@ -56,7 +57,7 @@ from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
-from canonical.launchpad.interfaces.codereviewmessage import *
+from canonical.launchpad.interfaces.codereviewcomment import *
 from canonical.launchpad.interfaces.codereviewvote import *
 from canonical.launchpad.interfaces.commercialsubscription import *
 from canonical.launchpad.interfaces.component import *

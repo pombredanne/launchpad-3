@@ -1,4 +1,4 @@
-= Code Review Messages =
+= Code Review Comments =
 
 Set up required objects
 
@@ -14,11 +14,11 @@ Set up required objects
     >>> nopriv_browser.getControl('Subject').value = 'my subject'
     >>> nopriv_browser.getControl('Comment').value = 'my body'
     >>> nopriv_browser.getControl('Add').click()
-    >>> message_url = nopriv_browser.url
+    >>> comment_url = nopriv_browser.url
 
 Now, open its home page.
 
-    >>> anon_browser.open(message_url)
+    >>> anon_browser.open(comment_url)
     >>> def print_tag(tag_id, browser=None):
     ...     if browser is None:
     ...         browser = anon_browser
@@ -48,9 +48,9 @@ Reply link is displayed even if the user isn't logged in.
 We can reply to a comment.
 
     >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-    >>> nopriv_browser.open(message_url)
+    >>> nopriv_browser.open(comment_url)
     >>> nopriv_browser.getLink('Reply').click()
-    >>> nopriv_browser.url == message_url + '/+reply'
+    >>> nopriv_browser.url == comment_url + '/+reply'
     True
     >>> nopriv_browser.getControl('Subject').value = 'Subjects are nice.'
     >>> nopriv_browser.getControl('Comment').value = ('I like this.\n'
