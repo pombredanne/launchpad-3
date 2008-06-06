@@ -41,7 +41,8 @@ class CodeImportMachine(SQLBase):
     heartbeat = UtcDateTimeCol(notNull=False)
 
     current_jobs = SQLMultipleJoin(
-        'CodeImportJob', joinColumn='machine', orderBy='date_started')
+        'CodeImportJob', joinColumn='machine',
+        orderBy=['date_started', 'id'])
 
     events = SQLMultipleJoin(
         'CodeImportEvent', joinColumn='machine',

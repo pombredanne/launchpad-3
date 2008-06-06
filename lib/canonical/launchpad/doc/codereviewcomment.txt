@@ -1,4 +1,4 @@
-= Code review messages =
+= Code review comments =
 
 When code is proposed to be merged, it's common to perform a review of
 that code, which is often in the form of a conversation.  The reviewer
@@ -7,15 +7,15 @@ whether or not the code should be merged.  The submitter responds to the
 reviewer until submitter and reviewer and reach an agreement about the
 status of the code or conclude that agreement cannot be reached.
 
-The ICodeReviewMessage interface represents this kind of conversation.
-It has a IMessage as a member (in a one-to-one relationship), a vote
+The ICodeReviewComment interface represents this kind of conversation.
+It has an IMessage as a member (in a one-to-one relationship), a vote
 (which is an enum), and a reference to the IBranchMergeProposal it is
 about.
 
 
-== Creating CodeReviewMessages ==
+== Creating CodeReviewComments ==
 
-CodeReviewMessages are created from their BranchMergeProposals:
+CodeReviewComments are created from their BranchMergeProposals:
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -24,35 +24,35 @@ CodeReviewMessages are created from their BranchMergeProposals:
     >>> sender = factory.makePerson(
     ...     email='sender@example.com', password='password',
     ...     displayname='Sender Person')
-    >>> message = merge_proposal.createMessage(
+    >>> comment = merge_proposal.createComment(
     ...     sender, 'Please merge', 'This patch is very nice.')
 
-The first message to be created is the root of the code review
-conversation, and is available as BranchMergeProposal.root_message.
+The first comment to be created is the root of the code review
+conversation, and is available as BranchMergeProposal.root_comment.
 
-    >>> merge_proposal.root_message == message
+    >>> merge_proposal.root_comment == comment
     True
 
-Subsequent messages are marked as replies to the root_message, by
+Subsequent comments are marked as replies to the root_comment, by
 default.
 
     >>> from canonical.launchpad.interfaces import CodeReviewVote
-    >>> message2 = merge_proposal.createMessage(
+    >>> comment2 = merge_proposal.createComment(
     ...     sender, 'No!', 'You are ugly and stupid',
     ...     CodeReviewVote.DISAPPROVE)
-    >>> message2.message.parent == merge_proposal.root_message.message
+    >>> comment2.message.parent == merge_proposal.root_comment.message
     True
 
-Messages can be marked as replies to particular messages.
+Comments can be marked as replies to particular comments.
 
-    >>> message3 = merge_proposal.createMessage(
+    >>> comment3 = merge_proposal.createComment(
     ...     sender, 'Hurt', "That wasn't a nice thing to say.",
-    ...     parent=message2)
-    >>> message3.message.parent == message2.message
+    ...     parent=comment2)
+    >>> comment3.message.parent == comment2.message
     True
 
 If there is a subscriber to any of the branches involved in the merge,
-a notification is produced when the message is created.
+a notification is produced when the comment is created.
 
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
@@ -66,7 +66,7 @@ a notification is produced when the message is created.
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
     >>> _unused = pop_notifications()
-    >>> message = merge_proposal.createMessage(
+    >>> comment = merge_proposal.createComment(
     ...     sender, 'Please merge', 'This patch is very nice.',
     ...     vote=CodeReviewVote.APPROVE, vote_tag='DB')
     >>> notifications = pop_notifications()
@@ -77,25 +77,25 @@ a notification is produced when the message is created.
     Subject: Please merge
     Vote: Approve DB
     This patch is very nice.
-    --
+    --...
     You are subscribed to branch ~person-name.../product-name.../branch....
     ----------------------------------------
     >>> print notifications[0]['X-Launchpad-Branch']
     ~person-name.../product-name.../branch...
     >>> print notifications[0]['X-Launchpad-Message-Rationale']
     Subscriber
-    >>> notifications[0]['Message-Id'] == message.message.rfc822msgid
+    >>> notifications[0]['Message-Id'] == comment.message.rfc822msgid
     True
     >>> (notifications[0]['In-Reply-To'] ==
-    ...  merge_proposal.root_message.message.rfc822msgid)
+    ...  merge_proposal.root_comment.message.rfc822msgid)
     True
 
 
 == Interfaces ==
 
-The CodeReviewMessage must implement the ICodeReviewMessage interface.
+The CodeReviewComment must implement the ICodeReviewComment interface.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import ICodeReviewMessage
-    >>> verifyObject(ICodeReviewMessage, message)
+    >>> from canonical.launchpad.interfaces import ICodeReviewComment
+    >>> verifyObject(ICodeReviewComment, comment)
     True
