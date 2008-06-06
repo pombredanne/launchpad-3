@@ -5,7 +5,6 @@
 __metaclass__ = type
 __all__ = [
     'People',
-    'Person',
     ]
 
 
@@ -15,31 +14,8 @@ from launchpadlib.collection import Collection, Entry
 from launchpadlib.errors import HTTPError
 
 
-class Person(Entry):
-    """A Launchpad person or team."""
-
-
 class People(Collection):
     """The set of all Launchpad people or teams."""
-
-    def _entry(self, entry_dict):
-        """Return a new entry subclass."""
-        return Person(entry_dict)
-
-    def __getitem__(self, name):
-        """Return the named person or team.
-
-        :param name: The person's or team's name
-        :type name: string
-        :return: the person with the given name
-        :rtype: `Person`
-        :raise KeyError: when there is no named person in the collection.
-        """
-        missing = object()
-        result = self.get(name, missing)
-        if result is missing:
-            raise KeyError(name)
-        return result
 
     def get(self, name, default=None):
         """Return the named person or team.
@@ -58,4 +34,4 @@ class People(Collection):
             if error.status == 404:
                 return default
             raise
-        return Person(data)
+        return Entry(data)

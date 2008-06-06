@@ -16,13 +16,14 @@ import httplib2
 import urlparse
 import simplejson
 
+from urllib import urlencode
+
 from launchpadlib._oauth.oauth import (
     OAuthRequest, OAuthSignatureMethod_PLAINTEXT)
 from launchpadlib.errors import HTTPError
 
 
 OAUTH_REALM = 'https://api.launchpad.net'
-JOINER = '&'
 
 
 class Browser:
@@ -66,6 +67,5 @@ class Browser:
     def post(self, url, method_name, **kws):
         """Post a request to the web service."""
         kws['ws.op'] = method_name
-        data = JOINER.join('%s=%s' % (key, value)
-                           for key, value in kws.items())
+        data = urlencode(kws)
         return self._request(url, data, 'POST')

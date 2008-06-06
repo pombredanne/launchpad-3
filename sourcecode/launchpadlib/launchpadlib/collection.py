@@ -49,18 +49,6 @@ class Collection:
         except KeyError:
             raise TypeError('collection size is not available')
 
-    def _entry(self, entry_dict):
-        """Return an entry instance.
-
-        :param entry_dict: The entry's JSON dictionary
-        :type entry_dict: dict
-        :return: A subclass of `Entry` or None if the `entry_dict` does not
-            correspond to the correct type of entry (e.g. it's a team for a
-            person collection).
-        :rtype: `Entry` subclass or None
-        """
-        raise NotImplementedError
-
     def __iter__(self):
         """Iterate over the items in the collection.
 
@@ -70,10 +58,34 @@ class Collection:
         current_page = self._info
         while True:
             for entry_dict in current_page.get('entries', []):
-                entry = self._entry(entry_dict)
-                if entry is not None:
-                    yield entry
+                yield Entry(entry_dict)
             next_link = current_page.get('next_collection_link')
             if next_link is None:
                 break
             current_page = self._browser.get(next_link)
+
+    def __getitem__(self, name):
+        """Return the named entry.
+
+        :param name: The collection entry's name
+        :type name: string
+        :return: the named Entry
+        :rtype: `Entry`
+        :raise KeyError: when there is no named entry in the collection.
+        """
+        missing = object()
+        result = self.get(name, missing)
+        if result is missing:
+            raise KeyError(name)
+        return result
+
+    def get(self, name, default=None):
+        """Return the named entry.
+
+        :param name: The collection entry's name
+        :type name: string
+        :return: the entry with the given name or None if there is no such
+            entry
+        :rtype: `Entry` or None
+        """
+        raise NotImplementedError
