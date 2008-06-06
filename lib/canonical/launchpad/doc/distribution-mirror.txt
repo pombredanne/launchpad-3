@@ -97,8 +97,6 @@ contents are not in a mirror where they used to be.
     >>> new_mirror.deleteMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
     >>> new_mirror.source_serieses.count()
     0
     >>> new_mirror.arch_serieses.count()
@@ -153,7 +151,6 @@ First we'll have to add some of this URLs to sample data:
     >>> login("mark@hbd.com")
     >>> example_mirror.ftp_base_url = 'ftp://localhost/example-ftp'
     >>> example_mirror.rsync_base_url = 'rsync://localhost/example-rsync'
-    >>> flush_database_updates()
 
 The getBy*Url methods return the corresponding mirrors:
 
@@ -381,7 +378,6 @@ single notification to the distribution's mirror admins.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_record = removeSecurityProxy(proberecord)
     >>> naked_record.destroySelf()
-    >>> flush_database_updates()
     >>> transaction.commit()
 
 
@@ -645,7 +641,6 @@ we'll enable them again.
     >>> cdimage_mirror.enabled
     True
     >>> cdimage_mirror.enabled = False
-    >>> flush_database_updates()
     >>> transaction.commit()
     >>> prober, stdout, stderr = run_prober('--content-type=cdimage --force')
     >>> print stderr
