@@ -33,7 +33,7 @@
         />
 
     <content
-        class="canonical.launchpad.translationformat.mozilla_xpi_importer.XpiHeader">
+        class="canonical.launchpad.translationformat.xpi_header.XpiHeader">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationHeaderData" />
         <require

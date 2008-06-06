@@ -13,7 +13,6 @@ includes GPG information, if the user has any.
 
   >>> anon_browser.open("http://launchpad.dev/~name16/+rdf")
   >>> print anon_browser.contents
-  <BLANKLINE>
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:foaf="http://xmlns.com/foaf/0.1/"
@@ -39,7 +38,6 @@ team.
 
   >>> anon_browser.open("http://launchpad.dev/~ubuntu-team/+rdf")
   >>> print anon_browser.contents
-  <BLANKLINE>
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:foaf="http://xmlns.com/foaf/0.1/"
