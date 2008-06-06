@@ -111,8 +111,8 @@ class MaloneApplication:
         return getUtility(IBugSet).searchAsUser(
             user=user, orderBy='-datecreated', limit=5)
 
-    def default_bug_list(self):
-        return getUtility(IBugSet).searchAsUser(None)
+    def default_bug_list(self, user=None):
+        return getUtility(IBugSet).searchAsUser(user)
 
 
 class BazaarApplication:

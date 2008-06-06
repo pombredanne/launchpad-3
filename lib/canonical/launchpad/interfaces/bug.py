@@ -37,8 +37,7 @@ from canonical.launchpad.validators.bugattachment import (
 
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import CollectionField
-
+from canonical.lazr.rest.schema import CollectionField, Reference
 
 class CreateBugParams:
     """The parameters used to create a bug."""
@@ -159,7 +158,8 @@ class IBug(IMessageTarget, ICanBeMentored):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Object(IPerson, title=_("The owner's IPerson")))
+        Reference(title=_("The owner's IPerson"),
+                  required=True, readonly=True, schema=IPerson))
     duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')
@@ -169,12 +169,13 @@ class IBug(IMessageTarget, ICanBeMentored):
                            "their subscribers."),
              default=False))
     date_made_private = exported(
-        Datetime(title=_('Date Made Private'), required=False))
+        Datetime(title=_('Date Made Private'), required=False, readonly=True))
     who_made_private = exported(
         PublicPersonChoice(
             title=_('Who Made Private'), required=False,
             vocabulary='ValidPersonOrTeam',
-            description=_("The person who set this bug private.")))
+            description=_("The person who set this bug private."),
+            readonly=True))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability"),
              required=False, default=False))
@@ -187,7 +188,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         CollectionField(
             title=_('BugTasks on this bug, sorted upstream, then '
                     'ubuntu, then other distroseriess.'),
-            value_type=Object(schema=IBugTask),
+            value_type=Reference(schema=IBugTask),
             readonly=True))
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
@@ -200,7 +201,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
-            value_type=BugField()))
+            value_type=BugField(), readonly=True))
     attachments = Attribute("List of bug attachments.")
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
@@ -216,17 +217,20 @@ class IBug(IMessageTarget, ICanBeMentored):
                 "True or False depending on whether this bug is considered "
                 "completely addressed. A bug is Launchpad is completely "
                 "addressed when there are no tasks that are still open for "
-                "the bug.")))
+                "the bug."),
+             readonly=True))
     permits_expiration = exported(
         Bool(title=_("Does the bug's state permit expiration?"),
              description=_(
                 "Expiration is permitted when the bug is not valid anywhere, "
                 "a message was sent to the bug reporter, and the bug is "
-                "associated with pillars that have enabled bug expiration.")))
+                "associated with pillars that have enabled bug expiration."),
+             readonly=True))
     can_expire = exported(
         Bool(title=_("Can the Incomplete bug expire if it becomes inactive? "
                      "Expiration may happen when the bug permits expiration, "
-                     "and a bugtask cannot be confirmed.")))
+                     "and a bugtask cannot be confirmed."),
+             readonly=True))
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))

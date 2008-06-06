@@ -42,6 +42,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.security.interfaces import Unauthorized
 
 from sqlos.interfaces import ISelectResults
 
@@ -65,7 +66,7 @@ from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, export_operation_as,
     export_write_operation, exported, operation_parameters,
     rename_parameters_as, webservice_error)
-from canonical.lazr.rest.schema import CollectionField
+from canonical.lazr.rest.schema import CollectionField, Reference
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -303,7 +304,7 @@ class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
 
 
-class UserCannotEditBugTaskStatus(Exception):
+class UserCannotEditBugTaskStatus(Unauthorized):
     """User not permitted to change status.
 
     Raised when a user tries to transition to a new status who doesn't
@@ -318,11 +319,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
 
     id = Int(title=_("Bug Task #"))
     bug = exported(
-        BugField(title=_("Bug")))
-    product = Choice(title=_('Project'), required=False,
-               vocabulary='Product')
-    productseries = Choice(title=_('Series'), required=False,
-               vocabulary='ProductSeries')
+        BugField(title=_("Bug"), readonly=True))
+    product = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
+    productseries = Choice(
+        title=_('Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
@@ -370,7 +371,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         Datetime(title=_("Date Assigned"),
                  description=_("The date on which this task was assigned "
                                "to someone."),
-                 readonly=True))
+                 readonly=True,
+                 required=False))
     datecreated = exported(
         Datetime(title=_("Date Created"),
                  description=_("The date on which this task was created."),
@@ -380,48 +382,54 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         Datetime(title=_("Date Confirmed"),
                  description=_("The date on which this task was marked "
                                "Confirmed."),
-                 readonly=True))
+                 readonly=True,
+                 required=False))
     date_inprogress = exported(
         Datetime(title=_("Date In Progress"),
                  description=_("The date on which this task was marked "
                                "In Progress."),
-                 readonly=True),
+                 readonly=True,
+                 required=False),
         exported_as='date_in_progress')
     date_closed = exported(
         Datetime(title=_("Date Closed"),
                  description=_("The date on which this task was marked "
                                "either Fix Committed or Fix Released."),
-                 readonly=True))
+                 readonly=True,
+                 required=False))
     date_left_new = exported(
         Datetime(title=_("Date left new"),
                  description=_("The date on which this task was marked "
                                "with a status higher than New."),
-                 readonly=True))
+                 readonly=True,
+                 required=False))
     date_triaged = exported(
         Datetime(title=_("Date Triaged"),
                  description=_("The date on which this task was marked "
                                "Triaged."),
-                 readonly=True))
+                 readonly=True,
+                 required=False))
     date_fix_committed = exported(
         Datetime(title=_("Date Fix Committed"),
                  description=_("The date on which this task was marked "
                                "Fix Committed."),
-                 readonly=True))
+                 readonly=True,
+                 required=False))
     date_fix_released = exported(
         Datetime(title=_("Date Fix Relesaed"),
                  description=_("The date on which this task was marked "
                                "Fix Released."),
-                 readonly=True))
+                 readonly=True,
+                 required=False))
     age = Datetime(title=_("Age"),
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
     owner = exported(
-        Object(title=_("The owner"), schema=IPerson))
-    target = Object(title=_('Target'), required=False,
-                    schema=IBugTarget,
-                    description=_("The software in which this bug should "
-                                  "be fixed."))
+        Reference(title=_("The owner"), schema=IPerson))
+    target = Reference(
+        title=_('Target'), required=True, schema=IBugTarget,
+        description=_("The software in which this bug should be fixed."))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
     title = exported(
@@ -432,8 +440,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
             description=_(
                 "IBugTasks related to this one, namely other "
                 "IBugTasks on the same IBug."),
-            value_type=Object(schema=Interface),
-            readonly=True)) # Will be specified later.
+            value_type=Reference(schema=Interface), # Will be specified later.
+            readonly=True))
     pillar = Choice(
         title=_('Pillar'),
         description=_("The LP pillar (product or distribution) "
@@ -511,7 +519,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         be a bug supervisor or the owner of the project.
         """
 
-    @export_operation_as('change_status')
+    @export_operation_as('transitionToStatus')
     @rename_parameters_as(new_status='status')
     @operation_parameters(
         new_status=copy_field(status))
@@ -531,7 +539,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
-    @export_operation_as('change_assignee')
+    @export_operation_as('transitionToAssignee')
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()

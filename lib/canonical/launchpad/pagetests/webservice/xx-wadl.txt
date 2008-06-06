@@ -539,13 +539,13 @@ resources.
 
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    ['BugEntryAdapter', 'BugTaskEntry', ...]
+    ['BugEntryAdapter', 'BugTaskEntryAdapter', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.
 
     >>> bugtask_description = [entry for entry in entry_resource_descriptions
-    ...                        if entry[0].attrib['id'] == 'BugTaskEntry'][0]
+    ...                        if entry[0].attrib['id'] == 'BugTaskEntryAdapter'][0]
 
     >>> (entry_type, full_rep, diff_rep,
     ...  scoped_collection_type, collection_rep) = bugtask_description
@@ -564,14 +564,14 @@ documents.
     >>> full_rep.attrib['mediaType']
     'application/json'
     >>> full_rep.attrib['id']
-    'BugTaskEntry-full'
+    'BugTaskEntryAdapter-full'
 
     >>> diff_rep.tag
     '...representation'
     >>> diff_rep.attrib['mediaType']
     'application/json'
     >>> diff_rep.attrib['id']
-    'BugTaskEntry-diff'
+    'BugTaskEntryAdapter-diff'
 
 
 === Representation parameters ===
@@ -638,7 +638,7 @@ collection of bug tasks.
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['type']
-    'http://api.launchpad.dev/beta/#BugTaskEntry-scoped-collection'
+    'http://api.launchpad.dev/beta/#BugTaskEntryAdapter-scoped-collection'
 
 The full representation contains all fields, even read-only ones,
 because it's describing the document you receive when you make a GET
@@ -704,14 +704,15 @@ operations.
 The name of a method is always the HTTP method used to activate
 it. Different operations that use the same method are distinguished by
 XML id. Here that's not a problem; we have one custom POST method
-('BugTaskEntry-change_status'), plus the standard GET, PATCH, and PUT.
+('BugTaskEntryAdapter-transitionToStatus'), plus the standard GET, PATCH, and PUT.
 
     >>> [method.attrib['name'] for method in methods]
     ['GET', 'PUT', 'PATCH', 'POST']
 
     >>> [method.attrib['id'] for method in methods]
-    ['BugTaskEntry-get', 'BugTaskEntry-put',
-     'BugTaskEntry-patch', 'BugTaskEntry-change_status']
+    ['BugTaskEntryAdapter-get', 'BugTaskEntryAdapter-put',
+     'BugTaskEntryAdapter-patch', 'BugTaskEntryAdapter-transitionToStatus',
+     'BugTaskEntryAdapter-transitionToAssignee']
 
 
 === Standard entry operations ===
@@ -727,10 +728,10 @@ very first section of this test.
     '...response'
     >>> full, wadl = list(response)
     >>> full.attrib['href']
-    'http://api.launchpad.dev/beta/#BugTaskEntry-full'
+    'http://api.launchpad.dev/beta/#BugTaskEntryAdapter-full'
 
     >>> wadl.attrib['id']
-    'BugTaskEntry-wadl'
+    'BugTaskEntryAdapter-wadl'
     >>> wadl.attrib['mediaType']
     'application/vd.sun.wadl+xml'
 
@@ -746,10 +747,10 @@ with a request.
     '...request'
     >>> [representation] = request
     >>> representation.attrib['href']
-    'http://api.launchpad.dev/beta/#BugTaskEntry-full'
+    'http://api.launchpad.dev/beta/#BugTaskEntryAdapter-full'
 
     >>> patch[0][0].attrib['href']
-    'http://api.launchpad.dev/beta/#BugTaskEntry-diff'
+    'http://api.launchpad.dev/beta/#BugTaskEntryAdapter-diff'
 
 This is why we defined the representations separately. Now we can
 link to them instead of describing them every time.
@@ -852,7 +853,7 @@ describes the collection at that URL.
     >>> scoped_collection_type.tag
     '...resource_type'
     >>> scoped_collection_type.attrib['id']
-    'BugTaskEntry-scoped-collection'
+    'BugTaskEntryAdapter-scoped-collection'
 
 The difference between a scoped collection and a top-level collection
 is that, right now, scoped collections never have custom
@@ -860,7 +861,7 @@ operations. They only support the standard GET operation.
 
     >>> [get] = scoped_collection_type
     >>> get.attrib['id']
-    'BugTaskEntry-scoped-collection-get'
+    'BugTaskEntryAdapter-scoped-collection-get'
 
 In response to that GET operation they'll serve a WADL representation
 (not that interesting) or a JSON representation (interesting, and
@@ -869,7 +870,7 @@ covered immediately below).
     >>> [get_response] = get
     >>> json_representation, wadl_representation = list(get_response)
     >>> json_representation.attrib['href']
-    '#BugTaskEntry-page'
+    '#BugTaskEntryAdapter-page'
 
 
 == The representation of a collection ==
@@ -898,7 +899,7 @@ collection of bug tasks? Well, the ID is different, but that's just a
 name.
 
     >>> collection_rep.attrib['id']
-    'BugTaskEntry-page'
+    'BugTaskEntryAdapter-page'
 
 No, the real difference is the 'entry_links' parameter. It tells the
 client that this particular collection contains links to objects of
@@ -908,7 +909,7 @@ type BugTaskEntry.
     "$['entries'][*]['self_link']"
     >>> [link] = entry_links
     >>> link.attrib['type']
-    'http://api.launchpad.dev/beta/#BugTaskEntry'
+    'http://api.launchpad.dev/beta/#BugTaskEntryAdapter'
 
 This tells the client that a 'collection of bug tasks' resource
 contains lots of links to 'bug task' resources.
@@ -919,8 +920,8 @@ pages of the same collection!
 
     >>> [next_type] = next
     >>> next_type.attrib['type']
-    '#BugTaskEntry-page'
+    '#BugTaskEntryAdapter-page'
 
     >>> [prev_type] = prev
     >>> prev_type.attrib['type']
-    '#BugTaskEntry-page'
+    '#BugTaskEntryAdapter-page'
