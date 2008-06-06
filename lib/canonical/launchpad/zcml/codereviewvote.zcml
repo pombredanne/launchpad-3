@@ -5,8 +5,8 @@
   xmlns:zope="http://namespaces.zope.org/zope"
   i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.CodeReviewVote">
-    <allow interface="canonical.launchpad.interfaces.ICodeReviewVote" />
+  <content class="canonical.launchpad.database.CodeReviewVoteReference">
+    <allow interface="canonical.launchpad.interfaces.ICodeReviewVoteReference" />
   </content>
 
 </configure>

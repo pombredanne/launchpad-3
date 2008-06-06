@@ -43,6 +43,19 @@
       Whiteboard text goes here.
     </div>
   </tal:whiteboard>
+
+  <tal:votes condition="view/votes">
+    <h2>Votes</h2>
+    <table>
+      <tr tal:repeat="vote view/votes">
+        <td tal:content="structure vote/reviewer/fmt:link" />
+        <td tal:content="vote/comment/vote/title" />
+        <td tal:content="vote/comment/vote_tag" />
+        <td tal:content="vote/comment/message/datecreated/fmt:displaydate" />
+      </tr>
+    </table>
+  </tal:votes>
+
   <a href="#" tal:attributes="href view/comment_location"
      ><img src="/@@/add"/>Add comment</a>
       <tal:comments repeat="row view/comments" >

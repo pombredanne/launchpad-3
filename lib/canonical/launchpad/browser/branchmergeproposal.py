@@ -44,10 +44,14 @@ from canonical.launchpad.interfaces import (
     IMessageSet,
     IStructuralObjectPresentation,
     WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
+
+from canonical.lazr import decorates
 
 
 def notify(func):
@@ -243,6 +247,22 @@ class BranchMergeProposalNavigation(Navigation):
             return None
 
 
+class DecoratedCodeReviewVoteReference:
+    """Provide a code review vote that knows if it is important or not."""
+
+    decorates(ICodeReviewVoteReference)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def important_reviewer(self):
+        """Is the reviewer in the review team for the target branch."""
+        vote = self.context
+        target_branch = vote.branch_merge_proposal.target_branch
+        return vote.reviewer.inTeam(target_branch.code_reviewer)
+
+
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
@@ -261,6 +281,12 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     def comment_location(self):
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
+
+    @cachedproperty
+    def votes(self):
+        """Return the decorated votes for the proposal."""
+        return [DecoratedCodeReviewVoteReference(vote)
+                for vote in self.context.votes]
 
     @property
     def comments(self):

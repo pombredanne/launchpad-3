@@ -4,19 +4,19 @@ from canonical.database.sqlbase import SQLBase
 from sqlobject import ForeignKey
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ICodeReviewVote
+from canonical.launchpad.interfaces import ICodeReviewVoteReference
 
 
-__all__ = ['CodeReviewVote']
+__all__ = ['CodeReviewVoteReference']
 
 
 __metaclass__ = type
 
 
-class CodeReviewVote(SQLBase):
+class CodeReviewVoteReference(SQLBase):
     """See `ICodeReviewVote`"""
 
-    implements(ICodeReviewVote)
+    implements(ICodeReviewVoteReference)
 
     _table = 'CodeReviewVote'
     branch_merge_proposal = ForeignKey(
@@ -27,3 +27,5 @@ class CodeReviewVote(SQLBase):
         dbName='registrant', foreignKey='Person', notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person', notNull=True)
+    comment = ForeignKey(
+        dbName='vote_message', foreignKey='CodeReviewComment', default=None)
