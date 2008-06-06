@@ -159,7 +159,7 @@ class Dominator:
     def _getOtherBinaryPublications(self, dominated):
         """Return remaining publications of the same binarypackagerelease.
 
-        It only consider binary publications in the same distroseries,
+        It only considers binary publications in the same distroseries,
         pocket and archive context, which is the limit where the domination
         should happen.
 

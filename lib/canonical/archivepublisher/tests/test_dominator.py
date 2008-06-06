@@ -13,9 +13,11 @@ from zope.component import getUtility
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IComponentSet, IPersonSet, PackagePublishingStatus,
-    PackagePublishingPocket)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus, PackagePublishingPocket)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 
 
@@ -219,8 +221,8 @@ class TestDominator(TestNativePublishingBase):
         # to check if the lookup is indeed restricted to the dominated
         # archive. See bug #237845 for further information.
         cprov = getUtility(IPersonSet).getByName('cprov')
-        for pub_bin in pub_binaries_archindep:
-            pub_bin.copyTo(
+        for pub_binary in pub_binaries_archindep:
+            pub_binary.copyTo(
                 self.breezy_autotest,
                 PackagePublishingPocket.RELEASE,
                 cprov.archive)
