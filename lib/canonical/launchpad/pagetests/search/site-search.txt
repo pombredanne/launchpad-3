@@ -177,6 +177,7 @@ user.
     >>> search_for('fnord')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Pages matching "fnord" in Launchpad
+    ...
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
