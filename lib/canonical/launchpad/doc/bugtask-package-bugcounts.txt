@@ -23,15 +23,23 @@ package, and the number of open bugs in various states.
     ...         print "%s: %s" % (key, value)
     ...     print # Blank line, to make output more readable.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> packages = [
     ...     ubuntu.getSourcePackage('pmount'),
     ...     ubuntu.getSourcePackage('mozilla-firefox'),
+    ...     debian.getSourcePackage('mozilla-firefox'),
     ...     ]
 
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=None, packages=packages)
     >>> for package_count in package_counts:
     ...     print_package_counts(package_count)
+    open: 3
+    open_critical: 0
+    open_inprogress: 0
+    open_unassigned: 2
+    package: mozilla-firefox (Debian)
+    <BLANKLINE>
     open: 1
     open_critical: 0
     open_inprogress: 0
@@ -60,14 +68,12 @@ open_unassigned count will increase by one.
 
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=None, packages=packages)
-    >>> for package_count in package_counts:
-    ...     print_package_counts(package_count)
+    >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 0
     open_inprogress: 0
     open_unassigned: 2
     package: mozilla-firefox (Ubuntu)
-    ...
 
 If we mark the bug as critical, the open_critical count will increase.
 
@@ -80,14 +86,12 @@ If we mark the bug as critical, the open_critical count will increase.
 
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=None, packages=packages)
-    >>> for package_count in package_counts:
-    ...     print_package_counts(package_count)
+    >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
     open_inprogress: 0
     open_unassigned: 2
     package: mozilla-firefox (Ubuntu)
-    ...
 
 If we assign the bug to someone, the open_unassigned count will
 decrease.
@@ -97,14 +101,12 @@ decrease.
 
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=None, packages=packages)
-    >>> for package_count in package_counts:
-    ...     print_package_counts(package_count)
+    >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
-    ...
 
 If we mark the bug as In Progress, the open_inprogress will increase.
 
@@ -115,14 +117,12 @@ If we mark the bug as In Progress, the open_inprogress will increase.
 
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=None, packages=packages)
-    >>> for package_count in package_counts:
-    ...     print_package_counts(package_count)
+    >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
     open_inprogress: 1
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
-    ...
 
 === Privacy ===
 
@@ -137,27 +137,23 @@ open bug, even though there are two.
     >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=no_priv, packages=packages)
-    >>> for package_count in package_counts:
-    ...     print_package_counts(package_count)
+    >>> print_package_counts(package_counts[1])
     open: 1
     open_critical: 0
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
-    ...
 
 Foo Bar still can see all the bugs, though.
 
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=foo_bar, packages=packages)
-    >>> for package_count in package_counts:
-    ...     print_package_counts(package_count)
+    >>> print_package_counts(package_counts[1])
     open: 2
     open_critical: 1
     open_inprogress: 1
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
-    ...
 
 === Duplicate Bugs ===
 
@@ -168,11 +164,9 @@ Duplicates bugs are omitted from the counts.
     >>> syncUpdate(bug)
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=foo_bar, packages=packages)
-    >>> for package_count in package_counts:
-    ...     print_package_counts(package_count)
+    >>> print_package_counts(package_counts[1])
     open: 1
     open_critical: 0
     open_inprogress: 0
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
-    ...

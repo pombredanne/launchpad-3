@@ -1936,6 +1936,22 @@ class BugTaskSet:
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""
+        distributions = list(
+            set(package.distribution for package in packages))
+        L = []
+        for distribution in distributions:
+            L.extend(self._getBugCountsForDistribution(
+                user, distribution, packages))
+        return L
+
+    def _getBugCountsForDistribution(self, user, distribution, packages):
+        """XXX"""
+        packages = [
+            package for package in packages
+            if package.distribution == distribution]
+        package_name_ids = [
+            package.sourcepackagename.id for package in packages]
+
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
                 any(*UNRESOLVED_BUGTASK_STATUSES)))
@@ -1952,18 +1968,11 @@ class BugTaskSet:
                 'BugTask.status %s' % search_value_to_where_condition(
                     BugTaskStatus.INPROGRESS), 'open_inprogress_bugs')]
 
-        package_names = [package.sourcepackagename.id for package in packages]
-        distributions = list(
-            set(package.distribution for package in packages))
-        if len(package_names) == 0:
-            return []
-        #XXX: a test for len(distribution) > 1
-        assert len(distributions) == 1
         conditions = [
             'Bug.id = BugTask.bug',
             open_bugs_cond,
-            'BugTask.sourcepackagename IN %s' % sqlvalues(package_names),
-            'BugTask.distribution = %s' % sqlvalues(distributions[0]),
+            'BugTask.sourcepackagename IN %s' % sqlvalues(package_name_ids),
+            'BugTask.distribution = %s' % sqlvalues(distribution),
             'Bug.duplicateof is NULL']
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
