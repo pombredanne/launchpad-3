@@ -1407,8 +1407,8 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
             if self.selected_lifecycle_status is None:
                 return True
             else:
-                return branch.lifecycle_status in \
-                    self.selected_lifecycle_status
+                return (branch.lifecycle_status in
+                    self.selected_lifecycle_status)
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
@@ -1512,8 +1512,8 @@ class ProductBranchesView(ProductBranchListingView):
             redirect_url = canonical_url(self.context)
             widget = self.widgets['lifecycle']
             if widget.hasValidInput():
-                redirect_url += '?field.lifecycle=' + \
-                    widget.getInputValue().name
+                redirect_url += (
+                    '?field.lifecycle=' + widget.getInputValue().name)
             self.request.response.redirect(redirect_url)
 
     @property
