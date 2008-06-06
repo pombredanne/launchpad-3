@@ -218,18 +218,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return None
 
-    def countOpenBugsInUploadedDistro(self, user):
-        """See ISourcePackageRelease."""
-        upload_distro = self.upload_distroseries.distribution
-        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
-            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # XXX: kiko 2006-03-07:
-        # We need to omit duplicates here or else our bugcounts are
-        # inconsistent. This is a wart, and we need to stop spreading
-        # these things over the code.
-        params.omit_dupes = True
-        return upload_distro.searchTasks(params).count()
-
     @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
