@@ -131,6 +131,7 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
@@ -1618,8 +1619,9 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
-        for package_counts in self.context.getBugSubscriberOpenBugCounts(
-            self.user):
+        package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
+            self.user, self.context.getBugSubscriberPackages())
+        for package_counts in package_counts:
             package = package_counts['package']
             L.append({
                 'package_name': package.displayname,

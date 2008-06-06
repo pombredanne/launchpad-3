@@ -700,11 +700,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBugSubscriberOpenBugCounts(self, user):
-        """See `IPerson`."""
-        return getUtility(IBugTaskSet).getBugCountsForPackages(
-            user, self.getBugSubscriberPackages())
-
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
         # import here to work around a circular import problem
