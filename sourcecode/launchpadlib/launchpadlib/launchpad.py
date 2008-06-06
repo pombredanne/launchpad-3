@@ -34,7 +34,7 @@ class Launchpad:
         self._person_set_link = response.get(
             'PersonSetCollectionAdapter_collection_link')
         self._bug_set_link = response.get(
-            'BugCollection_collection_link')
+            'MaloneApplicationCollectionAdapter_collection_link')
 
     @property
     def people(self):
