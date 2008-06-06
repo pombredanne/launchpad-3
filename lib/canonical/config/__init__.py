@@ -291,12 +291,16 @@ class DatabaseConfig:
     Some values are required to have a value, such as dbuser.  So we
     get an exception if they are not set:
 
-        >>> config.launchpad.dbuser = None
+        >>> config.codehosting.dbuser
+        Traceback (most recent call last):
+          ...
+        AttributeError: No section key named dbuser.
+        >>> dbconfig.setConfigSection('codehosting')
         >>> print dbconfig.dbuser
         Traceback (most recent call last):
           ...
         ValueError: dbuser must be set
-        >>> config.launchpad.dbuser = 'launchpad'
+        >>> dbconfig.setConfigSection('launchpad')
     """
     _config_section = None
     _db_config_attrs = frozenset([
