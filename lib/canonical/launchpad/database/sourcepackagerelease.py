@@ -26,13 +26,19 @@ from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
-    ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
-    PackageDiffAlreadyRequested, PackagePublishingStatus, PackageUploadStatus,
-    NotFoundError, SourcePackageFileType, SourcePackageFormat,
-    SourcePackageUrgency, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.packagediff import (
+    PackageDiffAlreadyRequested)
+from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.sourcepackage import (
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
@@ -42,6 +48,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class SourcePackageRelease(SQLBase):
