@@ -144,8 +144,8 @@ time the caches are rebuilt.
 
 A merged account gets a -merged suffix on its name.
 
-    >>> from canonical.launchpad.database import Person
-    >>> cur = Person._connection._connection.cursor()
+    >>> from canonical.database.sqlbase import cursor
+    >>> cur = cursor()
 
     >>> cur.execute("SELECT id FROM Person WHERE name='marilize-merged'")
     >>> cur.fetchone()[0] == marilize.id
@@ -155,7 +155,7 @@ A merged account gets a -merged suffix on its name.
     ...             "person = %s and team = %s"
     ...             % sqlvalues(sample.id, rosetta_admins.id))
     >>> cur.fetchone()
-    [12, 30, 2]
+    (12, 30, 2)
 
     >>> sample.inTeam(rosetta_admins)
     True
@@ -187,12 +187,14 @@ We will use PersonLocation as an example. There are many permutations and
 combinations, we will exercise them all, and in each case we'll create, and
 then delete, the needed two people.
 
-    >>> from canonical.launchpad.database import PersonSet
+    >>> from storm.store import Store
+    >>> from canonical.launchpad.database import Person, PersonSet
     >>> from canonical.launchpad.interfaces import PersonCreationRationale
     >>> personset = PersonSet()
 
     >>> skip = []
     >>> def decorator_refs(cur, winner, loser):
+    ...    Store.of(winner).flush()
     ...    cur.execute(
     ...        "SELECT person, last_modified_by FROM PersonLocation "
     ...        "WHERE person IN (%(loser)d, %(winner)d)"
