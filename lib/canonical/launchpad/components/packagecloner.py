@@ -10,8 +10,6 @@ __all__ = [
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 
-from canonical.launchpad.components.packagelocation import PackageLocation
-
 from canonical.launchpad.interfaces import PackagePublishingStatus
 
 
