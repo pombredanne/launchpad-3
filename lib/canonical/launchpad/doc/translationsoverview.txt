@@ -5,28 +5,35 @@ It includes data such as projects which have so far received the most
 translations and provides an easy way to figure out which projects a certain
 person has most translated for.
 
-In order to be able to update the KarmaCache table *and* to be able to do the
-regular queries (without slowing down the test by running
-cronscripts/foaf-update-karma-cache.py directly), we need to be logged in
-as a 'testadmin'.
+In order to make live updates to the KarmaCache table, we sometimes log
+in here as testadmin.  In real life the updates would be performed by
+cronscripts/foaf-update-karma-cache.py, but that would slow down this
+test too much.
 
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup(dbuser='testadmin').setUp()
-
-We carry on the basic set-up as well, preparing commonly used utilities.
-
+    >>> import transaction
+    >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import (
     ...     KarmaCategory, SourcePackageName)
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IKarmaCacheManager, IPersonSet,
     ...     IProductSet, ITranslationsOverview)
+    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> person_set = getUtility(IPersonSet)
     >>> product_set = getUtility(IProductSet)
 
     >>> overview = getUtility(ITranslationsOverview)
+
+    >>> def start_karma_update():
+    ...     """Prepare for update to karma cache."""
+    ...     transaction.commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+    >>> def finish_karma_update():
+    ...     """Return to normal after updating karma cache."""
+    ...     transaction.commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
 
 ITranslationOverview defines two constants regulating minimum and maximum
 contribution weights.
@@ -71,8 +78,10 @@ alsa-utils displayed among the top translated pillars as well.
     >>> translations = KarmaCategory.byName('translations')
     >>> alsa_utils = product_set.getByName('alsa-utils')
 
+    >>> start_karma_update()
     >>> cache_entry = karmacachemanager.new(
     ...     120, carlos.id, translations.id, product_id=alsa_utils.id)
+    >>> finish_karma_update()
 
     >>> display_pillars(overview.getMostTranslatedPillars())
     alsa-utils: 10
@@ -81,19 +90,24 @@ alsa-utils displayed among the top translated pillars as well.
 When karma is increased for alsa-utils, it will get more weight than
 Evolution.
 
+    >>> start_karma_update()
     >>> cache_entry = karmacachemanager.updateKarmaValue(
     ...     1020, carlos.id, translations.id, product_id=alsa_utils.id)
+    >>> finish_karma_update()
+
     >>> display_pillars(overview.getMostTranslatedPillars())
     alsa-utils: 18
     Evolution: 10
 
 Adding a little bit of karma to upstart will put it in the list as well.
 
+    >>> start_karma_update()
     >>> upstart = product_set.getByName('upstart')
     >>> removeSecurityProxy(upstart).official_rosetta = True
-    >>> flush_database_updates()
     >>> cache_entry = karmacachemanager.new(
     ...     50, carlos.id, translations.id, product_id=upstart.id)
+    >>> finish_karma_update()
+
     >>> display_pillars(overview.getMostTranslatedPillars())
     alsa-utils: 18
     Evolution: 13
@@ -102,11 +116,13 @@ Adding a little bit of karma to upstart will put it in the list as well.
 Distributions with a lot of translation contributions show in the same
 list as well.
 
+    >>> start_karma_update()
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> evolution_sourcepackagename = SourcePackageName.byName("evolution")
     >>> cache_entry = karmacachemanager.new(
     ...     5150, carlos.id, translations.id, distribution_id=ubuntu.id,
     ...     sourcepackagename_id=evolution_sourcepackagename.id)
+    >>> finish_karma_update()
     >>> display_pillars(overview.getMostTranslatedPillars())
     alsa-utils: 15
     Evolution: 12

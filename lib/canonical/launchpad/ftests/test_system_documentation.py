@@ -740,6 +740,10 @@ special = {
             '../doc/translationmessage-destroy.txt',
             layer=LaunchpadZopelessLayer
             ),
+    'translationsoverview.txt': LayeredDocFileSuite(
+            '../doc/translationsoverview.txt',
+            layer=LaunchpadZopelessLayer
+            ),
     'manage-chroot.txt': LayeredDocFileSuite(
             '../doc/manage-chroot.txt',
             setUp=manageChrootSetup,
