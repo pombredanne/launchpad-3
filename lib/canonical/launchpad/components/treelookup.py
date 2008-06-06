@@ -20,11 +20,13 @@ Secondly, a structure of tuples was attempted, and this proved easier
 to construct. However, it proved difficult to see what was going on,
 with brackets everywhere!
 
-The final design is a compromise. The `LookupTree` class and helper
-class `LookupBranch` both inherit from `tuple`, but also encapsulate
-the searching algorithm and a few other conveniences. This makes the
-generation of lookup trees quite pleasant on the eye, makes debugging
-easier, and means they can be customised.
+The final design is a compromise. `LookupTree` and `LookupBranch` both
+feel tuple-like when constructing lookup trees in code, especially
+because `LookupTree` will promote any regular tuples it's given into
+`LookupBranch`es, but they store branches and keys as instance
+attributes. They encapsulate the searching algorithm and a few other
+conveniences. This makes the generation of lookup trees quite pleasant
+on the eye, makes debugging easier, and means they can be customised.
 """
 
 __metaclass__ = type
