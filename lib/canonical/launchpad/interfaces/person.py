@@ -805,22 +805,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         (A to Z) by name.
         """
 
-    def getBugSubscriberOpenBugCounts(user):
-        """Return open bug counts for this bug subscriber's packages.
-
-            :user: The user doing the search. Private bugs that this
-                   user doesn't have access to won't be included in the
-                   count.
-
-        Returns a list of dictionaries, where each dict contains:
-
-            'package': The package the bugs are open on.
-            'open': The number of open bugs.
-            'open_critical': The number of open critical bugs.
-            'open_unassigned': The number of open unassigned bugs.
-            'open_inprogress': The number of open bugs that ar In Progress.
-        """
-
     def setContactAddress(email):
         """Set the given email address as this team's contact address.
 
