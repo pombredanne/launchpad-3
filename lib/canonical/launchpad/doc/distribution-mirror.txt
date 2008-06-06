@@ -472,15 +472,11 @@ On the warty release, component 'main' and pocket RELEASE , we had two
 uploads between 2005-09-15 and 2005-09-17, so at that time we could've
 checked if that mirror's last sync was in the last one or two days.
 
-    # XXX 2008-06-4 jamesh:
-    # The warty_mirror and warty_i386_mirror objects had previously
-    # been deleted from the database around line 95.  They seem to
-    # still be usable with SQLObject here, but not with Storm.  Adding
-    # the following statement did not seem to be enough to fix the
-    # test.
-
-    #>>> warty_mirror = new_mirror.ensureMirrorDistroSeriesSource(
-    #...     warty, pocket, warty_component)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> foo_mirror = ubuntu.getMirrorByName('foo.bar.com-archive')
+    >>> warty = ubuntu.getSeries('warty')
+    >>> warty_mirror = foo_mirror.ensureMirrorDistroSeriesSource(
+    ...     warty, PackagePublishingPocket.RELEASE, warty.components[0])
 
     >>> when = datetime(2005, 9, 17, tzinfo=utc)
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
@@ -518,6 +514,9 @@ so we need to skip that upload.
 
     >>> from canonical.launchpad.database import BinaryPackageFile
 
+    >>> warty_i386_mirror = foo_mirror.ensureMirrorDistroArchSeries(
+    ...     warty['i386'], PackagePublishingPocket.RELEASE,
+    ...     warty.components[0])
     >>> warty_i386_mirror = removeSecurityProxy(warty_i386_mirror)
     >>> recent_freshness, threshold = warty_i386_mirror.freshness_times[0]
     >>> start = datetime(2005, 06, 20, tzinfo=utc)
@@ -542,7 +541,7 @@ so we need to skip that upload.
     >>> when = datetime(2005, 6, 20, 0, 1, tzinfo=utc)
     >>> urls = warty_i386_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(freshness.name, url) for (freshness, url) in urls.items()]
-    [('UP', 
+    [('UP',
       u'http://foo.bar.com/pub/pool/main/p/pmount/pmount_1.9-1_all.deb'),
      ('TWODAYSBEHIND',
       u'http://foo.bar.com/pub/pool/main/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb')]
