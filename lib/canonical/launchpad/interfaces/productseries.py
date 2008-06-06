@@ -392,16 +392,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def autoTestFailed():
         """has the series source failed automatic testing by roomba?"""
 
-    def importUpdated():
-        """Import or sync run completed successfully, update last-synced.
-
-        If datelastsynced is set, and import_branch.last_mirrored is more
-        recent, then this is the date of the currently published import. Save
-        it into datepublishedsync.
-
-        Then, set datelastsynced to the current time.
-        """
-
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series

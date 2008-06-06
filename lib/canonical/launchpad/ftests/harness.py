@@ -118,12 +118,6 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
         assert ZopelessTransactionManager._installed is None, \
                 'Failed to tearDown Zopeless correctly'
 
-        # Tests using Layers don't want the database torn down here, as the
-        # Layer does it for us. However, this helper is currently also in
-        # use by the importd tests that do not use layers, so we need to cope.
-        if not BaseLayer.isSetUp:
-            super(LaunchpadZopelessTestSetup, self).tearDown()
-
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
     def _checkLayerInvariants(self):
