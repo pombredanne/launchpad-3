@@ -4023,7 +4023,7 @@ class PersonPackagesView(LaunchpadView):
             open_bugs[bug_count['package']] = bug_count['open']
         return [
             SourcePackageReleaseWithStats(
-                package, package.countOpenBugsInUploadedDistro(self.user))
+                package, open_bugs[package.distrosourcepackage])
             for package in package_releases]
 
 
