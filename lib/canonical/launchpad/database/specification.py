@@ -8,6 +8,8 @@ __all__ = [
     'SpecificationSet',
     ]
 
+from storm.store import Store
+
 from zope.interface import implements
 from zope.event import notify
 
@@ -29,7 +31,7 @@ from canonical.launchpad.interfaces import (
     SpecificationSort,
     )
 
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -823,18 +825,17 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
+        if len(specifications) == 0:
+            return {}
 
-        cur = cursor()
-        cur.execute("""
+        results = Store.of(specifications[0]).execute("""
             SELECT SpecificationDependency.specification,
                    SpecificationDependency.dependency
             FROM SpecificationDependency, Specification
             WHERE SpecificationDependency.specification IN %s
             AND SpecificationDependency.dependency = Specification.id
             ORDER BY Specification.priority DESC
-        """ % sqlvalues([spec.id for spec in specifications]))
-        results = cur.fetchall()
-        cur.close()
+        """ % sqlvalues([spec.id for spec in specifications])).get_all()
 
         dependencies = {}
         for spec_id, dep_id in results:
