@@ -35,6 +35,8 @@ from canonical.launchpad.interfaces import (
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from canonical.launchpad.validators.person import public_person_validator
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
@@ -45,6 +47,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from canonical.launchpad.database.bugtask import (
+    search_value_to_where_condition)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.questionbug import QuestionBug
@@ -56,6 +60,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lazr import DBItem, Item
 
@@ -650,6 +655,65 @@ class QuestionSet:
             return Question.get(question_id)
         except SQLObjectNotFound:
             return default
+
+    def getQuestionCountsForPackages(self, packages):
+        """See `IQuestionSet`."""
+        distributions = list(
+            set(package.distribution for package in packages))
+        counts = []
+        for distribution in distributions:
+            counts.extend(self._getQuestionCountsForDistribution(
+                distribution, packages))
+        return counts
+
+    def _getQuestionCountsForDistribution(self, distribution, packages):
+        """Get question counts by package belonging to the given distribution.
+
+        See `IQuestionSet.getQuestionCountsForPackages` for more
+        information.
+        """
+        packages = [
+            package for package in packages
+            if package.distribution == distribution]
+        package_name_ids = [
+            package.sourcepackagename.id for package in packages]
+
+        open_question_cond = (
+            'Question.status %s' % search_value_to_where_condition(
+                any(QuestionStatus.OPEN, QuestionStatus.NEEDSINFO)))
+
+        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
+        sums = [
+            sum_template % (open_question_cond, 'open_questions'),
+            ]
+
+        conditions = [
+            open_question_cond,
+            'Question.sourcepackagename IN %s' % sqlvalues(package_name_ids),
+            'Question.distribution = %s' % sqlvalues(distribution),
+            ]
+        query = """
+            SELECT Question.distribution,
+                   Question.sourcepackagename,
+                   %(sums)s
+            FROM Question
+            WHERE %(conditions)s
+            GROUP BY Question.distribution, Question.sourcepackagename
+            """
+        cur = cursor()
+        cur.execute(query % dict(
+            sums=', '.join(sums), conditions=' AND '.join(conditions)))
+        sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        counts = []
+        for distro_id, spn_id, open_bugs in cur.fetchall():
+            sourcepackagename = sourcepackagename_set.get(spn_id)
+            source_package = distribution.getSourcePackage(sourcepackagename)
+            package_counts = dict(
+                package=source_package,
+                open=open_bugs,
+                )
+            counts.append(package_counts)
+        return counts
 
 
 class QuestionSearch:
