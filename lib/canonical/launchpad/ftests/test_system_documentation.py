@@ -21,13 +21,14 @@ from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)
+from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, setGlobs, tearDown)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
+    AppServerLayer, DatabaseLayer, FunctionalLayer, GoogleServiceLayer,
     LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
 
 
@@ -769,6 +770,18 @@ special = {
             layer=LaunchpadZopelessLayer,
             setUp=setUp, tearDown=tearDown,
             ),
+    # This test is actually run twice to prove that the AppServerLayer
+    # properly isolates the database between tests.
+    'launchpadlib.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
+    'launchpadlib2.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
     'google-service-stub.txt': LayeredDocFileSuite(
             '../doc/google-service-stub.txt',
             layer=GoogleServiceLayer,
