@@ -171,13 +171,14 @@ Search for a user's launchpad name, a user will find the user in the
 
 == Searches with no results ==
 
-Searches that don't return any results display a kind message to the
-user.
+Searches that don't return any results display a explanation message to
+the user. The text field is focused so that the user can try another
+search.
 
     >>> search_for('fnord')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Pages matching "fnord" in Launchpad
-    ...
+    <!-- setFocusByName('field.text'); // -->
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
