@@ -274,10 +274,9 @@
                               />
                           </div>
                         </div>
-                        <tal:noportlets
-                          condition="not: view/macro:pagehas/portlets"
-                          metal:define-slot="main"
-                        />
+                        <tal:noportlets condition="not: view/macro:pagehas/portlets">
+                          <metal:block define-slot="main" />
+                        </tal:noportlets>
                         <div
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
