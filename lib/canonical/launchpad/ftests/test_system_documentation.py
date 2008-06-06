@@ -215,15 +215,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     uploadQueueSetUp(test)
     login(ANONYMOUS)
 
-def translationMessageDestroySetUp(test):
-    """Set up the TranslationMessage.destroySelf() test."""
-    LaunchpadZopelessLayer.switchDbUser('rosettaadmin')
-    setUp(test)
-
-def translationMessageDestroyTearDown(test):
-    """Tear down the TranslationMessage.destroySelf() test."""
-    tearDown(test)
-
 def manageChrootSetup(test):
     """Set up the manage-chroot.txt test."""
     setUp(test)
@@ -747,8 +738,6 @@ special = {
             ),
     'translationmessage-destroy.txt': LayeredDocFileSuite(
             '../doc/translationmessage-destroy.txt',
-            setUp=translationMessageDestroySetUp,
-            tearDown=translationMessageDestroyTearDown,
             layer=LaunchpadZopelessLayer
             ),
     'manage-chroot.txt': LayeredDocFileSuite(
