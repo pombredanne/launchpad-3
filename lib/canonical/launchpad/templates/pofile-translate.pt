@@ -17,7 +17,6 @@
     </metal:leftportlets>
 
     <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-translators" />
       <div tal:replace="structure context/@@+portlet-contributors" />
     </metal:rightportlets>
 
