@@ -8,8 +8,6 @@ __all__ = [
     ]
 
 
-from urlparse import urljoin
-
 from launchpadlib.collection import Collection, Entry
 from launchpadlib.errors import HTTPError
 
@@ -29,7 +27,7 @@ class People(Collection):
         # For indexing by name, we can go directly to the person through our
         # seekrit magick URL.
         try:
-            data = self._browser.get(urljoin(self._base_url, '~' + name))
+            data = self._browser.get(self._base_url.resolve('~' + name))
         except HTTPError, error:
             if error.response.status == 404:
                 return default
