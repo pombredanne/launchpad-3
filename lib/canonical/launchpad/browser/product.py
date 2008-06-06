@@ -1171,16 +1171,6 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('subscription_modified_after', DateWidget)
     custom_widget('subscription_modified_before', DateWidget)
 
-    @action(_('Search'), name='search')
-    def action_search(self, action, data):
-        """Provide search button in form.
-
-        forReviewBatched() actually does all the work, and
-        it is not dependent on the search button which hasn't
-        been pressed when the page first loads.
-        """
-        pass
-
     def setUpWidgets(self):
         super(ProductSetReviewLicensesView, self).setUpWidgets()
         self.full_row_widgets = []
@@ -1204,7 +1194,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request)
+                              self.request, size=10)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):

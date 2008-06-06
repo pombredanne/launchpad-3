@@ -4,34 +4,32 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<img src="/@@/product" />
-<a tal:attributes="href context/fmt:url"
-   tal:content="context/title">Project Title Here</a>
-(<a tal:attributes="href string:${context/fmt:url}/+review-license"
-  >Review license</a>)
-<table style="margin-left: 17px;">
-  <tr><th width="1">Active:</th><td tal:content="context/active"/>
-  <tr><th>Licenses:</th>
+  <tr>
+    <td style="white-space: nowrap">
+      <img src="/@@/product" />
+      <a tal:attributes="href context/fmt:url"
+        tal:content="context/title">Project Title Here</a>
+    </td>
     <td>
-    <tal:loop repeat="license context/licenses">
-      <span tal:replace="license/title"/><br/>
-    </tal:loop>
+        <img src="/@@/yes" tal:condition="context/active"/>
+        <img src="/@@/no" tal:condition="not: context/active"/>
+    <td style="white-space: nowrap">
+      <a tal:replace="structure context/owner/fmt:link">Foo Bar</a>
+      <span
+        tal:attributes="title context/datecreated/fmt:datetime"
+        tal:content="context/datecreated/fmt:displaydate">2005-10-12</span>
+    </td>
+    <td style="white-space: nowrap">
+      <span tal:condition="not: context/licenses">None<br/></span>
+      <tal:loop repeat="license context/licenses">
+        <tal:title tal:replace="license/title"/><br/>
+      </tal:loop>
+      (<a tal:attributes="href string:${context/fmt:url}/+review-license"
+        >Review</a>)
+    </td>
+    <td style="width: 99%"
+        tal:content="structure context/license_info/fmt:text-to-html">
+        License info goes here
     </td>
   </tr>
-  <tr>
-    <td colspan="2"
-        tal:content="context/summary" tal:condition="context/summary">
-      Summary Goes Here
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2">
-    Registered by <a
-      tal:replace="structure context/owner/fmt:link">Foo Bar</a>
-    <span
-      tal:attributes="title context/datecreated/fmt:datetime"
-      tal:content="context/datecreated/fmt:displaydate">2005-10-12</span>
-    </td>
-  </tr>
-</table>
 </tal:root>

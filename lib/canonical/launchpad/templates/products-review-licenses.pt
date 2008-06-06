@@ -17,6 +17,28 @@
 
   <h1>Projects for review</h1>
 
+  <div tal:condition="not: batch/currentBatch" class="warning message">
+    No items found with these search options.
+  </div>
+  <tal:result condition="batch/currentBatch">
+    <h3 >Please review these items.</h3>
+    <tal:navigation replace="structure batch/@@+navigation-links-upper" />
+    <table class="listing">
+      <thead>
+        <th>Project</th>
+        <th>Active</th>
+        <th>Registered by</th>
+        <th>Licenses</th>
+        <th>License info</th>
+      </thead>
+      <tbody>
+        <div tal:repeat="product batch/currentBatch"
+            tal:replace="structure product/@@+listing-for-review" />
+      </tbody>
+    </table>
+    <tal:navigation replace="structure batch/@@+navigation-links-lower" />
+  </tal:result>
+
   <form action="."
         tal:attributes="action view/action_url"
         name="launchpadform"
@@ -70,11 +92,6 @@
 
   </form>
 
-  <h3>Please review these items.</h3>
-  <tal:navigation replace="structure batch/@@+navigation-links-upper" />
-  <div tal:repeat="product batch/currentBatch"
-       tal:replace="structure product/@@+listing-for-review" />
-  <tal:navigation replace="structure batch/@@+navigation-links-lower" />
 </div>
 
 </body>
