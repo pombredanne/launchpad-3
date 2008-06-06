@@ -651,7 +651,7 @@ So it's hidden initially, and then revealed if JavaScript is available.
 /* Navigation menus appear as a segmented pill overlaid on a groove: */
 .navigation.menu {
   background: url(/+icing/navigation-menu-groove.png) repeat-x center left;
-  margin-bottom: 2em;
+  margin: 1em 0 2em;
   text-align: center;
 }
 /* Segments have slight padding, and are normally mid-blue: */
