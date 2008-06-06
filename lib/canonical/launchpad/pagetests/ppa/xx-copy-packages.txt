@@ -421,13 +421,44 @@ there are no binaries to be copied.
     The following source cannot be copied: pmount 0.1-1 in hoary
     (source not completely built while copying binaries)
 
+We will marke the pmount build completed, to emulate the situation
+when described in bug #236407 when binaries were built but have to
+wait until the next publishing cycle to be published in the archive.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.build import BuildStatus
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> jblack = person_set.getByName('jblack')
+    >>> pmount_build = jblack.archive.getBuildRecords()[0]
+    >>> pmount_build.buildstate = BuildStatus.FULLYBUILT
+    >>> flush_database_updates()
+    >>> logout()
+
+In such situations, the copy is also denied, because it will also
+trigger a rebuild within the same archive, since no binaries can be
+copied.
+
+    >>> jblack_browser.getControl(
+    ...    name='field.selected_sources').value = [pmount_pub_id]
+    >>> jblack_browser.getControl(
+    ...     'Destination series').value = ['grumpy']
+    >>> jblack_browser.getControl('Copy binaries').selected = True
+    >>> jblack_browser.getControl("Copy Packages").click()
+
+    >>> messages = get_feedback_messages(jblack_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    The following source cannot be copied: pmount 0.1-1 in hoary
+    (source has unpublished binaries, wait the next publishing cycle
+     to copy them.)
+
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
     >>> pmount_binaries = test_publisher.buildAndPublishBinaryForSource(

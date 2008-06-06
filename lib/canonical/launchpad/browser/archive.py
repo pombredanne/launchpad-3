@@ -252,23 +252,36 @@ def check_archive_conflicts(source, archive, include_binaries):
                 raise CannotCopy(
                     "same version already building in the "
                     "destination archive")
+        return
 
-    # The copy includes binaries, but if no binaries are published
-    # in the archive, then the copy is allowed because there is no chance
-    # of conflict.
-    #
-    # Since DEB files are compressed with 'ar' (encoding the creation
-    # timestamp) and serially built by our infrastructure, it's correct
-    # to assume that the set of BinaryPackageReleases being copied can
-    # only be a superset of the set of BinaryPackageReleases published
-    # in the destination archive.
+    # The copy includes binaries.
+
     if len(published_binaries) > 0 :
+        # Since DEB files are compressed with 'ar' (encoding the creation
+        # timestamp) and serially built by our infrastructure, it's correct
+        # to assume that the set of BinaryPackageReleases being copied can
+        # only be a superset of the set of BinaryPackageReleases published
+        # in the destination archive.
         copied_binaries = set(
-            pub.binarypackagerelease
-            for pub in source.getBuiltBinaries())
+            pub.binarypackagerelease for pub in source.getBuiltBinaries())
         if not copied_binaries.issuperset(published_binaries):
             raise CannotCopy(
                 "binaries conflicting with the existing ones")
+    else:
+        # If no binaries are published in the archive, but there is,
+        # at least one FULLYBUILT build record, it means that the binaries
+        # were built but will be only published in the next publishing cycle.
+        # The copy should be denied and the user should wait the next
+        # publishing cycle happen to copy the package. The copy is only
+        # allowed when there is no published binaries, neither FULLYBUILT
+        # builds, because this way there is no chance of conflict.
+        fullybuilt_builds = [
+            build for build in source.getBuilds()
+            if build.buildstate == BuildStatus.FULLYBUILT]
+        if len(fullybuilt_builds) > 0:
+            raise CannotCopy(
+                "source has unpublished binaries, wait the next publishing "
+                "cycle to copy them.")
 
 
 def check_copy(source, archive, series, pocket, include_binaries):
