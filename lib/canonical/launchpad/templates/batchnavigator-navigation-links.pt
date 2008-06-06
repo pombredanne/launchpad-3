@@ -24,23 +24,21 @@
       </td>
       <td style="text-align: right; white-space: nowrap" 
           class="batch-navigation-links">
-        <tal:first condition="first_page_url">
-          <a tal:attributes="href first_page_url" rel="first"
-          >&laquo;&nbsp;First</a>
-        </tal:first>
-        <span
-          tal:condition="not:first_page_url"
-          class="unavailable"
-        >&laquo;&nbsp;First</span>
-        <tal:previous condition="prev_page_url">
-          &mdash;
-          <a tal:attributes="href prev_page_url" rel="previous"
-          >Previous</a>
-        </tal:previous>
-        <span
-          tal:condition="not:prev_page_url"
-          class="unavailable"
-        >&mdash; Previous</span>
+        <a
+          tal:condition="first_page_url"
+          tal:attributes="href first_page_url"
+          rel="first"
+        >First</a>
+        <span tal:condition="not:first_page_url" class="unavailable"
+        >First</span>
+        &#149;
+        <a
+          tal:condition="prev_page_url"
+          tal:attributes="href prev_page_url"
+          rel="previous"
+        >Previous</a>
+        <span tal:condition="not:prev_page_url" class="unavailable"
+        >Previous</span>
         <tal:intermediaries repeat="page_url context/batchPageURLs">
           <a
             tal:condition="python:len(page_url) > 1"
@@ -48,25 +46,23 @@
             tal:attributes="href python:page_url.values()[0]"
           >[1]</a>
         </tal:intermediaries>
-        <tal:next condition="next_page_url">
-          &mdash;
-          <a tal:attributes="href next_page_url" rel="next"
-          >Next</a>
-        </tal:next>
-        <span
-          tal:condition="not:next_page_url"
-          class="unavailable"
-        >&mdash; Next</span>
+        &#149;
+        <a
+          tal:condition="next_page_url"
+          tal:attributes="href next_page_url"
+          rel="next"
+        ><strong>Next</strong></a>
+        <span tal:condition="not:next_page_url" class="unavailable"
+        ><strong>Next</strong></span>
         <tal:last_link condition="context/show_last_link|default">
-          <tal:last condition="last_page_url">
-            &mdash;
-            <a tal:attributes="href last_page_url" rel="last"
-               >Last&nbsp;&raquo;</a>
-          </tal:last>
-          <span
-             tal:condition="not:last_page_url"
-             class="unavailable"
-             >&mdash; Last&nbsp;&raquo;</span>
+          &#149;
+          <a
+            tal:condition="last_page_url"
+            tal:attributes="href last_page_url"
+            rel="last"
+          >Last</a>
+          <span tal:condition="not:last_page_url" class="unavailable"
+          >Last</span>
         </tal:last_link>
       </td>
     </tr>
