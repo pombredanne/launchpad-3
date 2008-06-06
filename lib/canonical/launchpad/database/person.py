@@ -20,7 +20,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
-import sha
 
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -981,6 +980,31 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=['PillarName.distribution', 'PillarName.project',
                      'PillarName.product'])
 
+    def getOwnedProjects(self, match_name=None):
+        """See `IPerson`."""
+        # Import here to work around a circular import problem.
+        from canonical.launchpad.database import Product
+        clauses = ["""
+            SELECT DISTINCT Product.id
+            FROM Product, TeamParticipation
+            WHERE TeamParticipation.person = %(person)s
+            AND owner = TeamParticipation.team
+            """ % sqlvalues(person=self)]
+        if match_name is not None:
+
+            like_query = "'%%' || %s || '%%'" % quote_like(match_name)
+            quoted_query = quote(match_name)
+            clauses.append(
+                """(Product.name LIKE %s OR
+                    Product.displayname LIKE %s OR
+                    fti @@ ftq(%s))""" % (like_query,
+                                          like_query,
+                                          quoted_query))
+        query = " AND ".join(clauses)
+        results = Product.select("""id IN (%s)""" % query,
+                                 orderBy=['displayname'])
+        return results
+
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
         for name, ignored in self._getProjectsWithTheMostKarma(limit=limit):
@@ -1212,7 +1236,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     #
     # ITeam methods
     #
-    def getSuperTeams(self):
+    @property
+    def super_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.team AND
@@ -1221,7 +1246,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
-    def getSubTeams(self):
+    @property
+    def sub_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.person AND
@@ -1952,16 +1978,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return ''
 
     @property
-    def preferredemail_sha1(self):
-        """See `IPerson`."""
-        preferredemail = self.preferredemail
-        if preferredemail:
-            return sha.new(
-                'mailto:' + preferredemail.email).hexdigest().upper()
-        else:
-            return None
-
-    @property
     def validatedemails(self):
         """See `IPerson`."""
         return self._getEmailsByStatus(EmailAddressStatus.VALIDATED)
@@ -2306,15 +2322,6 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
-            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
-            )
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2376,7 +2383,7 @@ class PersonSet:
 
         return results.orderBy(orderBy)
 
-    def findTeam(self, text, orderBy=None):
+    def findTeam(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations

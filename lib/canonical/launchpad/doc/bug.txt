@@ -784,8 +784,9 @@ has been marked invalid or a fix has been released.
 
 Let's add a new task to b8 to see if that affects the completeness.
 
-    >>> from canonical.launchpad.database import BugTask
-    >>> newtask = BugTask(bug=b8, product=firefox, owner=b8.owner)
+    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> newtask = getUtility(IBugTaskSet).createTask(
+    ...     bug=b8, product=firefox, owner=b8.owner)
     >>> newtask.status.name
     'NEW'
     >>> b8.is_complete

@@ -441,10 +441,13 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagename == prev_sourcepackagename):
                     bugtask.sourcepackagename = self.sourcepackagename
 
-    def getConjoinedMaster(self, bugtasks):
+    def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None
         if IDistroBugTask.providedBy(self):
+            if bugtasks_by_package is None:
+                bugtasks_by_package = self.getBugTasksByPackageName(bugtasks)
+            bugtasks = bugtasks_by_package[self.sourcepackagename]
             possible_masters = [
                 bugtask for bugtask in bugtasks
                 if (bugtask.distroseries is not None and
@@ -471,6 +474,14 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
+
+    def getBugTasksByPackageName(self, bugtasks):
+        """See IBugTask."""
+        bugtasks_by_package = {}
+        for bugtask in bugtasks:
+            bugtasks_by_package.setdefault(bugtask.sourcepackagename, [])
+            bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
+        return bugtasks_by_package
 
     @property
     def conjoined_master(self):
@@ -827,17 +838,13 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        component = None
+        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
-            component = self.target.latest_published_component
+            return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):
-            # Pull the component from the package published in the
-            # latest distribution series.
-            packages = self.target.get_distroseries_packages()
-            if packages:
-                component = packages[0].latest_published_component
-        if component:
-            return component
+            spph = self.target.latest_overall_publication
+            if spph:
+                return spph.component
         return None
 
     def asEmailHeaderValue(self):
