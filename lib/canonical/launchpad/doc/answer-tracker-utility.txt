@@ -227,10 +227,14 @@ questions on a set of packages.
 
     >>> question_set.getQuestionCountsForPackages([])
     []
+
+It returns the number of open questions for each given package.
+
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> ubuntu_pmount = ubuntu.getSourcePackage('pmount')
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> debian_evolution = debian.getSourcePackage('evolution')
+    >>> debian_pmount = debian.getSourcePackage('pmount')
 
     >>> login('foo.bar@canonical.com')
     >>> QuestionFactory.createManyByTarget(ubuntu_pmount, 4)
@@ -245,13 +249,17 @@ questions on a set of packages.
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(closed_question)
 
-    >>> for question_count in question_set.getQuestionCountsForPackages(
-    ...     [ubuntu_evolution, ubuntu_pmount, debian_evolution]):
+    >>> from operator import itemgetter
+    >>> package_counts = question_set.getQuestionCountsForPackages(
+    ...     [ubuntu_evolution, ubuntu_pmount, debian_evolution, debian_pmount])
+    >>> package_counts = sorted(package_counts, key=itemgetter('open'))
+    >>> for question_count in package_counts:
     ...     print "%s: %s" % (
     ...         question_count['package'].bugtargetname,
     ...         question_count['open'])
+    pmount (Debian): 0
+    evolution (Ubuntu): 1
     evolution (Debian): 3
     pmount (Ubuntu): 4
-    evolution (Ubuntu): 1
 
 

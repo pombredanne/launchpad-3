@@ -704,15 +704,28 @@ class QuestionSet:
         cur.execute(query % dict(
             sums=', '.join(sums), conditions=' AND '.join(conditions)))
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        packages_with_questions = set()
         counts = []
         for distro_id, spn_id, open_bugs in cur.fetchall():
             sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
+            packages_with_questions.add(source_package)
             package_counts = dict(
                 package=source_package,
                 open=open_bugs,
                 )
             counts.append(package_counts)
+
+        # Only packages with open question were included in the query. Let's
+        # add the rest of the packages as well.
+        all_packages = set(packages)
+        for package in all_packages.difference(packages_with_questions):
+            package_counts = dict(
+                package=package,
+                open=0,
+                )
+            counts.append(package_counts)
+
         return counts
 
 
