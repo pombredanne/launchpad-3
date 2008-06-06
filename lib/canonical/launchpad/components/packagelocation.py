@@ -27,24 +27,21 @@ class PackageLocation(object):
     distroseries = None
     pocket = None
     distroarchseries = None
-    component = None
 
     def __init__(self, archive, distribution, distroseries, pocket,
-                 distroarchseries=None, component=None):
+                 distroarchseries=None):
         """Initialize the PackageLocation from the given parameters."""
         self.archive = archive
         self.distribution = distribution
         self.distroseries = distroseries
         self.pocket = pocket
         self.distroarchseries = distroarchseries
-        self.component = component
 
     def __eq__(self, other):
         if (self.distribution == other.distribution and
             self.archive == other.archive and
             self.distroseries == other.distroseries and
             self.distroarchseries == other.distroarchseries and
-            self.component == other.component and
             self.pocket == other.pocket):
             return True
         return False
