@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.components.pubhistcopier import (
+from canonical.launchpad.components.packagelocation import (
     build_package_location)
 
 from canonical.launchpad.interfaces import (

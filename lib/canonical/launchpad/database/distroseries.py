@@ -21,8 +21,8 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.launchpad.components.pubhistcopier import (
-    PackageLocation, PubHistoryCopier)
+from canonical.launchpad.components.packagelocation import PackageLocation
+from canonical.launchpad.components.packagecloner import PackageCloner
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1369,7 +1369,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
-        copier = PubHistoryCopier()
+        pkg_cloner = PackageCloner()
 
         archive_set = getUtility(IArchiveSet)
         for archive in self.parent_series.distribution.all_distro_archives:
@@ -1387,7 +1387,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             destination = PackageLocation(
                 target_archive, self.distribution, self,
                 PackagePublishingPocket.RELEASE, arch)
-            copier.copy_binary_publishing_data(origin, destination)
+            pkg_cloner.copy_binary_publishing_data(origin, destination)
 
     def _copy_source_publishing_records(self):
         """Copy the source publishing records from our parent distro series.
@@ -1398,7 +1398,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
-        copier = PubHistoryCopier()
+        pkg_cloner = PackageCloner()
 
         archive_set = getUtility(IArchiveSet)
         for archive in self.parent_series.distribution.all_distro_archives:
@@ -1415,7 +1415,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             destination = PackageLocation(
                 target_archive, self.distribution, self,
                 PackagePublishingPocket.RELEASE)
-            copier.copy_source_publishing_data(origin, destination)
+            pkg_cloner.copy_source_publishing_data(origin, destination)
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro

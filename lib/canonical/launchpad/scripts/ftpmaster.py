@@ -33,7 +33,7 @@ from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
 
-from canonical.launchpad.components.pubhistcopier import (
+from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
 
 from canonical.launchpad.helpers import filenameToContentType
