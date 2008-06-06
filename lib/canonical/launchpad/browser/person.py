@@ -1158,7 +1158,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
     def profile(self):
         target = '+index'
         text = 'Profile'
-        return Link(target, text)
+        return Link(target, text, menu=PersonEditNavigationMenu)
 
     def related_software(self):
         target = '+related-software'
@@ -1191,13 +1191,23 @@ class PersonEditNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def email_settings(self):
-        target = '+editemail'
+        target = '+editemailaddresses'
         text = 'E-mail Settings'
         return Link(target, text)
 
-    def keys_and_password(self):
-        target = '+edit'
-        text = 'Keys and Password'
+    def sshkeys(self):
+        target = '+editsshkeys'
+        text = 'SSH Keys'
+        return Link(target, text)
+
+    def gpgkeys(self):
+        target = '+editpgpkeys'
+        text = 'GPG Keys'
+        return Link(target, text)
+
+    def passwords(self):
+        target = '+editpassword'
+        text = 'Passwords'
         return Link(target, text)
 
 
