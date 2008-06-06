@@ -1945,7 +1945,10 @@ class BugTaskSet:
         return L
 
     def _getBugCountsForDistribution(self, user, distribution, packages):
-        """XXX"""
+        """Get bug counts by package, belonging to the given distribution.
+
+        See `IBugTask.getBugCountsForPackages` for more information.
+        """
         packages = [
             package for package in packages
             if package.distribution == distribution]
