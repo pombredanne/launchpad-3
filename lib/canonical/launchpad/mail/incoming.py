@@ -307,7 +307,7 @@ def handleMail(trans=transaction):
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                # This bare except is needed in order to prevent a bug
+                # This bare except is needed in order to prevent any bug
                 # in the email handling from causing the email interface
                 # to lock up. If an email causes an unexpected
                 # exception, we simply log the error and delete the
