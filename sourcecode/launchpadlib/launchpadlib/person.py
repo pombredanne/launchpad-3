@@ -10,7 +10,7 @@ __all__ = [
 
 from launchpadlib._utils.uri import URI
 from launchpadlib.collection import Collection, Entry
-from launchpadlib.errors import HTTPError
+from launchpadlib.errors import HTTPError, UnexpectedResponseError
 
 
 class People(Collection):

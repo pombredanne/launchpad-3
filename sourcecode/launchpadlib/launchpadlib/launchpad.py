@@ -11,7 +11,6 @@ __all__ = [
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
 from launchpadlib.collection import Collection, Entry
-from launchpadlib.errors import UnexpectedResponseError
 from launchpadlib.person import People
 
 
