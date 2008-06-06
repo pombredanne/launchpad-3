@@ -41,7 +41,6 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet,
     ICveSet,
     IFrontPageBugTaskSearch,
-    IDistributionSourcePackage,
     ILaunchBag,
     NotFoundError,
     )
@@ -223,9 +222,7 @@ class BugContextMenu(ContextMenu):
         """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = (self.context.bug.isMentor(user) and
-                   not self.context.bug.is_complete and
-                   user)
+        enabled = self.context.bug.isMentor(user)
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def createquestion(self):
