@@ -314,7 +314,7 @@ are carried over just like when merging people.
     ...     PollSecrecy.OPEN, allowspoilt=True)
 
     # test_team has a superteam, one active member and a poll.
-    >>> [team.name for team in test_team.getSuperTeams()]
+    >>> [team.name for team in test_team.super_teams]
     [u'launchpad']
     >>> test_team.teamowner.name
     u'name12'
@@ -325,7 +325,7 @@ are carried over just like when merging people.
 
     # Landscape-developers has no super teams, two members and no polls.
     >>> landscape = personset.getByName('landscape-developers')
-    >>> [team.name for team in landscape.getSuperTeams()]
+    >>> [team.name for team in landscape.super_teams]
     []
     >>> landscape.teamowner.name
     u'name12'
@@ -359,7 +359,7 @@ active members of the team so that we can perform the merge.
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
-    >>> [team.name for team in landscape.getSuperTeams()]
+    >>> [team.name for team in landscape.super_teams]
     [u'launchpad']
     >>> list(IPollSubset(landscape).getAll())
     []

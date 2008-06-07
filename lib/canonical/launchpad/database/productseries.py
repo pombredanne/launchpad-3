@@ -34,6 +34,7 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
     IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
@@ -71,6 +72,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
+    status = EnumCol(
+        notNull=True, schema=DistroSeriesStatus,
+        default=DistroSeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
