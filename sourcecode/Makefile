@@ -5,9 +5,9 @@ PYTHON=python${PYTHON_VERSION}
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
 # test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
-build_dirs:=buildbot bzr cscvs pygettextpo pygpgme storm twisted zope
-test_dirs:=buildbot bzr cscvs pygettextpo storm twisted zope
-launchpad_test_dirs:=buildbot
+build_dirs:=bzr cscvs pygettextpo pygpgme storm twisted zope
+test_dirs:=bzr cscvs pygettextpo storm twisted zope
+launchpad_test_dirs:=
 
 all:
 

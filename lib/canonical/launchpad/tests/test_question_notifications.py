@@ -33,6 +33,7 @@ class StubQuestion:
         self.id = id
         self.title = title
 
+
 class StubQuestionMessage:
     """Question message with only a subject attribute."""
 
@@ -44,7 +45,7 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
     """Test cases for mail notifications about modified questions."""
 
     def setUp(self):
-        # Create the notification with a StubQuestion.
+        """Create a notification with a fake question."""
         self.notification = TestQuestionModifiedNotification(
             StubQuestion(), object())
 

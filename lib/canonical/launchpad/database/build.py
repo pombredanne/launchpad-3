@@ -227,7 +227,7 @@ class Build(SQLBase):
         return {
             'main': ['main'],
             'restricted': ['main', 'restricted'],
-            'universe': ['main', 'restricted',  'universe'],
+            'universe': ['main', 'universe'],
             'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
             'partner' : ['partner'],
             }

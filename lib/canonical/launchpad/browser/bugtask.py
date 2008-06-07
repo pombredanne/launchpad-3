@@ -304,7 +304,7 @@ class BugTargetTraversalMixin:
         # anonymous user is presented with a login screen at the correct URL,
         # rather than making it look as though this task was "not found",
         # because it was filtered out by privacy-aware code.
-        for bugtask in helpers.shortlist(bug.bugtasks):
+        for bugtask in list(bug.bugtasks):
             if bugtask.target == context:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
@@ -2494,7 +2494,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         included in the returned results.
         """
         bug = self.context
-        bugtasks = helpers.shortlist(bug.bugtasks)
+        bugtasks = list(bug.bugtasks)
 
         upstream_tasks = [
             bugtask for bugtask in bugtasks
@@ -2520,8 +2520,15 @@ class BugTasksAndNominationsView(LaunchpadView):
         # nominations here, so we can pass it to getNominations() later
         # on.
         nominations = list(bug.getNominations())
+
+        # Build a cache we can pass on to getConjoinedMaster(), so that
+        # it doesn't have to iterate over all the bug tasks in each loop
+        # iteration.
+        bugtasks_by_package = bugtask.getBugTasksByPackageName(all_bugtasks)
+
         for bugtask in all_bugtasks:
-            conjoined_master = bugtask.getConjoinedMaster(bugtasks)
+            conjoined_master = bugtask.getConjoinedMaster(
+                bugtasks, bugtasks_by_package)
             view = self._getTableRowView(
                 bugtask, is_converted_to_question,
                 conjoined_master is not None)

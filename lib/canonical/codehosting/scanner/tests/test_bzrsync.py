@@ -84,6 +84,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
         """Make an arbitrary branch in the database."""
         LaunchpadZopelessLayer.txn.begin()
         new_branch = self.factory.makeBranch()
+        # Unsubscribe the implicit owner subscription.
+        new_branch.unsubscribe(new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
 
