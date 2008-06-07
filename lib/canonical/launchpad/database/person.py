@@ -3233,6 +3233,7 @@ class PersonLanguage(SQLBase):
 
 class SSHKey(SQLBase):
     implements(ISSHKey)
+    _defaultOrder = ["person", "keytype", "keytext"]
 
     _table = 'SSHKey'
 
@@ -3254,6 +3255,12 @@ class SSHKeySet:
             return SSHKey.get(id)
         except SQLObjectNotFound:
             return default
+
+    def getByPeople(self, people):
+        """See `ISSHKeySet`"""
+        return SSHKey.select("""
+            SSHKey.person IN %s
+            """ % sqlvalues([person.id for person in people]))
 
 
 class WikiName(SQLBase):
