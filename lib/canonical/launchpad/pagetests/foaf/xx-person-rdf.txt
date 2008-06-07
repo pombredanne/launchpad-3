@@ -7,7 +7,6 @@ We export FOAF RDF metadata from the /~Person.name/+index document.
   >>> print soup.renderContents()
   <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
 
-
 And this is what the FOAF document for a person actually looks like.  It
 includes GPG information, if the user has any.
 
@@ -15,8 +14,9 @@ includes GPG information, if the user has any.
   >>> print anon_browser.contents
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:foaf="http://xmlns.com/foaf/0.1/"
-         xmlns:wot="http://xmlns.com/wot/0.1/">
+           xmlns:foaf="http://xmlns.com/foaf/0.1/"
+           xmlns:lp="https://launchpad.net/rdf/launchpad#"
+           xmlns:wot="http://xmlns.com/wot/0.1/">
     <foaf:Person>
       <foaf:name>Foo Bar</foaf:name>
       <foaf:nick>name16</foaf:nick>
@@ -32,6 +32,23 @@ includes GPG information, if the user has any.
     </foaf:Person>
   </rdf:RDF>
 
+It also includes SSH keys:
+
+  >>> anon_browser.open("http://launchpad.dev/~name12/+rdf")
+  >>> print anon_browser.contents
+  <?xml version="1.0" encoding="utf-8"?>
+  ...
+  <foaf:name>Sample Person</foaf:name>
+  ...
+  <lp:sshPubKey>AAAAB3NzaC1kc3MAAAE...</lp:sshPubKey>
+  ...
+
+And it's valid XML and RDF:
+
+  >>> from xml.dom.minidom import parseString
+  >>> document = parseString(str(anon_browser.contents))
+  >>> print document.documentElement.nodeName
+  rdf:RDF
 
 Teams also have an RDF export, which includes information for each member of the
 team.
@@ -40,8 +57,9 @@ team.
   >>> print anon_browser.contents
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-         xmlns:foaf="http://xmlns.com/foaf/0.1/"
-         xmlns:wot="http://xmlns.com/wot/0.1/">
+           xmlns:foaf="http://xmlns.com/foaf/0.1/"
+           xmlns:lp="https://launchpad.net/rdf/launchpad#"
+           xmlns:wot="http://xmlns.com/wot/0.1/">
     <foaf:Group>
       <foaf:name>Ubuntu Team</foaf:name>
       <foaf:nick>ubuntu-team</foaf:nick>
@@ -66,4 +84,9 @@ team.
         </foaf:Person>
       </foaf:member>
   ...
-
+      <foaf:member>
+        <foaf:Person>
+          <foaf:name>Mark Shuttleworth</foaf:name>
+          ...
+          <lp:sshPubKey>AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==</lp:sshPubKey>
+  ...
