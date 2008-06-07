@@ -43,7 +43,7 @@ and update it.
 
     >>> new_value = 19
     >>> karmacachemanager.updateKarmaValue(
-    ...     new_value, person.id, bugs.id, product_id=firefox_id) 
+    ...     new_value, person.id, bugs.id, product_id=firefox_id)
     >>> cache_entry.karmavalue
     19
 
@@ -52,7 +52,7 @@ If we try to update an unexistent KarmaCache entry, we'll get a
 NotFoundError.
 
     >>> karmacachemanager.updateKarmaValue(
-    ...     new_value, person.id, bugs.id, product_id=9999) 
+    ...     new_value, person.id, bugs.id, product_id=9999)
     Traceback (most recent call last):
     ...
     NotFoundError: ...

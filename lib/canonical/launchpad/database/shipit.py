@@ -40,7 +40,7 @@ from canonical.config import config
 from canonical.uuid import generate_uuid
 
 from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, quote, quote_like, cursor)
+    block_implicit_flushes, SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -459,6 +459,10 @@ class ShippingRequestSet:
             recipientdisplayname=recipientdisplayname,
             organization=organization, phone=phone)
 
+        # The normalized_address field is maitained by a trigger, so
+        # the object needed to be refetched after creation.
+        Store.of(request).flush()
+        Store.of(request).invalidate()
         return request
 
     def getTotalsForRequests(self, requests):
@@ -587,6 +591,7 @@ class ShippingRequestSet:
             shippingrun.exportToCSVFile(filename)
             ztm.commit()
 
+    @block_implicit_flushes
     def _create_shipping_run(self, request_ids):
         """Create and return a ShippingRun containing all requests whose ids
         are in request_ids.

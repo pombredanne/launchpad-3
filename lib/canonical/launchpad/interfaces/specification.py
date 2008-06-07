@@ -909,7 +909,7 @@ class ISpecificationSet(IHasSpecifications):
 
         The results are ordered by descending priority.
 
-        :specifications: a sequence of the specifications to look up.
+        :param specifications: a sequence of the `ISpecification` to look up.
         """
 
     def get(spec_id):
