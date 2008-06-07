@@ -1404,22 +1404,27 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
-class PersonWithGPGKeysAndPreferredEmail:
+class PersonWithKeysAndPreferredEmail:
     """A decorated person that includes GPG keys and preferred emails."""
 
     # These need to be predeclared to avoid decorates taking them over.
     # Would be nice if there was a way of allowing writes to just work
     # (i.e. no proxying of __set__).
     gpgkeys = None
+    sshkeys = None
     preferredemail = None
     decorates(IPerson, 'person')
 
     def __init__(self, person):
         self.person = person
         self.gpgkeys = []
+        self.sshkeys = []
 
-    def addKey(self, key):
+    def addGPGKey(self, key):
         self.gpgkeys.append(key)
+
+    def addSSHKey(self, key):
+        self.sshkeys.append(key)
 
     def setPreferredEmail(self, email):
         self.preferredemail = email
@@ -1467,13 +1472,16 @@ class PersonRdfContentsView:
         members = []
         members_by_id = {}
         for member in self.context.allmembers:
-            member = PersonWithGPGKeysAndPreferredEmail(member)
+            member = PersonWithKeysAndPreferredEmail(member)
             members.append(member)
             members_by_id[member.id] = member
+        sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)
+        for key in sshkeyset.getByPeople(members):
+            members_by_id[key.personID].addSSHKey(key)
         for key in gpgkeyset.getGPGKeysForPeople(members):
-            members_by_id[key.ownerID].addKey(key)
+            members_by_id[key.ownerID].addGPGKey(key)
         for email in emailset.getPreferredEmailForPeople(members):
             members_by_id[email.personID].setPreferredEmail(email)
         return members
