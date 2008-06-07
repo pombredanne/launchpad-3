@@ -177,7 +177,7 @@ class TestPerson(unittest.TestCase):
             self.assertEqual(
                 str(exc),
                 'This team cannot be made private since it is referenced by a'
-                ' branch.')
+                ' branch and a branchsubscription.')
 
     def test_visibility_validator_bug(self):
         bug_params = CreateBugParams(

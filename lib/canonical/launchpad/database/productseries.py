@@ -43,24 +43,6 @@ from canonical.launchpad.interfaces import (
     SpecificationImplementationStatus, SpecificationSort)
 
 
-class NoImportBranchError(Exception):
-    """Raised when ProductSeries.importUpdated finds not import branch.
-
-    This exception should never be caught. It exists only for unit testing.
-    """
-
-
-class DatePublishedSyncError(Exception):
-    """Raised by ProductSeries.importUpdated if datepublishedsync
-    should not be set.
-
-    If import_branch.date_last_mirrored is NULL, datepublishedsync should not
-    have been set because the import has not been published yet.
-
-    This exception should never be caught. It exists only for unit testing.
-    """
-
-
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     HasTranslationImportsMixin,
                     StructuralSubscriptionTargetMixin):
@@ -522,46 +504,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
-
-    def importUpdated(self):
-        """See IProductSeries."""
-        # Update the timestamps after an import has successfully completed, so
-        # we can always know at what time the currently published branch was
-        # last imported.
-        #
-        # Importd updates branches to match the foreign VCS, then uploads them
-        # to an internal server. Then the branch-puller copies the branches
-        # from the internal server to the public server.
-        #
-        # * datelastsynced: time when importd last updated the internal branch
-        #   to match the foreign VCS.
-        # * import_branch.last_mirrored: time when branch-puller last updated
-        #   the published branch to match the internal branch.
-        # * datepublishedsync: time when the /published/ branch was last
-        #   updated from the foreign VCS, at the time when the /internal/
-        #   branch was last updated from the foreign VCS.
-        #
-        # Sorry if that breaks your brain.
-        if self.import_branch is None:
-            raise NoImportBranchError(
-                "importUpdated called for series %d,"
-                " but import_branch is NULL." % (self.id,))
-        if (self.import_branch.last_mirrored is None
-                and self.datepublishedsync is not None):
-            raise DatePublishedSyncError(
-                "importUpdated called for series %d,"
-                " where datepublishedsync is set,"
-                " but import_branch.last_mirror is NULL."
-                % (self.id,))
-        if self.datelastsynced is None:
-            # datepublishedsync SHOULD be None, but we reset it just in case.
-            self.datepublishedsync = None
-        if (self.datelastsynced is not None
-                and self.import_branch.last_mirrored is not None
-                and self.datelastsynced < self.import_branch.last_mirrored):
-            self.datepublishedsync = self.datelastsynced
-        self.datelastsynced = UTC_NOW
-        self.import_branch.requestMirror()
 
     def getImportDetailsForDisplay(self):
         assert self.rcstype is not None, (
