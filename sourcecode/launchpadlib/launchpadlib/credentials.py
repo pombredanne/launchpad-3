@@ -44,7 +44,7 @@ class Credentials:
         This overrides the consumer and access token given in the constructor
         and replaces them with the values read from the file.
 
-        :param readable_file: A file-like object containing stored credentials
+        :param readable_file: A file-like object to read the credentials from
         :type readable_file: Any object supporting the file-like `read()`
             method
         """
@@ -54,9 +54,8 @@ class Credentials:
         # Check the version number and extract the access token and
         # secret.  Then convert these to the appropriate instances.
         if not parser.has_section(CREDENTIALS_FILE_VERSION):
-            self.consumer = None
-            self.access_token = None
-            return
+            raise CredentialsFileError('No configuration for version %s' %
+                                       CREDENTIALS_FILE_VERSION)
         consumer_key = parser.get(
             CREDENTIALS_FILE_VERSION, 'consumer_key')
         consumer_secret = parser.get(
@@ -71,10 +70,10 @@ class Credentials:
     def save(self, writable_file):
         """Write the credentials to the file-like object.
 
-        :param readable_file: A file-like object containing stored credentials
-        :type readable_file: Any object supporting the file-like `read()`
+        :param writable_file: A file-like object to write the credentials to
+        :type writable_file: Any object supporting the file-like `write()`
             method
-        :raise CredentialsFileError: when there is either no consumer or not
+        :raise CredentialsFileError: when there is either no consumer or no
             access token
         """
         if self.consumer is None:

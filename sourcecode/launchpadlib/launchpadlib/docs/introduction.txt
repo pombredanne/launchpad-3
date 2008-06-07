@@ -10,33 +10,6 @@ launchpadlib is currently in pre-alpha release.
     >>> launchpadlib.__version__
     '0.1'
 
-launchpadlib talks to Launchpad's API facet, but anonymous users are not
-allowed to access the root service.
-
-    >>> from urllib import urlopen
-    >>> import lxml.objectify
-    >>> def parse(url):
-    ...     connection = urlopen(url)
-    ...     try:
-    ...         tree = lxml.objectify.parse(connection)
-    ...     finally:
-    ...         connection.close()
-    ...     return tree.getroot()
-
-    >>> root = parse('http://api.launchpad.dev')
-    >>> root.head.title
-    'Forbidden'
-    >>> root.body.div[1].table.tr.td.div.text.strip()
-    u'Not logged in \u2014'
-
-Anonymous users cannot access the beta service.
-
-    >>> root = parse('http://api.launchpad.dev/beta')
-    >>> root.head.title
-    'Forbidden'
-    >>> root.body.div[1].table.tr.td.div.text.strip()
-    u'Not logged in \u2014'
-
 
 == OAuth authentication ==
 
@@ -78,10 +51,7 @@ to the OAuth protocol.  Once this happens, we have Salgado's credentials for
 accessing Launchpad.
 
     >>> from launchpadlib.credentials import AccessToken
-    >>> access_token = AccessToken(
-    ...     'hgm2VK35vXD6rLg5pxWw',
-    ...     'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw'
-    ...     + '8VVwW4ClNnPHDPJ7vm3xjDRn5hLpKc3r6WfznFVz')
+    >>> access_token = AccessToken('salgado-change-anything', 'test')
 
 And now these credentials are used to access the root service on Salgado's
 behalf.
@@ -109,16 +79,6 @@ have to go through the whole OAuth request dance.
     >>> fd, path = tempfile.mkstemp('.credentials')
     >>> os.close(fd)
     >>> credentials_file = open(path)
-
-If the credentials file is empty, no credentials will be loaded from it.
-
-    >>> credentials = Credentials()
-    >>> credentials.load(credentials_file)
-    >>> credentials_file.close()
-    >>> print credentials.consumer
-    None
-    >>> print credentials.access_token
-    None
 
 Once Salgado's credentials are obtained for the first time, just set the
 appropriate instance variables and use the save() method.
@@ -149,9 +109,9 @@ dance can be avoided.
     >>> credentials.consumer.secret
     ''
     >>> credentials.access_token.key
-    'hgm2VK35vXD6rLg5pxWw'
+    'salgado-change-anything'
     >>> credentials.access_token.secret
-    'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw...
+    'test'
 
 These credentials too, are perfectly usable to access Launchpad.
 
@@ -172,10 +132,10 @@ Salgado's credentials.
     >>> credentials.save(stream)
     >>> print encrypted_file.getvalue()
     [1]
-    pbafhzre_frperg =
-    npprff_gbxra = utz2IX35iKQ6eYt5ckJj
+    pbafhzre_frperg = 
+    npprff_gbxra = fnytnqb-punatr-nalguvat
     pbafhzre_xrl = ynhapucnq-yvoenel
-    npprff_frperg = DmfXoqx2Se8EfWK3w89IId5zJITID84Ucjqet0Pj...
+    npprff_frperg = grfg
     <BLANKLINE>
     <BLANKLINE>
 
@@ -187,31 +147,100 @@ Salgado's credentials.
     >>> credentials.consumer.secret
     ''
     >>> credentials.access_token.key
-    'hgm2VK35vXD6rLg5pxWw'
+    'salgado-change-anything'
     >>> credentials.access_token.secret
-    'QzsKbdk2Fr8RsJX3j89VVq5mWVGVQ84Hpwdrg0Cw...
+    'test'
+
+
+== Credentials file errors ==
+
+If the credentials file is empty, loading it raises an exception.
+
+    >>> credentials = Credentials()
+    >>> credentials.load(StringIO())
+    Traceback (most recent call last):
+    ...
+    CredentialsFileError: No configuration for version 1
 
 It is an error to save a credentials file when no consumer or access token is
 available.
 
-    >>> credentials_file = open(path, 'w')
     >>> credentials.consumer = None
-    >>> credentials.save(credentials_file)
+    >>> credentials.save(StringIO())
     Traceback (most recent call last):
     ...
     CredentialsFileError: No consumer
 
     >>> credentials.consumer = consumer
     >>> credentials.access_token = None
-    >>> credentials.save(credentials_file)
+    >>> credentials.save(StringIO())
     Traceback (most recent call last):
     ...
     CredentialsFileError: No access token
 
-    >>> credentials_file.close()
+The credentials file is not intended to be edited, but because it's human
+readable, that's of course possible.  If the credentials file gets corrupted,
+an error is raised.
+
+    >>> credentials_file = StringIO("""\
+    ... [1]
+    ... #consumer_key: aardvark
+    ... consumer_secret: badger
+    ... access_token: caribou
+    ... access_secret: dingo
+    ... """)
+    >>> credentials.load(credentials_file)
+    Traceback (most recent call last):
+    ...
+    NoOptionError: No option 'consumer_key' in section: '1'
+
+    >>> credentials_file = StringIO("""\
+    ... [1]
+    ... consumer_key: aardvark
+    ... #consumer_secret: badger
+    ... access_token: caribou
+    ... access_secret: dingo
+    ... """)
+    >>> credentials.load(credentials_file)
+    Traceback (most recent call last):
+    ...
+    NoOptionError: No option 'consumer_secret' in section: '1'
+
+    >>> credentials_file = StringIO("""\
+    ... [1]
+    ... consumer_key: aardvark
+    ... consumer_secret: badger
+    ... #access_token: caribou
+    ... access_secret: dingo
+    ... """)
+    >>> credentials.load(credentials_file)
+    Traceback (most recent call last):
+    ...
+    NoOptionError: No option 'access_token' in section: '1'
+
+    >>> credentials_file = StringIO("""\
+    ... [1]
+    ... consumer_key: aardvark
+    ... consumer_secret: badger
+    ... access_token: caribou
+    ... #access_secret: dingo
+    ... """)
+    >>> credentials.load(credentials_file)
+    Traceback (most recent call last):
+    ...
+    NoOptionError: No option 'access_secret' in section: '1'
 
 
 == Bad credentials ==
+
+The application is not allowed to access Launchpad if there are no
+credentials.
+
+    >>> credentials = Credentials(consumer)
+    >>> launchpad = Launchpad(credentials=credentials)
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 401: Unauthorized
 
 The application is not allowed to access Launchpad with a bad access token.
 
@@ -220,7 +249,7 @@ The application is not allowed to access Launchpad with a bad access token.
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    HTTPError: HTTP Error 401: Unauthorized
 
 The application is not allowed to access Launchpad with a bad access secret.
 
@@ -229,7 +258,7 @@ The application is not allowed to access Launchpad with a bad access secret.
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    HTTPError: HTTP Error 401: Unauthorized
 
 
 == Clean up ==
