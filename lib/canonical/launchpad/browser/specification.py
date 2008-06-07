@@ -346,7 +346,12 @@ class SpecificationContextMenu(ContextMenu):
     def retractmentoring(self):
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = self.context.isMentor(user)
+        # We should really only allow people to retract mentoring if the
+        # spec's open and the user's already a mentor.
+        if user and not self.context.is_complete:
+            enabled = self.context.isMentor(user)
+        else:
+            enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):

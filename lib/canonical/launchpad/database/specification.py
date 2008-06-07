@@ -279,10 +279,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def isMentor(self, user):
         """See ICanBeMentored."""
-        if user is None:
-            return False
-        if self.is_complete:
-            return False
         return MentoringOffer.selectOneBy(
             specification=self, owner=user) is not None
 

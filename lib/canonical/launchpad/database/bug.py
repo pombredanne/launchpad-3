@@ -791,10 +791,6 @@ class Bug(SQLBase):
 
     def isMentor(self, user):
         """See `ICanBeMentored`."""
-        if user is None:
-            return False
-        if self.duplicateof is not None or self.is_complete:
-            return False
         return MentoringOffer.selectOneBy(bug=self, owner=user) is not None
 
     def offerMentoring(self, user, team):

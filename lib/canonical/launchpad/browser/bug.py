@@ -222,7 +222,12 @@ class BugContextMenu(ContextMenu):
         """Return the 'Retract mentorship' Link."""
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = self.context.bug.isMentor(user)
+        # We should really only allow people to retract mentoring if the
+        # bug's open and the user's already a mentor.
+        if user and not self.context.bug.is_complete:
+            enabled = self.context.bug.isMentor(user)
+        else:
+            enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def createquestion(self):
