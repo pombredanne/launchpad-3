@@ -278,6 +278,10 @@ class DistributionSourcePackage(BugTargetBase,
             (self.distribution.id == other.distribution.id) and
             (self.sourcepackagename.id == other.sourcepackagename.id))
 
+    def __hash__(self):
+        """Return the combined hash of distribution and package name."""
+        return hash(self.distribution) + hash(self.sourcepackagename)
+
     def __ne__(self, other):
         """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
