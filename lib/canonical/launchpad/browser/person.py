@@ -1156,6 +1156,8 @@ class IPersonEditMenu(Interface):
 class PersonOverviewNavigationMenu(NavigationMenu):
 
     usedfor = IPerson
+    facet = 'overview'
+    links = ['profile', 'related_software', 'karma', 'show_ppa']
 
     def profile(self):
         target = '+index'
@@ -1181,6 +1183,9 @@ class PersonOverviewNavigationMenu(NavigationMenu):
 class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
+    facet = 'overview'
+    links = ['personal', 'contact_details', 'email_settings',
+             'sshkeys']
 
     def personal(self):
         target='+edit'

@@ -82,7 +82,8 @@
     module="canonical.launchpad.browser.person"
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
-        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu"
+        PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
+        PersonOverviewNavigationMenu PersonEditNavigationMenu"
     />
 
   <browser:url
