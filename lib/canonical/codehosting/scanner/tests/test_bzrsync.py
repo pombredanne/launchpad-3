@@ -44,14 +44,20 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        self.test_warehouse_root_url = local_path_to_url(os.getcwd()) + '/'
         self._warehouse_root_url = config.supermirror.warehouse_root_url
-        config.supermirror.warehouse_root_url = (
-            local_path_to_url(os.getcwd()) + '/')
+        config.supermirror.warehouse_root_url = self.test_warehouse_root_url
         self.factory = LaunchpadObjectFactory()
         self.makeFixtures()
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        self.txn = LaunchpadZopelessLayer.txn
+        self.lp_db_user = config.launchpad.dbuser
+        self.switchDbUser(config.branchscanner.dbuser)
         self._setUpAuthor()
+
+    def switchDbUser(self, user):
+        """We need to reset the config warehouse root after a switch."""
+        LaunchpadZopelessLayer.switchDbUser(user)
+        config.supermirror.warehouse_root_url = self.test_warehouse_root_url
+        self.txn = LaunchpadZopelessLayer.txn
 
     def tearDown(self):
         config.supermirror.warehouse_root_url = self._warehouse_root_url
@@ -78,6 +84,8 @@ class BzrSyncTestCase(TestCaseWithTransport):
         """Make an arbitrary branch in the database."""
         LaunchpadZopelessLayer.txn.begin()
         new_branch = self.factory.makeBranch()
+        # Unsubscribe the implicit owner subscription.
+        new_branch.unsubscribe(new_branch.owner)
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
 
@@ -196,6 +204,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
             branch into the mainline branch.
         :return: (db_trunk, trunk_tree), (db_branch, branch_tree).
         """
+
+        self.switchDbUser(self.lp_db_user)
+
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
         trunk_tree = self.makeBzrBranchAndTree(db_branch)
@@ -213,6 +224,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # Merge branch into trunk.
         trunk_tree.merge_from_branch(branch_tree.branch)
         trunk_tree.commit(u'merge revision', rev_id=merge_rev_id)
+
+        LaunchpadZopelessLayer.txn.commit()
+        self.switchDbUser(config.branchscanner.dbuser)
 
         return (db_branch, trunk_tree), (new_db_branch, branch_tree)
 
