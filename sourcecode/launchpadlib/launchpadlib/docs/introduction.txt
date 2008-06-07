@@ -240,7 +240,7 @@ credentials.
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    HTTPError: HTTP Error 401: Unauthorized
 
 The application is not allowed to access Launchpad with a bad access token.
 
@@ -249,7 +249,7 @@ The application is not allowed to access Launchpad with a bad access token.
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    HTTPError: HTTP Error 401: Unauthorized
 
 The application is not allowed to access Launchpad with a bad access secret.
 
@@ -258,7 +258,7 @@ The application is not allowed to access Launchpad with a bad access secret.
     >>> launchpad = Launchpad(credentials=credentials)
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    HTTPError: HTTP Error 401: Unauthorized
 
 
 == Clean up ==
