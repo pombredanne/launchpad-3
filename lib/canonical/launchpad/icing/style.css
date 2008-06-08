@@ -197,8 +197,8 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 
 /* Next links have icons: */
 .batch-navigation-links .next {
-  background: center left no-repeat;
-  padding-left: 14px;
+  background: center right no-repeat;
+  padding-right: 14px;
 }
 .batch-navigation-links .next {background-image: url(/@@/arrowRight);}
 .batch-navigation-links .next.inactive {
