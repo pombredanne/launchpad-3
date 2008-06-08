@@ -27,17 +27,19 @@
         <a
           tal:condition="first_page_url"
           tal:attributes="href first_page_url"
+          class="first"
           rel="first"
         >First</a>
-        <span tal:condition="not:first_page_url" class="unavailable"
+        <span tal:condition="not:first_page_url" class="first inactive"
         >First</span>
         &#149;
         <a
           tal:condition="prev_page_url"
           tal:attributes="href prev_page_url"
+          class="previous"
           rel="previous"
         >Previous</a>
-        <span tal:condition="not:prev_page_url" class="unavailable"
+        <span tal:condition="not:prev_page_url" class="previous inactive"
         >Previous</span>
         <tal:intermediaries repeat="page_url context/batchPageURLs">
           <a
@@ -50,18 +52,20 @@
         <a
           tal:condition="next_page_url"
           tal:attributes="href next_page_url"
+          class="next"
           rel="next"
         ><strong>Next</strong></a>
-        <span tal:condition="not:next_page_url" class="unavailable"
+        <span tal:condition="not:next_page_url" class="next inactive"
         ><strong>Next</strong></span>
         <tal:last_link condition="context/show_last_link|default">
           &#149;
           <a
             tal:condition="last_page_url"
             tal:attributes="href last_page_url"
+            class="last"
             rel="last"
           >Last</a>
-          <span tal:condition="not:last_page_url" class="unavailable"
+          <span tal:condition="not:last_page_url" class="last inactive"
           >Last</span>
         </tal:last_link>
       </td>
