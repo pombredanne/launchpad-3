@@ -26,8 +26,8 @@ But the navigation links should point to IPOFile urls.
     >>> print_navigation_links(browser.contents)
     Description
     Translate: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
-    Upload a file: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
-    Download: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
+    Import: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+    Export: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
 
 Taking an IPOFile for ISourcePackage context:
 
@@ -52,5 +52,5 @@ But the navigation links should point to IPOFile urls.
     >>> print_navigation_links(browser.contents)
     Description
     Translate: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
-    Upload a file: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
-    Download: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+    Import: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
+    Export: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export

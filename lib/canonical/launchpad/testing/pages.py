@@ -414,12 +414,13 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll('li')
+    entries = navigation_links.findAll(['strong','a'])
     for entry in entries:
-        if entry.a:
-            print '%s: %s' % (entry.a.string, entry.a['href'])
-        elif entry.strong:
-            print entry.strong.string
+        try:
+            print '%s: %s' % (entry.span.string, entry['href'])
+        except KeyError:
+            print entry.span.string
+
 
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
