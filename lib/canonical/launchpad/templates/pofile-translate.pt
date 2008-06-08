@@ -177,35 +177,25 @@
                 <tal:loop repeat="translationmessage_view view/translationmessage_views">
                   <div tal:replace="structure translationmessage_view" />
                 </tal:loop>
-              </tbody>
-              <tfoot>
                 <tr tal:condition="view/form_is_writeable">
-                  <th colspan="5">
-                    <tal:review
-                      condition="not: view/user_is_official_translator"
-                    >
-                      Your translations will be held for review by the
-                      official translators for this file.
-                    </tal:review>
+                  <td colspan="4">
+                    Translated so far:
+                    <tal:completeness replace="view/completeness" />
+                  </td>
+                  <td style="text-align: right;">
                     <input type="submit"
                            name="submit_translations"
                            value="Save &amp; Continue"
-                           style="text-align: right;"/>
-                  </th>
+                    />
+                  </td>
                 </tr>
-              </tfoot>
+              </tbody>
             </table>
 
           </form>
           <!-- Paging doodads. -->
           <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
         </tal:block>
-        <p class="discreet">
-          Translation status:
-          <span class="language-code"
-                tal:replace="context/language/englishname">Spanish</span>
-          <span tal:replace="view/completeness">0 %</span>
-        </p>
         <tal:status replace="structure context/@@+access" />
         <tal:status replace="structure context/@@+portlet-details" />
         <div tal:replace="structure context/@@+portlet-contributors" />

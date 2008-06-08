@@ -9,8 +9,14 @@
     This template is <strong>open</strong> to anyone to translate.
   </p>
   <p class="discreet">
-    This template is <strong>restricted</strong>.
-    Your suggestions will be held for review by <a>Just a testing team</a>.
+    <tal:official condition="view/user_is_official_translator">
+      This template is <strong>restricted</strong> to you and other members of
+      <a>Just a testing team</a>.
+    </tal:official>
+    <tal:unofficial condition="not: view/user_is_official_translator">
+      This template is <strong>restricted</strong>.
+      Your translations will be held for review by <a>Just a testing team</a>.
+    </tal:unofficial>
   </p>
   <p class="discreet">
     This template is <strong>closed</strong>, translatable only by <a>Just a testing team</a>.
