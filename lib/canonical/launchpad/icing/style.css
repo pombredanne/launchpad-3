@@ -207,11 +207,11 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 /* And all the links have spacing between them: */
 .batch-navigation-links .previous, .batch-navigation-links .next,
 .batch-navigation-links .last {
-  margin-left: 0.5em;
+  margin-left: 0.25em;
 }
 .batch-navigation-links .first, .batch-navigation-links .previous,
 .batch-navigation-links .next {
-  margin-right: 0.5em;
+  margin-right: 0.25em;
 }
 
 /* --- Other --- */
