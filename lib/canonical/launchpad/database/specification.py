@@ -270,10 +270,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def canMentor(self, user):
         """See ICanBeMentored."""
-        return not (not user or
-                    self.isMentor(user) or
-                    self.is_complete or
-                    not user.teams_participated_in)
+        if user is None:
+            return False
+        if self.is_complete:
+            return False
+        if bool(self.isMentor(user)):
+            return False
+        if not user.teams_participated_in:
+            return False
+        return True
 
     def isMentor(self, user):
         """See ICanBeMentored."""

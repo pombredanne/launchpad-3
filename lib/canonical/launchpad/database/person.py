@@ -1777,7 +1777,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             AND TeamMembership.team = %d
             """ % (statuses, self.id)
         return TeamMembership.select(
-            query, clauseTables=['Person'], orderBy=Person.sortingColumns)
+            query, clauseTables=['Person'],
+            prejoinClauseTables=['Person'],
+            orderBy=Person.sortingColumns)
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
