@@ -198,7 +198,7 @@
         </tal:block>
         <tal:status replace="structure context/@@+access" />
         <tal:status replace="structure context/@@+portlet-details" />
-        <div tal:replace="structure context/@@+portlet-contributors" />
+        <tal:contributors replace="structure context/@@+contributors" />
       </tal:havepluralforms>
     </div>
 

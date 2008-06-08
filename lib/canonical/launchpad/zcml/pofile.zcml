@@ -66,6 +66,9 @@
             name="+portlet-contributors"
             template="../templates/pofile-portlet-contributors.pt" />
         <browser:page
+            name="+contributors"
+            template="../templates/pofile-translate-contributors.pt" />
+        <browser:page
             name="+portlet-details"
             template="../templates/pofile-portlet-details.pt" />
         <browser:page
