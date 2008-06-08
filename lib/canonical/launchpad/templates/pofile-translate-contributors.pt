@@ -10,7 +10,8 @@
     Contributors to this translation:
     <tal:contributors repeat="contributor view/contributors">
       <tal:contributor replace="structure contributor/fmt:link" /><tal:comma
-      condition="not:repeat/contributor/end">,</tal:comma>
+      condition="not:repeat/contributor/end">,</tal:comma><tal:period
+      condition="repeat/contributor/end">.</tal:period>
     </tal:contributors>
   </p>
 </tal:root>
