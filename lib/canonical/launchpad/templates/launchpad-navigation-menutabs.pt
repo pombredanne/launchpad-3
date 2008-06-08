@@ -13,7 +13,18 @@
     20080513 mpt: The HTML comment works around bug 229931.
   </tal:XXX>
   <!-- :-) --><tal:item repeat="link view/links"
-  ><tal:link-content replace="structure link/@@+link" /></tal:item>
-</div>
-
+    ><a
+      tal:condition="link/linked"
+      tal:attributes="
+        href link/url;
+        title link/summary;
+        class string:menu-link-${link/name};
+      "
+      ><span tal:content="structure link/escapedtext"
+    >link text></span></a><strong
+      tal:condition="not: link/linked"
+      tal:attributes="class string:menu-link-${link/name};"
+      ><span tal:content="structure link/escapedtext"
+    >Unlinked text</span></strong></tal:item>
+  </div>
 </tal:root>

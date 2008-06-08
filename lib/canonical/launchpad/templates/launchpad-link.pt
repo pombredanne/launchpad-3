@@ -12,8 +12,8 @@
     tal:attributes="href context/url;
                     title context/summary;
                     class string:menu-link-${context/name};"
-    ><span tal:content="structure context/escapedtext"
-    >link text></span></a><strong
+    tal:content="structure context/escapedtext"
+    >link text</a><strong
     tal:condition="not: context/linked"
     tal:attributes="class string:menu-link-${context/name};"
     ><span tal:content="structure context/escapedtext"
