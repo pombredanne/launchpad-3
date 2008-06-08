@@ -19,7 +19,6 @@
     <!-- arrowBlank is used in sorttable.js -->
     <resource name="arrowBlank" file="../images/arrowBlank.gif" />
     <resource name="arrowBottom" file="../images/arrowBottom.png" />
-    <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.png" />
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
