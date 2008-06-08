@@ -1495,6 +1495,9 @@ class PersonRdfContentsView:
             member = PersonWithKeysAndPreferredEmail(member)
             members.append(member)
             members_by_id[member.id] = member
+        if not members:
+            # Empty teams have nothing to offer.
+            return members
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)
