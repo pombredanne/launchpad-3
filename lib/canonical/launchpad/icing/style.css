@@ -681,6 +681,8 @@ So it's hidden initially, and then revealed if JavaScript is available.
 .navigation.menu strong * {background-color: #888;}
 /* The segments have a thin separator, and padding around their text: */
 .navigation.menu * * {border-right: 1px solid #fff; padding: 0.25em 0.5em;}
+/* For text browsers, there's a " / " separator, hidden from CSS browsers: */
+.navigation.menu small {display: none;}
 /* All text in the navigation menu is white, even the links: */
 .navigation.menu, .navigation.menu a {color: #fff;}
 /* The first segment has a rounded cap, matching its color: */

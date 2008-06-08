@@ -4,7 +4,9 @@ contributors.
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/es')
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print extract_text(find_main_content(anon_browser.contents)).encode(
+    ...     'ascii', 'backslashreplace')
+    Description / Translate / Import / Export
     Template "evolution-2.2" in Evolution trunk
     Overview for Spanish translation
     Contributors to this translation
@@ -13,11 +15,10 @@ contributors.
     Carlos... (filter)
     Mark Shuttleworth (filter)
     No Privileges Person (filter)
+    ...
 
-
-
-This page was converted to the 2.0 inline navigation. It has tabs
-to navigate to other pages.
+This page has a navigation menu for translating, importing translations
+into, or exporting translations from the template.
 
     >>> navigation_tabs = find_tag_by_id(
     ...     anon_browser.contents, 'context-navigation-tabs')
@@ -25,9 +26,9 @@ to navigate to other pages.
     ...     print "%s:\n%s" % (extract_text(link), link['href'])
     Translate:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
-    Upload a file:
+    Import:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
-    Download:
+    Export:
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
 
 And has no actions menu:
@@ -143,4 +144,3 @@ If a person to filter by is not specified, user is notified of that.
     >>> get_feedback_messages(anon_browser.contents)
     [u'No person to filter by specified.',
     u'This person has made no contributions to this file.']
-

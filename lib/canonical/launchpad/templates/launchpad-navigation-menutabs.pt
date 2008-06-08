@@ -25,6 +25,8 @@
       tal:condition="not: link/linked"
       tal:attributes="class string:menu-link-${link/name};"
       ><span tal:content="structure link/escapedtext"
-    >Unlinked text</span></strong></tal:item>
+    >Unlinked text</span></strong><small
+      tal:condition="not:repeat/link/end"> /
+    </small></tal:item>
   </div>
 </tal:root>
