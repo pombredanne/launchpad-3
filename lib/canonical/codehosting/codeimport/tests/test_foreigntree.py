@@ -247,6 +247,7 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
 
         tree2.update()
 
+
 class TestCVSWorkingTree(TestCaseWithTransport):
 
     layer = BaseLayer
