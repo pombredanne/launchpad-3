@@ -1497,7 +1497,7 @@ class PersonRdfContentsView:
             members_by_id[member.id] = member
         if not members:
             # Empty teams have nothing to offer.
-            return members
+            return []
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)

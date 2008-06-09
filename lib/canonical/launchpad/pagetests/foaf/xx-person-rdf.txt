@@ -51,8 +51,7 @@ And it's valid XML and RDF:
   rdf:RDF
 
 Teams also have an RDF export, which includes information for each
-member of the team. Note that this output uses backslashreplace() to
-allow proper rendering of Carlos' name, which is non-ascii.
+member of the team.
 
   >>> from canonical.launchpad.helpers import backslashreplace
   >>> anon_browser.open("http://launchpad.dev/~testing-spanish-team/+rdf")
@@ -67,7 +66,7 @@ allow proper rendering of Carlos' name, which is non-ascii.
       <foaf:nick>testing-spanish-team</foaf:nick>
       <foaf:member>
           <foaf:Person>
-            <foaf:name>Carlos Perell\xf3 Mar\xednn</foaf:name>
+            <foaf:name>Carlos Perell\xf3 Mar\xedn</foaf:name>
             <foaf:nick>carlos</foaf:nick>
              <foaf:mbox_sha1sum>BCB3DF72647D7B136A3C33005318D63974179452</foaf:mbox_sha1sum>
           </foaf:Person>
@@ -94,10 +93,31 @@ allow proper rendering of Carlos' name, which is non-ascii.
     </foaf:Group>
   </rdf:RDF>
 
+Note how ascii and non-ascii names are rendered properly:
 
-Unless that team has no active members, of course:
+  >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+  >>> strainer = SoupStrainer(['foaf:name'])
+  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+  >>> for tag in soup:
+  ...   tag.renderContents()
+  'testing Spanish team'
+  'Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+  'Foo Bar'
+  'Mark Shuttleworth'
+  'Miroslav Kure'
+  'Valentina Commissari'
+
+If the team has no active members no <foaf:member> elements will be
+present:
 
   >>> anon_browser.open("http://launchpad.dev/~name21/+rdf")
+  >>> strainer = SoupStrainer(['foaf:member'])
+  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+  >>> len(soup)
+  0
+
+And nothing about them is rendered at all:
+
   >>> print anon_browser.contents
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
