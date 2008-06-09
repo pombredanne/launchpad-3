@@ -202,22 +202,22 @@ def check_copy(source, archive, series, pocket, include_binaries):
             (ancestry.displayname, ancestry.distroseries.name))
 
 
-def do_copy(sources, series, pocket, archive, include_binaries=False):
+def do_copy(sources, archive, series, pocket, include_binaries=False):
     """Perform the complete copy of the given sources.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
     to the given destination. Also copy published binaries for each
     source if requested to.
 
-    :param: sources: a list of `SourcePackagePublishingHistory`;
-    :param: series: the target `DistroSeries`, if None is given the same
+    :param: sources: a list of `ISourcePackagePublishingHistory`;
+    :param: archive: the target `IArchive`;
+    :param: series: the target `IDistroSeries`, if None is given the same
         current source distroseries will be used as destination;
     :param: pocket: the target `PackagePublishingPocket`;
-    :param: archive: the target `Archive`;
     :param: include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source;
-    :return: a list of `SourcePackagePublishingHistory` and
+    :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
         publications.
     """
@@ -350,17 +350,20 @@ class PackageCopier(SoyuzScript):
         for candidate in to_copy:
             self.logger.info('\t%s' % candidate.displayname)
 
-        copies = []
-        for candidate in to_copy:
-            try:
-                copied = candidate.copyTo(
-                    distroseries = self.destination.distroseries,
-                    pocket = self.destination.pocket,
-                    archive = self.destination.archive)
-            except NotFoundError:
-                self.logger.warn('Could not copy %s' % candidate.displayname)
-            else:
-                copies.append(copied)
+        try:
+            check_copy(
+                source_pub, self.destination.archive,
+                self.destination.distroseries, self.destination.pocket,
+                self.options.include_binaries)
+        except CannotCopy, reason:
+            self.logger.error(
+                "%s (%s)" % (source_pub.displayname, reason))
+            return []
+
+        sources = [source_pub]
+        copies = do_copy(
+            sources, self.destination.archive, self.destination.distroseries,
+            self.destination.pocket, self.options.include_binaries)
 
         if len(copies) == 1:
             self.logger.info(

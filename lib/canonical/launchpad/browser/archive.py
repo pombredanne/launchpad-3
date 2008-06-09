@@ -663,8 +663,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         destination_pocket = self.default_pocket
 
         copies = do_copy(
-            selected_sources, destination_series, destination_pocket,
-            destination_archive, include_binaries)
+            selected_sources, destination_archive, destination_series,
+            destination_pocket, include_binaries)
 
         # Refresh the selected_sources, it changes when sources get
         # copied within the PPA.

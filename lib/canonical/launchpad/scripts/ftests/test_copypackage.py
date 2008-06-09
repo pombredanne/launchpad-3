@@ -253,12 +253,15 @@ class TestCopyPackage(unittest.TestCase):
     def testCopyFromPPA(self):
         """Check the copy operation from PPA to PRIMARY Archive.
 
+        Source and optinally binaries can get copied from PPA to the PRIMARY
+        archive.
+
         That's the preliminary workflow for 'syncing' sources from PPA to
         the ubuntu PRIMARY archive.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary', include_binaries=False)
+            from_suite='warty', to_suite='hoary', include_binaries=True)
         copied = copy_helper.mainTask()
 
         self.assertEqual(
@@ -269,7 +272,10 @@ class TestCopyPackage(unittest.TestCase):
             'Primary Archive for Ubuntu Linux: hoary-RELEASE')
 
         target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 1)
+        self.checkCopies(copied, target_archive, 2)
+        self.assertEqual(
+            sorted([pub.displayname for pub in copied]),
+            ['iceweasel 1.0 in hoary', 'mozilla-firefox 1.0 in hoary i386'])
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
