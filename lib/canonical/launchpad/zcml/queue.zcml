@@ -35,15 +35,6 @@
           />
     </content>
 
-    <browser:pages
-      for="canonical.launchpad.interfaces.IPackageUpload"
-      permission="zope.Public">
-      <browser:page
-        name="+iconlist"
-        template="../templates/packageupload-iconlist.pt"
-        />
-    </browser:pages>
-
     <content class="canonical.launchpad.database.PackageUploadSource">
         <allow interface="canonical.launchpad.interfaces.IPackageUploadSource" />
     </content>

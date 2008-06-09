@@ -7,7 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'IBinaryPackageFile',
+    'IBinaryPackageFileSet',
     'ISourcePackageReleaseFile',
+    'ISourcePackageReleaseFileSet',
     ]
 
 from zope.schema import Int
@@ -36,6 +38,12 @@ class IBinaryPackageFile(Interface):
             )
 
 
+class IBinaryPackageFileSet(Interface):
+    """The set of all `BinaryPacakgeFile`s."""
+
+    def getByPackageUploadIDs(self, package_upload_ids):
+        """Return `BinaryPackageFile`s for the `PackageUpload` IDs."""
+
 
 class ISourcePackageReleaseFile(Interface):
     """A source package release to librarian link record."""
@@ -56,3 +64,10 @@ class ISourcePackageReleaseFile(Interface):
     filetype = Int(
             title=_('The type of this file'), required=True, readonly=False,
             )
+
+
+class ISourcePackageReleaseFileSet(Interface):
+    """The set of all `ISourcePackageReleaseFile`s."""
+
+    def getByPackageUploadIDs(package_upload_ids):
+        """Return `SourcePackageReleaseFile`s for the `PackageUpload` IDs."""

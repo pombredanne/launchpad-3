@@ -20,6 +20,8 @@ from canonical.launchpad.interfaces import (
     UnexpectedFormData, PackageUploadStatus)
 from canonical.launchpad.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseSet)
+from canonical.launchpad.interfaces.files import (
+    IBinaryPackageFileSet)
 from canonical.launchpad.scripts.queue import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -92,13 +94,28 @@ class QueueItemsView(LaunchpadView):
         """Return the current batch, converted to decorated objects.
 
         Each batch item, a PackageUpload, is converted to a
-        PackageUploadWithSourcesBuildsAndPackages.
+        CompletePackageUpload.  This avoids many additional SQL queries
+        in the +queue template.
         """
-        if not self.batchnav.currentBatch:
+        uploads = list(self.batchnav.currentBatch())
+
+        if not uploads:
             return None
 
-        return [PackageUploadWithSourcesBuildsAndPackages(item)
-                for item in self.batchnav.currentBatch()]
+        # Build a dictionary keyed by upload ID where the values are
+        # lists of binary files.
+        upload_ids = [upload.id for upload in uploads]
+        binary_file_set = getUtility(IBinaryPackageFileSet)
+        binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        build_upload_files = {}
+        for binary_file in binary_files:
+            id = binary_file.binarypackagerelease.build.package_upload.id
+            if id not in build_upload_files:
+                build_upload_files[id] = []
+            build_upload_files[id].append(binary_file)
+
+        return [CompletePackageUpload(item, build_upload_files)
+                for item in uploads]
 
     def availableActions(self):
         """Return the available actions according to the selected queue state.
@@ -278,36 +295,46 @@ class QueueItemsView(LaunchpadView):
         return (priority for priority in PackagePublishingPriority)
 
 
-class PackageUploadWithSourcesBuildsAndPackages:
-    "A decorated `PackageUpload` including sources, builds and packages."""
+class CompletePackageUpload:
+    """A decorated `PackageUpload` including sources, builds and packages.
+    
+    Some properties of PackageUpload are cached here to reduce the number
+    of queries that the +queue template has to make.
+    """
+    id = None
+    pocket = None
+    datecreated = None
     sources = None
     builds = None
     customfiles = None
     contains_source = None
     contains_build = None
+    sourcepackagerelease = None
     decorates(IPackageUpload)
 
-    def __init__(self, packageupload):
+    def __init__(self, packageupload, build_upload_files):
+        self.id = packageupload.id
+        self.pocket = packageupload.pocket
+        self.datecreated = packageupload.datecreated
         self.context = packageupload
         self.sources = list(packageupload.sources)
         self.contains_source = len(self.sources) > 0
         self.builds = list(packageupload.builds)
         self.contains_build = len(self.builds) > 0
         self.customfiles = list(packageupload.customfiles)
-        self.package_dict = {}
 
-       # if self.contains_build:
-       #     # Get all the binary packages for this upload, in one go.
-       #     build_ids = [build.id for build in self.builds]
-       #     binarypackages = getUtility(
-       #         IBinaryPackageReleaseSet).getByBuildIDs(build_ids)
-       #     for binarypackage in binarypackages:
-       #         # Make a dictionary where the build is the key and the
-       #         # value is a list of binary packages.
-       #         build_id = binarypackage.build.id
-       #         if build_id not in self.package_dict:
-       #             self.package_dict[build_id] = []
-       #         self.package_dict[build_id].append(binarypackage)
-       #     self.packages = []
-       #     for (k,v) in self.package_dict.items():
-       #         self.packages.append(v)
+        # Create a dictionary of binary files keyed by
+        # binarypackagerelease ID.
+        self.binary_packages = {}
+        self.binary_files = build_upload_files.get(self.id, None)
+        if self.binary_files is not None:
+            for binary in self.binary_files:
+                package = binary.binarypackagerelease
+                if package not in self.binary_packages:
+                    self.binary_packages[package] = []
+                self.binary_packages[package].append(binary)
+
+        if self.contains_source:
+            self.sourcepackagerelease = self.sources[0].sourcepackagerelease
+        else:
+            self.sourcepackagerelease = None

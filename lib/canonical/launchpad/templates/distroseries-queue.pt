@@ -110,7 +110,7 @@
                             tal:attributes="value packageupload/id"/>
                 </td>
                 <td style="padding-top: 5px">
-                  <tal:iconlist replace="structure packageupload/@@+iconlist"/>
+                  <metal:iconlist use-macro="template/macros/package-iconlist"/>
                 </td>
 
                 <td style="padding-top: 5px"
@@ -236,13 +236,15 @@
       </tr>
     </tal:source>
 
+    <!--
     <tal:build repeat="queuebuild packageupload/builds">
-      <tal:binary repeat="binary python:list(queuebuild.build.binarypackages)">
-        <tal:define define="is_new binary/is_new;
-                            component_name binary/component/name/lower;
-                            section_name binary/section/name/lower;
-                            version binary/version">
-        <tr tal:repeat="file python:list(binary.files)"
+    -->
+    <tal:package repeat="package packageupload/binary_packages">
+      <tal:define define="is_new package/is_new;
+                          component_name package/component/name/lower;
+                          section_name package/section/name/lower;
+                          version package/version">
+        <tr tal:repeat="file python:packageupload.binary_packages[package]"
             tal:attributes="class string:${filelist_class}"
             style="display:none">
           <td/>
@@ -257,15 +259,14 @@
           <td tal:content="version"/>
           <td tal:content="component_name"/>
           <td tal:content="section_name"/>
-          <td tal:content="binary/priority/name/lower"/>
+          <td tal:content="package/priority/name/lower"/>
           <td colspan="2"/>
         </tr>
-        </tal:define>
-      </tal:binary>
-    </tal:build>
+      </tal:define>
+    </tal:package>
 
     <tal:custom define="customfiles packageupload/customfiles">
-      <tr tal:repeat="custom customfiles"
+      <tr tal:repeat="custom python:list(customfiles)"
           tal:attributes="class string:${filelist_class}"
           style="display:none">
         <td/>
@@ -282,6 +283,40 @@
     </tal:custom>
 
 </metal:macro>
+
+<metal:macro define-macro="package-iconlist">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+    :packageupload: A PackageUpload record for which we display icons.
+  </tal:comment>
+
+  <div tal:attributes="id string:queue${packageupload/id}-iconlist">
+    <img tal:condition="packageupload/contains_source"
+         alt="[Source]" src="/@@/package-source" title="Source"/>
+    <img tal:condition="packageupload/contains_build"
+         alt="[Build]" src="/@@/package-binary" title="Binary"/>
+    <img tal:condition="packageupload/contains_translation"
+         alt="[Translation]" src="/@@/translation-file"
+         title="Translation"/>
+    <img tal:condition="packageupload/contains_installer"
+         alt="[Installer]" src="/@@/ubuntu-icon"
+         title="Installer"/>
+    <img tal:condition="packageupload/contains_upgrader"
+         alt="[Upgrader]" src="/@@/ubuntu-icon"
+         title="Upgrader"/>
+    <img tal:condition="packageupload/contains_ddtp"
+         alt="[Debian Description Translation Project Indexes]"
+         src="/@@/ubuntu-icon"
+         title="Debian Description Translation Project Indexes"/>
+    <a tal:attributes="href packageupload/changesfile/http_url;
+                       title string:Changes file for ${packageupload/displayname}">
+      <tal:name replace="string: ${packageupload/displayname}"/>
+    </a>
+    <tal:version replace="
+          string: (${packageupload/displayarchs})"/>
+  </div>
+</metal:macro>
+
 </metal:macros>
 
 

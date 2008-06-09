@@ -23,4 +23,16 @@
         />
     </content>
 
+    <securedutility
+      class="canonical.launchpad.database.SourcePackageReleaseFileSet"
+      provides="canonical.launchpad.interfaces.ISourcePackageReleaseFileSet">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageReleaseFileSet" />
+    </securedutility>
+
+    <securedutility
+      class="canonical.launchpad.database.BinaryPackageFileSet"
+      provides="canonical.launchpad.interfaces.IBinaryPackageFileSet">
+      <allow interface="canonical.launchpad.interfaces.IBinaryPackageFileSet" />
+    </securedutility>
+
 </configure>

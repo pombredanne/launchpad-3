@@ -90,7 +90,7 @@ class BinaryPackageRelease(SQLBase):
         """See `IBinaryPackageRelease`."""
         distroarchseries = self.build.distroarchseries
         distroarchseries_binary_package = distroarchseries.getBinaryPackage(
-            self.name)
+            self.binarypackagename)
         return distroarchseries_binary_package.currentrelease is None
 
     def lastversions(self):
