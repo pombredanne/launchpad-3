@@ -178,3 +178,62 @@ hosting; there is no commercial subscription due.
     >>> bzr.license_approved = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
+
+= Product License Reviews =
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from datetime import timedelta
+    >>> flush_database_updates()
+    >>> date_expires = bzr.commercial_subscription.date_expires
+    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
+    >>> bzr.licenses = [License.GNU_GPL_V2]
+    >>> for product in product_set.forReview(search_text='gnome'):
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev
+    >>> for product in product_set.forReview(active=False):
+    ...     print product.name
+    python-gnome2-dev
+    unassigned
+    >>> for product in product_set.forReview(license_reviewed=True):
+    ...     print product.name
+    bzr
+    alsa-utils
+    python-gnome2-dev
+    unassigned
+    >>> for product in product_set.forReview(licenses=[License.GNU_GPL_V2]):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     created_after=bzr.datecreated, created_before=bzr.datecreated):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     created_before=bzr.datecreated-timedelta(days=1)):
+    ...     print product.name
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires,
+    ...     subscription_expires_before=date_expires):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires+timedelta(minutes=1)):
+    ...     print product.name
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_modified_after=date_last_modified,
+    ...     subscription_modified_before=date_last_modified):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_modified_after=date_last_modified
+    ...                                 +timedelta(seconds=1)):
+    ...     print product.name

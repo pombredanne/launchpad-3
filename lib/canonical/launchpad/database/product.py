@@ -884,54 +884,72 @@ class ProductSet:
 
         return product
 
-    def forReview(self, search_text, license_reviewed, licenses,
-                  active, created_after, created_before,
-                  subscription_expires_after,
-                  subscription_expires_before,
-                  subscription_modified_after,
-                  subscription_modified_before):
+    def forReview(self, search_text=None, active=None,
+                  license_reviewed=None, licenses=None,
+                  created_after=None, created_before=None,
+                  subscription_expires_after=None,
+                  subscription_expires_before=None,
+                  subscription_modified_after=None,
+                  subscription_modified_before=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
 
-        conditions = [
-            Product.q.license_reviewed == license_reviewed,
-            Product.q.active == active,
-            ]
-        if created_after is not None:
-            conditions.append(Product.q.datecreated >= created_after)
-        if created_before is not None:
-            conditions.append(Product.q.datecreated <= created_before)
+        conditions = []
 
-        need_join = False
+        if license_reviewed is not None:
+            conditions.append('Product.reviewed = %s'
+                              % sqlvalues(license_reviewed))
+
+        if active is not None:
+            conditions.append('Product.active = %s' % sqlvalues(active))
+
+        if search_text is not None and search_text.strip() != '':
+            conditions.append('Product.fti @@ ftq(%s)'
+                              % sqlvalues(search_text))
+
+        if created_after is not None:
+            conditions.append('Product.datecreated >= %s'
+                              % sqlvalues(created_after))
+        if created_before is not None:
+            conditions.append('Product.datecreated <= %s'
+                              % sqlvalues(created_before))
+
+        needs_join = False
         if subscription_expires_after is not None:
-            conditions.append(CommercialSubscription.q.date_expires
-                              >= subscription_expires_after)
-            need_join = True
+            conditions.append('CommercialSubscription.date_expires >= %s'
+                              % sqlvalues(subscription_expires_after))
+            needs_join = True
         if subscription_expires_before is not None:
-            conditions.append(CommercialSubscription.q.date_expires
-                              <= subscription_expires_before)
-            need_join = True
+            conditions.append('CommercialSubscription.date_expires <= %s'
+                              % sqlvalues(subscription_expires_before))
+            needs_join = True
 
         if subscription_modified_after is not None:
-            conditions.append(CommercialSubscription.q.date_last_modified
-                              >= subscription_modified_after)
-            need_join = True
+            conditions.append('CommercialSubscription.date_last_modified >= %s'
+                              % sqlvalues(subscription_modified_after))
+            needs_join = True
         if subscription_modified_before is not None:
-            conditions.append(CommercialSubscription.q.date_last_modified
-                              <= subscription_modified_before)
-            need_join = True
+            conditions.append('CommercialSubscription.date_last_modified <= %s'
+                              % sqlvalues(subscription_modified_before))
+            needs_join = True
 
-        if need_join:
+        clause_tables = []
+        if needs_join:
             conditions.append(
-                CommercialSubscription.q.productID == Product.q.id)
+                'CommercialSubscription.product = Product.id')
+            clause_tables.append('CommercialSubscription')
 
         if licenses is not None and len(licenses) > 0:
             or_conditions = []
             for license in licenses:
-                or_conditions.append(ProductLicense.q.license == license)
-            conditions.append(OR(*or_conditions))
-            conditions.append(ProductLicense.q.productID == Product.q.id)
+                or_conditions.append('ProductLicense.license = %s'
+                                     % sqlvalues(license))
+            conditions.append('\nOR '.join(or_conditions))
+            conditions.append('ProductLicense.product = Product.id')
+            clause_tables.append('ProductLicense')
 
-        result = Product.select(AND(*conditions), orderBy=['displayname'])
+        conditions_string = '\nAND '.join(conditions)
+        result = Product.select(conditions_string, clauseTables=clause_tables,
+                                orderBy=['displayname'])
         return result
 
     def search(self, text=None, soyuz=None,
