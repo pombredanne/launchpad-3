@@ -459,7 +459,7 @@ First let's look at the different collection resource types defined in the
 WADL file, and their representations.
 
     >>> sorted([type.attrib['id'] for type in collection_resource_types])
-    ['BugCollection', 'PersonSetCollectionAdapter']
+    ['MaloneApplicationCollectionAdapter', 'PersonSetCollectionAdapter']
 
 There's one <resource_type> tag for every top-level collection on the
 site. We'll be taking a close look at the resource type for the
@@ -474,19 +474,23 @@ site's collection of people.
 
 Any collection resource supports one standard HTTP method (GET) in
 addition to any custom operations.  This particular collection
-resource is the top-level list of people, and it exposes two custom
-operations: 'create_team' (POST) and 'find' (GET).
+resource is the top-level list of people, and it exposes a few other
+custom operations.
 
     >>> methods = list(resource_type)
-    >>> [method.attrib['name'] for method in methods]
-    ['GET', 'POST', 'GET']
+    >>> sorted((method.attrib['name'], method.attrib['id'])
+    ...        for method in methods)
+    [('GET', 'PersonSetCollectionAdapter-find'),
+     ('GET', 'PersonSetCollectionAdapter-findPerson'),
+     ('GET', 'PersonSetCollectionAdapter-findTeam'),
+     ('GET', 'PersonSetCollectionAdapter-get'),
+     ('GET', 'PersonSetCollectionAdapter-getAllPersons'),
+     ('GET', 'PersonSetCollectionAdapter-getAllTeams'),
+     ('GET', 'PersonSetCollectionAdapter-getByEmail'),
+     ('POST', 'PersonSetCollectionAdapter-newTeam')]
 
-    >>> [method.attrib['id'] for method in methods]
-    ['PersonSetCollectionAdapter-get',
-     'PersonSetCollectionAdapter-create_team',
-     'PersonSetCollectionAdapter-find']
-
-    >>> (get, create_team, find) = methods
+    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams, 
+    ...  getByEmail, newTeam) = sorted(methods, key=lambda i: i.attrib['id'])
 
 The standard GET operation is a way of getting either a page of the
 collection (see "The representation of a collection" later in this
@@ -508,18 +512,18 @@ like the one shown earlier in this test.
 
 The <method> tag for a named operation will contain one or more
 <parameter> tags describing the parameters the operation accepts. The
-'create_team' custom operation takes a number of parameters.
+'newTeam' custom operation takes a number of parameters.
 
-    >>> [param.attrib['name'] for param in list(create_team)]
+    >>> [param.attrib['name'] for param in list(newTeam)]
     ['ws.op', 'display_name', 'name', 'default_membership_period',
      'team_description', 'default_renewal_period', 'subscription_policy']
 
 The 'ws.op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
 
-    >>> ws_op = create_team[0]
+    >>> ws_op = newTeam[0]
     >>> ws_op.attrib['fixed']
-    'create_team'
+    'newTeam'
 
 The 'find' custom operation accepts one parameter in addition to
 'ws.op'.
@@ -539,7 +543,7 @@ resources.
 
     >>> sorted([entry[0].attrib['id']
     ...         for entry in entry_resource_descriptions])
-    ['BugEntry', 'BugTaskEntry', ...]
+    ['BugEntryAdapter', 'BugTaskEntry', ...]
 
 There's one <resource_type> tag for every kind of entry on the
 site. Let's take a close look at the WADL description of a bug task.

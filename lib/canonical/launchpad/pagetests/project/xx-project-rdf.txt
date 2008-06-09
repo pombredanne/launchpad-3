@@ -1,13 +1,37 @@
-Check that the project RDF export works.
+We export DOAP RDF metadata for projects from a link in the
+/projectname/+index document:
 
-  >>> print http(r"""
-  ... GET /mozilla/+rdf HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Disposition: attachment; filename=mozilla-project.rdf
-  Content-Length: ...
-  Content-Type: application/rdf+xml
-  <BLANKLINE>
+  >>> anon_browser.open("http://launchpad.dev/mozilla")
+  >>> anon_browser.getLink("Download RDF metadata").click()
+  >>> print anon_browser.contents
   <?xml version="1.0" encoding="utf-8"?>
-  <rdf:RDF ...
+  <rdf:RDF xmlns:doaml="http://ns.balbinus.net/doaml#"
+           xmlns:foaf="http://xmlns.com/foaf/0.1/"
+           xmlns:lp="https://launchpad.net/rdf/launchpad#"
+           xmlns:wot="http://xmlns.com/wot/0.1/"
+           xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <lp:Project>
+      <lp:specifiedAt rdf:resource="/mozilla/+rdf"/>
+      <lp:name>mozilla</lp:name>
+      <lp:displayName>the Mozilla Project</lp:displayName>
+      <lp:title>The Mozilla Project</lp:title>
   ...
+      <lp:owner>
+        <foaf:Person>
+          <foaf:name>Sample Person</foaf:name>
+          <foaf:nick>name12</foaf:nick>
+          <foaf:mbox_sha1sum>AF55D387F22F761CB32EC2A9C81F66220452C081</foaf:mbox_sha1sum>
+          <lp:sshPubKey>AAAAB3NzaC1kc3MAAA...SG1gBOiI=</lp:sshPubKey>
+        </foaf:Person>
+      </lp:owner>
+  ...
+     </lp:Project>
+   </rdf:RDF>
+
+It's valid XML and RDF:
+
+  >>> from xml.dom.minidom import parseString
+  >>> document = parseString(str(anon_browser.contents))
+  >>> print document.documentElement.nodeName
+  rdf:RDF
+

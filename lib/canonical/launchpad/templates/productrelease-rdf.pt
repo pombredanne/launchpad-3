@@ -31,8 +31,6 @@
                     string:${context/product/fmt:url}/${context/productseries/name}/+rdf" />
             </lp:ProductSeries>
         </lp:inProductSeries>
-        <lp:owner>
-            <metal:block metal:use-macro="context/@@rdf_macros/owner_foaf" />
-        </lp:owner>
+        <lp:owner tal:content="structure context/owner/@@+rdf-contents" />
     </lp:ProductRelease>
 </rdf:RDF>
