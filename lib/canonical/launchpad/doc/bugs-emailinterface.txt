@@ -2169,8 +2169,8 @@ A bugnotification is sent for each attached file.
        http://.../firefox1.log
 
 If a text/html attachment does not have a filename, it is not stored.
-This prevents that the HTML representation of the main text of an
-email is stored as an attachment.
+This is the HTML representation of the main text, it is not an
+attachment.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
