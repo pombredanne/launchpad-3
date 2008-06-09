@@ -6,15 +6,18 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+from zope.component import getUtility
+
+from canonical.launchpad.database import BranchMergeProposalGetter
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus)
+    EmailAddressStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.testing import (
-     capture_events, LaunchpadObjectFactory, time_counter)
+     LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -273,8 +276,8 @@ class TestBranchMergeProposalQueueing(TestCase):
             "Expected %s, got %s" % (new_queue_order, queue_order))
 
 
-class TestRootMessage(TestCase):
-    """Test the behavior of the root_message attribute"""
+class TestRootComment(TestCase):
+    """Test the behavior of the root_comment attribute"""
 
     layer = LaunchpadFunctionalLayer
 
@@ -289,22 +292,22 @@ class TestRootMessage(TestCase):
         counter = time_counter()
         oldest_date, middle_date, newest_date = [counter.next() for index in
             (1, 2, 3)]
-        message1 = self.merge_proposal.createMessage(
+        comment1 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject",
             _date_created=middle_date)
-        self.assertEqual(message1, self.merge_proposal.root_message)
-        message2 = self.merge_proposal.createMessage(
+        self.assertEqual(comment1, self.merge_proposal.root_comment)
+        comment2 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject",
             _date_created=newest_date)
-        self.assertEqual(message1, self.merge_proposal.root_message)
-        message3 = self.merge_proposal.createMessage(
+        self.assertEqual(comment1, self.merge_proposal.root_comment)
+        comment3 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject",
             _date_created=oldest_date)
-        self.assertEqual(message3, self.merge_proposal.root_message)
+        self.assertEqual(comment3, self.merge_proposal.root_comment)
 
 
-class TestMergeProposalAllMessages(TestCase):
-    """Tester for `BranchMergeProposal.all_messages`."""
+class TestMergeProposalAllComments(TestCase):
+    """Tester for `BranchMergeProposal.all_comments`."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -315,21 +318,21 @@ class TestMergeProposalAllMessages(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.merge_proposal = self.factory.makeBranchMergeProposal()
 
-    def test_all_messages(self):
-        """Ensure all messages associated with the proposal are returned."""
-        message1 = self.merge_proposal.createMessage(
+    def test_all_comments(self):
+        """Ensure all comments associated with the proposal are returned."""
+        comment1 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
-        message2 = self.merge_proposal.createMessage(
+        comment2 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
-        message3 = self.merge_proposal.createMessage(
+        comment3 = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
         self.assertEqual(
-            set([message1, message2, message3]),
-            set(self.merge_proposal.all_messages))
+            set([comment1, comment2, comment3]),
+            set(self.merge_proposal.all_comments))
 
 
-class TestMergeProposalGetMessage(TestCase):
-    """Tester for `BranchMergeProposal.getMessage`."""
+class TestMergeProposalGetComment(TestCase):
+    """Tester for `BranchMergeProposal.getComment`."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -340,51 +343,27 @@ class TestMergeProposalGetMessage(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.merge_proposal = self.factory.makeBranchMergeProposal()
         self.merge_proposal2 = self.factory.makeBranchMergeProposal()
-        self.message = self.merge_proposal.createMessage(
+        self.comment = self.merge_proposal.createComment(
             self.merge_proposal.registrant, "Subject")
 
-    def test_getMessage(self):
-        """Tests that we can get a message."""
+    def test_getComment(self):
+        """Tests that we can get a comment."""
         self.assertEqual(
-            self.message, self.merge_proposal.getMessage(self.message.id))
+            self.comment, self.merge_proposal.getComment(self.comment.id))
 
-    def test_getMessageWrongBranchMergeProposal(self):
-        """Tests that we can get a message."""
+    def test_getCommentWrongBranchMergeProposal(self):
+        """Tests that we can get a comment."""
         self.assertRaises(WrongBranchMergeProposal,
-                          self.merge_proposal2.getMessage, self.message.id)
+                          self.merge_proposal2.getComment, self.comment.id)
 
 
-class TestMergeProposalNotification(TestCase):
+class TestMergeProposalNotification(TestCaseWithFactory):
     """Test that events are created when merge proposals are manipulated"""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCase.setUp(self)
-        login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
-
-    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
-        """Assert that a callable performs a given notification.
-
-        :param event_type: The type of event that notification is expected
-            for.
-        :param callable_obj: The callable to call.
-        :param *args: The arguments to pass to the callable.
-        :param **kwargs: The keyword arguments to pass to the callable.
-        :return: (result, event), where result was the return value of the
-            callable, and event is the event emitted by the callable.
-        """
-        result, events = capture_events(callable_obj, *args, **kwargs)
-        if len(events) == 0:
-            raise AssertionError('No notification was performed.')
-        elif len(events) > 1:
-            raise AssertionError('Too many (%d) notifications performed.'
-                % len(events))
-        elif not isinstance(events[0], event_type):
-            raise AssertionError('Wrong event type: %r (expected %r).' %
-                (events[0], event_type))
-        return result, events[0]
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def test_notifyOnCreate(self):
         """Ensure that a notification is emitted on creation"""
@@ -458,6 +437,42 @@ class TestMergeProposalNotification(TestCase):
         self.assertEqual(
             set([source_subscriber, target_subscriber, dependent_subscriber]),
             set(recipients.keys()))
+
+
+class TestGetAddress(TestCaseWithFactory):
+    """Test that the address property gives expected results."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_address(self):
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        expected = 'mp+%d@code.launchpad.dev' % merge_proposal.id
+        self.assertEqual(expected, merge_proposal.address)
+
+
+class TestBranchMergeProposalGetter(TestCaseWithFactory):
+    """Test that the BranchMergeProposalGetter behaves as expected."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_get(self):
+        """Ensure the correct merge proposal is returned."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertEqual(merge_proposal,
+            BranchMergeProposalGetter().get(merge_proposal.id))
+
+    def test_get_as_utility(self):
+        """Ensure the correct merge proposal is returned."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        utility = getUtility(IBranchMergeProposalGetter)
+        retrieved = utility.get(merge_proposal.id)
+        self.assertEqual(merge_proposal, retrieved)
 
 
 def test_suite():

@@ -238,7 +238,7 @@ class BranchMergeProposalNavigation(Navigation):
         except ValueError:
             return None
         try:
-            return self.context.getMessage(id)
+            return self.context.getComment(id)
         except WrongBranchMergeProposal:
             return None
 
@@ -271,7 +271,7 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
         """
         message_to_comment = {}
         messages = []
-        for comment in self.context.all_messages:
+        for comment in self.context.all_comments:
             message_to_comment[comment.message] = comment
             messages.append(comment.message)
         message_set = getUtility(IMessageSet)
