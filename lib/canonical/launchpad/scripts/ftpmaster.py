@@ -32,28 +32,21 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
-
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
-
 from canonical.launchpad.helpers import filenameToContentType
-
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
     IBinaryPackagePublishingHistory, IBinaryPackageReleaseSet,
     IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
     ISourcePackagePublishingHistory, NotFoundError, PackagePublishingPocket,
     PackagePublishingPriority, PackagePublishingStatus, pocketsuffix)
-
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
-
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
-
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
-
 from canonical.librarian.utils import copy_and_close
 
 
