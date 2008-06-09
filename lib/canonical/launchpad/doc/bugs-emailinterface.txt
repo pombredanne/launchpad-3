@@ -2168,8 +2168,39 @@ A bugnotification is sent for each attached file.
     ** Attachment added: "firefox1.log"
        http://.../firefox1.log
 
-If the content-disposition header of a message part begins with 
-"attachment" it is stored as a bug attachment, even if the 
+If a text/html attachment does not have a filename, it is not stored.
+This is the HTML representation of the main text, it is not an
+attachment.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... This is an absolutely terrible bug.
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-type: text/html
+    ...
+    ... <html>
+    ...   <BLOCKQUOTE><FONT COLOR="#FF0000">
+    ...     This is an absolutely terrible bug.
+    ...   </FONT></BLOCKQUOTE>
+    ... </html>
+    ... --BOUNDARY"""
+    >>>
+    >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    No attachments
+
+If the content-disposition header of a message part begins with
+"attachment" it is stored as a bug attachment, even if the
 content-disposition header does not provide a filename.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>

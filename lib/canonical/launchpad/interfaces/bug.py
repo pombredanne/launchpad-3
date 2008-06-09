@@ -24,14 +24,20 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, DuplicateBug, PublicPersonChoice, Title, Tag)
+    BugField, ContentNameField, DuplicateBug, PublicPersonChoice, Tag, Title)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.bugtask import IBugTask
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
+
+from canonical.lazr.rest.declarations import (
+    export_as_webservice_entry, exported)
+from canonical.lazr.rest.schema import CollectionField
 
 
 class CreateBugParams:
@@ -127,51 +133,62 @@ class CreatedBugWithNoBugTasksError(Exception):
 
 class IBug(IMessageTarget, ICanBeMentored):
     """The core bug entry."""
+    export_as_webservice_entry()
 
-    id = Int(
-        title=_('Bug ID'), required=True, readonly=True)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    date_last_updated = Datetime(
-        title=_('Date Last Updated'), required=True, readonly=True)
-    name = BugNameField(
-        title=_('Nickname'), required=False,
-        description=_("""A short and unique name.
-        Add one only if you often need to retype the URL
-        but have trouble remembering the bug number."""),
-        constraint=name_validator)
-    title = Title(
-        title=_('Summary'), required=True,
-        description=_("""A one-line summary of the problem."""))
-    description = Text(
-        title=_('Description'), required=True,
-        description=_("""A detailed description of the problem,
-        including the steps required to reproduce it."""), 
-        max_length=50000)
+    id = exported(
+        Int(title=_('Bug ID'), required=True, readonly=True))
+    datecreated = exported(
+        Datetime(title=_('Date Created'), required=True, readonly=True),
+        exported_as='date_created')
+    date_last_updated = exported(
+        Datetime(title=_('Date Last Updated'), required=True, readonly=True))
+    name = exported(
+        BugNameField(
+            title=_('Nickname'), required=False,
+            description=_("""A short and unique name.
+                Add one only if you often need to retype the URL
+                but have trouble remembering the bug number."""),
+            constraint=name_validator))
+    title = exported(
+        Title(title=_('Summary'), required=True,
+              description=_("""A one-line summary of the problem.""")))
+    description = exported(
+        Text(title=_('Description'), required=True,
+             description=_("""A detailed description of the problem,
+                 including the steps required to reproduce it."""),
+             max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
-    owner = Attribute("The owner's IPerson")
-    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
-    private = Bool(
-        title=_("This bug report should be private"), required=False,
-        description=_(
-            "Private bug reports are visible only to their subscribers."),
-        default=False)
-    date_made_private = Datetime(
-        title=_('Date Made Private'), required=False)
-    who_made_private = PublicPersonChoice(
-        title=_('Who Made Private'), required=False,
-        vocabulary='ValidPersonOrTeam',
-        description=_("The person who set this bug private."))
-    security_related = Bool(
-        title=_("This bug is a security vulnerability"), required=False,
-        default=False)
+    owner = exported(
+        Object(IPerson, title=_("The owner's IPerson")))
+    duplicateof = exported(
+        DuplicateBug(title=_('Duplicate Of'), required=False),
+        exported_as='duplicate_of')
+    private = exported(
+        Bool(title=_("This bug report should be private"), required=False,
+             description=_("Private bug reports are visible only to "
+                           "their subscribers."),
+             default=False))
+    date_made_private = exported(
+        Datetime(title=_('Date Made Private'), required=False))
+    who_made_private = exported(
+        PublicPersonChoice(
+            title=_('Who Made Private'), required=False,
+            vocabulary='ValidPersonOrTeam',
+            description=_("The person who set this bug private.")))
+    security_related = exported(
+        Bool(title=_("This bug is a security vulnerability"),
+             required=False, default=False))
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     initial_message = Attribute(
         "The message that was specified when creating the bug")
-    bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
-        'ubuntu, then other distroseriess.')
+    bugtasks = exported(
+        CollectionField(
+            title=_('BugTasks on this bug, sorted upstream, then '
+                    'ubuntu, then other distroseriess.'),
+            value_type=Object(schema=IBugTask),
+            readonly=True))
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
@@ -180,39 +197,45 @@ class IBug(IMessageTarget, ICanBeMentored):
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-    duplicates = Attribute(
-        'MultiJoin of the bugs which are dups of this one')
+    duplicates = exported(
+        CollectionField(
+            title=_('MultiJoin of the bugs which are dups of this one'),
+            value_type=BugField()))
     attachments = Attribute("List of bug attachments.")
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
         "branches on which this bug is being fixed.")
-    tags = List(
-        title=_("Tags"), description=_("Separated by whitespace."),
-        value_type=Tag(), required=False)
-    is_complete = Attribute(
-        "True or False depending on whether this bug is considered "
-        "completely addressed. A bug is Launchpad is completely addressed "
-        "when there are no tasks that are still open for the bug.")
-    permits_expiration = Bool(
-        title=_("Does the bug's state permit expiration? "
-        "Expiration is permitted when the bug is not valid anywhere, "
-        "a message was sent to the bug reporter, and the bug is associated "
-        "with pillars that have enabled bug expiration."))
-    can_expire = Bool(
-        title=_("Can the Incomplete bug expire if it becomes inactive? "
-        "Expiration may happen when the bug permits expiration, and a "
-        "bugtask cannot be confirmed."))
-    date_last_message = Datetime(
-        title=_('Date of last bug message'), required=False, readonly=True)
+
+    tags = exported(
+        List(title=_("Tags"), description=_("Separated by whitespace."),
+             value_type=Tag(), required=False))
+    is_complete = exported(
+        Bool(description=_(
+                "True or False depending on whether this bug is considered "
+                "completely addressed. A bug is Launchpad is completely "
+                "addressed when there are no tasks that are still open for "
+                "the bug.")))
+    permits_expiration = exported(
+        Bool(title=_("Does the bug's state permit expiration?"),
+             description=_(
+                "Expiration is permitted when the bug is not valid anywhere, "
+                "a message was sent to the bug reporter, and the bug is "
+                "associated with pillars that have enabled bug expiration.")))
+    can_expire = exported(
+        Bool(title=_("Can the Incomplete bug expire if it becomes inactive? "
+                     "Expiration may happen when the bug permits expiration, "
+                     "and a bugtask cannot be confirmed.")))
+    date_last_message = exported(
+        Datetime(title=_('Date of last bug message'),
+                 required=False, readonly=True))
     number_of_duplicates = Int(
         title=_('The number of bugs marked as duplicates of this bug'),
         required=True, readonly=True)
     message_count = Int(
         title=_('The number of comments on this bug'),
         required=True, readonly=True)
-
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
