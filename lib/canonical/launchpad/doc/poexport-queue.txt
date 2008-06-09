@@ -88,7 +88,7 @@ One is for the user with the error notification.
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
   > 
   > Launchpad encountered problems exporting the files you requested.
-  > The Rosetta team has been notified of this problem.
+  > The Launchpad Translations team has been notified of this problem.
   > Please reply to this email for further assistance.
   >
 
@@ -145,7 +145,7 @@ The user's notification looks no different from that for an ordinary error.
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
   > 
   > Launchpad encountered problems exporting the files you requested.
-  > The Rosetta team has been notified of this problem.
+  > The Launchpad Translations team has been notified of this problem.
   > Please reply to this email for further assistance.
   >
 
@@ -201,8 +201,8 @@ In this case, there are no errors, so we should get just a single email
   > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
   > 
-  > The files you requested from Rosetta are ready for download
-  > from the following location:
+  > The files you requested from Launchpad are ready for
+  > download from the following location:
   > 
   >     http://someplace.com/somefile.tar.gz
 
@@ -255,8 +255,8 @@ The confirmation email shows no errors at all.
     > 
     > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
     > 
-    > The files you requested from Rosetta are ready for download
-    > from the following location:
+    > The files you requested from Launchpad are ready for
+    > download from the following location:
     > 
     >     http://localhost:58000/.../po_evolution-2.2.pot
 
