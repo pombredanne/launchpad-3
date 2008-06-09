@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.interfaces.bugtrackerperson import (
-    BugTrackerNameAlreadyTaken, IBugTrackerPersonSet)
+    IBugTrackerPersonSet)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
