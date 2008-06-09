@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Browser code for Translation files."""
 
 __metaclass__ = type
@@ -104,7 +104,7 @@ class POFileMenuMixin:
 
     def description(self):
         text = 'Description'
-        return Link('', text)
+        return Link('+index', text)
 
     def translate(self):
         text = 'Translate'
