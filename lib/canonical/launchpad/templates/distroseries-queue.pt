@@ -236,9 +236,6 @@
       </tr>
     </tal:source>
 
-    <!--
-    <tal:build repeat="queuebuild packageupload/builds">
-    -->
     <tal:package repeat="package packageupload/binary_packages">
       <tal:define define="is_new package/is_new;
                           component_name package/component/name/lower;
