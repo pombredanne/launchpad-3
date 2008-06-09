@@ -176,7 +176,8 @@ class IntFieldMarshaller(SimpleFieldMarshaller):
     def _marshall_from_json_data(self, value):
         """Make sure the value is an integer"""
         if not isinstance(value, int):
-            raise ValueError("not an integer: %r" % value)
+            raise ValueError("got '%s', expected int: %r" % (
+                type(value).__name__, value))
         return value
 
 

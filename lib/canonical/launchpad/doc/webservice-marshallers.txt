@@ -131,7 +131,7 @@ If the value from JSON isn't an integer, a ValueError is raised.
     >>> marshaller.marshall_from_json_data("-10")
     Traceback (most recent call last):
       ...
-    ValueError: not an integer: '-10'
+    ValueError: got 'str', expected int: '-10'
 
 None is passed through though.
 
