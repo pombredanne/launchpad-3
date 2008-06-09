@@ -480,13 +480,18 @@ updated. Errors in getRemoteStatus() will produce OOPS reports.
     Unknown: True (OOPS-...)
 
 
-== Generating documentation ==
+== Using `LookupTree` to map statuses ==
 
-Most of the status conversions are done by a customized LookupTree
+Most of the status conversions are assisted by a customized LookupTree
 class.
 
   >>> from canonical.launchpad.components.externalbugtracker import (
   ...     LookupTree)
+
+This is flexible enough to cover all current mapping scenarios with
+minimal preparation from `convertRemoteStatus`. Crucially, it also
+lets us generate documentation directory from the status mapping
+rules.
 
 First, we need a tree to document.
 
@@ -520,3 +525,36 @@ is always assumed to be a BugTaskStatus.
   || REOPENED '''or''' NEW '''or''' DEFERRED || - (''ignored'') || Co...
   || UNCONFIRMED || - (''ignored'') || New ||
   || * (''any'') || - (''ignored'') || Unknown ||
+
+
+You can also provide titles for the table.
+
+  >>> titles = ('Status', 'Resolution', 'LP status')
+  >>> for line in tree.moinmoin_table(titles):
+  ...     print line
+  || '''Status''' || '''Resolution''' || '''LP status''' ||
+  || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
+  || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
+  ...
+
+It will complain if you don't provide a suitable number of titles.
+
+  >>> titles = ('Status', 'Resolution')
+  >>> for line in tree.moinmoin_table(titles):
+  ...     print line
+  Traceback (most recent call last):
+  ...
+  ValueError: Table of 3 columns needs 3 titles, but 2 given.
+
+When constructing a status mapping tree, you are forced to choose a
+valid Launchpad status as the result of any lookup. This goes some way
+to ensuring that the tree is valid, and that `moinmoin_table` is safe
+to make that assumption.
+
+  >>> tree = LookupTree(
+  ...     ('ASSIGNED', BugTaskStatus.INPROGRESS),
+  ...     ('NEEDSINFO', 'Not a BugTaskStatus'),
+  ...     )
+  Traceback (most recent call last):
+  ...
+  TypeError: Result is not a member of BugTaskStatus: 'Not a BugTaskStatus'
