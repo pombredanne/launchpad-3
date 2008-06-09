@@ -20,6 +20,7 @@ from canonical.lazr.rest.declarations import (
 from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
 class InvalidEmailAddress(Exception):
@@ -76,7 +77,7 @@ class EmailAddressStatus(DBEnumeratedType):
         """)
 
 
-class IEmailAddress(Interface):
+class IEmailAddress(IHasOwner):
     """The object that stores the `IPerson`'s emails."""
     export_as_webservice_entry()
 
@@ -89,7 +90,6 @@ class IEmailAddress(Interface):
     person = exported(
         Reference(title=_('Person'), required=True, readonly=True,
                   schema=Interface))
-    personID = Int(title=_('PersonID'), required=True, readonly=True)
 
     rdf_sha1 = TextLine(
         title=_("RDF-ready SHA-1 Hash"),
@@ -99,7 +99,11 @@ class IEmailAddress(Interface):
         readonly=True)
 
     def destroySelf():
-        """Delete this email from the database."""
+        """Destroy this email address and any associated subscriptions.
+        
+        :raises UndeletableEmailAddress: When the email address is a person's
+            preferred one or a hosted mailing list's address.
+        """
 
     def syncUpdate():
         """Write updates made on this object to the database.

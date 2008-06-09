@@ -18,9 +18,10 @@ from canonical.lazr.rest.declarations import (
 from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
-class IJabberID(Interface):
+class IJabberID(IHasOwner):
     """Jabber specific user ID """
     export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)

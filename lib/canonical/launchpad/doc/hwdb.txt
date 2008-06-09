@@ -324,6 +324,7 @@ the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
     ...     u'beeblebrox@beeblebrox.net', user)
+    >>> login(email.email)
     >>> user.validateAndEnsurePreferredEmail(email)
     >>> submission = hw_submission_set.getBySubmissionKey(u'unique-id-2')
     >>> print submission.owner.displayname

@@ -5,9 +5,11 @@
   i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.WikiName">
-        <allow interface="canonical.launchpad.interfaces.IWikiName"/>
-        <require permission="zope.Public"
-            set_attributes="wiki wikiname" />
+        <allow interface="canonical.launchpad.interfaces.IHasOwner" />
+        <allow attributes="id person wiki wikiname url" />
+        <require permission="launchpad.Edit"
+                 set_schema="canonical.launchpad.interfaces.IWikiName"
+                 attributes="destroySelf" />
     </content>
 
     <content class="canonical.launchpad.database.WikiNameSet">

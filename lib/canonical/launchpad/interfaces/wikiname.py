@@ -15,12 +15,13 @@ from canonical.lazr.rest.declarations import (
 from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
 UBUNTU_WIKI_URL = 'https://wiki.ubuntu.com/'
 
 
-class IWikiName(Interface):
+class IWikiName(IHasOwner):
     """Wiki for Users"""
     export_as_webservice_entry()
     id = Int(title=_("Database ID"), required=True, readonly=True)

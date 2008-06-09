@@ -1503,7 +1503,7 @@ class PersonRdfContentsView:
         for key in gpgkeyset.getGPGKeysForPeople(members):
             members_by_id[key.ownerID].addGPGKey(key)
         for email in emailset.getPreferredEmailForPeople(members):
-            members_by_id[email.personID].setPreferredEmail(email)
+            members_by_id[email.person.id].setPreferredEmail(email)
         return members
 
     def __call__(self):

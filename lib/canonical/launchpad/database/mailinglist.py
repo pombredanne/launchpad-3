@@ -242,7 +242,12 @@ class MailingList(SQLBase):
                 # when the list status goes back to ACTIVE the email
                 # will go from PREFERRED to VALIDATED and the list
                 # will stop being the contact method.
-                email.status = EmailAddressStatus.VALIDATED
+                # We also need to remove the email's security proxy because
+                # this method will be called via the internal XMLRPC rather
+                # than as a response to a user action.
+                from zope.security.proxy import removeSecurityProxy
+                removeSecurityProxy(email).status = (
+                    EmailAddressStatus.VALIDATED)
             assert email.person == self.team, (
                 "Email already associated with another team.")
 

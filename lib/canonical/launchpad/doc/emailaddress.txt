@@ -50,3 +50,34 @@ addresses for a set of people:
      u'support@ubuntu.com']
 
 
+== Deleting email addresses ==
+
+Email addresses may be deleted if they're not a person's preferred one
+or the address of a team's mailing list.
+
+    >>> login(foobar.preferredemail.email)
+    >>> emailaddress = emailset.getByEmail('oink@canonical.com')
+    >>> emailaddress.destroySelf()
+    >>> print emailset.getByEmail('oink@canonical.com')
+    None
+
+Otherwise, UndeletableEmailAddress is raised.
+
+    >>> foobar.preferredemail.destroySelf()
+    Traceback (most recent call last):
+    ...
+    UndeletableEmailAddress: This is a person's preferred email...
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IMailingListSet, MailingListStatus)
+    >>> mailing_list = getUtility(IMailingListSet).new(guadamen)
+    >>> mailing_list.review(foobar, MailingListStatus.APPROVED)
+    >>> mailing_list.startConstructing()
+    >>> mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> flush_database_updates()
+    >>> email = emailset.getByEmail(guadamen.mailing_list.address)
+    >>> email.destroySelf()
+    Traceback (most recent call last):
+    ...
+    UndeletableEmailAddress: This is the email address of a team's mailing
+    list...

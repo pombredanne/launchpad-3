@@ -5,9 +5,11 @@
   i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.IrcID">
-        <allow interface="canonical.launchpad.interfaces.IIrcID"/>
-        <require permission="zope.Public"
-            set_attributes="network nickname" />
+        <allow interface="canonical.launchpad.interfaces.IHasOwner" />
+        <allow attributes="id person network nickname" />
+        <require permission="launchpad.Edit"
+                 set_schema="canonical.launchpad.interfaces.IIrcID"
+                 attributes="destroySelf" />
     </content>
 
     <content class="canonical.launchpad.database.IrcIDSet">

@@ -3278,6 +3278,10 @@ class WikiName(SQLBase):
     def url(self):
         return self.wiki + self.wikiname
 
+    # Defined because we want WikiName to provide IHasOwner so that it uses
+    # the security adapter of IHasOwner for launchpad.Edit.
+    owner = property(lambda s: s.person)
+
 
 class WikiNameSet:
     implements(IWikiNameSet)
@@ -3324,6 +3328,10 @@ class JabberID(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     jabberid = StringCol(dbName='jabberid', notNull=True)
 
+    # Defined because we want JabberID to provide IHasOwner so that it uses
+    # the security adapter of IHasOwner for launchpad.Edit.
+    owner = property(lambda s: s.person)
+
 
 class JabberIDSet:
     implements(IJabberIDSet)
@@ -3350,6 +3358,10 @@ class IrcID(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     network = StringCol(dbName='network', notNull=True)
     nickname = StringCol(dbName='nickname', notNull=True)
+
+    # Defined because we want IrcID to provide IHasOwner so that it uses
+    # the security adapter of IHasOwner for launchpad.Edit.
+    owner = property(lambda s: s.person)
 
 
 class IrcIDSet:

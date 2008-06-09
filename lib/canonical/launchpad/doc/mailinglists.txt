@@ -357,6 +357,7 @@ This method will return None for missing teams or non-team people.
 
 A list which is active may be deactivated.
 
+    >>> login(list_three.team.teamowner.preferredemail.email)
     >>> list_three.deactivate()
     >>> flush_database_updates()
     >>> list_three.status.name
