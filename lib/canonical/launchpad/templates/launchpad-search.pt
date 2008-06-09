@@ -17,30 +17,52 @@
       </h1>
 
       <form
-         action=""
-         name="sitesearch"
-         id="sitesearch"
-         method="get"
-         accept-charset="UTF-8"
-         tal:attributes="action string:${rooturl}+search">
-        <input
-          id="field.text"
-          class="textType"
-          type="text"
-          size="36"
-          name="field.text"
-          tal:attributes="value view/text"/>
-          <script
-            type="text/javascript"
-            tal:define="script view/focusedElementScript"
-            tal:condition="script"
-            tal:content="structure script" />
-        <input
-           id="field.actions.search"
-           name="field.actions.search"
-           class="button"
-           type="submit"
-           value="Search" />
+        action=""
+        name="sitesearch"
+        id="sitesearch"
+        method="get"
+        accept-charset="UTF-8"
+        tal:attributes="action string:${rooturl}+search"
+        tal:define="error python:view.getFieldError('text');
+                    error_class python:error and 'error' or None;">
+
+        <p class="error message"
+           tal:condition="view/errors"
+           tal:content="view/error_count" />
+
+        <p class="error message"
+          tal:repeat="form_wide_error view/form_wide_errors"
+          tal:content="structure form_wide_error">
+          Schema validation errors.
+        </p>
+
+        <div tal:attributes="class error_class">
+          <div>
+            <input
+              id="field.text"
+              class="textType"
+              type="text"
+              size="36"
+              name="field.text"
+              tal:attributes="value view/text"/>
+            <script
+              type="text/javascript"
+              tal:define="script view/focusedElementScript"
+              tal:condition="script"
+              tal:content="structure script" />
+            <input
+              id="field.actions.search"
+              name="field.actions.search"
+              class="button"
+              type="submit"
+              value="Search" />
+          </div>
+          <div class="message" style="max-width:25em;"
+            tal:condition="error"
+            tal:content="structure error">
+            Error message
+          </div>
+        </div>
       </form>
 
       <tal:wants-results condition="view/text">

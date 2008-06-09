@@ -1159,7 +1159,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     #
     # ITeam methods
     #
-    def getSuperTeams(self):
+    @property
+    def super_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.team AND
@@ -1168,7 +1169,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
-    def getSubTeams(self):
+    @property
+    def sub_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.person AND
@@ -1689,7 +1691,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             AND TeamMembership.team = %d
             """ % (statuses, self.id)
         return TeamMembership.select(
-            query, clauseTables=['Person'], orderBy=Person.sortingColumns)
+            query, clauseTables=['Person'],
+            prejoinClauseTables=['Person'],
+            orderBy=Person.sortingColumns)
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
@@ -2243,15 +2247,6 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
-            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
-            )
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2313,7 +2308,7 @@ class PersonSet:
 
         return results.orderBy(orderBy)
 
-    def findTeam(self, text, orderBy=None):
+    def findTeam(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
@@ -3163,6 +3158,7 @@ class PersonLanguage(SQLBase):
 
 class SSHKey(SQLBase):
     implements(ISSHKey)
+    _defaultOrder = ["person", "keytype", "keytext"]
 
     _table = 'SSHKey'
 
@@ -3184,6 +3180,12 @@ class SSHKeySet:
             return SSHKey.get(id)
         except SQLObjectNotFound:
             return default
+
+    def getByPeople(self, people):
+        """See `ISSHKeySet`"""
+        return SSHKey.select("""
+            SSHKey.person IN %s
+            """ % sqlvalues([person.id for person in people]))
 
 
 class WikiName(SQLBase):
