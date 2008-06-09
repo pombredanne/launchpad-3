@@ -167,7 +167,7 @@ class LookupTree:
             else:
                 # Promote a tuple or other iterable into a branch. The
                 # last value from the iterable is the result of the
-                # branch, and all the preceeding values are keys.
+                # branch, and all the preceding values are keys.
                 branches.append(self._branch_factory(*arg))
         self.branches = tuple(branches)
         self._verify()
