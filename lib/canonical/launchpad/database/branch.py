@@ -19,7 +19,8 @@ from zope.event import notify
 from zope.interface import implements
 
 from storm.expr import Join, LeftJoin
-from storm.locals import ClassAlias
+from storm.info import ClassAlias
+from storm.store import Store
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
@@ -470,6 +471,7 @@ class Branch(SQLBase):
                 branch=self, person=person,
                 notification_level=notification_level,
                 max_diff_lines=max_diff_lines, review_level=review_level)
+            Store.of(subscription).flush()
         else:
             subscription.notification_level = notification_level
             subscription.max_diff_lines = max_diff_lines
@@ -499,8 +501,10 @@ class Branch(SQLBase):
     def unsubscribe(self, person):
         """See `IBranch`."""
         subscription = self.getSubscription(person)
+        store = Store.of(subscription)
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
+        store.flush()
 
     def getBranchRevision(self, sequence):
         """See `IBranch`."""
