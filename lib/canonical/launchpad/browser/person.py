@@ -1016,6 +1016,77 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, icon='edit')
 
 
+class IPersonEditMenu(Interface):
+    """A marker interface for the 'Edit Profile' navigation menu."""
+
+
+class PersonOverviewNavigationMenu(NavigationMenu):
+
+    usedfor = IPerson
+    facet = 'overview'
+    title = 'Profile'
+    links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def profile(self):
+        target = '+index'
+        text = 'Profile'
+        return Link(target, text, menu=IPersonEditMenu)
+
+    def related_software(self):
+        target = '+projects'
+        text = 'Related Software'
+        return Link(target, text)
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        return Link(target, text)
+
+    def show_ppa(self):
+        target = '+archive'
+        text = 'Personal Package Archive'
+        return Link(target, text)
+
+
+class PersonEditNavigationMenu(NavigationMenu):
+
+    usedfor = IPersonEditMenu
+    facet = 'overview'
+    title = 'Personal'
+    links = ('personal', 'contact_details', 'email_settings',
+             'sshkeys', 'gpgkeys', 'passwords')
+
+    def personal(self):
+        target = '+edit'
+        text = 'Personal'
+        return Link(target, text)
+
+    def contact_details(self):
+        target = '+editcontactdetails'
+        text = 'Contact Details'
+        return Link(target, text)
+
+    def email_settings(self):
+        target = '+editemails'
+        text = 'E-mail Settings'
+        return Link(target, text)
+
+    def sshkeys(self):
+        target = '+editsshkeys'
+        text = 'SSH Keys'
+        return Link(target, text)
+
+    def gpgkeys(self):
+        target = '+editpgpkeys'
+        text = 'GPG Keys'
+        return Link(target, text)
+
+    def passwords(self):
+        target = '+changepassword'
+        text = 'Passwords'
+        return Link(target, text)
+
+
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
@@ -1167,75 +1238,6 @@ class TeamMembershipView(LaunchpadView):
     @property
     def have_pending_members(self):
         return self.proposed_memberships or self.invited_memberships
-class IPersonEditMenu(Interface):
-    """A marker interface for the 'Edit Profile' navigation menu."""
-
-
-class PersonOverviewNavigationMenu(NavigationMenu):
-
-    usedfor = IPerson
-    facet = 'overview'
-    title = 'Profile'
-    links = ('profile', 'related_software', 'karma', 'show_ppa')
-
-    def profile(self):
-        target = '+index'
-        text = 'Profile'
-        return Link(target, text, menu=IPersonEditMenu)
-
-    def related_software(self):
-        target = '+projects'
-        text = 'Related Software'
-        return Link(target, text)
-
-    def karma(self):
-        target = '+karma'
-        text = 'Karma'
-        return Link(target, text)
-
-    def show_ppa(self):
-        target = '+archive'
-        text = 'Personal Package Archive'
-        return Link(target, text)
-
-
-class PersonEditNavigationMenu(NavigationMenu):
-
-    usedfor = IPersonEditMenu
-    facet = 'overview'
-    title = 'Personal'
-    links = ('personal', 'contact_details', 'email_settings',
-             'sshkeys', 'gpgkeys', 'passwords')
-
-    def personal(self):
-        target='+edit'
-        text='Personal'
-        return Link(target, text)
-
-    def contact_details(self):
-        target = '+contactdetails'
-        text = 'Contact Details'
-        return Link(target, text)
-
-    def email_settings(self):
-        target = '+editemails'
-        text = 'E-mail Settings'
-        return Link(target, text)
-
-    def sshkeys(self):
-        target = '+editsshkeys'
-        text = 'SSH Keys'
-        return Link(target, text)
-
-    def gpgkeys(self):
-        target = '+editpgpkeys'
-        text = 'GPG Keys'
-        return Link(target, text)
-
-    def passwords(self):
-        target = '+changepassword'
-        text = 'Passwords'
-        return Link(target, text)
 
 
 class BaseListView:
