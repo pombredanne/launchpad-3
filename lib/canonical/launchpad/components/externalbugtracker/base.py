@@ -300,15 +300,29 @@ class LookupTree(treelookup.LookupTree):
             yield line("'''%s'''" % (title,) for title in titles)
 
         def diff(last, now):
+            """Yields elements from `now` when different to those in `last`.
+
+            When the elements are the same, this yields the empty
+            string.
+
+            Once a difference has been found, all subsequent elements
+            in `now` are returned.
+
+            This results in a good looking and readable mapping table;
+            it gives a good balance between being explicit and
+            avoiding repetition.
+            """
             all = False
-            for last, now in zip(last, now):
+            for elem_last, elem_now in zip(last, now):
                 if all:
-                    yield now
-                elif last == now:
+                    yield elem_now
+                elif elem_last == elem_now:
                     yield ''
                 else:
+                    # We found a difference. Force the return of all
+                    # subsequent elements in `now`.
                     all = True
-                    yield now
+                    yield elem_now
 
         last_columns = None
         for elems in self.flatten():
