@@ -911,6 +911,36 @@ class TestGetActiveImports(TestCaseWithFactory):
         self.assertEquals(
             list(results), [code_import_2])
 
+    def testJoining(self):
+        # Test that the query composed by CodeImportSet.composeQueryString
+        # gets the joins right.  We create code imports for each of the
+        # possibilities of active or inactive product and active or inactive
+        # or absent project.
+        expected = set()
+        source = {}
+        for project_active in [True, False, None]:
+            for product_active in [True, False]:
+                if project_active is not None:
+                    project_name = self.factory.getUniqueString()
+                else:
+                    project_name = None
+                code_import = make_active_import(
+                    self.factory, project_name=project_name)
+                if code_import.branch.product.project:
+                    code_import.branch.product.project.active = project_active
+                code_import.branch.product.active = product_active
+                if project_active != False and product_active:
+                    expected.add(code_import)
+                source[code_import] = (product_active, project_active)
+        flush_database_updates()
+        results = set(getUtility(ICodeImportSet).getActiveImports())
+        errors = []
+        for extra in results - expected:
+            errors.append(('extra', source[extra]))
+        for missing in expected - results:
+            errors.append(('extra', source[missing]))
+        self.assertEquals(errors, [])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
