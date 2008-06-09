@@ -20,6 +20,8 @@ __all__ = [
     'PackagePublishingPriority',
     'PackagePublishingStatus',
     'PoolFileOverwriteError',
+    'active_publishing_status',
+    'inactive_publishing_status',
     'pocketsuffix'
     ]
 
@@ -663,6 +665,7 @@ class PackagePublishingPocket(DBEnumeratedType):
         Backported packages.
         """)
 
+
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
     PackagePublishingPocket.SECURITY: "-security",
@@ -670,3 +673,18 @@ pocketsuffix = {
     PackagePublishingPocket.PROPOSED: "-proposed",
     PackagePublishingPocket.BACKPORTS: "-backports",
 }
+
+
+active_publishing_status = (
+    PackagePublishingStatus.PENDING,
+    PackagePublishingStatus.PUBLISHED,
+    )
+
+
+inactive_publishing_status = (
+    PackagePublishingStatus.SUPERSEDED,
+    PackagePublishingStatus.DELETED,
+    PackagePublishingStatus.OBSOLETE,
+    )
+
+
