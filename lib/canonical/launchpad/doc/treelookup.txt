@@ -65,6 +65,18 @@ last position is treated as an error.
   ...
   TypeError: Default branch must be last.
 
+Although it should not happen in regular operation (because
+`LookupTree.__init__` ensures all arguments are `LookupBranch`
+instances), `LookupTree._verify` also checks that every branch is a
+`LookupBranch`.
+
+  >>> invalid_tree = LookupTree(tree)
+  >>> invalid_tree.branches = invalid_tree.branches + ('Greenland',)
+  >>> invalid_tree._verify()
+  Traceback (most recent call last):
+  ...
+  TypeError: Not a LookupBranch: 'Greenland'
+
 To help when constructing more complex trees, an existing `LookupTree`
 instance can be passed in when constructing a new one. Its branches
 are copied into the new `LookupTree` at that point.
