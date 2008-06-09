@@ -277,8 +277,8 @@
         <tal:block condition="not: context/bug/is_complete">
           <div tal:condition="view/userIsMentor"
                class="action">
+            <img class="inlineLinkIcon" src="/@@/remove" alt=""/>
             <a href="+retractmentoring">
-              <img class="inlineLinkIcon" src="/@@/remove" alt=""/>
               Retract my offer of mentorship
             </a>
           </div>
@@ -287,8 +287,8 @@
       <div tal:define="link context/menu:context/offermentoring"
            tal:condition="link/enabled"
            class="action">
+        <img class="inlineLinkIcon" src="/@@/add" alt=""/>
         <a tal:attributes="href link/url">
-          <img class="inlineLinkIcon" src="/@@/add" alt=""/>
           Offer to mentor someone fixing this bug
         </a>
       </div>
@@ -298,6 +298,8 @@
               metal:use-macro="context/@@bugcomment-macros/comment-box" />
         </tal:comment-box>
       </tal:comment>
+
+      <div style="clear:both" style="height: 1em;">&nbsp;</div>
 
       <tal:logged-in condition="view/user">
         <fieldset class="collapsible collapsed">
