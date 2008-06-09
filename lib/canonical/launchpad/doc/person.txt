@@ -866,10 +866,11 @@ maintainer got omitted from the results:
 == Packages a Person is subscribed to ==
 
 IPerson.getBugSubscriberPackages returns this list of packages, sorted
-alphabetically (A to Z) by package name.
+alphabetically by package name.
 
     >>> login('no-priv@canonical.com')
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
