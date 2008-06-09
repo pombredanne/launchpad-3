@@ -152,7 +152,9 @@ The elements of a collection can be looked up by unique identifier:
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
   self_link: http://.../~admins
+  sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
+  super_teams_collection_link: http://.../~admins/super_teams
   team_description: Launchpad Administrators
   team_memberships_collection_link: http://.../~admins/team_memberships
   team_owner_link: http://.../~sabdfl
@@ -233,7 +235,7 @@ the collection of people.
 
   >>> def create_team(name, display_name):
   ...     return webservice.named_post(
-  ...         "/beta/people", "create_team", {},
+  ...         "/beta/people", "newTeam", {},
   ...         name=name, display_name=display_name)
 
   >>> print webservice.get('/beta/~serviceteam')

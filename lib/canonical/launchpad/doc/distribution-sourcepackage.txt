@@ -157,3 +157,30 @@ archive (bug #60440):
     ...     print pub.distroseries.name, pub.status.name, is_removed
     breezy-autotest DELETED True
 
+
+== __hash__ ==
+
+DistributionSourcePackage defines a custom __hash__ method, so that
+different instances, representing the same packages, have the same hash.
+
+    >>> pmount = ubuntu.getSourcePackage('pmount')
+    >>> pmount_again = ubuntu.getSourcePackage('pmount')
+    >>> pmount is pmount_again
+    False
+    >>> hash(pmount) == hash(pmount_again)
+    True
+    >>> pmount == pmount_again
+    True
+
+This means that packages can be used as keys in dictionaries.
+
+    >>> pmount_marker = object()
+    >>> firefox_marker = object()
+    >>> mapping = {
+    ...     pmount: pmount_marker,
+    ...     ubuntu.getSourcePackage('mozilla-firefox'): firefox_marker,
+    ...     }
+    >>> mapping[pmount_again] is pmount_marker
+    True
+    >>> mapping[ubuntu.getSourcePackage('mozilla-firefox')] is firefox_marker
+    True
