@@ -1,4 +1,4 @@
-== Bug Counts For Open Bugs on Packages ==
+= Bug Counts For Open Bugs on Packages =
 
 BugTaskset has a method, getBugCountsForPackages(), which returns counts
 for open bugs on each package.
@@ -9,7 +9,7 @@ for open bugs on each package.
     []
 
 It's possible to get some basic statistics of the open bugs on each
-package using this method, which returns a list of dicts, containing the
+package using this method which returns a list of dicts, containing the
 package, and the number of open bugs in various states.
 
     >>> from canonical.launchpad.interfaces.distribution import (
@@ -124,7 +124,7 @@ If we mark the bug as In Progress, the open_inprogress will increase.
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
 
-=== Privacy ===
+== Privacy ==
 
 Only those bugs that the user has access to are shown, so if we mark the
 bug as private, No Privileges Person will only see that there is one
@@ -155,7 +155,7 @@ Foo Bar still can see all the bugs, though.
     open_unassigned: 1
     package: mozilla-firefox (Ubuntu)
 
-=== Duplicate Bugs ===
+== Duplicate Bugs ==
 
 Duplicates bugs are omitted from the counts.
 

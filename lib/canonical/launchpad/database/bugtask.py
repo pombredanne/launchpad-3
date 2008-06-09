@@ -446,10 +446,13 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagename == prev_sourcepackagename):
                     bugtask.sourcepackagename = self.sourcepackagename
 
-    def getConjoinedMaster(self, bugtasks):
+    def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None
         if IDistroBugTask.providedBy(self):
+            if bugtasks_by_package is None:
+                bugtasks_by_package = self.getBugTasksByPackageName(bugtasks)
+            bugtasks = bugtasks_by_package[self.sourcepackagename]
             possible_masters = [
                 bugtask for bugtask in bugtasks
                 if (bugtask.distroseries is not None and
@@ -476,6 +479,14 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
+
+    def getBugTasksByPackageName(self, bugtasks):
+        """See IBugTask."""
+        bugtasks_by_package = {}
+        for bugtask in bugtasks:
+            bugtasks_by_package.setdefault(bugtask.sourcepackagename, [])
+            bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
+        return bugtasks_by_package
 
     @property
     def conjoined_master(self):
@@ -1938,11 +1949,11 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         distributions = list(
             set(package.distribution for package in packages))
-        L = []
+        counts = []
         for distribution in distributions:
-            L.extend(self._getBugCountsForDistribution(
+            counts.extend(self._getBugCountsForDistribution(
                 user, distribution, packages))
-        return L
+        return counts
 
     def _getBugCountsForDistribution(self, user, distribution, packages):
         """Get bug counts by package, belonging to the given distribution.
@@ -1969,14 +1980,16 @@ class BugTaskSet:
                 'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
             sum_template % (
                 'BugTask.status %s' % search_value_to_where_condition(
-                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs')]
+                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
+            ]
 
         conditions = [
             'Bug.id = BugTask.bug',
             open_bugs_cond,
             'BugTask.sourcepackagename IN %s' % sqlvalues(package_name_ids),
             'BugTask.distribution = %s' % sqlvalues(distribution),
-            'Bug.duplicateof is NULL']
+            'Bug.duplicateof is NULL',
+            ]
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
             conditions.append(privacy_filter)
@@ -1993,7 +2006,7 @@ class BugTaskSet:
         distribution_set = getUtility(IDistributionSet)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_bugs = set()
-        L = []
+        counts = []
         for (distro_id, spn_id, open_bugs,
              open_critical_bugs, open_unassigned_bugs,
              open_inprogress_bugs) in shortlist(cur.fetchall()):
@@ -2010,8 +2023,9 @@ class BugTaskSet:
                 open=open_bugs,
                 open_critical=open_critical_bugs,
                 open_unassigned=open_unassigned_bugs,
-                open_inprogress=open_inprogress_bugs)
-            L.append(package_counts)
+                open_inprogress=open_inprogress_bugs,
+                )
+            counts.append(package_counts)
 
         # Only packages with open bugs were included in the query. Let's
         # add the rest of the packages as well.
@@ -2024,6 +2038,6 @@ class BugTaskSet:
                 package=distribution.getSourcePackage(sourcepackagename),
                 open=0, open_critical=0, open_unassigned=0,
                 open_inprogress=0)
-            L.append(package_counts)
+            counts.append(package_counts)
 
-        return L
+        return counts
