@@ -143,7 +143,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def translationdownload(self):
         text = 'Download translations'
-        enabled = (len(self.context.getCurrentTranslationTemplates()) > 0)
+        enabled = bool(self.context.getCurrentTranslationTemplates())
         return Link('+export', text, icon='download', enabled=enabled)
 
     def help(self):
