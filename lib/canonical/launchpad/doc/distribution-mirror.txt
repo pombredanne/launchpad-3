@@ -578,6 +578,7 @@ Now we run the prober as another process, and check that the generated
 output doesn't contain any errors and that the number of mirrors probed
 is correct.
 
+    >>> transaction.commit()
     >>> prober, stdout, stderr = run_prober('--content-type=archive')
     >>> print stdout
     <BLANKLINE>
@@ -652,13 +653,11 @@ we'll enable them again.
     INFO    Done.
     <BLANKLINE>
 
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+    >>> http_server.tearDown()
+    >>> transaction.abort()
+
     >>> cdimage_mirror.enabled
     True
-
-    >>> http_server.tearDown()
-    >>> transaction.commit()
 
     >>> [(mirror.name, mirror.speed.title, mirror.country.name)
     ...  for mirror in ubuntu.disabled_mirrors]
