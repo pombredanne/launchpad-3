@@ -11,15 +11,12 @@ __all__ = [
 import operator
 
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IArchivePermissionSet, IComponentSet, IHasQueueItems,
     IPackageUpload, IPackageUploadSet, ISectionSet, NotFoundError,
     PackagePublishingPriority, QueueInconsistentStateError,
     UnexpectedFormData, PackageUploadStatus)
-from canonical.launchpad.interfaces.binarypackagerelease import (
-    IBinaryPackageReleaseSet)
 from canonical.launchpad.interfaces.files import (
     IBinaryPackageFileSet)
 from canonical.launchpad.scripts.queue import name_priority_map

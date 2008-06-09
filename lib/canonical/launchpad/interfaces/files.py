@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.schema import Int
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from canonical.launchpad import _
 
 
@@ -51,7 +51,8 @@ class ISourcePackageReleaseFile(Interface):
             title=_('ID'), required=True, readonly=True,
             )
     sourcepackagerelease = Int(
-            title=_('The sourcepackagerelease being published'), required=True,
+            title=_('The sourcepackagerelease being published'),
+            required=True,
             readonly=False,
             )
 
