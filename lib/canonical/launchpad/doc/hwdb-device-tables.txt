@@ -24,8 +24,78 @@ row with the same name raises an IntegrityError error.
     Traceback (most recent call last):
     ...
     IntegrityError: ERROR:  duplicate key... violates unique
-    constraint "hwvendorname_name_key"
+    constraint "hwvendorname__lc_vendor_name__idx"
     ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+The database checks the uniqueness of the lower-case name, hence we
+cannot insert another name like "INTEL" or "intel".
+
+    >>> vendor_name_set.create('INTEL')
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+    >>> vendor_name_set.create('intel')
+    Traceback (most recent call last):
+    ...
+    IntegrityError: ERROR:  duplicate key... violates unique
+    constraint "hwvendorname__lc_vendor_name__idx"
+    ...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+The lower-case uniqueness constraint works for latin characters with
+diacritical marks too...
+
+    >>> a_umlaut_upper = u'\N{LATIN CAPITAL LETTER A WITH DIAERESIS}'
+    >>> a_umlaut_lower = u'\N{LATIN SMALL LETTER A WITH DIAERESIS}'
+    >>> a_umlaut_name = vendor_name_set.create(name=a_umlaut_upper)
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> print repr(a_umlaut_name.name)
+    u'\xc4'
+
+    >>> from psycopg import IntegrityError
+    >>> try:
+    ...     vendor_name_set.create(name=a_umlaut_lower)
+    ... except IntegrityError, val:
+    ...     str(val)
+    'ERROR:  duplicate key... violates unique constraint
+    "hwvendorname__lc_vendor_name__idx"...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+...as well as for Cyrillic characters...
+
+    >>> cyrillic_de_upper = u'\N{CYRILLIC CAPITAL LETTER DE}'
+    >>> cyrillic_de_lower = u'\N{CYRILLIC SMALL LETTER DE}'
+    >>> cyrillic_de_name = vendor_name_set.create(name=cyrillic_de_upper)
+    >>> print repr(cyrillic_de_name.name)
+    u'\u0414'
+
+    >>> try:
+    ...     vendor_name_set.create(name=cyrillic_de_lower)
+    ... except IntegrityError, val:
+    ...     str(val)
+    'ERROR:  duplicate key... violates unique constraint
+    "hwvendorname__lc_vendor_name__idx"...
+    >>> LaunchpadZopelessLayer.txn.abort()
+
+...and Greek characters.
+
+    >>> alpha_upper = u'\N{GREEK CAPITAL LETTER ALPHA}'
+    >>> alpha_lower = u'\N{GREEK SMALL LETTER ALPHA}'
+    >>> cyrillic_de_name = vendor_name_set.create(name=alpha_upper)
+    >>> print repr(cyrillic_de_name.name)
+    u'\u0391'
+
+    >>> try:
+    ...     vendor_name_set.create(name=alpha_lower)
+    ... except IntegrityError, val:
+    ...     str(val)
+    'ERROR:  duplicate key... violates unique constraint
+    "hwvendorname__lc_vendor_name__idx"...
     >>> LaunchpadZopelessLayer.txn.abort()
 
 Existing IHWVendorName records are retrieved by IHWVendorName.getByName().
@@ -33,6 +103,26 @@ Existing IHWVendorName records are retrieved by IHWVendorName.getByName().
     >>> intel_name = vendor_name_set.getByName('Intel')
     >>> print intel_name.name
     Intel
+
+The capitalization of the name does not metter.
+
+    >>> intel_name = vendor_name_set.getByName('INTEL')
+    >>> print intel_name.name
+    Intel
+
+    >>> intel_name = vendor_name_set.getByName('intel')
+    >>> print intel_name.name
+    Intel
+
+    >>> umlaut_name = vendor_name_set.getByName(
+    ...     u'\N{LATIN CAPITAL LETTER A WITH DIAERESIS}')
+    >>> print repr(umlaut_name.name)
+    u'\xc4'
+
+    >>> umlaut_name = vendor_name_set.getByName(
+    ...     u'\N{LATIN SMALL LETTER A WITH DIAERESIS}')
+    >>> print repr(umlaut_name.name)
+    u'\xc4'
 
 If no record matching the given name exists, IHWVendorName.getByName()
 returns None.

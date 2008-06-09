@@ -849,3 +849,11 @@ $$;
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugMessage maintaining the Bug.message_count column';
 
+CREATE OR REPLACE FUNCTION ulower(text) RETURNS text
+LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
+$$
+    return args[0].decode('utf8').lower().encode('utf8')
+$$;
+
+COMMENT ON FUNCTION ulower(text) IS
+'Return the lower case version of a UTF-8 encoded string.'
