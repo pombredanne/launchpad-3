@@ -65,9 +65,6 @@ class CodeReviewCommentMailer(BMPMailer):
         return ''.join((
             prefix, main, footer_separator, self.getReason(recipient)))
 
-    def _getReplyToAddress(self):
-        """Return the address to use for the reply-to header."""
-        return self.code_review_comment.branch_merge_proposal.address
 
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""

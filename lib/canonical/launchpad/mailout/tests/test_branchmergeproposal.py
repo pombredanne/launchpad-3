@@ -59,7 +59,8 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual('Merge of foo into bar proposed', subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
-             'X-Launchpad-Message-Rationale': 'Subscriber'},
+             'X-Launchpad-Message-Rationale': 'Subscriber',
+             'Reply-To': bmp.address},
             headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
