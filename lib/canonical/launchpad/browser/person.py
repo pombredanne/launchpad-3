@@ -1163,7 +1163,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
     def profile(self):
         target = '+index'
         text = 'Profile'
-        return Link(target, text, menu=PersonEditNavigationMenu)
+        return Link(target, text, menu=IPersonEditMenu)
 
     def related_software(self):
         target = '+related-software'
