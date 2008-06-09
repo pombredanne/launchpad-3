@@ -2,6 +2,8 @@
 
 """Logic for bulk copying of source/binary publishing history data."""
 
+__metaclass__ = type
+
 __all__ = [
     'build_package_location',
     'PackageLocation',
@@ -11,12 +13,13 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchiveSet, IDistributionSet, NotFoundError,
-    PackagePublishingPocket)
+from canonical.launchpad.interfaces import NotFoundError
+from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 
 
-class PackageLocation(object):
+class PackageLocation:
     """Object used to model locations when copying publications.
 
     It groups distribution, distroseries and pocket in a way they
@@ -26,22 +29,18 @@ class PackageLocation(object):
     distribution = None
     distroseries = None
     pocket = None
-    distroarchseries = None
 
-    def __init__(self, archive, distribution, distroseries, pocket,
-                 distroarchseries=None):
+    def __init__(self, archive, distribution, distroseries, pocket):
         """Initialize the PackageLocation from the given parameters."""
         self.archive = archive
         self.distribution = distribution
         self.distroseries = distroseries
         self.pocket = pocket
-        self.distroarchseries = distroarchseries
 
     def __eq__(self, other):
         if (self.distribution == other.distribution and
             self.archive == other.archive and
             self.distroseries == other.distroseries and
-            self.distroarchseries == other.distroarchseries and
             self.pocket == other.pocket):
             return True
         return False

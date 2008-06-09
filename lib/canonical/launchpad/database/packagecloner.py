@@ -2,22 +2,53 @@
 
 """Logic for bulk copying of source/binary publishing history data."""
 
+__metaclass__ = type
+
 __all__ = [
     'PackageCloner',
     ]
 
 
+from zope.interface import implements
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
-
 from canonical.launchpad.interfaces import PackagePublishingStatus
+from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 
 
-class PackageCloner(object):
+class PackageCloner:
     """Used for copying of various publishing history data across archives.
     """
 
-    def clone_binary_packages(self, origin, destination):
+    implements(IPackageCloner)
+
+    def clonePackages(self, origin, destination, distroarchseries_list=None):
+        """Copies the source packages from origin to destination as
+        well as the binary packages for the DistroArchSeries specified.
+
+        @type origin: PackageLocation
+        @param origin: the location from which packages are to be copied.
+        @type destination: PackageLocation
+        @param destination: the location to which the data is to be copied.
+        @type distroarchseries_list: list of pairs of (origin, destination)
+            distroarchseries instances.
+        @param distroarchseries_list: the binary packages will be copied
+            for the distroarchseries pairs specified (if any).
+        """
+        # First clone the source packages.
+        self._clone_source_packages(origin, destination)
+
+        # Are we also supposed to clone binary packages from origin to
+        # destination distroarchseries pairs?
+        if distroarchseries_list is not None:
+            for (origin_das, destination_das) in distroarchseries_list:
+                self._clone_binary_packages(
+                    origin, destination, origin_das, destination_das)
+                
+
+    def _clone_binary_packages(self, origin, destination, origin_das,
+                              destination_das):
         """Copy binary publishing data from origin to destination.
 
         @type origin: PackageLocation
@@ -26,6 +57,12 @@ class PackageCloner(object):
         @type destination: PackageLocation
         @param destination: the location to which the data is
             to be copied.
+        @type origin_das: DistroArchSeries
+        @param origin_das: the DistroArchSeries from which to copy
+            binary packages
+        @type destination_das: DistroArchSeries
+        @param destination_das: the DistroArchSeries to which to copy
+            binary packages
         """
         cur = cursor()
         cur.execute('''
@@ -42,14 +79,14 @@ class PackageCloner(object):
             AND
                 bpph.pocket = %s and bpph.archive = %s
             ''' % sqlvalues(
-                destination.distroarchseries, destination.archive,
+                destination_das, destination.archive,
                 UTC_NOW, UTC_NOW, destination.pocket,
-                origin.distroarchseries,
+                origin_das,
                 PackagePublishingStatus.PENDING,
                 PackagePublishingStatus.PUBLISHED,
                 origin.pocket, origin.archive))
 
-    def clone_source_packages(self, origin, destination):
+    def _clone_source_packages(self, origin, destination):
         """Copy source publishing data from origin to destination.
 
         @type origin: PackageLocation

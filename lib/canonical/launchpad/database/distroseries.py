@@ -22,8 +22,6 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.components.packagelocation import PackageLocation
-from canonical.launchpad.components.packagecloner import PackageCloner
-
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -82,6 +80,7 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
+from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -1340,10 +1339,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Perform the copies
         self._copy_component_and_section_selections(cur)
-        self._copy_source_publishing_records()
+
+        # Prepare the list of distroarchseries for which binary packages
+        # shall be copied.
+        distroarchseries_list = []
         for arch in self.architectures:
             parent_arch = self.parent_series[arch.architecturetag]
-            self._copy_binary_publishing_records(arch, parent_arch)
+            distroarchseries_list.append((parent_arch, arch))
+        # Now copy source and binary packages.
+        self._copy_publishing_records(distroarchseries_list)
         self._copy_lucille_config(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
@@ -1359,8 +1363,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             WHERE id = %s
             ''' % sqlvalues(self.parent_series.id, self.id))
 
-    def _copy_binary_publishing_records(self, arch, parent_arch):
-        """Copy the binary publishing records from the parent arch series
+    def _copy_publishing_records(self, distroarchseries_list):
+        """Copy the publishing records from the parent arch series
         to the given arch series in ourselves.
 
         We copy all PENDING and PUBLISHED records as PENDING into our own
@@ -1369,9 +1373,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
-        pkg_cloner = PackageCloner()
-
+        pkg_cloner = getUtility(IPackageCloner)
         archive_set = getUtility(IArchiveSet)
+
         for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
             if archive.purpose not in (
@@ -1383,39 +1387,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
             origin = PackageLocation(
                 archive, self.parent_series.distribution, self.parent_series,
-                PackagePublishingPocket.RELEASE, parent_arch)
-            destination = PackageLocation(
-                target_archive, self.distribution, self,
-                PackagePublishingPocket.RELEASE, arch)
-            pkg_cloner.clone_binary_packages(origin, destination)
-
-    def _copy_source_publishing_records(self):
-        """Copy the source publishing records from our parent distro series.
-
-        We copy all PENDING and PUBLISHED records as PENDING into our own
-        publishing records.
-
-        We copy only the RELEASE pocket in the PRIMARY and PARTNER
-        archives.
-        """
-        pkg_cloner = PackageCloner()
-
-        archive_set = getUtility(IArchiveSet)
-        for archive in self.parent_series.distribution.all_distro_archives:
-            # We only want to copy PRIMARY and PARTNER archives.
-            if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
-                continue
-            target_archive = archive_set.ensure(
-                distribution=self.distribution, purpose=archive.purpose,
-                owner=None)
-            origin = PackageLocation(
-                archive, self.parent_series.distribution, self.parent_series,
                 PackagePublishingPocket.RELEASE)
             destination = PackageLocation(
                 target_archive, self.distribution, self,
                 PackagePublishingPocket.RELEASE)
-            pkg_cloner.clone_source_packages(origin, destination)
+            pkg_cloner.clonePackages(
+                origin, destination, distroarchseries_list)
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro

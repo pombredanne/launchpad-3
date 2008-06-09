@@ -92,6 +92,7 @@
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
     <include file="packagebugsupervisor.zcml" />
+    <include file="packagecloner.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
