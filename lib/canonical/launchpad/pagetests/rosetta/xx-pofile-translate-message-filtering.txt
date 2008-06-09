@@ -384,6 +384,7 @@ suggestions.
 
     >>> text = extract_text(find_main_content(user_browser.contents))
     >>> print text.encode('UTF-8')
+    Description...
     Template ...
     English: current addressbook folder
     Current Chinese (China): (no translation yet)

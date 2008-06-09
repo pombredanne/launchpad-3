@@ -76,7 +76,8 @@ The Spanish translations now show up as suggestions.  For example, where
 "tarjetas."
 
     >>> print extract_text(find_main_content(
-    ...     browser.contents)).encode('UTF-8')
+    ...     browser.contents)).encode('ASCII', 'backslashreplace')
+    Description...
     Template "evolution-2.2" in Ubuntu Hoary package "evolution"
     Translating into Catalan
     ...
@@ -118,7 +119,9 @@ languages are defined.  Suggestions just work for anonymous users.
     >>> anon_browser.getControl('Spanish (es)').selected = True
     >>> anon_browser.getControl(name='select_alternate_language').click()
 
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print extract_text(find_main_content(
+    ...     anon_browser.contents)).encode('ASCII', 'backslashreplace')
+    Description...
     Template "evolution-2.2" in Ubuntu Hoary package "evolution"
     Browsing Catalan translation
     ...

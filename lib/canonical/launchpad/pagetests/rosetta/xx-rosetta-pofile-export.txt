@@ -6,7 +6,7 @@ Not logged in users can't access the +export page.
   >>> anon_browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es/')
-  >>> anon_browser.getLink('Download').click()
+  >>> anon_browser.getLink('Export').click()
   Traceback (most recent call last):
   ...
   Unauthorized:...
@@ -16,7 +16,7 @@ Logged in as a regular user, the +export page is accessible.
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es')
-  >>> user_browser.getLink('Download').click()
+  >>> user_browser.getLink('Export').click()
 
   >>> print user_browser.title
   Download translation for “Spanish (es) translation of evolution-2.2 in
@@ -49,7 +49,7 @@ No Privileges Person.
   >>> no_priv_browser.open(
   ...    'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...    'evolution-2.2/cy')
-  >>> no_priv_browser.getLink('Download').click()
+  >>> no_priv_browser.getLink('Export').click()
 
   >>> no_priv_browser.getControl(name='format').value = ['PO']
   >>> no_priv_browser.getControl('Confirm Download').click()
@@ -81,7 +81,7 @@ evolution yet; it will be created at the moment the export is requested.
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/sv')
-  >>> browser.getLink('Download').click()
+  >>> browser.getLink('Export').click()
 
   >>> browser.getControl(name='format').value = ['PO']
   >>> browser.getControl('Confirm Download').click()
@@ -104,7 +104,7 @@ evolution yet; it will be created at the moment the export is requested.
 Request the same pofile again won't crash. (See bug
 https://launchpad.net/rosetta/+bug/1558).
 
-  >>> browser.getLink('Download').click()
+  >>> browser.getLink('Export').click()
 
   >>> browser.getControl(name='format').value = ['PO']
   >>> browser.getControl('Confirm Download').click()
