@@ -559,17 +559,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datelastsynced = UTC_NOW
         self.import_branch.requestMirror()
 
-    def getImportDetailsForDisplay(self):
-        assert self.rcstype is not None, (
-            "Only makes sense for series with import details set.")
-        if self.rcstype == RevisionControlSystems.CVS:
-            return '%s %s' % (self.cvsroot, self.cvsmodule)
-        elif self.rcstype == RevisionControlSystems.SVN:
-            return self.svnrepository
-        else:
-            raise AssertionError(
-                'Unknown rcs type: %s'% self.rcstype.title)
-
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(
