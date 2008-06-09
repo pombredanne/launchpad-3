@@ -9,7 +9,7 @@ for open bugs on each package.
     []
 
 It's possible to get some basic statistics of the open bugs on each
-package using this method, which returns a list of dicts, containing the
+package using this method which returns a list of dicts, containing the
 package, and the number of open bugs in various states.
 
     >>> from canonical.launchpad.interfaces.distribution import (
