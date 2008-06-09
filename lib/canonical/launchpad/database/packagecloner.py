@@ -6,15 +6,39 @@ __metaclass__ = type
 
 __all__ = [
     'PackageCloner',
+    'clone_packages',
     ]
 
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
+
+
+def clone_packages(origin, destination, distroarchseries_list=None):
+    """Copies packages from origin to destination package location.
+
+    Binary packages are only copied for the DistroArchSeries pairs
+    specified.
+
+    This function is meant to simplify the utilization of the package
+    cloning functionality.
+
+    @type origin: PackageLocation
+    @param origin: the location from which packages are to be copied.
+    @type destination: PackageLocation
+    @param destination: the location to which the data is to be copied.
+    @type distroarchseries_list: list of pairs of (origin, destination)
+        distroarchseries instances.
+    @param distroarchseries_list: the binary packages will be copied
+        for the distroarchseries pairs specified (if any).
+    """
+    pkg_cloner = getUtility(IPackageCloner)
+    pkg_cloner.clonePackages(origin, destination, distroarchseries_list)
 
 
 class PackageCloner:

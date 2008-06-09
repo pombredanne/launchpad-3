@@ -80,7 +80,7 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, PackageUploadStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.interfaces.packagecloner import IPackageCloner
+from canonical.launchpad.database.packagecloner import clone_packages
 
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -1373,7 +1373,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         We copy only the RELEASE pocket in the PRIMARY and PARTNER
         archives.
         """
-        pkg_cloner = getUtility(IPackageCloner)
         archive_set = getUtility(IArchiveSet)
 
         for archive in self.parent_series.distribution.all_distro_archives:
@@ -1391,8 +1390,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             destination = PackageLocation(
                 target_archive, self.distribution, self,
                 PackagePublishingPocket.RELEASE)
-            pkg_cloner.clonePackages(
-                origin, destination, distroarchseries_list)
+            clone_packages(origin, destination, distroarchseries_list)
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro
