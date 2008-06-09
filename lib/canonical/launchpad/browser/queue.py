@@ -301,6 +301,9 @@ class CompletePackageUpload:
     Some properties of PackageUpload are cached here to reduce the number
     of queries that the +queue template has to make.
     """
+    # These need to be predeclared to avoid decorates taking them over.
+    # Would be nice if there was a way of allowing writes to just work
+    # (i.e. no proxying of __set__).
     id = None
     pocket = None
     datecreated = None
@@ -310,6 +313,7 @@ class CompletePackageUpload:
     contains_source = None
     contains_build = None
     sourcepackagerelease = None
+
     decorates(IPackageUpload)
 
     def __init__(self, packageupload, build_upload_files):
@@ -324,7 +328,7 @@ class CompletePackageUpload:
         self.customfiles = list(packageupload.customfiles)
 
         # Create a dictionary of binary files keyed by
-        # binarypackagerelease ID.
+        # binarypackagerelease.
         self.binary_packages = {}
         self.binary_files = build_upload_files.get(self.id, None)
         if self.binary_files is not None:
@@ -334,6 +338,7 @@ class CompletePackageUpload:
                     self.binary_packages[package] = []
                 self.binary_packages[package].append(binary)
 
+        # Pre-fetch the sourcepackagerelease if it exists.
         if self.contains_source:
             self.sourcepackagerelease = self.sources[0].sourcepackagerelease
         else:
