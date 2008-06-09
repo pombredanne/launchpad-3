@@ -124,7 +124,7 @@ class BugContextMenu(ContextMenu):
 
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
-        text = 'Update description'
+        text = 'Update description / tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
