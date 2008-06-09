@@ -162,6 +162,8 @@ class LinkData:
         self.text = text
         self.summary = summary
         self.icon = icon
+        if not isinstance(enabled, bool):
+            raise AssertionError, "enabled must be boolean, got %r" % enabled
         self.enabled = enabled
         self.site = site
         self.menu = menu

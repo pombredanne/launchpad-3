@@ -696,6 +696,7 @@
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
     template="../templates/team-members.pt"
+    class="canonical.launchpad.browser.TeamMembershipView"
     />
 
   <browser:page
