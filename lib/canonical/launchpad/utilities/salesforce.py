@@ -4,9 +4,11 @@
 
 __metaclass__ = type
 
-__all__ = ['SalesforceVoucherProxy',
-           'SalesforceVoucherProxyException',
-           'Voucher']
+__all__ = [
+    'SalesforceVoucherProxy',
+    'SalesforceVoucherProxyException',
+    'Voucher',
+    ]
 
 
 from xmlrpclib import Fault, ServerProxy, SafeTransport
@@ -16,7 +18,7 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.interfaces import IProductSet
+from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucher, ISalesforceVoucherProxy)
 
@@ -41,17 +43,23 @@ class SVPNotAllowedException(SalesforceVoucherProxyException):
     """The operation is not allowed by the current user."""
 
 
-ERRORCODE_MAP = dict(SFDCError=SFDCError,
-                     NotFound=SVPNotFoundException,
-                     AlreadyRedeemed=SVPAlreadyRedeemedException,
-                     NotAllowed=SVPNotAllowedException)
+def fault_mapper(func):
+    """Decorator to catch Faults and map them to our exceptions."""
 
+    errorcode_map = dict(SFDCError=SFDCError,
+                         NotFound=SVPNotFoundException,
+                         AlreadyRedeemed=SVPAlreadyRedeemedException,
+                         NotAllowed=SVPNotAllowedException)
 
-def map_fault(fault):
-    """Map the XMLRPC Fault to one of our defined exceptions."""
-    exception = ERRORCODE_MAP.get(fault.faultCode,
-                                  SalesforceVoucherProxyException)
-    return exception(fault.faultString)
+    def decorator(voucher, *args, **kwargs):
+        try:
+            results = func(voucher, *args, **kwargs)
+        except Fault, fault:
+            exception = errorcode_map.get(fault.faultCode,
+                                          SalesforceVoucherProxyException)
+            raise exception(fault.faultString)
+        return results
+    return decorator
 
 
 class Voucher:
@@ -108,57 +116,45 @@ class SalesforceVoucherProxy:
                            transport=self.xmlrpc_transport,
                            allow_none=True)
 
+    @fault_mapper
     def getUnredeemedVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        try:
-            vouchers = self.server.getUnredeemedVouchers(
-                user.openid_identifier)
-        except Fault, fault:
-            raise map_fault(fault)
+        vouchers = self.server.getUnredeemedVouchers(
+            user.openid_identifier)
         return [Voucher(voucher) for voucher in vouchers]
 
+    @fault_mapper
     def getAllVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
-        try:
-            vouchers = self.server.getAllVouchers(user.openid_identifier)
-        except Fault, fault:
-            raise map_fault(fault)
+        vouchers = self.server.getAllVouchers(user.openid_identifier)
         return [Voucher(voucher) for voucher in vouchers]
 
+    @fault_mapper
     def getServerStatus(self):
         """See `ISalesforceVoucherProxy`."""
-        try:
-            status = self.server.getServerStatus()
-        except Fault, fault:
-            raise map_fault(fault)
+        status = self.server.getServerStatus()
         return status
 
+    @fault_mapper
     def getVoucher(self, voucher_id):
         """See `ISalesforceVoucherProxy`."""
-        try:
-            voucher = self.server.getVoucher(voucher_id)
-        except Fault, fault:
-            raise map_fault(fault)
+        voucher = self.server.getVoucher(voucher_id)
         if voucher is not None:
             voucher = Voucher(voucher)
         return voucher
 
+    @fault_mapper
     def redeemVoucher(self, voucher_id, user, project):
         """See `ISalesforceVoucherProxy`."""
-        try:
-            status = self.server.redeemVoucher(voucher_id,
-                                               user.openid_identifier,
-                                               project.id,
-                                               project.displayname)
-        except Fault, fault:
-            raise map_fault(fault)
+        status = self.server.redeemVoucher(voucher_id,
+                                           user.openid_identifier,
+                                           project.id,
+                                           project.displayname)
         return status
 
+    @fault_mapper
     def updateProjectName(self, project):
         """See `ISalesforceVoucherProxy`."""
-        try:
-            num_updated = self.server.updateProjectName(project.id,
-                                                        project.displayname)
-        except Fault, fault:
-            raise map_fault(fault)
+        num_updated = self.server.updateProjectName(project.id,
+                                                    project.displayname)
         return num_updated

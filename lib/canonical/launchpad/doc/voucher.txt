@@ -37,8 +37,10 @@ All of the sample voucher data in the transport can be shown.
 
 We can retrieve all unredeemed vouchers for a person.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet)
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     IPersonSet)
+    >>> from canonical.launchpad.interfaces.product import (
+    ...     IProductSet)
     >>> mark = getUtility(IPersonSet).getByName('sabdfl')
 
     >>> vouchers = server.getUnredeemedVouchers(mark.openid_identifier)
@@ -82,7 +84,7 @@ A single voucher can be redeemed, but must be associated with a project.
 The interface `ISalesforceVoucherProxy` defines the interaction with
 the Salesforce proxy.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.interfaces.salesforce import (
     ...     ISalesforceVoucher, ISalesforceVoucherProxy)
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> sfv = getUtility(ISalesforceVoucherProxy)
@@ -182,7 +184,6 @@ A user cannot redeem a voucher if it is owned by someone else.
       ...
     SVPNotAllowedException: Voucher is not owned by named user
 
-Getting al
 Using None for the project results in an error.
 
     >>> result = sfv.redeemVoucher(voucher_id, mark, None)

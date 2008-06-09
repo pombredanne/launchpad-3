@@ -20,9 +20,11 @@ from canonical.launchpad.utilities import SalesforceVoucherProxy
 from canonical.launchpad.interfaces import ISalesforceVoucherProxy
 
 
-STATUSES = ['Unredeemed',
-            'Redeemed',
-            'Reserved']
+STATUSES = [
+    'Unredeemed',
+    'Redeemed',
+    'Reserved',
+    ]
 
 
 PRODUCT_TERM_MAP = dict(LPCS12=12,
