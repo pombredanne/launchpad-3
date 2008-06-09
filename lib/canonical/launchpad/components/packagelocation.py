@@ -63,15 +63,15 @@ def build_package_location(distribution_name, suite=None, purpose=None,
                            person_name=None):
     """Convenience function to build PackageLocation objects."""
 
-    # XXX: we need a way to specify exactly what location we want
-    # through strings in the commandline. Until we do, we will end up
+    # XXX kiko 2007-10-24:
+    # We need a way to specify exactly what location we want
+    # through strings in the command line. Until we do, we will end up
     # with this horrible set of self-excluding options that make sense
     # to nobody. Perhaps:
     #   - ppa.launchpad.net/cprov/ubuntu/warty
     #   - archive.ubuntu.com/ubuntu-security/hoary
     #   - security.ubuntu.com/ubuntu/hoary
     #   - archive.canonical.com/gutsy
-    #                                           -- kiko, 2007-10-24
 
     try:
         distribution = getUtility(IDistributionSet)[distribution_name]

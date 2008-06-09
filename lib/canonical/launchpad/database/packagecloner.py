@@ -24,8 +24,10 @@ class PackageCloner:
     implements(IPackageCloner)
 
     def clonePackages(self, origin, destination, distroarchseries_list=None):
-        """Copies the source packages from origin to destination as
-        well as the binary packages for the DistroArchSeries specified.
+        """Copies packages from origin to destination package location.
+
+        Binary packages are only copied for the DistroArchSeries pairs
+        specified.
 
         @type origin: PackageLocation
         @param origin: the location from which packages are to be copied.
@@ -45,7 +47,7 @@ class PackageCloner:
             for (origin_das, destination_das) in distroarchseries_list:
                 self._clone_binary_packages(
                     origin, destination, origin_das, destination_das)
-                
+
 
     def _clone_binary_packages(self, origin, destination, origin_das,
                               destination_das):
