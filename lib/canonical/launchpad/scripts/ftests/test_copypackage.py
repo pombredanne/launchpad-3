@@ -11,16 +11,19 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.launchpad.scripts.ftpmaster import (
-    PackageLocationError, PackageCopier, SoyuzScriptError,
-    UnembargoSecurityPackage)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet, IPersonSet,
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
     ISourcePackagePublishingHistory, PackagePublishingStatus)
+from canonical.launchpad.scripts import QuietFakeLogger
+from canonical.launchpad.scripts.ftpmasterbase import (
+    PackageLocationError, SoyuzScriptError)
+from canonical.launchpad.scripts.packagecopier import (
+    PackageCopier, UnembargoSecurityPackage)
 from canonical.librarian.ftests.harness import (
     cleanupLibrarianFiles, fillLibrarianFile)
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
@@ -32,8 +35,10 @@ class TestCopyPackageScript(unittest.TestCase):
 
     def runCopyPackage(self, extra_args=None):
         """Run copy-package.py, returning the result and output.
+
         Returns a tuple of the process's return code, stdout output and
-        stderr output."""
+        stderr output.
+        """
         if extra_args is None:
             extra_args = []
         script = os.path.join(
