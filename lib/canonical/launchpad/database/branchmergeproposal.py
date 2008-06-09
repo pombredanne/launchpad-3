@@ -6,29 +6,35 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
+    'BranchMergeProposalGetter',
     ]
 
 from email.Utils import make_msgid
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 
 from storm.references import Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
+from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.codereviewvote import CodeReviewVote
-from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.database.message import (
+    Message, MessageChunk)
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus, IBranchMergeProposal,
+    IBranchMergeProposalGetter,
     ILaunchpadCelebrities,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,)
@@ -65,16 +71,6 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
-
-
-class BranchNotificationReason:
-    '''A reason for being notified about a branch.'''
-
-    def __init__(self, person, branch, rationale, subscription=None):
-        self.person = person
-        self.branch = branch
-        self.rationale = rationale
-        self.subscription = subscription
 
 
 class BranchMergeProposal(SQLBase):
@@ -127,6 +123,10 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
+    @property
+    def address(self):
+        return 'mp+%d@%s' % (self.id, config.vhost.code.hostname)
+
     superseded_by = ForeignKey(
         dbName='superseded_by', foreignKey='BranchMergeProposal',
         notNull=False, default=None)
@@ -138,8 +138,8 @@ class BranchMergeProposal(SQLBase):
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
     @property
-    def root_message(self):
-        return CodeReviewMessage.selectOne("""
+    def root_comment(self):
+        return CodeReviewComment.selectOne("""
             CodeReviewMessage.id in (
                 SELECT CodeReviewMessage.id
                     FROM CodeReviewMessage, Message
@@ -149,16 +149,16 @@ class BranchMergeProposal(SQLBase):
             """ % self.id)
 
     @property
-    def all_messages(self):
+    def all_comments(self):
         """See `IBranchMergeProposal`."""
-        return CodeReviewMessage.selectBy(branch_merge_proposal=self.id)
+        return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
 
-    def getMessage(self, id):
+    def getComment(self, id):
         """See `IBranchMergeProposal`."""
-        message = CodeReviewMessage.get(id)
-        if message.branch_merge_proposal != self:
+        comment = CodeReviewComment.get(id)
+        if comment.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
-        return message
+        return comment
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -168,10 +168,7 @@ class BranchMergeProposal(SQLBase):
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
         recipients = {}
-        dont_email_me = set()
-
         branches = [self.source_branch, self.target_branch]
-
         if self.dependent_branch is not None:
             branches.append(self.dependent_branch)
         for branch in branches:
@@ -180,29 +177,8 @@ class BranchMergeProposal(SQLBase):
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
-                    dont_email_me.add(recipient)
                     continue
-                recipients[recipient] = BranchNotificationReason(
-                    person=recipient,
-                    branch=subscription.branch,
-                    rationale=rationale,
-                    subscription=subscription)
-
-        owner_recipients = NotificationRecipientSet()
-        owner_recipients.add(
-            self.source_branch.owner, self.source_branch, 'Owner')
-        owner_recipients.add(
-            self.target_branch.owner, self.target_branch, 'Owner')
-        if self.dependent_branch is not None:
-            owner_recipients.add(
-                self.dependent_branch.owner, self.dependent_branch, 'Owner')
-        for recipient in owner_recipients:
-            if recipient in dont_email_me:
-                branch, rationale = owner_recipients.getReason(recipient)
-                recipients[recipient] = BranchNotificationReason(
-                    person=recipient,
-                    branch=branch,
-                    rationale=rationale)
+                recipients[recipient] = (subscription, rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -413,28 +389,40 @@ class BranchMergeProposal(SQLBase):
             ''' % sqlvalues(self.source_branch, self.target_branch),
             prejoins=['revision'], orderBy='-sequence')
 
-    def createMessage(self, owner, subject, content=None, vote=None,
-                      vote_tag=None, parent=None, _date_created=None):
-        """See IBranchMergeProposal.createMessage"""
+    def createComment(self, owner, subject, content=None, vote=None,
+                      vote_tag=None, parent=None, _date_created=DEFAULT):
+        """See `IBranchMergeProposal`."""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is None:
-            if self.root_message is not None:
-                parent_message = self.root_message.message
+            if self.root_comment is not None:
+                parent_message = self.root_comment.message
         else:
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
         msgid = make_msgid('codereview')
-        # Can't pass None into Message constructor to get the default, so
-        # we have to supply datecreated only when we want to override the
-        # default.
-        kwargs = {}
-        if _date_created is not None:
-            kwargs['datecreated'] = _date_created
-        msg = Message(parent=parent_message, owner=owner,
-                      rfc822msgid=msgid, subject=subject, **kwargs)
-        chunk = MessageChunk(message=msg, content=content, sequence=1)
-        return CodeReviewMessage(
-            branch_merge_proposal=self, message=msg, vote=vote,
+        message = Message(
+            parent=parent_message, owner=owner, rfc822msgid=msgid,
+            subject=subject, datecreated=_date_created)
+        chunk = MessageChunk(message=message, content=content, sequence=1)
+        return self.createCommentFromMessage(message, vote, vote_tag)
+
+    def createCommentFromMessage(self, message, vote, vote_tag):
+        """See `IBranchMergeProposal`."""
+        code_review_message = CodeReviewComment(
+            branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=vote_tag)
+        notify(SQLObjectCreatedEvent(code_review_message))
+        return code_review_message
+
+
+class BranchMergeProposalGetter:
+    """See `IBranchMergeProposalGetter`."""
+
+    implements(IBranchMergeProposalGetter)
+
+    @staticmethod
+    def get(id):
+        """See `IBranchMergeProposalGetter`."""
+        return BranchMergeProposal.get(id)

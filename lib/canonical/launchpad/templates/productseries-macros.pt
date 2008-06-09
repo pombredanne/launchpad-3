@@ -18,6 +18,9 @@
     </a>
   </strong>
   <em tal:condition="is_focus">Current development focus</em>
+  <em tal:condition="not: is_focus" tal:content="series/status/title">
+    This series' status
+  </em>
   <div tal:condition="series/releases">
     Releases:
     <tal:release repeat="release series/releases">

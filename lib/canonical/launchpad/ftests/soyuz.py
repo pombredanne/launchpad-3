@@ -10,12 +10,13 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingPocket,
-    PackagePublishingStatus)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.ftests import syncUpdate
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingStatus)
 
 
 class SoyuzTestHelper:
@@ -69,14 +70,18 @@ class SoyuzTestHelper:
         """
         sample_pub = []
         for status, archive, pocket in self.sample_publishing_data:
-            sample_pub.append(SecureSourcePackagePublishingHistory(
+            pub = SecureSourcePackagePublishingHistory(
                 sourcepackagerelease=sourcepackagerelease,
                 distroseries=distroseries,
                 component=sourcepackagerelease.component,
                 section=sourcepackagerelease.section,
                 status=status,
                 archive=archive,
-                pocket=pocket))
+                pocket=pocket)
+            # Flush the object changes into DB do guarantee stable database
+            # ID order as expected in the callsites.
+            syncUpdate(pub)
+            sample_pub.append(pub)
         return sample_pub
 
     def createPublishingForDistroArchSeries(self, binarypackagerelease,
@@ -89,7 +94,7 @@ class SoyuzTestHelper:
         """
         sample_pub = []
         for status, archive, pocket in self.sample_publishing_data:
-            sample_pub.append(SecureBinaryPackagePublishingHistory(
+            pub = SecureBinaryPackagePublishingHistory(
                 binarypackagerelease=binarypackagerelease,
                 distroarchseries=distroarchseries,
                 component=binarypackagerelease.component,
@@ -97,7 +102,11 @@ class SoyuzTestHelper:
                 priority=binarypackagerelease.priority,
                 status=status,
                 archive=archive,
-                pocket=pocket))
+                pocket=pocket)
+            # Flush the object changes into DB do guarantee stable database
+            # ID order as expected in the callsites.
+            syncUpdate(pub)
+            sample_pub.append(pub)
         return sample_pub
 
     def checkPubList(self, expected, given):

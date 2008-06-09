@@ -13,7 +13,7 @@ from zope.app.testing.functional import FunctionalTestSetup
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.testing import BaseLayer, FunctionalLayer, ZopelessLayer
+from canonical.testing import FunctionalLayer, ZopelessLayer
 from canonical.testing.layers import disconnect_stores, reconnect_stores
 
 
@@ -47,12 +47,6 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
         LaunchpadZopelessTestSetup.txn.uninstall()
         assert ZopelessTransactionManager._installed is None, \
                 'Failed to tearDown Zopeless correctly'
-
-        # Tests using Layers don't want the database torn down here, as the
-        # Layer does it for us. However, this helper is currently also in
-        # use by the importd tests that do not use layers, so we need to cope.
-        if not BaseLayer.isSetUp:
-            super(LaunchpadZopelessTestSetup, self).tearDown()
 
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):

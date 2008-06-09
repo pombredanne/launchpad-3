@@ -8,6 +8,8 @@ __all__ = [
     'SpecificationSet',
     ]
 
+from storm.store import Store
+
 from zope.interface import implements
 from zope.event import notify
 
@@ -29,7 +31,8 @@ from canonical.launchpad.interfaces import (
     SpecificationSort,
     )
 
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    block_implicit_flushes, quote, SQLBase, sqlvalues)
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -267,10 +270,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def canMentor(self, user):
         """See ICanBeMentored."""
-        return not (not user or
-                    self.isMentor(user) or
-                    self.is_complete or
-                    not user.teams_participated_in)
+        if user is None:
+            return False
+        if self.is_complete:
+            return False
+        if bool(self.isMentor(user)):
+            return False
+        if not user.teams_participated_in:
+            return False
+        return True
 
     def isMentor(self, user):
         """See ICanBeMentored."""
@@ -394,7 +402,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
                      SpecificationImplementationStatus.INFORMATIONAL) and
                     (self.definition_status ==
                      SpecificationDefinitionStatus.APPROVED)))
-
 
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
@@ -823,18 +830,18 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
+        specification_ids = [spec.id for spec in specifications]
+        if len(specification_ids) == 0:
+            return {}
 
-        cur = cursor()
-        cur.execute("""
+        results = Store.of(specifications[0]).execute("""
             SELECT SpecificationDependency.specification,
                    SpecificationDependency.dependency
             FROM SpecificationDependency, Specification
             WHERE SpecificationDependency.specification IN %s
             AND SpecificationDependency.dependency = Specification.id
             ORDER BY Specification.priority DESC
-        """ % sqlvalues([spec.id for spec in specifications]))
-        results = cur.fetchall()
-        cur.close()
+        """ % sqlvalues(specification_ids)).get_all()
 
         dependencies = {}
         for spec_id, dep_id in results:

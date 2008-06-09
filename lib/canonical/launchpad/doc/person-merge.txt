@@ -7,7 +7,7 @@ person and they're there just because each of those was created using a
 different email address.
 
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
+    >>> from canonical.database.sqlbase import sqlvalues
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
 
@@ -98,7 +98,6 @@ active member of that team.
     # Now we remove the only email address marilize had, so that we can merge
     # it.
     >>> marilize.preferredemail.destroySelf()
-    >>> flush_database_updates()
 
     >>> personset.merge(marilize, sample)
 
@@ -144,36 +143,40 @@ time the caches are rebuilt.
 
 A merged account gets a -merged suffix on its name.
 
-    >>> from canonical.launchpad.database import Person
-    >>> cur = Person._connection._connection.cursor()
-
-    >>> cur.execute("SELECT id FROM Person WHERE name='marilize-merged'")
-    >>> cur.fetchone()[0] == marilize.id
+    >>> from storm.store import Store
+    >>> store = Store.of(marilize)
+    >>> results = store.execute(
+    ...     "SELECT id FROM Person WHERE name='marilize-merged'")
+    >>> results.get_one()[0] == marilize.id
     True
 
-    >>> cur.execute("select person, team, status from teammembership where "
-    ...             "person = %s and team = %s"
-    ...             % sqlvalues(sample.id, rosetta_admins.id))
-    >>> cur.fetchone()
-    [12, 30, 2]
+    >>> results = store.execute(
+    ...     "SELECT person, team, status from TeamMembership WHERE "
+    ...     "person = %s and team = %s" % sqlvalues(
+    ...     sample.id, rosetta_admins.id))
+    >>> results.get_one()
+    (12, 30, 2)
 
     >>> sample.inTeam(rosetta_admins)
     True
 
-    >>> cur.execute("select p1.name from person as p1, person as p2 where "
-    ...             "p1.id = p2.teamowner and p2.name = 'ubuntu-team'")
-    >>> cur.fetchone()[0]
+    >>> results = store.execute(
+    ...     "SELECT p1.name FROM Person as p1, Person as p2 "
+    ...     "WHERE p1.id = p2.teamowner and p2.name = 'ubuntu-team'")
+    >>> results.get_one()[0]
     u'name12'
 
 The account that has been merged is flagged. We can use this to eliminate
 merged accounts from lists etc.
 
-    >>> cur.execute("SELECT merged FROM Person WHERE name='marilize-merged'")
-    >>> cur.fetchone()[0]
+    >>> results = store.execute(
+    ...     "SELECT merged FROM Person WHERE name='marilize-merged'")
+    >>> results.get_one()[0]
     12
 
-    >>> cur.execute("SELECT merged FROM Person WHERE name='name12'")
-    >>> cur.fetchone()[0] is None
+    >>> results = store.execute(
+    ...     "SELECT merged FROM Person WHERE name='name12'")
+    >>> results.get_one()[0] is None
     True
 
 
@@ -187,20 +190,20 @@ We will use PersonLocation as an example. There are many permutations and
 combinations, we will exercise them all, and in each case we'll create, and
 then delete, the needed two people.
 
-    >>> from canonical.launchpad.database import PersonSet
+    >>> from canonical.launchpad.database.person import PersonSet, Person
     >>> from canonical.launchpad.interfaces import PersonCreationRationale
     >>> personset = PersonSet()
 
     >>> skip = []
-    >>> def decorator_refs(cur, winner, loser):
-    ...    cur.execute(
+    >>> def decorator_refs(store, winner, loser):
+    ...    results = store.execute(
     ...        "SELECT person, last_modified_by FROM PersonLocation "
     ...        "WHERE person IN (%(loser)d, %(winner)d)"
     ...        "      OR last_modified_by IN (%(loser)d, %(winner)d)"
     ...        "ORDER BY date_created" % {
     ...        'winner': winner.id, 'loser': loser.id})
     ...    result = ''
-    ...    for line in cur.fetchall():
+    ...    for line in results.get_all():
     ...        for item in line:
     ...            if item == winner.id: result += 'winner, '
     ...            elif item == loser.id: result += 'loser, '
@@ -223,9 +226,9 @@ then delete, the needed two people.
 First, we will test a merge where there is no decoration.
 
     >>> winner, loser = endless_supply_of_players.next()
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     <BLANKLINE>
-    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 "Skip" should have been updated with the table and unique reference column
@@ -236,7 +239,7 @@ name.
 
 There should still be no columns that reference the winner or loser.
 
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     <BLANKLINE>
 
 OK, now, this time, we will add some decorator information to the winner but
@@ -244,15 +247,15 @@ not the loser.
 
     >>> winner, loser = endless_supply_of_players.next()
     >>> winner.timezone = 'America/Santiago'
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     winner, winner,
-    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 There should now still be one decorator, with all columns pointing to the
 winner:
 
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     winner, winner,
 
 This time, we will have a decorator for the person that is being merged INTO
@@ -260,15 +263,15 @@ another person, but nothing on the target person.
 
     >>> winner, loser = endless_supply_of_players.next()
     >>> loser.timezone = 'America/Santiago'
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     loser, loser,
-    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
 
 There should now still be one decorator, with all columns pointing to the
 winner:
 
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     winner, winner,
 
 Now, we want to show what happens when there is a decorator for both the
@@ -279,12 +282,12 @@ the winner, and the to_person will be unaffected.
     >>> winner, loser = endless_supply_of_players.next()
     >>> winner.timezone = 'America/Santiago'
     >>> loser.timezone = 'America/New_York'
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     winner, winner,
     loser, loser,
-    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    >>> personset._merge_person_decoration(winner, loser, skip,
     ...     'PersonLocation', 'person', ['last_modified_by',])
-    >>> print decorator_refs(cur, winner, loser)
+    >>> print decorator_refs(store, winner, loser)
     winner, winner,
     loser, winner,
 
@@ -311,7 +314,7 @@ are carried over just like when merging people.
     ...     PollSecrecy.OPEN, allowspoilt=True)
 
     # test_team has a superteam, one active member and a poll.
-    >>> [team.name for team in test_team.getSuperTeams()]
+    >>> [team.name for team in test_team.super_teams]
     [u'launchpad']
     >>> test_team.teamowner.name
     u'name12'
@@ -322,7 +325,7 @@ are carried over just like when merging people.
 
     # Landscape-developers has no super teams, two members and no polls.
     >>> landscape = personset.getByName('landscape-developers')
-    >>> [team.name for team in landscape.getSuperTeams()]
+    >>> [team.name for team in landscape.super_teams]
     []
     >>> landscape.teamowner.name
     u'name12'
@@ -347,7 +350,6 @@ active members of the team so that we can perform the merge.
 
     >>> comment = "We're merging this team into another one."
     >>> test_team.deactivateAllMembers(comment, personset.getByName('name16'))
-    >>> flush_database_caches()
     >>> personset.merge(test_team, landscape)
 
     # The resulting Landscape-developers has now a super team, but has
@@ -357,7 +359,7 @@ active members of the team so that we can perform the merge.
     u'name12'
     >>> [member.name for member in landscape.allmembers]
     [u'salgado', u'name12']
-    >>> [team.name for team in landscape.getSuperTeams()]
+    >>> [team.name for team in landscape.super_teams]
     [u'launchpad']
     >>> list(IPollSubset(landscape).getAll())
     []

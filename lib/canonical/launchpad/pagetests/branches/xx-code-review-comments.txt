@@ -1,0 +1,108 @@
+= Code Review Comments =
+
+Set up required objects
+
+    >>> # We need to be admin to add a landing target to a random branch
+    >>> login('foo.bar@canonical.com')
+    >>> merge_proposal = factory.makeBranchMergeProposal()
+    >>> merge_proposal_url = canonical_url(merge_proposal)
+    >>> logout()
+
+    >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> nopriv_browser.open(merge_proposal_url)
+    >>> nopriv_browser.getLink('Add comment').click()
+    >>> nopriv_browser.getControl('Subject').value = 'my subject'
+    >>> nopriv_browser.getControl('Comment').value = 'my body'
+    >>> nopriv_browser.getControl('Add').click()
+    >>> comment_url = nopriv_browser.url
+
+Now, open its home page.
+
+    >>> anon_browser.open(comment_url)
+    >>> def print_tag(tag_id, browser=None):
+    ...     if browser is None:
+    ...         browser = anon_browser
+    ...     tag = find_tag_by_id(browser.contents, tag_id)
+    ...     print extract_text(tag)
+    >>> print anon_browser.title
+    Code review comment
+    >>> print_tag('comment-subject')
+    my subject
+    >>> print_tag('comment-body')
+    my body
+    >>> print_tag('comment-from')
+    No Privileges Person
+    >>> print anon_browser.getLink('No Privileges Person').url
+    http://launchpad.dev/~no-priv
+    >>> print_tag('wrote-block', nopriv_browser)
+    wrote
+    >>> find_tag_by_id(nopriv_browser.contents, 'voted-block') is None
+    True
+
+Reply link is displayed even if the user isn't logged in.
+
+    >>> anon_browser.getLink('Reply').click()
+    Traceback (most recent call last):
+    Unauthorized:...
+
+We can reply to a comment.
+
+    >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+    >>> nopriv_browser.open(comment_url)
+    >>> nopriv_browser.getLink('Reply').click()
+    >>> nopriv_browser.url == comment_url + '/+reply'
+    True
+    >>> nopriv_browser.getControl('Subject').value = 'Subjects are nice.'
+    >>> nopriv_browser.getControl('Comment').value = ('I like this.\n'
+    ... 'I wish I had time to review it properly')
+    >>> nopriv_browser.getControl('Vote').displayValue = ['Abstain']
+    >>> nopriv_browser.getControl('Tag').value = 'timeless'
+    >>> nopriv_browser.getControl('Add').click()
+
+After this, we are taken to the view page for that comment.
+
+    >>> print_tag('comment-subject', nopriv_browser)
+    Subjects are nice.
+    >>> print_tag('comment-body', nopriv_browser)
+    I like this.
+    I wish I had time to review it properly
+    >>> print_tag('voted-block', nopriv_browser)
+    voted
+    Abstain
+    timeless
+    >>> find_tag_by_id(nopriv_browser.contents, 'wrote-block') is None
+    True
+
+We can't validate the date string since that would lead to timing bugs, but
+we can establish that it exists.
+
+    >>> find_tag_by_id(nopriv_browser.contents, 'comment-date') is not None
+    True
+
+The comment's view page has a link that takes us back to the merge proposal.
+
+    >>> nopriv_browser.getLink('Back to merge proposal').click()
+    >>> bool(nopriv_browser.url == merge_proposal_url)
+    True
+
+Our comments are now listed on this page.  The second comment has been
+abbreviated at the newline, with a trailing elipsis.  (And there are a total
+of three periods, even though simply appending an elipsis to a sentence with
+a period would give four.)
+
+    >>> comments = find_tags_by_class(
+    ...     nopriv_browser.contents, 'boardCommentDetails')
+    >>> print extract_text(comments[0])
+    No Privileges Person
+    wrote
+    ...:
+    my body
+    (full message)
+    >>> print extract_text(comments[1])
+    No Privileges Person
+    voted
+    Abstain
+    timeless
+    ...:
+    I like this...
+    (full message)

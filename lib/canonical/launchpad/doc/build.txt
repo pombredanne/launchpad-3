@@ -42,7 +42,7 @@ Let's check the complex properties of a build object.
     <LibraryFileAlias ...>
 
     >>> firefox_build.calculated_buildstart
-    datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
+    datetime.datetime(...)
 
     >>> firefox_build.is_virtualized
     False
@@ -96,7 +96,7 @@ components and a list of components it can depend of.
     multiverse | main restricted universe multiverse
        partner | partner
     restricted | main restricted
-      universe | main restricted universe
+      universe | main universe
 
 `IBuild.ogre_components` is the list of allowed components for
 building this source. It simply submits the `IBuild.current_component`
@@ -689,7 +689,7 @@ consistently spread according the source target component, i.e. a
 source published in 'main' component is only allowed to depend on
 binaries also published in 'main', on the other hand a source
 published in 'universe' is allowed to depend on binaries published in
-'main', 'restricted' and 'universe' components.
+'main' and 'universe' components.
 
 A proper name for this "model" would be 'cross-component-dependency'.
 
@@ -723,7 +723,7 @@ A proper name for this "model" would be 'cross-component-dependency'.
     -----------+---------------
           main | main
     restricted | main restricted
-      universe | main restricted universe
+      universe | main universe
     multiverse | main restricted universe multiverse
        partner | partner
 

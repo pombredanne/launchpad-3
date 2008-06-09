@@ -31,9 +31,20 @@ class XpiHeader:
         self.launchpad_export_date = None
         self.comment = None
 
+        if isinstance(header_content, str):
+            try:
+                self._text = header_content.decode(self.charset)
+            except UnicodeDecodeError:
+                raise TranslationFormatInvalidInputError, (
+                    "XPI header is not encoded in %s." % self.charset)
+        else:
+            assert isinstance(header_content, unicode), (
+                "XPI header text is neither str nor unicode.")
+            self._text = header_content
+
     def getRawContent(self):
         """See `ITranslationHeaderData`."""
-        return self._raw_content
+        return self._text
 
     def updateFromTemplateHeader(self, template_header):
         """See `ITranslationHeaderData`."""
@@ -43,6 +54,8 @@ class XpiHeader:
     def getLastTranslator(self):
         """See `ITranslationHeaderData`."""
         last_name, last_email = None, None
+        # Both cElementTree and elementtree fail when trying to parse
+        # proper unicode strings.  Use our raw input instead.
         parse = cElementTree.iterparse(StringIO(self._raw_content))
         for event, elem in parse:
             if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":

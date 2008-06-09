@@ -493,8 +493,12 @@ The upload will be rejected.
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
 
+  >>> print ed_src_dup.queue_root.status.name
+  REJECTED
+
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
-  >>> hoary.getQueueItems(PackageUploadStatus.NEW).count()
+  >>> hoary.getQueueItems(
+  ...     status=PackageUploadStatus.REJECTED, name="ed").count()
   1
 
 
@@ -744,7 +748,10 @@ unapproved.
 
 And pop it back to development now that we're done
 
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 Check the uploader behaviour against a missing orig.tar.gz file,
       bug # 30741.
@@ -890,7 +897,7 @@ for further checks:
   340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
 The ACL rules also enable us to specify that a user has a
-package-specific upload right.  In the test package data, bar_1.0-2 is
+package-specific upload right.  In the test package data, bar_1.0-1 is
 signed by "Foo Bar" who is name16 in the sample data.  As shown above,
 he currently has no upload rights at all to Ubuntu.  However, we can add
 an ArchivePermission record to permit him to upload "bar" specifically.
@@ -910,8 +917,10 @@ an ArchivePermission record to permit him to upload "bar" specifically.
 Now try the "bar" upload:
 
     >>> bar2 = NascentUpload(
-    ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
+    ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
     ...     insecure_policy, mock_logger_quiet)
     >>> bar2.process()
     >>> bar2.is_rejected
     False
+
+  >>> print bar2.rejection_message

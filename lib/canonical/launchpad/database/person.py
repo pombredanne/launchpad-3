@@ -20,7 +20,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
-import sha
 
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -32,6 +31,7 @@ from sqlobject import (
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.references import Reference
+from storm.store import Store
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -39,8 +39,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, flush_database_caches, flush_database_updates, quote, quote_like,
-    sqlvalues, SQLBase)
+    cursor, quote, quote_like, sqlvalues, SQLBase)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -1247,7 +1246,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     #
     # ITeam methods
     #
-    def getSuperTeams(self):
+    @property
+    def super_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.team AND
@@ -1256,7 +1256,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
-    def getSubTeams(self):
+    @property
+    def sub_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.person AND
@@ -1580,9 +1581,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         for membership in self.myactivememberships:
             self.leave(membership.team)
-        # Make sure all further queries don't see this person as a member of
-        # any teams.
-        flush_database_updates()
 
         # Deactivate CoC signatures, invalidate email addresses, unassign bug
         # tasks and specs and reassign pillars and teams.
@@ -1779,7 +1777,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             AND TeamMembership.team = %d
             """ % (statuses, self.id)
         return TeamMembership.select(
-            query, clauseTables=['Person'], orderBy=Person.sortingColumns)
+            query, clauseTables=['Person'],
+            prejoinClauseTables=['Person'],
+            orderBy=Person.sortingColumns)
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
@@ -1987,16 +1987,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return self.preferredemail.email
         else:
             return ''
-
-    @property
-    def preferredemail_sha1(self):
-        """See `IPerson`."""
-        preferredemail = self.preferredemail
-        if preferredemail:
-            return sha.new(
-                'mailto:' + preferredemail.email).hexdigest().upper()
-        else:
-            return None
 
     @property
     def validatedemails(self):
@@ -2343,15 +2333,6 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
-            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
-            )
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2413,7 +2394,7 @@ class PersonSet:
 
         return results.orderBy(orderBy)
 
-    def findTeam(self, text, orderBy=None):
+    def findTeam(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
@@ -2501,7 +2482,7 @@ class PersonSet:
         return Person.select("Person.teamowner IS NOT NULL",
             orderBy=['-datecreated'], limit=limit)
 
-    def _merge_person_decoration(self, to_person, from_person, skip, cur,
+    def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
         """Merge a table that "decorates" Person.
 
@@ -2512,7 +2493,6 @@ class PersonSet:
         :from_person:     the IPerson that is being merged away
         :skip:            a list of table/column pairs that have been
                           handled
-        :cur:             a database cursor
         :decorator_table: the name of the table that decorated Person
         :person_pointer_column:
                           the column on decorator_table that UNIQUE'ly
@@ -2533,12 +2513,11 @@ class PersonSet:
         non-unique and will be updated to point to the to_person
         regardless.
         """
-        cur = cursor()
-
+        store = Store.of(to_person)
         # First, update the main UNIQUE pointer row which links the
         # decorator table to Person. We do not update rows if there are
         # already rows in the table that refer to the to_person
-        cur.execute(
+        store.execute(
          """UPDATE %(decorator)s
             SET %(person_pointer)s=%(to_id)d
             WHERE %(person_pointer)s=%(from_id)d
@@ -2554,7 +2533,7 @@ class PersonSet:
         # Person. Since these are assumed to be NOT UNIQUE, we don't
         # have to worry about multiple rows pointing at the to_person.
         for additional_column in additional_person_columns:
-            cur.execute(
+            store.execute(
              """UPDATE %(decorator)s
                 SET %(column)s=%(to_id)d
                 WHERE %(column)s=%(from_id)d
@@ -2585,7 +2564,7 @@ class PersonSet:
 
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
-        flush_database_updates()
+        store = Store.of(from_person)
 
         # Get a database cursor.
         cur = cursor()
@@ -2647,7 +2626,7 @@ class PersonSet:
 
         # Update PersonLocation, which is a Person-decorator table.
         self._merge_person_decoration(
-            to_person, from_person, skip, cur, 'PersonLocation', 'person',
+            to_person, from_person, skip, 'PersonLocation', 'person',
             ['last_modified_by', ])
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
@@ -3144,9 +3123,9 @@ class PersonSet:
         cur.execute("UPDATE Person SET name = %s WHERE id = %s"
                     % sqlvalues(name, from_person))
 
-        # Since we've updated the database behind SQLObject's back,
+        # Since we've updated the database behind Storm's back,
         # flush its caches.
-        flush_database_caches()
+        store.invalidate()
 
     def getTranslatorsByLanguage(self, language):
         """See `IPersonSet`."""
@@ -3263,6 +3242,7 @@ class PersonLanguage(SQLBase):
 
 class SSHKey(SQLBase):
     implements(ISSHKey)
+    _defaultOrder = ["person", "keytype", "keytext"]
 
     _table = 'SSHKey'
 
@@ -3284,6 +3264,12 @@ class SSHKeySet:
             return SSHKey.get(id)
         except SQLObjectNotFound:
             return default
+
+    def getByPeople(self, people):
+        """See `ISSHKeySet`"""
+        return SSHKey.select("""
+            SSHKey.person IN %s
+            """ % sqlvalues([person.id for person in people]))
 
 
 class WikiName(SQLBase):

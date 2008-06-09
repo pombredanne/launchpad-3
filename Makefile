@@ -34,7 +34,7 @@ schema: build clean_codehosting
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build dbfreeze_check check importdcheck check_sourcecode_dependencies
+check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 
 check_launchpad_storm_on_merge: build dbfreeze_check check_storm
 
@@ -59,7 +59,7 @@ dbfreeze_check:
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
 
-check_merge: check_not_a_ui_merge build check importdcheck
+check_merge: check_not_a_ui_merge build check
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be
@@ -69,7 +69,7 @@ check_merge: check_not_a_ui_merge build check importdcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_ui: build check importdcheck
+check_merge_ui: build check
 	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
@@ -79,10 +79,6 @@ check_merge_edge: dbfreeze_check check_merge
 	# database patches or datamigration scripts (which should live
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
-
-importdcheck: build
-	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./lib/importd/test_all.py "$$TESTFILTER"
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
@@ -99,13 +95,18 @@ check_storm: build
 	  --module canonical.launchpad.interfaces \
 	  --module canonical.launchpad.pagetests \
 	  --module canonical.launchpad.webapp \
+	  --module canonical.archivepublisher \
 	  --module canonical.authserver \
+	  --module canonical.config \
 	  --module canonical.database \
 	  --module canonical.ftests \
 	  --module canonical.lazr \
 	  --module canonical.librarian \
 	  --module canonical.lp \
-	  --module canonical.testing
+	  --module canonical.poppy \
+	  --module canonical.testing \
+	  --module canonical.widgets \
+	  --module canonical.zeca
 
 lint:
 	@bash ./utilities/lint.sh
@@ -164,6 +165,12 @@ run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecod
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
+run_all_quickly_and_quietly: stop_quickly_and_quietly
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) \
+		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
+		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
+
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
 	# mirrored area.
@@ -201,6 +208,11 @@ start: inplace stop bzr_version_info
 stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
+
+stop_quickly_and_quietly:
+	LPCONFIG=${LPCONFIG} ${PYTHON} \
+	  utilities/killservice.py librarian buildsequencer launchpad mailman \
+	  > /dev/null 2>&1
 
 shutdown: scheduleoutage stop
 	rm -f +maintenancetime.txt
@@ -284,7 +296,7 @@ tags:
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
-		check importdcheck check_merge schema default launchpad.pot \
+		check check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
 		sync_branches check_loggerhead_on_merge reload-apache \
 		check_storm check_launchpad_storm_on_merge

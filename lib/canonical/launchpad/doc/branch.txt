@@ -443,9 +443,18 @@ And on a branch with a NULL author.
 
 == Branch subscriptions ==
 
-Branches can be subscribed to and unsubscribed from by a Person.
+Branches can be subscribed to and unsubscribed from by a Person.  An
+implicit subscription to the branch is created when the branch is created
+so that the branch owner can be informed of merge proposals or code review
+messages relating to their branches.
 
-Branch subscriptions now have extra attributes associated with them.
+    >>> subscriptions = list(gterm_dev.subscriptions)
+    >>> print len(subscriptions)
+    1
+    >>> subscriptions[0].person == gterm_dev.owner
+    True
+
+Branch subscriptions have attributes associated with them.
 The notification_level is used to control what email is sent to the
 subscribed user, and max_diff_lines is used to control the size of
 any generated diffs between revisions that are emailed out.  The review_level
@@ -476,9 +485,9 @@ BranchSubscriptionNotificationLevel.
     True
     >>> subscription.review_level == CodeReviewNotificationLevel.FULL
     True
-    >>> gterm_dev.subscriptions[0] == subscription
+    >>> gterm_dev.subscriptions[1] == subscription
     True
-    >>> list(gterm_dev.subscribers) == [sabdfl]
+    >>> set(gterm_dev.subscribers) == set([gterm_dev.owner, sabdfl])
     True
     >>> list(sabdfl.subscribed_branches) == [gterm_dev]
     True
@@ -505,7 +514,7 @@ BranchSubscriptionNotificationLevel.
 
     >>> gterm_dev.unsubscribe(sabdfl)
     >>> gterm_dev.subscribers.count()
-    0
+    1
 
 
 We can get the subscribers for a branch based on their level of
@@ -1115,14 +1124,10 @@ canonical/launchpad/database/tests/test_branch.py.
 
     >>> print branch.unique_name
     ~ddaa/gnome-terminal/to-delete
-    >>> branch.canBeDeleted()
-    True
 
-Adding a subscriber makes it not deletable.
+Since the branch has ddaa as an implicit subscriber, the branch is not
+deletable.
 
-    >>> ignored = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> branch.canBeDeleted()
     False
     >>> branch.destroySelf()
@@ -1145,14 +1150,12 @@ The requirements for deleting the branch can be discovered:
     ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
     ...     'http://example.com/branches/to-delete', 'A branch to delete',
     ...     date_created=now.next())
-    >>> subscription = branch.subscribe(
-    ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None,
-    ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> requirements = branch.deletionRequirements()
 
 The keys in the requirements are the objects that are associated with the
 branch.
 
+    >>> [subscription] = list(branch.subscriptions)
     >>> [subscription] == requirements.keys()
     True
     >>> action, reason = requirements[subscription]
