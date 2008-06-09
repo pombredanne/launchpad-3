@@ -228,6 +228,24 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         readme_path = os.path.join(tree2.local_path, 'README')
         self.assertFileEqual(new_content, readme_path)
 
+    def test_update_ignores_externals(self):
+        # update() ignores svn:externals.
+        # We test this in a similar way to test_update, by getting two trees,
+        # mutating one and checking its effect on the other tree -- though
+        # here we are hoping for no effect.
+        tree = SubversionWorkingTree(self.svn_branch_url, 'tree')
+        tree.checkout()
+
+        tree2 = SubversionWorkingTree(self.svn_branch_url, 'tree2')
+        tree2.checkout()
+
+        client = pysvn.Client()
+        client.propset(
+            'svn:externals', 'external http://foo.invalid/svn/something',
+            tree.local_path)
+        tree.commit()
+
+        tree2.update()
 
 class TestCVSWorkingTree(TestCaseWithTransport):
 
