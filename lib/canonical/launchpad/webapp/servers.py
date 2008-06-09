@@ -44,9 +44,9 @@ from canonical.lazr.rest.resource import (
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
-    OAuthPermission, NonceAlreadyUsed)
+    IFeedsApplication, IPrivateApplication, IOpenIdApplication, IPerson,
+    IPersonSet, IShipItApplication, IWebServiceApplication,
+    IOAuthConsumerSet, OAuthPermission, NonceAlreadyUsed)
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -354,18 +354,6 @@ class WebServiceRequestPublicationFactory(
         super(WebServiceRequestPublicationFactory, self).__init__(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
-
-    def canHandle(self, environment):
-        """See `IRequestPublicationFactory`.
-
-        XXX: This factory only accepts calls if the web service is
-        exposed. Once we launch the web service this method will be
-        removed.-- Leonard Richardson 2008-01-04
-        (https://launchpad.net/launchpad/+spec/api-bugs-remote)
-        """
-        result = super(WebServiceRequestPublicationFactory, self).canHandle(
-            environment)
-        return result and config.vhosts.expose_webservice
 
 
 class NotFoundRequestPublicationFactory:
@@ -1055,8 +1043,22 @@ class WebServicePublication(LaunchpadBrowserPublication):
         else:
             # Everything is fine, let's return the principal.
             pass
-        return getUtility(IPlacelessLoginSource).getPrincipal(
+        principal = getUtility(IPlacelessLoginSource).getPrincipal(
             token.person.id, access_level=token.permission)
+
+        # Make sure the principal is a member of the beta test team.
+        # XXX leonardr 2008-05-22 blueprint=api-bugs-remote
+        # Once we launch the web service this code will be removed.
+        people = getUtility(IPersonSet)
+        webservice_beta_team_name = config.vhost.api.beta_test_team
+        if webservice_beta_team_name is not None:
+            webservice_beta_team = people.getByName(
+                webservice_beta_team_name)
+            person = IPerson(principal)
+            if not person.inTeam(webservice_beta_team):
+                raise Unauthorized(person.name +
+                                   " is not a member of the beta test team.")
+        return principal
 
 
 class WebServiceRequestTraversal:

@@ -13,7 +13,7 @@ from canonical.launchpad.interfaces import (
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportMachine,
-    ICodeReviewMessage, IDistribution, IDistributionMirror, IDistroSeries,
+    ICodeReviewComment, IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
     IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
     ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
@@ -1408,23 +1408,23 @@ class BranchMergeProposalView(AuthorizationBase):
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
 
 
-class CodeReviewMessageView(AuthorizationBase):
+class CodeReviewCommentView(AuthorizationBase):
     permission = 'launchpad.View'
-    usedfor = ICodeReviewMessage
+    usedfor = ICodeReviewComment
 
     def checkAuthenticated(self, user):
-        """Is the user able to view the code review message?
+        """Is the user able to view the code review comment?
 
-        The user can see a code review message if they can see the branch
+        The user can see a code review comment if they can see the branch
         merge proposal.
         """
         bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
         return bmp_checker.checkAuthenticated(user)
 
     def checkUnauthenticated(self):
-        """Are not-logged-in people able to view the code review message?
+        """Are not-logged-in people able to view the code review comment?
 
-        They can see a code review message if they can see the branch merge
+        They can see a code review comment if they can see the branch merge
         proposal.
         """
         bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)

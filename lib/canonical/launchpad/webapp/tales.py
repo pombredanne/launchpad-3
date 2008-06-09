@@ -1182,8 +1182,8 @@ class SpecificationFormatterAPI(CustomizableFormatter):
         return {'title': self._context.title}
 
 
-class CodeReviewMessageFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for CodeReviewMessage objects"""
+class CodeReviewCommentFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for CodeReviewComment objects"""
 
     _link_summary_template = _('Comment by %(author)s')
     _link_permission = 'zope.Public'
