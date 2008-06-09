@@ -44,8 +44,8 @@ simple case, it's the same name as the field.
 
 The marshall_from_json_data() method is used during PUT and PATCH
 requests to transform the value provided in the JSON representation to a
-value the underlying schema field. In SimpleFieldMarshaller
-implementation, the value in is returned unchanged.
+value in the underlying schema field. In SimpleFieldMarshaller
+implementation, the value is returned unchanged.
 
     >>> marshaller.marshall_from_json_data("foo")
     'foo'
@@ -76,9 +76,9 @@ None.
 
 The unmarshall() method is used to convert the field's value to a value
 that can be serialized to JSON as part of an entry representation.  The
-first parameter is the entry that the value is part of (for fields that
-will transform the value into a URL for example--see the CollectionField
-marshaller for an example). The second one is the value to convert.  In
+first parameter is the entry that the value is part of. That is used by
+fields that transform the value into a URL, see the CollectionField
+marshaller for an example. The second one is the value to convert.  In
 the SimpleFieldMarshaller implementation, the value is returned
 unchanged.
 
@@ -86,6 +86,7 @@ unchanged.
     'foo'
     >>> print marshaller.unmarshall(None, None)
     None
+
 
 == Basic types marshallers ==
 
@@ -123,8 +124,7 @@ The empty string still marshalls to None.
     >>> print marshaller.marshall_from_request("")
     None
 
-If the value from the JSON representation isn't an integer, a ValueError
-is raised.
+If the value from JSON isn't an integer, a ValueError is raised.
 
     >>> marshaller.marshall_from_json_data(-10)
     -10
