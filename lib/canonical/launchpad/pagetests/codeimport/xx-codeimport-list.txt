@@ -1,28 +1,35 @@
 There is a page listing all the active code imports on the code
 homepage.
 
-As there are no *active* imports in the sampled data, we will mark the
-existing three imports as active.
+We start by deleting all the code import sample data and creating a
+few imports that will be displayed in the listing.
 
+    >>> import datetime
+    >>> import pytz
+    >>> from canonical.codehosting.codeimport.tests.test_worker_monitor import (
+    ...     nuke_codeimport_sample_data)
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.database.tests.test_codeimport import (
+    ...     make_active_import)
+    >>> from canonical.launchpad.interfaces import ICodeImportSet
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     ImportStatus, IProductSeriesSet)
     >>> from zope.component import getUtility
     >>> login('david.allouche@canonical.com')
-    >>> product_series_set = getUtility(IProductSeriesSet)
-    >>> for ps in product_series_set.searchImports():
-    ...     ps.enableAutoSync()
+    >>> nuke_codeimport_sample_data()
+    >>> code_import_set = getUtility(ICodeImportSet)
+    >>> active_import = make_active_import(
+    ...     factory, product_name="myproject", branch_name="trunk",
+    ...     svn_branch_url="http://svn.example.com/svn/myproject/trunk",
+    ...     last_update=datetime.datetime(2007, 1, 1, tzinfo=pytz.UTC))
     >>> flush_database_updates()
-    >>> len(list(product_series_set.searchImports(
-    ...     importstatus=ImportStatus.SYNCING)))
-    3
+    >>> len(list(code_import_set.getActiveImports()))
+    1
     >>> logout()
 
 The page is linked to from the "$N imported branches" text.
 
     >>> browser.open('http://code.launchpad.dev')
-    >>> browser.getLink('3 imported branches').click()
+    >>> browser.getLink('1 imported branches').click()
     >>> print browser.title
     Available code imports
 
@@ -33,37 +40,31 @@ It lists the active imports, sorted by product then branch name:
    ...     print extract_text(table)
 
    >>> print_import_table()
-   Project   Series
-         Source Details   Last Updated
-   a52dec    failedbranch
-         :pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52 a52dec
-   a52dec     trunk
-         :pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52 a52dec
-   Evolution  trunk
-         :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome evolution
+   Project   Branch Name Source Details   Last Updated
+   myproject trunk       http://svn.example.com/svn/myproject/trunk 2007-01-01
 
 You can filter the list by product:
 
-   >>> browser.getControl(name='text').value = 'a52dec'
-   >>> browser.getControl('Search').click()
-   >>> print_import_table()
-   Project   Series
-         Source Details   Last Updated
-   a52dec    failedbranch
-         :pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52 a52dec
-   a52dec     trunk
-         :pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52 a52dec
+#   >>> browser.getControl(name='text').value = 'a52dec'
+#   >>> browser.getControl('Search').click()
+#   >>> print_import_table()
+#   Project   Series
+#         Source Details   Last Updated
+#   a52dec    failedbranch
+#         :pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52 a52dec
+#   a52dec     trunk
+#         :pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52 a52dec
 
 And by project group:
 
-   # We use an obscure search term that only appears in the Gnome
-   # project's description, as the word "Gnome" appears in Evolution's
-   # description.
-   >>> browser.getControl(name='text').value = 'hig'
-   >>> browser.getControl('Search').click()
-   >>> print_import_table()
-   Project   Series
-         Source Details   Last Updated
-   Evolution  trunk
-         :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome evolution
+#   # We use an obscure search term that only appears in the Gnome
+#   # project's description, as the word "Gnome" appears in Evolution's
+#   # description.
+#   >>> browser.getControl(name='text').value = 'hig'
+#   >>> browser.getControl('Search').click()
+#   >>> print_import_table()
+#   Project   Series
+#         Source Details   Last Updated
+#   Evolution  trunk
+#         :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome evolution
 

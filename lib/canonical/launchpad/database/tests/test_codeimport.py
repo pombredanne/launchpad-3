@@ -765,7 +765,9 @@ class TestNewFromProductSeries(unittest.TestCase):
 
 
 def make_active_import(factory, project_name=None, product_name=None,
-                       branch_name=None):
+                       branch_name=None, svn_branch_url=None,
+                       cvs_root=None, cvs_module=None,
+                       last_update=None):
     """Make a new CodeImport for a new Product, maybe in a new Project.
 
     The import will be 'active' in the sense used by
@@ -775,19 +777,25 @@ def make_active_import(factory, project_name=None, product_name=None,
         project = factory.makeProject(name=project_name)
     else:
         project = None
-    product = factory.makeProduct(name=product_name, project=project)
+    product = factory.makeProduct(
+        name=product_name, displayname=product_name, project=project)
     code_import = factory.makeCodeImport(
-        product=product, branch_name=branch_name)
-    make_import_active(factory, code_import)
+        product=product, branch_name=branch_name,
+        svn_branch_url=svn_branch_url, cvs_root=cvs_root,
+        cvs_module=cvs_module)
+    make_import_active(factory, code_import, last_update)
     return code_import
 
 
-def make_import_active(factory, code_import):
-    """Make `code_import` active as in `ICodeImportSet.getActiveImports`."""
+def make_import_active(factory, code_import, last_update=None):
+    """Make `code_import` active as per `ICodeImportSet.getActiveImports`."""
     code_import.approve({}, factory.makePerson(password='whatever'))
     from zope.security.proxy import removeSecurityProxy
-    removeSecurityProxy(code_import).date_last_successful = datetime(
-        2008, 1, 1, tzinfo=pytz.UTC)
+    if last_update is None:
+        # If last_update is not specfied, presumably we don't care what it is
+        # so we just use some made up value.
+        last_update = datetime(2008, 1, 1, tzinfo=pytz.UTC)
+    removeSecurityProxy(code_import).date_last_successful = last_update
     flush_database_updates()
 
 
