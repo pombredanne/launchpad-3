@@ -52,7 +52,7 @@ class TestMergeProposalMailing(TestCase):
         self.assertEqual("""\
 Baz Qux has proposed merging foo into bar.
 
---
+--\x20
 %s
 %s
 """ % (canonical_url(bmp), mailer.getReason(subscriber)), body)
@@ -139,7 +139,7 @@ The proposal to merge foo into bar has been updated.
 Commit Message changed to:
 
 new commit message
---
+--\x20
 %s
 %s
 """ % (url, reason), body)
