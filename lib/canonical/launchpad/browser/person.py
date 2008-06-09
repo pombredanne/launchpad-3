@@ -1454,7 +1454,7 @@ class PersonRdfView:
     """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
-        '../templates/person-foaf.pt')
+        '../templates/person-rdf.pt')
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
@@ -1481,7 +1481,7 @@ class PersonRdfContentsView:
     # preserve the case of the elements (which is not preserved in the
     # parsing of the default text/html content-type.)
     template = ViewPageTemplateFile(
-        '../templates/person-foaf-contents.pt',
+        '../templates/person-rdf-contents.pt',
         content_type="application/rdf+xml")
 
     def __init__(self, context, request):
