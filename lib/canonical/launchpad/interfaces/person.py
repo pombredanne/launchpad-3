@@ -1613,7 +1613,6 @@ class IPersonSet(Interface):
         given.
         """
 
-    @export_operation_as('create_team')
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
