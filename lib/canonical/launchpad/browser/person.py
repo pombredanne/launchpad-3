@@ -1509,12 +1509,14 @@ class PersonRdfContentsView:
             members_by_id[email.personID].setPreferredEmail(email)
         return members
 
-    def rawtemplate(self):
-        """Render RDF output."""
-        return self.template()
-
     def __call__(self):
-        """Render RDF output."""
+        """Render RDF output.
+
+        This is only used when rendering this to the end-user, and is
+        only here to avoid us OOPSing if people access +raw-contents via
+        the web. All templates should reuse this view by invoking
+        +rdf-contents/template.
+        """
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
