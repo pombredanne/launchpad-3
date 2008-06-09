@@ -1166,7 +1166,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text, menu=IPersonEditMenu)
 
     def related_software(self):
-        target = '+related-software'
+        target = '+projects'
         text = 'Related Software'
         return Link(target, text)
 
@@ -1195,12 +1195,12 @@ class PersonEditNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def contact_details(self):
-        target = '+contactaddress'
+        target = '+contactdetails'
         text = 'Contact Details'
         return Link(target, text)
 
     def email_settings(self):
-        target = '+editemailaddresses'
+        target = '+editemails'
         text = 'E-mail Settings'
         return Link(target, text)
 
@@ -1215,7 +1215,7 @@ class PersonEditNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def passwords(self):
-        target = '+editpassword'
+        target = '+changepassword'
         text = 'Passwords'
         return Link(target, text)
 
@@ -2606,6 +2606,8 @@ class PersonEditJabberIDsView(LaunchpadView):
 
 class PersonEditSSHKeysView(LaunchpadView):
 
+    implements(IPersonEditMenu)
+
     info_message = None
     error_message = None
 
@@ -2777,6 +2779,9 @@ class PersonGPGView(LaunchpadView):
     it. Also supports removing the token generated for validation (in
     the case you want to give up on importing the key).
     """
+
+    implements(IPersonEditMenu)
+
     key = None
     fingerprint = None
 
@@ -2952,6 +2957,8 @@ class PersonGPGView(LaunchpadView):
 
 
 class PersonChangePasswordView(LaunchpadFormView):
+
+    implements(IPersonEditMenu)
 
     label = "Change your password"
     schema = IPersonChangePassword
@@ -3231,6 +3238,8 @@ class PersonEditEmailsView(LaunchpadFormView):
     the system associated with their account, and remove associated
     emails.
     """
+
+    implements(IPersonEditMenu)
 
     schema = IEmailAddress
 
