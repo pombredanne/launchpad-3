@@ -1119,6 +1119,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
     def url(self, view_name=None):
         """See `ObjectFormatterAPI`."""
         # The url of a code import is the associated branch.
+        # This is still here primarily for supporting branch deletion,
+        # which does a fmt:link of the other entities that will be deleted.
         url = canonical_url(
             self._context.branch, path_only_if_possible=True,
             view_name=view_name)
