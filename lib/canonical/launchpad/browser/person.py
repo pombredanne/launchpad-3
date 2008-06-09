@@ -1157,12 +1157,14 @@ class PersonOverviewNavigationMenu(NavigationMenu):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['profile', 'related_software', 'karma', 'show_ppa']
+    title = 'Profile'
+    links = ('profile', 'related_software', 'karma', 'show_ppa')
 
     def profile(self):
         target = '+index'
         text = 'Profile'
-        return Link(target, text, menu=PersonEditNavigationMenu)
+        edit_menu = PersonEditNavigationMenu(self.context)
+        return Link(target, text, menu=edit_menu)
 
     def related_software(self):
         target = '+related-software'
@@ -1184,8 +1186,9 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    links = ['personal', 'contact_details', 'email_settings',
-             'sshkeys']
+    title = 'Personal'
+    links = ('personal', 'contact_details', 'email_settings',
+             'sshkeys')
 
     def personal(self):
         target='+edit'
