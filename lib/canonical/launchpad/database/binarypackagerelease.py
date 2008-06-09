@@ -236,9 +236,3 @@ class BinaryPackageReleaseSet:
 
         return query, clauseTables
 
-    def getByBuildIDs(self, buildIDs):
-        """See `IBinaryPackageReleaseSet`."""
-        return BinaryPackageRelease.select("""
-            BinaryPackageRelease.build IN %s
-            """ % sqlvalues(buildIDs))
-

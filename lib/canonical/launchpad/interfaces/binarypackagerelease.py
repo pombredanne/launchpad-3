@@ -92,9 +92,6 @@ class IBinaryPackageReleaseSet(Interface):
     def getByNameInDistroSeries(distroseries, name):
         """Get an BinaryPackageRelease in a DistroSeries by its name"""
 
-    def getByBuildIDs(build_ids):
-        """Return all packages belonging to the list of build IDs."""
-
 
 class BinaryPackageFileType(DBEnumeratedType):
     """Binary Package File Type
