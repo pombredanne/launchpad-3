@@ -418,7 +418,7 @@ class LaunchpadObjectFactory:
             product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None):
+                       cvs_module=None, product=None, branch_name=None):
         """Create and return a new, arbitrary code import.
 
         The code import will be an import from a Subversion repository located
@@ -427,8 +427,10 @@ class LaunchpadObjectFactory:
         if svn_branch_url is cvs_root is cvs_module is None:
             svn_branch_url = self.getUniqueURL()
 
-        product = self.makeProduct()
-        branch_name = self.getUniqueString('name')
+        if product is None:
+            product = self.makeProduct()
+        if branch_name is None:
+            branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
         registrant = self.makePerson(
             email_address_status=EmailAddressStatus.VALIDATED)
