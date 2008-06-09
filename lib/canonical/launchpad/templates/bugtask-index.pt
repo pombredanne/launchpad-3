@@ -275,17 +275,22 @@
           </tal:block>
         </p>
         <tal:block condition="not: context/bug/is_complete">
-          <p tal:condition="view/userIsMentor">
-            &raquo;
-            <a href="+retractmentoring">Retract my offer of mentorship</a>
-          </p>
+          <div tal:condition="view/userIsMentor"
+               class="action">
+            <a href="+retractmentoring">
+              <img class="inlineLinkIcon" src="/@@/remove" alt=""/>
+              Retract my offer of mentorship
+            </a>
+          </div>
         </tal:block>
       </tal:mentors>
       <div tal:define="link context/menu:context/offermentoring"
            tal:condition="link/enabled"
-           style="text-align: left; width: 100%">
-        &raquo; <a tal:attributes="href link/url">
-        Offer to mentor someone fixing this bug</a>
+           class="action">
+        <a tal:attributes="href link/url">
+          <img class="inlineLinkIcon" src="/@@/add" alt=""/>
+          Offer to mentor someone fixing this bug
+        </a>
       </div>
       <tal:comment repeat="comment view/getBugCommentsForDisplay">
         <tal:comment-box condition="comment/can_be_shown">
