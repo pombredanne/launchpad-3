@@ -81,7 +81,8 @@ from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
     BugTask, get_bug_privacy_filter, search_value_to_where_condition)
-from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress, HasOwnerMixin)
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pillar import PillarName
@@ -3265,7 +3266,7 @@ class SSHKeySet:
             """ % sqlvalues([person.id for person in people]))
 
 
-class WikiName(SQLBase):
+class WikiName(SQLBase, HasOwnerMixin):
     implements(IWikiName)
 
     _table = 'WikiName'
@@ -3277,10 +3278,6 @@ class WikiName(SQLBase):
     @property
     def url(self):
         return self.wiki + self.wikiname
-
-    # Defined because we want WikiName to provide IHasOwner so that it uses
-    # the security adapter of IHasOwner for launchpad.Edit.
-    owner = property(lambda s: s.person)
 
 
 class WikiNameSet:
@@ -3319,7 +3316,7 @@ class WikiNameSet:
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname) is not None
 
 
-class JabberID(SQLBase):
+class JabberID(SQLBase, HasOwnerMixin):
     implements(IJabberID)
 
     _table = 'JabberID'
@@ -3327,10 +3324,6 @@ class JabberID(SQLBase):
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     jabberid = StringCol(dbName='jabberid', notNull=True)
-
-    # Defined because we want JabberID to provide IHasOwner so that it uses
-    # the security adapter of IHasOwner for launchpad.Edit.
-    owner = property(lambda s: s.person)
 
 
 class JabberIDSet:
@@ -3349,7 +3342,7 @@ class JabberIDSet:
         return JabberID.selectBy(person=person)
 
 
-class IrcID(SQLBase):
+class IrcID(SQLBase, HasOwnerMixin):
     """See `IIrcID`"""
     implements(IIrcID)
 
@@ -3358,10 +3351,6 @@ class IrcID(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     network = StringCol(dbName='network', notNull=True)
     nickname = StringCol(dbName='nickname', notNull=True)
-
-    # Defined because we want IrcID to provide IHasOwner so that it uses
-    # the security adapter of IHasOwner for launchpad.Edit.
-    owner = property(lambda s: s.person)
 
 
 class IrcIDSet:

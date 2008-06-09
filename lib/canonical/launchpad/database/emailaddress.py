@@ -5,10 +5,13 @@ __metaclass__ = type
 __all__ = [
     'EmailAddress',
     'EmailAddressSet',
+    'HasOwnerMixin',
     'UndeletableEmailAddress',
     ]
 
+import operator
 import sha
+
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
@@ -22,7 +25,16 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus)
 
 
-class EmailAddress(SQLBase):
+class HasOwnerMixin:
+    """A mixing providing an 'owner' property which returns self.person.
+
+    This is to be used on content classes who want to provide IHasOwner but
+    have the owner stored in an attribute named 'person' rather than 'owner'.
+    """
+    owner = property(operator.attrgetter('person'))
+
+
+class EmailAddress(SQLBase, HasOwnerMixin):
     implements(IEmailAddress)
 
     _table = 'EmailAddress'
@@ -31,10 +43,6 @@ class EmailAddress(SQLBase):
     email = StringCol(dbName='email', notNull=True, unique=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-
-    # Defined because we want EmailAddress to provide IHasOwner so that it
-    # uses the security adapter of IHasOwner for launchpad.Edit.
-    owner = property(lambda s: s.person)
 
     def destroySelf(self):
         """See `IEmailAddress`."""
