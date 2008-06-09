@@ -9,7 +9,6 @@ __all__ = [
     'IBinaryPackageFile',
     'IBinaryPackageFileSet',
     'ISourcePackageReleaseFile',
-    'ISourcePackageReleaseFileSet',
     ]
 
 from zope.schema import Int
@@ -64,10 +63,3 @@ class ISourcePackageReleaseFile(Interface):
     filetype = Int(
             title=_('The type of this file'), required=True, readonly=False,
             )
-
-
-class ISourcePackageReleaseFileSet(Interface):
-    """The set of all `ISourcePackageReleaseFile`s."""
-
-    def getByPackageUploadIDs(package_upload_ids):
-        """Return `SourcePackageReleaseFile`s for the `PackageUpload` IDs."""

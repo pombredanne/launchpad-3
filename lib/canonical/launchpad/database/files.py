@@ -6,7 +6,6 @@ __all__ = [
     'BinaryPackageFile',
     'BinaryPackageFileSet',
     'SourcePackageReleaseFile',
-    'SourcePackageReleaseFileSet',
     ]
 
 from zope.interface import implements
@@ -18,8 +17,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, IBinaryPackageFile, IBinaryPackageFileSet,
-    ISourcePackageReleaseFile, ISourcePackageReleaseFileSet,
-    SourcePackageFileType)
+    ISourcePackageReleaseFile, SourcePackageFileType)
 
 
 class BinaryPackageFile(SQLBase):
@@ -69,20 +67,3 @@ class SourcePackageReleaseFile(SQLBase):
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
                              dbName='libraryfile')
     filetype = EnumCol(schema=SourcePackageFileType)
-
-
-class SourcePackageReleaseFileSet:
-    """See `ISourcePackageReleaseFileSet`."""
-    implements(ISourcePackageReleaseFileSet)
-
-    def getByPackageUploadIDs(self, package_upload_ids):
-        """See `ISourcePackageReleaseFileSet`"""
-        files = SourcePackageReleaseFile.select("""
-            PackageUploadSource.packageupload = PackageUpload.id AND
-            PackageUpload.id IN %s AND
-            SourcePackageRelease.id =
-                PackageUploadSource.sourcepackagerelease AND
-            SourcePackageReleaseFile.sourcepackagerelease =
-                SourcePackageRelease.id
-            """ % sqlvalues(package_upload_ids))
-        return files
