@@ -407,7 +407,7 @@
         <iframe id="help-pane-content" class="invisible">Loading...</iframe>
       </div>
       <div id="help-footer">
-        <button id="help-close-btn" type="button">Close</button>
+        <a href="#" id="help-close-btn">Close</a>
       </div>
     </div>
 
