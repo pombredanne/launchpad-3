@@ -1163,8 +1163,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
     def profile(self):
         target = '+index'
         text = 'Profile'
-        edit_menu = PersonEditNavigationMenu(self.context)
-        return Link(target, text, menu=edit_menu)
+        return Link(target, text, menu=PersonEditNavigationMenu)
 
     def related_software(self):
         target = '+related-software'
@@ -1188,7 +1187,7 @@ class PersonEditNavigationMenu(NavigationMenu):
     facet = 'overview'
     title = 'Personal'
     links = ('personal', 'contact_details', 'email_settings',
-             'sshkeys')
+             'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
         target='+edit'
@@ -2997,6 +2996,8 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
+
+    implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
         'verbose_bugnotifications', 'timezone']
