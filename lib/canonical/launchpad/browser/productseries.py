@@ -547,7 +547,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 class ProductSeriesEditView(LaunchpadEditFormView):
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
+    field_names = [
+        'name', 'summary', 'status', 'user_branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
