@@ -1907,6 +1907,7 @@ COMMENT ON TABLE HWSubmissionDevice IS 'Links between devices and submissions.';
 COMMENT ON COLUMN HWSubmissionDevice.device_driver_link IS 'The combination (device, driver) mentioned in a submission.';
 COMMENT ON COLUMN HWSubmissionDevice.submission IS 'The submission mentioning this (device, driver) combination.';
 COMMENT ON COLUMN HWSubmissionDevice.parent IS 'The parent device of this device.';
+COMMENT ON COLUMN HWSubmissionDevice.hal_device_id IS 'The ID of the HAL node of this device in the submitted data.';
 
 COMMENT ON TABLE HWTest IS 'General information about a device test.';
 COMMENT ON COLUMN HWTest.namespace IS 'The namespace of a test.';

@@ -227,7 +227,7 @@ class IHWSystemFingerprintSet(Interface):
         """Create an entry in the fingerprint list.
 
         Return the new entry."""
-        
+
 # Identification of a hardware device.
 #
 # In theory, a tuple (bus, vendor ID, product ID) should identify
@@ -529,6 +529,11 @@ class IHWSubmissionDevice(Interface):
 
     parent = Attribute(u'The parent IHWSubmissionDevice entry of this '
                         ' device.')
+
+    hal_device_id = Int(
+        title=u'The ID of the HAL node of this device in the submitted data',
+        required=True)
+
 
 class IHWSubmissionDeviceSet(Interface):
     """The set of IHWSubmissionDevices."""

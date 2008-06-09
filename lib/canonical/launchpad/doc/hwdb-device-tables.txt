@@ -1115,7 +1115,11 @@ the given parameters or creates a new one, if no existing record matches.
 
 This table links devices listed in a submission to the
 HWDeviceDriverLink table. Additionally it links a device of a
-submission to its parent device, as modeled by HAL.
+submission to its parent device, as modeled by HAL. A submission
+may contain two or more identical devices. In order to unambiugously
+relate HWSubmissionDevice records to devices as represented in the
+submitted data, we store the attribute "id" of the HAL device node
+too.
 
 We need a submission to which we can link HWSubmissionDevice entries.
 
@@ -1129,7 +1133,7 @@ A HWSubmissionDevice record for a system does not have any parent...
     >>> submission_device_set = getUtility(IHWSubmissionDeviceSet)
     >>> submitted_tuffbook_2600 = submission_device_set.create(
     ...     device_driver_link=tuffbook_2600_device_driver_link,
-    ...     submission=sample_submission, parent=None)
+    ...     submission=sample_submission, parent=None, hal_device_id=1)
     >>> print submitted_tuffbook_2600.device_driver_link.device.name
     Tuffbook 2600
     >>> print submitted_tuffbook_2600.submission.submission_key
@@ -1145,7 +1149,8 @@ is the system itself.
     >>> submitted_usb_ehci_hcd_controller = submission_device_set.create(
     ...      device_driver_link=usb_controller_ehci_hcd_link,
     ...      submission=sample_submission,
-    ...      parent=submitted_tuffbook_2600)
+    ...      parent=submitted_tuffbook_2600,
+    ...      hal_device_id=2)
 
 For the "output aspect" of the USB controller, we have
 usb_controller_usb_link; its parent is submitted_usb_ehci_hcd_controller
@@ -1154,7 +1159,8 @@ that we just have created.
     >>> submitted_usb_controller = submission_device_set.create(
     ...      device_driver_link=usb_controller_usb_link,
     ...      submission=sample_submission,
-    ...      parent=usb_controller_ehci_hcd_link)
+    ...      parent=usb_controller_ehci_hcd_link,
+    ...      hal_device_id=3)
 
 The USB controller is connected to an (often internal) USB hub. We don't
 yet have HWDevice and HWDeviceDriverLink records for this hub, so we must
@@ -1169,16 +1175,20 @@ create them first.
     >>> submitted_usb_hub = submission_device_set.create(
     ...     device_driver_link=usb_hub_driver_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_usb_controller)
+    ...     parent=submitted_usb_controller,
+    ...      hal_device_id=4)
 
 Finally, a scanner may be connected to the USB hub.
 
     >>> submitted_scanner_usb = submission_device_set.create(
     ...     device_driver_link=scanner_usb_driver_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_usb_hub)
+    ...     parent=submitted_usb_hub,
+    ...      hal_device_id=5)
 
     >>> submitted_scanner_sane = submission_device_set.create(
     ...     device_driver_link=scanner_sane_plustek_link,
     ...     submission=sample_submission,
-    ...     parent=submitted_scanner_usb)
+    ...     parent=submitted_scanner_usb,
+    ...      hal_device_id=6)
+

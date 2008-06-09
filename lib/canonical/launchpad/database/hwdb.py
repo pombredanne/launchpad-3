@@ -575,13 +575,16 @@ class HWSubmissionDevice(SQLBase):
     parent = ForeignKey(dbName='parent', foreignKey='HWSubmissionDevice',
                         notNull=False)
 
+    hal_device_id = IntCol(notNull=True)
+
+
 class HWSubmissionDeviceSet:
     """See `IHWSubmissionDeviceSet`."""
 
     implements(IHWSubmissionDeviceSet)
 
-    def create(self, device_driver_link, submission, parent):
+    def create(self, device_driver_link, submission, parent, hal_device_id):
         """See `IHWSubmissionDeviceSet`."""
         return HWSubmissionDevice(device_driver_link=device_driver_link,
-                                  submission=submission,
-                                  parent=parent)
+                                  submission=submission, parent=parent,
+                                  hal_device_id=hal_device_id)
