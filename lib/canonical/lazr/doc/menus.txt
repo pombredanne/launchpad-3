@@ -397,14 +397,12 @@ menu though one of its links.
     ...     def summary(self):
     ...         target = '+index'
     ...         text = 'Summary'
-    ...         summary_menu = RecipeEditMenu(recipe)
-    ...         return Link(target, text, menu=summary_menu)
+    ...         return Link(target, text, menu=IRecipeEditMenuMarker)
     ...
     ...     def journal(self):
     ...         target = '+journal'
     ...         text = 'Journal'
-    ...         journal_menu = RecipeJournalMenu(recipe)
-    ...         return Link(target, text, menu=journal_menu)
+    ...         return Link(target, text, menu=IRecipeJournalMenuMarker)
 
     >>> class RecipeQuestionsMenu(NavigationMenu):
     ...     usedfor = IRecipe
@@ -438,13 +436,13 @@ is defined in by the RecipeMenu class and the view of recipe.
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <RecipeEditMenu ...>
+        menu: <...IRecipeEditMenuMarker...>
         selected: True
         linked: False
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <RecipeJournalMenu ...>
+        menu: <...IRecipeJournalMenuMarker...>
         selected: False
         linked: True
 
@@ -631,13 +629,13 @@ seeing. The matched URI comes from the view's request...
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <RecipeEditMenu ...>
+        menu: <...IRecipeEditMenuMarker...>
         selected: True
         linked: False
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <RecipeJournalMenu ...>
+        menu: <...IRecipeJournalMenuMarker...>
         selected: False
         linked: True
 
@@ -650,13 +648,13 @@ is passed by the helper function.
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <RecipeEditMenu ...>
+        menu: <...IRecipeEditMenuMarker...>
         selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <RecipeJournalMenu ...>
+        menu: <...IRecipeJournalMenuMarker...>
         selected: True
         linked: False
 
@@ -723,13 +721,13 @@ link is selected too.
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <RecipeEditMenu ...>
+        menu: <...IRecipeEditMenuMarker...>
         selected: True
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <RecipeJournalMenu ...>
+        menu: <...IRecipeJournalMenuMarker...>
         selected: False
         linked: True
 
@@ -764,13 +762,13 @@ menu of the RecipeMenu will change the state of both menus.
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <RecipeEditMenu ...>
+        menu: <...IRecipeEditMenuMarker...>
         selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <RecipeJournalMenu ...>
+        menu: <...IRecipeJournalMenuMarker...>
         selected: True
         linked: True
 
@@ -810,13 +808,13 @@ find the instancemethods object.
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <RecipeEditMenu ...>
+        menu: <...IRecipeEditMenuMarker...>
         selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <RecipeJournalMenu ...>
+        menu: <...IRecipeJournalMenuMarker...>
         selected: True
         linked: True
 
@@ -889,13 +887,13 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
-        menu: <...RecipeJournalMenu ...>
+        menu: <...IRecipeJournalMenuMarker...>
         selected: True
         linked: True
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
-        menu: <...RecipeEditMenu ...>
+        menu: <...IRecipeEditMenuMarker...>
         selected: False
         linked: True
 

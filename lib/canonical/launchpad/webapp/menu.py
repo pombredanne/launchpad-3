@@ -404,7 +404,7 @@ class NavigationMenu(MenuBase):
         the request) and whether the current view's menu is the link's menu.
         """
         request = get_current_browser_request()
-        submenu = self._get_current_menu(request)
+        view = get_current_view(request)
         if request_url is None:
             request_url = request.getURL()
         else:
@@ -416,38 +416,21 @@ class NavigationMenu(MenuBase):
             # A link is selected when the request_url matches the link's URL
             # or because the menu for the current view is the link's menu.
             link.selected = (request_url.startswith(link_url)
-                             or self._is_link_menu(link, submenu))
+                             or self._is_menulink_for_view(link, view))
             link.url = link.url.ensureNoSlash()
             yield link
 
-    def _get_current_menu(self, request):
-        """Return the menu associated with the current view, or None.
-
-        :param request: The request provides the current view, usually
-            it is the last traversed object.
-
-        Menus associated with views are often sub menus that belong to
-        links in the menu associated with the content object. A link
-        in a top-level menu is considered to be selected if the view's
-        menu is an instance of the link's menu
-        """
-        view = get_current_view(request)
-        # XXX sinzui 2008-05-09 bug=226917: We should be retrieving the facet
-        # name from the layer implemented by the request.
-        facet = get_facet(view)
-        return queryAdapter(view, INavigationMenu, name=facet)
-
-    def _is_link_menu(self, link, menu):
-        """Return True if menu is an instance of link's menu, otherwise False.
+    def _is_menulink_for_view(self, link, view):
+        """Return True if the menu-link is for the current view, otherwise False.
 
         :param link: An `ILink` in the menu. It has a menu attribute that may
             have an `INavigationMenu` assigned.
-        :menu: The `INavigationMenu` being tested.
+        :view: The view being tested.
 
-        A link is considered to be selected when the menu for the current
-        view is an instance of a link's menu.
+        A link is considered to be selected when the view provides link's menu
+        interface.
         """
-        return (menu is not None and isinstance(menu, link.menu.__class__))
+        return (link.menu is not None and link.menu.providedBy(view))
 
 
 class enabled_with_permission:
