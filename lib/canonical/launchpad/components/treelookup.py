@@ -83,11 +83,11 @@ class LookupBranch:
         """
         return len(self.keys) == 0
 
-    def describe(self, _level=1):
+    def describe(self, level=1):
         """A representation of this branch.
 
         If the result of this branch is a `LookupTree` instance, it's
-        asked for a representation at a specific `_level`, which
+        asked for a representation at a specific `level`, which
         corresponds to its position in the tree. This allows for
         pretty indentation to aid human comprehension.
 
@@ -106,7 +106,7 @@ class LookupBranch:
         if self.is_leaf:
             return format % self._describe_result(self.result)
         else:
-            return format % self.result.describe(_level)
+            return format % self.result.describe(level)
 
     _describe_key_chars = set(string.letters + string.digits + '-_+=*')
 
@@ -239,11 +239,11 @@ class LookupTree:
         """The maximum distance to a leaf."""
         return max(len(path) for path in self.flatten()) - 1
 
-    def describe(self, _level=1):
+    def describe(self, level=1):
         """A representation of this tree, formatted for human consumption.
 
         The representation of each branch in this tree is indented
-        corresponding to `_level`, which indicates the position we are
+        corresponding to `level`, which indicates the position we are
         at within the tree that is being represented.
 
         When asking each branch for a representation, the next level
@@ -252,10 +252,10 @@ class LookupTree:
 
         This is mainly intended as an aid to development.
         """
-        indent = '    ' * _level
+        indent = '    ' * level
         format = indent + '%s'
         return 'tree(\n%s\n%s)' % (
-            '\n'.join(format % branch.describe(_level + 1)
+            '\n'.join(format % branch.describe(level + 1)
                       for branch in self.branches),
             indent)
 
