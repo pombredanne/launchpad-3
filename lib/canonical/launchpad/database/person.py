@@ -3224,6 +3224,22 @@ class PersonSet:
                         PostedMessageStatus.APPROVED,
                         config.standingupdater.approvals_needed))
 
+    def cacheBrandingForPeople(self, people):
+        """See `IPersonSet`."""
+        from canonical.launchpad.database import LibraryFileAlias
+        aliases = []
+        aliases.extend(person.iconID for person in people
+                       if person.iconID is not None)
+        aliases.extend(person.logoID for person in people
+                       if person.logoID is not None)
+        aliases.extend(person.mugshotID for person in people
+                       if person.mugshotID is not None)
+        # Listify, since this is a pure cache. The orderBy is just to avoid
+        # random()izing the results.
+        list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
+             % sqlvalues(aliases), prejoins=["content"],
+             orderBy=["LibraryFileAlias.id"]))
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'

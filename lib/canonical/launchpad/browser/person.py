@@ -1491,13 +1491,17 @@ class PersonRdfContentsView:
     def buildMemberData(self):
         members = []
         members_by_id = {}
-        for member in self.context.allmembers:
-            member = PersonWithKeysAndPreferredEmail(member)
-            members.append(member)
-            members_by_id[member.id] = member
-        if not members:
+        raw_members = list(self.context.allmembers)
+        if not raw_members:
             # Empty teams have nothing to offer.
             return []
+        personset = getUtility(IPersonSet)
+        personset.cacheBrandingForPeople(raw_members)
+        for member in raw_members:
+            decorated_member = PersonWithKeysAndPreferredEmail(member)
+            members.append(decorated_member)
+            members_by_id[member.id] = decorated_member
+        resources = set()
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)

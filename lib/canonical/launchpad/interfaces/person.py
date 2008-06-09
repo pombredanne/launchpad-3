@@ -449,6 +449,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "that can be used to identify this team. The icon will be "
             "displayed whenever the team name is listed - for example "
             "in listings of bugs or on a person's membership table."))
+    iconID = Int(title=_('Icon ID'), required=True, readonly=True)
+
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/person-logo',
@@ -457,6 +459,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "the heading of all pages related to you. Traditionally this "
             "is a logo, a small picture or a personal mascot. It should be "
             "no bigger than 50kb in size."))
+    logoID = Int(title=_('Logo ID'), required=True, readonly=True)
+
     mugshot = exported(MugshotImageUpload(
         title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
@@ -465,6 +469,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "on your home page in Launchpad. Traditionally this is a great "
             "big picture of your grinning face. Make the most of it! It "
             "should be no bigger than 100kb in size. ")))
+    mugshotID = Int(title=_('Mugshot ID'), required=True, readonly=True)
+
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -1816,6 +1822,9 @@ class IPersonSet(Interface):
         If a person's standing is already Good, or Poor or Excellent, no
         change to standing is made.
         """
+
+    def cacheBrandingForPeople(people):
+        """Prefetch Librarian aliases and content for personal images."""
 
 
 class IRequestPeopleMerge(Interface):
