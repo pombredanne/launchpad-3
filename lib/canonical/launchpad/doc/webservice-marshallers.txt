@@ -40,7 +40,7 @@ implement that interface.
 
 The representation_name attribute is used to retrieve the name under
 which the field should be stored in the JSON representation. In the
-simple case, it's the same name than the field.
+simple case, it's the same name as the field.
 
     >>> marshaller.representation_name
     'field_name'
@@ -49,9 +49,9 @@ simple case, it's the same name than the field.
 === marshall_from_json_data() ===
 
 The marshall_from_json_data() method is used during PUT and PATCH
-requests to transform the value provided in the JSON representation to
-a value the underlying schema field. In the simple case, the value is
-returned unchanged.
+requests to transform the value provided in the JSON representation to a
+value in the underlying schema field. In SimpleFieldMarshaller
+implementation, the value is returned unchanged.
 
     >>> marshaller.marshall_from_json_data("foo")
     'foo'
@@ -112,9 +112,11 @@ quotes, or can pass lists using multiple key-value pairs.
 
 The unmarshall() method is used to convert the field's value to a value
 that can be serialized to JSON as part of an entry representation.  The
-first parameter is the entry that the value is part of (for fields that
-will transform the value into a URL for example), the second on is the
-value to convert.  In the simple case, the value is returned unchanged.
+first parameter is the entry that the value is part of. That is used by
+fields that transform the value into a URL, see the CollectionField
+marshaller for an example. The second one is the value to convert.  In
+the SimpleFieldMarshaller implementation, the value is returned
+unchanged.
 
     >>> marshaller.unmarshall(None, 'foo')
     'foo'
@@ -143,11 +145,11 @@ True or False. A ValueError is raised when its not the case.
     >>> marshaller.marshall_from_json_data("true")
     Traceback (most recent call last):
       ...
-    ValueError: not a boolean: 'true'
+    ValueError: got 'str', expected bool: 'true'
     >>> marshaller.marshall_from_json_data(1)
     Traceback (most recent call last):
       ...
-    ValueError: not a boolean: 1
+    ValueError: got 'int', expected bool: 1
 
 None is passed through though.
 
@@ -165,7 +167,7 @@ Booleans are encoded using the standard JSON representation of 'true' or
     >>> marshaller.marshall_from_request('True')
     Traceback (most recent call last):
       ...
-    ValueError: not a boolean: 'True'
+    ValueError: got 'str', expected bool: 'True'
 
 
 === Int ===
@@ -184,7 +186,7 @@ integer. A ValueError is raised when its not the case.
     >>> marshaller.marshall_from_json_data("-10")
     Traceback (most recent call last):
       ...
-    ValueError: not an integer: '-10'
+    ValueError: got 'str', expected int: '-10'
 
 None is passed through though.
 
@@ -198,16 +200,31 @@ Integers are encoded using strings when in a request.
     >>> marshaller.marshall_from_request(u"-4")
     -4
 
+It raises a ValueError if the value cannot be converted to an integer.
+
+    >>> marshaller.marshall_from_request("foo")
+    Traceback (most recent call last):
+    ...
+    ValueError: got 'str', expected int: 'foo'
+
+    >>> marshaller.marshall_from_request("4.62")
+    Traceback (most recent call last):
+    ...
+    ValueError:  got 'float', expected int: 4.62...
+
 Note that python octal and hexadecimal syntax isn't supported.
 
 (This would 13 in octal notation.)
 
     >>> marshaller.marshall_from_request(u"015")
-    15
+    Traceback (most recent call last):
+      ...
+    ValueError: got 'unicode', expected int: u'015'
+
     >>> marshaller.marshall_from_request(u"0x04")
     Traceback (most recent call last):
       ...
-    ValueError: invalid literal for int() with base 10: '0x04'
+    ValueError: got 'unicode', expected int: u'0x04'
 
 
 === Float ===
@@ -228,7 +245,7 @@ float.  A ValueError is raised when it's not the case.
     >>> marshaller.marshall_from_json_data("true")
     Traceback (most recent call last):
       ...
-    ValueError: not a float: 'true'
+    ValueError: got 'str', expected float, int: 'true'
 
 None is passed through though.
 
@@ -252,7 +269,7 @@ Floats are encoded using the standard JSON representation.
     >>> marshaller.marshall_from_request('True')
     Traceback (most recent call last):
       ...
-    ValueError: not a float: 'True'
+    ValueError: got 'str', expected float, int: 'True'
 
 
 === Text ===
@@ -271,11 +288,11 @@ string. A ValueError is raised when that's not the case.
     >>> marshaller.marshall_from_json_data(1.0)
     Traceback (most recent call last):
       ...
-    ValueError: not a unicode string: 1.0
+    ValueError: got 'float', expected unicode: 1.0
     >>> marshaller.marshall_from_json_data('Test')
     Traceback (most recent call last):
       ...
-    ValueError: not a unicode string: 'Test'
+    ValueError: got 'str', expected unicode: 'Test'
 
 None is passed through though.
 
@@ -319,7 +336,7 @@ a string, a ValueError is raised.
     >>> marshaller.marshall_from_json_data(1.0)
     Traceback (most recent call last):
       ...
-    ValueError: not a string: 1.0
+    ValueError: got 'float', expected str: 1.0
 
 Again, except for None which is passed through.
 
@@ -538,7 +555,7 @@ raise a ValueError.
     >>> list_marshaller.marshall_from_json_data(u"Test")
     Traceback (most recent call last):
       ...
-    ValueError: not a list: u'Test'
+    ValueError: got 'unicode', expected list: u'Test'
 
 None is passed through though.
 
@@ -551,7 +568,7 @@ validate against the more specific marshaller.
     >>> list_marshaller.marshall_from_json_data([u'Text', 1, 2])
     Traceback (most recent call last):
       ...
-    ValueError: not a unicode string: 1
+    ValueError: got 'int', expected unicode: 1
 
 The return type is correctly typed to the concrete collection.
 

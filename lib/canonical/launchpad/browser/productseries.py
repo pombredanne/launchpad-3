@@ -547,7 +547,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 class ProductSeriesEditView(LaunchpadEditFormView):
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
+    field_names = [
+        'name', 'summary', 'status', 'user_branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
@@ -953,12 +954,12 @@ class ProductSeriesSourceSetView:
 class ProductSeriesSourceListView(LaunchpadView):
     """A listing of all the running imports.
 
-    We take 'running' to mean 'has importstatus==SYNCING'."""
+    See `ICodeImportSet.getActiveImports` for our definition of running.
+    """
 
     def initialize(self):
         self.text = self.request.get('text')
-        results = getUtility(IProductSeriesSet).searchImports(
-            text=self.text, importstatus=ImportStatus.SYNCING)
+        results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
 
         self.batchnav = BatchNavigator(results, self.request)
 

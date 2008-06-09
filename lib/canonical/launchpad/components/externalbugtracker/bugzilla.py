@@ -3,10 +3,17 @@
 """Bugzilla ExternalBugTracker utility."""
 
 __metaclass__ = type
-__all__ = ['Bugzilla']
+__all__ = [
+    'Bugzilla',
+    'BugzillaLPPlugin',
+    ]
 
+import pytz
+import time
 import xml.parsers.expat
+import xmlrpclib
 
+from datetime import datetime
 from xml.dom import minidom
 
 from canonical import encoding
@@ -16,6 +23,7 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.webapp.url import urlappend
 
 
 class Bugzilla(ExternalBugTracker):
@@ -297,3 +305,48 @@ class Bugzilla(ExternalBugTracker):
             return self.remote_bug_status[bug_id]
         except KeyError:
             raise BugNotFound(bug_id)
+
+
+class BugzillaLPPlugin(Bugzilla):
+    """An `ExternalBugTracker` to handle BugZillas using the LP Plugin."""
+
+    def __init__(self, baseurl, xmlrpc_transport=None):
+        super(BugzillaLPPlugin, self).__init__(baseurl)
+
+        if xmlrpc_transport is None:
+            xmlrpc_transport = BugzillaXMLRPCTransport()
+        else:
+            self.xmlrpc_transport = xmlrpc_transport
+
+        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+
+    def getCurrentDBTime(self):
+        """See `IExternalBugTracker`."""
+        server = xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+        time_dict = server.Launchpad.time()
+
+        # Return the UTC time sent by the server so that we don't have
+        # to care about timezones.
+        server_timestamp = time.mktime(
+            time.strptime(
+                str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S'))
+
+        server_utc_time = datetime.utcfromtimestamp(server_timestamp)
+        return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
+
+
+class BugzillaXMLRPCTransport(xmlrpclib.Transport):
+    """XML-RPC Transport for Bugzilla bug trackers.
+
+    Sends a cookie header for authentication.
+    """
+
+    auth_cookie = None
+
+    def send_host(self, connection, host):
+        """Send the host and cookie headers."""
+        xmlrpclib.Transport.send_host(self, connection, host)
+        if self.auth_cookie is not None:
+            connection.putheader('Cookie', self.auth_cookie)

@@ -89,6 +89,7 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
     canonical_url, custom_widget, enabled_with_permission,
     sorted_version_numbers, stepthrough, stepto, structured, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
@@ -350,7 +351,7 @@ class ProductOverviewMenu(ApplicationMenu):
 
     def announcements(self):
         text = 'Show announcements'
-        enabled = bool(self.context.announcements().count())
+        enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
@@ -535,7 +536,10 @@ class ProductSetContextMenu(ContextMenu):
 
     def register(self):
         text = 'Register a project'
-        return Link('+new', text, icon='add')
+        # We link to the guided form, though people who know the URL can
+        # just jump to +new directly. That might be considered a
+        # feature!
+        return Link('+new-guided', text, icon='add')
 
     def register_team(self):
         text = 'Register a team'
@@ -790,8 +794,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
 
     @property
     def can_purchase_subscription(self):
-        return (check_permission('launchpad.Admin', self.context)
-                and not context.qualifies_for_free_hosting)
+        return (check_permission('launchpad.Edit', self.context)
+                and not self.context.qualifies_for_free_hosting)
 
 
 class ProductDownloadFilesView(LaunchpadView,

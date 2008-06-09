@@ -1,5 +1,6 @@
 = Various utility functions =
 
+
 == safe_hasattr() ==
 
 LAZR provides a safe_hasattr() that doesn't hide exception from the
