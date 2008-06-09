@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_bugwatcherrortype_for_error',
+    'get_external_bugtracker',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
@@ -27,8 +29,6 @@ __all__ = [
     'UnparseableBugData',
     'UnparseableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
-    'get_bugwatcherrortype_for_error',
-    'get_external_bugtracker',
     ]
 
 from canonical.launchpad.components.externalbugtracker.base import *

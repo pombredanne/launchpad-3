@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_bugwatcherrortype_for_error',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
@@ -17,7 +18,6 @@ __all__ = [
     'UnparseableBugData',
     'UnparseableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
-    'get_bugwatcherrortype_for_error',
     ]
 
 import socket
