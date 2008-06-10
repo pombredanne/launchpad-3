@@ -10,9 +10,9 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
-    'validate_cvs_root',
-    'validate_cvs_module',
     'RevisionControlSystems',
+    'validate_cvs_module',
+    'validate_cvs_root',
     ]
 
 import re
@@ -25,6 +25,7 @@ from CVS.protocol import CVSRoot, CvsRootError
 from canonical.launchpad.fields import (
     ContentNameField, PublicPersonChoice, URIField)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -188,6 +189,9 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     id = Int(title=_('ID'))
     # field names
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
+    status = Choice(
+        title=_('Status'), required=True, vocabulary=DistroSeriesStatus,
+        default=DistroSeriesStatus.DEVELOPMENT)
     parent = Attribute('The structural parent of this series - the product')
     name = ProductSeriesNameField(title=_('Name'), required=True,
         description=_("The name of the series is a short, unique name "
@@ -340,11 +344,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         allow_fragment=False, # Fragment makes no sense in Subversion.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
-    def getImportDetailsForDisplay():
-        """Get a one-line summary of the location this import is from.
-
-        Only makes sense for series with import details set."""
-
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
@@ -376,6 +375,13 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     datepublishedsync = Attribute(_("The date of the published code was last "
         "synced, at the time of the last sync."))
 
+    # XXX: MichaelHudson 2008-05-20, bug=232076: This attribute is
+    # only necessary for the transition from the old to the new
+    # code import system, and should be deleted after that process
+    # is done.
+    new_style_import = Attribute(_("The new-style import that was created "
+        "from this import, if any."))
+
     def syncCertified():
         """is the series source sync enabled?"""
 
@@ -384,16 +390,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def autoTestFailed():
         """has the series source failed automatic testing by roomba?"""
-
-    def importUpdated():
-        """Import or sync run completed successfully, update last-synced.
-
-        If datelastsynced is set, and import_branch.last_mirrored is more
-        recent, then this is the date of the currently published import. Save
-        it into datepublishedsync.
-
-        Then, set datelastsynced to the current time.
-        """
 
 
 class IProductSeriesSourceAdmin(Interface):
@@ -412,6 +408,13 @@ class IProductSeriesSourceAdmin(Interface):
 
     def markDontSync():
         """Mark this import as DONTSYNC.
+
+        See `ImportStatus` for what this means.  This method also clears
+        timestamps and other ancillary data.
+        """
+
+    def markStopped():
+        """Mark this import as STOPPED.
 
         See `ImportStatus` for what this means.  This method also clears
         timestamps and other ancillary data.

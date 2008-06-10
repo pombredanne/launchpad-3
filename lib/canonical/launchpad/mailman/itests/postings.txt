@@ -56,7 +56,7 @@ equivalent to making it unvalidated.
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
     >>> commit()
-    >>> print alternative_email.email, alternative_email.statusname
+    >>> print alternative_email.email, alternative_email.status.title
     aperson@example.org New Email Address
 
     >>> vette_watcher.resync()
@@ -83,7 +83,7 @@ that address.  However, because she has not yet joined the team or subscribed
 to its mailing list, her messages gets held for moderation by the team's
 administrator.
 
-    >>> print anne.preferredemail.email, anne.preferredemail.statusname
+    >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\
@@ -318,8 +318,8 @@ This time, her message is on topic and is accepted.
     ...
     List-Id: <itest-one.lists.launchpad.dev>
     List-Help: <http://help.launchpad.dev/ListHelp>
-    List-Subscribe: <http://launchpad.dev/people/+me/+editemails>
-    List-Unsubscribe: <http://launchpad.dev/people/+me/+editemails>
+    List-Subscribe: <http://launchpad.dev/~itest-one>
+    List-Unsubscribe: <http://launchpad.dev/~itest-one>
     List-Post: <mailto:itest-one@lists.launchpad.dev>
     List-Archive: <http://lists.launchpad.dev/itest-one>
     List-Owner: <http://launchpad.dev/~itest-one>
@@ -332,7 +332,7 @@ This time, her message is on topic and is accepted.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -357,7 +357,7 @@ to the mailing list.
     >>> commit()
     >>> serial_watcher.wait()
 
-    >>> print anne.preferredemail.email, anne.preferredemail.statusname
+    >>> print anne.preferredemail.email, anne.preferredemail.status.title
     anne.person@example.com Preferred Email Address
     >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
     >>> inject('itest-one', """\
@@ -397,7 +397,7 @@ Here's the copy sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -418,7 +418,7 @@ Here's the copy sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -488,7 +488,7 @@ However, once she validates this address, she can post from it.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -507,7 +507,7 @@ However, once she validates this address, she can post from it.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>

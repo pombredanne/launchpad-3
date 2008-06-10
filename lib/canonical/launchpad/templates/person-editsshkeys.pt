@@ -27,7 +27,7 @@
     information, read about <a href="/+code/">The Bazaar</a>.
     </p>
 
-    <p tal:condition="view/error_message" tal:content="view/error_message"
+    <p tal:condition="view/error_message" tal:content="structure view/error_message"
       class="error message">Error message.</p>
     
     <p tal:condition="view/info_message" tal:content="view/info_message"

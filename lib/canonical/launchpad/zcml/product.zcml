@@ -5,6 +5,16 @@
   xmlns:zope="http://namespaces.zope.org/zope"
   i18n:domain="launchpad">
 
+  <!-- CommercialSubscription -->
+  <content class="canonical.launchpad.database.CommercialSubscription">
+    <allow
+      interface="canonical.launchpad.interfaces.ICommercialSubscription" />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="date_expires date_starts purchaser registrant
+                      sales_system_id is_active"
+      />
+  </content>
   <!-- Product -->
   <content class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct" />
@@ -22,7 +32,9 @@
                       enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot
-                      license_info licenses bug_reporting_guidelines"
+                      license_approved license_info licenses
+                      bug_reporting_guidelines
+                      commercial_subscription redeemSubscriptionVoucher"
       />
 <!-- sabdfl 2006-04-10 I put "name" in the admin group because
       with Bazaar now in place, lots of people can have personal
@@ -34,7 +46,12 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate private_bugs 
+      set_attributes="name autoupdate"
+      />
+
+    <require
+      permission="launchpad.Commercial"
+      set_attributes="active private_bugs license_reviewed
                       reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
@@ -268,6 +285,16 @@
       template="../templates/product-details.pt"
       />
     <browser:page
+      name="+portlet-requires-subscription"
+      facet="overview"
+      template="../templates/product-portlet-requires-subscription.pt"
+      />
+    <browser:page
+      name="+portlet-license-missing"
+      facet="overview"
+      template="../templates/product-portlet-license-missing.pt"
+      />
+    <browser:page
       name="+portlet-lifecycle"
       facet="overview"
       template="../templates/product-portlet-lifecycle.pt"
@@ -319,11 +346,15 @@
       name="+portlet-productfiles"
       template="../templates/product-portlet-latestfiles.pt"
       />
+    <browser:page
+      name="+purchase-subscription"
+      template="../templates/product-purchase-subscription.pt"
+      />
   </browser:pages>
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
-    class="canonical.launchpad.browser.ProductBranchListingView"
+    class="canonical.launchpad.browser.ProductBranchesView"
     facet="branches"
     permission="zope.Public"
     name="+branches"
@@ -406,12 +437,21 @@
     />
 
   <browser:page
-    name="+review"
+    name="+admin"
     for="canonical.launchpad.interfaces.IProduct"
     facet="overview"
-    class="canonical.launchpad.browser.ProductReviewView"
+    class="canonical.launchpad.browser.ProductAdminView"
     permission="launchpad.Admin"
     template="../templates/product-admin.pt"
+    />
+
+  <browser:page
+    name="+review-license"
+    for="canonical.launchpad.interfaces.IProduct"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductReviewLicenseView"
+    permission="launchpad.Commercial"
+    template="../templates/product-review-license.pt"
     />
 
   <browser:page
@@ -550,6 +590,15 @@
     class="canonical.launchpad.browser.ProductAddView"
     permission="launchpad.AnyPerson"
     template="../templates/product-new.pt"
+    />
+
+  <browser:page
+    name="+new-guided"
+    for="canonical.launchpad.interfaces.IProductSet"
+    facet="overview"
+    class="canonical.launchpad.browser.ProductAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/product-new-guided.pt"
     />
 
   <browser:page

@@ -32,21 +32,22 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
+from canonical.launchpad.components.packagelocation import (
+    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
     IBinaryPackagePublishingHistory, IBinaryPackageReleaseSet,
     IDistributionSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet,
     ISourcePackagePublishingHistory, NotFoundError, PackagePublishingPocket,
-    PackagePublishingPriority, PackagePublishingStatus)
+    PackagePublishingPriority, PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
+from canonical.launchpad.scripts.ftpmasterbase import (
+    SoyuzScript, SoyuzScriptError)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, PackageLocationError, SoyuzScript,
-    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -1276,8 +1277,8 @@ class LpQueryDistro(LaunchpadScript):
         Also initialise the list 'allowed_arguments'.
         """
         self.allowed_actions = [
-            'current', 'development', 'supported', 'archs', 'official_archs',
-            'nominated_arch_indep']
+            'current', 'development', 'supported', 'pending_suites', 'archs',
+            'official_archs', 'nominated_arch_indep']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
 
@@ -1462,6 +1463,28 @@ class LpQueryDistro(LaunchpadScript):
                 self.location.distribution.name)
 
         return " ".join(supported_series)
+
+    @property
+    def get_pending_suites(self):
+        """Return the suite names containing PENDING publication.
+
+        It check for sources and/or binary publications.
+        """
+        self.checkNoSuiteDefined()
+        pending_suites = set()
+        pending_sources = self.location.archive.getPublishedSources(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_sources:
+            pending_suites.add((pub.distroseries, pub.pocket))
+
+        pending_binaries = self.location.archive.getAllPublishedBinaries(
+            status=PackagePublishingStatus.PENDING)
+        for pub in pending_binaries:
+            pending_suites.add((
+                pub.distroarchseries.distroseries, pub.pocket))
+
+        return " ".join([distroseries.name + pocketsuffix[pocket]
+                         for distroseries, pocket in pending_suites])
 
     @property
     def get_archs(self):
@@ -1796,6 +1819,17 @@ class UnembargoSecurityPackage(PackageCopier):
         """
         if ISourcePackagePublishingHistory.providedBy(pub_record):
             files = pub_record.sourcepackagerelease.files
+            # Re-upload the changes file if necessary.
+            sourcepackagerelease = pub_record.sourcepackagerelease
+            queue_record = sourcepackagerelease.getQueueRecord(
+                distroseries=pub_record.distroseries)
+            if queue_record is not None:
+                changesfile = queue_record.changesfile
+            else:
+                changesfile = None
+            if changesfile is not None and changesfile.restricted:
+                new_lfa = self.reUploadFile(changesfile, False)
+                queue_record.changesfile = new_lfa
         elif IBinaryPackagePublishingHistory.providedBy(pub_record):
             files = pub_record.binarypackagerelease.files
         else:
@@ -1806,31 +1840,43 @@ class UnembargoSecurityPackage(PackageCopier):
         for package_file in files:
             # Open the old library file.
             libfile = package_file.libraryfile
-            libfile.open()
-
-            # Make a temporary file to hold the download.  It's annoying
-            # having to download to a temp file but there are no guarantees
-            # how large the files are, so using StringIO would be dangerous.
-            filepath = tempfile.mktemp()
-            temp_file = open(filepath, "w")
-
-            # Read the old library file into the temp file.
-            copy_and_close(libfile, temp_file)
-
-            # Upload the file to the unrestricted librarian and make
-            # sure the publishing record points to it.
-            librarian = getUtility(ILibraryFileAliasSet)
-            new_lfa = librarian.create(
-                libfile.filename, libfile.content.filesize,
-                open(filepath, "rb"), libfile.mimetype,
-                restricted=to_restricted)
+            new_lfa = self.reUploadFile(libfile, to_restricted)
             package_file.libraryfile = new_lfa
-            self.logger.info(
-                "Re-uploaded %s to the unrestricted librarian with ID %d" % (
-                    libfile.filename, new_lfa.id))
 
-            # Junk the temporary file.
-            os.remove(filepath)
+    def reUploadFile(self, libfile, to_restricted):
+        """Re-upload a librarian file between librarians.
+
+        :param libfile: A LibraryFileAlias for the file.
+        :param to_restricted: True if copying to the restricted librarian.
+        :return: A new LibraryFileAlias that is not restricted.
+        """
+        libfile.open()
+
+        # Make a temporary file to hold the download.  It's annoying
+        # having to download to a temp file but there are no guarantees
+        # how large the files are, so using StringIO would be dangerous.
+        fd, filepath = tempfile.mkstemp()
+        temp_file = open(filepath, "w")
+
+        # Read the old library file into the temp file.
+        copy_and_close(libfile, temp_file)
+
+        # Upload the file to the unrestricted librarian and make
+        # sure the publishing record points to it.
+        librarian = getUtility(ILibraryFileAliasSet)
+        new_lfa = librarian.create(
+            libfile.filename, libfile.content.filesize,
+            open(filepath, "rb"), libfile.mimetype,
+            restricted=to_restricted)
+
+        self.logger.info(
+            "Re-uploaded %s to the unrestricted librarian with ID %d" % (
+                libfile.filename, new_lfa.id))
+
+        # Junk the temporary file.
+        os.remove(filepath)
+
+        return new_lfa
 
     def overrideFromAncestry(self, pub_records):
         """Set the right published component from publishing ancestry.

@@ -10,12 +10,13 @@ import os
 import re
 import simplejson
 import unittest
+import urllib
+from urlparse import urljoin
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
@@ -29,6 +30,7 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
 
@@ -64,8 +66,15 @@ class WebServiceCaller:
     """A class for making calls to Launchpad web services."""
 
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
-                 *args, **kwargs):
-        """Obtain the information necessary to sign OAuth requests."""
+                 handle_errors=True, *args, **kwargs):
+        """Create a WebServiceCaller.
+        :param oauth_consumer_key: The OAuth consumer key to use.
+        :param oauth_access_key: The OAuth access key to use for the request.
+        :param handle_errors: Should errors raise exception or be handled by
+            the publisher. Default is to let the publisher handle them.
+
+        Other parameters are passed to the HTTPCaller used to make the calls.
+        """
         if oauth_consumer_key is not None and oauth_access_key is not None:
             login(ANONYMOUS)
             self.consumer = getUtility(IOAuthConsumerSet).getByKey(
@@ -77,10 +86,17 @@ class WebServiceCaller:
             self.consumer = None
             self.access_token = None
 
+        self.handle_errors = handle_errors
+
         # Set up a delegate to make the actual HTTP calls.
         self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
 
-    def __call__(self, path, method='GET', data=None, headers=None):
+    def __call__(self, path_or_url, method='GET', data=None, headers=None):
+        if path_or_url.startswith('http:'):
+            scheme, netloc, path, query, fragment = urlsplit(path_or_url)
+        else:
+            path = path_or_url
+        path = str(path)
         # Make an HTTP request.
         full_headers = {'Host' : 'api.launchpad.dev'}
         if self.consumer is not None and self.access_token is not None:
@@ -100,12 +116,13 @@ class WebServiceCaller:
         if data:
             request_string += "\n" + data
 
-        response = self.http_caller(request_string)
+        response = self.http_caller(
+            request_string, handle_errors=self.handle_errors)
         return WebServiceResponseWrapper(response)
 
     def get(self, path, media_type='application/json', headers=None):
         """Make a GET request."""
-        full_headers = {'Accept' : media_type}
+        full_headers = {'Accept': media_type}
         if headers is not None:
             full_headers.update(headers)
         return self(path, 'GET', headers=full_headers)
@@ -128,8 +145,14 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers)
 
-    def named_post(self, path, operation_name, headers, **kwargs):
-        kwargs['ws_op'] = operation_name
+    def named_get(self, path_or_url, operation_name, headers=None, **kwargs):
+        kwargs['ws.op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
+                         for key, value in kwargs.items()])
+        return self.get("%s?%s" % (path_or_url, data), data, headers)
+
+    def named_post(self, path, operation_name, headers=None, **kwargs):
+        kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, value)
                          for key, value in kwargs.items()])
         return self.post(path, 'application/x-www-form-urlencoded', data,
@@ -395,6 +418,9 @@ def print_navigation_links(content):
     if navigation_links is None:
         print "No navigation links"
         return
+    title = navigation_links.find('label')
+    if title is not None:
+        print '= %s =' % title.string
     entries = navigation_links.findAll('li')
     for entry in entries:
         if entry.a:
@@ -461,6 +487,13 @@ def print_batch_header(soup):
     print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
+def print_self_link_of_entries(json_body):
+    """Print the self_link attribute of each entry in the given JSON body."""
+    links = sorted(entry['self_link'] for entry in json_body['entries'])
+    for link in links:
+        print link
+
+
 def print_ppa_packages(contents):
     packages = find_tags_by_class(contents, 'ppa_package_row')
     for pkg in packages:
@@ -521,6 +554,10 @@ def setUpGlobs(test):
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
         'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
+    test.globs['public_webservice'] = WebServiceCaller(
+        'foobar123451432', 'qQ7dw1fXCR5hhJRN7ztj', port=9000)
+    test.globs['user_webservice'] = WebServiceCaller(
+        'launchpad-library', '3SdVlTlVKcgXSJHbsSSk', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -555,6 +592,7 @@ def setUpGlobs(test):
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
     test.globs['print_ppa_packages'] = print_ppa_packages
+    test.globs['print_self_link_of_entries'] = print_self_link_of_entries
 
 
 class PageStoryTestCase(unittest.TestCase):

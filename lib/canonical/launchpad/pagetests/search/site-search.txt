@@ -1,0 +1,237 @@
+= Site-wide Search =
+
+Launchpad features a site-wide search that combines Google's
+site-specific search with Launchpad's prominent objects (projects,
+bugs, teams, etc.).
+
+    # Our very helpful function for printing all the page results.
+    >>> def print_search_results():
+    ...     tag = find_tag_by_id(anon_browser.contents, 'search-results')
+    ...     if tag:
+    ...         print extract_text(tag)
+
+    # Another helper to make searching convenient
+    >>> def search_for(terms):
+    ...     search_text = anon_browser.getControl(name='field.text')
+    ...     search_text.value = terms
+    ...     anon_browser.getControl(name='field.actions.search').click()
+
+Search is accessible to any user via the root +search url:
+
+    >>> anon_browser.open('http://launchpad.dev/+search')
+    >>> print anon_browser.title
+    Search Launchpad
+
+The user does not see any search results on the page without submitting
+search text. An explanation of search is included in the page when the
+search field is empty.
+
+    >>> print_search_results()
+
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'no-search'))
+    Enter a term or many terms to find matching pages...
+
+When the user searches for specific item, such as a project name, he
+sees a result for that exact match in Launchpad.
+
+    >>> search_for('firefox')
+    >>> print anon_browser.title
+    Pages matching "firefox" in Launchpad
+    >>> print_search_results()
+    Most relevant matches
+    Mozilla Firefox
+    The Mozilla Firefox web browser
+    Registered by Sample Person
+    on 2004-09-24
+
+Searching for an integer returns the matching bug number as well as
+the matching question number, if one exists. Searching for "3", the
+user sees that a bug matched.
+
+    >>> search_for('3')
+    >>> print anon_browser.title
+    Pages matching "3" in Launchpad
+    >>> print_search_results()
+    Most relevant matches
+    Bug #3: Bug Title Test
+    ...
+    3: Firefox is slow and consumes too much RAM
+    ...
+
+An arbitrary search returns a list of Google search results. The
+user searches for "bug" and sees a listing of matching pages. The
+navigation states that the page is showing 1 through 20 of 25 total
+results.
+
+    # Use our pre-defined search results for the 'bug' search.
+    >>> search_for('bug')
+    >>> print anon_browser.title
+    Pages matching "bug" in Launchpad
+    >>> print_search_results()
+    Matching pages
+    1 &rarr; 20 of 25 results...
+    Launchpad Bugs...
+    Bugs in Ubuntu Linux...
+    Bugs related to Sample Person...
+    Bug #1 in Mozilla Firefox: ...Firefox does not support SVG...
+    ...
+
+He can see there really are only twenty matches in the page.
+
+    >>> first_page_results = list(
+    ...     find_tags_by_class(anon_browser.contents, 'pagematch'))
+    >>> len(first_page_results)
+    20
+
+The user sees the 'Next' link, and uses it to view the next page. It
+has 5 page matches.
+
+    >>> anon_browser.getLink('Next').click()
+    >>> second_page_results = list(
+    ...     find_tags_by_class(anon_browser.contents, 'pagematch'))
+    >>> len(second_page_results)
+    5
+
+    >>> in_both = [match for match in second_page_results
+    ...            if match in first_page_results]
+    >>> in_both
+    []
+
+
+== Specific searches ==
+
+Searches for specific launchpad items such as bugs, people, questions,
+teams, or projects, will return their respective matching item.
+
+The user searches for 'firefox' and sees the Mozilla Firefox product
+as the most relevant match.
+
+    >>> search_for('firefox')
+    >>> print_search_results()
+    Most relevant matches
+    Mozilla Firefox
+    The Mozilla Firefox web browser
+    Registered by Sample Person
+    on 2004-09-24
+
+Projects can appear too. For example, when the user searches for
+'gnome', the GNOME project is the best match.
+
+    >>> search_for('gnome')
+    >>> print_search_results()
+    Most relevant matches
+    GNOME
+    The GNOME Project is an initiative to ...
+    applications to work together in a harmonious desktop-ish way.
+    Registered by Sample Person
+    on 2004-09-24
+
+Distributions also appear in the 'Most relevant matches' section.
+The user searches for 'ubuntu' and sees it listed..
+
+    >>> search_for('ubuntu')
+    >>> print_search_results()
+    Most relevant matches
+    Ubuntu
+    Ubuntu is a new approach to Linux Distribution that includes regular
+    releases, and a simplified single-CD installation system.
+    Registered by Ubuntu Team
+    on 2006-10-16
+
+The user enters the number 1, and he sees a bug and a question in the
+"Most relevant matches" section.
+
+    >>> search_for('1')
+    >>> print_search_results()
+    Most relevant matches
+    Bug #1: Firefox does not support SVG
+    in Mozilla Firefox, Ubuntu, Debian, reported on ...
+    1: Firefox cannot render Bank Site
+    posted on ... by Steve Alexander in Mozilla Firefox
+
+
+The user searches for the rosetta admins team and it is listed.
+
+    >>> search_for('rosetta admins')
+    >>> print_search_results()
+    Most relevant matches
+    Rosetta Administrators (rosetta-admins)
+    Rosetta Administrators
+    Created on 2005-06-06
+
+Search for a user's launchpad name, a user will find the user in the
+"Most relevant matches" section.
+
+    >>> search_for('sabdfl')
+    >>> print_search_results()
+    Most relevant matches
+    Mark Shuttleworth (sabdfl)
+    joined on 2005-06-06, with 130 karma
+
+
+== Searches with no results ==
+
+Searches that don't return any results display a explanation message to
+the user. The text field is focused so that the user can try another
+search.
+
+    >>> search_for('fnord')
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Pages matching "fnord" in Launchpad
+    <!-- setFocusByName('field.text'); // -->
+    Your search for &ldquo;fnord&rdquo; did not return any results.
+
+
+== Searches for the empty string ==
+
+If the user submits the form without entering a term in the search
+field, the page does not contain any results. The user can see that
+the page is identical to the page visited without performing a search.
+
+    >>> search_for('')
+    >>> print anon_browser.title
+    Search Launchpad
+    >>> print_search_results()
+
+
+== Search limits ==
+
+The Google Custom Search Engine restricts the search to 10 terms and
+they cannot exceed 2048 characters. Testing revealed that 29 terms were
+actually honored by Google. Phrases are not terms; each word in the
+phrase was a term. Launchpad does not impose a restriction on the
+number of terms since sending more terms does not represent an error.
+Launchpad imposes an artificial limit to 250 characters.
+
+The user cannot enter more than 250 characters to in the search field.
+
+    >>> too_many_characters = '12345 7890' * 25 + 'n'
+    >>> search_for(too_many_characters)
+    >>> for message in get_feedback_messages(anon_browser.contents):
+    ...     print message
+    There is 1 error.
+    The search text cannot exceed 250 characters.
+
+
+== Searching from any page ==
+
+Most pages have the global search form in them. Any user can enter terms
+in the page he is viewing and submit the form to see the results.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print anon_browser.title
+    Bugs in Mozilla Firefox
+    >>> print anon_browser.url
+    http://bugs.launchpad.dev/firefox
+    >>> search_for('mozilla')
+    >>> print anon_browser.title
+    Pages matching "mozilla" in Launchpad
+    >>> print anon_browser.url
+    http://launchpad.dev/+search?...
+    >>> print_search_results()
+    Most relevant matches
+    the Mozilla Project
+    The Mozilla Project is the largest open source web browser collaborati...
+    browser technology.
+    Registered by Sample Person
+    on 2004-09-24

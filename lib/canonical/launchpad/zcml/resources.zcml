@@ -15,7 +15,6 @@
     <!-- General Images -->
     <resource name="add" file="../images/add.png" />
     <resource name="add-badge" file="../images/add-badge.png" />
-    <resource name="add-large" file="../images/add-large.png" />
     <resource name="architecture" file="../images/architecture.png" />
     <!-- arrowBlank is used in sorttable.js -->
     <resource name="arrowBlank" file="../images/arrowBlank.gif" />
@@ -60,7 +59,11 @@
               file="../images/bug-status-collapse.png" />
     <resource name="bug-status-expand" file="../images/bug-status-expand.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
+    <resource name="bug-remote-comment-synchronizing"
+              file="../images/bug-remote-comment-synchronizing.png" />
     <resource name="bullet" file="../images/bullet.png" />
+    <resource name="cancel" file="../images/cancel.png" />
+    <resource name="confirm" file="../images/confirm.png" />
     <resource name="copy" file="../images/copy.png" />
     <resource name="crowd" file="../images/crowd.png" />
     <resource name="crowd-large" file="../images/crowd-large.png" />

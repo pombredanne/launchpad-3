@@ -17,6 +17,7 @@ __all__ = [
     'BugTrackerVocabulary',
     'BugVocabulary',
     'BugWatchVocabulary',
+    'CommercialProjectsVocabulary',
     'ComponentVocabulary',
     'CountryNameVocabulary',
     'DistributionOrProductOrProjectVocabulary',
@@ -76,6 +77,7 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
     Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
     Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
@@ -99,7 +101,8 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 
-from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 
 
 class BasePersonVocabulary:
@@ -1224,11 +1227,8 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.displayname)
 
-    def __iter__(self):
-        target = None
-
-        milestone_context = self.context
-
+    @staticmethod
+    def getMilestoneTarget(milestone_context):
         if IUpstreamBugTask.providedBy(milestone_context):
             target = milestone_context.product
         elif IDistroBugTask.providedBy(milestone_context):
@@ -1252,6 +1252,12 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # We didn't find a context that can have milestones attached
             # to it.
             target = None
+        return target
+
+    @cachedproperty
+    def visible_milestones(self):
+        milestone_context = self.context
+        target = MilestoneVocabulary.getMilestoneTarget(milestone_context)
 
         # XXX: Brad Bollenbach 2006-02-24: Listifying milestones is
         # evil, but we need to sort the milestones by a non-database
@@ -1294,9 +1300,11 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # linked to it. Include such milestones in the vocabulary to
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
+        return sorted(visible_milestones, key=attrgetter('displayname'))
 
-        for ms in sorted(visible_milestones, key=attrgetter('displayname')):
-            yield self.toTerm(ms)
+    def __iter__(self):
+        for milestone in self.visible_milestones:
+            yield self.toTerm(milestone)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
@@ -1335,6 +1343,80 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 
+class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
+    """List commercial projects a user administers.
+
+    A commercial project is one that does not qualify for free hosting.
+    """
+
+    implements(IHugeVocabulary)
+
+    _table = Product
+    _orderBy = 'displayname'
+    displayname = 'Select one of the commercial projects you administer'
+
+    def _filter_projs(self, projects):
+        """Filter the list of all projects to just the commercial ones."""
+        return [
+            project for project in sorted(projects,
+                                          key=attrgetter('displayname'))
+            if not project.qualifies_for_free_hosting
+            ]
+
+    def _doSearch(self, query):
+        """Return terms where query is in the text of name
+        or displayname, or matches the full text index.
+        """
+        user = self.context
+        if user is None:
+            return self.emptySelectResults()
+
+        projects = user.getOwnedProjects(match_name=query)
+        commercial_projects = self._filter_projs(projects)
+        return commercial_projects
+
+    def toTerm(self, project):
+        """Return the term for this object."""
+        if project.commercial_subscription is None:
+            sub_status = "(unsubscribed)"
+        else:
+            date_formatter = DateTimeFormatterAPI(
+                project.commercial_subscription.date_expires)
+            sub_status = "(expires %s)" % date_formatter.displaydate()
+        return SimpleTerm(project,
+                          project.name,
+                          sub_status)
+
+    def getTermByToken(self, token):
+        """Return the term for the given token."""
+        search_results = self._doSearch(token)
+        for search_result in search_results:
+            if search_result.name == token:
+                return self.toTerm(search_result)
+        raise LookupError(token)
+
+    def searchForTerms(self, query=None):
+        """See `SQLObjectVocabularyBase`."""
+        results = self._doSearch(query)
+        return CountableIterator(len(results), results, self.toTerm)
+
+    def _commercial_projects(self):
+        """Return the list of commercial project owned by this user."""
+        user = self.context
+        if user is None:
+            return self.emptySelectResults()
+        return self._filter_projs(user.getOwnedProjects())
+
+    def __iter__(self):
+        """See `IVocabulary`."""
+        for proj in self._commercial_projects():
+            yield self.toTerm(proj)
+
+    def __contains__(self, obj):
+        """See `IVocabulary`."""
+        return obj in self._commercial_projects()
+
+
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     """List specifications on which the current specification depends."""
 
@@ -1349,6 +1431,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
             for spec in sorted(
                 curr_spec.dependencies, key=attrgetter('title')):
                 yield SimpleTerm(spec, spec.name, spec.title)
+
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
@@ -1886,4 +1969,3 @@ class FilteredLanguagePackVocabulary(FilteredLanguagePackVocabularyBase):
         query.append('(updates is NULL OR updates = %s)' % sqlvalues(
             self.context.language_pack_base))
         return query
-

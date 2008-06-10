@@ -162,6 +162,8 @@ class LinkData:
         self.text = text
         self.summary = summary
         self.icon = icon
+        if not isinstance(enabled, bool):
+            raise AssertionError, "enabled must be boolean, got %r" % enabled
         self.enabled = enabled
         self.site = site
         self.menu = menu
@@ -363,6 +365,7 @@ class FacetMenu(MenuBase):
             if (selectedfacetname is not None and
                 selectedfacetname == link.name):
                 link.selected = True
+            link.url = link.url.ensureNoSlash()
             yield link
 
 
@@ -389,6 +392,8 @@ class NavigationMenu(MenuBase):
 
     _baseclassname = 'NavigationMenu'
 
+    title = None
+
     def _get_link(self, name):
         return IFacetLink(
             super(NavigationMenu, self)._get_link(name))
@@ -414,6 +419,7 @@ class NavigationMenu(MenuBase):
             # or because the menu for the current view is the link's menu.
             link.selected = (request_url.startswith(link_url)
                              or self._is_link_menu(link, submenu))
+            link.url = link.url.ensureNoSlash()
             yield link
 
     def _get_current_menu(self, request):

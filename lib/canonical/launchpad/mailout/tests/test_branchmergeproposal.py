@@ -54,7 +54,6 @@ Baz Qux has proposed merging foo into bar.
 
 --
 %s
-
 %s
 """ % (canonical_url(bmp), mailer.getReason(subscriber)), body)
         self.assertEqual('Merge of foo into bar proposed', subject)

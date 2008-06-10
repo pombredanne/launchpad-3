@@ -8,6 +8,7 @@ __metaclass__ = type
 # file, one file for each interface type: person, project, bug, etc.
 
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
@@ -56,8 +57,9 @@ from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
-from canonical.launchpad.interfaces.codereviewmessage import *
+from canonical.launchpad.interfaces.codereviewcomment import *
 from canonical.launchpad.interfaces.codereviewvote import *
+from canonical.launchpad.interfaces.commercialsubscription import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.cve import *
@@ -133,9 +135,11 @@ from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
+from canonical.launchpad.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
+from canonical.launchpad.interfaces.searchservice import *
 from canonical.launchpad.interfaces.shipit import *
 from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackagename import *

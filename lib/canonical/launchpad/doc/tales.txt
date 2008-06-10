@@ -261,6 +261,15 @@ Merge proposals also have a link formatter, which displays branch titles:
     u'<a href="...">Proposed merge of baz into qux</a>'
 
 
+=== Code review comments ===
+
+   >>> comment = factory.makeCodeReviewComment()
+   >>> print test_tales('comment/fmt:url', comment=comment)
+   http://code.launchpad.dev/~person-name.../product-name.../branch.../+merge/.../comments/...
+   >>> print test_tales('comment/fmt:link', comment=comment)
+   <a href="...">Comment by Person-name...</a>
+
+
 === Bug branches ===
 
     >>> login('test@canonical.com')

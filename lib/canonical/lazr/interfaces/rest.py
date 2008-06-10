@@ -6,11 +6,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'IByteStorage',
+    'IByteStorageResource',
     'ICollection',
-    'ICollectionField',
     'ICollectionResource',
     'IEntry',
     'IEntryResource',
+    'IFieldMarshaller',
     'IHTTPResource',
     'IJSONPublishable',
     'IResourceOperation',
@@ -27,14 +29,6 @@ from zope.interface import Attribute, Interface
 from zope.interface.interface import invariant
 from zope.interface.exceptions import Invalid
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.schema.interfaces import IObject
-
-
-class ICollectionField(IObject):
-    """A collection associated with an entry.
-
-    This is a marker interface.
-    """
 
 
 class IHTTPResource(Interface):
@@ -56,6 +50,9 @@ class IJSONPublishable(Interface):
 
 class IServiceRootResource(IHTTPResource):
     """A service root object that also acts as a resource."""
+
+    def getTopLevelPublications(request):
+        """Return a mapping of top-level link names to published objects."""
 
 
 class IEntryResource(IHTTPResource):
@@ -136,6 +133,8 @@ class IEntry(Interface):
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
 
+    entry_schema = Attribute("The schema for this collection's entries.")
+
     def find():
         """Retrieve all entries in the collection under the given scope.
 
@@ -153,3 +152,80 @@ class IScopedCollection(ICollection):
 class WebServiceLayer(IDefaultBrowserLayer):
     """Marker interface for requests to the web service."""
 
+
+class IByteStorage(Interface):
+    """A sequence of bytes stored on the server.
+
+    The bytestream is expected to have a URL other than the one used
+    by the web service.
+    """
+
+    alias_url = Attribute("The external URL to the byte stream.")
+    filename = Attribute("Filename for the byte stream.")
+    is_stored = Attribute("Whether or not there's a previously created "
+                          "external byte stream here.")
+
+    def createStored(mediaType, representation):
+        """Create a new stored bytestream."""
+
+    def deleteStored():
+        """Delete an existing stored bytestream."""
+
+
+class IByteStorageResource(IHTTPResource):
+    """A resource that represents an external binary file."""
+
+    def do_GET():
+        """Redirect the client to the externally hosted file."""
+
+    def do_PUT(media_type, representation):
+        """Update the stored bytestream.
+
+        :param media_type: The media type of the proposed new bytesteram.
+        :param representation: The proposed new bytesteram.
+        :return: None or an error message describing validation errors. The
+            HTTP status code should be set appropriately.
+        """
+
+    def do_DELETE():
+        """Delete the stored bytestream."""
+
+
+class IFieldMarshaller(Interface):
+    """A mapper between schema fields and their representation on the wire."""
+
+    representation_name = Attribute(
+        'The name to use for this field within the representation.')
+
+    def marshall_from_json_data(value):
+        """Transform the given data value into an object.
+
+        This is used in PATCH/PUT requests when modifying the field, to get
+        the actual value to use from the data submitted via JSON.
+
+        :param value: A value obtained by deserializing a string into
+            a JSON data structure.
+
+        :return: The value that should be used to update the field.
+
+        """
+
+    def marshall_from_request(value):
+        """Return the value to use based on the request submitted value.
+
+        This is used by operation where the data comes from either the
+        query string or the form-encoded POST data.
+
+        :param value: The value submitted as part of the request.
+
+        :return: The value that should be used to update the field.
+        """
+
+    def unmarshall(entry, value):
+        """Transform an object value into a value suitable for JSON.
+
+        :param entry: The entry whose field this is.
+        :value: The object value of the field.
+
+        :return: A value that can be serialized as part of a JSON hash.
+        """

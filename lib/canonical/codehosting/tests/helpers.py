@@ -10,14 +10,13 @@ __all__ = [
     'deferToThread', 'make_bazaar_branch_and_tree']
 
 import os
-import shutil
 import threading
 import unittest
 
 import transaction
 
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import FileExists, TransportNotPossible
+from bzrlib.errors import FileExists, PermissionDenied, TransportNotPossible
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
@@ -47,8 +46,6 @@ class AvatarTestCase(TrialTestCase):
     layer = TwistedLayer
 
     def setUp(self):
-        self.tmpdir = self.mktemp()
-        os.mkdir(self.tmpdir)
         # A basic user dict, 'alice' is a member of no teams (aside from the
         # user themself).
         self.aliceUserDict = {
@@ -68,15 +65,6 @@ class AvatarTestCase(TrialTestCase):
             'initialBranches': [(2, []), (3, [])]
         }
 
-    def tearDown(self):
-        shutil.rmtree(self.tmpdir)
-
-        # Remove test droppings in the current working directory from using
-        # twisted.trial.unittest.TestCase.mktemp outside the trial test
-        # runner.
-        tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
-        shutil.rmtree(tmpdir_root)
-
 
 def exception_names(exceptions):
     """Return a list of exception names for the given exception list."""
@@ -88,6 +76,8 @@ def exception_names(exceptions):
         # Unfortunately, not all exceptions render themselves as their name.
         # More cases like this may need to be added
         names = ["Transport operation not possible"]
+    elif exceptions is PermissionDenied:
+        names = ['Permission denied', 'PermissionDenied']
     else:
         names = [exceptions.__name__]
     return names
@@ -301,6 +291,19 @@ class FakeLaunchpad:
         new_id = max(item_set.keys() + [0]) + 1
         item_set[new_id] = item_dict
         return new_id
+
+    def getDefaultStackedOnBranch(self, product_name):
+        if product_name == '+junk':
+            return ''
+        elif product_name == 'evolution':
+            # This has to match the sample data. :(
+            return '~vcs-imports/evolution/main'
+        elif product_name == 'firefox':
+            return ''
+        else:
+            raise ValueError(
+                "The crappy mock authserver doesn't know how to translate: %r"
+                % (product_name,))
 
     def createBranch(self, login_id, user, product, branch_name):
         """See `IHostedBranchStorage.createBranch`.

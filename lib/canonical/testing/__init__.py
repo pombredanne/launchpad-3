@@ -52,9 +52,7 @@ def reset_logging():
 
 
 # Imported here to avoid circular import issues
-from canonical.testing.layers import (
-    ExperimentalLaunchpadZopelessLayer,
-    BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
-    LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, LaunchpadScriptLayer,
-    TwistedLaunchpadZopelessLayer)
+# pylint: disable-msg=W0401
+from canonical.testing.layers import *
+from canonical.testing.layers import __all__ as layers_all
+__all__.extend(layers_all)

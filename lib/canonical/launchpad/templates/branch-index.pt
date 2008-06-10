@@ -9,6 +9,13 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
+
+<style type="text/css" metal:fill-slot="head_epilogue">
+  .logtail {
+    padding-left: 2em;
+  }
+</style>
+
 <body>
 
 <metal:leftportlets fill-slot="portlets">
@@ -42,13 +49,13 @@
         </tr>
       </tal:not-junk-branch>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
-        <tr><th>Location:</th><td tal:content="context/url" /></tr>
+        <tr><th>Location:</th><td tal:content="view/mirror_location" /></tr>
         <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
       </tal:mirrored-branch>
       <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
         <tr>
           <th>Location:</th>
-          <td tal:condition="context/url" tal:content="context/url" />
+          <td tal:condition="context/url" tal:content="view/mirror_location" />
           <td tal:condition="not: context/url" >Not specified</td>
         </tr>
       </tal:remote-branch>
@@ -174,25 +181,42 @@
 
         <tal:has-job define="job code_import/import_job"
                      condition="job">
-          <p>
+          <div>
           <tal:is-running condition="job/state/enumvalue:RUNNING">
-            An import is currently running, and was started
+            An import is currently running on
+            <tal:machine content="structure job/machine/fmt:link" />,
+            and was started
             <tal:date-started replace="job/date_started/fmt:displaydate">
               2 hours ago
             </tal:date-started>.
+            <tal:is-logtail condition="job/logtail">
+              The last few lines of the job's output were:
+              <div class="logtail">
+                <tal:logtail content="structure job/logtail/fmt:nice_pre" />
+              </div>
+            </tal:is-logtail>
           </tal:is-running>
           <tal:not-running condition="not: job/state/enumvalue:RUNNING">
             The next import is scheduled to run
             <tal:overdue condition="job/isOverdue">
-              as soon as possible.
+              as soon as possible<tal:requested-by
+                condition="job/requesting_user">
+                (requested by
+                <tal:requested-by-user
+                   content="structure job/requesting_user/fmt:link">
+                  Some user.
+                </tal:requested-by-user>)</tal:requested-by>.
             </tal:overdue>
             <tal:not-overdue condition="not: job/isOverdue">
               <tal:date-started replace="job/date_due/fmt:displaydate">
                 in 2 hours
               </tal:date-started>.
+              <tal:button
+                 condition="view/user"
+                 replace="structure view/context/@@+request-import" />
             </tal:not-overdue>
           </tal:not-running>
-          </p>
+          </div>
         </tal:has-job>
 
         <tal:last-successful condition="code_import/date_last_successful">
@@ -203,6 +227,12 @@
             </tal:last-successful>.
           </p>
         </tal:last-successful>
+
+        <div id="import-results" tal:condition="view/latest_code_import_results">
+          <tal:result repeat="result view/latest_code_import_results">
+            <metal:result use-macro="code_import/@@+macros/show_result"/>
+          </tal:result>
+        </div>
 
         <tal:can-edit condition="code_import/required:launchpad.Edit">
           <p>
@@ -269,6 +299,38 @@
     </tal:show-link>
   </div>
 
+  <div id="related-bugs-and-blueprints">
+    <h2>Linked bug reports and blueprints</h2>
+    <div class="actions">
+      <tal:bugs tal:define="branch context;
+                            show_edit python:True;
+                            show_whiteboard python:True;">
+        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+      </tal:bugs>
+      <div
+        tal:define="link context/menu:context/link_bug"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a bug
+      </div>
+    </div>
+    <div class="actions">
+      <tal:blueprints tal:define="branch context;
+                                  show_edit python:True;
+                                  show_whiteboard python:True;">
+        <metal:spec-branch-links
+            use-macro="context/@@+macros/spec-branch-links"/>
+      </tal:blueprints>
+      <div
+        tal:define="link context/menu:context/link_blueprint"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a blueprint
+      </div>
+    </div>
+  </div>
+
+
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>
 
@@ -284,30 +346,6 @@
   </tal:history-available>
 
   </div>
-
-  <tal:has-related-bugs condition="context/related_bugs">
-    <div id="related-bugs">
-      <h2>Related bugs</h2>
-      <tal:bugs tal:define="branch context;
-                            show_edit python:True;
-                            show_whiteboard python:True;">
-        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
-      </tal:bugs>
-    </div>
-  </tal:has-related-bugs>
-
-  <tal:has-related-blueprints condition="context/spec_links">
-    <div id="related-blueprints">
-      <h2>Related blueprints</h2>
-      <tal:blueprints tal:define="branch context;
-                                  show_edit python:True;
-                                  show_whiteboard python:True;">
-        <metal:spec-branch-links
-            use-macro="context/@@+macros/spec-branch-links"/>
-      </tal:blueprints>
-    </div>
-  </tal:has-related-blueprints>
-
 
       <div class="related">
 

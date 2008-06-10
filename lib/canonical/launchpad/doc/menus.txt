@@ -366,8 +366,11 @@ Next, we return the link as HTML.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <span class="action"><img alt="" class="inlineLinkIcon"
-                              src="/@@/icon" /><a class="menu-link-None" title="summary">text--&gt;</a></span>
+    <a style="
+          background: url(/@@/icon) center left no-repeat;
+          line-height: 20px;
+          padding-left: 18px"
+       class="actions menu-link-None" title="summary">text--&gt;</a>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
@@ -541,7 +544,7 @@ This will be the common case for default links.
     >>> facets = BlankTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ True
+    http://launchpad.dev/sesamestreet True
     http://launchpad.dev/sesamestreet/+bar False
     http://launchpad.dev/sesamestreet/+baz True
 
@@ -604,7 +607,7 @@ earlier in this doctest.
     >>> facets = AbsoluteUrlTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://launchpad.dev/sesamestreet/ False
+    http://launchpad.dev/sesamestreet False
     ftp://barlink.example.com/barbarbar True
     http://launchpad.dev/sesamestreet/+baz True
     http://launchpad.dev/sesamestreet/+spoo True
@@ -890,7 +893,7 @@ The request is also set as the menu's 'request' attribute.
     ...     print link.url, link.selected, link.linked, link.summary
     http://launchpad.dev/sesamestreet/+foo False True None
     http://launchpad.dev/sesamestreet/+bar True False More explanation about Bar of sesamestreet
-    http://launchpad.dev/sesamestreet/ False True GET
+    http://launchpad.dev/sesamestreet False True GET
 
 So, the first link '+foo' is linked, but the second '+bar' is not.  This
 is because the URL of '+bar' is the same as the request in the CONTEXTS.
@@ -907,7 +910,7 @@ Let's try again, this time with a request from the participation.
     ...     print link.url, link.selected, link.linked
     http://launchpad.dev/sesamestreet/+foo False True
     http://launchpad.dev/sesamestreet/+bar False False
-    http://launchpad.dev/sesamestreet/ False True
+    http://launchpad.dev/sesamestreet False True
 
 Note that '+bar' is not selected.  This is because we're adapting 'context'
 and not 'CONTEXTS', so the menus system has no way of knowing what the
@@ -942,7 +945,7 @@ actually calculates a shortened URL for this case.
     ...     print link.url, link.linked
     http://launchpad.dev/sesamestreet/+foo True
     http://launchpad.dev/sesamestreet/+bar True
-    http://launchpad.dev/sesamestreet/ False
+    http://launchpad.dev/sesamestreet False
 
 
 The result of `house/menu:application` will be empty at the moment, because
@@ -1042,8 +1045,9 @@ render() method.
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
     >>> print html #doctest: +NORMALIZE_WHITESPACE
-    <span class="action"><a href="http://127.0.0.1/sesamestreet/number73/+first"
-          class="menu-link-first">First menu</a></span>
+    <a style="line-height: 20px;"
+       href="http://127.0.0.1/sesamestreet/number73/+first"
+       class="actions menu-link-first">First menu</a>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)

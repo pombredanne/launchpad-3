@@ -6,7 +6,7 @@ branches that have been created in error.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Register branch').click()
+    >>> browser.getLink(id="register-branch").click()
     >>> browser.getControl('Project').value = 'firefox'
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
@@ -19,20 +19,6 @@ The newly created branch has an action 'Delete branch'.
     >>> delete_link = browser.getLink('Delete branch')
     >>> print delete_link.url
     http://code.launchpad.dev/~name12/firefox/to-delete/+delete
-
-The branch deletion page does not say that items must be deleted.
-
-    >>> delete_link.click()
-    >>> content = extract_text(find_main_content(browser.contents))
-    >>> 'The following items must be deleted' not in content
-    True
-
-If the user subscribes to the branch, then the branch is still deletable.
-
-    >>> browser.getLink('Subscribe').click()
-    >>> # Just use the default settings since we don't care.
-    >>> browser.getControl('Subscribe').click()
-    >>> delete_link = browser.getLink('Delete branch')
 
 When the user clicks on the link, they are informed what will happen if they
 delete the branch.

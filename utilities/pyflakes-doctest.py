@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=F0401
 """Perform pyflakes checks on doctests."""
 
 import compiler
@@ -9,14 +10,7 @@ import os
 import sys
 
 import pyflakes
-# XXX sinzui 2008-04-03:
-# pyflakes broke its API. We should be using pyflakes.checker.Checker,
-# but while we are transitioning to Hardy, we will preserve the old
-# behaviour.
-try:
-    from pyflakes.checker import Checker
-except ImportError:
-    Checker = pyflakes.Checker
+from pyflakes.checker import Checker
 
 
 # Names we define in the globals for our doctests
@@ -39,6 +33,7 @@ GLOBAL_NAMES = set([
     'browser',
     'extract_link_from_tag',
     'extract_text',
+    'factory',
     'filebug',
     'find_main_content',
     'find_portlet',
@@ -57,11 +52,14 @@ GLOBAL_NAMES = set([
     'print_portlet_links',
     'print_ppa_packages',
     'print_radio_button_field',
+    'print_self_link_of_entries',
     'print_submit_buttons',
     'print_tab_links',
     'setupBrowser',
     'user_browser',
     'webservice',
+    'public_webservice',
+    'user_webservice',
     # For OpenID per-version tests
     'PROTOCOL_URI',
     # For buildd tests

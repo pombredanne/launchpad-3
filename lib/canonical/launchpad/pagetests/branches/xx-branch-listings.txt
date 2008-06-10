@@ -68,13 +68,13 @@ If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> browser.getLink('Subscribed').click()
+    >>> browser.getLink('subscribed').click()
     >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
     >>> links is None
     True
 
 
-== Lifecycle Filtering ==
+== Lifecycle Filtering for Person Branches ==
 
 When the branches for a person is first loaded, only the 'Current'
 branches are shown.  Current branches are those that have a
@@ -186,13 +186,10 @@ helpful message supplied.
 
 If the user does not have any branches, then we say so.
 
-    >>> browser.open('http://code.launchpad.dev/'
-    ...   '~no-priv?field.lifecycle=Mature')
-    >>> browser.getControl(name='field.lifecycle').displayValue
-    ['Mature']
+    >>> browser.open('http://code.launchpad.dev/~no-priv')
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-    >>> print message.renderContents()
-    There are no branches related to No Privileges Person in Launchpad...
+    >>> print extract_text(message)
+    There are no branches related to No Privileges Person today.
 
 
 == Branch Badge Decoration ==
@@ -270,7 +267,6 @@ by product name (which is of course called "project name" in the UI).
     ...     print option
     by project name
     by lifecycle status
-    by author name
     by branch name
     by registrant name
     most recently changed first
@@ -292,8 +288,8 @@ options that can be selected.
     ItemNotFoundError: insufficient items with name 'by project name'
     >>> for option in sort_by_control.options:
     ...     print option
+    by most interesting
     by lifecycle status
-    by author name
     by branch name
     by registrant name
     most recently changed first
@@ -302,14 +298,14 @@ options that can be selected.
     oldest first
 
 If you filter by a specific lifecycle status then ordering by
-lifecycle ceases to be relevant, and the default is to sort by author.
+lifecycle ceases to be relevant, and the default is to sort by registrant.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> status_control = browser.getControl(name='field.lifecycle')
     >>> status_control.value = ['MATURE']
     >>> browser.getControl('Filter').click()
     >>> browser.getControl(name='field.sort_by').value
-    ['by author name']
+    ['by most interesting']
 
 The implicitly sorted listings do not have an ordering widget at all.
 
@@ -332,16 +328,16 @@ Finally, sorting by a particular criterion has the desired effect.
     lp://dev/~vcs-imports/gnome-terminal/import    New          ...
     lp://dev/~name12/gnome-terminal/mirrored       New          ...
 
-    >>> browser.getControl(name='field.sort_by').value = ['by author name']
+    >>> browser.getControl(name='field.sort_by').value = ['by branch name']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    lp://dev/~launchpad/gnome-terminal/launchpad    New             ...
-    lp://dev/~name12/gnome-terminal/klingon         Experimental    ...
     lp://dev/~name12/gnome-terminal/2.6             Mature          ...
-    lp://dev/~name12/gnome-terminal/main            Development     ...
     lp://dev/~vcs-imports/gnome-terminal/import     New             ...
+    lp://dev/~name12/gnome-terminal/klingon         Experimental    ...
+    lp://dev/~launchpad/gnome-terminal/launchpad    New             ...
+    lp://dev/~name12/gnome-terminal/main            Development     ...
     lp://dev/~name12/gnome-terminal/mirrored        New             ...
 
 
@@ -401,6 +397,59 @@ The current development focus is shown first though.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> print extract_text(table.tbody.fetch('tr')[1])
     lp://dev/gnome-terminal  Series: trunk, alpha, pre-1.0  ...
+
+
+== Lifecycle Filtering for Product Branches ==
+
+When the branches for a product are first loaded, only the 'Current'
+branches are shown.  Current branches are those that have a
+lifecycle status of New, Development, Experimental or Mature.
+Merged or Abandoned branches are not shown.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/gnome-terminal   Series: trunk...    Development  ...
+    lp://dev/~name12/gnome-terminal/2.6           Mature       ...
+    lp://dev/~name12/gnome-terminal/klingon       Experimental ...
+    lp://dev/~launchpad/gnome-terminal/launchpad  New          ...
+    lp://dev/~vcs-imports/gnome-terminal/import   New          ...
+
+There is a select control that is used to define which
+subset of the branches are shown.
+
+    >>> filter_control = browser.getControl(name='field.lifecycle')
+    >>> filter_control
+    <ListControl name='field.lifecycle' type='select'>
+    >>> filter_control.displayValue
+    ['Any active status']
+    >>> filter_control.displayOptions
+    ['Any active status', 'Any status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
+
+Selecting an individual lifecycle status from the select control
+will cause only branches with that status to be listed.
+
+    >>> browser.getControl(name='field.lifecycle').displayValue = ['Experimental']
+    >>> browser.getControl('Filter').click()
+    >>> print browser.url
+    http://code.launchpad.dev/gnome-terminal?field.lifecycle=EXPERIMENTAL
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/~name12/gnome-terminal/klingon       Experimental ...
+
+If the development focus matches the lifecycle selected, it is still shown 
+first.
+
+    >>> browser.getControl(name='field.lifecycle').displayValue = ['Development']
+    >>> browser.getControl('Filter').click()
+    >>> print browser.url
+    http://code.launchpad.dev/gnome-terminal?field.lifecycle=DEVELOPMENT
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/gnome-terminal   Series: trunk...    Development  ...
 
 
 == The last commit ==

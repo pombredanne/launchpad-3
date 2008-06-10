@@ -14,55 +14,18 @@
         <allow interface='canonical.launchpad.webapp.interfaces.ICanonicalUrlData' />
     </securedutility>
 
-    <!-- TALES namespaces for WADL generation -->
+    <!-- Registration for the class that manages an entry's byte
+         storage fields. -->
     <adapter
-        for="canonical.lazr.interfaces.IHTTPResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlResourceAPI"
-        name="wadl"
+        for="canonical.lazr.interfaces.IEntry
+             zope.schema.interfaces.IField"
+        provides="canonical.lazr.interfaces.IByteStorage"
+        factory="canonical.launchpad.rest.LibraryBackedByteStorage"
         />
 
-    <adapter
-        for="canonical.lazr.interfaces.ICollectionResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="canonical.lazr.interfaces.IEntryResource"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlEntryResourceAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="tuple"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
-        name="wadl_entry"
-        />
-
-    <adapter
-        for="tuple"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
-        name="wadl_collection"
-        />
-
-    <adapter
-        for="zope.schema.interfaces.IField"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlFieldAPI"
-        name="wadl"
-        />
-
-    <adapter
-        for="*"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.lazr.rest.tales.WadlOperationAPI"
-        name="wadl_operation"
-        />
+    <class class="canonical.launchpad.rest.LibraryBackedByteStorage">
+        <allow interface='canonical.lazr.interfaces.IByteStorage' />
+    </class>
 
     <!-- WebService uses the default LaunchpadRootNavigation -->
     <view
@@ -81,26 +44,8 @@
     <view
         for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
         type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        factory="canonical.lazr.rest.error.WebServiceExceptionView"
         name="index.html"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        provides="canonical.launchpad.rest.IBugEntry"
-        factory="canonical.launchpad.rest.BugEntry"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMaloneApplication"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.BugCollection"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.ITeamMembership"
-        provides="canonical.launchpad.rest.ITeamMembershipEntry"
-        factory="canonical.launchpad.rest.TeamMembershipEntry"
         />
 
     <adapter

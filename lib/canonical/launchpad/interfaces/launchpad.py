@@ -24,6 +24,7 @@ from canonical.launchpad.webapp.interfaces import (
     IOpenLaunchBag, NotFoundError, UnexpectedFormData,
     UnsafeFormGetSubmissionError)
 
+
 __all__ = [
     'IAging',
     'IAppFrontPageSearchForm',
@@ -50,8 +51,8 @@ __all__ = [
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
+    'ILaunchpadSearch',
     'ILaunchpadUsage',
-    'IMaloneApplication',
     'INotificationRecipientSet',
     'IOpenIdApplication',
     'IOpenLaunchBag',
@@ -125,24 +126,6 @@ class ICrowd(Interface):
         The returned crowd contains the person or teams in
         both this crowd and the given crowd.
         """
-
-
-class IMaloneApplication(ILaunchpadApplication):
-    """Application root for malone."""
-
-    def searchTasks(search_params):
-        """Search IBugTasks with the given search parameters."""
-
-    bug_count = Attribute("The number of bugs recorded in Launchpad")
-    bugwatch_count = Attribute("The number of links to external bug trackers")
-    bugtask_count = Attribute("The number of bug tasks in Launchpad")
-    projects_with_bugs_count = Attribute("The number of products and "
-        "distributions which have bugs in Launchpad.")
-    shared_bug_count = Attribute("The number of bugs that span multiple "
-        "products and distributions")
-    bugtracker_count = Attribute("The number of bug trackers in Launchpad")
-    top_bugtrackers = Attribute("The BugTrackers with the most watches.")
-    latest_bugs = Attribute("The latest 5 bugs filed.")
 
 
 class IPrivateMaloneApplication(ILaunchpadApplication):
@@ -441,6 +424,13 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProject')
+
+
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
 
 
 class UnknownRecipientError(KeyError):

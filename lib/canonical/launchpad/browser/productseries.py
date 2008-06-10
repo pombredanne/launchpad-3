@@ -48,10 +48,10 @@ from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
-    ICountry, ILaunchpadCelebrities, ImportStatus, IPOTemplateSet,
+    ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
     IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
-    ITranslationImporter, ITranslationImportQueue, NotFoundError,
-    RevisionControlSystems)
+    ITranslationImportQueue, ITranslationImporter, ImportStatus,
+    NotFoundError, RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
@@ -547,7 +547,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 class ProductSeriesEditView(LaunchpadEditFormView):
 
     schema = IProductSeries
-    field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
+    field_names = [
+        'name', 'summary', 'status', 'user_branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
 
@@ -850,6 +851,22 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Source import deleted.')
 
+    def allowConversion(self, action):
+        return self.isAdmin() and self.context.importstatus in [
+            ImportStatus.AUTOTESTED,
+            ImportStatus.TESTING,
+            ImportStatus.PROCESSING,
+            ImportStatus.SYNCING,
+            ImportStatus.STOPPED,
+            ]
+
+    @action(_('Convert To New Style Import'), name='convert',
+            condition=allowConversion)
+    def convert_action(self, action, data):
+        getUtility(ICodeImportSet).newFromProductSeries(self.context)
+        self.request.response.addInfoNotification(
+            'Import converted to new style.')
+
     @property
     def next_url(self):
         return canonical_url(self.context)
@@ -937,12 +954,12 @@ class ProductSeriesSourceSetView:
 class ProductSeriesSourceListView(LaunchpadView):
     """A listing of all the running imports.
 
-    We take 'running' to mean 'has importstatus==SYNCING'."""
+    See `ICodeImportSet.getActiveImports` for our definition of running.
+    """
 
     def initialize(self):
         self.text = self.request.get('text')
-        results = getUtility(IProductSeriesSet).searchImports(
-            text=self.text, importstatus=ImportStatus.SYNCING)
+        results = getUtility(ICodeImportSet).getActiveImports(text=self.text)
 
         self.batchnav = BatchNavigator(results, self.request)
 

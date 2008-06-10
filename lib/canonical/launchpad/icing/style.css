@@ -186,12 +186,44 @@ right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
 /* This is currently overridden for Internet Explorer in main-template.pt. */
 
-table.form {margin-top: 1em; margin-bottom: 1em; width: 100%;}
+table.form {margin-top: 1em; width: 100%;}
+  /* http://launchpad.dev/firefox/+edit */
+
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
  * person-pagelet-details.pt. We should move to use tables everywhere
  * and then kill this class I guess. -- kiko, 2007-12-05 */
 table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
+
+/* --- Action links and buttons --- */
+
+/*
+  Action links are those that begin the process of doing something.
+  For example, "Register a branch", "Edit profile", "Link to CVE".
+  When presented inline, they are rendered by launchpad-inline-link.pt.
+
+  Action buttons are those that submit a multi-row form.
+  Often an action button will have an "or _Cancel_" link next to it.
+
+  We want 0.5em horizontal gap between links and buttons in these sections.
+  Using margin-left would cause a bad gap to the left of a leftmost item.
+  Using margin-right would cause a bad gap to the right of a rightmost item.
+  We could fix these problems with :first-child/:last-child, but not in IE.
+  So we do something a little tricky.
+  We go ahead and give each child of the actions container a right margin:
+*/
+.actions * {margin-right: 0.5em;}
+.actions * * {margin-right: 0;} /* because ">" doesn't work in IE6 */
+/*
+  Then in addition to the top/bottom margins of the actions container, we
+  give it a *negative* right margin, cancelling out that of the last child.
+*/
+.actions {margin: 1em -0.5em 1em 0;}
+/*
+  Examples:
+  http://bugs.launchpad.dev/firefox/+bug/1 (after 'Affects' table)
+  http://bugs.launchpad.dev/firefox/+bug/1/+subscribe (bottom button)
+*/
 
 /* --- Other --- */
 
@@ -651,6 +683,52 @@ So it's hidden initially, and then revealed if JavaScript is available.
   padding-top: 10px;
 }
 
+/*
+Inline help is different from the pop-out help panel. It is contained in
+a <div> and dynamically positioned by JavaScript.
+*/
+#help-pane {
+  position: absolute;
+  border: 5px solid black;
+  padding: 10px;
+  z-index: 3000;  /* This should appear above all other content. */
+  background-color: #fff;
+  width: 25em;
+}
+/* We want the hidden pane to have dimensions so that we can position the
+frame with them.  This works because the element an absolute position, taking
+it out of the page flow. */
+#help-pane.invisible {
+    position: absolute;
+    visibility: hidden;
+    display: block;
+    left: 0px;
+    top: 0px;
+}
+
+#help-body {
+    background: url(spinner.gif) no-repeat center center;
+}
+#help-pane iframe {
+    width: 100%;
+    height: 18em;
+}
+#help-pane iframe.invisible {
+    visibility: hidden;
+    display: block;
+}
+#help-footer {
+  padding: 3px;
+  border-top: 1px solid #ddd;
+  text-align: right;
+}
+#help-footer button {
+  margin-bottom: 10px;
+  margin-top: 3px;
+}
+
+span.help {font-weight: normal;}
+
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
@@ -1067,7 +1145,7 @@ ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
 ul.cve, li.cve                       {list-style-image: url(/@@/cve);}
 ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
-ul.distroseries, li.distroseries   {list-style-image: url(/@@/distribution);}
+ul.distroseries, li.distroseries     {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
 ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
@@ -1076,7 +1154,10 @@ ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.mail, li.mail                     {list-style-image: url(/@@/mail);}
 ul.meeting, li.meeting               {list-style-image: url(/@@/meeting);}
 ul.milestone, li.milestone           {list-style-image: url(/@@/milestone);}
-ul.news, li.news                     {list-style-image: url(/@@/news);}
+ul.news, li.news {
+  list-style-image: url(/@@/news);
+  margin-bottom: 1em;
+}
 ul.package.binary, li.package.binary {list-style-image: url(/@@/package-binary);}
 ul.package.source, li.package.source {list-style-image: url(/@@/package-source);}
 ul.person, li.person                 {list-style-image: url(/@@/person);}
@@ -1097,12 +1178,15 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .description {font-size: 1.125em;}
 /* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
-.boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
+.boardComment, .boardCommentSummary {border: 1px solid #ddd;}
+.boardComment {margin: 1em 0 1.5em;}
+.boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
 .boardCommentDetails {background-color: #eee; padding: 0.5em 12px;}
 .boardCommentBody {padding: 0.5em 12px 0;}
 .boardCommentContent { line-height: 1.5em;}
+.boardCommentFooter {background-color: #eee; padding: 0.5em 12px;}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
 
@@ -1203,7 +1287,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   background-color: #d18b39;
 }
 .tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong {
+.tab-branches #application-footer strong, .tab-branches #application-summary strong, .tab-branches #page-summary strong.count {
   background: none;
   color: #d18b39;
 }
@@ -1519,7 +1603,7 @@ div#applications {padding: 1em 0; text-align: center;}
   color: #303030;
   font-size: 1.2em;
 }
-#application-summary, #application-footer {
+#application-summary, #application-footer, #page-summary {
   font-size: 1.2em;
   line-height: 1.4em;
   margin-top: 0;
@@ -1725,5 +1809,51 @@ div.popupTitle {
   display: none;
 }
 
-/* The icon next to inline action links */
-.inlineLinkIcon {margin-right: 0.5em; margin-left: 0.5em;}
+/* Search results*/
+
+#search-results {
+    margin-top: 1em;
+}
+
+#search-results ul {
+  margin: .5em 0 .5em 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+#search-results ul li {
+  margin-bottom: 1em;
+}
+
+#search-results ul li div.summary {
+  margin-left: 17px;
+  font-weight: normal;
+}
+
+#search-results ul.exact-matches {
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+#search-results, #no-search{
+  width: 40em;
+}
+
+#search-results div.upper-batch-nav {
+  border-top: 1px solid #d2d2d2;
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+
+#search-results div.lower-batch-nav {
+  margin-top: 1.5em;
+  border-top: 1px solid #d2d2d2;
+}
+
+#no-results {
+  margin-top: 2em;
+}
+
+#no-results span.search_text {
+  font-weight: bold;
+}

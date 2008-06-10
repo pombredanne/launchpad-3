@@ -96,7 +96,7 @@ components and a list of components it can depend of.
     multiverse | main restricted universe multiverse
        partner | partner
     restricted | main restricted
-      universe | main restricted universe
+      universe | main universe
 
 `IBuild.ogre_components` is the list of allowed components for
 building this source. It simply submits the `IBuild.current_component`
@@ -544,11 +544,11 @@ The default set of builds with no user specified excludes private builds:
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> bob_builds = bob.getBuildRecords()
     >>> print_build_details(bob_builds)
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
-    main: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
 
     >>> bob_builds.count()
     13
@@ -561,13 +561,13 @@ three additional private builds for cprov:
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
-    main: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
 
     >>> bob_builds.count()
     16
@@ -577,13 +577,13 @@ Cprov can also see his own builds of course:
     >>> bob_builds = bob.getBuildRecords(user=cprov)
     >>> print_build_details(bob_builds)
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
-    main: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
 
 You can filter on build state:
 
@@ -689,7 +689,7 @@ consistently spread according the source target component, i.e. a
 source published in 'main' component is only allowed to depend on
 binaries also published in 'main', on the other hand a source
 published in 'universe' is allowed to depend on binaries published in
-'main', 'restricted' and 'universe' components.
+'main' and 'universe' components.
 
 A proper name for this "model" would be 'cross-component-dependency'.
 
@@ -723,7 +723,7 @@ A proper name for this "model" would be 'cross-component-dependency'.
     -----------+---------------
           main | main
     restricted | main restricted
-      universe | main restricted universe
+      universe | main universe
     multiverse | main restricted universe multiverse
        partner | partner
 
@@ -898,7 +898,7 @@ expect depwait_build to be 'retried' and scored.
     NEEDSBUILD
 
     >>> depwait_build.buildqueue_record.lastscore
-    1005
+    4005
 
 The 'retryDepWaiting' task is performed periodically via cronjob by
 cronscript/buildd-retry-depwait.py. It can be run in parallel with
@@ -922,7 +922,7 @@ Accessing the cprov builds when logged in as admin will see the records:
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -933,7 +933,7 @@ Likewise when logged in as cprov:
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_build_details(bob_builds)
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
     cprov: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
@@ -951,7 +951,7 @@ when accessing the builds:
     ... else:
     ...     print "FAIL: should raise Unauthorized exception"
     cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
     Generated Unauthorized exception as expected
 
 == Estimated Build Duration ==

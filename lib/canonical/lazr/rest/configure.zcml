@@ -1,6 +1,5 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="lazr">
 
     <class class="canonical.lazr.rest.CollectionResource">
@@ -11,6 +10,70 @@
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
         <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
     </class>
+
+    <!-- TALES namespaces for WADL generation -->
+    <adapter
+        for="canonical.lazr.interfaces.IHTTPResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.IServiceRootResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlServiceRootResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.ICollectionResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlCollectionResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.IEntryResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlEntryResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.IByteStorageResource"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlByteStorageResourceAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlEntryAdapterAPI"
+        name="wadl_entry"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
+        name="wadl_collection"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IField"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlFieldAPI"
+        name="wadl"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlOperationAPI"
+        name="wadl_operation"
+        />
 
     <!-- Generic adapter for scoped collection -->
     <adapter
@@ -25,63 +88,162 @@
         factory="canonical.lazr.rest.JSONItem"
         />
 
-    <!-- IFieldDeserializer adapters -->
+    <!-- Byte storage resources -->
+    <adapter
+        for="canonical.lazr.interfaces.IByteStorage
+             zope.publisher.interfaces.http.IHTTPApplicationRequest"
+        provides="canonical.lazr.interfaces.IHTTPResource"
+        factory="canonical.lazr.rest.ByteStorageResource"
+        />
+
+    <class class="canonical.lazr.rest.ByteStorageResource">
+        <allow interface='canonical.lazr.interfaces.IByteStorageResource' />
+    </class>
+
+    <!-- IFieldMarshaller adapters -->
     <adapter
         for="zope.schema.interfaces.IField
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.SimpleFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IBool
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.BoolFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IFloat
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.FloatFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IInt
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.IntFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IDatetime
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.DateTimeFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.DateTimeFieldMarshaller"
         />
 
     <adapter
-        for="zope.schema.interfaces.Int
+        for="zope.schema.interfaces.IBytes
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.IntFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.BytesFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IText
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.TextFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.VocabularyLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.VocabularyLookupFieldMarshaller"
+        />
+
+    <adapter
+        for="zope.schema.interfaces.IChoice
+             canonical.lazr.interfaces.rest.WebServiceLayer
+             zope.schema.interfaces.IVocabularyTokenized"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.TokenizedVocabularyFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.lazr.enum.IEnumeratedType"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleVocabularyLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.SimpleVocabularyLookupFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IChoice
              canonical.lazr.interfaces.rest.WebServiceLayer
              canonical.launchpad.webapp.vocabulary.SQLObjectVocabularyBase"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
         />
 
     <adapter
         for="zope.schema.interfaces.IObject
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.ObjectLookupFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.ObjectLookupFieldMarshaller"
         />
 
     <adapter
-        for="canonical.lazr.interfaces.ICollectionField
+        for="zope.schema.interfaces.ICollection
              canonical.lazr.interfaces.rest.WebServiceLayer"
-        provides="canonical.lazr.interfaces.IFieldDeserializer"
-        factory="canonical.lazr.rest.SimpleFieldDeserializer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.AbstractCollectionFieldMarshaller"
+        />
+
+    <adapter
+        for="canonical.lazr.interfaces.fields.ICollectionField
+             canonical.lazr.interfaces.rest.WebServiceLayer"
+        provides="canonical.lazr.interfaces.IFieldMarshaller"
+        factory="canonical.lazr.rest.marshallers.CollectionFieldMarshaller"
+        />
+
+    <!-- System Errors -->
+    <view
+        for="zope.interface.common.interfaces.IException"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.SystemErrorView"
+        name="index.html"
+        />
+
+    <!-- Unauthorized -->
+    <view
+        for="zope.exceptions.IUnauthorized"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.UnauthorizedView"
+        name="index.html"
+        />
+
+    <!-- NotFound -->
+    <view
+        for="zope.publisher.interfaces.NotFound"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.NotFoundView"
+        name="index.html"
+        />
+
+    <!-- RequestExpired 
+
+    XXX flacoste 2008-05-22 bug=185958 This interface should 
+    be moved to LAZR.
+    -->
+    <view
+        for="canonical.database.interfaces.IRequestExpired"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.RequestExpiredView"
+        name="index.html"
+        />
+
+    <!-- TimeoutError -->
+    <view
+        for="canonical.lazr.timeout.TimeoutError"
+        type="canonical.lazr.interfaces.rest.WebServiceLayer"
+        factory="canonical.lazr.rest.error.RequestExpiredView"
+        name="index.html"
         />
 
 </configure>

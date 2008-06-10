@@ -189,11 +189,11 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        # Check upload rights for the signer of the upload.
-        self.verify_acl()
-
         # Override archive location if necessary.
         self.overrideArchive()
+
+        # Check upload rights for the signer of the upload.
+        self.verify_acl()
 
         # Perform policy checks.
         self.policy.checkUpload(self)
@@ -702,6 +702,10 @@ class NascentUpload:
 
         Override target component and section.
         """
+        if self.is_ppa:
+            # There are no overrides for PPAs.
+            return
+
         self.logger.debug("%s (source) exists in %s" % (
             override.sourcepackagerelease.title,
             override.pocket.name))
@@ -714,6 +718,10 @@ class NascentUpload:
 
         Override target component, section and priority.
         """
+        if self.is_ppa:
+            # There are no overrides for PPAs.
+            return
+
         self.logger.debug("%s (binary) exists in %s/%s" % (
             override.binarypackagerelease.title,
             override.distroarchseries.architecturetag,
@@ -956,12 +964,13 @@ class NascentUpload:
             ancestry = package_upload_source.getSourceAncestry()
             if ancestry is not None:
                 to_sourcepackagerelease = ancestry.sourcepackagerelease
-                diff = sourcepackagerelease.requestDiffTo(
-                    sourcepackagerelease.creator, to_sourcepackagerelease)
-                self.logger.debug('%s requested' % diff.title)
+                diff = to_sourcepackagerelease.requestDiffTo(
+                    sourcepackagerelease.creator, sourcepackagerelease)
+                self.logger.debug(
+                    'Package diff for %s from %s requested' % (
+                        diff.from_source.name, diff.title))
 
         if self.binaryful:
-
             for custom_file in self.changes.custom_files:
                 libraryfile = custom_file.storeInDatabase()
                 self.queue_root.addCustom(

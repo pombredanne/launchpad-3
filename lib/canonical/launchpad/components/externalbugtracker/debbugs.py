@@ -26,8 +26,11 @@ from canonical.launchpad.components.externalbugtracker import (
     InvalidBugId, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, IMessageSet, ISupportsBugImport,
-    ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE)
+    ISupportsCommentImport, ISupportsCommentPushing,
+    UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.webapp import urlsplit
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,
@@ -42,7 +45,10 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(ISupportsBugImport, ISupportsCommentImport)
+    implements(
+        ISupportsBugImport, ISupportsCommentImport, ISupportsCommentPushing)
+
+    sync_comments = config.checkwatches.sync_debbugs_comments
 
     # We don't support different versions of debbugs.
     version = None
@@ -216,7 +222,14 @@ class DebBugs(ExternalBugTracker):
         comment_ids = []
         for comment in debian_bug.comments:
             parsed_comment = email.message_from_string(comment)
-            comment_ids.append(parsed_comment['message-id'])
+
+            # It's possible for the same message to appear several times
+            # in a DebBugs comment log, since each control command in a
+            # message results in that message being recorded once
+            # against the bug that the command affects. We only want to
+            # know about the comment once, though.
+            if parsed_comment['message-id'] not in comment_ids:
+                comment_ids.append(parsed_comment['message-id'])
 
         return comment_ids
 
@@ -251,3 +264,29 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+        """Push a comment to the remote DebBugs instance.
+
+        See `ISupportsCommentPushing`.
+        """
+        debian_bug = self._findBug(remote_bug)
+
+        # We set the subject to "Re: <bug subject>" in the same way that
+        # a mail client would.
+        subject = "Re: %s" % debian_bug.subject
+        host_name = urlsplit(self.baseurl)[1]
+        to_addr = "%s@%s" % (remote_bug, host_name)
+
+        headers = {'Message-Id': rfc822msgid}
+
+        # We str()ify to_addr since simple_sendmail expects ASCII
+        # strings and gets awfully upset when it gets a unicode one.
+        sent_msg_id = simple_sendmail(
+            'debbugs@bugs.launchpad.net', [str(to_addr)], subject,
+            comment_body, headers=headers)
+
+        # We add angle-brackets to the sent_msg_id because
+        # simple_sendmail strips them out. We want to remain consistent
+        # with debbugs, which uses angle-brackets in its message IDS (as
+        # does Launchpad).
+        return "<%s>" % sent_msg_id

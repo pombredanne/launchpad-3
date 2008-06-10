@@ -27,19 +27,14 @@
 
   <tbody>
     <tal:bugtask-or-nomination
-        repeat="task_or_nom view/getBugTasksAndNominations">
-      <tal:block
-          condition="task_or_nom/is_conjoined_slave"
-          replace="structure task_or_nom/row_context/@@+bugtasks-and-nominations-table-row/renderConjoinedSlave" />
-      <tal:block
-          condition="not:task_or_nom/is_conjoined_slave"
-          replace="structure task_or_nom/row_context/@@+bugtasks-and-nominations-table-row/renderNonConjoinedSlave" />
+        repeat="task_or_nom_view view/getBugTaskAndNominationViews">
+      <tal:block replace="structure task_or_nom_view" />
     </tal:bugtask-or-nomination>
   </tbody>
 
 </table>
 
-<div style="text-align: right; margin-bottom: 1em;"
+<div class="actions" style="text-align: right;"
      tal:condition="view/displayAlsoAffectsLinks"
      tal:define="current_bugtask view/currentBugTask">
 

@@ -35,7 +35,7 @@ from canonical.codehosting.codeimport.tests.test_worker import (
 from canonical.launchpad.database import CodeImport, CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, CodeImportReviewStatus, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportResultSet, ICodeImportSet)
+    ICodeImportJobWorkflow, ICodeImportSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
@@ -107,12 +107,15 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
         self.assertEqual(self.log_file.getvalue(), output[0] + output[1])
 
     def test_outReceivedUpdatesTail(self):
-        # outReceived updates the tail of the log, currently and arbitarily
-        # defined to be the last 100 bytes of the output.
-        self.protocol.outReceived('a' * 150)
-        self.assertEqual(self.protocol._tail, 'a'*100)
-        self.protocol.outReceived('b' * 50)
-        self.assertEqual(self.protocol._tail, 'a'*50 + 'b'*50)
+        # outReceived updates the tail of the log, currently and arbitrarily
+        # defined to be the last 5 lines of the log.
+        lines = ['line %d' % number for number in range(1, 7)]
+        self.protocol.outReceived('\n'.join(lines[:3]) + '\n')
+        self.assertEqual(
+            self.protocol._tail, 'line 1\nline 2\nline 3\n')
+        self.protocol.outReceived('\n'.join(lines[3:]) + '\n')
+        self.assertEqual(
+            self.protocol._tail, 'line 3\nline 4\nline 5\nline 6\n')
 
 
 class TestWorkerMonitorUnit(TestCase):
@@ -135,8 +138,7 @@ class TestWorkerMonitorUnit(TestCase):
         """Return the `CodeImportResult`s for the `CodeImport` we created.
         """
         code_import = getUtility(ICodeImportSet).get(self.code_import_id)
-        return getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import)
+        return code_import.results
 
     def getOneResultForOurCodeImport(self):
         """Return the only `CodeImportResult` for the `CodeImport` we created.
@@ -194,6 +196,32 @@ class TestWorkerMonitorUnit(TestCase):
                 details.cvs_module, job.code_import.cvs_module)
         return self.worker_monitor.getSourceDetails().addCallback(
             check_source_details)
+
+    def associateCodeImportWithSeries(self, code_import_id):
+        """Pretend the given code import was created from some ProductSeries.
+        """
+        self.layer.switchDbUser('launchpad')
+        code_import = getUtility(ICodeImportSet).get(code_import_id)
+        series = self.factory.makeSeries()
+        from canonical.launchpad.database.codeimport import (
+            _ProductSeriesCodeImport)
+        _ProductSeriesCodeImport(
+            codeimport=code_import, productseries=series)
+        series_id = series.id
+        self.layer.txn.commit()
+        self.layer.switchDbUser('codeimportworker')
+        return series_id
+
+    def test_getSourceDetailsForImportWithSourceSeries(self):
+        # getSourceDetails extracts the details from the CodeImport database
+        # object.
+        series_id = self.associateCodeImportWithSeries(self.code_import_id)
+        @read_only_transaction
+        def check_source_productseries_id(details):
+            self.assertEquals(
+                details.source_product_series_id, series_id)
+        return self.worker_monitor.getSourceDetails().addCallback(
+            check_source_productseries_id)
 
     def test_updateHeartbeat(self):
         # The worker monitor's updateHeartbeat method calls the
@@ -436,9 +464,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
-        results = list(getUtility(ICodeImportResultSet).getResultsForImport(
-            code_import))
-        self.failUnlessEqual(len(results), 1)
+        self.failUnlessEqual(len(list(code_import.results)), 1)
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
