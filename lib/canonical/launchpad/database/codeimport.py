@@ -25,7 +25,7 @@ from canonical.config import config
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.codeimportjob import CodeImportJobWorkflow
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -113,6 +113,18 @@ class CodeImport(SQLBase):
 
     import_job = Reference("<primary key>", "CodeImportJob.code_importID",
                            on_remote=True)
+
+    def getImportDetailsForDisplay(self):
+        """See `ICodeImport`."""
+        assert self.rcs_type is not None, (
+            "Only makes sense for series with import details set.")
+        if self.rcs_type == RevisionControlSystems.CVS:
+            return '%s %s' % (self.cvs_root, self.cvs_module)
+        elif self.rcs_type == RevisionControlSystems.SVN:
+            return self.svn_branch_url
+        else:
+            raise AssertionError(
+                'Unknown rcs type: %s'% self.rcs_type.title)
 
     def _removeJob(self):
         """If there is a pending job, remove it."""
@@ -387,6 +399,51 @@ class CodeImportSet:
     def getAll(self):
         """See `ICodeImportSet`."""
         return CodeImport.select()
+
+    def getActiveImports(self, text=None):
+        """See `ICodeImportSet`."""
+        query = self.composeQueryString(text)
+        return CodeImport.select(
+            query, orderBy=['product.name', 'branch.name'],
+            clauseTables=['Product', 'Branch'])
+
+    def composeQueryString(self, text=None):
+        """Build SQL "where" clause for `CodeImport` search.
+
+        :param text: Text to search for in the product and project titles and
+            descriptions.
+        """
+        conditions = [
+            "date_last_successful IS NOT NULL",
+            "review_status=%s" % sqlvalues(CodeImportReviewStatus.REVIEWED),
+            "CodeImport.branch = Branch.id",
+            "Branch.product = Product.id",
+            ]
+        if text == u'':
+            text = None
+
+        # First filter on text, if supplied.
+        if text is not None:
+            conditions.append("""
+                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
+                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
+
+        # Exclude deactivated products.
+        conditions.append('Product.active IS TRUE')
+
+        # Exclude deactivated projects, too.
+        conditions.append(
+            "((Product.project = Project.id AND Project.active) OR"
+            " Product.project IS NULL)")
+
+        # And build the query.
+        query = " AND ".join(conditions)
+        return """
+            codeimport.id IN
+            (SELECT codeimport.id FROM codeimport, branch, product, project
+             WHERE %s)
+            AND codeimport.branch = branch.id
+            AND branch.product = product.id""" % query
 
     def get(self, id):
         """See `ICodeImportSet`."""
