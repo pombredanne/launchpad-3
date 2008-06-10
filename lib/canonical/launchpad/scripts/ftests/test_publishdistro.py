@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests.logger import MockLogger
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet,
     PackagePublishingStatus)
@@ -40,7 +40,7 @@ class TestPublishDistro(TestNativePublishingBase):
         options, args = parser.parse_args(args=args)
         self.layer.switchDbUser(config.archivepublisher.dbuser)
         result = publishdistro.run_publisher(options, self.layer.txn,
-                                             log=MockLogger())
+                                             log=QuietFakeLogger())
         self.layer.switchDbUser('launchpad')
 
     def runPublishDistroScript(self):
