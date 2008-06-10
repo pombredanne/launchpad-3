@@ -53,10 +53,11 @@ class XMLValidator:
                    '--%s' % self.SCHEMA_ARGUMENT,
                    self.schema_filename, xml_file.name]
         local_catalog_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "catalog", "catalog"))
+            os.path.join(os.path.dirname(__file__), "tests",
+                         "catalog", "catalog"))
         catalogs = " ".join(
             [local_catalog_path, "/etc/xml/catalog"])
-        env = { "XML_CATALOG_FILES" : catalogs }
+        env = {"XML_CATALOG_FILES": catalogs}
         result = simple_popen2(command, '', env=env).strip()
 
         # The output consists of lines describing possible errors; the
