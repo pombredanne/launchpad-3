@@ -10,8 +10,7 @@ from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus)
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branchmergeproposal import (
     BMPMailer, send_merge_proposal_modified_notifications)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
@@ -31,12 +30,10 @@ class TestMergeProposalMailing(TestCase):
 
     def makeProposalWithSubscriber(self):
         registrant = self.factory.makePerson(
-            displayname='Baz Qux', email='baz.qux@example.com',
-            email_address_status=EmailAddressStatus.VALIDATED)
+            displayname='Baz Qux', email='baz.qux@example.com')
         bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
-            email='baz.quxx@example.com',
-            email_address_status=EmailAddressStatus.VALIDATED)
+            email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
@@ -75,7 +72,7 @@ Baz Qux has proposed merging foo into bar.
         """Ensure the correct reason is generated for teams."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         team_member = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com', password='password')
+            displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp.source_branch.subscribe(team,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
@@ -153,7 +150,11 @@ new commit message
         pop_notifications()
         send_merge_proposal_modified_notifications(merge_proposal, event)
         emails = pop_notifications()
-        self.assertEqual(1, len(emails))
+        self.assertEqual(3, len(emails),
+                         'There should be three emails sent out.  One to the '
+                         'explicit subscriber above, and one each to the '
+                         'source branch owner and the target branch owner '
+                         'who were implicitly subscribed to their branches.')
 
     def test_send_merge_proposal_modified_notifications_no_delta(self):
         """Should not send emails if no delta."""

@@ -10,7 +10,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote, EmailAddressStatus)
+    CodeReviewVote)
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.codereviewcomment import (
     CodeReviewCommentMailer)
@@ -31,16 +31,14 @@ class TestCodeReviewComment(TestCaseWithFactory):
                                  vote_tag=None):
         """Return a comment and a subscriber."""
         sender = self.factory.makePerson(
-            displayname='Sender', email='sender@example.com',
-            email_address_status=EmailAddressStatus.VALIDATED)
+            displayname='Sender', email='sender@example.com')
         comment = self.factory.makeCodeReviewComment(
             sender, body=body, vote=vote, vote_tag=vote_tag)
         if as_reply:
             comment = self.factory.makeCodeReviewComment(
                 sender, body=body, parent=comment)
         subscriber = self.factory.makePerson(
-            displayname='Subscriber', email='subscriber@example.com',
-            email_address_status=EmailAddressStatus.VALIDATED)
+            displayname='Subscriber', email='subscriber@example.com')
         if notification_level is None:
             notification_level = CodeReviewNotificationLevel.FULL
         comment.branch_merge_proposal.source_branch.subscribe(
@@ -60,7 +58,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(comment.message.subject,
                          mailer._subject_template)
-        self.assertEqual(set([subscriber]),
+        bmp = comment.branch_merge_proposal
+        # The branch owners are implicitly subscribed to their branches
+        # when the branches are created.
+        self.assertEqual(set([subscriber, bmp.source_branch.owner,
+                              bmp.target_branch.owner]),
                          mailer._recipients.getRecipientPersons())
         self.assertEqual(
             comment.branch_merge_proposal, mailer.merge_proposal)
@@ -75,7 +77,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.STATUS)
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        self.assertEqual(set(),
+        bmp = comment.branch_merge_proposal
+        # The branch owners are implicitly subscribed to their branches
+        # when the branches are created.
+        self.assertEqual(set([bmp.source_branch.owner,
+                              bmp.target_branch.owner]),
                          mailer._recipients.getRecipientPersons())
 
     def test_forCreationStatusNoEmail(self):
@@ -83,7 +89,11 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment, subscriber = self.makeCommentAndSubscriber(
             CodeReviewNotificationLevel.NOEMAIL)
         mailer = CodeReviewCommentMailer.forCreation(comment)
-        self.assertEqual(set(),
+        bmp = comment.branch_merge_proposal
+        # The branch owners are implicitly subscribed to their branches
+        # when the branches are created.
+        self.assertEqual(set([bmp.source_branch.owner,
+                              bmp.target_branch.owner]),
                          mailer._recipients.getRecipientPersons())
 
     def test_getReplyAddress(self):

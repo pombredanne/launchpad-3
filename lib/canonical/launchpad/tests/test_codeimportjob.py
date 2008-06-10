@@ -902,8 +902,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     def deleteJob(self, code_import_id):
         """Cause the code import job associated to the import to be deleted.
         """
-        user = self.factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        user = self.factory.makePerson()
         getUtility(ICodeImportSet).get(code_import_id).suspend(
             {}, user)
         flush_database_updates()
