@@ -68,6 +68,8 @@ If we remove the licenses from the search parameters, there should be
 enough results to paginate through.
 
     >>> commercial_browser.getControl(name='field.licenses').value = []
+    >>> commercial_browser.getControl(
+    ...     name='field.license_info_is_empty').value = []
     >>> commercial_browser.getControl(name='field.created_before').value = (
     ...     '2007-01-01')
     >>> commercial_browser.getControl(name='search').click()

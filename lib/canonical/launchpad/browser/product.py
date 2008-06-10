@@ -977,6 +977,10 @@ class ProductReviewLicenseView(ProductAdminView):
         else:
             return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return self.next_url
+
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
@@ -1167,6 +1171,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'search_text',
         'active',
         'license_reviewed',
+        'license_info_is_empty',
         'licenses',
         ]
 
@@ -1182,6 +1187,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         orientation='vertical')
     custom_widget('active', LaunchpadRadioWidget)
     custom_widget('license_reviewed', LaunchpadRadioWidget)
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
     custom_widget('subscription_expires_after', DateWidget)
@@ -1211,6 +1217,13 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
             search_params[name] = self.schema[name].default
         # Override the defaults with the form values if available.
         search_params.update(data)
+        if search_params['license_info_is_empty'] == 'Empty':
+            search_params['license_info_is_empty'] = True
+        elif search_params['license_info_is_empty'] == 'Not Empty':
+            search_params['license_info_is_empty'] = False
+        else:
+            # license_info_is_empty is None.
+            pass
         return BatchNavigator(self.context.forReview(**search_params),
                               self.request, size=10)
 

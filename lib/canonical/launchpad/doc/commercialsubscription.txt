@@ -186,8 +186,8 @@ be reviewed. You can search by text in the Product table's full text index.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from datetime import timedelta
+    >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
     >>> flush_database_updates()
-    >>> bzr.licenses = [License.GNU_GPL_V2]
     >>> for product in product_set.forReview(search_text='gnome'):
     ...     print product.name
     evolution
@@ -207,7 +207,6 @@ You can search for whether the product is marked reviewed or not.
 
     >>> for product in product_set.forReview(license_reviewed=True):
     ...     print product.name
-    bzr
     alsa-utils
     python-gnome2-dev
     unassigned
@@ -215,12 +214,47 @@ You can search for whether the product is marked reviewed or not.
 You can search for products by license. This will match products with
 any one of the licenses listed.
 
-    >>> for product in product_set.forReview(licenses=[License.GNU_GPL_V2]):
+    >>> for product in product_set.forReview(
+    ...     licenses=[License.GNU_GPL_V2, License.BSD]):
     ...     print product.name
     bzr
-    >>> bzr.licenses
     >>> for product in product_set.forReview(
-    ...     licenses=[License.GNU_GPL_V2, License.ECLIPSE]):
+    ...     licenses=[License.GNU_GPL_V2, License.MIT]):
+    ...     print product.name
+    bzr
+
+You can search for products whose license_info field is emtpy or not empty.
+This OR the licenses search field must match.
+
+    >>> for product in product_set.forReview(license_info_is_empty=True):
+    ...     print product.name
+    aptoncd
+    arch-mirrors
+    bazaar
+    bzr
+    derby
+    evolution
+    gnome-terminal
+    applets
+    jokosher
+    launchpad
+    firefox
+    thunderbird
+    netapplet
+    redfish
+    landscape
+    tomcat
+    upstart
+    a52dec
+    alsa-utils
+    gnomebaker
+    iso-codes
+    python-gnome2-dev
+    unassigned
+    >>> for product in product_set.forReview(license_info_is_empty=False):
+    ...     print product.name
+    >>> for product in product_set.forReview(license_info_is_empty=False,
+    ...                                      licenses=[License.GNU_GPL_V2]):
     ...     print product.name
     bzr
 

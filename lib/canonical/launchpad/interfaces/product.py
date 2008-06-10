@@ -527,6 +527,12 @@ class IProductReviewSearch(Interface):
         title=_('License Reviewed'), values=[True, False],
         required=False, default=False)
 
+    license_info_is_empty = Choice(
+        title=_('Description of additional licenses'),
+        description=_('Either this field or any one of the selected licenses'
+                      ' must match.'),
+        values=['Empty', 'Not Empty'], required=False, default='Not Empty')
+
     # Zope requires sets.Set() instead of the builtin set().
     licenses = Set(
         title=_('Licenses'),
