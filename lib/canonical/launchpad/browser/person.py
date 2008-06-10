@@ -1020,6 +1020,10 @@ class IPersonEditMenu(Interface):
     """A marker interface for the 'Edit Profile' navigation menu."""
 
 
+class IPersonRelatedSoftwareMenu(Interface):
+    """A marker interface for the 'Related Software' navigation menu."""
+
+
 class PersonOverviewNavigationMenu(NavigationMenu):
 
     usedfor = IPerson
@@ -1035,7 +1039,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
     def related_software(self):
         target = '+projects'
         text = 'Related Software'
-        return Link(target, text)
+        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
 
     def karma(self):
         target = '+karma'
@@ -1084,6 +1088,24 @@ class PersonEditNavigationMenu(NavigationMenu):
     def passwords(self):
         target = '+changepassword'
         text = 'Passwords'
+        return Link(target, text)
+
+
+class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
+
+    usedfor = IPersonRelatedSoftwareMenu
+    facet = 'overview'
+    title = 'Related Software'
+    links = ('participation', 'assigned_packages')
+
+    def participation(self):
+        target = '+projects'
+        text = 'Participation'
+        return Link(target, text)
+
+    def assigned_packages(self):
+        target = '+packages'
+        text = 'Assigned Packages'
         return Link(target, text)
 
 
