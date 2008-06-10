@@ -388,7 +388,7 @@ class ArchivePurpose(DBEnumeratedType):
 
     For example, Partner/ISV software in ubuntu is stored in a separate
     archive. PPAs are separate archives and contain packages that 'overlay'
-    ubuntu PRIMARY archive.
+    the ubuntu PRIMARY archive.
     """
 
     PRIMARY = DBItem(1, """
