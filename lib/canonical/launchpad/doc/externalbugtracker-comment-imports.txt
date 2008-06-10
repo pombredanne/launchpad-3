@@ -239,15 +239,17 @@ return a new Person record.
     >>> print new_person.displayname
     New Person
 
-There will be a BugTrackerPerson record linking 'New Person' to the
-bugtracker.
+There won't be a BugTrackerPerson record linking 'New Person' to the
+bugtracker since we have an email address for 'New Person'. That means
+that we can always retrieve them reliably when we encounter them in a
+remote bugtracker.
 
     >>> bugtracker_person = getUtility(
     ...     IBugTrackerPersonSet).getByNameAndBugTracker(
     ...         'New Person', bug_watch.bugtracker)
 
-    >>> bugtracker_person.person == new_person
-    True
+    >>> print bugtracker_person
+    None
 
 Calling _getPersonForBugTracker() with the same details will return the
 same person.
@@ -271,6 +273,17 @@ addresses aren't provided.
 
     >>> print noemail_person.name
     no-email-person-bugzilla-checkwatches-1
+
+A BugTrackerPerson record will have been created to map
+'no-email-person' on our example bugtracker to
+'no-email-person-bugzilla-checkwatches-1' in Launchpad.
+
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'no-email-person', bug_watch.bugtracker)
+
+    >>> bugtracker_person.person == noemail_person
+    True
 
 However, if a person with no email or name is passed to
 _getPersonForBugTracker() an error will be raised.

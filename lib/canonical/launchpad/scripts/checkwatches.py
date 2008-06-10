@@ -577,6 +577,11 @@ class BugWatchUpdater(object):
             raise InvalidRemotePerson(
                 "Either an email address or a name must be specified in "
                 "order to create a new Person.")
+        # If we have an email address to work with we can use
+        # ensurePerson() to get the Person we need.
+        elif email:
+            return getUtility(IPersonSet).ensurePerson(
+                email, name, rationale, creation_comment)
 
         # First, see if there's already a BugTrackerPerson for this name
         # on this bugtracker. If there is, return it.
@@ -587,22 +592,17 @@ class BugWatchUpdater(object):
         if bugtracker_person is not None:
             return bugtracker_person.person
 
-        # If email is None, create a Person without an email address.
-        if email is None:
-            # Generate a valid Launchpad name for the Person.
-            canonical_name = (
-                "%s-%s" % (sanitize_name(name), bugtracker.name))
-            person = getUtility(IPersonSet).ensurePersonWithoutEmail(
-                canonical_name, name, rationale, creation_comment)
-        else:
-            person = getUtility(IPersonSet).ensurePerson(
-                email, name, rationale, creation_comment)
+        # Generate a valid Launchpad name for the Person.
+        canonical_name = (
+            "%s-%s" % (sanitize_name(name), bugtracker.name))
+        person = getUtility(IPersonSet).ensurePersonWithoutEmail(
+            canonical_name, name, rationale, creation_comment)
 
         # Link the Person to the bugtracker for future reference.
         bugtracker_person = bugtracker_person_set.linkPersonToBugTracker(
             name, bugtracker, person)
 
-        return bugtracker_person.person
+        return person
 
     def importBugComments(self, external_bugtracker, bug_watch):
         """Import all the comments from a remote bug.

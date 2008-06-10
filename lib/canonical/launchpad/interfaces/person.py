@@ -1606,13 +1606,6 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def ensurePersonWithoutEmail(
-        name, displayname, rationale, comment=None, registrant=None):
-        """Make sure that there is a person in the database with the given
-        name. If necessary, create the person, using the displayname
-        given.
-        """
-
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
