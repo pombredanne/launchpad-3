@@ -20,7 +20,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
-import sha
 
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -980,6 +979,31 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             quoted_names, prejoins=['distribution', 'project', 'product'],
             orderBy=['PillarName.distribution', 'PillarName.project',
                      'PillarName.product'])
+
+    def getOwnedProjects(self, match_name=None):
+        """See `IPerson`."""
+        # Import here to work around a circular import problem.
+        from canonical.launchpad.database import Product
+        clauses = ["""
+            SELECT DISTINCT Product.id
+            FROM Product, TeamParticipation
+            WHERE TeamParticipation.person = %(person)s
+            AND owner = TeamParticipation.team
+            """ % sqlvalues(person=self)]
+        if match_name is not None:
+
+            like_query = "'%%' || %s || '%%'" % quote_like(match_name)
+            quoted_query = quote(match_name)
+            clauses.append(
+                """(Product.name LIKE %s OR
+                    Product.displayname LIKE %s OR
+                    fti @@ ftq(%s))""" % (like_query,
+                                          like_query,
+                                          quoted_query))
+        query = " AND ".join(clauses)
+        results = Product.select("""id IN (%s)""" % query,
+                                 orderBy=['displayname'])
+        return results
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -1950,16 +1974,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return self.preferredemail.email
         else:
             return ''
-
-    @property
-    def preferredemail_sha1(self):
-        """See `IPerson`."""
-        preferredemail = self.preferredemail
-        if preferredemail:
-            return sha.new(
-                'mailto:' + preferredemail.email).hexdigest().upper()
-        else:
-            return None
 
     @property
     def validatedemails(self):

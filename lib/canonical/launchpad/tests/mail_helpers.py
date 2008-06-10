@@ -26,7 +26,7 @@ def pop_notifications(sort_key=None, commit=True):
     if commit:
         transaction.commit()
     if sort_key is None:
-        sort_key=operator.itemgetter('To')
+        sort_key = operator.itemgetter('To')
 
     notifications = [
         email.message_from_string(raw_message)
@@ -37,7 +37,8 @@ def pop_notifications(sort_key=None, commit=True):
     return sorted(notifications, key=sort_key)
 
 
-def print_emails(include_reply_to=False, group_similar=False):
+def print_emails(include_reply_to=False, group_similar=False,
+                 notifications=None):
     """Pop all messages from stub.test_emails and print them with
      their recipients.
 
@@ -47,9 +48,14 @@ def print_emails(include_reply_to=False, group_similar=False):
     together in the 'To:' field.  It will also strip the first line of
     the email body.  (The line with "Hello Foo," which is likely
     distinct for each recipient.)
+
+    If notifications are supplied, the stack will not be popped and only those
+    notifications will be displayed.
     """
     distinct_bodies = {}
-    for message in pop_notifications():
+    if notifications is None:
+        notifications = pop_notifications()
+    for message in notifications:
         recipients = set(
             recipient.strip()
             for recipient in message['To'].split(','))
