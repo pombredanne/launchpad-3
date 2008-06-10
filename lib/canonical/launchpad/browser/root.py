@@ -118,6 +118,9 @@ class LaunchpadSearchView(LaunchpadFormView):
         'ubuntu', 'kubuntu', 'edubuntu',
         'ship', 'shipit', 'send', 'get', 'mail', 'free',
         'cd', 'cds', 'dvd', 'dvds', 'disc'])
+    shipit_anti_keywords = set([
+        'burn', 'burning', 'enable', 'error', 'errors', 'image', 'iso',
+        'read', 'rip', 'write'])
 
     def __init__(self, context, request):
         """Initialize the view.
@@ -227,6 +230,9 @@ class LaunchpadSearchView(LaunchpadFormView):
         if self.text is None:
             return False
         terms = set(self.text.lower().split())
+        anti_matches = self.shipit_anti_keywords.intersection(terms)
+        if len(anti_matches) >= 1:
+            return False
         matches = self.shipit_keywords.intersection(terms)
         return len(matches) >= 2
 

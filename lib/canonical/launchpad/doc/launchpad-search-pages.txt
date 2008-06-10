@@ -299,6 +299,27 @@ is True when 2 or more words match.
     >>> search_view.has_shipit
     True
 
+There are shipit_anti_keywords too, words that indicate the search is
+not for free CDs from Shipit. Search that have any of these word will
+set has_shipit to False.
+
+    >>> sorted(search_view.shipit_anti_keywords)
+    ['burn', 'burning', 'enable', 'error', 'errors', 'image', 'iso',
+     'read', 'rip', 'write']
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'ubuntu CD write',
+    ...           'start': '0'})
+    >>> search_view.has_shipit
+    False
+
+    >>> search_view = getSearchView(
+    ...     form={'field.text': 'shipit error',
+    ...           'start': '0'})
+    >>> search_view.has_shipit
+    False
+
+
 The shipit FAQ URL is provides by the view for the template to use.
 
     >>> search_view.shipit_faq_url
