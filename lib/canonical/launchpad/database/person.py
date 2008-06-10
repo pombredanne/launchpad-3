@@ -56,31 +56,61 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.launchpad.interfaces import (
-    AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IArchivePermissionSet, IBugTarget,
-    IBugTaskSet, IDistribution, IDistributionSet, IEmailAddress,
-    IEmailAddressSet, IGPGKeySet, IHWSubmissionSet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
-    IMailingListSet, INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress,
-    InvalidName, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
-    IProduct, IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    MailingListAutoSubscribePolicy, NameAlreadyTaken, PackagePublishingStatus,
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermissionSet)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskSearchParams, IBugTaskSet)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.codeofconduct import (
+    ISignedCodeOfConductSet)
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
+from canonical.launchpad.interfaces.gpg import IGPGKeySet
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+from canonical.launchpad.interfaces.irc import IIrcID, IIrcIDSet
+from canonical.launchpad.interfaces.jabber import IJabberID, IJabberIDSet
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    IPasswordEncryptor)
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, PostedMessageStatus)
+from canonical.launchpad.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
+from canonical.launchpad.interfaces.person import (
+    AccountStatus, INACTIVE_ACCOUNT_STATUSES, InvalidName, IPerson,
+    IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility, PersonalStanding,
-    PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.shipit import (
+    ShipItConstants, ShippingRequestStatus)
+from canonical.launchpad.interfaces.specification import (
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
+from canonical.launchpad.interfaces.teammembership import (
+    TeamMembershipStatus)
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroupSet)
+from canonical.launchpad.interfaces.wikiname import (
+    IWikiName, IWikiNameSet, UBUNTU_WIKI_URL)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.bugtask import (
-    BugTask, get_bug_privacy_filter, search_value_to_where_condition)
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
@@ -104,7 +134,6 @@ from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
 
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import (

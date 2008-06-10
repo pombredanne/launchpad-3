@@ -18,6 +18,7 @@ __all__ = [
 
 
 import datetime
+from operator import attrgetter
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
@@ -1947,8 +1948,9 @@ class BugTaskSet:
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""
-        distributions = list(
-            set(package.distribution for package in packages))
+        distributions = sorted(
+            set(package.distribution for package in packages),
+            key=attrgetter('name'))
         counts = []
         for distribution in distributions:
             counts.extend(self._getBugCountsForDistribution(
