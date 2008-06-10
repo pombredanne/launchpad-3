@@ -44,8 +44,7 @@ class TestBranchMergeProposalTransitions(TestCase):
         TestCase.setUp(self)
         login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
-        owner = self.factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        owner = self.factory.makePerson()
         self.target_branch = self.factory.makeBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
 
@@ -207,8 +206,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         TestCase.setUp(self)
         login(ANONYMOUS)
         factory = LaunchpadObjectFactory()
-        owner = factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        owner = factory.makePerson()
         self.target_branch = factory.makeBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
         self.proposals = [

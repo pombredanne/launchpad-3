@@ -275,8 +275,7 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson(
-                password=self.getUniqueString('password'))
+            registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
@@ -316,8 +315,7 @@ class LaunchpadObjectFactory:
         :param person_displayname: The displayname for the created Person
         """
         branch = self.makeBranch(title=branch_title)
-        person = self.makePerson(displayname=person_displayname,
-            email_address_status=EmailAddressStatus.VALIDATED)
+        person = self.makePerson(displayname=person_displayname)
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
@@ -423,8 +421,7 @@ class LaunchpadObjectFactory:
         if branch_name is None:
             branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
-        registrant = self.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -530,7 +527,7 @@ class LaunchpadObjectFactory:
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None):
         if sender is None:
-            sender = self.makePerson(password='password')
+            sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
