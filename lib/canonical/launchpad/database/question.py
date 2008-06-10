@@ -656,20 +656,20 @@ class QuestionSet:
         except SQLObjectNotFound:
             return default
 
-    def getQuestionCountsForPackages(self, packages):
+    def getOpenQuestionCountByPackages(self, packages):
         """See `IQuestionSet`."""
         distributions = list(
             set(package.distribution for package in packages))
         counts = []
         for distribution in distributions:
-            counts.extend(self._getQuestionCountsForDistribution(
+            counts.extend(self._getOpenQuestionCountsForDistribution(
                 distribution, packages))
         return counts
 
-    def _getQuestionCountsForDistribution(self, distribution, packages):
+    def _getOpenQuestionCountsForDistribution(self, distribution, packages):
         """Get question counts by package belonging to the given distribution.
 
-        See `IQuestionSet.getQuestionCountsForPackages` for more
+        See `IQuestionSet.getOpenQuestionCountByPackages` for more
         information.
         """
         packages = [

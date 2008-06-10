@@ -220,12 +220,12 @@ project returned:
     Ubuntu
 
 
-== getQuestionCountsForPackages() ==
+== getOpenQuestionCountByPackages() ==
 
-getQuestionCountsForPackages() allow you to get the count of open
+getOpenQuestionCountByPackages() allow you to get the count of open
 questions on a set of packages.
 
-    >>> question_set.getQuestionCountsForPackages([])
+    >>> question_set.getOpenQuestionCountByPackages([])
     []
 
 It returns the number of open questions for each given package.
@@ -250,7 +250,7 @@ It returns the number of open questions for each given package.
     >>> syncUpdate(closed_question)
 
     >>> from operator import itemgetter
-    >>> package_counts = question_set.getQuestionCountsForPackages(
+    >>> package_counts = question_set.getOpenQuestionCountByPackages(
     ...     [ubuntu_evolution, ubuntu_pmount, debian_evolution, debian_pmount])
     >>> package_counts = sorted(package_counts, key=itemgetter('open'))
     >>> for question_count in package_counts:

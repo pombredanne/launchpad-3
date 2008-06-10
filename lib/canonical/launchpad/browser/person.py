@@ -4050,14 +4050,16 @@ class PersonPackagesView(LaunchpadView):
             self.user, distro_packages)
         open_bugs = {}
         for bug_count in package_bug_counts:
-            open_bugs[bug_count['package']] = bug_count['open']
+            distro_package = bug_count['package']
+            open_bugs[distro_package] = bug_count['open']
 
         question_set = getUtility(IQuestionSet)
-        package_question_counts = question_set.getQuestionCountsForPackages(
+        package_question_counts = question_set.getOpenQuestionCountByPackages(
             distro_packages)
         open_questions = {}
         for question_count in package_question_counts:
-            open_questions[question_count['package']] = question_count['open']
+            distro_package = question_count['package']
+            open_questions[distro_package] = question_count['open']
 
         return [
             SourcePackageReleaseWithStats(

@@ -103,14 +103,13 @@ class IQuestionSet(IQuestionCollection):
         :param limit: The number of projects to return.
         """
 
-    def getQuestionCountsForPackages(packages):
+    def getOpenQuestionCountByPackages(packages):
         """Return number of open questions for the list of packages.
 
-            :param packages: A list of `IDistributionSourcePackage`
-                instances.
+        :param packages: A list of `IDistributionSourcePackage`
+            instances.
 
-        Returns a list of dictionaries, where each dict contains:
-
+        :return: a list of dictionaries, where each dict contains:
             'package': The package the questions are open on.
             'open': The number of open questions.
         """
