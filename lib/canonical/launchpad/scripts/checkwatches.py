@@ -108,6 +108,7 @@ def report_oops(message=None, properties=None, info=None):
             for key, value in properties:
                 if key == name:
                     return value
+        return None
     url = find_url()
 
     # Create the dummy request object.
@@ -556,7 +557,7 @@ class BugWatchUpdater(object):
         :param external_bugtracker: An ISupportsBugImport, which talks
             to the external bug tracker.
         :param bugtracker: An IBugTracker, to which the created bug
-            watch will be linked. 
+            watch will be linked.
         :param bug_target: An IBugTarget, to which the created bug will
             be linked.
         :param remote_bug: The remote bug id as a string.
