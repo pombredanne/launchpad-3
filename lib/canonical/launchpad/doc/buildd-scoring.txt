@@ -237,8 +237,7 @@ Builds in rebuild archives should have a score above zero but lower than
 the score of build jobs tied to non-rebuild archives.
 
     >>> from canonical.launchpad.interfaces import ArchivePurpose
-    >>> bqc = setUpBuildQueueEntry(
-    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> bqc = setUpBuildQueueEntry()
     >>> bqc.build.archive.purpose = ArchivePurpose.REBUILD
     >>> bqc.score()
     >>> 0 < bqc.lastscore < bq_low.lastscore
