@@ -106,7 +106,7 @@ class TestRetryDepwait(unittest.TestCase):
             name='retry-depwait', test_args=test_args)
         retry_depwait.logger = QuietFakeLogger()
 
-        # `IBuildSet.retryDepwait` retrive a specific logger instance
+        # `IBuildSet.retryDepwait` retrieve a specific logger instance
         # from the global registry, we have to silence that too.
         root_logger = logging.getLogger('retry-depwait')
         root_logger.setLevel(logging.CRITICAL)
