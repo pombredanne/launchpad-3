@@ -18,7 +18,6 @@ __all__ = [
 
 import copy
 from datetime import datetime
-import operator
 import simplejson
 from types import NoneType
 
@@ -32,7 +31,7 @@ from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError, getFields
+from zope.schema import ValidationError, getFields, getFieldsInOrder
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
@@ -496,11 +495,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # Make sure the representation includes values for all
         # writable attributes.
-        # Sort the fields by name so that we always evaluate them in
+        # Get the fields ordered by name so that we always evaluate them in
         # the same order. This is needed to predict errors when testing.
-        items = sorted(
-            getFields(self.entry.schema).items(), key=operator.itemgetter(0))
-        for name, field in items:
+        for name, field in getFieldsInOrder(self.entry.schema):
             if (name.startswith('_') or ICollectionField.providedBy(field)
                 or field.readonly):
                 # This attribute is not part of the web service
@@ -552,11 +549,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
-        # Sort the fields by name so that we always evaluate them in the same
-        # order.  This is needed to predict errors when testing.
-        items = sorted(
-            getFields(self.entry.schema).items(), key=operator.itemgetter(0))
-        for name, field in items:
+        # Get the fields ordered by name so that we always evaluate them in
+        # the same order. This is needed to predict errors when testing.
+        for name, field in getFieldsInOrder(self.entry.schema):
             if name.startswith('_'):
                 # This field is not part of the web service interface.
                 continue

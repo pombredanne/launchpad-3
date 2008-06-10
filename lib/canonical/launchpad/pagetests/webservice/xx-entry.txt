@@ -224,7 +224,8 @@ might not be acceptable as the payload of a PUT request.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  You didn't specify a value for the attribute 'display_name'.
+  You didn't specify a value for the attribute
+  'mailing_list_auto_subscribe_policy'.
 
 A document that's not a valid JSON document is also unacceptable.
 
