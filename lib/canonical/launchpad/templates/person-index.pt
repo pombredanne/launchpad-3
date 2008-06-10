@@ -294,18 +294,18 @@
           <div class="portlet" id="subteam-of">
             <h2>Subteam of</h2>
 
-            <p tal:condition="not:context/getSuperTeams">
+            <p tal:condition="not:context/super_teams">
               &#8220;<span tal:replace="context/browsername"/>&#8221;
               itself is not a member of any other team.
             </p>
 
-            <tal:block condition="context/getSuperTeams">
+            <tal:block condition="context/super_teams">
               <p>
                 &#8220;<span tal:replace="context/browsername"/>&#8221;
                 is a member of these teams:
               </p>
               <ul>
-                <li tal:repeat="team context/getSuperTeams">
+                <li tal:repeat="team context/super_teams">
                   <a tal:attributes="href team/fmt:url"
                      tal:content="team/browsername">name</a>
                 </li>
