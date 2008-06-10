@@ -30,6 +30,8 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
+from canonical.launchpad.components.packagelocation import (
+    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IBinaryPackageNameSet, IBinaryPackageReleaseSet,
@@ -38,12 +40,11 @@ from canonical.launchpad.interfaces import (
     PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
+from canonical.launchpad.scripts.ftpmasterbase import (
+    SoyuzScript, SoyuzScriptError)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, PackageLocationError, SoyuzScript,
-    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):

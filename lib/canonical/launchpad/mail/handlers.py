@@ -375,7 +375,7 @@ class MaloneHandler:
     # the entire MacOS file should be sent encapsulated for example in
     # MacBinary format.
     #
-    # application/ms-tnef attachment are created by Outlook; they 
+    # application/ms-tnef attachment are created by Outlook; they
     # seem to store no more than an RTF representation of an email.
 
     irrelevant_content_types = set((
@@ -401,6 +401,11 @@ class MaloneHandler:
             # content type.
             content_type = blob.mimetype.split(';', 1)[0]
             if content_type in self.irrelevant_content_types:
+                continue
+
+            if content_type == 'text/html' and blob.filename == 'unnamed':
+                # This is the HTML representation of the main part of
+                # an email.
                 continue
 
             if content_type in ('text/x-diff', 'text/x-patch'):
