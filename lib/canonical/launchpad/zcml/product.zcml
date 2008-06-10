@@ -580,7 +580,7 @@
     for="canonical.launchpad.interfaces.IProductSet"
     class="canonical.launchpad.browser.ProductSetReviewLicensesView"
     facet="overview"
-    permission="launchpad.Admin">
+    permission="launchpad.Commercial">
     <browser:page
       name="+review-licenses"
       template="../templates/products-review-licenses.pt"

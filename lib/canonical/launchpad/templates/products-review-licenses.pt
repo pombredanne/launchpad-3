@@ -23,7 +23,7 @@
   <tal:result condition="batch/currentBatch">
     <h3 >Please review these items.</h3>
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
-    <table class="listing">
+    <table id="product-listing" class="listing">
       <thead>
         <th>Project</th>
         <th>Active</th>

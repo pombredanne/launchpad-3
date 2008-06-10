@@ -2,11 +2,11 @@
 
 Under "/projects" there are several pages for various administration tasks.
 
-The pages are "+review", "+new", and "+all".
+The pages are "+review-licenses", "+new", and "+all".
 
-A logged in, unprivileged person cannot see the "+review" page.
+A logged in, unprivileged person cannot see the "+review-licenses" page.
 
-    >>> user_browser.open('http://launchpad.dev/projects/+review')
+    >>> user_browser.open('http://launchpad.dev/projects/+review-licenses')
     Traceback (most recent call last):
       ...
     Unauthorized:...
@@ -21,17 +21,85 @@ However, the unprivileged user can see "+all" and "+new".
     >>> user_browser.title
     'Register a project in Launchpad'
 
-An administrator may successfully access all of these pages.
+The Commercial Admins may successfully access the +review-licenses page.
 
-    >>> admin_browser.open('http://launchpad.dev/projects/+review')
-    >>> admin_browser.title
-    'Review Launchpad items'
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open(
+    ...     'http://launchpad.dev/projects/+review-licenses')
+    >>> commercial_browser.title
+    'Review licenses of projects'
 
-    >>> admin_browser.open('http://launchpad.dev/projects/+all')
-    >>> admin_browser.title
-    'Upstream projects registered in Launchpad'
+The default form values will search for active projects that have not
+been reviewed and that have an Other/Open-Source or Other/Proprietary
+license.
 
-    >>> admin_browser.open('http://launchpad.dev/projects/+new')
-    >>> admin_browser.title
-    'Register a project in Launchpad'
+    >>> commercial_browser.getControl(name='field.active').value
+    ['True']
+    >>> commercial_browser.getControl(name='field.license_reviewed').value
+    ['False']
+    >>> commercial_browser.getControl(name='field.licenses').value
+    ['OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE']
+    >>> commercial_browser.getControl(name='field.created_after').value
+    ''
+    >>> commercial_browser.getControl(name='field.created_before').value
+    ''
+    >>> commercial_browser.getControl(
+    ...     name='field.subscription_expires_after').value
+    ''
+    >>> commercial_browser.getControl(
+    ...     name='field.subscription_expires_before').value
+    ''
+    >>> commercial_browser.getControl(
+    ...     name='field.subscription_modified_after').value
+    ''
+    >>> commercial_browser.getControl(
+    ...     name='field.subscription_modified_before').value
+    ''
 
+
+The test data will not find any products with Other/Open-Source or
+Other/Proprietary licenses, so a warning message will be displayed.
+
+    >>> find_tags_by_class(commercial_browser.contents, 'warning message')
+    [<div...No items found with these search options...
+
+If we remove the licenses from the search parameters, there should be
+enough results to paginate through.
+
+    >>> commercial_browser.getControl(name='field.licenses').value = []
+    >>> commercial_browser.getControl(name='field.created_before').value = (
+    ...     '2007-01-01')
+    >>> commercial_browser.getControl(name='search').click()
+    >>> pagination = find_tags_by_class(commercial_browser.contents,
+    ...                                 'batch-navigation-index')
+    >>> print ' '.join(text.strip() for text in pagination[0].findAll(text=True))
+    1 ... 10 of 14 results
+    >>> table = find_tag_by_id(commercial_browser.contents, 'product-listing')
+    >>> for tr in table.findAll('tr'):
+    ...     td_list = tr.findAll('td')
+    ...     print td_list[4].a
+    <a href="/arch-mirrors/+review-license">Review</a>
+    <a href="/bazaar/+review-license">Review</a>
+    <a href="/evolution/+review-license">Review</a>
+    <a href="/gnome-terminal/+review-license">Review</a>
+    <a href="/applets/+review-license">Review</a>
+    <a href="/launchpad/+review-license">Review</a>
+    <a href="/firefox/+review-license">Review</a>
+    <a href="/thunderbird/+review-license">Review</a>
+    <a href="/netapplet/+review-license">Review</a>
+    <a href="/landscape/+review-license">Review</a>
+    >>> commercial_browser.getLink('Next').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/projects/+review-licenses?field...&start=10
+
+Now, we can click on the Review link, which will take us to the
+$project/+review-license page. Then clicking on the Change button
+will take us back to the page we came from.
+
+    >>> commercial_browser.getLink('Review').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/tomcat/+review-license
+    >>> commercial_browser.getControl(name='field.actions.change').click()
+    >>> print commercial_browser.url
+    http://launchpad.dev/projects/+review-licenses?field...&start=10
