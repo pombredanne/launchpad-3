@@ -40,23 +40,6 @@ license.
     ['False']
     >>> commercial_browser.getControl(name='field.licenses').value
     ['OTHER_PROPRIETARY', 'OTHER_OPEN_SOURCE']
-    >>> commercial_browser.getControl(name='field.created_after').value
-    ''
-    >>> commercial_browser.getControl(name='field.created_before').value
-    ''
-    >>> commercial_browser.getControl(
-    ...     name='field.subscription_expires_after').value
-    ''
-    >>> commercial_browser.getControl(
-    ...     name='field.subscription_expires_before').value
-    ''
-    >>> commercial_browser.getControl(
-    ...     name='field.subscription_modified_after').value
-    ''
-    >>> commercial_browser.getControl(
-    ...     name='field.subscription_modified_before').value
-    ''
-
 
 The test data will not find any products with Other/Open-Source or
 Other/Proprietary licenses, so a warning message will be displayed.
