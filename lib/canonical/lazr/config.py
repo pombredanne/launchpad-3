@@ -14,7 +14,6 @@ __all__ = [
     'SectionSchema',]
 
 from ConfigParser import NoSectionError, RawConfigParser
-import copy
 from os.path import abspath, basename, dirname
 import re
 import StringIO
@@ -83,13 +82,16 @@ class Section:
     implements(ISection)
     decorates(ISectionSchema, context='schema')
 
-    def __init__(self, schema):
+    def __init__(self, schema, _options=None):
         """Create an `ISection` from schema.
 
         :param schema: The ISectionSchema that defines this ISection.
         """
         self.schema = schema
-        self._options = dict([(key, schema[key]) for key in schema])
+        if _options is None:
+            self._options = dict([(key, schema[key]) for key in schema])
+        else:
+            self._options = _options
 
     def __getitem__(self, key):
         """See `ISection`"""
@@ -129,7 +131,14 @@ class Section:
         The extension mechanism requires a copy of a section to prevent
         mutation.
         """
-        return copy.deepcopy(self)
+        new_section = self.__class__(self.schema, self._options.copy())
+        # XXX 2008-06-10 jamesh:
+        # Evil legacy code sometimes assigns directly to the config
+        # section objects.  Copy those attributes over.
+        new_section.__dict__.update(
+            dict((key, value) for (key, value) in self.__dict__.iteritems()
+                 if key not in ['schema', '_options']))
+        return new_section
 
 
 class ImplicitTypeSection(Section):
