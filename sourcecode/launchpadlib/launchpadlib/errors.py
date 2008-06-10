@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'CredentialsError',
     'CredentialsFileError',
+    'HTTPError',
     'LaunchpadError',
     'ResponseError',
     'UnexpectedResponseError',

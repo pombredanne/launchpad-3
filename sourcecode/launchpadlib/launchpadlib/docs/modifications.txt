@@ -39,3 +39,29 @@ object, it won't be persistent.
     Traceback (most recent call last):
     ...
     AttributeError: is_great
+
+
+== Moving an entry ==
+
+We can actually rename and move Salgado's person by changing the 'name'
+attribute.
+
+    >>> salgado.name = u'guilherme'
+    >>> salgado.save()
+
+Once this is done you can no longer access his data through the old name.  But
+you can through the new name.
+
+    >>> print launchpad.people.get('salgado')
+    None
+    >>> launchpad.people.get('guilherme').display_name
+    u'Guilherme Salgado'
+
+And it's just as easy to move him back to the old name.
+
+    >>> salgado.name = u'salgado'
+    >>> salgado.save()
+    >>> print launchpad.people.get('guilherme')
+    None
+    >>> launchpad.people.get('salgado').display_name
+    u'Guilherme Salgado'

@@ -10,6 +10,7 @@ __all__ = [
 
 
 from launchpadlib._utils.uri import URI
+from launchpadlib.errors import HTTPError
 
 
 class Entry:
@@ -17,6 +18,10 @@ class Entry:
 
     def __init__(self, entry_dict, browser):
         self._browser = browser
+        self._initialize(entry_dict)
+
+    def _initialize(self, entry_dict):
+        """Initialize this entry from a JSON dictionary."""
         # The entry_dict contains lots of information mixed up in the same
         # namespace.  Everything that's a link to other information is
         # contained in a key ending with '_link'.  We'll treat everything else
@@ -55,14 +60,26 @@ class Entry:
         except KeyError:
             raise AttributeError(name)
 
+    def _refresh(self, url):
+        entry_dict = self._browser.get(URI(url))
+        self._initialize(entry_dict)
+
     def save(self):
         representation = {}
         # Find all the dirty attributes and build up a representation of them
         # to be set on the web service.
         for name in self._dirty_attributes:
             representation[name] = self._attributes[name]
-        # PATCH the new representation to the 'self' link.
-        self._browser.patch(URI(self._links['self']), representation)
+        # PATCH the new representation to the 'self' link.  It's possible that
+        # this will cause the object to be permanently moved.  Catch that
+        # exception and refresh our representation.
+        try:
+            self._browser.patch(URI(self._links['self']), representation)
+        except HTTPError, error:
+            if error.response.status == 301:
+                self._refresh(error.response['location'])
+            else:
+                raise
         self._dirty_attributes.clear()
 
 
