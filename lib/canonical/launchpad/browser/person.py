@@ -1499,6 +1499,9 @@ class PersonRdfContentsView:
             member = PersonWithKeysAndPreferredEmail(member)
             members.append(member)
             members_by_id[member.id] = member
+        if not members:
+            # Empty teams have nothing to offer.
+            return []
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)
@@ -1511,7 +1514,13 @@ class PersonRdfContentsView:
         return members
 
     def __call__(self):
-        """Render RDF output, and return it as a string encoded in UTF-8."""
+        """Render RDF output.
+
+        This is only used when rendering this to the end-user, and is
+        only here to avoid us OOPSing if people access +raw-contents via
+        the web. All templates should reuse this view by invoking
+        +rdf-contents/template.
+        """
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
