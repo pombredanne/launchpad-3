@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 
+import os
 from tempfile import NamedTemporaryFile
 from canonical.launchpad.helpers import simple_popen2
 
@@ -48,10 +49,15 @@ class XMLValidator:
         xml_file = NamedTemporaryFile()
         xml_file.write(xml)
         xml_file.flush()
-        command = ['xmllint', '--noout', '--nocatalogs',
+        command = ['xmllint', '--noout', '--nonet',
                    '--%s' % self.SCHEMA_ARGUMENT,
                    self.schema_filename, xml_file.name]
-        result = simple_popen2(command, '').strip()
+        local_catalog_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "catalog", "catalog"))
+        catalogs = " ".join(
+            [local_catalog_path, "/etc/xml/catalog"])
+        env = { "XML_CATALOG_FILES" : catalogs }
+        result = simple_popen2(command, '', env=env).strip()
 
         # The output consists of lines describing possible errors; the
         # last line is either "(file) fails to validate" or

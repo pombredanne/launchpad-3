@@ -174,7 +174,7 @@ def browserLanguages(request):
     return IRequestPreferredLanguages(request).getPreferredLanguages()
 
 
-def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
+def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     """Run a command, give it input on its standard input, and capture its
     standard output.
 
@@ -189,7 +189,7 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     """
 
     p = subprocess.Popen(
-            command, stdin=subprocess.PIPE,
+            command, env=env, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT
             )
     (output, nothing) = p.communicate(input)
