@@ -1,0 +1,34 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <p metal:fill-slot="extra_info" style="background: #e0f0d0; padding: 0.5em">
+      Before you register a project from scratch, you might want to search
+      through the
+      <a href="/projects">existing projects registered in Launchpad</a>
+      and see if the
+      project you are thinking of is not already in there. If so, you can
+      just <a href="/launchpad/+addquestion">ask our staff</a> to make
+      that project part of your project group.
+    </p>
+
+  </div>
+
+</div>
+</body>
+</html>
+

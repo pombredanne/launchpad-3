@@ -46,7 +46,7 @@
     <include file="codeimportmachine.zcml" />
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
-    <include file="codereviewmessage.zcml" />
+    <include file="codereviewcomment.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="cve.zcml" />
@@ -92,6 +92,7 @@
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
     <include file="packagebugsupervisor.zcml" />
+    <include file="packagecloner.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
