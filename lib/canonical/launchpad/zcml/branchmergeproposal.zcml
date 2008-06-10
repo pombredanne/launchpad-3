@@ -6,7 +6,7 @@
 
   <!-- Branch Merge Proposal -->
   <content class="canonical.launchpad.database.BranchMergeProposal">
-    <allow attributes="id registrant source_branch target_branch
+    <allow attributes="address id registrant source_branch target_branch
                        dependent_branch whiteboard queue_status
                        reviewer reviewed_revision_id
                        queuer queue_position queued_revision_id
@@ -14,8 +14,8 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
-                       votes root_message all_messages
-                       isPersonValidReviewer isMergable getMessage
+                       votes root_comment all_comments
+                       isPersonValidReviewer isMergable getComment
                        getNotificationRecipients isValidTransition
                        getUnlandedSourceBranchRevisions"/>
     <require
@@ -28,7 +28,7 @@
                     " />
     <require
         permission="launchpad.AnyPerson"
-        attributes="createMessage"
+        attributes="createComment createCommentFromMessage"
     />
   </content>
   <subscriber
@@ -169,4 +169,9 @@
       attribute_to_parent="source_branch"
       rootsite="code" />
 
+  <securedutility
+      class="canonical.launchpad.database.BranchMergeProposalGetter"
+      provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
+    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalGetter" />
+  </securedutility>
 </configure>

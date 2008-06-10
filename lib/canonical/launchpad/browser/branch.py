@@ -242,8 +242,11 @@ class BranchContextMenu(ContextMenu):
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
-        text = 'Link to bug report'
-        return Link('+linkbug', text, icon='edit')
+        if self.context.related_bugs:
+            text = 'Link to another bug report'
+        else:
+            text = 'Link to a bug report'
+        return Link('+linkbug', text, icon='add')
 
     def merge_queue(self):
         text = 'View merge queue'
@@ -253,11 +256,14 @@ class BranchContextMenu(ContextMenu):
         return Link('+merge-queue', text, enabled=enabled)
 
     def link_blueprint(self):
-        text = 'Link to blueprint'
+        if self.context.spec_links:
+            text = 'Link to another blueprint'
+        else:
+            text = 'Link to a blueprint'
         # Since the blueprints are only related to products, there is no
         # point showing this link if the branch is junk.
         enabled = self.context.product is not None
-        return Link('+linkblueprint', text, icon='edit', enabled=enabled)
+        return Link('+linkblueprint', text, icon='add', enabled=enabled)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
@@ -370,6 +376,31 @@ class BranchView(LaunchpadView, FeedsMixin):
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
+
+    @property
+    def mirror_location(self):
+        """Check the mirror location to see if it is a private one."""
+        branch = self.context
+
+        # If the user has edit permissions, then show the actual location.
+        if check_permission('launchpad.Edit', branch):
+            return branch.url
+
+        # XXX: Tim Penhey, 2008-05-30
+        # Instead of a configuration hack we should support the users
+        # specifying whether or not they want the mirror location
+        # hidden or not.  Given that this is a database patch,
+        # it isn't going to happen today.
+        # See bug 235916
+        hosts = config.codehosting.private_mirror_hosts.split(',')
+        private_mirror_hosts = [name.strip() for name in hosts]
+
+        uri = URI(branch.url)
+        for private_host in private_mirror_hosts:
+            if uri.underDomain(private_host):
+                return '<private server>'
+
+        return branch.url
 
 
 class DecoratedMergeProposal:
