@@ -102,13 +102,15 @@ class TestPackageLocation(unittest.TestCase):
         restricted = getUtility(IComponentSet)['restricted']
 
         location_ubuntu_hoary.component = universe
-        self.assertNotEqual(location_ubuntu_hoary, location_ubuntu_hoary_again)
+        self.assertNotEqual(
+            location_ubuntu_hoary, location_ubuntu_hoary_again)
 
         location_ubuntu_hoary_again.component = universe
         self.assertEqual(location_ubuntu_hoary, location_ubuntu_hoary_again)
 
         location_ubuntu_hoary.component = restricted
-        self.assertNotEqual(location_ubuntu_hoary, location_ubuntu_hoary_again)
+        self.assertNotEqual(
+            location_ubuntu_hoary, location_ubuntu_hoary_again)
 
         location_ubuntu_warty_security = self.getPackageLocation(
             suite='warty-security')
