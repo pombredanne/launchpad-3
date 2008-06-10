@@ -158,6 +158,12 @@ more:
     >>> alias.expires is None
     True
 
+Closing an alias repeatedly and/or without opening it beforehand is
+tolerated and will not result in exceptions being raised.
+
+    >>> alias.close()
+    >>> alias.close()
+
 
 == Low Level ==
 

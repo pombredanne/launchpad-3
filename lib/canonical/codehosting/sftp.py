@@ -92,7 +92,8 @@ class TransportSFTPFile:
     implements(ISFTPFile)
 
     def __init__(self, transport, name, flags, server):
-        self.name = name
+        self._unescaped_relpath = name
+        self._escaped_path = urlutils.escape(self._unescaped_relpath)
         self._flags = flags
         self.transport = transport
         self._written = False
@@ -124,7 +125,7 @@ class TransportSFTPFile:
     def _truncateFile(self):
         """Truncate this file."""
         self._written = True
-        return self.transport.put_bytes(self.name, '')
+        return self.transport.put_bytes(self._escaped_path, '')
 
     @with_sftp_error
     def writeChunk(self, offset, data):
@@ -132,7 +133,7 @@ class TransportSFTPFile:
         if not self._shouldWrite():
             raise filetransfer.SFTPError(
                 filetransfer.FX_PERMISSION_DENIED,
-                "%r was opened read-only." % self.name)
+                "%r was opened read-only." % self._unescaped_relpath)
         if self._shouldTruncate():
             deferred = self._truncateFile()
         else:
@@ -141,17 +142,18 @@ class TransportSFTPFile:
         if self._shouldAppend():
             deferred.addCallback(
                 lambda ignored:
-                self.transport.append_bytes(self.name, data))
+                self.transport.append_bytes(self._escaped_path, data))
         else:
             deferred.addCallback(
                 lambda ignored:
-                self.transport.writeChunk(self.name, offset, data))
+                self.transport.writeChunk(self._escaped_path, offset, data))
         return deferred
 
     @with_sftp_error
     def readChunk(self, offset, length):
         """See `ISFTPFile`."""
-        deferred = self.transport.readv(self.name, [(offset, length)])
+        deferred = self.transport.readv(
+            self._escaped_path, [(offset, length)])
         def get_first_chunk(read_things):
             return read_things.next()[1]
         deferred.addCallback(get_first_chunk)
@@ -172,12 +174,12 @@ class TransportSFTPFile:
         """
         # XXX 2008-05-09 JonathanLange: This should at least raise an error,
         # not do nothing silently.
-        return self._server.setAttrs(self.name, attrs)
+        return self._server.setAttrs(self._unescaped_relpath, attrs)
 
     @with_sftp_error
     def getAttrs(self):
         """See `ISFTPFile`."""
-        return self._server.getAttrs(self.name, False)
+        return self._server.getAttrs(self._unescaped_relpath, False)
 
     def close(self):
         """See `ISFTPFile`."""
@@ -187,7 +189,7 @@ class TransportSFTPFile:
         if self._shouldTruncate():
             return self._truncateFile()
 
-        deferred = self.transport.has(self.name)
+        deferred = self.transport.has(self._escaped_path)
         def maybe_create_file(already_exists):
             if not already_exists:
                 return self._truncateFile()
@@ -200,8 +202,8 @@ def _get_transport_for_dir(directory):
 
 
 def avatar_to_sftp_server(avatar):
-    user_id = avatar.lpid
-    authserver = avatar._launchpad
+    user_id = avatar.user_id
+    authserver = avatar.authserver
     hosted_transport = _get_transport_for_dir(
         config.codehosting.branches_root)
     mirror_transport = _get_transport_for_dir(
@@ -244,7 +246,11 @@ class TransportSFTPServer:
 
             def __init__(self, files):
                 self.position = (
-                    (filename, filename, {}) for filename in files)
+                    self._getListingEntry(filename) for filename in files)
+
+            def _getListingEntry(self, filename):
+                unescaped = urlutils.unescape(filename).encode('utf-8')
+                return (unescaped, unescaped, {})
 
             def __iter__(self):
                 return self
@@ -257,7 +263,7 @@ class TransportSFTPServer:
                 # have this do-nothing method (abentley).
                 pass
 
-        deferred = self.transport.list_dir(path)
+        deferred = self.transport.list_dir(urlutils.escape(path))
         return deferred.addCallback(DirectoryListing)
 
     @with_sftp_error
@@ -279,7 +285,7 @@ class TransportSFTPServer:
 
     def realPath(self, relpath):
         """See `ISFTPServer`."""
-        return self.transport.local_realPath(relpath)
+        return self.transport.local_realPath(urlutils.escape(relpath))
 
     def setAttrs(self, path, attrs):
         """See `ISFTPServer`.
@@ -294,7 +300,7 @@ class TransportSFTPServer:
 
         This just delegates to TransportSFTPFile's implementation.
         """
-        deferred = self.transport.stat(path)
+        deferred = self.transport.stat(urlutils.escape(path))
         def translate_stat(stat_val):
             return {
                 'size': getattr(stat_val, 'st_size', 0),
@@ -313,22 +319,24 @@ class TransportSFTPServer:
     @with_sftp_error
     def makeDirectory(self, path, attrs):
         """See `ISFTPServer`."""
-        return self.transport.mkdir(path, attrs['permissions'])
+        return self.transport.mkdir(
+            urlutils.escape(path), attrs['permissions'])
 
     @with_sftp_error
     def removeDirectory(self, path):
         """See `ISFTPServer`."""
-        return self.transport.rmdir(path)
+        return self.transport.rmdir(urlutils.escape(path))
 
     @with_sftp_error
     def removeFile(self, path):
         """See `ISFTPServer`."""
-        return self.transport.delete(path)
+        return self.transport.delete(urlutils.escape(path))
 
     @with_sftp_error
     def renameFile(self, oldpath, newpath):
         """See `ISFTPServer`."""
-        return self.transport.rename(oldpath, newpath)
+        return self.transport.rename(
+            urlutils.escape(oldpath), urlutils.escape(newpath))
 
     @staticmethod
     def translateError(failure, func_name):
