@@ -660,9 +660,9 @@ class QuestionSet:
         """See `IQuestionSet`."""
         distributions = list(
             set(package.distribution for package in packages))
-        counts = []
+        counts = {}
         for distribution in distributions:
-            counts.extend(self._getOpenQuestionCountsForDistribution(
+            counts.update(self._getOpenQuestionCountsForDistribution(
                 distribution, packages))
         return counts
 
@@ -699,26 +699,13 @@ class QuestionSet:
         cur.execute(query)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_questions = set()
-        counts = []
-        for distro_id, spn_id, open_bugs in cur.fetchall():
+        # Only packages with open questions are included in the query
+        # result, so initialize each package to 0.
+        counts = dict((package, 0) for package in packages)
+        for distro_id, spn_id, open_questions in cur.fetchall():
             sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
-            packages_with_questions.add(source_package)
-            package_counts = dict(
-                package=source_package,
-                open=open_bugs,
-                )
-            counts.append(package_counts)
-
-        # Only packages with open question were included in the query. Let's
-        # add the rest of the packages as well.
-        all_packages = set(packages)
-        for package in all_packages.difference(packages_with_questions):
-            package_counts = dict(
-                package=package,
-                open=0,
-                )
-            counts.append(package_counts)
+            counts[source_package] = open_questions
 
         return counts
 

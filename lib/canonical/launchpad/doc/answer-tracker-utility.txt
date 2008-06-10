@@ -226,7 +226,7 @@ getOpenQuestionCountByPackages() allow you to get the count of open
 questions on a set of packages.
 
     >>> question_set.getOpenQuestionCountByPackages([])
-    []
+    {}
 
 It returns the number of open questions for each given package.
 
@@ -250,16 +250,18 @@ It returns the number of open questions for each given package.
     >>> syncUpdate(closed_question)
 
     >>> from operator import itemgetter
-    >>> package_counts = question_set.getOpenQuestionCountByPackages(
-    ...     [ubuntu_evolution, ubuntu_pmount, debian_evolution, debian_pmount])
-    >>> package_counts = sorted(package_counts, key=itemgetter('open'))
-    >>> for question_count in package_counts:
+    >>> packages = [
+    ...     ubuntu_evolution, ubuntu_pmount, debian_evolution, debian_pmount]
+    >>> package_counts = question_set.getOpenQuestionCountByPackages(packages)
+    >>> len(packages)
+    4
+    >>> for package in packages:
     ...     print "%s: %s" % (
-    ...         question_count['package'].bugtargetname,
-    ...         question_count['open'])
-    pmount (Debian): 0
+    ...         package.bugtargetname,
+    ...         package_counts[package])
     evolution (Ubuntu): 1
-    evolution (Debian): 3
     pmount (Ubuntu): 4
+    evolution (Debian): 3
+    pmount (Debian): 0
 
 
