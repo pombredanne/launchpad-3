@@ -401,21 +401,8 @@ class ArchivePurpose(DBEnumeratedType):
         This is a Personal Package Archive.
         """)
 
-    EMBARGOED = DBItem(3, """
-        Embargoed Archive
-
-        This is the archive for embargoed packages.
-        """)
-
     PARTNER = DBItem(4, """
         Partner Archive
 
         This is the archive for partner packages.
         """)
-
-    OBSOLETE = DBItem(5, """
-        Obsolete Archive
-
-        This is the archive for obsolete packages.
-        """)
-

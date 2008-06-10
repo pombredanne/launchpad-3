@@ -749,7 +749,7 @@ class TestQueueTool(TestQueueBase):
         proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
             ubuntu, ArchivePurpose.PARTNER)
         comm_archive = removeSecurityProxy(proxied_archive)
-        comm_archive.purpose = ArchivePurpose.EMBARGOED
+        comm_archive.purpose = ArchivePurpose.PPA
         LaunchpadZopelessLayer.txn.commit()
         self.assertRaises(CommandRunnerError,
                           self.execute_command,
