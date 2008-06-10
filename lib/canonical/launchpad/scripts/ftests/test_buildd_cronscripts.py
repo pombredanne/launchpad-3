@@ -15,8 +15,8 @@ from canonical.config import config
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    BuildStatus, IComponentSet)
+from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.buildd import RetryDepwait
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
