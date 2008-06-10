@@ -14,6 +14,7 @@ from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces import (
     ICountrySet, IPersonSet, ShipItArchitecture, ShipItDistroSeries,
     ShipItFlavour, ShippingRequestPriority, ShippingRequestStatus,
@@ -399,7 +400,9 @@ class TestShippingRequest(unittest.TestCase):
         # If the user becomes inactive (which can be done by having his
         # account closed by an admin or by the user himself), though, the
         # recipient_email will be just a piece of text explaining that.
-        request.recipient.preferredemail.destroySelf()
+        email = request.recipient.preferredemail
+        email.status = EmailAddressStatus.VALIDATED
+        email.destroySelf()
         # Need to clean the cache because preferredemail is a cached property.
         request.recipient._preferredemail_cached = None
         self.failIf(request.recipient.preferredemail is not None)

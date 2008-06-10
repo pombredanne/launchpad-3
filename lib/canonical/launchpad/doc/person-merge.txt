@@ -96,9 +96,13 @@ active member of that team.
 == Do the merge! ==
 
     # Now we remove the only email address marilize had, so that we can merge
-    # it.
-    >>> marilize.preferredemail.destroySelf()
-    >>> flush_database_updates()
+    # it.  First we need to change its status, though, because we can't delete
+    # a person's preferred email.
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus)
+    >>> email = marilize.preferredemail
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> email.destroySelf()
 
     >>> personset.merge(marilize, sample)
 
