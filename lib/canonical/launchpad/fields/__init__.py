@@ -80,7 +80,7 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
-from canonical.lazr.rest.schema import Reference
+from canonical.lazr.fields import Reference
 from canonical.foaf import nickname
 
 

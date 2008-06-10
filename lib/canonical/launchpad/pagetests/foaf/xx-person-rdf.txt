@@ -50,26 +50,27 @@ And it's valid XML and RDF:
   >>> print document.documentElement.nodeName
   rdf:RDF
 
-Teams also have an RDF export, which includes information for each member of the
-team.
+Teams also have an RDF export, which includes information for each
+member of the team.
 
-  >>> anon_browser.open("http://launchpad.dev/~ubuntu-team/+rdf")
-  >>> print anon_browser.contents
+  >>> from canonical.launchpad.helpers import backslashreplace
+  >>> anon_browser.open("http://launchpad.dev/~testing-spanish-team/+rdf")
+  >>> print backslashreplace(anon_browser.contents)
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
            xmlns:foaf="http://xmlns.com/foaf/0.1/"
            xmlns:lp="https://launchpad.net/rdf/launchpad#"
            xmlns:wot="http://xmlns.com/wot/0.1/">
     <foaf:Group>
-      <foaf:name>Ubuntu Team</foaf:name>
-      <foaf:nick>ubuntu-team</foaf:nick>
+      <foaf:name>testing Spanish team</foaf:name>
+      <foaf:nick>testing-spanish-team</foaf:nick>
       <foaf:member>
           <foaf:Person>
-            <foaf:name>Alexander Limi</foaf:name>
-            <foaf:nick>limi</foaf:nick>
+            <foaf:name>Carlos Perell\xf3 Mar\xedn</foaf:name>
+            <foaf:nick>carlos</foaf:nick>
+             <foaf:mbox_sha1sum>BCB3DF72647D7B136A3C33005318D63974179452</foaf:mbox_sha1sum>
           </foaf:Person>
       </foaf:member>
-  ...
       <foaf:member>
         <foaf:Person>
           <foaf:name>Foo Bar</foaf:name>
@@ -83,10 +84,49 @@ team.
           </wot:hasKey>
         </foaf:Person>
       </foaf:member>
-  ...
       <foaf:member>
         <foaf:Person>
           <foaf:name>Mark Shuttleworth</foaf:name>
           ...
           <lp:sshPubKey>AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==</lp:sshPubKey>
   ...
+    </foaf:Group>
+  </rdf:RDF>
+
+Note how ascii and non-ascii names are rendered properly:
+
+  >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+  >>> strainer = SoupStrainer(['foaf:name'])
+  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+  >>> for tag in soup:
+  ...   tag.renderContents()
+  'testing Spanish team'
+  'Carlos Perell\xc3\xb3 Mar\xc3\xadn'
+  'Foo Bar'
+  'Mark Shuttleworth'
+  'Miroslav Kure'
+  'Valentina Commissari'
+
+If the team has no active members no <foaf:member> elements will be
+present:
+
+  >>> anon_browser.open("http://launchpad.dev/~name21/+rdf")
+  >>> strainer = SoupStrainer(['foaf:member'])
+  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+  >>> len(soup)
+  0
+
+And nothing about them is rendered at all:
+
+  >>> print anon_browser.contents
+  <?xml version="1.0" encoding="utf-8"?>
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+           xmlns:foaf="http://xmlns.com/foaf/0.1/"
+           xmlns:lp="https://launchpad.net/rdf/launchpad#"
+           xmlns:wot="http://xmlns.com/wot/0.1/">
+    <foaf:Group>
+      <foaf:name>Hoary Gnome Team</foaf:name>
+      <foaf:nick>name21</foaf:nick>
+    </foaf:Group>
+  </rdf:RDF>
+
