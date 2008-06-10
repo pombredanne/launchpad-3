@@ -201,7 +201,7 @@ In this case, there are no errors, so we should get just a single email
   > 
   > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
   > 
-  > The files you requested from Launchpad are ready for
+  > The translation files you requested from Launchpad are ready for
   > download from the following location:
   > 
   >     http://someplace.com/somefile.tar.gz
@@ -255,7 +255,7 @@ The confirmation email shows no errors at all.
     > 
     > Hello Carlos Perell=C3=B3 Mar=C3=ADn,
     > 
-    > The files you requested from Launchpad are ready for
+    > The translation files you requested from Launchpad are ready for
     > download from the following location:
     > 
     >     http://localhost:58000/.../po_evolution-2.2.pot
