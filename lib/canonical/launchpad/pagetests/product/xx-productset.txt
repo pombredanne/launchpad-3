@@ -63,7 +63,7 @@ enough results to paginate through.
     >>> table = find_tag_by_id(commercial_browser.contents, 'product-listing')
     >>> for tr in table.findAll('tr'):
     ...     td_list = tr.findAll('td')
-    ...     print td_list[4].a
+    ...     print td_list[5].a
     <a href="/arch-mirrors/+review-license">Review</a>
     <a href="/bazaar/+review-license">Review</a>
     <a href="/evolution/+review-license">Review</a>
