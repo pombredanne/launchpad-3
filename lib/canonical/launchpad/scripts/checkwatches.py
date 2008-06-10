@@ -570,7 +570,9 @@ class BugWatchUpdater(object):
         self, bugtracker, name, email, rationale, creation_comment):
         """Return a Person that is linked to a given bug tracker."""
         # We need to have a name or an email address to be able to
-        # create a new Person or retrieve an existing one.
+        # create a new Person or retrieve an existing one. Either one of
+        # name and email can be an empty string or None, but we need one
+        # of them in order to continue.
         if not name and not email:
             raise InvalidRemotePerson(
                 "Either an email address or a name must be specified in "
