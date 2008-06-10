@@ -223,7 +223,7 @@ project returned:
 == getOpenQuestionCountByPackages() ==
 
 getOpenQuestionCountByPackages() allow you to get the count of open
-questions on a set of packages.
+questions on a set of IDistributionSourcePackage packages.
 
     >>> question_set.getOpenQuestionCountByPackages([])
     {}

@@ -685,9 +685,7 @@ class QuestionSet:
         query = """
             SELECT Question.distribution,
                    Question.sourcepackagename,
-                   SUM(CASE WHEN Question.status IN %(open_statuses)s
-                            THEN 1 ELSE 0 END)
-                        AS open_questions
+                   COUNT(*) AS open_questions
             FROM Question
             WHERE Question.status IN %(open_statuses)s
                 AND Question.sourcepackagename IN %(package_names)s
@@ -706,6 +704,8 @@ class QuestionSet:
         # result, so initialize each package to 0.
         counts = dict((package, 0) for package in packages)
         for distro_id, spn_id, open_questions in cur.fetchall():
+            # The SourcePackageNames here should already be pre-fetched,
+            # so that .get(spn_id) won't issue a DB query.
             sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
             counts[source_package] = open_questions
