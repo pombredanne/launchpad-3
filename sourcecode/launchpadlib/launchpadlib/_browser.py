@@ -1,10 +1,9 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Temporary browser object to make requests of Launchpad web service.
+"""Browser object to make requests of Launchpad web service.
 
-This code will get replaced once WADL parsing is implemented, so it only needs
-to be good enough for the current test suite.  I'm not even going to bother
-pydoctoring this code because it's not part of the public interface.
+The `Browser` class implements OAuth authenticated communications with
+Launchpad.  It is not part of the public launchpadlib API.
 """
 
 __metaclass__ = type
@@ -22,11 +21,29 @@ from launchpadlib.oauth.oauth import (
 OAUTH_REALM = 'https://api.launchpad.net'
 
 
+class SocketClosingOnErrorHandler(urllib2.BaseHandler):
+    """A handler that ensures that the socket gets closed on errors.
+
+    Interestingly enough <wink> without this, HTTP errors will cause urllib2
+    to leak open socket objects.
+    """
+    # Ensure that this handler is the first default error handler to execute,
+    # because right after this, the built-in default handler will raise an
+    # exception.
+    handler_order = 0
+
+    # Copy signature from base class.
+    def http_error_default(self, req, fp, code, msg, hdrs):
+        """See `urllib2.BaseHandler`."""
+        fp.close()
+
+
 class Browser:
     """A class for making calls to Launchpad web services."""
 
     def __init__(self, credentials):
         self.credentials = credentials
+        self._opener = urllib2.build_opener(SocketClosingOnErrorHandler)
 
     def get(self, url):
         """Get the resource at the requested url."""
@@ -48,7 +65,7 @@ class Browser:
         full_headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
         url_request = urllib2.Request(url, headers=full_headers)
-        f = urllib2.urlopen(url_request)
+        f = self._opener.open(url_request)
         try:
             data = f.read()
         finally:

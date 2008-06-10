@@ -29,12 +29,12 @@ class Launchpad:
         """
         self.credentials = credentials
         # Get the root resource.
-        browser = Browser(self.credentials)
-        response = simplejson.loads(browser.get(self.SERVICE_ROOT))
+        self._browser = Browser(self.credentials)
+        response = simplejson.loads(self._browser.get(self.SERVICE_ROOT))
         self._person_set_link = response.get(
             'PersonSetCollectionAdapter_collection_link')
         self._bug_set_link = response.get(
-            'BugCollection_collection_link')
+            'MaloneApplicationCollectionAdapter_collection_link')
 
     @property
     def people(self):
