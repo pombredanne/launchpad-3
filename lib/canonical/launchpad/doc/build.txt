@@ -264,7 +264,7 @@ Emulate a huge list of binaries for 'pmount':
 
 Check if the property still working:
 
-    >>> len(pmount_build.binarypackages)
+    >>> pmount_build.binarypackages.count()
     17
 
 Ensure the list is ordered by 'name'

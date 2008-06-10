@@ -108,7 +108,7 @@ A FAILEDTOUPLOAD build obviously has no binaries:
   >>> failedtoupload_candidate.buildstate.name
   'FAILEDTOUPLOAD'
 
-  >>> len(failedtoupload_candidate.binarypackages)
+  >>> failedtoupload_candidate.binarypackages.count()
   0
 
 
@@ -180,6 +180,6 @@ updated during the upload processing time):
 
 And contains the associated binaries.
 
-  >>> len(failedtoupload_candidate.binarypackages)
+  >>> failedtoupload_candidate.binarypackages.count()
   1
 
