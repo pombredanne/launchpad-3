@@ -61,7 +61,8 @@ class IBugBranch(IHasDateCreated, IHasBug):
 
     id = Int(title=_("Bug Branch #"))
     bug = BugField(
-        title=_("The bug that is linked to."), required=True, readonly=True)
+        title=_("The bug that is linked to."),
+        required=True, readonly=True)
     branch = Choice(
         title=_("Branch"), vocabulary="Branch",
         constraint=non_duplicate_branch, required=True, readonly=True)

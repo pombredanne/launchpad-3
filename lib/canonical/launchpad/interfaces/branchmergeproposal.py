@@ -10,6 +10,7 @@ __all__ = [
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
+    'IBranchMergeProposalGetter',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -43,7 +44,7 @@ class BadStateTransition(Exception):
 
 
 class WrongBranchMergeProposal(Exception):
-    """The message requested is not associated with this merge proposal."""
+    """The comment requested is not associated with this merge proposal."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -201,13 +202,13 @@ class IBranchMergeProposal(Interface):
     date_queued = Datetime(
         title=_('Date Queued'), required=False, readonly=True)
     # Cannote use Object as this would cause circular dependencies.
-    root_message = Attribute(
+    root_comment = Attribute(
         _("The first message in discussion of this merge proposal"))
-    all_messages = Attribute(
+    all_comments = Attribute(
         _("All messages discussing this merge proposal"))
 
-    def getMessage(id):
-        """Return the CodeReviewMessage with the specified ID."""
+    def getComment(id):
+        """Return the CodeReviewComment with the specified ID."""
 
     def getNotificationRecipients(min_level):
         """Return the people who should be notified.
@@ -350,20 +351,35 @@ class IBranchMergeProposal(Interface):
     def nominateReviewer(reviewer, registrant):
         """Create a vote for the specified person."""
 
-    def createMessage(owner, subject, content=None, vote=None, vote_tag=None,
+    def createComment(owner, subject, content=None, vote=None, vote_tag=None,
                       parent=None, _date_created=None):
-        """Create an ICodeReviewMessage associated with this merge proposal.
+        """Create an ICodeReviewComment associated with this merge proposal.
 
         :param owner: The person who the message is from.
         :param subject: The subject line to use for the message.
         :param content: The text to use for the message content.  If
             unspecified, the text of the merge proposal is used.
-        :param parent: The previous CodeReviewMessage in the thread.  If
+        :param parent: The previous CodeReviewComment in the thread.  If
             unspecified, the root message is used.
         :param _date_created: The date the message was created.  Provided only
             for testing purposes, as it can break
             BranchMergeProposal.root_message.
         """
 
+    def createCommentFromMessage(message, vote, vote_tag):
+        """Create an `ICodeReviewComment` from an IMessage.
+
+        :param message: The IMessage to use.
+        :param vote: A CodeReviewVote (or None).
+        :param vote_tag: A string (or None).
+        """
+
     def deleteProposal():
         """Delete the proposal to merge."""
+
+
+class IBranchMergeProposalGetter(Interface):
+    """Utility for getting BranchMergeProposals."""
+
+    def get(id):
+        """Return the BranchMergeProposal with specified id."""

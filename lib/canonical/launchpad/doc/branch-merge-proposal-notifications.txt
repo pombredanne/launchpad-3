@@ -29,6 +29,11 @@ notification they would like to receive.
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.FULL)
 
+The owners of the branches are subscribed when the branches are created.
+
+    >>> source_owner = bmp.source_branch.owner
+    >>> target_owner = bmp.target_branch.owner
+
 
 == Notification Recipients ==
 
@@ -39,24 +44,31 @@ Recipients are determined using getNotificationRecipients.
 
 Subscribers to all related branches are candidates.
 
-    >>> set([target_subscriber, source_subscriber]) == set(recipients.keys())
+    >>> all_subscribers = set([
+    ...     source_owner, target_owner, source_subscriber, target_subscriber])
+    >>> all_subscribers == set(recipients.keys())
     True
 
 Only subscribers whose level is >= the minimum level are selected.
 
+    >>> full_subscribers = set([
+    ...     source_owner, target_owner, target_subscriber])
     >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.FULL)
-    >>> [target_subscriber] == recipients.keys()
+    >>> full_subscribers == set(recipients.keys())
     True
+
+Now we will unsubscribe the branch owners to simplify the rest of the test.
+
+    >>> bmp.source_branch.unsubscribe(source_owner)
+    >>> bmp.target_branch.unsubscribe(target_owner)
+    >>> recipients = bmp.getNotificationRecipients(
+    ...     CodeReviewNotificationLevel.FULL)
 
 The value assigned to the recipient is a machine-readable explanation why they
 were chosen, and their subscription
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> naked_recipients = removeSecurityProxy(recipients)
-    >>> [notification_reason] = naked_recipients.values()
-    >>> (target_subscription, 'Subscriber') == \
-    ...     (notification_reason.subscription, notification_reason.rationale)
+    >>> [(target_subscription, 'Subscriber')] == recipients.values()
     True
 
 

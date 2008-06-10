@@ -10,6 +10,7 @@ __all__ = [
 import re
 
 from zope.component import getUtility
+from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
@@ -111,6 +112,13 @@ class LaunchpadSearchView(LaunchpadFormView):
             return 'Pages matching "%s" in Launchpad' % self.text
 
     @property
+    def focusedElementScript(self):
+        """Focus the first widget when there are no matches."""
+        if self.has_matches:
+            return None
+        return super(LaunchpadSearchView, self).focusedElementScript()
+
+    @property
     def bug(self):
         """Return the bug that matched the terms, or None."""
         return self._bug
@@ -155,6 +163,15 @@ class LaunchpadSearchView(LaunchpadFormView):
             if kind is not None:
                 return True
         return False
+
+    def validate(self, data):
+        """See `LaunchpadFormView`"""
+        errors = list(self.errors)
+        for error in errors:
+            if (error.field_name == 'text'
+                and isinstance(error.errors, TooLong)):
+                self.setFieldError(
+                    'text', 'The search text cannot exceed 250 characters.')
 
     @safe_action
     @action(u'Search', name='search')
@@ -272,6 +289,21 @@ class WindowedList:
             yield self[index]
 
 
+class WindowedListBatch(_Batch):
+    """A batch class that does not include None objects when iterating."""
+
+    def __iter__(self):
+        """Iterate over objects that are not None."""
+        for item in super(WindowedListBatch, self).__iter__():
+            if item is not None:
+                # Never yield None
+                yield item
+
+    def endNumber(self):
+        """Return the end index of the batch, not including None objects."""
+        return self.start + len(self.list._window)
+
+
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
@@ -303,6 +335,8 @@ class GoogleBatchNavigator(BatchNavigator):
                 self.start = int(request_start)
             except (ValueError, TypeError):
                 self.start = start
+
         self.default_size = 20
-        self.batch = _Batch(results, start=self.start, size=self.default_size)
+        self.batch = WindowedListBatch(
+            results, start=self.start, size=self.default_size)
 

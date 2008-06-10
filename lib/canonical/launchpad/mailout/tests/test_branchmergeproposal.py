@@ -85,8 +85,13 @@ Baz Qux has proposed merging foo into bar.
             mailer.getReason(team_member))
         mailer._recipients._emailToPerson[
             subscriber.preferredemail.email] = team
-        self.assertEqual(u'Your team Qux is subscribed to branch foo.',
-            mailer.getReason(subscriber))
+        try:
+            mailer.getReason(subscriber)
+        except AssertionError, e:
+            self.assertEqual(
+                'Baz Quxx does not participate in team Qux.', str(e))
+        else:
+            self.fail('Did not detect bogus team recipient.')
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""

@@ -44,20 +44,8 @@
     <view
         for="canonical.launchpad.webapp.interfaces.InvalidBatchSizeError"
         type="canonical.launchpad.layers.WebServiceLayer"
-        factory="canonical.lazr.rest.declarations.WebServiceExceptionView"
+        factory="canonical.lazr.rest.error.WebServiceExceptionView"
         name="index.html"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        provides="canonical.launchpad.rest.IBugEntry"
-        factory="canonical.launchpad.rest.BugEntry"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMaloneApplication"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.BugCollection"
         />
 
     <adapter
