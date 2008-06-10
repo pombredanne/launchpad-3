@@ -660,6 +660,9 @@ class QuestionSet:
         """See `IQuestionSet`."""
         distributions = list(
             set(package.distribution for package in packages))
+        # We can get counts for all packages in one query, since we'd
+        # need to match on (distribution, sourcepackagename). Issue one
+        # query per distribution instead.
         counts = {}
         for distribution in distributions:
             counts.update(self._getOpenQuestionCountsForDistribution(
