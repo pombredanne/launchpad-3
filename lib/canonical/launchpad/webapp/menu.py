@@ -26,7 +26,7 @@ import types
 
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
-from zope.component import getMultiAdapter, queryAdapter
+from zope.component import getMultiAdapter
 from zope.security.proxy import (
     isinstance as zope_isinstance, ProxyFactory, removeSecurityProxy)
 
@@ -423,7 +423,7 @@ class NavigationMenu(MenuBase):
             yield link
 
     def _is_menulink_for_view(self, link, view):
-        """Return True if the menu-link is for the current view, otherwise False.
+        """Return True if the menu-link is for the current view.
 
         :param link: An `ILink` in the menu. It has a menu attribute that may
             have an `INavigationMenu` assigned.
