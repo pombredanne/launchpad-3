@@ -29,11 +29,15 @@
 
 <div metal:fill-slot="main">
 
+
+  <div id="series-details">
     <p tal:content="context/summary">
         $ProductSeries.summary goes here. This should be quite short,
         just a single paragraph of text really, giving the status of
         this series of releases.
     </p>
+    Status: <strong tal:content="context/status/title" />
+  </div>
 
     <p>
       <img src="/@@/info" />

@@ -95,7 +95,7 @@ class SourcePackageRelease(SQLBase):
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
     package_diffs = SQLMultipleJoin(
-        'PackageDiff', joinColumn='from_source', orderBy="-date_requested")
+        'PackageDiff', joinColumn='to_source', orderBy="-date_requested")
 
 
     @property

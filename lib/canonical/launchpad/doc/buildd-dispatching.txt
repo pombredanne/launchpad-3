@@ -196,7 +196,17 @@ above.
 
 In order to enable 'bob' to find and build the PPA job, we have to
 change it to virtualized.  This is because PPA builds will only build
-on virtualized builders.
+on virtualized builders.  We also need to make sure this build's source
+is published, or it will also be ignored (by superseding it).  We can
+do this by copying the existing publication in Ubuntu.
+
+    >>> from canonical.launchpad.database.publishing import (
+    ...     SourcePackagePublishingHistory)
+    >>> [old_pub] = SourcePackagePublishingHistory.selectBy(
+    ...    distroseries=ppa_job.build.distroseries,
+    ...    sourcepackagerelease=ppa_job.build.sourcepackagerelease)
+    >>> new_pub = old_pub.copyTo(
+    ...     old_pub.distroseries, old_pub.pocket, ppa_job.build.archive)
 
     >>> bob_builder.virtualized = True
     >>> syncUpdate(bob_builder)
@@ -310,8 +320,10 @@ before the legitimate job.
     >>> flush_database_updates()
 
 New we can check that the next valid candidate is the just-added
-'pending_job'.
+'pending_job', ensuring that it's published before doing so.
 
+    >>> new_pub = old_pub.copyTo(
+    ...     pending_build.distroseries, old_pub.pocket, pending_build.archive)
     >>> candidate = bob_builder.findBuildCandidate()
     >>> flush_database_updates()
     >>> candidate.id == pending_job.id

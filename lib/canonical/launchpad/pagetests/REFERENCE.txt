@@ -30,6 +30,8 @@ Manipulating content:
     >>> "foo" in browser.contents
     True
 
+== Parsing content ==
+
 Parsing specific sections of pages:
 
     >>> find_portlet()
@@ -70,6 +72,23 @@ Finding contents by element class or IDs:
     >>> subtag['href']
     '/bar'
 
+Using BeautifulSoup in all its glory:
+
+  >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+  >>> anon_browser.open("http://launchpad.dev/~name16")
+  >>> strainer = SoupStrainer(['link'], {'type': ['application/rdf+xml']})
+  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+  >>> print soup.renderContents()
+  <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
+
+  >>> strainer = SoupStrainer({'class': ['error']})
+  >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+  >>> for tag in soup:
+    ...     print extract_text(tag)
+  Quantities must be greater than or equal 0.
+
+== Links ==
+
 Manipulating links:
 
     >>> link = browser.getLink('Link text')
@@ -106,7 +125,9 @@ Extracting link pointers:
     >>> extract_link_from_tag(link, 'http://launchpad.dev/blah/blah/')
     u'http://launchpad.dev/foo'
 
-Form control basics:
+== Form Controls ==
+
+Basics:
 
     >>> control = browser.getControl('Label')
     >>> control = browser.getControl(name='field.foo')
@@ -119,7 +140,7 @@ Form control basics:
     >>> browser.url
     'http://where-you-went-after-posting/'
 
-Form controls:
+Form control attributes:
 
     >>> browser.getControl('Checkbox label').selected
     True
@@ -135,27 +156,31 @@ Form controls:
 
     >>> browser.getControl(name='field.radiobuttons').value = ['BSD']
 
-Forms without submit buttons:
+Posting without submit buttons:
 
     >>> browser.getControl("Text field").value = "something"
     >>> browser.getForm(id="text_form").submit()
     >>> browser.url
     'http://where-you-went-after-posting/'
 
-Gotchas:
+== Gotchas ==
+
+If you get:
 
     AttributeError: 'zope.thread.local' object has no attribute 'interaction'
 
-        This means you are trying to getUtility() and aren't logged in.
-        Use something like this:
+This means you are trying to getUtility() and aren't logged in.
+Use something like this:
 
-            >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-            >>> login(ANONYMOUS)
+If you get:
+
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
 
     AssertionError: newInteraction called while another interaction is
     active.
 
-        This means you forgot to log out!
+This means you forgot to log out:
 
-            >>> logout()
+   >>> logout()
 
