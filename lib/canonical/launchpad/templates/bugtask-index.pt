@@ -161,8 +161,46 @@
 
       <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
+      <div class="report">
+        <tal:user condition="view/user">
+          <tal:description
+              define="global description context/bug/description/fmt:text-to-html" />
+        </tal:user>
+        <tal:not-user condition="not:view/user">
+          <tal:description
+              define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
+        </tal:not-user>
+
+        <div id="bug-description"
+             tal:content="structure description" />
+
+        <div style="margin-bottom: 1em; text-align: center; clear: both">
+          <span tal:condition="view/wasDescriptionModified">
+          This description was updated. <a href="comments/0">View original description</a>.</span>
+        </div>
+
+        <div style="width: 100%; clear: both;">
+          <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags"
+               style="width: 45%: text-align: left; float: left;">
+            Tags:
+            <a tal:repeat="tag tags"
+               tal:content="tag"
+               tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
+          </div>
+
+          <div style="width: 45%: text-align: right; float: right;">
+            <tal:editdescription
+                define="link context/menu:context/editdescription"
+                condition="link/enabled"
+                replace="structure link/render" />
+          </div>
+        </div>
+        <div style="clear:both; height: 1em;"></div>
+      </div>
+
       <tal:branches define="bug_branches view/bug_branches"
                     condition="bug_branches">
+
         <h2>Related branches</h2>
 
         <tal:bug-branches repeat="bug_branch bug_branches">
@@ -209,18 +247,17 @@
             replace="structure link/render" />
       </p>
 
-      <tal:cve-references define="cves context/bug/cves"
-                          condition="cves">
-        <h2>CVE references</h2>
+      <div condition="context/bug/cves">
+        <h2>CVE References</h2>
         <ul>
-          <li class="cve" tal:repeat="cve cves">
+          <li class="cve" tal:repeat="cve context/bug/cves">
             <a tal:attributes="href cve/fmt:url;
                                title cve/description/fmt:shorten/40"
                tal:content="cve/sequence"
                >2002-1342</a>
           </li>
         </ul>
-      </tal:cve-references>
+      </div>
 
       <p>
         <tal:linktocve
@@ -232,37 +269,6 @@
             condition="link/enabled"
             replace="structure link/render" />
       </p>
-
-      <div class="report">
-        <div id="bug-tags" tal:define="tags context/bug/tags" tal:condition="tags">
-          <b>Tags:</b>
-          <a tal:repeat="tag tags"
-             tal:content="tag"
-             tal:attributes="
-                             href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
-        </div>
-
-        <tal:user condition="view/user">
-          <tal:description
-              define="global description context/bug/description/fmt:text-to-html" />
-        </tal:user>
-        <tal:not-user condition="not:view/user">
-          <tal:description
-              define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
-        </tal:not-user>
-
-        <div id="bug-description"
-             tal:content="structure description" />
-        <tal:editdescription
-            define="link context/menu:context/editdescription"
-            condition="link/enabled"
-            replace="structure link/render" />
-      </div>
-
-      <div style="margin-bottom: 1em; text-align: center">
-        <span tal:condition="view/wasDescriptionModified">
-        This description was updated. <a href="comments/0">View original description</a>.</span>
-      </div>
 
       <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
                    condition="mentoring_offers">
@@ -277,20 +283,14 @@
         <tal:block condition="not: context/bug/is_complete">
           <div tal:condition="view/userIsMentor"
                class="action">
-            <img class="inlineLinkIcon" src="/@@/remove" alt=""/>
-            <a href="+retractmentoring">
-              Retract my offer of mentorship
-            </a>
+            <img class="inlineLinkIcon" src="/@@/remove" alt=""/><a href="+retractmentoring">Retract my offer of mentorship</a>
           </div>
         </tal:block>
       </tal:mentors>
       <div tal:define="link context/menu:context/offermentoring"
            tal:condition="link/enabled"
            class="action">
-        <img class="inlineLinkIcon" src="/@@/add" alt=""/>
-        <a tal:attributes="href link/url">
-          Offer to mentor someone fixing this bug
-        </a>
+        <img class="inlineLinkIcon" src="/@@/add" alt=""/><a tal:attributes="href link/url">Offer to mentor someone fixing this bug</a>
       </div>
       <tal:comment repeat="comment view/getBugCommentsForDisplay">
         <tal:comment-box condition="comment/can_be_shown">
@@ -299,7 +299,7 @@
         </tal:comment-box>
       </tal:comment>
 
-      <div style="clear:both" style="height: 1em;">&nbsp;</div>
+      <div style="clear:both; height: 1em;">&nbsp;</div>
 
       <tal:logged-in condition="view/user">
         <fieldset class="collapsible collapsed">

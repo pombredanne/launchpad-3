@@ -10,7 +10,6 @@ __all__ = [
     'BugNominationsView',
     'BugTargetTraversalMixin',
     'BugTargetView',
-    'BugTaskBadges',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
@@ -72,7 +71,6 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
@@ -2716,37 +2714,6 @@ class BugTaskPrivacyAdapter:
     def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
-
-
-class BugTaskBadges(HasBadgeBase):
-    """Provides `IHasBadges` for `IBugTask`."""
-
-    badges = ('security', 'private', 'mentoring', 'branch')
-
-    def isBranchBadgeVisible(self):
-        return self.context.bug.bug_branches.count() > 0
-
-    def isMentoringBadgeVisible(self):
-        return self.context.bug.mentoring_offers.count() > 0
-
-    def isSecurityBadgeVisible(self):
-        return self.context.bug.security_related
-
-    def getSecurityBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        return "This bug report is about a security vulnerability"
-
-    # HasBadgeBase supplies isPrivateBadgeVisible().
-    def getPrivateBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        if self.context.bug.date_made_private is None:
-            return "This bug report is private"
-        else:
-            date_formatter = DateTimeFormatterAPI(
-                self.context.bug.date_made_private)
-            return "This bug report was made private by %s %s" % (
-                self.context.bug.who_made_private.displayname,
-                date_formatter.displaydate())
 
 
 class BugTaskSOP(StructuralObjectPresentation):
