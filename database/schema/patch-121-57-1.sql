@@ -6,4 +6,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE DistroSeriesPackageCache
   ALTER COLUMN id SET DEFAULT nextval('distroseriespackagecache_id_seq');
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 57, 1);
