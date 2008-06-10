@@ -12,24 +12,6 @@ __all__ = [
 from launchpadlib._utils.uri import URI
 
 
-class EntryAttributeDescriptor:
-    """Descriptor for Entry attributes settable via the web service."""
-
-    def __init__(self, attribute_name):
-        self._attribute_name = attribute_name
-        self._value_key = '_%s_value' % attribute_name
-        self.is_dirty = False
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            raise AttributeError('Class attribute: %s' % self._attribute_name)
-        return getattr(instance, self._value_key)
-
-    def __set__(self, instance, value):
-        setattr(instance, self._value_key, value)
-        self.is_dirty = True
-
-
 class Entry:
     """Simple bag-like class for collection entry attributes."""
 
@@ -42,31 +24,42 @@ class Entry:
         # read-only but we don't yet know that) are the names of all the
         # non-link keys.
         self._links = {}
+        self._attributes = {}
+        self._dirty_attributes = set()
         for key, value in entry_dict.items():
             if key.endswith('_link'):
                 self._links[key[:-5]] = value
             else:
-                descriptor = EntryAttributeDescriptor(key)
-                # Store the descriptor into the class's dictionary so that it
-                # will act like a descriptor.
-                setattr(Entry, key, descriptor)
-                # Now set the value on the instance, invoking the descriptor,
-                # but be sure to reset the dirty flag, since it's not
-                # appropriate to set it in the constructor.
-                setattr(self, key, value)
-                descriptor.is_dirty = False
+                self._attributes[key] = value
+
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            # Short-circuit any non-public attributes.  We have to do this so
+            # our own implementation-specific attributes will work.
+            super(Entry, self).__setattr__(name, value)
+        elif name in self._attributes:
+            self._attributes[name] = value
+            self._dirty_attributes.add(name)
+        else:
+            # It's a 'plain' attribute that the web service doesn't know
+            # about, so just set it like normal.
+            super(Entry, self).__setattr__(name, value)
+
+    def __getattr__(self, name):
+        if name in self._attributes:
+            return self._attributes[name]
+        else:
+            return super(Entry, self).__getattr__(name)
 
     def save(self):
         representation = {}
         # Find all the dirty attributes and build up a representation of them
-        # to be set on the web service.  Reset the dirty flags while we're at
-        # it.
-        for name, descriptor in self.__class__.__dict__.items():
-            if getattr(descriptor, 'is_dirty', False):
-                representation[name] = getattr(self, name)
-                descriptor.is_dirty = False
+        # to be set on the web service.
+        for name in self._dirty_attributes:
+            representation[name] = self._attributes[name]
         # PATCH the new representation to the 'self' link.
         self._browser.patch(URI(self._links['self']), representation)
+        self._dirty_attributes.clear()
 
 
 class Collection:
