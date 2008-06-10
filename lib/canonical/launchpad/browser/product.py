@@ -962,7 +962,8 @@ class ProductAdminView(ProductEditView):
 class ProductReviewLicenseView(ProductAdminView):
     label = "Review project licensing"
     field_names = ["active", "private_bugs",
-                   "license_reviewed", "reviewer_whiteboard"]
+                   "license_reviewed", "license_approved",
+                   "reviewer_whiteboard"]
 
     @property
     def next_url(self):

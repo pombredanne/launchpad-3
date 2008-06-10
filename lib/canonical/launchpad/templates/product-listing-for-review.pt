@@ -18,6 +18,10 @@
       <img src="/@@/yes" tal:condition="context/license_reviewed"/>
       <img src="/@@/no" tal:condition="not: context/license_reviewed"/>
     </td>
+    <td>
+      <img src="/@@/yes" tal:condition="context/license_approved"/>
+      <img src="/@@/no" tal:condition="not: context/license_approved"/>
+    </td>
     <td style="white-space: nowrap">
       <a tal:replace="structure context/owner/fmt:link">Foo Bar</a>
       <span

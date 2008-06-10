@@ -354,9 +354,10 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Whether the project's licensing qualifies for free
         hosting or the project has an up-to-date subscription.""")
 
-    license_approved = Attribute("""
-        Whether a license is manually approved for free hosting
-        after automatic approval fails.""")
+    license_approved = Bool(
+        title=_("License approved"),
+        description=_("""Whether a license is manually approved for free
+                         hosting after automatic approval fails."""))
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):

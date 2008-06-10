@@ -32,7 +32,7 @@
                       enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot
-                      license_approved license_info licenses
+                      license_info licenses
                       bug_reporting_guidelines
                       commercial_subscription redeemSubscriptionVoucher"
       />
@@ -52,7 +52,7 @@
     <require
       permission="launchpad.Commercial"
       set_attributes="active private_bugs license_reviewed
-                      reviewer_whiteboard"
+                      license_approved reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->
