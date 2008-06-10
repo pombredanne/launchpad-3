@@ -34,7 +34,7 @@ LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 
 
 #
-# Exceptions caught in scripts/checkwatches.py
+# Errors.
 #
 
 
@@ -79,7 +79,7 @@ class BugTrackerConnectError(BugWatchUpdateError):
 
 
 #
-# Exceptions caught locally
+# Warnings.
 #
 
 
@@ -112,6 +112,10 @@ class UnknownRemoteStatusError(BugWatchUpdateWarning):
 class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
+
+#
+# Everything else.
+#
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""

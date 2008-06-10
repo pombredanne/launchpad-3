@@ -46,6 +46,9 @@ _exception_to_bugwatcherrortype = [
    (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
    (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
    (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (InvalidBugId, BugWatchErrorType.INVALID_BUG_ID),
+   (BugNotFound, BugWatchErrorType.BUG_NOT_FOUND),
+   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
    (socket.timeout, BugWatchErrorType.TIMEOUT)]
 
 def get_bugwatcherrortype_for_error(error):
@@ -420,6 +423,23 @@ class BugWatchUpdater(object):
                 "Comment importing supported, but server time can't be"
                 " trusted. No comments will be imported.")
 
+        error_type_messages = {
+            BugWatchErrorType.INVALID_BUG_ID:
+                ("Invalid bug %(bug_id)r on %(base_url)s "
+                 "(local bugs: %(local_ids)s)."),
+            BugWatchErrorType.BUG_NOT_FOUND:
+                ("Didn't find bug %(bug_id)r on %(base_url)s "
+                 "(local bugs: %(local_ids)s)."),
+            BugWatchErrorType.PRIVATE_REMOTE_BUG:
+                ("Remote bug %(bug_id)r on %(base_url)s is private "
+                 "(local bugs: %(local_ids)s)."),
+            }
+        error_type_message_default = (
+            "remote bug: %(bug_id)r; "
+            "base url: %(base_url)s; "
+            "local bugs: %(local_ids)s"
+            )
+
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:
@@ -450,35 +470,20 @@ class BugWatchUpdater(object):
                     new_malone_importance = (
                         remotesystem.convertRemoteImportance(
                             new_remote_importance))
-                except InvalidBugId:
-                    error = BugWatchErrorType.INVALID_BUG_ID
+                except (InvalidBugId, BugNotFound, PrivateRemoteBug), ex:
+                    error = get_bugwatcherrortype_for_error(ex)
+                    message = error_type_messages.get(
+                        error, error_type_message_default)
                     self.warning(
-                        "Invalid bug %r on %s (local bugs: %s)." %
-                             (bug_id, remotesystem.baseurl, local_ids),
+                        message % {
+                            'bug_id': bug_id,
+                            'base_url': remotesystem.baseurl,
+                            'local_ids': local_ids,
+                            },
                         properties=[
                             ('bug_id', bug_id),
-                            ('local_ids', local_ids)] +
-                            self._getOOPSProperties(remotesystem),
-                        info=sys.exc_info())
-                except BugNotFound:
-                    error = BugWatchErrorType.BUG_NOT_FOUND
-                    self.warning(
-                        "Didn't find bug %r on %s (local bugs: %s)." %
-                             (bug_id, remotesystem.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)] +
-                            self._getOOPSProperties(remotesystem),
-                        info=sys.exc_info())
-                except PrivateRemoteBug:
-                    error = BugWatchErrorType.PRIVATE_REMOTE_BUG
-                    self.warning(
-                        "Remote bug %r on %s is private (local bugs: %s)." %
-                            (bug_id, remotesystem.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)] +
-                            self._getOOPSProperties(remotesystem),
+                            ('local_ids', local_ids),
+                            ] + self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
