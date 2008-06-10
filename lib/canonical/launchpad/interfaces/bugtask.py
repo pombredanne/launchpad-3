@@ -540,7 +540,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         be a bug supervisor or the owner of the project.
         """
 
-    @export_operation_as('transitionToStatus')
     @rename_parameters_as(new_status='status')
     @operation_parameters(
         new_status=copy_field(status))
@@ -560,7 +559,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
-    @export_operation_as('transitionToAssignee')
     @operation_parameters(
         assignee=copy_field(assignee))
     @export_write_operation()

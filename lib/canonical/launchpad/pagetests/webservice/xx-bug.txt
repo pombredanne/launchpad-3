@@ -145,7 +145,7 @@ The collection of bug tasks is not exposed as a resource:
 It's possible to change the task's assignee.
 
   >>> print webservice.named_post(
-  ...     bugtask_path, 'transitionToAssignee', {}, assignee='http://api.launchpad.dev/beta/~cprov')
+  ...     bugtask_path, 'transitionToAssignee', assignee='http://api.launchpad.dev/beta/~cprov')
   HTTP/1.1 200 Ok
   ...
   Content-Type: application/json
