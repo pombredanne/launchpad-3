@@ -57,16 +57,16 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IArchivePermissionSet, IBugTarget,
-    IBugTaskSet, IDistribution, IDistributionSet, IEmailAddress,
+    AccountStatus, ArchivePurpose, BugTaskSearchParams,
+    EmailAddressStatus, IArchivePermissionSet, IBugTarget,
+    IBugTaskSet, IDistribution, IEmailAddress,
     IEmailAddressSet, IGPGKeySet, IHWSubmissionSet, IHasIcon, IHasLogo,
     IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
     ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
     IMailingListSet, INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress,
     InvalidName, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
     MailingListAutoSubscribePolicy, NameAlreadyTaken, PackagePublishingStatus,
     PersonCreationRationale, PersonVisibility, PersonalStanding,
@@ -74,13 +74,12 @@ from canonical.launchpad.interfaces import (
     ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    UBUNTU_WIKI_URL)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.bugtask import (
-    BugTask, get_bug_privacy_filter, search_value_to_where_condition)
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
@@ -104,7 +103,6 @@ from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
 
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import (
