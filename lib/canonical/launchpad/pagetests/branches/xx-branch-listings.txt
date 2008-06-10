@@ -74,7 +74,7 @@ needed, then the table is sortable and no batching navigation links are shown.
     True
 
 
-== Lifecycle Filtering ==
+== Lifecycle Filtering for Person Branches ==
 
 When the branches for a person is first loaded, only the 'Current'
 branches are shown.  Current branches are those that have a
@@ -397,6 +397,59 @@ The current development focus is shown first though.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> print extract_text(table.tbody.fetch('tr')[1])
     lp://dev/gnome-terminal  Series: trunk, alpha, pre-1.0  ...
+
+
+== Lifecycle Filtering for Product Branches ==
+
+When the branches for a product are first loaded, only the 'Current'
+branches are shown.  Current branches are those that have a
+lifecycle status of New, Development, Experimental or Mature.
+Merged or Abandoned branches are not shown.
+
+    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/gnome-terminal   Series: trunk...    Development  ...
+    lp://dev/~name12/gnome-terminal/2.6           Mature       ...
+    lp://dev/~name12/gnome-terminal/klingon       Experimental ...
+    lp://dev/~launchpad/gnome-terminal/launchpad  New          ...
+    lp://dev/~vcs-imports/gnome-terminal/import   New          ...
+
+There is a select control that is used to define which
+subset of the branches are shown.
+
+    >>> filter_control = browser.getControl(name='field.lifecycle')
+    >>> filter_control
+    <ListControl name='field.lifecycle' type='select'>
+    >>> filter_control.displayValue
+    ['Any active status']
+    >>> filter_control.displayOptions
+    ['Any active status', 'Any status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
+
+Selecting an individual lifecycle status from the select control
+will cause only branches with that status to be listed.
+
+    >>> browser.getControl(name='field.lifecycle').displayValue = ['Experimental']
+    >>> browser.getControl('Filter').click()
+    >>> print browser.url
+    http://code.launchpad.dev/gnome-terminal?field.lifecycle=EXPERIMENTAL
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/~name12/gnome-terminal/klingon       Experimental ...
+
+If the development focus matches the lifecycle selected, it is still shown 
+first.
+
+    >>> browser.getControl(name='field.lifecycle').displayValue = ['Development']
+    >>> browser.getControl('Filter').click()
+    >>> print browser.url
+    http://code.launchpad.dev/gnome-terminal?field.lifecycle=DEVELOPMENT
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    lp://dev/gnome-terminal   Series: trunk...    Development  ...
 
 
 == The last commit ==
