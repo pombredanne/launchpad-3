@@ -51,9 +51,7 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
 from zope.interface import alsoProvides, implements
-from zope.schema import Date, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

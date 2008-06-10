@@ -13,7 +13,7 @@ import calendar
 import pytz
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND, OR)
+    SQLObjectNotFound, AND)
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -925,12 +925,14 @@ class ProductSet:
             needs_join = True
 
         if subscription_modified_after is not None:
-            conditions.append('CommercialSubscription.date_last_modified >= %s'
-                              % sqlvalues(subscription_modified_after))
+            conditions.append(
+                'CommercialSubscription.date_last_modified >= %s'
+                % sqlvalues(subscription_modified_after))
             needs_join = True
         if subscription_modified_before is not None:
-            conditions.append('CommercialSubscription.date_last_modified <= %s'
-                              % sqlvalues(subscription_modified_before))
+            conditions.append(
+                'CommercialSubscription.date_last_modified <= %s'
+                % sqlvalues(subscription_modified_before))
             needs_join = True
 
         clause_tables = []
@@ -966,8 +968,9 @@ class ProductSet:
             conditions.append('(%s)' % '\nOR '.join(or_conditions))
 
         conditions_string = '\nAND '.join(conditions)
-        result = Product.select(conditions_string, clauseTables=clause_tables,
-                                orderBy=['displayname', 'name'], distinct=True)
+        result = Product.select(
+            conditions_string, clauseTables=clause_tables,
+            orderBy=['displayname', 'name'], distinct=True)
         return result
 
     def search(self, text=None, soyuz=None,
