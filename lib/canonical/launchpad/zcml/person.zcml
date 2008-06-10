@@ -310,16 +310,6 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    name="+relicensing"
-    facet="translations"
-    class="canonical.launchpad.browser.PersonTranslationRelicensingView"
-    permission="launchpad.Edit"
-    template="../templates/person-translations-relicensing.pt"
-    layer="canonical.launchpad.layers.TranslationsLayer"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
     name="+imports"
     class="canonical.launchpad.browser.HasTranslationImportsView"
     facet="translations"
@@ -364,6 +354,14 @@
     name="+rdf"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonRdfView"
+    attribute="__call__"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+rdf-contents"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRdfContentsView"
     attribute="__call__"
     />
 
@@ -697,6 +695,7 @@
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
     template="../templates/team-members.pt"
+    class="canonical.launchpad.browser.TeamMembershipView"
     />
 
   <browser:page

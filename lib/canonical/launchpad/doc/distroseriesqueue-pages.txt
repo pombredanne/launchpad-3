@@ -8,9 +8,13 @@ Let's instantiate the view for +queue for anonymous access:
   >>> from zope.component import queryMultiAdapter
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.database import LibraryFileAlias
+  >>> fake_chroot = LibraryFileAlias.get(1)
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> breezy_autotest = ubuntu['breezy-autotest']
+  >>> breezy_autotest_i386 = breezy_autotest['i386']
+  >>> unused = breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
 
   >>> request = TestRequest(form={})
   >>> queue_view = queryMultiAdapter(
