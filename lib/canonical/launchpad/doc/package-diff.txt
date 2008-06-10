@@ -178,10 +178,10 @@ the last published version in the RELEASE pocket.
     >>> print diff.title
     1.0-8 to 1.0-9
 
-The first upload to the just-oppened distroseries. It gets diffed
-against the last version present in the RELEASE pocket of the previous
-distroseries and *not* the highest previous version present in ubuntu
-distribution, the hoary-updates one.
+Now version 1.0-12 gets uploaded to the just opened distroseries. It
+gets diffed against the last version present in the RELEASE pocket of
+the previous distroseries and *not* the highest previous version
+present in ubuntu distribution, the hoary-updates one.
 
     >>> packager.buildVersion('1.0-12', changelog_text="chips")
     >>> packager.buildSource(signed=False)
