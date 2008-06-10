@@ -18,9 +18,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
-    UnknownRemoteStatusError)
+    UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
+    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
@@ -36,6 +37,24 @@ from canonical.launchpad.webapp.interaction import (
 
 class TooMuchTimeSkew(BugWatchUpdateError):
     """Time difference between ourselves and the remote server is too much."""
+
+
+_exception_to_bugwatcherrortype = [
+   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
+   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
+   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (socket.timeout, BugWatchErrorType.TIMEOUT)]
+
+def get_bugwatcherrortype_for_error(error):
+    """Return the correct `BugWatchErrorType` for a given error."""
+    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
+        if isinstance(error, exc_type):
+            return bugwatcherrortype
+    else:
+        return BugWatchErrorType.UNKNOWN
 
 
 #
