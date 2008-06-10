@@ -18,6 +18,7 @@ __all__ = [
 
 import copy
 from datetime import datetime
+import operator
 import simplejson
 from types import NoneType
 
@@ -495,8 +496,11 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # Make sure the representation includes values for all
         # writable attributes.
-        schema = self.entry.schema
-        for name, field in getFields(schema).items():
+        # Sort the fields by name so that we always evaluate them in
+        # the same order. This is needed to predict errors when testing.
+        items = sorted(
+            getFields(self.entry.schema).items(), key=operator.itemgetter(0))
+        for name, field in items:
             if (name.startswith('_') or ICollectionField.providedBy(field)
                 or field.readonly):
                 # This attribute is not part of the web service
@@ -548,7 +552,11 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
-        for name, field in getFields(self.entry.schema).items():
+        # Sort the fields by name so that we always evaluate them in the same
+        # order.  This is needed to predict errors when testing.
+        items = sorted(
+            getFields(self.entry.schema).items(), key=operator.itemgetter(0))
+        for name, field in items:
             if name.startswith('_'):
                 # This field is not part of the web service interface.
                 continue

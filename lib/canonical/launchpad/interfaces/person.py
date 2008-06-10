@@ -616,7 +616,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     "active member of."),
             value_type=Object(schema=ITeamMembership),
             readonly=True, required=False),
-        exported_as='team_memberships')
+        exported_as='memberships_details')
     open_membership_invitations = exported(
         CollectionField(
             title=_('Open membership invitations.'),
@@ -628,12 +628,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_('All teams in which this person is a participant.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Object(schema=Interface)),
+        exported_as='participations')
     teams_indirectly_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is an indirect member.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Object(schema=Interface)),
+        exported_as='indirect_participations')
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -1241,7 +1243,8 @@ class IPersonViewRestricted(Interface):
                 "APPROVED status.  The results are ordered using "
                 "Person.sortingColumns."),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Object(schema=ITeamMembership)),
+        exported_as='members_details')
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     proposedmembers = exported(
@@ -1940,6 +1943,8 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
 IPersonPublic['super_teams'].value_type.schema = ITeam
+IPersonPublic['teams_participated_in'].value_type.schema = ITeam
+IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
