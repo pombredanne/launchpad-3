@@ -17,7 +17,8 @@
 </metal:portlets>
 
 <div metal:fill-slot="main"
-     tal:define="user_can_edit_memberships context/required:launchpad.Edit">
+     tal:define="user_can_edit_memberships context/required:launchpad.Edit;
+                 active_member_count context/active_member_count">
 
   <h1>Members of
     &#8220;<span tal:replace="context/browsername" />&#8221;
@@ -26,11 +27,11 @@
   <p>Active, pending and former members of this team.</p>
 
   <ul>
-    <li tal:condition="context/active_member_count">
+    <li tal:condition="active_member_count">
       <h2>Active members</h2>
 
       <p>
-        There are <span tal:replace="context/active_member_count">15</span>
+        There are <span tal:replace="active_member_count">15</span>
         direct members of the 
         "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
         and <span tal:replace="context/all_member_count">23</span> people are
@@ -90,7 +91,7 @@
       <br />
     </li>
 
-    <li tal:condition="not: context/active_member_count">
+    <li tal:condition="not: active_member_count">
       <h2>
         &#8220;<span tal:replace="context/browsername" />&#8221; has no 
         members
@@ -100,10 +101,10 @@
     </li>
     <br />
 
-    <li tal:condition="context/pendingmembers">
+    <li tal:condition="view/have_pending_members">
       <h2>Pending members</h2>
 
-      <tal:invited condition="context/invited_members">
+      <tal:invited condition="view/invited_memberships">
         <h3>Invited members</h3>
 
         <p>These teams have been invited to join this team, but one of
@@ -119,7 +120,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="membership context/getInvitedMemberships">
+            <tr tal:repeat="membership view/invited_memberships">
               <tal:block tal:define="member membership/person">
                 <td>
                   <a tal:attributes="href member/fmt:url"
@@ -146,7 +147,7 @@
         </table>
       </tal:invited>
 
-      <tal:proposed condition="context/proposedmembers">
+      <tal:proposed condition="view/proposed_memberships">
         <h3>Proposed members</h3>
 
         <p>
@@ -163,7 +164,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="membership context/getProposedMemberships">
+            <tr tal:repeat="membership view/proposed_memberships">
               <tal:block tal:define="member membership/person">
               <td>
                 <a tal:attributes="href member/fmt:url"
@@ -198,7 +199,7 @@
     </li>
     <br />
 
-    <li tal:condition="context/inactivemembers">
+    <li tal:condition="view/inactive_memberships">
       <h2>Former members</h2>
 
       <p>
@@ -215,7 +216,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="membership context/getInactiveMemberships">
+          <tr tal:repeat="membership view/inactive_memberships">
             <tal:block define="member membership/person">
             <td>
               <a tal:attributes="href member/fmt:url"
