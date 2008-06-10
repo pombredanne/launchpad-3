@@ -567,34 +567,34 @@ class BugWatchUpdater(object):
         return bug
 
     def _getPersonForBugTracker(
-        self, bugtracker, name, email, rationale, creation_comment):
+        self, bugtracker, display_name, email, rationale, creation_comment):
         """Return a Person that is linked to a given bug tracker."""
-        # We need to have a name or an email address to be able to
-        # create a new Person or retrieve an existing one. Either one of
-        # name and email can be an empty string or None, but we need one
-        # of them in order to continue.
-        if not name and not email:
+        # We need to have a display_name or an email address to be able
+        # to create a new Person or retrieve an existing one. Either one
+        # of display_name and email can be an empty string or None, but
+        # we need one of them in order to continue.
+        if not display_name and not email:
             raise InvalidRemotePerson(
-                "Either an email address or a name must be specified in "
-                "order to create a new Person.")
+                "Either an email address or a display_name must be "
+                "specified in order to create a new Person.")
         # If we have an email address to work with we can use
         # ensurePerson() to get the Person we need.
         elif email:
             return getUtility(IPersonSet).ensurePerson(
-                email, name, rationale, creation_comment)
+                email, display_name, rationale, creation_comment)
 
-        # First, see if there's already a BugTrackerPerson for this name
-        # on this bugtracker. If there is, return it.
+        # First, see if there's already a BugTrackerPerson for this
+        # display_name on this bugtracker. If there is, return it.
         bugtracker_person_set = getUtility(IBugTrackerPersonSet)
         bugtracker_person = bugtracker_person_set.getByNameAndBugTracker(
-            name, bugtracker)
+            display_name, bugtracker)
 
         if bugtracker_person is not None:
             return bugtracker_person.person
 
         # Generate a valid Launchpad name for the Person.
         canonical_name = (
-            "%s-%s" % (sanitize_name(name), bugtracker.name))
+            "%s-%s" % (sanitize_name(display_name), bugtracker.name))
         index = 1
         person_set = getUtility(IPersonSet)
         while person_set.getByName(
@@ -604,11 +604,11 @@ class BugWatchUpdater(object):
         canonical_name = "%s-%d" % (canonical_name, index)
         person = person_set.createPersonWithoutEmail(
             canonical_name, rationale, creation_comment,
-            displayname=name)
+            displayname=display_name)
 
         # Link the Person to the bugtracker for future reference.
         bugtracker_person = bugtracker_person_set.linkPersonToBugTracker(
-            name, bugtracker, person)
+            display_name, bugtracker, person)
 
         return person
 

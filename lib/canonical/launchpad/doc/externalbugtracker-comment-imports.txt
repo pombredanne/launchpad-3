@@ -231,7 +231,7 @@ return a new Person record.
     None
 
     >>> new_person = bugwatch_updater._getPersonForBugTracker(
-    ...     bugtracker=bug_watch.bugtracker, name='New Person',
+    ...     bugtracker=bug_watch.bugtracker, display_name='New Person',
     ...     email='new.person@example.com',
     ...     rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing _getPersonForBugTracker().')
@@ -255,7 +255,7 @@ Calling _getPersonForBugTracker() with the same details will return the
 same person.
 
     >>> other_person = bugwatch_updater._getPersonForBugTracker(
-    ...     bugtracker=bug_watch.bugtracker, name='New Person',
+    ...     bugtracker=bug_watch.bugtracker, display_name='New Person',
     ...     email='new.person@example.com',
     ...     rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing _getPersonForBugTracker().')
@@ -267,7 +267,7 @@ _getPersonForBugTracker() can also handle remote users whose email
 addresses aren't provided.
 
     >>> noemail_person = bugwatch_updater._getPersonForBugTracker(
-    ...     bugtracker=bug_watch.bugtracker, name='no-email-person',
+    ...     bugtracker=bug_watch.bugtracker, display_name='no-email-person',
     ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing _getPersonForBugTracker().')
 
@@ -289,12 +289,12 @@ However, if a person with no email or name is passed to
 _getPersonForBugTracker() an error will be raised.
 
     >>> bugwatch_updater._getPersonForBugTracker(
-    ...     bugtracker=bug_watch.bugtracker, name=None,
+    ...     bugtracker=bug_watch.bugtracker, display_name=None,
     ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing _getPersonForBugTracker().')
     Traceback (most recent call last):
       ...
-    InvalidRemotePerson: Either an email address or a name must be
+    InvalidRemotePerson: Either an email address or a display_name must be
     specified in order to create a new Person.
 
 
@@ -513,3 +513,6 @@ imported previously.
 
     >>> original_bugtracker_person.person == new_person
     False
+
+    >>> print new_person.name
+    noemail-bugzilla-checkwatches-1-2
