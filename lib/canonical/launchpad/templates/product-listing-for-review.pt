@@ -11,8 +11,13 @@
         tal:content="context/title">Project Title Here</a>
     </td>
     <td>
-        <img src="/@@/yes" tal:condition="context/active"/>
-        <img src="/@@/no" tal:condition="not: context/active"/>
+      <img src="/@@/yes" tal:condition="context/active"/>
+      <img src="/@@/no" tal:condition="not: context/active"/>
+    </td>
+    <td>
+      <img src="/@@/yes" tal:condition="context/license_reviewed"/>
+      <img src="/@@/no" tal:condition="not: context/license_reviewed"/>
+    </td>
     <td style="white-space: nowrap">
       <a tal:replace="structure context/owner/fmt:link">Foo Bar</a>
       <span

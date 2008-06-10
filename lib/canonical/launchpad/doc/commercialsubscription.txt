@@ -181,11 +181,12 @@ hosting; there is no commercial subscription due.
 
 = Product License Reviews =
 
+The forReview() method allows searching for products whose license needs to
+be reviewed. You can search by text in the Product table's full text index.
+
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from datetime import timedelta
     >>> flush_database_updates()
-    >>> date_expires = bzr.commercial_subscription.date_expires
-    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
     >>> bzr.licenses = [License.GNU_GPL_V2]
     >>> for product in product_set.forReview(search_text='gnome'):
     ...     print product.name
@@ -194,19 +195,38 @@ hosting; there is no commercial subscription due.
     applets
     gnomebaker
     python-gnome2-dev
+
+You can search for whether the product is active or not.
+
     >>> for product in product_set.forReview(active=False):
     ...     print product.name
     python-gnome2-dev
     unassigned
+
+You can search for whether the product is marked reviewed or not.
+
     >>> for product in product_set.forReview(license_reviewed=True):
     ...     print product.name
     bzr
     alsa-utils
     python-gnome2-dev
     unassigned
+
+You can search for products by license. This will match products with
+any one of the licenses listed.
+
     >>> for product in product_set.forReview(licenses=[License.GNU_GPL_V2]):
     ...     print product.name
     bzr
+    >>> bzr.licenses
+    >>> for product in product_set.forReview(
+    ...     licenses=[License.GNU_GPL_V2, License.ECLIPSE]):
+    ...     print product.name
+    bzr
+
+You can search for products based on a date range in which the product
+was created.
+
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     created_after=bzr.datecreated, created_before=bzr.datecreated):
@@ -214,8 +234,13 @@ hosting; there is no commercial subscription due.
     bzr
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
-    ...     created_before=bzr.datecreated-timedelta(days=1)):
+    ...     created_before=bzr.datecreated-timedelta(seconds=1)):
     ...     print product.name
+    >>> date_expires = bzr.commercial_subscription.date_expires
+
+You can search for products based on the expiration date of
+its commercial subscription.
+
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_expires_after=date_expires,
@@ -224,8 +249,14 @@ hosting; there is no commercial subscription due.
     bzr
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
-    ...     subscription_expires_after=date_expires+timedelta(minutes=1)):
+    ...     subscription_expires_after=date_expires+timedelta(seconds=1)):
     ...     print product.name
+    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
+
+You can search for products based on the date of that
+its commercial subscription was modified, which only
+happens when a voucher is redeemed.
+
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_modified_after=date_last_modified,

@@ -28,6 +28,8 @@
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info"
          id="portlet-license" class="portlet">
+      <input type="hidden" name="next_url"
+        tal:attributes="value view/next_url" />
       <table class="summary" style="width: 100%;">
         <tr>
           <td>

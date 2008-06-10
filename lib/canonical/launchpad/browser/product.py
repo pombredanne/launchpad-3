@@ -98,7 +98,9 @@ from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.date import DateWidget
-from canonical.widgets.itemswidgets import CheckBoxMatrixWidget
+from canonical.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget)
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -961,6 +963,20 @@ class ProductReviewLicenseView(ProductAdminView):
     field_names = ["active", "private_bugs",
                    "license_reviewed", "reviewer_whiteboard"]
 
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+        if referrer is None:
+            referrer = self.request.getHeader('referer')
+
+        if referrer and referrer.startswith(self.request.getApplicationURL()):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product series"""
@@ -1164,6 +1180,8 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget(
         'licenses', CheckBoxMatrixWidget, column_count=4,
         orientation='vertical')
+    custom_widget('active', LaunchpadRadioWidget)
+    custom_widget('license_reviewed', LaunchpadRadioWidget)
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
     custom_widget('subscription_expires_after', DateWidget)

@@ -1,5 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.  # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
 
@@ -16,6 +15,8 @@ import sets
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, Set, Text, TextLine
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -518,10 +519,13 @@ class IProductReviewSearch(Interface):
 
     search_text = TextLine(title=_('Search text'), required=False)
 
-    active = Bool(title=_('Active'), required=False, default=True)
+    active = Choice(
+        title=_('Active'), values=[True, False],
+        required=False, default=True)
 
-    license_reviewed = Bool(
-        title=_('License Reviewed'), required=False, default=False)
+    license_reviewed = Choice(
+        title=_('License Reviewed'), values=[True, False],
+        required=False, default=False)
 
     # Zope requires sets.Set() instead of the builtin set().
     licenses = Set(
