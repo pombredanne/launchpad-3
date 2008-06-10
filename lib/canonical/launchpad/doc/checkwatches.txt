@@ -104,7 +104,8 @@ First, we create some bug watches to test with:
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
 The timeout will also produce an OOPS report and the OOPS id will be
-included in the logged error message.
+included in the logged error message. The URL field of the OOPS report
+will also be automatically filled from the baseurl OOPS property.
 
     >>> import socket
     >>> import urllib2
@@ -132,7 +133,7 @@ included in the logged error message.
     Branch: ...
     Revision: ...
     User: None
-    URL: None
+    URL: http://bugs.example.com
     Duration: -1
     <BLANKLINE>
     baseurl=http://bugs.example.com

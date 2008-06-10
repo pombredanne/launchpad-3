@@ -76,6 +76,9 @@ def report_oops(message=None, properties=None, info=None):
 
     This must only be called while handling an exception.
 
+    Searches for 'URL', 'url', or 'baseurl' properties, in order of
+    preference, to use as the linked URL of the OOPS report.
+
     :param message: custom explanatory error message. Do not use
         str(exception) to fill in this parameter, it should only be
         set when a human readable error has been explicitly generated.
@@ -99,8 +102,16 @@ def report_oops(message=None, properties=None, info=None):
     if message is not None:
         properties.append(('error-explanation', message))
 
+    # Find a candidate for the request URL.
+    def find_url():
+        for name in 'URL', 'url', 'baseurl':
+            for key, value in properties:
+                if key == name:
+                    return value
+    url = find_url()
+
     # Create the dummy request object.
-    request = ScriptRequest(properties)
+    request = ScriptRequest(properties, url)
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
 
@@ -209,7 +220,7 @@ class BugWatchUpdater(object):
                         str(error), properties=properties, info=info)
                 elif isinstance(error, socket.timeout):
                     self.error(
-                        "Connection timed out when updating %s" % 
+                        "Connection timed out when updating %s" %
                         bug_tracker_url,
                         properties=properties, info=info)
                 else:
@@ -448,6 +459,9 @@ class BugWatchUpdater(object):
                 # No need to try to update it, if it wasn't modified.
                 continue
 
+            # Save the remote bug URL in case we need to log an error.
+            remote_bug_url = bug_watches[0].url
+
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
                 new_remote_status = None
@@ -481,6 +495,7 @@ class BugWatchUpdater(object):
                             'local_ids': local_ids,
                             },
                         properties=[
+                            ('URL', remote_bug_url),
                             ('bug_id', bug_id),
                             ('local_ids', local_ids),
                             ] + self._getOOPSProperties(remotesystem),
@@ -529,6 +544,7 @@ class BugWatchUpdater(object):
                     "Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
                     properties=[
+                        ('URL', remote_bug_url),
                         ('bug_id', bug_id),
                         ('local_ids', local_ids)] +
                         self._getOOPSProperties(remotesystem))
