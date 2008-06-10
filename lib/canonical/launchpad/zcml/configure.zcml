@@ -112,6 +112,7 @@
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="revision.zcml" />
+    <include file="salesforce.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
     <include file="shipit.zcml" />
