@@ -36,5 +36,6 @@
         tal:content="structure context/license_info/fmt:text-to-html">
         License info goes here
     </td>
+    <td tal:content="structure context/reviewer_whiteboard" />
   </tr>
 </tal:root>

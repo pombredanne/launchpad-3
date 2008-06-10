@@ -517,7 +517,11 @@ class IProductSet(Interface):
 class IProductReviewSearch(Interface):
     """A search form for products being reviewed."""
 
-    search_text = TextLine(title=_('Search text'), required=False)
+    search_text = TextLine(
+      title=_('Search text'),
+      description=_("""Search text in the product's name, displayname, title,
+          summary, and description."""),
+      required=False)
 
     active = Choice(
         title=_('Active'), values=[True, False],

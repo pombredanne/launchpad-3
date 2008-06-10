@@ -95,7 +95,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
-from canonical.widgets.bugtask import NewLineToSpacesWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -1183,7 +1182,6 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         ('subscription_modified_after', 'subscription_modified_before'),
         ]
 
-    custom_widget('search_text', NewLineToSpacesWidget)
     custom_widget(
         'licenses', CheckBoxMatrixWidget, column_count=4,
         orientation='vertical')
