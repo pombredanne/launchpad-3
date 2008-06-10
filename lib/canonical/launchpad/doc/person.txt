@@ -917,12 +917,12 @@ projects ordered by displayname.
 
     >>> for project in sabdfl.getOwnedProjects():
     ...     print project.displayname
-    Derby
-    Gnome Applets
-    Tomcat
     a52dec
     alsa-utils
+    Derby
+    Gnome Applets
     gnomebaker
+    Tomcat
 
     >>> for project in ubuntu_team.getOwnedProjects():
     ...     print project.displayname
