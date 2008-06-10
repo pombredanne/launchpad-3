@@ -10,13 +10,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
 
 from canonical.lazr.rest.declarations import exported
-from canonical.lazr.rest.schema import CollectionField
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class IMessageTarget(Interface):
@@ -27,7 +26,7 @@ class IMessageTarget(Interface):
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
-            value_type=Object(schema=IMessage)))
+            value_type=Reference(schema=IMessage)))
 
     followup_subject = Attribute("The likely subject of the next message.")
 
