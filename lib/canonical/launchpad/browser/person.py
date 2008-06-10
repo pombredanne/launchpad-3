@@ -41,6 +41,7 @@ __all__ = [
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
     'PersonRdfView',
+    'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
     'PersonRelatedProjectsView',
@@ -74,6 +75,7 @@ __all__ = [
     'TeamListView',
     'TeamNavigation',
     'TeamOverviewMenu',
+    'TeamMembershipView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
@@ -99,6 +101,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
+from canonical.lazr import decorates
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -757,7 +760,7 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Mentoring offered'
         summary = ('Lists bugs for which %s has offered to mentor someone.'
                    % self.context.displayname)
-        enabled = self.context.mentoring_offers
+        enabled = bool(self.context.mentoring_offers)
         return Link('+mentoring', text, enabled=enabled, summary=summary)
 
     def commentedbugs(self):
@@ -809,7 +812,7 @@ class PersonSpecsMenu(ApplicationMenu):
 
     def mentoring(self):
         text = 'Mentoring offered'
-        enabled = self.context.mentoring_offers
+        enabled = bool(self.context.mentoring_offers)
         return Link('+mentoring', text, enabled=enabled, icon='info')
 
     def workload(self):
@@ -890,16 +893,16 @@ class CommonMenuLinks:
         text = 'Activate Personal Package Archive'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
-        enable_link = (self.context.archive is None)
-        return Link(target, text, summary, icon='edit', enabled=enable_link)
+        enabled = not bool(self.context.archive)
+        return Link(target, text, summary, icon='edit', enabled=enabled)
 
     def show_ppa(self):
         target = '+archive'
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
-        enable_link = (self.context.archive is not None and
-                       check_permission('launchpad.View',
-                                        self.context.archive))
+        archive = self.context.archive
+        enable_link = (archive is not None and
+                       check_permission('launchpad.View', archive))
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
@@ -979,7 +982,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mentoringoffers(self):
         target = '+mentoring'
         text = 'Mentoring offered'
-        enabled = self.context.mentoring_offers
+        enabled = bool(self.context.mentoring_offers)
         return Link(target, text, enabled=enabled, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1076,7 +1079,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring available'
-        enabled = self.context.team_mentorships
+        enabled = bool(self.context.team_mentorships)
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, enabled=enabled,
                     icon='info')
@@ -1145,6 +1148,25 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
+
+
+class TeamMembershipView(LaunchpadView):
+    """The view behins ITeam/+members."""
+    @cachedproperty
+    def inactive_memberships(self):
+        return list(self.context.getInactiveMemberships())
+
+    @cachedproperty
+    def invited_memberships(self):
+        return list(self.context.getInvitedMemberships())
+
+    @cachedproperty
+    def proposed_memberships(self):
+        return list(self.context.getProposedMemberships())
+
+    @property
+    def have_pending_members(self):
+        return self.proposed_memberships or self.invited_memberships
 
 
 class BaseListView:
@@ -1402,15 +1424,37 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
+class PersonWithKeysAndPreferredEmail:
+    """A decorated person that includes GPG keys and preferred emails."""
+
+    # These need to be predeclared to avoid decorates taking them over.
+    # Would be nice if there was a way of allowing writes to just work
+    # (i.e. no proxying of __set__).
+    gpgkeys = None
+    sshkeys = None
+    preferredemail = None
+    decorates(IPerson, 'person')
+
+    def __init__(self, person):
+        self.person = person
+        self.gpgkeys = []
+        self.sshkeys = []
+
+    def addGPGKey(self, key):
+        self.gpgkeys.append(key)
+
+    def addSSHKey(self, key):
+        self.sshkeys.append(key)
+
+    def setPreferredEmail(self, email):
+        self.preferredemail = email
+
+
 class PersonRdfView:
-    """A view that sets its mime-type to application/rdf+xml"""
+    """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
         '../templates/person-foaf.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
@@ -1425,6 +1469,54 @@ class PersonRdfView:
         self.request.response.setHeader('Content-Disposition',
                                         'attachment; filename=%s.rdf' %
                                             self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
+
+
+class PersonRdfContentsView:
+    """A view for the contents of Person FOAF RDF."""
+
+    # We need to set the content_type here explicitly in order to
+    # preserve the case of the elements (which is not preserved in the
+    # parsing of the default text/html content-type.)
+    template = ViewPageTemplateFile(
+        '../templates/person-foaf-contents.pt',
+        content_type="application/rdf+xml")
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def buildMemberData(self):
+        members = []
+        members_by_id = {}
+        for member in self.context.allmembers:
+            member = PersonWithKeysAndPreferredEmail(member)
+            members.append(member)
+            members_by_id[member.id] = member
+        if not members:
+            # Empty teams have nothing to offer.
+            return []
+        sshkeyset = getUtility(ISSHKeySet)
+        gpgkeyset = getUtility(IGPGKeySet)
+        emailset = getUtility(IEmailAddressSet)
+        for key in sshkeyset.getByPeople(members):
+            members_by_id[key.personID].addSSHKey(key)
+        for key in gpgkeyset.getGPGKeysForPeople(members):
+            members_by_id[key.ownerID].addGPGKey(key)
+        for email in emailset.getPreferredEmailForPeople(members):
+            members_by_id[email.personID].setPreferredEmail(email)
+        return members
+
+    def __call__(self):
+        """Render RDF output.
+
+        This is only used when rendering this to the end-user, and is
+        only here to avoid us OOPSing if people access +raw-contents via
+        the web. All templates should reuse this view by invoking
+        +rdf-contents/template.
+        """
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata

@@ -358,6 +358,14 @@
     />
 
   <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+rdf-contents"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRdfContentsView"
+    attribute="__call__"
+    />
+
+  <browser:page
     name="+bugs"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
@@ -687,6 +695,7 @@
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
     template="../templates/team-members.pt"
+    class="canonical.launchpad.browser.TeamMembershipView"
     />
 
   <browser:page
