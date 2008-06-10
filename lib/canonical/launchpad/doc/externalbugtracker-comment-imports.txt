@@ -298,6 +298,7 @@ _getPersonForBugTracker() an error will be raised.
     specified in order to create a new Person.
 
 
+
 == BugWatch comment importing functionality ==
 
 The IBugWatch interface provides methods for linking imported comments
@@ -453,3 +454,62 @@ Once again, CVE links are created but no karma is assigned.
     CVE-1999-0593
 
     >>> karma_helper.unregister_listener()
+
+Bjorn's bug:
+
+We've already imported a comments for 'noemail' on the bugtracker
+'bugzilla-checkwatches-1'.
+
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'noemail', bug_watch.bugtracker)
+
+    >>> print bugtracker_person.person.name
+    noemail-bugzilla-checkwatches-1-1
+
+    >>> print bugtracker_person.bugtracker.name
+    bugzilla-checkwatches-1
+
+    >>> commit()
+
+If we rename the BugTracker and then create another with the same name,
+importing a comment from 'noemail' on that BugTracker should produce a
+new Person rather than re-using the existing one.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bug_watch.bugtracker.name = 'bugzilla-checkwatches-renamed'
+    >>> commit()
+
+    >>> other_bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
+    >>> print other_bug_tracker.name
+    bugzilla-checkwatches-1
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> other_bug = firefox.createBug(
+    ...     CreateBugParams(sample_person, "Yet another test bug",
+    ...         "Yet another test description.",
+    ...         subscribe_reporter=False))
+
+    >>> other_bug_watch = bug.addWatch(
+    ...     other_bug_tracker, '123456', sample_person)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> new_person = bugwatch_updater._getPersonForBugTracker(
+    ...     other_bug_tracker, 'noemail', None,
+    ...     PersonCreationRationale.BUGIMPORT, 'while testing, again')
+
+A new Person has been created for 'noemail' on other_bug_tracker, even
+though that bug tracker's name is the same as one from which we've
+imported previously.
+
+    >>> original_bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'noemail', bug_watch.bugtracker)
+
+    >>> original_bugtracker_person.person == new_person
+    False

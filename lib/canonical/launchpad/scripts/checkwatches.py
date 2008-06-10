@@ -601,8 +601,9 @@ class BugWatchUpdater(object):
             "%s-%d" % (canonical_name, index)) is not None:
             index += 1
 
+        canonical_name = "%s-%d" % (canonical_name, index)
         person = person_set.createPersonWithoutEmail(
-            "%s-%d" % (canonical_name, index), rationale, creation_comment,
+            canonical_name, rationale, creation_comment,
             displayname=name)
 
         # Link the Person to the bugtracker for future reference.
