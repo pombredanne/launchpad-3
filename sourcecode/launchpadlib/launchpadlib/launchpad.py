@@ -13,9 +13,12 @@ from urlparse import urljoin
 from launchpadlib._browser import Browser
 from launchpadlib.collection import Collection, Entry
 from launchpadlib.errors import UnexpectedResponseError
-from launchpadlib.person import People, Person
+from launchpadlib.person import People
 
 
+# XXX BarryWarsaw 05-Jun-2008 this is a placeholder to satisfy the interface
+# required by the Launchpad.bugs property below.  It is temporary and will go
+# away when we flesh out the bugs interface.
 class _FakeBugCollection(Collection):
     def _entry(self, entry_dict):
         return Entry(entry_dict)
@@ -66,7 +69,7 @@ class Launchpad:
         :param display_name: The 'display name' of the team
         :type display_name: string
         :return: the new team
-        :rtype: `Person`
+        :rtype: `Entry`
         :raises ResponseError: when an unexpected response occurred.
         """
         url = urljoin(self.SERVICE_ROOT + '/', 'people')
@@ -79,5 +82,5 @@ class Launchpad:
             # We know this has to be a person, so create and return the
             # appropriate instance.
             data = self._browser.get(response['location'])
-            return Person(data)
+            return Entry(data)
         raise UnexpectedResponseError(response, content)
