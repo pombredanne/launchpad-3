@@ -299,6 +299,38 @@
     </tal:show-link>
   </div>
 
+  <div id="related-bugs-and-blueprints">
+    <h2>Linked bug reports and blueprints</h2>
+    <div class="actions">
+      <tal:bugs tal:define="branch context;
+                            show_edit python:True;
+                            show_whiteboard python:True;">
+        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+      </tal:bugs>
+      <div
+        tal:define="link context/menu:context/link_bug"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a bug
+      </div>
+    </div>
+    <div class="actions">
+      <tal:blueprints tal:define="branch context;
+                                  show_edit python:True;
+                                  show_whiteboard python:True;">
+        <metal:spec-branch-links
+            use-macro="context/@@+macros/spec-branch-links"/>
+      </tal:blueprints>
+      <div
+        tal:define="link context/menu:context/link_blueprint"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a blueprint
+      </div>
+    </div>
+  </div>
+
+
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>
 
@@ -314,30 +346,6 @@
   </tal:history-available>
 
   </div>
-
-  <tal:has-related-bugs condition="context/related_bugs">
-    <div id="related-bugs">
-      <h2>Related bugs</h2>
-      <tal:bugs tal:define="branch context;
-                            show_edit python:True;
-                            show_whiteboard python:True;">
-        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
-      </tal:bugs>
-    </div>
-  </tal:has-related-bugs>
-
-  <tal:has-related-blueprints condition="context/spec_links">
-    <div id="related-blueprints">
-      <h2>Related blueprints</h2>
-      <tal:blueprints tal:define="branch context;
-                                  show_edit python:True;
-                                  show_whiteboard python:True;">
-        <metal:spec-branch-links
-            use-macro="context/@@+macros/spec-branch-links"/>
-      </tal:blueprints>
-    </div>
-  </tal:has-related-blueprints>
-
 
       <div class="related">
 

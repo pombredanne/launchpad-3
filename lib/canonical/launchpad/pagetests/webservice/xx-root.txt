@@ -6,9 +6,9 @@ links to the top-level web service objects.
 
   >>> top_level_links = webservice.get("/beta/").jsonBody()
   >>> sorted(top_level_links.keys())
-  [u'BugCollection_collection_link',
+  [u'MaloneApplicationCollectionAdapter_collection_link',
    u'PersonSetCollectionAdapter_collection_link']
-  >>> top_level_links['BugCollection_collection_link']
+  >>> top_level_links['MaloneApplicationCollectionAdapter_collection_link']
   u'http://api.launchpad.dev/beta/bugs'
 
 The client can explore the entire web service by following these links

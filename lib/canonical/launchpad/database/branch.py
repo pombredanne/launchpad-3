@@ -974,6 +974,16 @@ class BranchSet:
                 BranchSubscriptionDiffSize.NODIFF,
                 CodeReviewNotificationLevel.NOEMAIL)
 
+        # The owner of the branch should also be automatically subscribed
+        # in order for them to get code review notifications.  The implicit
+        # owner subscription does not cause email to be sent about attribute
+        # changes, just merge proposals and code review comments.
+        branch.subscribe(
+            branch.owner,
+            BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.FULL)
+
         notify(SQLObjectCreatedEvent(branch))
         return branch
 
