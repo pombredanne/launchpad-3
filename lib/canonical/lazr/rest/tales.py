@@ -20,10 +20,12 @@ from canonical.launchpad.webapp.publisher import get_current_browser_request
 
 from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, IEntry, IResourceGETOperation,
-    IResourceOperation, IResourcePOSTOperation, IScopedCollection)
+    ICollection, IEntry, IResourceGETOperation, IResourceOperation,
+    IResourcePOSTOperation, IScopedCollection)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import CollectionResource
+
 
 class WadlAPI:
     """Base class for WADL-related function namespaces."""
