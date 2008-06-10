@@ -834,9 +834,9 @@ class PersonTranslationsMenu(ApplicationMenu):
         return Link('+imports', text)
 
     def relicensing(self):
-        text = 'Relicense translations'
+        text = 'Translations licensing'
         enabled = (self.context == self.user)
-        return Link('+relicensing', text, enabled=enabled)
+        return Link('+licensing', text, enabled=enabled)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -2603,7 +2603,7 @@ class PersonTranslationView(LaunchpadView):
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
-    label = "Relicense your translations?"
+    label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreement
     field_names = ['allow_relicensing']
 
@@ -2618,7 +2618,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     @property
     def relicensing_url(self):
         """Return an URL for this view."""
-        return canonical_url(self.context, view_name='+relicensing')
+        return canonical_url(self.context, view_name='+licensing')
 
     @property
     def next_url(self):
@@ -2642,7 +2642,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if allow_relicensing:
             self.request.response.addInfoNotification(_(
                 "Your choice has been saved. "
-                "Thank you for deciding to relicense your translations."))
+                "Thank you for deciding to license your translations under "
+                "BSD license."))
         else:
             self.request.response.addInfoNotification(_(
                 "Your choice has been saved. "

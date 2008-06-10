@@ -8,16 +8,16 @@ relicensed under BSD license.
     >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/'
     ...              '+pots/alsa-utils/es/+translate')
     >>> browser.url
-    'http://translations.launchpad.dev/~karl/+relicensing'
+    'http://translations.launchpad.dev/~karl/+licensing'
 
 Karl realises that he is not on the translate page, he can see that
 that this page has information about relicensing.
 
     >>> print browser.title
-    Relicense your translations
+    Translations licensing
     >>> print find_main_content(browser.contents)
     <div...
-    <p>We are planning to relicense...
+    <p>Hello. We plan to clarify the licence...
     ...
 
 The page asks Karl to make a choice as to whether he wants to
@@ -42,11 +42,11 @@ Launchpad Translations switches to a BSD license.
 Karl changes his mind. He returns to the relicensing page.
 
     >>> browser.open('http://translations.launchpad.dev/~karl/')
-    >>> browser.getLink('Relicense translations').click()
+    >>> browser.getLink('Translations licensing').click()
     >>> browser.url
-    'http://translations.launchpad.dev/~karl/+relicensing'
+    'http://translations.launchpad.dev/~karl/+licensing'
     >>> print browser.title
-    Relicense your translations
+    Translations licensing
 
 Karl sees that the current value is 'no', which he set before.
 
@@ -60,8 +60,8 @@ He changes it again.
     >>> browser.getControl("Update my decision").click()
 
     >>> get_feedback_messages(browser.contents)
-    [u'Your choice has been saved. Thank you for deciding to relicense
-    your translations.']
+    [u'Your choice has been saved. Thank you for deciding to license
+    your translations under BSD license.']
 
 Karl can now browse to a +translate page without being forwarded.
 
@@ -76,7 +76,7 @@ If another logged-in user comes across Karl's translations page, he sees
 no link to relicense Karl's translations.
 
     >>> user_browser.open('http://translations.launchpad.dev/~karl/')
-    >>> user_browser.getLink('Relicense translations')
+    >>> user_browser.getLink('Translations licensing')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -84,7 +84,7 @@ no link to relicense Karl's translations.
 Typing in URL directly doesn't work either.
 
     >>> user_browser.open(
-    ...     'http://translations.launchpad.dev/~karl/+relicensing')
+    ...     'http://translations.launchpad.dev/~karl/+licensing')
     Traceback (most recent call last):
     ...
     Unauthorized: ...

@@ -319,7 +319,7 @@ class POFileTranslateView(BaseTranslationView):
         if (self.user is not None and
             self.user.translations_relicensing_agreement is None):
             return self.request.response.redirect(
-                canonical_url(self.user, view_name='+relicensing'))
+                canonical_url(self.user, view_name='+licensing'))
 
         # The handling of errors is slightly tricky here. Because this
         # form displays multiple POMsgSetViews, we need to track the

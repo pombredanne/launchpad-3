@@ -310,7 +310,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    name="+relicensing"
+    name="+licensing"
     facet="translations"
     class="canonical.launchpad.browser.PersonTranslationRelicensingView"
     permission="launchpad.Edit"
