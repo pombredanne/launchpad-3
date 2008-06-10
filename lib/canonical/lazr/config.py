@@ -132,7 +132,7 @@ class Section:
         mutation.
         """
         new_section = self.__class__(self.schema, self._options.copy())
-        # XXX 2008-06-10 jamesh:
+        # XXX 2008-06-10 jamesh bug=237827:
         # Evil legacy code sometimes assigns directly to the config
         # section objects.  Copy those attributes over.
         new_section.__dict__.update(

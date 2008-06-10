@@ -84,7 +84,8 @@ check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
+	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) \
+	  --test '!doc/externalbugtracker-trac.txt|canonical.codehosting.tests.test_acceptance.AcceptanceTests'
 
 lint:
 	@bash ./utilities/lint.sh
