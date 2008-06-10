@@ -83,7 +83,8 @@
     classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
         PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
         PersonSetFacets PersonSetContextMenu PersonTranslationsMenu
-        PersonOverviewNavigationMenu PersonEditNavigationMenu"
+        PersonOverviewNavigationMenu PersonEditNavigationMenu
+        PersonRelatedSoftwareNavigationMenu"
     />
 
   <browser:url

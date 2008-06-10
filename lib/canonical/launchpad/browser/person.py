@@ -2431,6 +2431,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
 class PersonRelatedProjectsView(LaunchpadView):
 
+    implements(IPersonRelatedSoftwareMenu)
+
     # Safety net for the Registry Admins case which is the owner/driver of
     # lots of projects.
     max_results_to_display = config.launchpad.default_batch_size
