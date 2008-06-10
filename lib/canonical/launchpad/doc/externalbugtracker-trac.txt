@@ -349,9 +349,17 @@ watch hasn't altered:
     >>> bug_watch = example_bug_tracker.watches[0]
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> bug_watch.lastchanged
+    >>> bug_watch.remotestatus
+    >>> bug_watch.remote_importance
+    >>> bug_watch.last_error_type
     >>> old_last_changed = bug_watch.lastchanged
     >>> trac.trace_calls = False
     >>> bug_watch_updater.updateBugWatches(trac, [bug_watch])
     INFO:...:Updating 1 watches on http://bugs.some.where
     >>> bug_watch.lastchanged == old_last_changed
     True
+    >>> bug_watch.lastchanged
+    >>> bug_watch.remotestatus
+    >>> bug_watch.remote_importance
+    >>> bug_watch.last_error_type
