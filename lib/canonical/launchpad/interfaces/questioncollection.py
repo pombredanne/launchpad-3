@@ -109,7 +109,6 @@ class IQuestionSet(IQuestionCollection):
         :param packages: A list of `IDistributionSourcePackage`
             instances.
 
-        :return: a list of dictionaries, where each dict contains:
-            'package': The package the questions are open on.
-            'open': The number of open questions.
+        :return: a dictionary, where the package is the key, and the
+            number of open questions the value.
         """
