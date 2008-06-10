@@ -279,7 +279,7 @@ and the shipit_keywords. The comparison is case-insensitive, has_shipit
 is True when 2 or more words match.
 
     >>> sorted(search_view.shipit_keywords)
-    ['cd', 'cds', 'disc', 'dvd', 'dvds', 'edubuntu', 'get', 'kubuntu',
+    ['cd', 'cds', 'disc', 'dvd', 'dvds', 'edubuntu', 'free', 'get', 'kubuntu',
      'mail', 'send', 'ship', 'shipit', 'ubuntu']
     >>> search_view = getSearchView(
     ...     form={'field.text': 'ubuntu CDs',
@@ -298,6 +298,11 @@ is True when 2 or more words match.
     ...           'start': '0'})
     >>> search_view.has_shipit
     True
+
+The shipit FAQ URL is provides by the view for the template to use.
+
+    >>> search_view.shipit_faq_url
+    'http://www.ubuntu.com/getubuntu/shipit-faq'
 
 
 == Page searches ==
@@ -411,6 +416,61 @@ showing the matching terms in context of the page text.
 
 See `google-searchservice.txt` for more information about the
 GoogleSearchService and PageMatch objects.
+
+
+== SearchFormView and SearchFormPrimaryView ==
+
+Two companion views are used to help render the global search form.
+They define the required attributes to render the form in the
+correct state.
+
+The LaunchpadSearchFormView provides the minimum information to display
+the form, but cannot handled the submitted data. It appends a suffix
+('-secondary') to the id of the form and inputs to prevent them from
+conflicting with other forms. The search text is not the default value
+of the text field; 'bug' was submitted above, but is not present in the
+rendered form.
+
+    >>> search_form_view = getMultiAdapter(
+    ...     (search_view, request), name='+search-form')
+    >>> search_form_view.initialize()
+    >>> search_form_view.id_suffix
+    '-secondary'
+    >>> print search_form_view.render()
+    <form action="http://launchpad.dev/+search"
+      name="sitesearch" method="get" accept-charset="UTF-8"
+      id="sitesearch-secondary">
+      <div>
+        <input class="textType" type="text" size="36" name="field.text"
+          id="field.text-secondary" />
+        <input name="field.actions.search" class="button"
+          type="submit" value="Search"
+          id="field.text-secondary" />
+      </div>
+    </form>
+
+LaunchpadPrimarySearchFormView can handle submitted form by deferring to
+its context (the LaunchpadSearchView) for the needed information. The
+view does not append a suffix to the form and input ids. The search
+field's value is 'bug', as was submitted above..
+
+    >>> search_form_view = getMultiAdapter(
+    ...     (search_view, request), name='+primary-search-form')
+    >>> search_form_view.initialize()
+    >>> search_form_view.id_suffix
+    ''
+    >>> print search_form_view.render()
+    <form action="http://launchpad.dev/+search"
+      name="sitesearch" method="get" accept-charset="UTF-8"
+      id="sitesearch">
+      <div>
+        <input class="textType" type="text" size="36" name="field.text"
+          id="field.text" value="bug" />
+        <input name="field.actions.search" class="button"
+          type="submit" value="Search"
+          id="field.text" />
+      </div>
+    </form>
 
 
 == WindowedList and GoogleBatchNavigator ==

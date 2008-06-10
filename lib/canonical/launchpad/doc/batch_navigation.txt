@@ -329,7 +329,7 @@ for display.
     >>> navigator.heading
     'results'
 
-There is a special case for when on there is only one item in the batch,
+There is a special case for when there is only one item in the batch,
 the singular version of the heading is returned.
 
     >>> navigator = BatchNavigator(['only-one'], request=request)

@@ -15,15 +15,20 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.interfaces import (
-    IPillarNameSet, IBugSet, ILaunchpadSearch, IPersonSet, IQuestionSet,
-    ISearchService)
+from canonical.launchpad.interfaces.bug import IBugSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.questioncollection import IQuestionSet
+from canonical.launchpad.interfaces.searchservice import ISearchService
+from canonical.launchpad.interfaces.shipit import ShipItConstants
 from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.z3batching.batch import _Batch
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
@@ -45,6 +50,65 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         return getUtility(IPillarNameSet).featured_projects
 
 
+class LaunchpadSearchFormView(LaunchpadView):
+    """A view to display the global search form in any page."""
+    id_suffix = '-secondary'
+    text = None
+    focusedElementScript = None
+    form_wide_errors = None
+    errors = None
+    error_count = None
+    error = None
+    error_class = None
+
+    @property
+    def rooturl(self):
+        """Return the site's root url."""
+        return allvhosts.configs['mainsite'].rooturl
+
+
+class LaunchpadPrimarySearchFormView(LaunchpadSearchFormView):
+    """A view to display the global search form in the page."""
+    id_suffix = ''
+
+    @property
+    def text(self):
+        """The search text submitted to the context view."""
+        return self.context.text
+
+    @property
+    def focusedElementScript(self):
+        """The context view's focusedElementScript."""
+        return self.context.focusedElementScript
+
+    @property
+    def form_wide_errors(self):
+        """The context view's form_wide_errors."""
+        return self.context.form_wide_errors
+
+    @property
+    def errors(self):
+        """The context view's errors."""
+        return self.context.errors
+
+    @property
+    def error_count(self):
+        """The context view's error_count."""
+        return self.context.error_count
+
+    @property
+    def error(self):
+        """The context view's text field error."""
+        return self.context.getFieldError('text')
+
+    @property
+    def error_class(self):
+        """Return the 'error' if there is an error, or None."""
+        if self.error:
+            return 'error'
+        return None
+
+
 class LaunchpadSearchView(LaunchpadFormView):
     """A view to search for Launchpad pages and objects."""
     schema = ILaunchpadSearch
@@ -52,7 +116,7 @@ class LaunchpadSearchView(LaunchpadFormView):
 
     shipit_keywords = set([
         'ubuntu', 'kubuntu', 'edubuntu',
-        'ship', 'shipit', 'send', 'get', 'mail',
+        'ship', 'shipit', 'send', 'get', 'mail', 'free',
         'cd', 'cds', 'dvd', 'dvds', 'disc'])
 
     def __init__(self, context, request):
@@ -172,6 +236,11 @@ class LaunchpadSearchView(LaunchpadFormView):
         kinds = (self.bug, self.question, self.pillar,
                  self.person_or_team, self.has_shipit)
         return self.containsMatchingKind(kinds)
+
+    @property
+    def shipit_faq_url(self):
+        """The shipit FAQ URL."""
+        return ShipItConstants.faq_url
 
     @property
     def has_matches(self):
@@ -335,6 +404,8 @@ class WindowedListBatch(_Batch):
 
     def endNumber(self):
         """Return the end index of the batch, not including None objects."""
+        # This class should know about the private _window attribute.
+        # pylint: disable-msg=W0212
         return self.start + len(self.list._window)
 
 
