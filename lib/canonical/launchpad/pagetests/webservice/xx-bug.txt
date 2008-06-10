@@ -13,19 +13,19 @@ At the top level we provide a collection of bugs.
   >>> bugs['total_size']
   15
   >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
-  >>> sorted(bug_entries[0].items())
+  >>> from pprint import pprint
+  >>> pprint(sorted(bug_entries[0].items()))
   [(u'bugtasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bugtasks'),
    (u'can_expire', False),
+   (u'date_created', u'2007-03-15T20:33:56.678930+00:00'),
    (u'date_last_message', None),
    (u'date_last_updated', u'2007-03-15T20:37:51.603369+00:00'),
    (u'date_made_private', None),
-   (u'datecreated', u'2007-03-15T20:33:56.678930+00:00'),
    (u'description', u"I've had problems when switching..."),
    (u'duplicate_of_link', None),
    (u'duplicates_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/duplicates'),
-   (u'followup_subject', u'Re: Make Jokosher use autoaudiosink'),
    (u'id', 11),
    (u'is_complete', False),
    (u'messages_collection_link',

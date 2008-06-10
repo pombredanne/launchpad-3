@@ -50,12 +50,11 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IFieldMarshaller, IHTTPResource, IJSONPublishable,
-    IResourceGETOperation, IResourcePOSTOperation, IScopedCollection,
-    IServiceRootResource)
+    ICollection, ICollectionResource, IEntry, IEntryResource,
+    IFieldMarshaller, IHTTPResource, IJSONPublishable, IResourceGETOperation,
+    IResourcePOSTOperation, IScopedCollection, IServiceRootResource)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
-from canonical.lazr.rest.schema import URLDereferencingMixin
 
 
 # The path to the WADL XML Schema definition.
@@ -110,7 +109,7 @@ class JSONItem:
         return str(self.context.title)
 
 
-class HTTPResource(URLDereferencingMixin):
+class HTTPResource:
     """See `IHTTPResource`."""
     implements(IHTTPResource)
 
@@ -425,10 +424,10 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                           IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             try:
                 value = getattr(self.entry, name)
-                repr_value = marshaller.unmarshall(self.entry, name, value)
+                repr_value = marshaller.unmarshall(self.entry, value)
             except Unauthorized:
                 # Either the client doesn't have permission to see
                 # this field, or it doesn't have permission to read
@@ -517,7 +516,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             if (changeset.get(repr_name) is None
                 and getattr(self.entry, name) is not None):
                 # This entry has a value for the attribute, but the
@@ -580,7 +579,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             field = field.bind(self.context)
             marshaller = getMultiAdapter((field, self.request),
                                          IFieldMarshaller)
-            repr_name = marshaller.representationName(name)
+            repr_name = marshaller.representation_name
             if not repr_name in changeset:
                 # The client didn't try to set a value for this field.
                 continue
@@ -590,7 +589,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # way to see if the client changed the value.
             try:
                 current_value = marshaller.unmarshall(
-                    self.entry, name, getattr(self.entry, name))
+                    self.entry, getattr(self.entry, name))
             except Unauthorized:
                 # The client doesn't have permission to see the old
                 # value. That doesn't necessarily mean they can't set
@@ -603,15 +602,14 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
             # it, validate it, and (if it's different from the current
             # value) move it from the client changeset to the
             # validated changeset.
-            original_value = changeset[repr_name]
-            del changeset[repr_name]
+            original_value = changeset.pop(repr_name)
             if original_value == current_value == self.REDACTED_VALUE:
                 # The client can't see the field's current value, and
                 # isn't trying to change it. Skip to the next field.
                 continue
 
             try:
-                value = marshaller.marshall(original_value)
+                value = marshaller.marshall_from_json_data(original_value)
             except (ValueError, ValidationError), e:
                 errors.append("%s: %s" % (repr_name, e))
                 continue
@@ -648,7 +646,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
                 # ObjectLookupFieldMarshaller, once we make it
                 # possible for Vocabulary fields to specify a schema
                 # class the way IObject fields can.
-                if not field.schema.providedBy(value):
+                if value != None and not field.schema.providedBy(value):
                     errors.append("%s: Your value points to the "
                                   "wrong kind of object" % repr_name)
                     continue

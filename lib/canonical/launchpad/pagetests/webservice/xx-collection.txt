@@ -155,7 +155,9 @@ The elements of a collection can be looked up by unique identifier:
   renewal_policy: invite them to apply for renewal
   resource_type_link: http://api.launchpad.dev/beta/#TeamEntryAdapter
   self_link: http://.../~admins
+  sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
+  super_teams_collection_link: http://.../~admins/super_teams
   team_description: Launchpad Administrators
   team_memberships_collection_link: http://.../~admins/team_memberships
   team_owner_link: http://.../~sabdfl
@@ -226,10 +228,10 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/people?ws.op=find&text=")
+  >>> print webservice.get("/beta/~ubuntu-team?ws.op=getMembersByStatus")
   HTTP/1.1 400 Bad Request
   ...
-  text: Required input is missing.
+  status: Required input is missing.
 
 A collection may also expose named operations in response to POST
 requests. These operations are usually factories. Here's a helper
@@ -238,7 +240,7 @@ the collection of people.
 
   >>> def create_team(name, display_name):
   ...     return webservice.named_post(
-  ...         "/beta/people", "create_team", {},
+  ...         "/beta/people", "newTeam", {},
   ...         name=name, display_name=display_name)
 
   >>> print webservice.get('/beta/~serviceteam')
