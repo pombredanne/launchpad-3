@@ -27,7 +27,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
-    CodeImportReviewStatus, EmailAddressStatus, ICodeImportEventSet,
+    CodeImportReviewStatus, ICodeImportEventSet,
     ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync

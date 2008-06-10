@@ -15,7 +15,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus, IBranchMergeProposalGetter)
+    IBranchMergeProposalGetter)
 from canonical.launchpad.testing import (
      LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 

@@ -148,7 +148,7 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString('person-name')
         if password is None:
             password = self.getUniqueString('password')
-        # By default, make the email address validated.
+        # By default, make the email address preferred.
         if email_address_status is None:
             email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
