@@ -74,7 +74,7 @@ from canonical.launchpad.interfaces.jabber import IJabberID, IJabberIDSet
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     IPasswordEncryptor)
-from canonical.launchpad.interfaces.launchpadstatistics import (
+from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet, LoginTokenType)
