@@ -33,7 +33,7 @@ class People(Collection):
             if error.response.status == 404:
                 return default
             raise
-        return Entry(data)
+        return Entry(data, self._browser)
 
     def newTeam(self, name, display_name):
         """Create a new team.
@@ -55,5 +55,5 @@ class People(Collection):
             # We know this has to be a person, so create and return the
             # appropriate instance.
             data = self._browser.get(URI(response['location']))
-            return Entry(data)
+            return Entry(data, self._browser)
         raise UnexpectedResponseError(response, content)

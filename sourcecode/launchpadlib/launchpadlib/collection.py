@@ -12,11 +12,61 @@ __all__ = [
 from launchpadlib._utils.uri import URI
 
 
+class EntryAttributeDescriptor:
+    """Descriptor for Entry attributes settable via the web service."""
+
+    def __init__(self, attribute_name):
+        self._attribute_name = attribute_name
+        self._value_key = '_%s_value' % attribute_name
+        self.is_dirty = False
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            raise AttributeError('Class attribute: %s' % self._attribute_name)
+        return getattr(instance, self._value_key)
+
+    def __set__(self, instance, value):
+        setattr(instance, self._value_key, value)
+        self.is_dirty = True
+
+
 class Entry:
     """Simple bag-like class for collection entry attributes."""
 
-    def __init__(self, entry_dict):
-        self.__dict__.update(entry_dict)
+    def __init__(self, entry_dict, browser):
+        self._browser = browser
+        # The entry_dict contains lots of information mixed up in the same
+        # namespace.  Everything that's a link to other information is
+        # contained in a key ending with '_link'.  We'll treat everything else
+        # as an attribute of this object.  Settable attributes (unless they're
+        # read-only but we don't yet know that) are the names of all the
+        # non-link keys.
+        self._links = {}
+        for key, value in entry_dict.items():
+            if key.endswith('_link'):
+                self._links[key[:-5]] = value
+            else:
+                descriptor = EntryAttributeDescriptor(key)
+                # Store the descriptor into the class's dictionary so that it
+                # will act like a descriptor.
+                setattr(Entry, key, descriptor)
+                # Now set the value on the instance, invoking the descriptor,
+                # but be sure to reset the dirty flag, since it's not
+                # appropriate to set it in the constructor.
+                setattr(self, key, value)
+                descriptor.is_dirty = False
+
+    def save(self):
+        representation = {}
+        # Find all the dirty attributes and build up a representation of them
+        # to be set on the web service.  Reset the dirty flags while we're at
+        # it.
+        for name, descriptor in self.__class__.__dict__.items():
+            if getattr(descriptor, 'is_dirty', False):
+                representation[name] = getattr(self, name)
+                descriptor.is_dirty = False
+        # PATCH the new representation to the 'self' link.
+        self._browser.patch(URI(self._links['self']), representation)
 
 
 class Collection:
@@ -60,8 +110,8 @@ class Collection:
         """
         current_page = self._info
         while True:
-            for entry_dict in current_page.get('entries', []):
-                yield Entry(entry_dict)
+            for entry_dict in current_page.get('entries', {}):
+                yield Entry(entry_dict, self._browser)
             next_link = current_page.get('next_collection_link')
             if next_link is None:
                 break

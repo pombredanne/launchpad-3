@@ -14,3 +14,13 @@ Some of these attributes can be changed.  For example, a person can change his
 or her display name.  When changing attribute values though, the changes are
 not pushed to the web service until the object is explicitly saved.  This
 allows us to batch the changes over the wire for efficiency.
+
+    >>> salgado.display_name = u'Salgado'
+    >>> #launchpad.people.get('salgado').display_name
+    u'Guilherme Salgado'
+
+Once the changes are saved though, they are saved on the web service.
+
+    >>> salgado.save()
+    >>> launchpad.people.get('salgado').display_name
+    u'Salgado'
