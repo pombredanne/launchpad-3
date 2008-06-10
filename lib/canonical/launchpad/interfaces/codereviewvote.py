@@ -1,5 +1,14 @@
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+
+"""CodeReviewVoteReference interface."""
+
+__metaclass__ = type
+__all__ = [
+    'ICodeReviewVoteReference',
+    ]
+
 from zope.interface import Interface
-from zope.schema import Object, Datetime
+from zope.schema import Datetime, Object, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -7,11 +16,6 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.codereviewcomment import (
     ICodeReviewComment)
 from canonical.launchpad.interfaces.person import IPerson
-
-__metaclass__ = type
-
-
-__all__ = ['ICodeReviewVoteReference']
 
 
 class ICodeReviewVoteReference(Interface):
@@ -35,6 +39,9 @@ class ICodeReviewVoteReference(Interface):
     reviewer = Object(
         title=_("The person who cast this vote"),
         required=True, schema=IPerson)
+
+    review_type = TextLine(
+        title=_('Review type'), required=False)
 
     comment = Object(
         title=_("The code review comment that contains the most recent vote."),

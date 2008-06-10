@@ -19,8 +19,11 @@ __all__ = [
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
     'BranchMergeProposalView',
+    'BranchMergeProposalVoteView',
     'BranchMergeProposalWorkInProgressView',
     ]
+
+import operator
 
 from zope.component import getUtility
 from zope.event import notify as zope_notify
@@ -44,6 +47,8 @@ from canonical.launchpad.interfaces import (
     IMessageSet,
     IStructuralObjectPresentation,
     WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.codereviewcomment import (
+    CodeReviewVote)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
@@ -247,22 +252,6 @@ class BranchMergeProposalNavigation(Navigation):
             return None
 
 
-class DecoratedCodeReviewVoteReference:
-    """Provide a code review vote that knows if it is important or not."""
-
-    decorates(ICodeReviewVoteReference)
-
-    def __init__(self, context):
-        self.context = context
-
-    @property
-    def important_reviewer(self):
-        """Is the reviewer in the review team for the target branch."""
-        vote = self.context
-        target_branch = vote.branch_merge_proposal.target_branch
-        return vote.reviewer.inTeam(target_branch.code_reviewer)
-
-
 class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
@@ -281,12 +270,6 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
     def comment_location(self):
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
-
-    @cachedproperty
-    def votes(self):
-        """Return the decorated votes for the proposal."""
-        return [DecoratedCodeReviewVoteReference(vote)
-                for vote in self.context.votes]
 
     @property
     def comments(self):
@@ -308,6 +291,70 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+
+class DecoratedCodeReviewVoteReference:
+    """Provide a code review vote that knows if it is important or not."""
+
+    decorates(ICodeReviewVoteReference)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def important_reviewer(self):
+        """Is the reviewer in the review team for the target branch.
+
+        If a reviewer was asked to review the branch, then they are also
+        important.
+        """
+        vote = self.context
+        target_branch = vote.branch_merge_proposal.target_branch
+        return (vote.reviewer.inTeam(target_branch.code_reviewer) or
+                vote.reviewer != vote.registrant)
+
+    @property
+    def date_of_comment(self):
+        """The date of the comment, not the date_created of the vote."""
+        return self.context.comment.message.datecreated
+
+
+class BranchMergeProposalVoteView(LaunchpadView):
+    """The view used for the tables of votes and requested reviews."""
+
+    __used_for__ = IBranchMergeProposal
+
+    @cachedproperty
+    def reviews(self):
+        """Return the decorated votes for the proposal."""
+        return [DecoratedCodeReviewVoteReference(vote)
+                for vote in self.context.votes]
+
+    def getOrderedReviews(self, actual_vote):
+        """Return votes with the specified vote ordered newest first."""
+        reviews = [review for review in self.reviews
+                   if (review.comment is not None and
+                       review.comment.vote == actual_vote)]
+        return sorted(reviews, key=operator.attrgetter('date_of_comment'),
+                      reverse=True)
+
+    @property
+    def current_reviews(self):
+        """The current votes ordered by vote then date."""
+        # We want the reviews in a specific order.
+        # Disapprovals first, then approvals, then abstentions.
+        return (self.getOrderedReviews(CodeReviewVote.DISAPPROVE) +
+                self.getOrderedReviews(CodeReviewVote.APPROVE) +
+                self.getOrderedReviews(CodeReviewVote.ABSTAIN))
+
+    @property
+    def requested_reviews(self):
+        """Reviews requested but not yet done."""
+        reviews = [review for review in self.reviews
+                   if review.comment is None]
+        # Now sort so the most recently created is first.
+        return sorted(reviews, key=operator.attrgetter('date_created'),
+                      reverse=True)
 
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):

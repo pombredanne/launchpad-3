@@ -12,8 +12,11 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-</metal:portlets>
+<style type="text/css" metal:fill-slot="head_epilogue">
+  #code-review-votes {
+    margin: 2em 0;
+  }
+</style>
 
 <div metal:fill-slot="main">
 
@@ -44,17 +47,7 @@
     </div>
   </tal:whiteboard>
 
-  <tal:votes condition="view/votes">
-    <h2>Votes</h2>
-    <table>
-      <tr tal:repeat="vote view/votes">
-        <td tal:content="structure vote/reviewer/fmt:link" />
-        <td tal:content="vote/comment/vote/title" />
-        <td tal:content="vote/comment/vote_tag" />
-        <td tal:content="vote/comment/message/datecreated/fmt:displaydate" />
-      </tr>
-    </table>
-  </tal:votes>
+  <tal:votes replace="structure context/@@+votes"/>
 
   <a href="#" tal:attributes="href view/comment_location"
      ><img src="/@@/add"/>Add comment</a>

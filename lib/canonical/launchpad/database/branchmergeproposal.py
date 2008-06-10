@@ -365,14 +365,15 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         return proposal
 
-    def nominateReviewer(self, reviewer, registrant):
+    def nominateReviewer(self, reviewer, registrant, review_type=None,
+                         _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
-        vote_request = CodeReviewVoteReference(
+        return CodeReviewVoteReference(
             branch_merge_proposal=self,
             registrant=registrant,
-            reviewer=reviewer)
-        notify(SQLObjectCreatedEvent(vote_request))
-        return vote_request
+            reviewer=reviewer,
+            review_type=review_type,
+            date_created=_date_created)
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""

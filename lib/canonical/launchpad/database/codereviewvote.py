@@ -1,16 +1,19 @@
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+
+"""CodeReviewVoteReference database class."""
+
+__metaclass__ = type
+__all__ = [
+    'CodeReviewVoteReference',
+    ]
+
+from sqlobject import ForeignKey, StringCol
+from zope.interface import implements
+
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from sqlobject import ForeignKey
-from zope.interface import implements
-
 from canonical.launchpad.interfaces import ICodeReviewVoteReference
-
-
-__all__ = ['CodeReviewVoteReference']
-
-
-__metaclass__ = type
 
 
 class CodeReviewVoteReference(SQLBase):
@@ -27,5 +30,6 @@ class CodeReviewVoteReference(SQLBase):
         dbName='registrant', foreignKey='Person', notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person', notNull=True)
+    review_type = StringCol(default=None)
     comment = ForeignKey(
         dbName='vote_message', foreignKey='CodeReviewComment', default=None)

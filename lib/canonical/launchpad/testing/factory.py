@@ -148,26 +148,17 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString('person-name')
         if password is None:
             password = self.getUniqueString('password')
-        else:
-            # If a password was specified, validate the email address,
-            # unless told otherwise.
-            if email_address_status is None:
-                email_address_status = EmailAddressStatus.VALIDATED
+        # By default, make the email address validated.
+        if email_address_status is None:
+            email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
-        # To make the person someone valid in Launchpad, validate the
-        # email.
-        if email_address_status == EmailAddressStatus.VALIDATED:
-            person.validateAndEnsurePreferredEmail(email)
-        elif email_address_status is not None:
-            email.status = email_address_status
-            email.syncUpdate()
-        else:
-            # Leave the email as NEW.
-            pass
+        # Set the status on the email.
+        email.status = email_address_status
+        email.syncUpdate()
         return person
 
     def makeTeam(self, owner, displayname=None, email=None):

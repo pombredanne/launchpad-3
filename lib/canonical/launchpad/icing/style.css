@@ -1698,6 +1698,10 @@ table.duplicate.listing * {color: #999;}
 
 table.listing table.simple {margin-left: 2em;}
 table.listing table.simple td {padding: 0.25em;}
+
+table.compressed { width: auto }
+table.compressed td { padding: 0.25em 0.5em }
+
 /* --- Sortable tables --- */
 
 table.sortable a.sortheader {
