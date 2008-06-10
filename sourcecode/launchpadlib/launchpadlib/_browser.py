@@ -12,30 +12,17 @@ __all__ = [
     ]
 
 
-import urllib2
+import httplib2
 import urlparse
+import simplejson
 
-from launchpadlib.oauth.oauth import (
+from launchpadlib._oauth.oauth import (
     OAuthRequest, OAuthSignatureMethod_PLAINTEXT)
+from launchpadlib.errors import HTTPError
+
 
 OAUTH_REALM = 'https://api.launchpad.net'
-
-
-class SocketClosingOnErrorHandler(urllib2.BaseHandler):
-    """A handler that ensures that the socket gets closed on errors.
-
-    Interestingly enough <wink> without this, HTTP errors will cause urllib2
-    to leak open socket objects.
-    """
-    # Ensure that this handler is the first default error handler to execute,
-    # because right after this, the built-in default handler will raise an
-    # exception.
-    handler_order = 0
-
-    # Copy signature from base class.
-    def http_error_default(self, req, fp, code, msg, hdrs):
-        """See `urllib2.BaseHandler`."""
-        fp.close()
+JOINER = '&'
 
 
 class Browser:
@@ -43,10 +30,10 @@ class Browser:
 
     def __init__(self, credentials):
         self.credentials = credentials
-        self._opener = urllib2.build_opener(SocketClosingOnErrorHandler)
+        self._connection = httplib2.Http()
 
-    def get(self, url):
-        """Get the resource at the requested url."""
+    def _request(self, url, data=None, method='GET'):
+        """Create an authenticated request object."""
         oauth_request = OAuthRequest.from_consumer_and_token(
             self.credentials.consumer,
             self.credentials.access_token,
@@ -61,13 +48,24 @@ class Browser:
             hostname, port = netloc.split(':', 1)
         else:
             hostname = netloc
-        full_headers = dict(Host=hostname)
-        full_headers.update(oauth_request.to_header(OAUTH_REALM))
+        headers = dict(Host=hostname)
+        headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
-        url_request = urllib2.Request(url, headers=full_headers)
-        f = self._opener.open(url_request)
-        try:
-            data = f.read()
-        finally:
-            f.close()
-        return data
+        response, content = self._connection.request(
+            url, method=method, body=data, headers=headers)
+        # Turn non-2xx responses into exceptions.
+        if response.status // 100 != 2:
+            raise HTTPError(response.status, response.reason)
+        return response, content
+
+    def get(self, url):
+        """Get the resource at the requested url."""
+        response, content = self._request(url)
+        return simplejson.loads(content)
+
+    def post(self, url, method_name, **kws):
+        """Post a request to the web service."""
+        kws['ws.op'] = method_name
+        data = JOINER.join('%s=%s' % (key, value)
+                           for key, value in kws.items())
+        return self._request(url, data, 'POST')
