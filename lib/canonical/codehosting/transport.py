@@ -628,7 +628,7 @@ class LaunchpadServer(Server):
             least a valid path to a branch.
         """
         branch, ignored = self._getBranch(virtual_url_fragment)
-        branch.requestMirror()
+        return branch.requestMirror()
 
     def translateVirtualPath(self, virtual_url_fragment):
         """Translate 'virtual_url_fragment' into a transport and sub-fragment.
@@ -929,8 +929,9 @@ class AsyncLaunchpadTransport(VirtualTransport):
             deferred = self.server.requestMirror(abs_from)
         else:
             deferred = defer.succeed(None)
-        return deferred.addCallback(
+        deferred = deferred.addCallback(
             lambda ignored: VirtualTransport.rename(self, rel_from, rel_to))
+        return self._extractResult(deferred)
 
     def rmdir(self, relpath):
         # We hook into rmdir in order to prevent users from deleting branches,
