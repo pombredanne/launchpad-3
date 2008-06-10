@@ -55,7 +55,7 @@
                     string:${context/fmt:url}/${series/name}/+rdf" />
             </lp:ProductSeries>
         </lp:series>
-        <lp:owner tal:content="structure context/owner/@@+rdf-contents" />
+        <lp:owner tal:content="structure context/owner/@@+rdf-contents/template" />
         <lp:status tal:condition="context/active">Active</lp:status>
         <lp:status tal:condition="not:context/active">Inactive</lp:status>
     </lp:Product>
