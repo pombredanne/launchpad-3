@@ -376,9 +376,12 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
-    def makeSignedMessage(self, msgid=None, body=None):
+    def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
         mail['From'] = self.getUniqueEmailAddress()
+        if subject is None:
+            subject = self.getUniqueString('subject')
+        mail['Subject'] = subject
         if msgid is None:
             msgid = make_msgid('launchpad')
         if body is None:
