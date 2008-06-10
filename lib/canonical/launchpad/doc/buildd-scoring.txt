@@ -241,5 +241,5 @@ the score of build jobs tied to non-rebuild archives.
     ...     pocket=PackagePublishingPocket.SECURITY)
     >>> bqc.build.archive.purpose = ArchivePurpose.REBUILD
     >>> bqc.score()
-    >>> bqc.lastscore < bq_low.lastscore
+    >>> 0 < bqc.lastscore < bq_low.lastscore
     True
