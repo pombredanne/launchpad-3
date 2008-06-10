@@ -37,10 +37,6 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.validators.name import sanitize_name
 
 
-class InvalidRemotePerson(BugWatchUpdateWarning):
-    """Raised when _getPersonForBugTracker() is passed invalid data."""
-
-
 class TooMuchTimeSkew(BugWatchUpdateError):
     """Time difference between ourselves and the remote server is too much."""
 
@@ -569,17 +565,9 @@ class BugWatchUpdater(object):
     def _getPersonForBugTracker(
         self, bugtracker, display_name, email, rationale, creation_comment):
         """Return a Person that is linked to a given bug tracker."""
-        # We need to have a display_name or an email address to be able
-        # to create a new Person or retrieve an existing one. Either one
-        # of display_name and email can be an empty string or None, but
-        # we need one of them in order to continue.
-        if not display_name and not email:
-            raise InvalidRemotePerson(
-                "Either an email address or a display_name must be "
-                "specified in order to create a new Person.")
         # If we have an email address to work with we can use
         # ensurePerson() to get the Person we need.
-        elif email:
+        if email:
             return getUtility(IPersonSet).ensurePerson(
                 email, display_name, rationale, creation_comment)
 
@@ -634,25 +622,27 @@ class BugWatchUpdater(object):
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
-            try:
-                poster = self._getPersonForBugTracker(
-                    bug_watch.bugtracker, displayname, email,
-                    PersonCreationRationale.BUGIMPORT,
-                    "when importing comments for %s." % bug_watch.title)
-            except InvalidRemotePerson, error:
-                # If the remote person is invalid we log the error and
-                # then give up on this comment. We don't let one invalid
-                # remote person break all our comment imports.
+            if displayname is None and email is None:
+                # If we don't have a displayname or an email address
+                # then we can't create a Launchpad Person as the author
+                # of this comment. We raise an OOPS and continue.
                 self.warning(
-                    "Invalid remote person in imported comment.",
+                    "Unable to import remote comment author. No email "
+                    "address or display name found.",
                     self._getOOPSProperties(external_bugtracker),
                     sys.exc_info())
-            else:
-                comment_message = external_bugtracker.getMessageForComment(
-                    bug_watch, comment_id, poster)
+                continue
 
-                bug_watch.addComment(comment_id, comment_message)
-                imported_comments += 1
+            poster = self._getPersonForBugTracker(
+                bug_watch.bugtracker, displayname, email,
+                PersonCreationRationale.BUGIMPORT,
+                "when importing comments for %s." % bug_watch.title)
+
+            comment_message = external_bugtracker.getMessageForComment(
+                bug_watch, comment_id, poster)
+
+            bug_watch.addComment(comment_id, comment_message)
+            imported_comments += 1
 
         if imported_comments > 0:
             self.log.info("Imported %(count)i comments for remote bug "

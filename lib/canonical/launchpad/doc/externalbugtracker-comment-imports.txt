@@ -203,7 +203,8 @@ imported.
     ...     "This will not be imported.")
 
     >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
-    WARNING:...:Invalid remote person in imported comment.
+    WARNING:...:Unable to import remote comment author. No email address
+    or display name found.
 
     >>> print bug.messages[-1].text_contents
     Yet another comment.
@@ -284,19 +285,6 @@ A BugTrackerPerson record will have been created to map
 
     >>> bugtracker_person.person == noemail_person
     True
-
-However, if a person with no email or name is passed to
-_getPersonForBugTracker() an error will be raised.
-
-    >>> bugwatch_updater._getPersonForBugTracker(
-    ...     bugtracker=bug_watch.bugtracker, display_name=None,
-    ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
-    ...     creation_comment='whilst testing _getPersonForBugTracker().')
-    Traceback (most recent call last):
-      ...
-    InvalidRemotePerson: Either an email address or a display_name must be
-    specified in order to create a new Person.
-
 
 
 == BugWatch comment importing functionality ==
