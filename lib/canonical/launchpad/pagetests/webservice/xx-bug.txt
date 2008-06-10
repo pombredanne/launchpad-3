@@ -34,7 +34,7 @@ At the top level we provide a collection of bugs.
    (u'owner_link', u'http://api.launchpad.dev/beta/~name16'),
    (u'permits_expiration', False),
    (u'private', False),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugEntry'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugEntryAdapter'),
    (u'security_related', False),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/11'),
    (u'tags', []),

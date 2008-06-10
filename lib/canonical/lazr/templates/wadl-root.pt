@@ -72,7 +72,7 @@
           Human-readable documentation for the method.
         </wadl:doc>
         <request>
-          <param style="query" name="ws_op" required="true"
+          <param style="query" name="ws.op" required="true"
                  tal:attributes="fixed operation/name">
             <doc>The name of the operation being invoked.</doc>
           </param>
@@ -140,7 +140,7 @@
              xmlns="http://www.w3.org/1999/xhtml/">
         </wadl:doc>
         <request>
-          <param style="query" name="ws_op" required="true"
+          <param style="query" name="ws.op" required="true"
                  tal:attributes="fixed operation/name" />
           <param style="query" tal:repeat="field operation/op/params"
                  tal:attributes="name field/__name__;

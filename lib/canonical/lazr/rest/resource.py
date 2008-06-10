@@ -15,7 +15,6 @@ __all__ = [
     'RESTUtilityBase',
     'ScopedCollection',
     'ServiceRootResource',
-    'URLDereferencingMixin',
     'WADL_SCHEMA_FILE',
     ]
 
