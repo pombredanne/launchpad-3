@@ -46,10 +46,14 @@ class Entry:
             super(Entry, self).__setattr__(name, value)
 
     def __getattr__(self, name):
-        if name in self._attributes:
+        # All normal attribute access bypasses __getattr__(), so the only
+        # attributes that need special treatment are the web service ones.
+        # We just need to turn missing attributes into AttributeErrors instead
+        # of KeyErrors.
+        try:
             return self._attributes[name]
-        else:
-            return super(Entry, self).__getattr__(name)
+        except KeyError:
+            raise AttributeError(name)
 
     def save(self):
         representation = {}

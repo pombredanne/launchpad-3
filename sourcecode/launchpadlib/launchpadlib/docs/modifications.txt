@@ -24,3 +24,18 @@ Once the changes are saved though, they are saved on the web service.
     >>> salgado.save()
     >>> launchpad.people.get('salgado').display_name
     u'Salgado'
+
+The person object is a normal Python object like any other.  You can set any
+attribute on the object, but if it doesn't correspond to a web services
+object, it won't be persistent.
+
+    >>> salgado.display_name = u'Guilherme Salgado'
+    >>> salgado.is_great = True
+    >>> salgado.save()
+    >>> salgado = launchpad.people.get('salgado')
+    >>> salgado.display_name
+    u'Guilherme Salgado'
+    >>> salgado.is_great
+    Traceback (most recent call last):
+    ...
+    AttributeError: is_great
