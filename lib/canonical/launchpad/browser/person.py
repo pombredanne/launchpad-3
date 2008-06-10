@@ -1501,7 +1501,6 @@ class PersonRdfContentsView:
             decorated_member = PersonWithKeysAndPreferredEmail(member)
             members.append(decorated_member)
             members_by_id[member.id] = decorated_member
-        resources = set()
         sshkeyset = getUtility(ISSHKeySet)
         gpgkeyset = getUtility(IGPGKeySet)
         emailset = getUtility(IEmailAddressSet)

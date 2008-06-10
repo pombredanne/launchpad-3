@@ -3234,11 +3234,9 @@ class PersonSet:
                        if person.logoID is not None)
         aliases.extend(person.mugshotID for person in people
                        if person.mugshotID is not None)
-        # Listify, since this is a pure cache. The orderBy is just to avoid
-        # random()izing the results.
+        # Listify, since this is a pure cache.
         list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
-             % sqlvalues(aliases), prejoins=["content"],
-             orderBy=["LibraryFileAlias.id"]))
+             % sqlvalues(aliases), prejoins=["content"]))
 
 
 class PersonLanguage(SQLBase):
@@ -3382,3 +3380,4 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
+
