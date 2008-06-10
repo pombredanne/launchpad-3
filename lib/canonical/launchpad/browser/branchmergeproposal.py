@@ -309,9 +309,13 @@ class DecoratedCodeReviewVoteReference:
         important.
         """
         vote = self.context
+        if vote.reviewer != vote.registrant:
+            return _("Requested reviewer")
         target_branch = vote.branch_merge_proposal.target_branch
-        return (vote.reviewer.inTeam(target_branch.code_reviewer) or
-                vote.reviewer != vote.registrant)
+        if vote.reviewer.inTeam(target_branch.code_reviewer):
+            return _("Target branch reviewer")
+        else:
+            return None
 
     @property
     def date_of_comment(self):
