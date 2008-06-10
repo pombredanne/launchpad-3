@@ -55,8 +55,14 @@ class PackageLocation:
             title = self.archive.owner.name
         else:
             title = self.archive.title
-        return '%s: %s-%s' % (
+
+        result = '%s: %s-%s' % (
             title, self.distroseries.name, self.pocket.name)
+
+        if self.component is not None:
+            result += ' (%s)' % self.component.name
+
+        return result
 
 
 class PackageLocationError(Exception):

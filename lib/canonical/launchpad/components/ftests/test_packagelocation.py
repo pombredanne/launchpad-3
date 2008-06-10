@@ -136,6 +136,13 @@ class TestPackageLocation(unittest.TestCase):
         self.assertEqual(str(location_ubuntu_hoary),
                          'Primary Archive for Ubuntu Linux: hoary-RELEASE')
 
+        universe = getUtility(IComponentSet)['universe']
+        location_ubuntu_hoary.component = universe
+
+        self.assertEqual(
+            str(location_ubuntu_hoary),
+            'Primary Archive for Ubuntu Linux: hoary-RELEASE (universe)')
+
         location_ubuntu_warty_security = self.getPackageLocation(
             suite='warty-security')
         self.assertEqual(str(location_ubuntu_warty_security),
