@@ -106,3 +106,14 @@ a period would give four.)
     ...:
     I like this...
     (full message)
+
+
+== Vote summaries ==
+
+The summary of the votes that have been made for a code review are shown
+in a table at the top of the page.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     nopriv_browser.contents, 'code-review-votes'))
+    Status    Reviewed by            Date
+    Abstain   No Privileges Person   ...second...ago
