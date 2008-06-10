@@ -677,32 +677,26 @@ class QuestionSet:
             if package.distribution == distribution]
         package_name_ids = [
             package.sourcepackagename.id for package in packages]
+        open_statuses = [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO]
 
-        open_question_cond = (
-            'Question.status %s' % search_value_to_where_condition(
-                any(QuestionStatus.OPEN, QuestionStatus.NEEDSINFO)))
-
-        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
-        sums = [
-            sum_template % (open_question_cond, 'open_questions'),
-            ]
-
-        conditions = [
-            open_question_cond,
-            'Question.sourcepackagename IN %s' % sqlvalues(package_name_ids),
-            'Question.distribution = %s' % sqlvalues(distribution),
-            ]
         query = """
             SELECT Question.distribution,
                    Question.sourcepackagename,
-                   %(sums)s
+                   SUM(CASE WHEN Question.status IN %(open_statuses)s
+                            THEN 1 ELSE 0 END)
+                        AS open_questions
             FROM Question
-            WHERE %(conditions)s
+            WHERE Question.status IN %(open_statuses)s
+                AND Question.sourcepackagename IN %(package_names)s
+                AND Question.distribution = %(distribution)s
             GROUP BY Question.distribution, Question.sourcepackagename
-            """
+            """ % sqlvalues(
+                open_statuses=open_statuses,
+                package_names=package_name_ids,
+                distribution=distribution,
+                )
         cur = cursor()
-        cur.execute(query % dict(
-            sums=', '.join(sums), conditions=' AND '.join(conditions)))
+        cur.execute(query)
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_questions = set()
         counts = []
