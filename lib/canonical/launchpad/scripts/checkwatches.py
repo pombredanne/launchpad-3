@@ -595,8 +595,15 @@ class BugWatchUpdater(object):
         # Generate a valid Launchpad name for the Person.
         canonical_name = (
             "%s-%s" % (sanitize_name(name), bugtracker.name))
-        person = getUtility(IPersonSet).ensurePersonWithoutEmail(
-            canonical_name, name, rationale, creation_comment)
+        index = 1
+        person_set = getUtility(IPersonSet)
+        while person_set.getByName(
+            "%s-%d" % (canonical_name, index)) is not None:
+            index += 1
+
+        person = person_set.createPersonWithoutEmail(
+            "%s-%d" % (canonical_name, index), rationale, creation_comment,
+            displayname=name)
 
         # Link the Person to the bugtracker for future reference.
         bugtracker_person = bugtracker_person_set.linkPersonToBugTracker(
