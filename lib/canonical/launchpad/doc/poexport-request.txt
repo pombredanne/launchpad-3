@@ -1,4 +1,4 @@
-= Rosetta PO Export Request Queue =
+= Translation Export Request Queue =
 
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
@@ -82,8 +82,8 @@ The user receives a confirmation email.
     >
     > Hello Mark Shuttleworth,
     >
-    > The files you requested from Rosetta are ready for download
-    > from the following location:
+    > The translation files you requested from Launchpad are ready for
+    > download from the following location:
     >
     >     http://localhost:58000/.../launchpad-export.tar.gz
 
@@ -199,8 +199,8 @@ Let's try requesting an export in MO format:
     > 
     > Hello Mark Shuttleworth,
     > 
-    > The files you requested from Rosetta are ready for download
-    > from the following location:
+    > The translation files you requested from Launchpad are ready for
+    > download from the following location:
     > 
     >     http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
     >>> url = extract_url(body)
