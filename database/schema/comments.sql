@@ -1395,7 +1395,8 @@ COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line 
 COMMENT ON COLUMN Build.archive IS 'Targeted archive for this build.';
 COMMENT ON COLUMN Build.estimated_build_duration IS 'How long does the previous attempt to build this source took in this architecture.';
 COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provided by the builder while building this job.';
-
+COMMENT ON COLUMN Build.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN Build.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the binaries resulted from this build.';
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
