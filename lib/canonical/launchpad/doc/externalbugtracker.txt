@@ -511,7 +511,7 @@ First, we need a tree to document.
 
 The customized LookupTree instance has a method to generate a MoinMoin
 compatible table that describes the paths through the tree. The result
-is always assumed to be a BugTaskStatus.
+is always assumed to be a member of `BugTaskStatus`.
 
   >>> for line in tree.moinmoin_table():
   ...     print line
@@ -526,8 +526,7 @@ is always assumed to be a BugTaskStatus.
   || UNCONFIRMED || - (''ignored'') || New ||
   || * (''any'') || - (''ignored'') || Unknown ||
 
-
-You can also provide titles for the table.
+Titles can also be provided for the table.
 
   >>> titles = ('Status', 'Resolution', 'LP status')
   >>> for line in tree.moinmoin_table(titles):
