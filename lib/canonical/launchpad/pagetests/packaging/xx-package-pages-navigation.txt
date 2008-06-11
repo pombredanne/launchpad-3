@@ -71,6 +71,8 @@ source package.
 
 A distribution source package release build should have almost the same
 navigation as its parent distribution source package release.
+XXX 20080611 mpt: A build probably should belong to a distribution *series*
+source package release, but that's more than I can chew off for now.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11')
@@ -85,14 +87,7 @@ navigation as its parent distribution source package release.
     * Blueprints (Not active)
     * Translations (Not active)
     * Answers (http://answers.launchpad.dev/ubuntu/+source/alsa-utils)
-    Main heading: i386 build in Ubuntu Hoary
-
-But the heading should be preceded by a link back to the distribution
-source package release.
-
-    >>> anon_browser.getLink('"alsa-utils" 1.0.9a-4ubuntu1').click()
-    >>> print anon_browser.url
-    http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1
+    Main heading: i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
 
 
 == Distribution series source package ==

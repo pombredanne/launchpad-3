@@ -370,7 +370,7 @@ build_buildlog = ContextTitle('Build log for %s')
 
 build_changes = ContextTitle('Changes in %s')
 
-build_index = ContextTitle('Build details for %s')
+build_index = ContextTitle('%s')
 
 build_retry = ContextTitle('Retry %s')
 
