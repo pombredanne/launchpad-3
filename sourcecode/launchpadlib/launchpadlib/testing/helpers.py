@@ -5,7 +5,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'Launchpad',
+    'nopriv_read_nonprivate',
+    'salgado_change_anything',
+    'salgado_read_nonprivate',
     ]
 
 
