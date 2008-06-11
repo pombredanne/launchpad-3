@@ -27,7 +27,7 @@ class ITranslationRelicensingAgreement(Interface):
     # Title of this field appears in the web form, thus it's
     # oriented more towards being a useful UI than being a docstring.
     allow_relicensing = Bool(
-        title=_("Relicense my translations under BSD license"),
+        title=_("License all my translations under BSD license"),
         readonly=False, default=True, required=True)
 
     date_decided = Datetime(
