@@ -41,9 +41,25 @@ __all__ = [
 from cgi import escape
 from datetime import timedelta
 import re
-from zope.interface import implements, Interface, Attribute
 
+from bzrlib.branch import (
+    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
+    BzrBranchFormat6)
+from bzrlib.bzrdir import (
+    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
+from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
+    RepositoryFormatKnit3, RepositoryFormatKnit4)
+from bzrlib.repofmt.pack_repo import (
+    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
+    RepositoryFormatPackDevelopment0Subtree)
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
+    RepositoryFormat7)
 from zope.component import getUtility
+from zope.interface import implements, Interface, Attribute
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
@@ -57,22 +73,6 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
-from bzrlib.branch import (
-    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6)
-from bzrlib.plugins.loom.branch import (
-    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
-from bzrlib.bzrdir import (
-    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
-from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
-    RepositoryFormatKnit3, RepositoryFormatKnit4)
-from bzrlib.repofmt.pack_repo import (
-    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
-    RepositoryFormatPackDevelopment0Subtree)
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
-    RepositoryFormat7)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -193,6 +193,8 @@ class BranchFormat(DBEnumeratedType):
 
 class RepositoryFormat(DBEnumeratedType):
 
+    # Repository formats prior to format 7 had no marker because they
+    # were implied by the control directory format.
     BZR_REPOSITORY_4 = _branch_format_enum(
         4, RepositoryFormat4, 'Fake Bazaar repository 4 marker')
 

@@ -4,10 +4,11 @@
 
 __metaclass__ = type
 
+from unittest import TestCase, TestLoader
+
 from bzrlib.branch import BranchFormat as BzrBranchFormat
 from bzrlib.bzrdir import BzrDirFormat
 from bzrlib.repository import format_registry as repo_format_registry
-from unittest import TestCase, TestLoader
 
 from canonical.launchpad.interfaces import (
     BranchFormat, ControlFormat, RepositoryFormat)
