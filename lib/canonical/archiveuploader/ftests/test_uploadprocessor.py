@@ -451,10 +451,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             policy='anything')
 
         # Fudge the partner archive in the sample data temporarily so that
-        # it's now an embargoed archive instead.
+        # it's now a PPA instead.
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution=self.ubuntu, purpose=ArchivePurpose.PARTNER)
-        removeSecurityProxy(archive).purpose = ArchivePurpose.EMBARGOED
+        removeSecurityProxy(archive).purpose = ArchivePurpose.PPA
 
         self.layer.txn.commit()
 
