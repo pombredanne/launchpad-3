@@ -1008,6 +1008,8 @@ class TestScanFormatWeave(BzrSyncTestCase):
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(self.db_branch.branch_format,
                          BranchFormat.BZR_BRANCH_4)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.BZR_REPOSITORY_6)
         self.assertEqual(self.db_branch.control_format,
                          ControlFormat.BZR_DIR_6)
 

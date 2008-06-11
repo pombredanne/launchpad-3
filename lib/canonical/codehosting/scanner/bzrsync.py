@@ -21,6 +21,8 @@ from bzrlib.diff import show_diff_trees
 from bzrlib.errors import NoSuchRevision
 from bzrlib.log import log_formatter, show_log
 from bzrlib.revision import NULL_REVISION
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6)
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -434,10 +436,16 @@ class BzrSync:
         control_string = bzr_branch.bzrdir._format.get_format_string()
         if bzr_branch._format.__class__ is BzrBranchFormat4:
             branch_string = BranchFormat.BZR_BRANCH_4.title
-            repository_string = control_string
         else:
             branch_string = bzr_branch._format.get_format_string()
-            repository_format = bzr_branch.repository._format
+        repository_format = bzr_branch.repository._format
+        if repository_format.__class__ is RepositoryFormat6:
+            repository_string = RepositoryFormat.BZR_REPOSITORY_6.title
+        elif repository_format.__class__ is RepositoryFormat5:
+            repository_string = RepositoryFormat.BZR_REPOSITORY_5.title
+        elif repository_format.__class__ is RepositoryFormat4:
+            repository_string = RepositoryFormat.BZR_REPOSITORY_4.title
+        else:
             repository_string = repository_format.get_format_string()
         self.db_branch.control_format = match_title(
             ControlFormat, control_string)
