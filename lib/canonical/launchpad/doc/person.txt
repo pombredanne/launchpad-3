@@ -863,6 +863,27 @@ maintainer got omitted from the results:
     (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
 
 
+== Packages a Person is subscribed to ==
+
+IPerson.getBugSubscriberPackages returns this list of packages, sorted
+alphabetically by package name.
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> pmount = ubuntu.getSourcePackage('pmount')
+    >>> pmount.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+    >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> mozilla_firefox.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+
+    >>> [package.name for package in no_priv.getBugSubscriberPackages()]
+    [u'mozilla-firefox', u'pmount']
+
+
 == Pillars owned or driven by a person or team ==
 
 To obtain all distributions, project groups and projects owned or driven by a
@@ -1162,7 +1183,6 @@ Reset firefox so we don't mess up later tests.
 We can ascertain whether a person has uploader rights to a distribution
 or not.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov.isUploader(ubuntu)

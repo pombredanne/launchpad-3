@@ -683,6 +683,52 @@ So it's hidden initially, and then revealed if JavaScript is available.
   padding-top: 10px;
 }
 
+/*
+Inline help is different from the pop-out help panel. It is contained in
+a <div> and dynamically positioned by JavaScript.
+*/
+#help-pane {
+  position: absolute;
+  border: 5px solid black;
+  padding: 10px;
+  z-index: 3000;  /* This should appear above all other content. */
+  background-color: #fff;
+  width: 25em;
+}
+/* We want the hidden pane to have dimensions so that we can position the
+frame with them.  This works because the element an absolute position, taking
+it out of the page flow. */
+#help-pane.invisible {
+    position: absolute;
+    visibility: hidden;
+    display: block;
+    left: 0px;
+    top: 0px;
+}
+
+#help-body {
+    background: url(spinner.gif) no-repeat center center;
+}
+#help-pane iframe {
+    width: 100%;
+    height: 18em;
+}
+#help-pane iframe.invisible {
+    visibility: hidden;
+    display: block;
+}
+#help-footer {
+  padding: 3px;
+  border-top: 1px solid #ddd;
+  text-align: right;
+}
+#help-footer button {
+  margin-bottom: 10px;
+  margin-top: 3px;
+}
+
+span.help {font-weight: normal;}
+
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
