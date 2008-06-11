@@ -19,7 +19,7 @@ from twisted.web import xmlrpc
 
 # cprov 20080611: in python2.4 posixfile.SEEK_END is deprecated and our
 # importfascist-check denies its import. When we migrate to python2.5,
-# we can use os.SEEK_END.
+# we can use os.SEEK_END. See bug #239213.
 SEEK_END = 2
 
 devnull = open("/dev/null", "r")
@@ -29,7 +29,7 @@ def _sanitizeURLs(text_seq):
     """A generator that deletes URL passwords from a string sequence.
 
     This generator removes user/password data from URLs if embedded
-    in the latter as follows: scheme://user:passwd@netloc/path. 
+    in the latter as follows: scheme://user:passwd@netloc/path.
 
     :param text_seq: A sequence of strings (that may contain URLs).
     :return: A (sanitized) line stripped of authentication credentials.
