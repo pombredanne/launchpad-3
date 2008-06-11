@@ -421,8 +421,8 @@ there are no binaries to be copied.
     The following source cannot be copied: pmount 0.1-1 in hoary
     (source not completely built while copying binaries)
 
-We will marke the pmount build completed, to emulate the situation
-when described in bug #236407 when binaries were built but have to
+We will mark the pmount build completed, to emulate the situation
+described in bug #236407 when binaries were built but have to
 wait until the next publishing cycle to be published in the archive.
 
     >>> login('foo.bar@canonical.com')
@@ -436,9 +436,12 @@ wait until the next publishing cycle to be published in the archive.
     >>> flush_database_updates()
     >>> logout()
 
-In such situations, the copy is also denied, because it will also
-trigger a rebuild within the same archive, since no binaries can be
-copied.
+In such situations the copy is also denied because build records would
+be created for the copied source records that have no published
+binaries. This then would cause problems where the previous binaries
+get published and the new ones (with the same version but different
+timestamps) show up. The new builds will stick in failed-to-upload
+state because the binaries can't be published in the PPA.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -452,8 +455,8 @@ copied.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (source has unpublished binaries, wait the next publishing cycle
-     to copy them.)
+    (source has unpublished binaries, please wait for them
+     to be published before copying)
 
 We will build and publish the architecture independent binary for
 pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.

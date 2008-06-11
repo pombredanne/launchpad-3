@@ -268,21 +268,21 @@ def check_archive_conflicts(source, archive, include_binaries):
             raise CannotCopy(
                 "binaries conflicting with the existing ones")
     else:
-        # If no binaries are published in the archive, but there is,
+        # If no binaries are published in the archive, but there is
         # at least one FULLYBUILT build record, it means that the binaries
         # were built but will be only published in the next publishing cycle.
-        # The copy should be denied and the user should wait the next
-        # publishing cycle happen to copy the package. The copy is only
-        # allowed when there is no published binaries, neither FULLYBUILT
-        # builds, because this way there is no chance of conflict.
+        # The copy should be denied and the user should wait for the next
+        # publishing cycle to happen before copying the package.
+        # The copy is only allowed when the binaries are published, or if not
+        # published there must be no FULLYBUILT builds. This way there is no
+        # chance of a conflict.
         fullybuilt_builds = [
             build for build in source.getBuilds()
             if build.buildstate == BuildStatus.FULLYBUILT]
         if len(fullybuilt_builds) > 0:
             raise CannotCopy(
-                "source has unpublished binaries, wait the next publishing "
-                "cycle to copy them.")
-
+                "source has unpublished binaries, please wait for them "
+                "to be published before copying")
 
 def check_copy(source, archive, series, pocket, include_binaries):
     """Check if the source can be copied to the given location.
