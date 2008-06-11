@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005, 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
@@ -60,9 +60,17 @@ from canonical.lazr import (
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
     BzrBranchFormat6)
+from bzrlib.plugins.loom.branch import (
+    BzrBranchLoomFormat1, BzrBranchLoomFormat6)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
+from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
+    RepositoryFormatKnit3, RepositoryFormatKnit4)
+from bzrlib.repofmt.pack_repo import (
+    RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
+    RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
+    RepositoryFormatPackDevelopment0Subtree)
+from bzrlib.repofmt.weaverepo import RepositoryFormat7
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -170,14 +178,38 @@ class BranchFormat(DBEnumeratedType):
     BZR_BRANCH_4 = _branch_format_enum(
         4, BzrBranchFormat5, 'Fake Bazaar Branch 4 marker')
 
+    BRANCH_REFERENCE = _branch_format_enum(1, BranchReferenceFormat)
+
     BZR_BRANCH_5 = _branch_format_enum(5, BzrBranchFormat5)
 
     BZR_BRANCH_6 = _branch_format_enum(6, BzrBranchFormat6)
 
+    BZR_LOOM_1 = _branch_format_enum(101, BzrBranchLoomFormat1)
+
+    BZR_LOOM_2 = _branch_format_enum(106, BzrBranchLoomFormat6)
+
 
 class RepositoryFormat(DBEnumeratedType):
 
-    BZR_KNITPACK_1 = _branch_format_enum(1, RepositoryFormatKnitPack1)
+    BZR_REPOSITORY_7 = _branch_format_enum(7, RepositoryFormat7)
+
+    BZR_KNIT_1 = _branch_format_enum(101, RepositoryFormatKnit1)
+
+    BZR_KNIT_3 = _branch_format_enum(103, RepositoryFormatKnit3)
+
+    BZR_KNIT_4 = _branch_format_enum(104, RepositoryFormatKnit4)
+
+    BZR_KNITPACK_1 = _branch_format_enum(201, RepositoryFormatKnitPack1)
+
+    BZR_KNITPACK_3 = _branch_format_enum(203, RepositoryFormatKnitPack3)
+
+    BZR_KNITPACK_4 = _branch_format_enum(204, RepositoryFormatKnitPack4)
+
+    BZR_PACK_DEV_0 = _branch_format_enum(
+        300, RepositoryFormatPackDevelopment0)
+
+    BZR_PACK_DEV_0_SUBTREE = _branch_format_enum(
+        301, RepositoryFormatPackDevelopment0Subtree)
 
 
 class ControlFormat(DBEnumeratedType):
