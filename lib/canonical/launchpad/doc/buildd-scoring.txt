@@ -213,7 +213,7 @@ Moving up to the UPDATES pocket will bump the score up by another 1500.
     >>> bqa.lastscore
     5515
 
-Finally, placing the build in the SECURITY pocket will push its score
+Placing the build in the SECURITY pocket will push its score
 up by another 1500.
 
     >>> bqb = setUpBuildQueueEntry(
@@ -221,3 +221,24 @@ up by another 1500.
     >>> bqb.score()
     >>> bqb.lastscore
     7015
+
+This is the lowest score "normal" build job possible (lowest pocket:
+proposed, lowest component: multiverse, lowest urgency and less than
+5 minutes spent in the queue).
+
+    >>> bq_low = setUpBuildQueueEntry(
+    ...     component_name='multiverse', urgency=SourcePackageUrgency.LOW,
+    ...     pocket=PackagePublishingPocket.PROPOSED)
+    >>> bq_low.score()
+    >>> bq_low.lastscore
+    5
+
+Builds in rebuild archives should have a score above zero but lower than
+the score of build jobs tied to non-rebuild archives.
+
+    >>> from canonical.launchpad.interfaces import ArchivePurpose
+    >>> bqc = setUpBuildQueueEntry()
+    >>> bqc.build.archive.purpose = ArchivePurpose.REBUILD
+    >>> bqc.score()
+    >>> 0 < bqc.lastscore < bq_low.lastscore
+    True

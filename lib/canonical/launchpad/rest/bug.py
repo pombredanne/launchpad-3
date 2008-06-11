@@ -9,7 +9,6 @@ __all__ = [
 
 from canonical.lazr.interfaces.rest import IEntry
 
-
 def bugcomment_to_entry(comment):
     """Will adapt to the bugcomment to the real IMessage.
 
