@@ -20,7 +20,7 @@ First we mark a bug as private:
 
     >>> print find_tag_by_id(
     ...     admin_browser.contents, 'big-badges').img['title']
-    This bug report was made private by Foo Bar ... ago
+    Private
 
 Next we mark another bug as a duplicate of the private bug:
 
