@@ -430,7 +430,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = exported(
-        Int(title=_('Karma'), readonly=False,
+        Int(title=_('Karma'), readonly=True,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,

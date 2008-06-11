@@ -65,3 +65,39 @@ And it's just as easy to move him back to the old name.
     None
     >>> launchpad.people.get('salgado').display_name
     u'Guilherme Salgado'
+
+
+== Read-only attributes ==
+
+Some attributes are read-only, such as a person's karma.
+
+    >>> salgado.karma
+    0
+    >>> salgado.karma = 1000000
+    >>> salgado.save()
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 400: Bad Request
+
+The exception has some interesting details about the error.
+
+    >>> from launchpadlib.errors import HTTPError
+    >>> def print_error_on_save(entry):
+    ...     try:
+    ...         entry.save()
+    ...     except HTTPError, error:
+    ...         pass
+    ...     print error.content
+
+    >>> print_error_on_save(salgado)
+    karma: You tried to modify a read-only attribute.
+
+You also get useful information if you try to change several read-only
+attributes.
+
+    >>> salgado.date_created = u'2003-06-06T08:59:51.596025+00:00'
+    >>> salgado.is_team = True
+    >>> print_error_on_save(salgado)
+    is_team: You tried to modify a read-only attribute.
+    date_created: You tried to modify a read-only attribute.
+    karma: You tried to modify a read-only attribute.
