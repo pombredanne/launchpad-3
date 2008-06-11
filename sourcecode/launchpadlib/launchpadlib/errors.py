@@ -7,6 +7,8 @@ __all__ = [
     'CredentialsError',
     'CredentialsFileError',
     'LaunchpadError',
+    'ResponseError',
+    'UnexpectedResponseError',
     ]
 
 
@@ -20,3 +22,27 @@ class CredentialsError(LaunchpadError):
 
 class CredentialsFileError(CredentialsError):
     """Error in credentials file."""
+
+
+class ResponseError(LaunchpadError):
+    """Error in response."""
+
+    def __init__(self, response, content):
+        LaunchpadError.__init__(self)
+        self.response = response
+        self.content = content
+
+
+class UnexpectedResponseError(ResponseError):
+    """An unexpected response was received."""
+
+    def __str__(self):
+        return '%s: %s' % (self.response.status, self.response.reason)
+
+
+class HTTPError(ResponseError):
+    """An HTTP non-2xx response code was received."""
+
+    def __str__(self):
+        return 'HTTP Error %s: %s' % (
+            self.response.status, self.response.reason)
