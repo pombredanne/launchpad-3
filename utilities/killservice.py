@@ -12,7 +12,7 @@ import os, logging
 from signal import SIGTERM
 from optparse import OptionParser
 from canonical.config import config
-from canonical.pidfile import pidfile_path
+from canonical.pidfile import get_pid, pidfile_path, remove_pidfile
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.mailman.runmailman import stop_mailman
 
@@ -29,25 +29,22 @@ if __name__ == '__main__':
         if service == 'mailman' and config.mailman.launch:
             stop_mailman()
             continue
-        pidfile = pidfile_path(service)
-        log.debug("PID file is %s", pidfile)
-        if os.path.exists(pidfile):
-            pid = open(pidfile).read()
+        log.debug("PID file is %s", pidfile_path(service))
+        try:
+            pid = get_pid(service)
+        except ValueError, error:
+            log.error(error)
+            continue
+        if pid is not None:
+            log.info("Killing %s (%d)", service, pid)
             try:
-                pid = int(pid)
-            except ValueError:
-                log.error("Badly formatted PID in %s (%r)", pidfile, pid)
-            else:
-                log.info("Killing %s (%d)", service, pid)
-                try:
-                    os.kill(pid, SIGTERM)
-                except OSError, x:
-                    log.error("Unable to kill %s (%d) - %s",
-                            service, pid, x.strerror)
-                try:
-                    os.unlink(pidfile)
-                except OSError:
-                    pass
+                os.kill(pid, SIGTERM)
+            except OSError, x:
+                log.error("Unable to kill %s (%d) - %s",
+                          service, pid, x.strerror)
+            try:
+                remove_pidfile(service)
+            except OSError:
+                pass
         else:
             log.debug("No PID file for %s", service)
-

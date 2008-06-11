@@ -219,16 +219,6 @@ created if done through the web UI, so we'll add nopriv here.
     >>> code_import.approve({}, nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
-    To: david.allouche@canonical.com, foo.bar@canonical.com,
-        robertc@robertcollins.net
-    Subject: Code import product.../name... status: Reviewed
-    <BLANKLINE>
-    The import has been approved and an import will start shortly.
-    --
-    http://code.launchpad.dev/~vcs-imports/product.../name...
-    You are getting this email because you are a member of the vcs-imports team.
-    ----------------------------------------
-    From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
@@ -246,30 +236,22 @@ invalidated.
     >>> code_import.suspend({}, nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
-    To: david.allouche@canonical.com, foo.bar@canonical.com,
-        robertc@robertcollins.net
+    To: no-priv@canonical.com
     Subject: Code import product.../name... status: Suspended
     <BLANKLINE>
     The import has been suspended.
     ...
     ----------------------------------------
-    ...
-    To: no-priv@canonical.com
-    ...
 
     >>> code_import.invalidate({}, nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
-    To: david.allouche@canonical.com, foo.bar@canonical.com,
-        robertc@robertcollins.net
+    To: no-priv@canonical.com
     Subject: Code import product-name6/name11 status: Invalid
     <BLANKLINE>
     The import has been marked as invalid.
     ...
     ----------------------------------------
-    ...
-    To: no-priv@canonical.com
-    ...
 
 
 == Update intervals ==

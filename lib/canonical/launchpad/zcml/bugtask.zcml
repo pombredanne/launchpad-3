@@ -41,7 +41,7 @@
                         asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
                         conjoined_master conjoined_slave subscribe
-                        getConjoinedMaster" />
+                        getConjoinedMaster getBugTasksByPackageName" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs

@@ -526,7 +526,7 @@ def _cleanTeamParticipation(member, team):
     _cleanTeamParticipation() to make sure the member is actually removed from
     the given team and its superteams.
     """
-    for subteam in team.getSubTeams():
+    for subteam in team.sub_teams:
         if member.hasParticipationEntryFor(subteam) and member != subteam:
             # This is an indirect member of the given team, so we must not
             # remove his participation entry for that team or any of its
@@ -538,7 +538,7 @@ def _cleanTeamParticipation(member, team):
     active_states = "%s,%s" % sqlvalues(
         TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN)
     member_team_and_subteams = itertools.chain(
-        [member, team], member.getSubTeams())
+        [member, team], member.sub_teams)
     member_team_and_subteams_ids = ",".join(
         str(person.id) for person in member_team_and_subteams)
     query = """
@@ -581,7 +581,7 @@ def _cleanTeamParticipation(member, team):
     # Now we remove the member (and its members, if they exist) from each
     # superteam of the given team, but only if there are no other paths from
     # the member to the team and if he's not a direct member of the team.
-    superteams = list(team.getSuperTeams())
+    superteams = list(team.super_teams)
     if len(superteams) == 0:
         return
 
@@ -645,6 +645,6 @@ def _fillTeamParticipation(member, team):
         members.extend(member.allmembers)
 
     for m in members:
-        for t in itertools.chain(team.getSuperTeams(), [team]):
+        for t in itertools.chain(team.super_teams, [team]):
             if not m.hasParticipationEntryFor(t):
                 TeamParticipation(person=m, team=t)

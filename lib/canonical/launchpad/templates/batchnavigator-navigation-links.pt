@@ -32,6 +32,7 @@
           tal:condition="not:first_page_url"
           class="unavailable"
         >&laquo;&nbsp;First</span>
+
         <tal:previous condition="prev_page_url">
           &mdash;
           <a tal:attributes="href prev_page_url" rel="previous"
@@ -41,13 +42,7 @@
           tal:condition="not:prev_page_url"
           class="unavailable"
         >&mdash; Previous</span>
-        <tal:intermediaries repeat="page_url context/batchPageURLs">
-          <a
-            tal:condition="python:len(page_url) > 1"
-            tal:content="python:page_url.keys()[0]"
-            tal:attributes="href python:page_url.values()[0]"
-          >[1]</a>
-        </tal:intermediaries>
+
         <tal:next condition="next_page_url">
           &mdash;
           <a tal:attributes="href next_page_url" rel="next"
@@ -57,6 +52,7 @@
           tal:condition="not:next_page_url"
           class="unavailable"
         >&mdash; Next</span>
+
         <tal:last_link condition="context/show_last_link|default">
           <tal:last condition="last_page_url">
             &mdash;

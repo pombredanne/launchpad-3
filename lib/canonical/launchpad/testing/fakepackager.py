@@ -262,7 +262,7 @@ class FakePackager:
         Build a upload policy with the given name and override it with
         archive, distribution_name and suite if passed.
 
-        Return a `IPackageUpload` object in DONE state.
+        Return the corresponding `NascentUpload` object.
         """
         changesfile_path = self._getChangefilePathForVersion(version, type)
         assert changesfile_path is not None, (
@@ -278,23 +278,9 @@ class FakePackager:
             policy.setDistroSeriesAndPocket(suite)
 
         upload = NascentUpload(changesfile_path, policy, logger)
-
         upload.process()
 
-        assert not upload.is_rejected, (
-            "Upload was rejected: %s" % upload.rejection_message)
-
-        upload.do_accept(notify=notify)
-
-        queue = upload.queue_root
-        needs_acceptance_statuses = (
-            PackageUploadStatus.NEW,
-            PackageUploadStatus.UNAPPROVED,
-            )
-        if queue.status in needs_acceptance_statuses:
-            queue.acceptFromUploader(changesfile_path, logger)
-
-        return queue
+        return upload
 
     def buildUpstream(self, suite='hoary', section=None, arch=None,
                       build_orig=True):
@@ -324,7 +310,7 @@ class FakePackager:
 
         first_version = '%s-1' % self.version
         self.buildVersion(
-            first_version, suite=suite, section=section,
+            first_version, suite=suite, section=section, arch=arch,
             changelog_text='Initial Upstream package')
 
     def buildVersion(self, version, changelog_text="nicht !",
@@ -396,21 +382,42 @@ class FakePackager:
 
     def uploadSourceVersion(self, version, policy='insecure', archive=None,
                             distribution_name='ubuntu', suite=None,
-                            logger=None, notify=False):
+                            logger=None, notify=False, auto_accept=True):
         """Upload and publish a source package from the sandbox directory.
 
         See `_doUpload`.
 
-        Return the corresponding publishing record.
+        If 'auto_accept' is true, accept the upload if necessary and return
+        the corresponding `ISourcePackagePublishingHistory` record. Otherwise
+        return the corresponding `NascentUpload` object.
         """
         policy = findPolicyByName(policy)
 
         if logger is None:
             logger = QuietFakeLogger()
 
-        queue_record = self._doUpload(
+        upload = self._doUpload(
             'source', version, policy, archive, distribution_name, suite,
             logger, notify)
+
+        if not auto_accept:
+            return upload
+
+        if not upload.is_rejected:
+            upload.do_accept(notify=notify)
+
+        assert not upload.is_rejected, (
+            "Upload was rejected: %s" % upload.rejection_message)
+
+        queue_record = upload.queue_root
+        needs_acceptance_statuses = (
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.UNAPPROVED,
+            )
+        changesfile_path = self._getChangefilePathForVersion(
+            version, 'source')
+        if queue_record.status in needs_acceptance_statuses:
+            queue_record.acceptFromUploader(changesfile_path, logger)
 
         pub_record = queue_record.archive.getPublishedSources(
             name=self.name, version=version, exact_match=True)[0]

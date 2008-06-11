@@ -72,6 +72,10 @@ class TestBranchDeletion(TestCase):
         self.branch = BranchSet().new(
             BranchType.HOSTED, 'to-delete', self.user, self.user,
             self.product, None, 'A branch to delete')
+        # The owner of the branch is subscribed to the branch when it is
+        # created.  The tests here assume no initial connections, so
+        # unsubscribe the branch owner here.
+        self.branch.unsubscribe(self.branch.owner)
 
     def tearDown(self):
         logout()
@@ -213,6 +217,10 @@ class TestBranchDeletionConsequences(TestCase):
         self.factory = LaunchpadObjectFactory()
         self.branch = self.factory.makeBranch()
         self.branch_set = getUtility(IBranchSet)
+        # The owner of the branch is subscribed to the branch when it is
+        # created.  The tests here assume no initial connections, so
+        # unsubscribe the branch owner here.
+        self.branch.unsubscribe(self.branch.owner)
 
     def test_plainBranch(self):
         """Ensure that a fresh branch has no deletion requirements."""
@@ -223,6 +231,9 @@ class TestBranchDeletionConsequences(TestCase):
         target_branch = self.factory.makeBranch(product=self.branch.product)
         dependent_branch = self.factory.makeBranch(
             product=self.branch.product)
+        # Remove the implicit subscriptions.
+        target_branch.unsubscribe(target_branch.owner)
+        dependent_branch.unsubscribe(dependent_branch.owner)
         merge_proposal1 = self.branch.addLandingTarget(
             self.branch.owner, target_branch, dependent_branch)
         # Disable this merge proposal, to allow creating a new identical one
@@ -295,10 +306,12 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSubscriptionReqirements(self):
         """Deletion requirements for a branch with subscription are right."""
-        subscription = self.factory.makeBranchSubscription()
+        branch = self.factory.makeBranch()
+        subscription = branch.getSubscription(branch.owner)
+        self.assertTrue(subscription is not None)
         self.assertEqual({subscription:
             ('delete', _('This is a subscription to this branch.'))},
-                         subscription.branch.deletionRequirements())
+                         branch.deletionRequirements())
 
     def test_branchWithSubscriptionDeletion(self):
         """break_links allows deleting a branch with subscription."""
@@ -383,6 +396,8 @@ class TestBranchDeletionConsequences(TestCase):
     def test_branchWithCodeImportRequirements(self):
         """Deletion requirements for a code import branch are right"""
         code_import = self.factory.makeCodeImport()
+        # Remove the implicit branch subscription first.
+        code_import.branch.unsubscribe(code_import.branch.owner)
         self.assertEqual({code_import:
             ('delete', _('This is the import data for this branch.'))},
              code_import.branch.deletionRequirements())

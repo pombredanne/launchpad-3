@@ -41,9 +41,10 @@ from canonical.launchpad.interfaces import (
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
-    QueueInconsistentStateError, QueueStateWriteProtectedError,
-    QueueSourceAcceptError, SourcePackageFileType)
+    PackageUploadCustomFormat, pocketsuffix, NonBuildableSourceUploadError,
+    QueueBuildAcceptError, QueueInconsistentStateError,
+    QueueStateWriteProtectedError,QueueSourceAcceptError,
+    SourcePackageFileType)
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, simple_sendmail)
 from canonical.launchpad.scripts.processaccepted import (
@@ -216,6 +217,17 @@ class PackageUpload(SQLBase):
             self, changesfile_object=changesfile_object)
         changesfile_object.close()
 
+    def _validateBuildsForSource(self, sourcepackagerelease, builds):
+        """Check if the sourcepackagerelease generates at least one build.
+
+        :raise NonBuildableSourceUploadError: when the uploaded source
+            doesn't result in any builds in its targeted distroseries.
+        """
+        if len(builds) == 0:
+            raise NonBuildableSourceUploadError(
+                "Cannot build any of the architectures requested: %s" %
+                sourcepackagerelease.architecturehintlist)
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
         debug(logger, "Setting it to ACCEPTED")
@@ -232,7 +244,9 @@ class PackageUpload(SQLBase):
         [pub_source] = self.realiseUpload()
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, self.distroseries)
-        pub_source.createMissingBuilds(pas_verify=pas_verify, logger=logger)
+        builds = pub_source.createMissingBuilds(
+            pas_verify=pas_verify, logger=logger)
+        self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -248,7 +262,9 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            pub_source.createMissingBuilds()
+            builds = pub_source.createMissingBuilds()
+            self._validateBuildsForSource(
+                pub_source.sourcepackagerelease, builds)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
@@ -1059,15 +1075,19 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         primary_archive = self.packageupload.distroseries.main_archive
         release_pocket = PackagePublishingPocket.RELEASE
+        current_distroseries = self.packageupload.distroseries
         ancestry_locations = [
-            (self.packageupload.archive, self.packageupload.pocket),
-            (primary_archive, release_pocket),
+            (self.packageupload.archive, current_distroseries,
+             self.packageupload.pocket),
+            (primary_archive, current_distroseries, release_pocket),
+            (primary_archive, None, release_pocket),
             ]
 
         ancestry = None
-        for archive, pocket in ancestry_locations:
+        for archive, distroseries, pocket in ancestry_locations:
             ancestries = archive.getPublishedSources(
-                name=self.sourcepackagerelease.name, pocket=pocket,
+                name=self.sourcepackagerelease.name,
+                distroseries=distroseries, pocket=pocket,
                 exact_match=True)
             if ancestries.count() == 0:
                 continue

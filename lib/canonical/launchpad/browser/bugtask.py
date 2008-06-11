@@ -75,20 +75,35 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
-from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
-    BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
-    BugTaskStatusSearchDisplay, BugTrackerType, IBug, IBugAttachmentSet,
-    IBugBranchSet, IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch,
-    IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
-    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPerson, IPersonSet,
-    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
-    IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
-    IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugnomination import (
+    BugNominationStatus, IBugNominationSet)
+from canonical.launchpad.interfaces.bug import IBug, IBugSet
+from canonical.launchpad.interfaces.bugtask import (
+    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, BugTaskStatusSearchDisplay, IBugTask, IBugTaskSearch,
+    IBugTaskSet, ICreateQuestionFromBugTaskForm, IDistroBugTask,
+    IDistroSeriesBugTask, IFrontPageBugTaskSearch,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
+    IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
+    IUpstreamProductBugTaskSearch, RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.cve import ICveSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.validation import (
+    valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.searchbuilder import all, any, NULL
 
@@ -304,7 +319,7 @@ class BugTargetTraversalMixin:
         # anonymous user is presented with a login screen at the correct URL,
         # rather than making it look as though this task was "not found",
         # because it was filtered out by privacy-aware code.
-        for bugtask in helpers.shortlist(bug.bugtasks):
+        for bugtask in list(bug.bugtasks):
             if bugtask.target == context:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
@@ -2495,7 +2510,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         included in the returned results.
         """
         bug = self.context
-        bugtasks = helpers.shortlist(bug.bugtasks)
+        bugtasks = list(bug.bugtasks)
 
         upstream_tasks = [
             bugtask for bugtask in bugtasks
@@ -2521,8 +2536,15 @@ class BugTasksAndNominationsView(LaunchpadView):
         # nominations here, so we can pass it to getNominations() later
         # on.
         nominations = list(bug.getNominations())
+
+        # Build a cache we can pass on to getConjoinedMaster(), so that
+        # it doesn't have to iterate over all the bug tasks in each loop
+        # iteration.
+        bugtasks_by_package = bugtask.getBugTasksByPackageName(all_bugtasks)
+
         for bugtask in all_bugtasks:
-            conjoined_master = bugtask.getConjoinedMaster(bugtasks)
+            conjoined_master = bugtask.getConjoinedMaster(
+                bugtasks, bugtasks_by_package)
             view = self._getTableRowView(
                 bugtask, is_converted_to_question,
                 conjoined_master is not None)

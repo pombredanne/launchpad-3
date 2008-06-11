@@ -36,3 +36,9 @@ team and the name of the team owner as arguments.
     >>> spiv = getUtility(IPersonSet).getByName('spiv')
     >>> spiv.isTeam()
     True
+
+We need to force a DB reset because the changes are done from an external
+script and the test system is not able to detect the database changes.
+
+    >>> from canonical.testing.layers import DatabaseLayer
+    >>> DatabaseLayer.force_dirty_database()

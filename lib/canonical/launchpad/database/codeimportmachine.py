@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
@@ -41,7 +41,8 @@ class CodeImportMachine(SQLBase):
     heartbeat = UtcDateTimeCol(notNull=False)
 
     current_jobs = SQLMultipleJoin(
-        'CodeImportJob', joinColumn='machine', orderBy='date_started')
+        'CodeImportJob', joinColumn='machine',
+        orderBy=['date_started', 'id'])
 
     events = SQLMultipleJoin(
         'CodeImportEvent', joinColumn='machine',
@@ -53,7 +54,8 @@ class CodeImportMachine(SQLBase):
 
         if self.state == CodeImportMachineState.OFFLINE:
             return False
-        elif self.state == CodeImportMachineState.QUIESCING:
+        self.heartbeat = UTC_NOW
+        if self.state == CodeImportMachineState.QUIESCING:
             if job_count == 0:
                 self.setOffline(
                     CodeImportMachineOfflineReason.QUIESCED)

@@ -1,0 +1,42 @@
+= SSH Keys =
+
+Launchpad models SSH keys in a SSHKey class.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISSHKeySet, IPersonSet, SSHKeyType)
+    >>> personset = getUtility(IPersonSet)
+    >>> name12 = personset.getByName('name12')
+    >>> [(key.keytype, key.comment) for key in name12.sshkeys]
+    [(<DBItem SSHKeyType.DSA, (2) DSA>, u'andrew@trogdor')]
+
+You can fetch SSH keys by ID:
+
+    >>> sshkeyset = getUtility(ISSHKeySet)
+    >>> key = sshkeyset.getByID(1)
+    >>> key.keytype, key.keytext
+    (<DBItem SSHKeyType.DSA, (2) DSA>, u'AAAAB3NzaC1k...9SG1gBOiI=')
+
+Adding new keys is pretty easy:
+
+    >>> foobar = personset.getByName('name16')
+    >>> key = sshkeyset.new(foobar, SSHKeyType.RSA, "zzzNOT-REALLY",
+    ...     "This is just a test key.")
+    >>> key, key.keytext
+    (<SSHKey at ...>, u'zzzNOT-REALLY')
+
+    >>> key = sshkeyset.new(name12, SSHKeyType.RSA, "zzzNOT-EITHER",
+    ...     "This is just a test key.")
+    >>> key, key.keytext
+    (<SSHKey at ...>, u'zzzNOT-EITHER')
+
+There's also a convenience method for fetching multiple SSH keys at
+once:
+
+    >>> cprov = personset.getByName('cprov')
+    >>> keys = sshkeyset.getByPeople([foobar, cprov, name12])
+    >>> [(key.person.name, key.keytype, key.keytext) for key in keys]
+    [(u'name12', <DBItem SSHKeyType.RSA, (1) RSA>, u'zzzNOT-EITHER'),
+     (u'name12', <DBItem SSHKeyType.DSA, (2) DSA>, u'AAAAB3...vz9SG1gBOiI='),
+     (u'name16', <DBItem SSHKeyType.RSA, (1) RSA>, u'zzzNOT-REALLY')]
+

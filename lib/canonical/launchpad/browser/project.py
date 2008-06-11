@@ -273,7 +273,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     def announcements(self):
         text = 'Show announcements'
-        enabled = bool(self.context.announcements().count())
+        enabled = bool(self.context.announcements())
         return Link('+announcements', text, enabled=enabled)
 
     def rdf(self):
