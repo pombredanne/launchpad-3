@@ -501,9 +501,9 @@ First, we need a tree to document.
   ...     ('PENDINGUPLOAD', 'RELEASE_PENDING', BugTaskStatus.FIXCOMMITTED),
   ...     ('REJECTED', BugTaskStatus.INVALID),
   ...     ('RESOLVED', 'CLOSED', LookupTree(
-  ...             ('ERRATA', 'FIXED', BugTaskStatus.FIXRELEASED),
-  ...             ('WONTFIX', BugTaskStatus.WONTFIX),
-  ...             (BugTaskStatus.INVALID,))),
+  ...         ('ERRATA', 'FIXED', BugTaskStatus.FIXRELEASED),
+  ...         ('WONTFIX', BugTaskStatus.WONTFIX),
+  ...         (BugTaskStatus.INVALID,))),
   ...     ('REOPENED', 'NEW', 'DEFERRED', BugTaskStatus.CONFIRMED),
   ...     ('UNCONFIRMED', BugTaskStatus.NEW),
   ...     (BugTaskStatus.UNKNOWN,),

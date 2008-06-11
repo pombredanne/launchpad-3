@@ -172,15 +172,15 @@ class SourceForge(ExternalBugTracker):
     _status_lookup = LookupTree(
         ('Open', _status_lookup_open),
         ('Closed', LookupTree(
-                (None, BugTaskStatus.FIXRELEASED),
-                ('Accepted', BugTaskStatus.FIXCOMMITTED),
-                ('Fixed', BugTaskStatus.FIXRELEASED),
-                ('Postponed', BugTaskStatus.WONTFIX),
-                _status_lookup_open)),
+            (None, BugTaskStatus.FIXRELEASED),
+            ('Accepted', BugTaskStatus.FIXCOMMITTED),
+            ('Fixed', BugTaskStatus.FIXRELEASED),
+            ('Postponed', BugTaskStatus.WONTFIX),
+            _status_lookup_open)),
         ('Pending', LookupTree(
-                (None, BugTaskStatus.INCOMPLETE),
-                ('Postponed', BugTaskStatus.WONTFIX),
-                _status_lookup_open)),
+            (None, BugTaskStatus.INCOMPLETE),
+            ('Postponed', BugTaskStatus.WONTFIX),
+            _status_lookup_open)),
         )
 
     def convertRemoteStatus(self, remote_status):

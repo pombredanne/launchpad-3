@@ -467,7 +467,8 @@ class Mantis(ExternalBugTracker):
             ('feedback', BugTaskStatus.INCOMPLETE),
             ('new', BugTaskStatus.NEW),
             ('confirmed', 'ackowledged', BugTaskStatus.CONFIRMED),
-            ('resolved', 'closed', LookupTree(
+            ('resolved', 'closed',
+                LookupTree(
                     ('reopened', BugTaskStatus.NEW),
                     ('fixed', 'open', 'no change required',
                      BugTaskStatus.FIXRELEASED),

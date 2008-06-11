@@ -18,13 +18,13 @@ from canonical.launchpad.webapp.uri import URI
 PYTHON_BUGS_HOSTNAME = 'bugs.python.org'
 
 
-def _parse_python_status(remote_status):
+def parse_python_status(remote_status):
     """Convert a Python bug status into a (status, resolution) tuple.
 
     :param remote_status: A bugs.python.org status string in the form
-      '<status>:<resolution>', where status is an integer and
-      resolution is an integer or None. An AssertionError will be
-      raised if these conditions are not met.
+        '<status>:<resolution>', where status is an integer and
+        resolution is an integer or None. An AssertionError will be
+        raised if these conditions are not met.
     """
     try:
         status, resolution = remote_status.split(':')
@@ -231,15 +231,15 @@ class Roundup(ExternalBugTracker):
     _status_lookup_python = LookupTree(
         (1, _status_lookup_python_1),
         (2, LookupTree(
-                (None, BugTaskStatus.WONTFIX),   # No resolution
-                (1, BugTaskStatus.FIXCOMMITTED), # Resolution: accepted
-                (3, BugTaskStatus.FIXRELEASED),  # Resolution: fixed
-                (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-                _status_lookup_python_1)),       # Failback
+            (None, BugTaskStatus.WONTFIX),   # No resolution
+            (1, BugTaskStatus.FIXCOMMITTED), # Resolution: accepted
+            (3, BugTaskStatus.FIXRELEASED),  # Resolution: fixed
+            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
+            _status_lookup_python_1)),       # Failback
         (3, LookupTree(
-                (None, BugTaskStatus.INCOMPLETE),# No resolution
-                (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-                _status_lookup_python_1)),       # Failback
+            (None, BugTaskStatus.INCOMPLETE),# No resolution
+            (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
+            _status_lookup_python_1)),       # Failback
         )
 
     # Combine custom mappings with the standard mappings, using the
@@ -254,7 +254,7 @@ class Roundup(ExternalBugTracker):
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
         if self.isPython():
-            remote_status_key = _parse_python_status(remote_status)
+            remote_status_key = parse_python_status(remote_status)
         elif remote_status.isdigit():
             remote_status_key = (int(remote_status),)
         else:

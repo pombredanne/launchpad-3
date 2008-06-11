@@ -122,7 +122,8 @@ class Bugzilla(ExternalBugTracker):
         ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
          BugTaskStatus.FIXCOMMITTED),
         ('REJECTED', BugTaskStatus.INVALID),
-        ('RESOLVED', 'VERIFIED', 'CLOSED', LookupTree(
+        ('RESOLVED', 'VERIFIED', 'CLOSED',
+            LookupTree(
                 ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
                  'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
                  BugTaskStatus.FIXRELEASED),

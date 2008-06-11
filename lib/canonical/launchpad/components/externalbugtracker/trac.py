@@ -234,9 +234,9 @@ class Trac(ExternalBugTracker):
 
     _status_lookup_titles = 'Trac status',
     _status_lookup = LookupTree(
+        ('new', 'open', 'reopened', BugTaskStatus.NEW),
         # XXX, 2007-08-06 Graham Binns:
         #      We should follow dupes if possible.
-        ('new', 'open', 'reopened', BugTaskStatus.NEW),
         ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
         ('fixed', 'closed', BugTaskStatus.FIXRELEASED),
         ('invalid', 'worksforme', BugTaskStatus.INVALID),
