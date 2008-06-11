@@ -78,6 +78,7 @@ body {
   /* Minimal width to display the application tabs and rounded corners. */
   min-width: 529px;
 }
+div.freeform {margin: 2em 20px;}
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -104,7 +105,7 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
-.offline {text-align: center; width: 100%; margin: 2em auto;}
+.offline {text-align: center; margin: 2em 20px;}
 .unavailable {color: #999; background: none;}
 
 /* --- Error, warning, and info messages --- */

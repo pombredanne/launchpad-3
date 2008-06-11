@@ -27,7 +27,7 @@ on with the registration process.
     >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
     >>> browser.getControl('Register').click()
 
-    >>> print find_tag_by_id(browser.contents, 'nonhelp')
+    >>> print browser.contents
     <...
     ...Instructions on completing your registration have been sent to...
 
