@@ -44,5 +44,6 @@ class ICodeReviewVoteReference(Interface):
         title=_('Review type'), required=False)
 
     comment = Object(
-        title=_("The code review comment that contains the most recent vote."),
+        title=_(
+            "The code review comment that contains the most recent vote."),
         required=True, schema=ICodeReviewComment)
