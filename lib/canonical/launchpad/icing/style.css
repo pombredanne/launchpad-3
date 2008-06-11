@@ -104,8 +104,7 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
-.offline {text-align: center; width: 100%; margin: 2em auto !important;}
-/* That !important is necessary only while #nonhelp exists. */
+.offline {text-align: center; width: 100%; margin: 2em auto;}
 .unavailable {color: #999; background: none;}
 
 /* --- Error, warning, and info messages --- */
@@ -613,16 +612,8 @@ ul#menuroot li.selected a.breadcrumb {
     color: #000000;
 }
 
-/* The rest of the page keeps clear of the collapsed help panel. */
-/* test: http://launchpad.dev/+logout */
-#nonhelp {
-  margin: 0 20px 0 38px;
-  padding-top: 10px;
-}
-
 /*
-Inline help is different from the pop-out help panel. It is contained in
-a <div> and dynamically positioned by JavaScript.
+Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
 #help-pane {
   position: absolute;
@@ -667,7 +658,7 @@ it out of the page flow. */
 span.help {font-weight: normal;}
 
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin-left: -20px;}
+#globalfooter {clear: both; margin: 0.5em 20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
   border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
@@ -720,6 +711,9 @@ body.pillarindex table#applications th {padding-left: 0;}
         above the "#mainarea". This margin provides the needed visual
         separation. */
   margin-bottom: 8px;
+  /* The right margin for the search matches the left margin of the structural
+     object heading. */
+  margin-right: 20px;
 }
 #globalsearch #searchbutton {
   position: relative;
@@ -758,6 +752,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   background: none;
   color: black;
   float: left;
+  margin: 10px 20px 0;
   width: 70%;
 }
 /* Structural headings contain an icon, maybe an intro, and a main heading.
@@ -795,7 +790,6 @@ border. */
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
-  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
 }
 #mainarea div.v {

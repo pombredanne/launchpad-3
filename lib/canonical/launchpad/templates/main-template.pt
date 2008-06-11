@@ -126,7 +126,7 @@
         </tr>
       </table>
     </div>
-    <div id="nonhelp">
+
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
         tal:condition="view/macro:pagehas/applicationbuttons"
@@ -384,7 +384,6 @@
             </li>
         </ul>
       </div><!--id="globalfooter"-->
-    </div><!--id="nonhelp"-->
 
     <div id="menupreload" style="visibility:hidden"
       xml:lang="en" lang="en" dir="ltr">
