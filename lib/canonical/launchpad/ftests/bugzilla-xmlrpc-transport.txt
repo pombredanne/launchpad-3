@@ -43,3 +43,80 @@ more useful.
     local_time: 20080515T16:19:53
     tz_name: US/Central
     utc_time: 20080515T22:19:53
+
+
+== Bug.get_bugs() ==
+
+The common Bugzilla bug API offers a get_bugs() method which can be used
+to retrieve bugs from a remote Bugzilla instance. It takes a list of bug
+IDs to retrieve and returns a list of dicts containing those bugs' data.
+
+    >>> [bug_dict] = bugzilla_transport.get_bugs([1])
+    >>> for key in sorted(bug_dict.keys()):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias:
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:
+    last_change_time: 20080610T16:19:53
+    summary: Our first example Bugzilla bug.
+    status: RESOLVED FIXED
+
+If more than one ID is specified when get_bugs() is called, more than
+one bug will be returned (assuming they all exist and are accessible).
+
+    >>> bug_dicts = bugzilla_transport.get_bugs([1, 2])
+    >>> for bug_dict in bug_dicts:
+    ...     for key in sorted(bug_dict.keys()):
+    ...         print "%s: %s" % (key, bug_dict[key])
+    ...     print "\n"
+    alias:
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:...
+    last_change_time: 20080610T16:19:53
+    summary: Our first example Bugzilla bug.
+    status: RESOLVED FIXED
+
+    alias: bug-two
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    last_change_time: 20080611T09:24:29
+    summary: Another example Bugzilla bug.
+    status: VERIFIED FIXED
+
+Bug aliases can also be used to request remote bugs.
+
+    >>> [bug_dict] = bugzilla_transport.get_bugs(['bug-two'])
+    >>> for key in sorted(bug_dict.keys()):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    last_change_time: 20080611T09:24:29
+    summary: Another example Bugzilla bug.
+    status: VERIFIED FIXED
+
+Passing an invalid bug alias to get_bugs will raise an error.
+
+    >>> bugzilla_transport.get_bugs(['no-such-alias'])
+    Traceback (most recent call last):
+      ...
+    Fault 100: Invalid bug alias.
+
+As will passing an invalid bug ID.
+
+    >>> bugzilla_transport.get_bugs([42])
+    Traceback (most recent call last):
+      ...
+    Fault 101: Invalid bug ID.
+
+We'll also get an error if we try to access a bug that we don't have the
+rights to view.
+
+    >>> bugzilla_transport.get_bugs(['private-bug'])
+    Traceback (most recent call last):
+      ...
+    Fault 102: Access denied.

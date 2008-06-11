@@ -35,3 +35,61 @@ current time on the remote server.
     >>> test_transport.seconds_since_epoch = 1210956800.0
     >>> bugzilla.getCurrentDBTime()
     datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
+
+
+== Initializing the remote bug database ==
+
+The BugzillaLPPlugin implements the standard initializeRemoteBugDB()
+method, taking a list of the bug ids that need to be updated. It uses
+the Bugzilla Bug.get_bugs() API to retrieve bugs from the remote system.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.initializeRemoteBugDB([1, 2, 3, 4])
+    CALLED Bug.get_bugs([1, 2, 3, 4])
+
+The bug data is stored as a list of dicts:
+
+    >>> for bug in sorted(bugzilla.bugs.keys())
+    ...     print "Bug %s:" % bug
+    ...     for key in sorted(bugzilla.bugs[bug].keys()):
+    ...         print "%s: %s" % (key, bugzilla.bugs[bug][key])
+    ...     print "\n"
+    Bug 1:
+        alias:
+        creation_time: 20080610T16:19:53
+        id: 1
+        internals:...
+        last_change_time: 20080610T16:19:53
+        summary: Our first example Bugzilla bug.
+        status: RESOLVED FIXED
+
+    Bug 2:
+        alias: bug-two
+        creation_time: 20080611T09:23:12
+        id: 2
+        internals:...
+        last_change_time: 20080611T09:24:29
+        summary: Another example Bugzilla bug.
+        status: VERIFIED FIXED
+    ...
+
+XXX: 2008-06-11 gmb: Add error handling tests here.
+
+
+== Getting remote statuses ==
+
+BugzillaLPPlugin.getRemoteStatus() will return the remote status of a
+given bug as a string.
+
+    >>> print bugzilla.getRemoteStatus(1)
+    RESOLVED FIXED
+
+If an invalid bug ID is passed to getRemoteStatus(), an InvalidBugId
+error will be raised.
+
+    >>> bugzilla.getRemoteStatus('no-such-bug')
+    Traceback (most recent call last):
+      ...
+    InvalidBugId: Bug 'no-such-bug' doesn't exist.
+
+
