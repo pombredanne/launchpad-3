@@ -1,9 +1,19 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface
+"""Interfaces related to Salesforce vouchers."""
 
-__all__ = ['ISalesforceVoucherProxy']
+__metaclass__ = type
+
+__all__ = [
+    'ISalesforceVoucher',
+    'ISalesforceVoucherProxy',
+    ]
+
+from zope.interface import Interface
+from zope.schema import Choice, Int, TextLine
+
+from canonical.launchpad import _
 
 
 class ISalesforceVoucherProxy(Interface):
@@ -44,3 +54,22 @@ class ISalesforceVoucherProxy(Interface):
         :return: integer representing the number of vouchers found for this
             project which were updated.
         """
+
+class ISalesforceVoucher(Interface):
+    """Vouchers in Salesforce."""
+
+    voucher_id = TextLine(
+        title=_("Voucher ID"),
+        description=_("The id for the voucher."))
+    project = Choice(
+        title=_('Project'),
+        required=False,
+        vocabulary='Product',
+        description=_("The project the voucher is redeemed against."))
+    status = TextLine(
+        title=_("Status"),
+        description=_("The voucher's redemption status."))
+    term_months = Int(
+        title=_("Term in months"),
+        description=_("The voucher can be redeemed for a subscription "
+                      "for this number of months."))

@@ -19,7 +19,7 @@
   <div id="packages">
 
   <tal:maintained-packages 
-    define="sourcepackagereleases context/getLatestMaintainedPackages"
+    define="sourcepackagereleases view/getLatestMaintainedPackagesWithStats"
     condition="sourcepackagereleases">
 
   <h2>Maintained packages</h2>
@@ -43,7 +43,7 @@
   </tal:maintained-packages>
 
   <tal:uploaded-packages
-    define="sourcepackagereleases context/getLatestUploadedButNotMaintainedPackages"
+    define="sourcepackagereleases view/getLatestUploadedButNotMaintainedPackagesWithStats"
     condition="sourcepackagereleases">
 
   <h2>Uploaded packages</h2>
@@ -66,7 +66,7 @@
   </tal:uploaded-packages>
 
   <tal:ppa-packages
-    define="sourcepackagereleases view/getLatestUploadedPPAPackages"
+    define="sourcepackagereleases view/getLatestUploadedPPAPackagesWithStats"
     condition="sourcepackagereleases">
 
   <h2>PPA packages</h2>
@@ -140,7 +140,7 @@
     </td>
     <td style="text-align: right">
       <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
-         tal:content="python: spr.countOpenBugsInUploadedDistro(view.user)">
+         tal:content="spr/open_bugs">
       </a>
     </td>
     <td style="text-align: right">
