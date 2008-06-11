@@ -46,12 +46,25 @@ class QuestionFactory:
 
         Questions will appear as posted by the currently logged in user.
         """
-        owner = getUtility(ILaunchBag).user
         for project, question_count in specification:
             target = cls._getQuestionTarget(project)
-            for index in range(question_count):
-                replacements = {'index' : index, 'target': target.displayname}
-                target.newQuestion(
-                    owner,
-                    'Question %(index)s on %(target)s' % replacements,
-                    'Description %(index)s on %(target)s' % replacements)
+            cls.createManyByTarget(target, question_count)
+
+    @classmethod
+    def createManyByTarget(cls, target, question_count):
+        """Create a number of questions on a selected target
+
+        :param question_count: The number of questions to create on the
+            target.
+
+        Questions will appear as posted by the currently logged in user.
+        """
+        owner = getUtility(ILaunchBag).user
+        created_questions = []
+        for index in range(question_count):
+            replacements = {'index' : index, 'target': target.displayname}
+            created_questions.append(target.newQuestion(
+                owner,
+                'Question %(index)s on %(target)s' % replacements,
+                'Description %(index)s on %(target)s' % replacements))
+        return created_questions

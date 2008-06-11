@@ -91,6 +91,7 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/inlinehelp.js"></script>
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
@@ -99,6 +100,7 @@
                            [], '1.3em', 16, true);
         sortables_init();
         initHelpPanel();
+        initInlineHelp();
         PortletManager.initialize(cookie_scope);
       }
       registerLaunchpadFunction(onLoadFunction);
@@ -399,6 +401,16 @@
         <div id="help-bottom">&nbsp;</div>
       </div>
     </div>
+
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        <iframe id="help-pane-content" class="invisible">Loading...</iframe>
+      </div>
+      <div id="help-footer">
+        <a href="#" id="help-close-btn">Close</a>
+      </div>
+    </div>
+
     <div id="menupreload" style="visibility:hidden"
       xml:lang="en" lang="en" dir="ltr">
       <ul class="menu" lpm:mid="root">

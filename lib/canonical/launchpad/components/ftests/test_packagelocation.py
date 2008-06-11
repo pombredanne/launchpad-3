@@ -4,7 +4,7 @@
 import unittest
 
 from canonical.launchpad.interfaces import ArchivePurpose
-from canonical.launchpad.scripts.ftpmasterbase import (
+from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
 from canonical.testing import LaunchpadZopelessLayer
 
