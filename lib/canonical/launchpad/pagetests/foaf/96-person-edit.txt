@@ -20,7 +20,7 @@ Launchpad.
 
 He noticed that his information is out of date and will update it.
 (If he leaves leading or trailing whitespace in the displayname it'll
-be stripped) 
+be stripped)
 
     >>> browser.getControl('Name', index=1).value = 'foobar'
     >>> browser.getControl('Display Name').value = '  Foo Bar2  '
@@ -78,3 +78,34 @@ He will also change his timezone:
     >>> browser.getControl('Timezone').value
     ['Africa/Dakar']
 
+
+== Clean up ==
+
+    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~foobar')
+    >>> browser.getLink('Change details').click()
+
+    # Change the details back
+    >>> browser.getControl('Name', index=1).value = 'name16'
+    >>> browser.getControl('Display Name').value = 'Foo Bar'
+    >>> browser.getControl(
+    ...     'Hide my email addresses from other Launchpad users').click()
+    >>> browser.getControl("Include bug descriptions when sending me "
+    ...     "bug notifications").click()
+    >>> browser.getControl('Timezone').value = ['Africa/Johannesburg']
+    >>> browser.getControl('Save').click()
+
+    >>> browser.url
+    'http://launchpad.dev/~name16'
+
+    # Verify that the data is restored.
+    >>> browser.getLink('Change details').click()
+    >>> browser.getControl('Display Name').value
+    'Foo Bar'
+    >>> browser.getControl('Name', index=1).value
+    'name16'
+    >>> browser.getControl('Timezone').value
+    ['Africa/Johannesburg']
+    >>> browser.getControl(
+    ...     'Hide my email addresses from other Launchpad users').selected
+    False
