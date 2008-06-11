@@ -158,6 +158,8 @@ class PackageDiff(SQLBase):
                 # Download the files associated with each package.
                 for file in package.files:
                     the_name = file.libraryfile.filename
+                    downloaded[direction].append(the_name)
+
                     # Was this file downloaded already?
                     if the_name in files_seen:
                         # Yes, skip it.
@@ -166,7 +168,6 @@ class PackageDiff(SQLBase):
                     # This file is new, download it.
                     destination_path = os.path.join(tmp_dir, the_name)
                     download_file(destination_path, file.libraryfile)
-                    downloaded[direction].append(the_name)
                     files_seen.append(the_name)
 
             # All downloads are done. Construct the name of the resulting

@@ -250,6 +250,7 @@ the version found in its context.
     >>> print diff.title
     1.0-2 to 1.0-3
 
+
 == Performing a Diff ==
 
 Now we will actually perform a package diff and look at the results.
@@ -421,3 +422,58 @@ if necessary.
     >>> candidate_diff == diff
     True
 
+
+== Special circumstances ==
+
+There is only one way a PackageDiff request will result in an empty
+diff, when the same source package is re-uploaded.
+
+To emulate this situation we will upload a new package called
+'staging' first to the ubuntu primary archive, which will result in no
+diff since the package is NEW, and then we will upload the same
+version to the Foo Bar's PPA.
+
+Note that this is a legitimate use-case, let's say Foo Bar user
+suspects 'staging' will be affected by his new toolchain, already
+hosted in the PPA. Since he cannot copy the primary archive sources,
+he simply re-upload the source as it is in ubuntu to his PPA and check
+if it builds correctly.
+
+    >>> packager = FakePackager(
+    ...     'staging', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+
+    >>> packager.buildUpstream(suite='breezy-autotest')
+    >>> packager.buildSource()
+    >>> staging_ubuntu_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', policy='sync')
+    >>> staging_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    0
+
+    >>> staging_ppa_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', archive=foobar.archive)
+    >>> [diff] = staging_ppa_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    1.0-1 (in Ubuntu) to 1.0-1
+
+Commit the transaction for make the uploaded files available in
+librarian:
+
+    >>> transaction.commit()
+
+Perform the pending diff request and commit the transaction again, so
+the diff file can be retrieved.
+
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+The PackageDiff request was correctly performed and the result is a
+empty library file, which is what the user expects.
+
+    >>> diff.date_fulfilled is not None
+    True
+
+    >>> print diff.diff_content.filename
+    staging_1.0-1_1.0-1.diff.gz
+
+    >>> get_diff_results(diff)
+    ''
