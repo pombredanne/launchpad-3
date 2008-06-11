@@ -87,6 +87,31 @@
               </tr>
             </tal:jabberids>
 
+            <tal:keys condition="context/sshkeys">
+              <tal:key repeat="sshkey context/sshkeys">
+                <tr>
+                  <th tal:condition="repeat/sshkey/start">
+                    SSH Keys:</th>
+                  <th tal:condition="not: repeat/sshkey/start">
+                  </th>
+                  <td tal:content="sshkey/comment" />
+                </tr>
+                <tr tal:condition="repeat/sshkey/end">
+                  <td>&nbsp;</td>
+                  <td>
+                    <small><a href="+sshkeys">(view key text)</a></small>
+                  </td>
+                </tr>
+              </tal:key>
+              <tr>
+                <td>&nbsp;</td>
+                <td><span
+                     tal:replace="
+                     structure context/menu:overview/editsshkeys/render"
+                     >Change your SSH keys</span></td>
+              </tr>
+            </tal:keys>
+
             <tal:gpgkeys tal:condition="context/gpgkeys">
               <tr>
                 <th>OpenPGP keys:</th>
