@@ -207,13 +207,14 @@ searches looks like the user is looking to get CDs sent from shipit.
 
 == Searches with no results ==
 
-Searches that don't return any results display a kind message to the
-user.
+Searches that don't return any results display a explanation message to
+the user. The text field is focused so that the user can try another
+search.
 
     >>> search_for('fnord')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Pages matching "fnord" in Launchpad
-    ...
+    <!-- setFocusByName('field.text'); // -->
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
@@ -240,12 +241,12 @@ Launchpad imposes an artificial limit to 250 characters.
 
 The user cannot enter more than 250 characters to in the search field.
 
-    >>> too_many_characters = '123456789 ' * 25 + '0'
+    >>> too_many_characters = '12345 7890' * 25 + 'n'
     >>> search_for(too_many_characters)
     >>> for message in get_feedback_messages(anon_browser.contents):
     ...     print message
     There is 1 error.
-    The search text is limited to 10 terms, and cannot exceed 250 characters.
+    The search text cannot exceed 250 characters.
 
 
 == Searching from any page ==

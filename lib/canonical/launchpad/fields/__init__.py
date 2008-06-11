@@ -67,11 +67,11 @@ from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
+    Bool, Bytes, Choice, Datetime, Int, Password, Text, TextLine,
     Tuple)
 from zope.schema.interfaces import (
-    ConstraintNotSatisfied, IBytes, IDatetime, IField, IInt, IPassword, IText,
-    ITextLine)
+    ConstraintNotSatisfied, IBytes, IDatetime, IInt, IObject, IPassword,
+    IText, ITextLine, Interface)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -80,6 +80,7 @@ from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
+from canonical.lazr.fields import Reference
 from canonical.foaf import nickname
 
 
@@ -106,8 +107,8 @@ class IWhiteboard(IText):
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
 
-class IBugField(IField):
-    """A Field that allows entry of a Bug number or nickname"""
+class IBugField(IObject):
+    """A field that allows entry of a Bug number or nickname"""
 
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
@@ -271,8 +272,22 @@ class TimeInterval(TextLine):
         return 1
 
 
-class BugField(Field):
+class BugField(Reference):
     implements(IBugField)
+
+    def __init__(self, *args, **kwargs):
+        """The schema will always be `IBug`."""
+        super(BugField, self).__init__(Interface, *args, **kwargs)
+
+    def _get_schema(self):
+        """Get the schema here to avoid circular imports."""
+        from canonical.launchpad.interfaces import IBug
+        return IBug
+
+    def _set_schema(self, schema):
+        """Ignore attempts to set the schema by the superclass."""
+
+    schema = property(_get_schema, _set_schema)
 
 
 class DuplicateBug(BugField):

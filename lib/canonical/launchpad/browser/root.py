@@ -10,6 +10,7 @@ __all__ = [
 import re
 
 from zope.component import getUtility
+from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
@@ -267,10 +268,9 @@ class LaunchpadSearchView(LaunchpadFormView):
         errors = list(self.errors)
         for error in errors:
             if (error.field_name == 'text'
-                and error.doc() == 'Value is too long'):
+                and isinstance(error.errors, TooLong)):
                 self.setFieldError(
-                    'text', ('The search text is limited to 10 terms, '
-                             'and cannot exceed 250 characters.'))
+                    'text', 'The search text cannot exceed 250 characters.')
 
     @safe_action
     @action(u'Search', name='search')

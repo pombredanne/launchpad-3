@@ -20,7 +20,6 @@ __all__ = [
 
 from datetime import datetime, timedelta
 import pytz
-import sha
 
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
@@ -57,31 +56,61 @@ from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
-from canonical.launchpad.interfaces import (
-    AccountStatus, ArchivePurpose, BugTaskImportance, BugTaskSearchParams,
-    BugTaskStatus, EmailAddressStatus, IArchivePermissionSet, IBugTarget,
-    IBugTaskSet, IDistribution, IDistributionSet, IEmailAddress,
-    IEmailAddressSet, IGPGKeySet, IHWSubmissionSet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILoginTokenSet,
-    IMailingListSet, INACTIVE_ACCOUNT_STATUSES, InvalidEmailAddress,
-    InvalidName, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
-    IProduct, IRevisionSet, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    MailingListAutoSubscribePolicy, NameAlreadyTaken, PackagePublishingStatus,
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermissionSet)
+from canonical.launchpad.interfaces.bugtask import (
+    BugTaskSearchParams, IBugTaskSet)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.codeofconduct import (
+    ISignedCodeOfConductSet)
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddress, IEmailAddressSet, InvalidEmailAddress)
+from canonical.launchpad.interfaces.gpg import IGPGKeySet
+from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
+from canonical.launchpad.interfaces.irc import IIrcID, IIrcIDSet
+from canonical.launchpad.interfaces.jabber import IJabberID, IJabberIDSet
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    IPasswordEncryptor)
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.mailinglist import (
+    IMailingListSet, PostedMessageStatus)
+from canonical.launchpad.interfaces.mailinglistsubscription import (
+    MailingListAutoSubscribePolicy)
+from canonical.launchpad.interfaces.person import (
+    AccountStatus, INACTIVE_ACCOUNT_STATUSES, InvalidName, IPerson,
+    IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility, PersonalStanding,
-    PostedMessageStatus, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.shipit import (
+    ShipItConstants, ShippingRequestStatus)
+from canonical.launchpad.interfaces.specification import (
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.ssh import ISSHKey, ISSHKeySet, SSHKeyType
+from canonical.launchpad.interfaces.teammembership import (
+    TeamMembershipStatus)
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroupSet)
+from canonical.launchpad.interfaces.wikiname import (
+    IWikiName, IWikiNameSet, UBUNTU_WIKI_URL)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
-from canonical.launchpad.database.bugtask import (
-    BugTask, get_bug_privacy_filter, search_value_to_where_condition)
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
@@ -105,7 +134,6 @@ from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
 
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import (
@@ -701,83 +729,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         packages.sort(key=lambda x: x.name)
         return packages
 
-    def getBugSubscriberOpenBugCounts(self, user):
-        """See `IPerson`."""
-        open_bugs_cond = (
-            'BugTask.status %s' % search_value_to_where_condition(
-                any(*UNRESOLVED_BUGTASK_STATUSES)))
-
-        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
-        sums = [
-            sum_template % (open_bugs_cond, 'open_bugs'),
-            sum_template % (
-                'BugTask.importance %s' % search_value_to_where_condition(
-                    BugTaskImportance.CRITICAL), 'open_critical_bugs'),
-            sum_template % (
-                'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
-            sum_template % (
-                'BugTask.status %s' % search_value_to_where_condition(
-                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs')]
-
-        conditions = [
-            'Bug.id = BugTask.bug',
-            open_bugs_cond,
-            'StructuralSubscription.subscriber = %s' % sqlvalues(self),
-            'BugTask.sourcepackagename = '
-                'StructuralSubscription.sourcepackagename',
-            'BugTask.distribution = StructuralSubscription.distribution',
-            'Bug.duplicateof is NULL']
-        privacy_filter = get_bug_privacy_filter(user)
-        if privacy_filter:
-            conditions.append(privacy_filter)
-
-        query = """SELECT BugTask.distribution,
-                          BugTask.sourcepackagename,
-                          %(sums)s
-                   FROM BugTask, Bug, StructuralSubscription
-                   WHERE %(conditions)s
-                   GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
-        cur = cursor()
-        cur.execute(query % dict(
-            sums=', '.join(sums), conditions=' AND '.join(conditions)))
-        distribution_set = getUtility(IDistributionSet)
-        sourcepackagename_set = getUtility(ISourcePackageNameSet)
-        packages_with_bugs = set()
-        L = []
-        for (distro_id, spn_id, open_bugs,
-             open_critical_bugs, open_unassigned_bugs,
-             open_inprogress_bugs) in shortlist(cur.fetchall()):
-            distribution = distribution_set.get(distro_id)
-            sourcepackagename = sourcepackagename_set.get(spn_id)
-            source_package = distribution.getSourcePackage(sourcepackagename)
-            # XXX: Bjorn Tillenius 2006-12-15:
-            # Add a tuple instead of the distribution package
-            # directly, since DistributionSourcePackage doesn't define a
-            # __hash__ method.
-            packages_with_bugs.add((distribution, sourcepackagename))
-            package_counts = dict(
-                package=source_package,
-                open=open_bugs,
-                open_critical=open_critical_bugs,
-                open_unassigned=open_unassigned_bugs,
-                open_inprogress=open_inprogress_bugs)
-            L.append(package_counts)
-
-        # Only packages with open bugs were included in the query. Let's
-        # add the rest of the packages as well.
-        all_packages = set(
-            (distro_package.distribution, distro_package.sourcepackagename)
-            for distro_package in self.getBugSubscriberPackages())
-        for distribution, sourcepackagename in all_packages.difference(
-                packages_with_bugs):
-            package_counts = dict(
-                package=distribution.getSourcePackage(sourcepackagename),
-                open=0, open_critical=0, open_unassigned=0,
-                open_inprogress=0)
-            L.append(package_counts)
-
-        return L
-
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
         # import here to work around a circular import problem
@@ -1237,7 +1188,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     #
     # ITeam methods
     #
-    def getSuperTeams(self):
+    @property
+    def super_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.team AND
@@ -1246,7 +1198,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
-    def getSubTeams(self):
+    @property
+    def sub_teams(self):
         """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.person AND
@@ -1767,7 +1720,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             AND TeamMembership.team = %d
             """ % (statuses, self.id)
         return TeamMembership.select(
-            query, clauseTables=['Person'], orderBy=Person.sortingColumns)
+            query, clauseTables=['Person'],
+            prejoinClauseTables=['Person'],
+            orderBy=Person.sortingColumns)
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
@@ -1975,16 +1930,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             return self.preferredemail.email
         else:
             return ''
-
-    @property
-    def preferredemail_sha1(self):
-        """See `IPerson`."""
-        preferredemail = self.preferredemail
-        if preferredemail:
-            return sha.new(
-                'mailto:' + preferredemail.email).hexdigest().upper()
-        else:
-            return None
 
     @property
     def validatedemails(self):
@@ -2331,15 +2276,6 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
-    def getAllValidPersons(self, orderBy=None):
-        """See `IPersonSet`."""
-        if orderBy is None:
-            orderBy = Person.sortingColumns
-        return Person.select(
-            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
-            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
-            )
-
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2401,7 +2337,7 @@ class PersonSet:
 
         return results.orderBy(orderBy)
 
-    def findTeam(self, text, orderBy=None):
+    def findTeam(self, text="", orderBy=None):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
@@ -3251,6 +3187,7 @@ class PersonLanguage(SQLBase):
 
 class SSHKey(SQLBase):
     implements(ISSHKey)
+    _defaultOrder = ["person", "keytype", "keytext"]
 
     _table = 'SSHKey'
 
@@ -3272,6 +3209,12 @@ class SSHKeySet:
             return SSHKey.get(id)
         except SQLObjectNotFound:
             return default
+
+    def getByPeople(self, people):
+        """See `ISSHKeySet`"""
+        return SSHKey.select("""
+            SSHKey.person IN %s
+            """ % sqlvalues([person.id for person in people]))
 
 
 class WikiName(SQLBase):
