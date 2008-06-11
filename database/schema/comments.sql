@@ -1835,8 +1835,14 @@ COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this en
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
--- OpenIdRealmConfig
+-- OpenIDRelyingParty
+COMMENT ON TABLE OpenIDRelyingParty IS 'The base information about an OpenID Relying Party.';
+COMMENT ON COLUMN OpenIDRelyingParty.trust_root IS 'The trust root for this RP.';
+COMMENT ON COLUMN OpenIDRelyingParty.date_created IS 'The creation date of the RP.';
+
+-- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
+COMMENT ON COLUMN OpenIdRPConfig.relying_party IS 'The RP to which this configuration applies.';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.displayname IS 'The human readable name for this RP';
 COMMENT ON COLUMN OpenIDRPConfig.description IS 'A description of the RP.  Should indicate why the RP wants the user to log in';
@@ -1844,6 +1850,13 @@ COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 
+--OpenIDRPLog
+COMMENT ON TABLE OpenIDRPLog IS 'The summary of the activity between a person and an RP.';
+COMMENT ON COLUMN OpenIDRPLog.relying_party IS 'The RP to which this log applies.';
+COMMENT ON COLUMN OpenIDRPLog.person IS 'The person who used this RP.';
+COMMENT ON COLUMN OpenIDRPLog.date_created IS 'The creation date of this log; the first time it was used.';
+COMMENT ON COLUMN OpenIDRPLog.date_last_used IS 'The date the RP was last used.';
+COMMENT ON COLUMN OpenIDRPLog.login_count IS 'The total number of times the RP was used by the person.';
 
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
