@@ -1360,8 +1360,10 @@ class HALDevice:
             if result is None:
                 if bus is None:
                     return None
-                return self.getProperty('%s.%s' % (bus, type_))
-            return result
+                else:
+                    return self.getProperty('%s.%s' % (bus, type_))
+            else:
+                return result
 
     @property
     def vendor(self):
