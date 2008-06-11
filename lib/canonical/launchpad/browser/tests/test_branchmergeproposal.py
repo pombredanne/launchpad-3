@@ -27,6 +27,21 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
         # nominating reviewers.
         TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
         self.bmp = self.factory.makeBranchMergeProposal()
+        self.date_generator = time_counter(delta=timedelta(days=1))
+
+    def _createComment(self, reviewer, vote):
+        """Create a comment on the merge proposal."""
+        self.bmp.createComment(
+            owner=reviewer,
+            subject=self.factory.getUniqueString('subject'),
+            vote=vote,
+            _date_created=self.date_generator.next())
+
+    def _nominateReviewer(self, reviewer, registrant):
+        """Nominate a reviewer for the merge proposal."""
+        self.bmp.nominateReviewer(
+            reviewer=reviewer, registrant=registrant,
+            _date_created=self.date_generator.next())
 
     def testNoVotes(self):
         # No votes should return empty lists
@@ -36,7 +51,6 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
     def testRequestedOrdering(self):
         # No votes should return empty lists
-        date_generator = time_counter(delta=timedelta(days=1))
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
@@ -44,26 +58,20 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         owner = self.bmp.source_branch.owner
 
-        review1 = self.bmp.nominateReviewer(
-            reviewer=albert, registrant=owner,
-            _date_created=date_generator.next())
-        review2 = self.bmp.nominateReviewer(
-            reviewer=bob, registrant=owner,
-            _date_created=date_generator.next())
-        review3 = self.bmp.nominateReviewer(
-            reviewer=charles, registrant=owner,
-            _date_created=date_generator.next())
+        self._nominateReviewer(albert, owner)
+        self._nominateReviewer(bob, owner)
+        self._nominateReviewer(charles, owner)
 
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
         self.assertEqual([], view.current_reviews)
         requested_reviews = view.requested_reviews
         self.assertEqual(3, len(requested_reviews))
-        self.assertEqual([charles, bob, albert],
-                         [review.reviewer for review in requested_reviews])
+        self.assertEqual(
+            [charles, bob, albert],
+            [review.reviewer for review in requested_reviews])
 
     def testCurrentReviewOrdering(self):
         # Disapprove first, then Approve, lastly Abstain.
-        date_generator = time_counter(delta=timedelta(days=1))
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
@@ -71,47 +79,36 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         owner = self.bmp.source_branch.owner
 
-        comment1 = self.bmp.createComment(
-            owner=albert, subject=self.factory.getUniqueString('subject'),
-            vote=CodeReviewVote.APPROVE)
-        comment2 = self.bmp.createComment(
-            owner=bob, subject=self.factory.getUniqueString('subject'),
-            vote=CodeReviewVote.ABSTAIN)
-        comment3 = self.bmp.createComment(
-            owner=charles, subject=self.factory.getUniqueString('subject'),
-            vote=CodeReviewVote.DISAPPROVE)
+        self._createComment(albert, CodeReviewVote.APPROVE)
+        self._createComment(bob, CodeReviewVote.ABSTAIN)
+        self._createComment(charles, CodeReviewVote.DISAPPROVE)
 
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
 
-        self.assertEqual([charles, albert, bob],
-                         [review.reviewer for review in view.current_reviews])
+        self.assertEqual(
+            [charles, albert, bob],
+            [review.reviewer for review in view.current_reviews])
 
     def testChangeOfVoteBringsToTop(self):
         # If albert changes his abstention to an approve, it comes before
         # other votes that occurred between the abstention and the approval.
 
         # Disapprove first, then Approve, lastly Abstain.
-        date_generator = time_counter(delta=timedelta(days=1))
         # Request three reviews.
         albert = self.factory.makePerson(name='albert')
         bob = self.factory.makePerson(name='bob')
 
         owner = self.bmp.source_branch.owner
 
-        comment1 = self.bmp.createComment(
-            owner=albert, subject=self.factory.getUniqueString('subject'),
-            vote=CodeReviewVote.ABSTAIN, _date_created=date_generator.next())
-        comment2 = self.bmp.createComment(
-            owner=bob, subject=self.factory.getUniqueString('subject'),
-            vote=CodeReviewVote.APPROVE, _date_created=date_generator.next())
-        comment3 = self.bmp.createComment(
-            owner=albert, subject=self.factory.getUniqueString('subject'),
-            vote=CodeReviewVote.APPROVE, _date_created=date_generator.next())
+        self._createComment(albert, CodeReviewVote.ABSTAIN)
+        self._createComment(bob, CodeReviewVote.APPROVE)
+        self._createComment(albert, CodeReviewVote.APPROVE)
 
         view = BranchMergeProposalVoteView(self.bmp, LaunchpadTestRequest())
 
-        self.assertEqual([albert, bob],
-                         [review.reviewer for review in view.current_reviews])
+        self.assertEqual(
+            [albert, bob],
+            [review.reviewer for review in view.current_reviews])
 
 
 def test_suite():

@@ -25,8 +25,8 @@
         <tal:reviewer replace="structure review/reviewer/fmt:link">
           Eric the Reviewer</tal:reviewer>
         <img src="/@@/favourite-yes"
-             tal:condition="review/important_reviewer"
-             tal:attributes="title review/important_reviewer"/>
+             tal:condition="review/reviewer_relationship"
+             tal:attributes="title review/reviewer_relationship"/>
       </td>
       <td tal:content="review/date_of_comment/fmt:displaydate" />
     </tr>

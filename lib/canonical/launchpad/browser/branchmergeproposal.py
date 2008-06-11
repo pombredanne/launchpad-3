@@ -302,12 +302,8 @@ class DecoratedCodeReviewVoteReference:
         self.context = context
 
     @property
-    def important_reviewer(self):
-        """Is the reviewer in the review team for the target branch.
-
-        If a reviewer was asked to review the branch, then they are also
-        important.
-        """
+    def reviewer_relationship(self):
+        """The relationship of the reviewer to the code review."""
         vote = self.context
         if vote.reviewer != vote.registrant:
             return _("Requested reviewer")
@@ -334,7 +330,7 @@ class BranchMergeProposalVoteView(LaunchpadView):
         return [DecoratedCodeReviewVoteReference(vote)
                 for vote in self.context.votes]
 
-    def getOrderedReviews(self, actual_vote):
+    def _getOrderedReviews(self, actual_vote):
         """Return votes with the specified vote ordered newest first."""
         reviews = [review for review in self.reviews
                    if (review.comment is not None and
@@ -347,9 +343,9 @@ class BranchMergeProposalVoteView(LaunchpadView):
         """The current votes ordered by vote then date."""
         # We want the reviews in a specific order.
         # Disapprovals first, then approvals, then abstentions.
-        return (self.getOrderedReviews(CodeReviewVote.DISAPPROVE) +
-                self.getOrderedReviews(CodeReviewVote.APPROVE) +
-                self.getOrderedReviews(CodeReviewVote.ABSTAIN))
+        return (self._getOrderedReviews(CodeReviewVote.DISAPPROVE) +
+                self._getOrderedReviews(CodeReviewVote.APPROVE) +
+                self._getOrderedReviews(CodeReviewVote.ABSTAIN))
 
     @property
     def requested_reviews(self):
