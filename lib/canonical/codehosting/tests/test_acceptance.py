@@ -607,6 +607,51 @@ def make_server_tests(base_suite, servers):
 
 
 def make_smoke_tests(base_suite):
+    """Make smoke tests that run against every supported repository type."""
+    # XXX: JonathanLange 2008-08-11: This is a temporary kludge to let us land
+    # this branch before we upgrade Bazaar. This should be removed once
+    # rocketfuel has bzr 1.6b2 or better.
+    from bzrlib.tests import repository_implementations
+    adapter = getattr(
+        repository_implementations, 'RepositoryTestProviderAdapter', None)
+    if adapter is not None:
+        return make_smoke_tests_old_bzr(base_suite)
+    else:
+        return make_smoke_tests_new_bzr(base_suite)
+
+
+def make_smoke_tests_new_bzr(base_suite):
+    # XXX: JonathanLange 2008-08-11: Once rocketfuel has bzr 1.6b2 or better,
+    # this should be renamed to 'make_smoke_tests'.
+    from bzrlib import tests
+    from bzrlib.tests import repository_implementations
+    excluded_scenarios = [
+        # RepositoryFormat4 is not initializable (bzrlib raises TestSkipped
+        # when you try).
+        'RepositoryFormat4',
+        # Fetching weave formats from the smart server is known to be broken.
+        # See bug 173807 and bzrlib.tests.test_repository.
+        'RepositoryFormat5',
+        'RepositoryFormat6',
+        'RepositoryFormat7',
+        # Using RemoteRepositoryFormat doesn't make sense when testing push to
+        # remote server.
+        'RemoteRepositoryFormat',
+        ]
+    scenarios = repository_implementations.all_repository_format_scenarios()
+    scenarios = [
+        scenario for scenario in scenarios
+        if scenario[0] not in excluded_scenarios]
+    adapter = tests.TestScenarioApplier()
+    adapter.scenarios = scenarios
+    new_suite = unittest.TestSuite()
+    tests.adapt_tests(base_suite, adapter, new_suite)
+    return new_suite
+
+
+def make_smoke_tests_old_bzr(base_suite):
+    # XXX: JonathanLange 2008-08-11: Delete this once rocketfuel has bzr 1.6b2
+    # or better.
     from bzrlib.tests.repository_implementations import (
         RepositoryTestProviderAdapter)
     # We specifically exclude RepositoryFormat7, which is not supported.
