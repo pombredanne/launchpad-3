@@ -1014,5 +1014,29 @@ class TestScanFormatWeave(BzrSyncTestCase):
                          ControlFormat.BZR_DIR_6)
 
 
+class TestScanFormatWeave(BzrSyncTestCase):
+
+    def testUnrecognize(self):
+        class MockFormat:
+            def get_format_string(self):
+                return 'Unrecognizable'
+
+        class MockWithFormat:
+            def __init__(self):
+                self._format = MockFormat()
+
+        class MockBranch(MockWithFormat):
+            bzrdir = MockWithFormat()
+            repository = MockWithFormat()
+
+        branch = MockBranch()
+        self.makeBzrSync(self.db_branch).setFormats(branch)
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.UNRECOGNIZED)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.UNRECOGNIZED)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.UNRECOGNIZED)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

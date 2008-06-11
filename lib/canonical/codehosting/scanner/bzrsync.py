@@ -429,10 +429,13 @@ class BzrSync:
     def setFormats(self, bzr_branch):
         # XXX Bazaar does not provide a public API for learning about format
         # markers.  Fix this in Bazaar, then here.
-        def match_title(enum, title):
+        def match_title(enum, title, default):
             for value in enum.items:
                 if value.title == title:
                     return value
+            else:
+                return default
+
         control_string = bzr_branch.bzrdir._format.get_format_string()
         if bzr_branch._format.__class__ is BzrBranchFormat4:
             branch_string = BranchFormat.BZR_BRANCH_4.title
@@ -448,10 +451,11 @@ class BzrSync:
         else:
             repository_string = repository_format.get_format_string()
         self.db_branch.control_format = match_title(
-            ControlFormat, control_string)
-        self.db_branch.branch_format = match_title(BranchFormat, branch_string)
+            ControlFormat, control_string, ControlFormat.UNRECOGNIZED)
+        self.db_branch.branch_format = match_title(
+            BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
         self.db_branch.repository_format = match_title(
-            RepositoryFormat, repository_string)
+            RepositoryFormat, repository_string, RepositoryFormat.UNRECOGNIZED)
 
     def planDatabaseChanges(self):
         """Plan database changes to synchronize with bzrlib data.

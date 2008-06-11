@@ -175,6 +175,8 @@ def _branch_format_enum(num, format, format_string=None):
 
 class BranchFormat(DBEnumeratedType):
 
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
+
     # Branch 4 was only used with all-in-one formats, so it didn't have its
     # own marker.  It was implied by the control directory marker.
     BZR_BRANCH_4 = _branch_format_enum(
@@ -191,7 +193,10 @@ class BranchFormat(DBEnumeratedType):
     BZR_LOOM_2 = _branch_format_enum(106, BzrBranchLoomFormat6)
 
 
+
 class RepositoryFormat(DBEnumeratedType):
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
 
     # Repository formats prior to format 7 had no marker because they
     # were implied by the control directory format.
@@ -226,6 +231,8 @@ class RepositoryFormat(DBEnumeratedType):
 
 
 class ControlFormat(DBEnumeratedType):
+
+    UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
 
     BZR_DIR_4 = _branch_format_enum(4, BzrDirFormat4)
 
