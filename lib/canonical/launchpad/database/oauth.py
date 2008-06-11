@@ -93,6 +93,32 @@ class OAuthToken(SQLBase):
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
     secret = StringCol(notNull=False, default='')
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    project = ForeignKey(
+        dbName='project', foreignKey='Project', notNull=False, default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution',
+        notNull=False, default=None)
+
+    @property
+    def context(self):
+        """See `IOAuthToken`."""
+        if self.product:
+            return self.product
+        elif self.project:
+            return self.project
+        elif self.distribution:
+            if self.sourcepackagename:
+                return self.distribution.getSourcePackage(
+                    self.sourcepackagename)
+            else:
+                return self.distribution
+        else:
+            return None
 
 
 class OAuthAccessToken(OAuthToken):
@@ -126,13 +152,18 @@ class OAuthRequestToken(OAuthToken):
     permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
 
-    def review(self, user, permission):
+    def review(self, user, permission, product=None, project=None,
+               distribution=None, sourcepackagename=None):
         """See `IOAuthRequestToken`."""
         assert not self.is_reviewed, (
             "Request tokens can be reviewed only once.")
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
         self.person = user
         self.permission = permission
+        self.product = product
+        self.project = project
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
 
     def createAccessToken(self):
         """See `IOAuthRequestToken`."""
@@ -144,7 +175,9 @@ class OAuthRequestToken(OAuthToken):
         access_level = AccessLevel.items[self.permission.name]
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            secret=secret, permission=access_level)
+            secret=secret, permission=access_level, product=self.product,
+            project=self.project, distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
         self.destroySelf()
         return access_token
 

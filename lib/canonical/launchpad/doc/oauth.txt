@@ -58,6 +58,11 @@ The token's key and secret have a length of 20 and 80 respectively.
     >>> len(request_token.secret)
     80
 
+Newly created tokens have no context associated with.
+
+    >>> print request_token.context
+    None
+
 Initially, a token does not have a person or permission associated with
 it as the consumer doesn't know what the user's identity is on
 Launchpad.
@@ -88,6 +93,36 @@ token is considered used and can only be exchanged for an access token
     True
     >>> request_token.is_reviewed
     True
+
+When reviewing a token we can also change the context associated with
+it, which means the consumer using that token will only have access
+to things linked to that context (Product, Project, Distribution,
+DistroSourcePackage).
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProductSet, IProjectSet, ISourcePackageNameSet)
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> request_token2 = consumer.newRequestToken()
+    >>> request_token2.review(
+    ...     salgado, OAuthPermission.WRITE_PRIVATE, product=firefox)
+    >>> request_token2.context.title
+    u'Mozilla Firefox'
+
+    >>> mozilla = getUtility(IProjectSet)['mozilla']
+    >>> request_token2 = consumer.newRequestToken()
+    >>> request_token2.review(
+    ...     salgado, OAuthPermission.WRITE_PRIVATE, project=mozilla)
+    >>> request_token2.context.title
+    u'The Mozilla Project'
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
+    >>> request_token2 = consumer.newRequestToken()
+    >>> request_token2.review(
+    ...     salgado, OAuthPermission.WRITE_PRIVATE, distribution=ubuntu,
+    ...     sourcepackagename=evolution)
+    >>> request_token2.context.title
+    u'Source Package "evolution" in Ubuntu Linux'
 
 
 === Retrieving request tokens ===
@@ -155,6 +190,15 @@ By default, access tokens don't expire.
     >>> print access_token.date_expires
     None
 
+Access tokens will also inherit the context from the request token.
+
+    >>> request_token2 = consumer.newRequestToken()
+    >>> request_token2.review(
+    ...     salgado, OAuthPermission.WRITE_PRIVATE, product=firefox)
+    >>> access_token2 = request_token2.createAccessToken()
+    >>> access_token2.context.title
+    u'Mozilla Firefox'
+
 If the request token hasn't been reviewed yet, it can't be used to
 create an access token.
 
@@ -201,12 +245,12 @@ From any given person it's possible to retrieve his non-expired access
 tokens.
 
     >>> access_token.person.oauth_access_tokens.count()
-    3
+    4
     >>> access_token.date_expires = (
     ...     datetime.now(pytz.timezone('UTC')) - timedelta(hours=1))
     >>> syncUpdate(access_token)
     >>> access_token.person.oauth_access_tokens.count()
-    2
+    3
 
 
 == Nonces and timestamps ==

@@ -46,7 +46,7 @@ import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication, IPerson,
     IPersonSet, IShipItApplication, IWebServiceApplication,
-    IOAuthConsumerSet, OAuthPermission, NonceAlreadyUsed)
+    IOAuthConsumerSet, NonceAlreadyUsed)
 
 from canonical.launchpad.webapp.adapter import (
     get_request_duration, RequestExpired)
@@ -56,7 +56,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
     INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
-    IPlacelessLoginSource)
+    IPlacelessLoginSource, OAuthPermission)
 from canonical.launchpad.webapp.authentication import (
     check_oauth_signature, get_oauth_authorization)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest

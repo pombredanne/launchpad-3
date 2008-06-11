@@ -15,10 +15,10 @@ __all__ = [
     'IOAuthRequestToken',
     'IOAuthRequestTokenSet',
     'NonceAlreadyUsed',
-    'OAuthPermission']
+    ]
 
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
@@ -129,6 +129,13 @@ class IOAuthToken(Interface):
         title=_('Secret'), required=True, readonly=True,
         description=_('The secret associated with this token.  It is used '
                       'by the consumer to sign its requests.'))
+    product = Choice(title=_('Project'), required=False, vocabulary='Product')
+    project = Choice(title=_('Project'), required=False, vocabulary='Project')
+    sourcepackagename = Choice(
+        title=_("Package"), required=False, vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
+    context = Attribute("FIXME")
 
 
 class IOAuthAccessToken(IOAuthToken):
