@@ -12,19 +12,37 @@
 
   <body>
     <div metal:fill-slot="main">
-      <p>We are planning to relicense all translations submitted
-        through Launchpad under BSD license.  This will clarify
-        licensing used for translations in Launchpad:
-        for further explanations, please see
-        <a href="http://help.launchpad.net/Translations/RelicensingFAQ">
-        Relicensing FAQ</a>.</p>
+      <p>Hello. We plan to clarify the licence applied to translations
+        made in Launchpad. Soon, all translations in Launchpad will use
+        the BSD licence.</p>
 
-      <p>You can choose not to relicense your translations,
-        and they will be <strong>removed</strong> when we migrate to
-        BSD licensed translations completely.  You will be able to change
-        your opinion at least until end of June, through your
-        <a tal:attributes="href string:${context/fmt:url}/+relicensing">
-         relicensing translations</a> page.</p>
+      <p>We would like your permission to apply the BSD licence to the
+        translations you've already made in Launchpad and also to any
+        future translations you make in Launchpad.</p>
+
+      <p>We've chosen the BSD licence because it is universally
+        compatible with projects that use other licences. That's ideal
+        because Launchpad shares your translations work with other
+        people and projects.</p>
+
+      <p>To see which translations are affected, visit your
+        <a tal:attributes="href string:${context/fmt:url}">translations</a>
+        page.</p>
+
+      <p>Please tell us if you're happy to use the BSD licence, using
+        the link below. If you change your mind, you can return here
+        by following the
+        "<a tal:attributes="href view/relicensing_url">Translations
+        licensing"</a> link on your translations page at any time
+        until July 31st.</p>
+
+      <p>If you choose not to use the BSD licence, we will remove your
+        translations from Launchpad shortly after July 31st.</p>
+
+      <p>For more about why we're clarifying translations licensing,
+        take a look at our
+        <a href="http://help.launchpad.net/Translations/LicensingFAQ">
+        translations licensing FAQ</a>.</p>
 
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>
