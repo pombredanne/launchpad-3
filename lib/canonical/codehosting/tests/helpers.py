@@ -12,9 +12,9 @@ __all__ = [
     'create_branch_with_one_revision',
     'deferToThread',
     'FakeLaunchpad',
+    'LoomTestMixin',
     'make_bazaar_branch_and_tree',
     'ServerTestCase',
-    'TestCaseWithTransportAndLoom',
     ]
 
 import os
@@ -91,8 +91,8 @@ def exception_names(exceptions):
     return names
 
 
-class TestCaseWithTransportAndLoom(TestCaseWithTransport):
-    """Extends TestCaseWithTransport to have limited loom support."""
+class LoomTestMixin:
+    """Mixin to provide Bazaar test classes with limited loom support."""
 
     def makeLoomBranchAndTree(self, tree_directory):
         """Make a looms-enabled branch and working tree."""
@@ -112,7 +112,7 @@ class TestCaseWithTransportAndLoom(TestCaseWithTransport):
         return loom_tree
 
 
-class BranchTestCase(TestCaseWithTransportAndLoom):
+class BranchTestCase(TestCaseWithTransport, LoomTestMixin):
     """Base class for tests that do a lot of things with branches."""
 
     layer = LaunchpadFunctionalLayer
