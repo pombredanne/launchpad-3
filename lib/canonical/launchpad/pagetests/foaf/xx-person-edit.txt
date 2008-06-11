@@ -84,6 +84,16 @@ He will also change his timezone:
     >>> browser.getControl('Timezone').value
     ['Africa/Dakar']
 
+If he decides that he doesn't want to change anything, he can click 'Cancel'
+to return to the index page.
+
+    # XXX mars 2008-06-11
+    # Use direct navigation for the LP 2.0 transition. See bug #239192.
+    >>> browser.open('http://launchpad.dev/~foobar/+edit2.0')
+    >>> browser.getLink('Cancel').click()
+    >>> browser.url
+    'http://launchpad.dev/~foobar'
+
 
 == Clean up ==
 

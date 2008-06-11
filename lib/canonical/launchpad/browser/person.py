@@ -2955,6 +2955,16 @@ class PersonEditView(BasePersonEditView):
         'verbose_bugnotifications', 'timezone']
     custom_widget('timezone', SelectWidget, size=15)
 
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
+
+    @action(_("Save Changes"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
 
 class PersonEditViewObsolete(BasePersonEditView):
     """The Launchpad 1.0 Person 'Edit' page."""
