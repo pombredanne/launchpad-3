@@ -117,26 +117,22 @@ class BzrSyncTestCase(TestCaseWithTransport):
          new_revisionnumber_count,
          new_revisionparent_count,
          new_revisionauthor_count) = self.getCounts()
-        revision_pair = (old_revision_count+new_revisions,
-                         new_revision_count)
-        revisionnumber_pair = (old_revisionnumber_count+new_numbers,
-                               new_revisionnumber_count)
-        revisionparent_pair = (old_revisionparent_count+new_parents,
-                               new_revisionparent_count)
-        revisionauthor_pair = (old_revisionauthor_count+new_authors,
-                               new_revisionauthor_count)
-        self.assertEqual(revision_pair[0], revision_pair[1],
-                         "Wrong Revision count (should be %d, not %d)"
-                         % revision_pair)
-        self.assertEqual(revisionnumber_pair[0], revisionnumber_pair[1],
-                         "Wrong BranchRevision count (should be %d, not %d)"
-                         % revisionnumber_pair)
-        self.assertEqual(revisionparent_pair[0], revisionparent_pair[1],
-                         "Wrong RevisionParent count (should be %d, not %d)"
-                         % revisionparent_pair)
-        self.assertEqual(revisionauthor_pair[0], revisionauthor_pair[1],
-                         "Wrong RevisionAuthor count (should be %d, not %d)"
-                         % revisionauthor_pair)
+        self.assertEqual(
+            new_revisions,
+            new_revision_count - old_revision_count,
+            "Wrong number of new database Revisions.")
+        self.assertEqual(
+            new_numbers,
+            new_revisionnumber_count - old_revisionnumber_count,
+            "Wrong number of new BranchRevisions.")
+        self.assertEqual(
+            new_parents,
+            new_revisionparent_count - old_revisionparent_count,
+            "Wrong number of new RevisionParents.")
+        self.assertEqual(
+            new_authors,
+            new_revisionauthor_count - old_revisionauthor_count,
+            "Wrong number of new RevisionAuthors.")
 
     def makeBzrSync(self, db_branch):
         """Create a BzrSync instance for the test branch.
