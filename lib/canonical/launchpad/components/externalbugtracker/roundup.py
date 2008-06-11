@@ -95,61 +95,6 @@ class Roundup(ExternalBugTracker):
                 "status&@sort=activity&@group=priority&@pagesize=50"
                 "&@startwith=0")
 
-    @property
-    def status_map(self):
-        """Return the remote status -> BugTaskStatus mapping for the
-        current remote bug tracker.
-        """
-        if self.isPython():
-            # Python bugtracker statuses come in two parts: status and
-            # resolution. Both of these are integer values. We can look
-            # them up in the form status_map[status][resolution]
-            return {
-                # Open issues (status=1). We also use this as a fallback
-                # for statuses 2 and 3, for which the mappings are
-                # different only in a few instances.
-                1: {
-                    None: BugTaskStatus.NEW,       # No resolution
-                    1: BugTaskStatus.CONFIRMED,    # Resolution: accepted
-                    2: BugTaskStatus.CONFIRMED,    # Resolution: duplicate
-                    3: BugTaskStatus.FIXCOMMITTED, # Resolution: fixed
-                    4: BugTaskStatus.INVALID,      # Resolution: invalid
-                    5: BugTaskStatus.CONFIRMED,    # Resolution: later
-                    6: BugTaskStatus.INVALID,      # Resolution: out-of-date
-                    7: BugTaskStatus.CONFIRMED,    # Resolution: postponed
-                    8: BugTaskStatus.WONTFIX,      # Resolution: rejected
-                    9: BugTaskStatus.CONFIRMED,    # Resolution: remind
-                    10: BugTaskStatus.WONTFIX,     # Resolution: wontfix
-                    11: BugTaskStatus.INVALID},    # Resolution: works for me
-
-                # Closed issues (status=2)
-                2: {
-                    None: BugTaskStatus.WONTFIX,   # No resolution
-                    1: BugTaskStatus.FIXCOMMITTED, # Resolution: accepted
-                    3: BugTaskStatus.FIXRELEASED,  # Resolution: fixed
-                    7: BugTaskStatus.WONTFIX},     # Resolution: postponed
-
-                # Pending issues (status=3)
-                3: {
-                    None: BugTaskStatus.INCOMPLETE,# No resolution
-                    7: BugTaskStatus.WONTFIX},     # Resolution: postponed
-            }
-
-        else:
-            # Our mapping of Roundup => Launchpad statuses.  Roundup
-            # statuses are integer-only and highly configurable.
-            # Therefore we map the statuses available by default so that
-            # they can be overridden by subclassing the Roundup class.
-            return {
-                1: BugTaskStatus.NEW,          # Roundup status 'unread'
-                2: BugTaskStatus.CONFIRMED,    # Roundup status 'deferred'
-                3: BugTaskStatus.INCOMPLETE,   # Roundup status 'chatting'
-                4: BugTaskStatus.INCOMPLETE,   # Roundup status 'need-eg'
-                5: BugTaskStatus.INPROGRESS,   # Roundup status 'in-progress'
-                6: BugTaskStatus.INPROGRESS,   # Roundup status 'testing'
-                7: BugTaskStatus.FIXCOMMITTED, # Roundup status 'done-cbb'
-                8: BugTaskStatus.FIXRELEASED,} # Roundup status 'resolved'
-
     def isPython(self):
         """Return True if the remote bug tracker is at bugs.python.org.
 
@@ -252,8 +197,7 @@ class Roundup(ExternalBugTracker):
 
     # Our mapping of Roundup => Launchpad statuses. Roundup statuses
     # are integer-only and highly configurable.  Therefore we map the
-    # statuses available by default so that they can be overridden by
-    # subclassing the Roundup class.
+    # statuses available by default.
     _status_lookup_standard = LookupTree(
         (1, BugTaskStatus.NEW),          # Roundup status 'unread'
         (2, BugTaskStatus.CONFIRMED),    # Roundup status 'deferred'
@@ -266,8 +210,7 @@ class Roundup(ExternalBugTracker):
         )
 
     # Python bugtracker statuses come in two parts: status and
-    # resolution. Both of these are integer values. We can look them
-    # up in the form status_map[status][resolution]
+    # resolution. Both of these are integer values.
     _status_lookup_python_1 = LookupTree(
         # Open issues (status=1). We also use this as a fallback for
         # statuses 2 and 3, for which the mappings are different only
@@ -292,14 +235,15 @@ class Roundup(ExternalBugTracker):
                 (1, BugTaskStatus.FIXCOMMITTED), # Resolution: accepted
                 (3, BugTaskStatus.FIXRELEASED),  # Resolution: fixed
                 (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-                _status_lookup_python_1)),    # Failback
+                _status_lookup_python_1)),       # Failback
         (3, LookupTree(
                 (None, BugTaskStatus.INCOMPLETE),# No resolution
                 (7, BugTaskStatus.WONTFIX),      # Resolution: postponed
-                _status_lookup_python_1)),    # Failback
+                _status_lookup_python_1)),       # Failback
         )
 
-    # Combine custom mappings with the standard mappings.
+    # Combine custom mappings with the standard mappings, using the
+    # remote host as the first key into the tree.
     _status_lookup_titles = (
         'Remote host', 'Roundup status', 'Roundup resolution')
     _status_lookup = LookupTree(
