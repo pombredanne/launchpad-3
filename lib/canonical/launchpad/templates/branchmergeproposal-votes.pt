@@ -3,55 +3,58 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="code-review-votes">
-
-<table class="listing compressed"
-       tal:define="current_reviews view/current_reviews"
-       tal:condition="current_reviews">
-  <thead>
-    <tr>
-      <th>Status</th>
-      <th>Reviewed by</th>
-      <th>Date</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr tal:repeat="review view/current_reviews">
-      <td>
-        <a tal:attributes="href review/comment/fmt:url"
-           tal:content="review/comment/vote/title">
+<tal:completed-reviews
+    define="current_reviews view/current_reviews"
+    condition="current_reviews">
+  <h3>Completed reviews</h3>
+  <table class="listing compressed">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Reviewed by</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="review view/current_reviews">
+        <td>
+          <a tal:attributes="href review/comment/fmt:url"
+             tal:content="review/comment/vote/title">
           Approved</a>
-      </td>
-      <td>
-        <tal:reviewer replace="structure review/reviewer/fmt:link">
+        </td>
+        <td>
+          <tal:reviewer replace="structure review/reviewer/fmt:link">
           Eric the Reviewer</tal:reviewer>
-        <img src="/@@/favourite-yes"
-             tal:condition="review/reviewer_relationship"
-             tal:attributes="title review/reviewer_relationship"/>
-      </td>
-      <td tal:content="review/date_of_comment/fmt:displaydate" />
-    </tr>
-  </tbody>
-</table>
-
-<table class="listing compressed"
-       tal:define="requested_reviews view/requested_reviews"
-       tal:condition="requested_reviews">
-  <thead>
-    <tr>
-      <th>Reviewer</th>
-      <th>Review type</th>
-      <th>Requested by</th>
-      <th>Date</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr tal:repeat="review requested_reviews">
-      <td tal:content="structure review/reviewer/fmt:link" />
-      <td tal:content="review/review_type" />
-      <td tal:content="structure review/registrant/fmt:link" />
-      <td tal:content="review/date_created/fmt:displaydate" />
-    </tr>
-  </tbody>
-</table>
-
+          <img src="/@@/favourite-yes"
+               tal:condition="review/reviewer_relationship"
+               tal:attributes="title review/reviewer_relationship"/>
+        </td>
+        <td tal:content="review/date_of_comment/fmt:displaydate" />
+      </tr>
+    </tbody>
+  </table>
+</tal:completed-reviews>
+<tal:pending-reviews
+    define="requested_reviews view/requested_reviews"
+    condition="requested_reviews">
+  <h3>Pending reviews</h3>
+  <table class="listing compressed">
+    <thead>
+      <tr>
+        <th>Reviewer</th>
+        <th>Review type</th>
+        <th>Requested by</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="review requested_reviews">
+        <td tal:content="structure review/reviewer/fmt:link" />
+        <td tal:content="review/review_type" />
+        <td tal:content="structure review/registrant/fmt:link" />
+        <td tal:content="review/date_created/fmt:displaydate" />
+      </tr>
+    </tbody>
+  </table>
+</tal:pending-reviews>
 </div>
