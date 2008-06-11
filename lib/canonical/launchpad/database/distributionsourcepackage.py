@@ -77,8 +77,10 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return 'Source Package "%s" in %s' % (
-            self.sourcepackagename.name, self.distribution.title)
+        lq = u'\N{left double quotation mark}'
+        rq = u'\N{right double quotation mark}'
+        return '%s%s%s source package in %s' % (
+            lq, self.sourcepackagename.name, rq, self.distribution.displayname)
 
     @property
     def bug_reporting_guidelines(self):

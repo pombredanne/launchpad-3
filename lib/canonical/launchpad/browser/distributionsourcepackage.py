@@ -80,7 +80,9 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
     redirection("+editbugcontact", "+subscribe")
 
     def breadcrumb(self):
-        return self.context.sourcepackagename.name
+        lq = u'\N{left double quotation mark}'
+        rq = u'\N{right double quotation mark}'
+        return '%s%s%s package' % (lq, self.context.sourcepackagename.name, rq)
 
 
 class DistributionSourcePackageView(LaunchpadFormView):

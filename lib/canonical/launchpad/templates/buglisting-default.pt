@@ -30,7 +30,7 @@
       >Bugs in Fooix: Advanced search</h1>
       <h1 tal:condition="not: view/shouldShowAdvancedForm">
         Bugs in
-        <tal:software replace="context/displayname">Fooix</tal:software>
+        <tal:software replace="context/title">Fooix</tal:software>
       </h1>
     </metal:heading>
 

@@ -27,7 +27,7 @@ Translations page.
     * Blueprints (Not active)
     * Translations (Not active)
     * Answers (http://answers.launchpad.dev/ubuntu/+source/alsa-utils)
-    Main heading: ?alsa-utils? source package in Ubuntu Linux
+    Main heading: ...alsa-utils... source package in Ubuntu
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_navigation(anon_browser.contents)
@@ -41,7 +41,7 @@ Translations page.
     * Blueprints (Not active)
     * Translations (Not active)
     * Answers (http://answers.launchpad.dev/ubuntu/+source/alsa-utils)
-    Main heading: Bugs in ?alsa-utils? source package in Ubuntu Linux
+    Main heading: Bugs in ...alsa-utils... source package in Ubuntu
 
 
 == Distribution source package release ==
