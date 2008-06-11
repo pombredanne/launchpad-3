@@ -207,6 +207,13 @@ class TestPullerWorkerFormats(
     repository_implementations.TestCaseWithRepository, PullerWorkerMixin,
     helpers.LoomTestMixin):
 
+    def makePullerWorker(self, *args, **kwargs):
+        worker = PullerWorkerMixin.makePullerWorker(self, *args, **kwargs)
+        def mirror_failed(error):
+            raise
+        worker._mirrorFailed = mirror_failed
+        return worker
+
     def tearDown(self):
         repository_implementations.TestCaseWithRepository.tearDown(self)
         reset_logging()
@@ -270,8 +277,8 @@ class TestPullerWorkerFormats(
         """Make and return a stacked branch."""
         format = bzrdir.BzrDirMetaFormat1()
         format.set_branch_format(BzrBranchFormat7())
-        format.repository_format = \
-            bzrlib.repofmt.pack_repo.RepositoryFormatPackDevelopment1()
+        format.repository_format = (
+            bzrlib.repofmt.pack_repo.RepositoryFormatPackDevelopment1())
         tree = self._createSourceBranch(
             'base-branch', format, format.repository_format)
         revision_id = tree.branch.last_revision()
@@ -288,6 +295,17 @@ class TestPullerWorkerFormats(
             stacked_branch.last_revision(), mirrored_branch.last_revision())
         self.assertEqual(
             stacked_branch.get_stacked_on(), mirrored_branch.get_stacked_on())
+
+    def test_loomBranch(self):
+        # When we mirror a loom branch for the first time....
+        self.repository_format = (
+            bzrlib.repofmt.pack_repo.RepositoryFormatPackDevelopment1())
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
+        loom_tree = self.makeLoomBranchAndTree('loom')
+        loom_branch = loom_tree.branch
+        mirrored_branch = self._mirror(loom_branch.base)
+        self.assertEqual(
+            loom_branch.last_revision(), mirrored_branch.last_revision())
 
     def _mirror(self, source_url):
         # Mirror src-branch to dest-branch
