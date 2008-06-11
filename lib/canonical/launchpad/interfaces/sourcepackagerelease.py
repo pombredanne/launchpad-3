@@ -162,11 +162,6 @@ class ISourcePackageRelease(Interface):
         argument remains untouched.
         """
 
-    def countOpenBugsInUploadedDistro(user):
-        """Return the number of open bugs targeted to the sourcepackagename
-        and distribution to which this release was uploaded.
-        """
-
     def attachTranslationFiles(tarball_alias, is_published, importer=None):
         """Attach a tarball with translations to be imported into Rosetta.
 
