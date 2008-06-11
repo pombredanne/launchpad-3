@@ -1302,6 +1302,9 @@ class BugTaskSet:
             else:
                 component_ids = sqlvalues(params.component)
 
+            distro_archive_ids = [
+                archive.id
+                for archive in distroseries.distribution.all_distro_archives]
             extra_clauses.extend(["""
             BugTask.sourcepackagename =
                 SourcePackageRelease.sourcepackagename AND
@@ -1312,7 +1315,7 @@ class BugTaskSet:
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(distroseries,
-                            distroseries.distribution.all_distro_archive_ids,
+                            distro_archive_ids,
                             component_ids,
                             PackagePublishingStatus.PUBLISHED)])
 
