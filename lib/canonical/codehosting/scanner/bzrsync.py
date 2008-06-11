@@ -16,7 +16,7 @@ import urlparse
 
 import pytz
 from zope.component import getUtility
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, BzrBranchFormat4
 from bzrlib.diff import show_diff_trees
 from bzrlib.errors import NoSuchRevision
 from bzrlib.log import log_formatter, show_log
@@ -24,9 +24,9 @@ from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionNotificationLevel, BugBranchStatus,
-    IBranchRevisionSet, IBugBranchSet, IBugSet,
-    IRevisionSet, NotFoundError)
+    BranchFormat, BranchSubscriptionNotificationLevel, BugBranchStatus,
+    ControlFormat, IBranchRevisionSet, IBugBranchSet, IBugSet, IRevisionSet,
+    NotFoundError, RepositoryFormat)
 from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 
@@ -382,6 +382,7 @@ class BzrSync:
         # write-lock contention. Update them all in a single transaction to
         # improve the performance and allow garbage collection in the future.
         self.trans_manager.begin()
+        self.setFormats(bzr_branch)
         self.retrieveDatabaseAncestry()
         (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges()
@@ -422,6 +423,27 @@ class BzrSync:
         assert first_ancestor is None, 'history horizons are not supported'
         self.bzr_ancestry = set(bzr_ancestry_ordered)
         self.bzr_history = bzr_branch.revision_history()
+
+    def setFormats(self, bzr_branch):
+        # XXX Bazaar does not provide a public API for learning about format
+        # markers.  Fix this in Bazaar, then here.
+        def match_title(enum, title):
+            for value in enum.items:
+                if value.title == title:
+                    return value
+        control_string = bzr_branch.bzrdir._format.get_format_string()
+        if bzr_branch._format.__class__ is BzrBranchFormat4:
+            branch_string = BranchFormat.BZR_BRANCH_4.title
+            repository_string = control_string
+        else:
+            branch_string = bzr_branch._format.get_format_string()
+            repository_format = bzr_branch.repository._format
+            repository_string = repository_format.get_format_string()
+        self.db_branch.control_format = match_title(
+            ControlFormat, control_string)
+        self.db_branch.branch_format = match_title(BranchFormat, branch_string)
+        self.db_branch.repository_format = match_title(
+            RepositoryFormat, repository_string)
 
     def planDatabaseChanges(self):
         """Plan database changes to synchronize with bzrlib data.

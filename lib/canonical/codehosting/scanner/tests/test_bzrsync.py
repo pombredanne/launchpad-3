@@ -24,8 +24,9 @@ from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IBranchSet, IPersonSet, IRevisionSet)
+    BranchFormat, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError, get_diff, get_revision_message)
@@ -74,11 +75,11 @@ class BzrSyncTestCase(TestCaseWithTransport):
         syncer = self.makeBzrSync(db_branch)
         syncer.syncBranchAndClose(bzr_branch)
 
-    def makeBzrBranchAndTree(self, db_branch):
+    def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
         path = relpath(os.getcwd(),
                        local_path_from_url(db_branch.warehouse_url))
-        return self.make_branch_and_tree(path)
+        return self.make_branch_and_tree(path, format=format)
 
     def makeDatabaseBranch(self):
         """Make an arbitrary branch in the database."""
@@ -973,6 +974,42 @@ class TestRevisionProperty(BzrSyncTestCase):
         # Check that properties are stored in the database.
         db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
         self.assertEquals(properties, db_revision.getProperties())
+
+
+class TestScanFormatPack(BzrSyncTestCase):
+
+    def testRecognizePack(self):
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_6)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.BZR_KNITPACK_1)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.BZR_METADIR_1)
+
+
+class TestScanFormatKnit(BzrSyncTestCase):
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'knit')
+
+    def testRecognizeKnit(self):
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_5)
+
+
+class TestScanFormatWeave(BzrSyncTestCase):
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'weave')
+
+    def testRecognizeWeave(self):
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_4)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.BZR_DIR_6)
 
 
 def test_suite():

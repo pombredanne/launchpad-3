@@ -38,15 +38,15 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
-    BranchPersonSearchRestriction, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
-    BranchVisibilityRule, CannotDeleteBranch, CodeReviewNotificationLevel,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchPersonSearchContext, IBranchSet,
-    ILaunchpadCelebrities, InvalidBranchMergeProposal,
-    IPerson, IProduct, IProject,
-    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT, NotFoundError)
+    BranchFormat, BranchLifecycleStatus, BranchListingSort,
+    BranchMergeProposalStatus, BranchPersonSearchRestriction,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
+    CodeReviewNotificationLevel, ControlFormat,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
+    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
+    IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    NotFoundError, RepositoryFormat)
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -71,6 +71,9 @@ class Branch(SQLBase):
     title = StringCol(notNull=False)
     summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
+    branch_format = EnumCol(enum=BranchFormat)
+    repository_format = EnumCol(enum=RepositoryFormat)
+    control_format = EnumCol(enum=ControlFormat, dbName='metadir_format')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
@@ -926,7 +929,8 @@ class BranchSet:
     def new(self, branch_type, name, registrant, owner, product,
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, whiteboard=None, date_created=None):
+            summary=None, whiteboard=None, date_created=None,
+            branch_format=None, repository_format=None, control_format=None):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW
@@ -962,7 +966,8 @@ class BranchSet:
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
-            date_last_modified=date_created)
+            date_last_modified=date_created, branch_format=branch_format,
+            repository_format=repository_format, control_format=control_format)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at

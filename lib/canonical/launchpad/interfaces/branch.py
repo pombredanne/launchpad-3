@@ -13,6 +13,7 @@ __all__ = [
     'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
+    'BranchFormat',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
@@ -22,6 +23,7 @@ __all__ = [
     'BranchTypeError',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
+    'ControlFormat',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -31,6 +33,7 @@ __all__ = [
     'IBranchPersonSearchContext',
     'MAXIMUM_MIRROR_FAILURES',
     'MIRROR_TIME_INCREMENT',
+    'RepositoryFormat',
     'UICreatableBranchType',
     'UnknownBranchTypeError'
     ]
@@ -54,6 +57,12 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from bzrlib.branch import (
+    BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
+    BzrBranchFormat6)
+from bzrlib.bzrdir import (
+    BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
+from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -145,6 +154,38 @@ class BranchType(DBEnumeratedType):
         Registered in Launchpad with an external location,
         but is not to be mirrored, nor available through Launchpad.
         """)
+
+
+def _branch_format_enum(num, format, format_string=None):
+    instance = format()
+    if format_string is None:
+        format_string = instance.get_format_string()
+    return DBItem(num, format_string, instance.get_format_description())
+
+
+class BranchFormat(DBEnumeratedType):
+
+    # Branch 4 was only used with all-in-one formats, so it didn't have its
+    # own marker.  It was implied by the control directory marker.
+    BZR_BRANCH_4 = _branch_format_enum(
+        4, BzrBranchFormat5, 'Fake Bazaar Branch 4 marker')
+
+    BZR_BRANCH_5 = _branch_format_enum(5, BzrBranchFormat5)
+
+    BZR_BRANCH_6 = _branch_format_enum(6, BzrBranchFormat6)
+
+
+class RepositoryFormat(DBEnumeratedType):
+
+    BZR_KNITPACK_1 = _branch_format_enum(1, RepositoryFormatKnitPack1)
+
+
+class ControlFormat(DBEnumeratedType):
+
+    BZR_DIR_4 = _branch_format_enum(4, BzrDirFormat4)
+    BZR_DIR_5 = _branch_format_enum(5, BzrDirFormat5)
+    BZR_DIR_6 = _branch_format_enum(6, BzrDirFormat6)
+    BZR_METADIR_1 = _branch_format_enum(1, BzrDirMetaFormat1)
 
 
 class UICreatableBranchType(EnumeratedType):
@@ -352,6 +393,15 @@ class IBranch(IHasOwner):
         trailing_slash=False,
         description=_("This is the external location where the Bazaar "
                       "branch is hosted."))
+
+    branch_format = Choice(
+        title=_("Branch Type"), required=True, vocabulary=BranchFormat)
+
+    repository_format = Choice(
+        title=_("Branch Type"), required=True, vocabulary=RepositoryFormat)
+
+    control_format = Choice(
+        title=_("Control Directory"), required=True, vocabulary=ControlFormat)
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))

@@ -17,7 +17,8 @@
                         last_mirrored last_mirrored_id last_mirror_attempt
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
-                        reviewer"
+                        reviewer branch_format repository_format
+                        control_format"
         />
     <require
         permission="launchpad.AnyPerson"
