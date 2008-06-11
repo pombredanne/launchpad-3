@@ -3,8 +3,8 @@
 Objects available through the web interface, such as people, have a readable
 interface which is available through direct attribute access.
 
-    >>> from launchpadlib.testing.helpers import Launchpad
-    >>> launchpad = Launchpad(Launchpad.tokens.salgado_change_anything)
+    >>> from launchpadlib.testing.helpers import salgado_change_anything
+    >>> launchpad = salgado_change_anything.login()
 
     >>> salgado = launchpad.people.get('salgado')
     >>> salgado.display_name

@@ -16,21 +16,23 @@ from launchpadlib.launchpad import Launchpad as _Launchpad
 class Launchpad(_Launchpad):
     """A base class for talking to the testing root service."""
 
+    # Use our test service root.
     SERVICE_ROOT = 'http://api.launchpad.dev:8085/beta'
 
-    class tokens:
-        # Convenient placeholders for web service users.  Values are 2-tuples
-        # of the user's access token and secret.
-        salgado_change_anything = ('salgado-change-anything', 'test')
-        salgado_read_nonprivate = ('salgado-read-nonprivate', 'secret')
-        nopriv_read_nonprivate  = ('nopriv-read-nonprivate', 'mystery')
 
-    def __init__(self, user):
-        """Create the root service.
+class KnownTokens:
+    """Known access token/secret combinations."""
 
-        :param user: One of the above hard coded access tokens.
-        """
-        consumer = Consumer('launchpad-library')
-        access_token = AccessToken(user[0], user[1])
-        credentials = Credentials(consumer, access_token)
-        super(Launchpad, self).__init__(credentials)
+    def __init__(self, token_string, access_secret):
+        self.token_string = token_string
+        self.access_secret = access_secret
+
+    def login(self):
+        """Login using these credentials."""
+        return Launchpad.login(
+            'launchpad-library', self.token_string, self.access_secret)
+
+
+salgado_change_anything = KnownTokens('salgado-change-anything', 'test')
+salgado_read_nonprivate = KnownTokens('salgado-read-nonprivate', 'secret')
+nopriv_read_nonprivate = KnownTokens('nopriv-read-nonprivate', 'mystery')

@@ -11,8 +11,8 @@ object to know whether you're dealing with a person or a team.
 You can access Launchpad people, and the set of all people, through the web
 service interface.  The set of people is available from the service root.
 
-    >>> from launchpadlib.testing.helpers import Launchpad
-    >>> launchpad = Launchpad(Launchpad.tokens.salgado_change_anything)
+    >>> from launchpadlib.testing.helpers import salgado_change_anything
+    >>> launchpad = salgado_change_anything.login()
     >>> len(launchpad.people)
     63
 
