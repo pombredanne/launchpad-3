@@ -27,6 +27,8 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadFormView, Link,
     StandardLaunchpadFacets, action, canonical_url, redirection)
 
+from canonical.lazr.utils import smartquote
+
 
 class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
@@ -80,9 +82,8 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
     redirection("+editbugcontact", "+subscribe")
 
     def breadcrumb(self):
-        lq = u'\N{left double quotation mark}'
-        rq = u'\N{right double quotation mark}'
-        return '%s%s%s package' % (lq, self.context.sourcepackagename.name, rq)
+        return smartquote('"%s" package') % (
+            self.context.sourcepackagename.name)
 
 
 class DistributionSourcePackageView(LaunchpadFormView):
