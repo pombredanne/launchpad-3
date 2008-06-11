@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 
-from launchpadlib.credentials import AccessToken, Consumer, Credentials
 from launchpadlib.launchpad import Launchpad as _Launchpad
 
 
