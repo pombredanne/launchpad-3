@@ -70,7 +70,9 @@ from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4, RepositoryFormatPackDevelopment0,
     RepositoryFormatPackDevelopment0Subtree)
-from bzrlib.repofmt.weaverepo import RepositoryFormat7
+from bzrlib.repofmt.weaverepo import (
+    RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
+    RepositoryFormat7)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -176,7 +178,7 @@ class BranchFormat(DBEnumeratedType):
     # Branch 4 was only used with all-in-one formats, so it didn't have its
     # own marker.  It was implied by the control directory marker.
     BZR_BRANCH_4 = _branch_format_enum(
-        4, BzrBranchFormat5, 'Fake Bazaar Branch 4 marker')
+        4, BzrBranchFormat4, 'Fake Bazaar Branch 4 marker')
 
     BRANCH_REFERENCE = _branch_format_enum(1, BranchReferenceFormat)
 
@@ -190,6 +192,15 @@ class BranchFormat(DBEnumeratedType):
 
 
 class RepositoryFormat(DBEnumeratedType):
+
+    BZR_REPOSITORY_4 = _branch_format_enum(
+        4, RepositoryFormat4, 'Fake Bazaar repository 4 marker')
+
+    BZR_REPOSITORY_5 = _branch_format_enum(
+        5, RepositoryFormat5, 'Fake Bazaar repository 5 marker')
+
+    BZR_REPOSITORY_6 = _branch_format_enum(
+        6, RepositoryFormat6, 'Fake Bazaar repository 6 marker')
 
     BZR_REPOSITORY_7 = _branch_format_enum(7, RepositoryFormat7)
 
@@ -215,8 +226,11 @@ class RepositoryFormat(DBEnumeratedType):
 class ControlFormat(DBEnumeratedType):
 
     BZR_DIR_4 = _branch_format_enum(4, BzrDirFormat4)
+
     BZR_DIR_5 = _branch_format_enum(5, BzrDirFormat5)
+
     BZR_DIR_6 = _branch_format_enum(6, BzrDirFormat6)
+
     BZR_METADIR_1 = _branch_format_enum(1, BzrDirMetaFormat1)
 
 
