@@ -8,7 +8,7 @@ Imports used later in the document:
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranchSet, IPersonSet)
+    ...     BranchType, BranchFormat, RepositoryFormat, IBranchSet, IPersonSet)
 
 
 == Recent Revisions ==
@@ -327,3 +327,35 @@ Public branches use the lp spec bzr lookup name.
     Project: GNOME Terminal
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
+
+
+== Branch formats ==
+
+    >>> login('no-priv@canonical.com')
+    >>> branch = factory.makeBranch(
+    ...     branch_format=BranchFormat.BZR_BRANCH_5,
+    ...     repository_format=RepositoryFormat.BZR_KNITPACK_1)
+    >>> url = canonical_url(branch)
+    >>> unscanned_branch = factory.makeBranch()
+    >>> unscanned_url = canonical_url(unscanned_branch)
+    >>> logout()
+    >>> browser.open(url)
+
+The data that we specified is shown on the web page.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-format-table'))
+    Branch format
+    Branch format 5
+    Repository format
+    Packs containing knits without subtree support
+
+For branches that haven't been scanned, suitable messages are printed.
+
+    >>> browser.open(unscanned_url)
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-format-table'))
+    Branch format
+    Not recorded
+    Repository format
+    Not recorded

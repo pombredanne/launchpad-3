@@ -143,6 +143,12 @@
 
     </tbody>
   </table>
+  <table id="branch-format-table">
+    <tr><td>Branch format</td><td
+        tal:content="view/branch_format_description" /></tr>
+    <tr><td>Repository format</td><td
+        tal:content="view/repository_format_description" /></tr>
+  </table>
 
   <tal:branch-errors tal:replace="structure context/@@+messages" />
 
