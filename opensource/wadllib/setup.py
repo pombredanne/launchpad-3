@@ -26,7 +26,7 @@ Language.
     setup_requires = [
         'setuptools_bzr',
         ]
-    ),
+    ,
     extras_require = {
         'nose': ['nose'],
         },

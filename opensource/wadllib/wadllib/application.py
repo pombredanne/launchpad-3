@@ -28,7 +28,13 @@ __metaclass__ = type
 
 from urlparse import urlparse
 import simplejson
-import xml.etree.cElementTree as ET
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    try:
+        import cElementTree as ET
+    except ImportError:
+        import elementtree.ElementTree as ET
 
 def wadl_tag(tag_name):
     """Scope a tag name with the WADL namespace."""
