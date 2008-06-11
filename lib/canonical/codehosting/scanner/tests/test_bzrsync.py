@@ -142,11 +142,13 @@ class BzrSyncTestCase(TestCaseWithTransport):
         """
         return BzrSync(self.txn, db_branch)
 
-    def syncAndCount(self, new_revisions=0, new_numbers=0,
+    def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
         """Run BzrSync and assert the number of rows added to each table."""
+        if db_branch is None:
+            db_branch = self.db_branch
         counts = self.getCounts()
-        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.makeBzrSync(db_branch).syncBranchAndClose()
         self.assertCounts(
             counts, new_revisions=new_revisions, new_numbers=new_numbers,
             new_parents=new_parents, new_authors=new_authors)
@@ -339,16 +341,17 @@ class TestBzrSync(BzrSyncTestCase):
 
     def test_shorten_history(self):
         # Commit some revisions with two paths to the head revision.
-        self.commitRevision()
-        merge_rev_id = self.bzr_branch.last_revision()
-        self.commitRevision()
-        self.commitRevision(extra_parents=[merge_rev_id])
-        self.syncAndCount(new_revisions=3, new_numbers=3, new_parents=3)
-        self.assertEqual(self.db_branch.revision_count, 3)
+        (db_branch, bzr_tree), ignored = self.makeBranchWithMerge(
+            'one', 'two', 'three', 'four')
+
+        self.syncAndCount(
+            db_branch, new_revisions=4, new_numbers=4, new_parents=4,
+            new_authors=1)
+        self.assertEqual(db_branch.revision_count, 3)
 
         # Sync with the shorter history.
         counts = self.getCounts()
-        bzrsync = BzrSync(self.txn, self.db_branch)
+        bzrsync = BzrSync(self.txn, db_branch)
         def patchedRetrieveBranchDetails(bzr_branch):
             unpatchedRetrieveBranchDetails(bzr_branch)
             full_history = bzrsync.bzr_history
@@ -362,7 +365,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertCounts(
             counts, new_revisions=0, new_numbers=-1,
             new_parents=0, new_authors=0)
-        self.assertEqual(self.db_branch.revision_count, 2)
+        self.assertEqual(db_branch.revision_count, 2)
 
     def test_sync_updates_branch(self):
         # test that the last scanned revision ID is recorded
