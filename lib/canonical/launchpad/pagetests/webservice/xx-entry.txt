@@ -72,13 +72,13 @@ representation is omitted from the team.
    >>> authorized_view = webservice.get('/beta/~myteam').jsonBody()
    >>> authorized_view['members_collection_link']
    u'http://api.launchpad.dev/beta/~myteam/members'
-   >>> authorized_view['member_memberships_collection_link']
-   u'http://api.launchpad.dev/beta/~myteam/member_memberships'
+   >>> authorized_view['members_details_collection_link']
+   u'http://api.launchpad.dev/beta/~myteam/members_details'
 
    >>> unauthorized_view = user_webservice.get('/beta/~myteam').jsonBody()
    >>> unauthorized_view['members_collection_link']
    u'tag:launchpad.net:2008:redacted'
-   >>> unauthorized_view['member_memberships_collection_link']
+   >>> unauthorized_view['members_details_collection_link']
    u'tag:launchpad.net:2008:redacted'
 
 
@@ -224,7 +224,8 @@ might not be acceptable as the payload of a PUT request.
   >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PUT')
   HTTP/1.1 400 Bad Request
   ...
-  You didn't specify a value for the attribute 'display_name'.
+  You didn't specify a value for the attribute
+  'mailing_list_auto_subscribe_policy'.
 
 A document that's not a valid JSON document is also unacceptable.
 
@@ -251,27 +252,27 @@ An entry's read-only attributes can't be modified.
 You can send a document that includes a value for a read-only
 attribute, but it has to be the same as the current value.
 
-  >>> print modify_person('salgado', {'date_created' : salgado['date_created']},
-  ...                     'PATCH')
+  >>> print modify_person(
+  ...     'salgado', {'date_created' : salgado['date_created']}, 'PATCH')
   HTTP/1.1 200 Ok
   ...
 
 You can't change the link to an entry's associated collection.
 
   >>> print modify_person('salgado',
-  ...                    {'team_memberships_collection_link' : 'dummy'},
+  ...                    {'memberships_details_collection_link' : 'dummy'},
   ...                     'PATCH')
   HTTP/1.1 400 Bad Request
   ...
-  team_memberships_collection_link: You tried to modify a collection attribute.
+  memberships_details_collection_link: You tried to modify a collection...
 
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> link = 'http://api.launchpad.dev/beta/~salgado/team_memberships'
+  >>> link = 'http://api.launchpad.dev/beta/~salgado/memberships_details'
   >>> print modify_person('salgado',
-  ...                    {'team_memberships_collection_link' : link },
-  ...                    'PATCH')
+  ...                     {'memberships_details_collection_link' : link },
+  ...                      'PATCH')
   HTTP/1.1 200 Ok
   ...
 
@@ -286,10 +287,11 @@ You can't directly change an entry's URL address.
 You can't refer to a link to an associated object or collection as
 though it were the actual object:
 
-  >>> print modify_person('salgado', {'team_memberships' : 'dummy'}, 'PATCH')
+  >>> print modify_person(
+  ...     'salgado', {'memberships_details' : 'dummy'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
-  team_memberships: You tried to modify a nonexistent attribute.
+  memberships_details: You tried to modify a nonexistent attribute.
 
   >>> print modify_person('landscape-developers', {'owner' :
   ...                     'salgado'}, 'PATCH')

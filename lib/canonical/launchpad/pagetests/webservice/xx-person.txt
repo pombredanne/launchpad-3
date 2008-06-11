@@ -16,6 +16,7 @@ for teams (as they're defined in the ITeam interface).
     expired_members_collection_link: http://.../~salgado/expired_members
     hide_email_addresses: False
     homepage_content: None
+    indirect_participations_collection_link: http://.../~salgado/indirect_participations
     invited_members_collection_link: http://.../~salgado/invited_members
     irc_nicknames_collection_link: http://.../~salgado/irc_nicknames
     is_team: False
@@ -24,21 +25,20 @@ for teams (as they're defined in the ITeam interface).
     karma: 0
     languages_collection_link: http://.../~salgado/languages
     mailing_list_auto_subscribe_policy: Ask me when I join a team
-    member_memberships_collection_link: http://.../~salgado/member_memberships
     members_collection_link: http://.../~salgado/members
+    members_details_collection_link: http://.../~salgado/members_details
+    memberships_details_collection_link: http://.../~salgado/memberships_details
     mugshot_link: http://.../~salgado/mugshot
     name: salgado
     open_membership_invitations_collection_link: http://.../~salgado/open_membership_invitations
     participants_collection_link: http://.../~salgado/participants
+    participations_collection_link: http://.../~salgado/participations
     preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
     proposed_members_collection_link: http://.../~salgado/proposed_members
     self_link: http://.../~salgado
     sub_teams_collection_link: http://.../~salgado/sub_teams
     super_teams_collection_link: http://.../~salgado/super_teams
-    team_memberships_collection_link: http://.../~salgado/team_memberships
     team_owner_link: None
-    teams_indirectly_participated_in_collection_link: http://.../~salgado/teams_indirectly_participated_in
-    teams_participated_in_collection_link: http://.../~salgado/teams_participated_in
     timezone: None
     visibility: Public
     wiki_names_collection_link: http://.../~salgado/wiki_names
@@ -56,6 +56,7 @@ for teams (as they're defined in the ITeam interface).
     expired_members_collection_link: http://.../~ubuntu-team/expired_members
     hide_email_addresses: False
     homepage_content: None
+    indirect_participations_collection_link: http://.../~ubuntu-team/indirect_participations
     invited_members_collection_link: http://.../~ubuntu-team/invited_members
     irc_nicknames_collection_link: http://.../~ubuntu-team/irc_nicknames
     is_team: True
@@ -64,12 +65,14 @@ for teams (as they're defined in the ITeam interface).
     karma: 0
     languages_collection_link: http://.../~ubuntu-team/languages
     mailing_list_auto_subscribe_policy: Ask me when I join a team
-    member_memberships_collection_link: http://.../~ubuntu-team/member_memberships
     members_collection_link: http://.../~ubuntu-team/members
+    members_details_collection_link: http://.../~ubuntu-team/members_details
+    memberships_details_collection_link: http://.../~ubuntu-team/memberships_details
     mugshot_link: http://.../~ubuntu-team/mugshot
     name: ubuntu-team
     open_membership_invitations_collection_link: http://.../~ubuntu-team/open_membership_invitations
     participants_collection_link: http://.../~ubuntu-team/participants
+    participations_collection_link: http://.../~ubuntu-team/participations
     preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
     proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
     renewal_policy: invite them to apply for renewal
@@ -78,10 +81,7 @@ for teams (as they're defined in the ITeam interface).
     subscription_policy: Moderated Team
     super_teams_collection_link: http://.../~ubuntu-team/super_teams
     team_description: This Team is responsible for the Ubuntu Distribution
-    team_memberships_collection_link: http://.../~ubuntu-team/team_memberships
     team_owner_link: http://.../~sabdfl
-    teams_indirectly_participated_in_collection_link: http://.../~ubuntu-team/teams_indirectly_participated_in
-    teams_participated_in_collection_link: http://.../~ubuntu-team/teams_participated_in
     timezone: None
     visibility: Public
     wiki_names_collection_link: http://.../~ubuntu-team/wiki_names
@@ -139,16 +139,16 @@ traversed to, obviously.
 
 A person is linked to their team memberships.
 
-    >>> salgado_memberships = salgado['team_memberships_collection_link']
+    >>> salgado_memberships = salgado['memberships_details_collection_link']
     >>> salgado_memberships
-    u'http://.../~salgado/team_memberships'
+    u'http://.../~salgado/memberships_details'
 
 Similarly, a team is linked to the team memberships of its members.
 
     >>> landscape_developers = webservice.get(
     ...     "/beta/~landscape-developers").jsonBody()
-    >>> landscape_developers['member_memberships_collection_link']
-    u'http://.../~landscape-developers/member_memberships'
+    >>> landscape_developers['members_details_collection_link']
+    u'http://.../~landscape-developers/members_details'
 
 And to all membership invitations sent to it.
 
@@ -198,7 +198,7 @@ possible to navigate from a team, to the collection of peoples'
 memberships in the team.
 
     >>> print_self_link_of_entries(webservice.get(
-    ...     "/beta/~landscape-developers/member_memberships").jsonBody())
+    ...     "/beta/~landscape-developers/members_details").jsonBody())
     http://.../~landscape-developers/+member/name12
     http://.../~landscape-developers/+member/salgado
 
@@ -230,19 +230,19 @@ All participants (direct or indirect members):
 
 A person/team is also linked to all teams in which they participate.
 
-    >>> salgado['teams_participated_in_collection_link']
-    u'http://.../~salgado/teams_participated_in'
+    >>> salgado['participations_collection_link']
+    u'http://.../~salgado/participations'
     >>> print_self_link_of_entries(webservice.get(
-    ...     salgado['teams_participated_in_collection_link']).jsonBody())
+    ...     salgado['participations_collection_link']).jsonBody())
     http://.../~admins
     http://.../~landscape-developers
     http://.../~mailing-list-experts
 
 And to the teams in which they're indirect members.
 
-    >>> link = salgado['teams_indirectly_participated_in_collection_link']
+    >>> link = salgado['indirect_participations_collection_link']
     >>> link
-    u'http://.../~salgado/teams_indirectly_participated_in'
+    u'http://.../~salgado/indirect_participations'
 
     >>> print_self_link_of_entries(webservice.get(link).jsonBody())
     http://.../~mailing-list-experts

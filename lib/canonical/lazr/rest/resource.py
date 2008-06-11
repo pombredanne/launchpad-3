@@ -30,7 +30,7 @@ from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError, getFields
+from zope.schema import ValidationError, getFields, getFieldsInOrder
 from zope.schema.interfaces import (
     ConstraintNotSatisfied, IBytes, IChoice, IObject)
 from zope.security.interfaces import Unauthorized
@@ -493,8 +493,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # Make sure the representation includes values for all
         # writable attributes.
-        schema = self.entry.schema
-        for name, field in getFields(schema).items():
+        # Get the fields ordered by name so that we always evaluate them in
+        # the same order. This is needed to predict errors when testing.
+        for name, field in getFieldsInOrder(self.entry.schema):
             if (name.startswith('_') or ICollectionField.providedBy(field)
                 or field.readonly):
                 # This attribute is not part of the web service
@@ -546,7 +547,9 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
 
         # For every field in the schema, see if there's a corresponding
         # field in the changeset.
-        for name, field in getFields(self.entry.schema).items():
+        # Get the fields ordered by name so that we always evaluate them in
+        # the same order. This is needed to predict errors when testing.
+        for name, field in getFieldsInOrder(self.entry.schema):
             if name.startswith('_'):
                 # This field is not part of the web service interface.
                 continue
