@@ -738,7 +738,7 @@ class POTemplateSubset:
         self.distroseries = distroseries
         self.productseries = productseries
         self.clausetables = []
-        self.orderby = []
+        self.orderby = ['id']
 
         assert productseries is None or distroseries is None, (
             'A product series must not be used with a distro series.')

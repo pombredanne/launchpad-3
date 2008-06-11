@@ -215,21 +215,6 @@ Let's get a sample SourcePackageRelease:
    u'pmount'
 
 
-== Counting bugs ==
-
-The SourcePackageRelease offers a convenient way of checking how many
-bugs are open against this package in the distribution to which it was
-uploaded. Because of bug privacy, this method needs a user supplied.
-
-   >>> spr = SourcePackageRelease.get(14)
-   >>> print spr.name
-   mozilla-firefox
-   >>> login('no-priv@canonical.com')
-   >>> no_priv = getUtility(ILaunchBag).user
-   >>> print spr.countOpenBugsInUploadedDistro(no_priv)
-   1
-
-
 == Uploading translations ==
 
 It's time to check the translation upload function.

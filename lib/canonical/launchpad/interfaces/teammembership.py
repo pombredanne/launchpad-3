@@ -18,9 +18,9 @@ from zope.schema import Choice, Datetime, Int, Object, Text
 from zope.interface import Attribute, Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
+from canonical.lazr.fields import Reference
 from canonical.lazr.rest.declarations import (
    export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import Reference
 
 from canonical.launchpad import _
 
