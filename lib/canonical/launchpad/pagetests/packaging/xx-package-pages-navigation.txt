@@ -64,7 +64,7 @@ source package.
     * Blueprints (Not active)
     * Translations (Not active)
     * Answers (http://answers.launchpad.dev/ubuntu/+source/alsa-utils)
-    Main heading: 1.0.9a-4ubuntu1 version of ?alsa-utils? package in Ubuntu
+    Main heading: 1.0.9a-4ubuntu1 version
 
 
 == Distribution source package release build ==

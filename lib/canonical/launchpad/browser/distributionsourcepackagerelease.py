@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSourcePackageReleaseFacets',
+    'distributionsourcepackagerelease_to_structuralheading',
     'DistributionSourcePackageReleaseNavigation',
     'DistributionSourcePackageReleaseShortLink',
     ]
@@ -14,20 +14,20 @@ from canonical.launchpad.browser.launchpad import (
     DefaultShortLink)
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackageRelease, ILaunchBag, IBuildSet, NotFoundError)
+    IDistributionSourcePackageRelease, ILaunchBag, IBuildSet,
+    IStructuralHeaderPresentation, NotFoundError)
 
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation,
+    ApplicationMenu, ContextMenu, Link, Navigation,
     GetitemNavigation, stepthrough)
 
 
-class DistributionSourcePackageReleaseFacets(StandardLaunchpadFacets):
-    # XXX mpt 2006-10-04: a DistributionSourcePackageRelease is not a structural
-    # object: it should inherit all navigation from its source package.
-
-    usedfor = IDistributionSourcePackageRelease
-    enable_only = ['overview', ]
+def distributionsourcepackagerelease_to_structuralheading(dspr):
+    """Adapts an `IDistributionSourcePackageRelease` into an
+    `IStructuralHeaderPresentation`.
+    """
+    return IStructuralHeaderPresentation(dspr.sourcepackage)
 
 
 class DistributionSourcePackageReleaseOverviewMenu(ApplicationMenu):
@@ -39,9 +39,6 @@ class DistributionSourcePackageReleaseOverviewMenu(ApplicationMenu):
 
 class DistributionSourcePackageReleaseNavigation(Navigation):
     usedfor = IDistributionSourcePackageRelease
-
-    def breadcrumb(self):
-        return self.context.version
 
     @stepthrough('+build')
     def traverse_build(self, name):

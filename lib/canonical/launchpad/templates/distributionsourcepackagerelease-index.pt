@@ -10,15 +10,20 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Source package release</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+    <div>
+      <a
+        tal:attributes="href context/sourcepackage/fmt:url"
+        tal:content="context/sourcepackage/title"
+      />
+    </div>
+    <h1><tal:release replace="context/version" /> version</h1>
 
   <h2>Download source</h2>
 
