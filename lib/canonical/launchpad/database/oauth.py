@@ -157,6 +157,13 @@ class OAuthRequestToken(OAuthToken):
         """See `IOAuthRequestToken`."""
         assert not self.is_reviewed, (
             "Request tokens can be reviewed only once.")
+        assert [product, project, distribution].count(None) >= 2, (
+            "More than one context given: %s, %s, %s"
+            % (product, project, distribution))
+        if sourcepackagename is not None and distribution is None:
+            raise AssertionError(
+                "You must specify a distribution when the context is a "
+                "source package.")
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
         self.person = user
         self.permission = permission
