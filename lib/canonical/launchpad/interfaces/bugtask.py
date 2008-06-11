@@ -420,12 +420,33 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
 
-    def getConjoinedMaster(bugtasks):
+    def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
+
+        :param bugtasks: The bugtasks to be considered when looking for
+            the conjoined master.
+        :param bugtasks_by_package: A cache, mapping a
+            `ISourcePackageName` to a list of bug tasks targeted to such
+            a package name. Both distribution and distro series tasks
+            should be included in this list.
 
         This method exists mainly to allow calculating the conjoined
         master from a cached list of bug tasks, reducing the number of
         db queries needed.
+        """
+
+    def getBugTasksByPackageName(bugtasks):
+        """Return a mapping from `ISourcePackageName` to its bug tasks.
+
+        This mapping is suitable to pass ass the bugtasks_by_package
+        cache to getConjoinedMaster().
+
+        The mapping is from a `ISourcePackageName` to all the bug tasks
+        that are targeted to such a package name, no matter which
+        distribution or distro series it is.
+
+        All the tasks that don't have a package will be available under
+        None.
         """
 
     def subscribe(person, subscribed_by):
@@ -1023,6 +1044,21 @@ class IBugTaskSet(Interface):
         update-bugtask-targetnamecaches.
         """
 
+    def getBugCountsForPackages(user, packages):
+        """Return open bug counts for the list of packages.
+
+        :param user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the count.
+        :param packages: A list of `IDistributionSourcePackage`
+            instances.
+
+        :return: A list of dictionaries, where each dict contains:
+            'package': The package the bugs are open on.
+            'open': The number of open bugs.
+            'open_critical': The number of open critical bugs.
+            'open_unassigned': The number of open unassigned bugs.
+            'open_inprogress': The number of open bugs that are In Progress.
+        """
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""

@@ -6,7 +6,7 @@ page.
 
 == From the branch page ==
 
-There is a "Link to bug report" item in the actions menu that is visible
+There is a "Link to a bug report" item in the actions menu that is visible
 to everybody but which links to a page restricted with the
 launchpad.AnyPerson permission.
 
@@ -15,7 +15,7 @@ if the user is not logged in, they will be asked to log in.
 
     >>> anon_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> anon_browser.getLink('Link to bug report').click()
+    >>> anon_browser.getLink('Link to a bug report').click()
     Traceback (most recent call last):
     ...
     Unauthorized: (...launchpad.AnyPerson')
@@ -43,7 +43,7 @@ if the user is not logged in, they will be asked to log in.
     >>> printBugBranchLinks(browser)
     No bug branch links
 
-    >>> browser.getLink('Link to bug report').click()
+    >>> browser.getLink('Link to a bug report').click()
     >>> browser.title
     'Link branch ...Klingon support in GNOME Terminal... to a bug report'
 
@@ -57,7 +57,7 @@ requires the user to enter a bug number.
 
 Attempting to link to the same bug again gives an error.
 
-    >>> browser.getLink('Link to bug report').click()
+    >>> browser.getLink('Link to another bug report').click()
     >>> browser.getControl('The bug that is linked to.').value = "9"
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):

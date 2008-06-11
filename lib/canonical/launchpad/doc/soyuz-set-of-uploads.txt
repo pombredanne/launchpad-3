@@ -71,6 +71,7 @@ for the ubuntutest distribution.
 
   >>> from canonical.launchpad.database import Distribution
   >>> from canonical.launchpad.database import DistroSeriesSet
+  >>> from canonical.launchpad.database import LibraryFileAlias
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
   >>> ubuntutest = Distribution.byName('ubuntutest')
@@ -84,6 +85,8 @@ for the ubuntutest distribution.
   >>> breezy.nominatedarchindep = breezy_i386
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> breezy.initialiseFromParent()
+  >>> fake_chroot = LibraryFileAlias.get(1)
+  >>> unused = breezy_i386.addOrUpdateChroot(fake_chroot)
 
 Add disk content for file inherited from ubuntu/breezy-autotest:
 

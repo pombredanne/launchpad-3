@@ -66,12 +66,9 @@ class FakeLogger:
 class QuietFakeLogger(FakeLogger):
     """Extra quiet FakeLogger.
 
-    Does not print DEBUG and INFO messages.
+    Does not print any message.
     """
-    def info(self, *stuff, **kw):
-        pass
-
-    def debug(self, *stuff, **kw):
+    def message(self, prefix, *stuff, **kw):
         pass
 
 

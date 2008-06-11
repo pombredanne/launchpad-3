@@ -350,15 +350,15 @@ branch.)
     >>> print canonical_url(merge_proposal)
     http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/...
 
-Create example CodeReviewMessage.
+Create example CodeReviewComment.
 
-    >>> message = merge_proposal.createMessage(
+    >>> comment = merge_proposal.createComment(
     ...     release26.owner, 'My subject', 'My content')
 
-CodeReviewMessage should have a canonical URL.  (It should extend the URL of
+CodeReviewComment should have a canonical URL.  (It should extend the URL of
 the merge proposal)
 
-    >>> print canonical_url(message)
+    >>> print canonical_url(comment)
     http://code.launchpad.dev/~name12/gnome-terminal/main/+merge/.../comments/...
 
 

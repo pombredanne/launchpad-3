@@ -19,8 +19,8 @@
   </h1>
   <h2>Relationship to other teams</h2>
   <tal:block define="
-    subteams context/getSubTeams;
-    superteams context/getSuperTeams
+    subteams context/sub_teams;
+    superteams context/super_teams
   ">
     <p tal:condition="python: not subteams and not superteams">
       None of the members of
