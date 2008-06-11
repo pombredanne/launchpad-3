@@ -77,8 +77,18 @@ class SalesforceXMLRPCTestTransport(Transport):
         Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005', 'cprov_oid'),
         ]
 
+    voucher_index = 0
+    voucher_prefix = 'LPCS12-f78df324-0cc2-11dd-0000-%012d'
+
     def __init__(self):
         self.vouchers = copy.deepcopy(self.vouchers)
+
+    def _createVoucher(self, owner_oid):
+        self.voucher_index += 1
+        voucher_id = self.voucher_prefix % self.voucher_index
+        voucher = Voucher(voucher_id, owner_oid)
+        self.vouchers.append(voucher)
+        return voucher
 
     def _findVoucher(self, voucher_id):
         for voucher in self.vouchers:
@@ -170,6 +180,15 @@ class SalesforceXMLRPCTestTransport(Transport):
             raise Fault('NotFound',
                         'No vouchers matching product id %s' % lp_project_id)
         return [num_updated]
+
+    def grantVoucher(self,
+                     admin_openid,
+                     approver_openid,
+                     recipient_openid,
+                     recipient_name,
+                     recipient_preferred_email):
+        voucher = self._createVoucher(recipient_openid)
+        return voucher.voucher_id
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
