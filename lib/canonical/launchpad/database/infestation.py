@@ -18,7 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import BoolCol, ForeignKey
 
 from canonical.launchpad.interfaces import (
     BugInfestationStatus, IBugPackageInfestation, IBugPackageInfestationSet, 
@@ -35,7 +35,7 @@ class BugProductInfestation(SQLBase):
 
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    explicit = IntCol(notNull=True, default=False)
+    explicit = BoolCol(notNull=True, default=False)
     productrelease = ForeignKey(dbName="productrelease",
         foreignKey='ProductRelease', notNull=False, default=None)
     infestationstatus = EnumCol(
@@ -69,7 +69,7 @@ class BugPackageInfestation(SQLBase):
 
     # field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    explicit = IntCol(dbName='explicit', notNull=True, default=False)
+    explicit = BoolCol(dbName='explicit', notNull=True, default=False)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,

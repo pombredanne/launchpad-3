@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Utils import make_msgid
+from email.Utils import make_msgid, formatdate
 from StringIO import StringIO
 
 import pytz
@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
+from canonical.launchpad.mail.signedmessage import SignedMessage
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -100,6 +101,9 @@ class LaunchpadObjectFactory:
         # Initialise the unique identifier.
         self._integer = 0
 
+    def getUniqueEmailAddress(self):
+        return "%s@example.com" % self.getUniqueString('email')
+
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
         self._integer += 1
@@ -139,7 +143,7 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = "%s@example.com" % self.getUniqueString('email')
+            email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
@@ -199,13 +203,16 @@ class LaunchpadObjectFactory:
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, owner)
 
-    def makeProduct(self, name=None, project=None, displayname=None):
+    def makeProduct(self, name=None, project=None, displayname=None,
+                    licenses=None):
         """Create and return a new, arbitrary Product."""
         owner = self.makePerson()
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
             displayname = self.getUniqueString('displayname')
+        if licenses is None:
+            licenses = [License.GNU_GPL_V2]
         return getUtility(IProductSet).createProduct(
             owner,
             name,
@@ -213,7 +220,8 @@ class LaunchpadObjectFactory:
             self.getUniqueString('title'),
             self.getUniqueString('summary'),
             self.getUniqueString('description'),
-            licenses=[License.GNU_GPL_V2], project=project)
+            licenses=licenses,
+            project=project)
 
     def makeProject(self, name=None, displayname=None):
         """Create and return a new, arbitrary Project."""
@@ -276,7 +284,8 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson()
+            registrant = self.makePerson(
+                password=self.getUniqueString('password'))
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
@@ -378,6 +387,19 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
+    def makeSignedMessage(self, msgid=None, body=None):
+        mail = SignedMessage()
+        mail['From'] = self.getUniqueEmailAddress()
+        if msgid is None:
+            msgid = make_msgid('launchpad')
+        if body is None:
+            body = self.getUniqueString('body')
+        mail['Message-Id'] = msgid
+        mail['Date'] = formatdate()
+        mail.set_payload(body)
+        mail.parsed_string = mail.as_string()
+        return mail
+
     def makeSpecification(self, product=None):
         """Create and return a new, arbitrary Blueprint.
 
@@ -396,7 +418,7 @@ class LaunchpadObjectFactory:
             product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None):
+                       cvs_module=None, product=None, branch_name=None):
         """Create and return a new, arbitrary code import.
 
         The code import will be an import from a Subversion repository located
@@ -405,8 +427,10 @@ class LaunchpadObjectFactory:
         if svn_branch_url is cvs_root is cvs_module is None:
             svn_branch_url = self.getUniqueURL()
 
-        product = self.makeProduct()
-        branch_name = self.getUniqueString('name')
+        if product is None:
+            product = self.makeProduct()
+        if branch_name is None:
+            branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
         registrant = self.makePerson(
             email_address_status=EmailAddressStatus.VALIDATED)
@@ -512,20 +536,29 @@ class LaunchpadObjectFactory:
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
             source_product_series_id)
 
-    def makeCodeReviewMessage(self, subject=None, body=None, vote=None):
+    def makeCodeReviewComment(self, sender=None, subject=None, body=None,
+                              vote=None, vote_tag=None, parent=None):
+        if sender is None:
+            sender = self.makePerson(password='password')
         if subject is None:
-            subject = self.getUniqueString()
+            subject = self.getUniqueString('subject')
         if body is None:
-            body = self.getUniqueString()
-        return self.makeBranchMergeProposal().createMessage(
-            self.makePerson(), subject, body, vote)
+            body = self.getUniqueString('content')
+        if parent:
+            merge_proposal = parent.branch_merge_proposal
+        else:
+            merge_proposal = self.makeBranchMergeProposal(registrant=sender)
+        return merge_proposal.createComment(
+            sender, subject, body, vote, vote_tag, parent)
 
-    def makeMessage(self, subject=None, content=None, parent=None):
+    def makeMessage(self, subject=None, content=None, parent=None,
+                    owner=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         rfc822msgid = make_msgid("launchpad")
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)

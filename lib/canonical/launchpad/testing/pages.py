@@ -10,12 +10,13 @@ import os
 import re
 import simplejson
 import unittest
+import urllib
+from urlparse import urljoin
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
@@ -121,7 +122,7 @@ class WebServiceCaller:
 
     def get(self, path, media_type='application/json', headers=None):
         """Make a GET request."""
-        full_headers = {'Accept' : media_type}
+        full_headers = {'Accept': media_type}
         if headers is not None:
             full_headers.update(headers)
         return self(path, 'GET', headers=full_headers)
@@ -144,7 +145,13 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers)
 
-    def named_post(self, path, operation_name, headers, **kwargs):
+    def named_get(self, path_or_url, operation_name, headers=None, **kwargs):
+        kwargs['ws.op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
+                         for key, value in kwargs.items()])
+        return self.get("%s?%s" % (path_or_url, data), data, headers)
+
+    def named_post(self, path, operation_name, headers=None, **kwargs):
         kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, value)
                          for key, value in kwargs.items()])
@@ -546,11 +553,11 @@ def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
+        'launchpad-library', 'salgado-change-anything', port=9000)
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'qQ7dw1fXCR5hhJRN7ztj', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate', port=9000)
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', '3SdVlTlVKcgXSJHbsSSk', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()

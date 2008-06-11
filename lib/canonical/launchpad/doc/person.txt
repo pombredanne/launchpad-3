@@ -532,18 +532,18 @@ or PersonVisibility.PRIVATE_MEMBERSHIP. To prevent leaking of
 private membership information, private-membership teams are only
 allowed to be connected with a few different database objects. This is
 enforced in the model, but there are also checks in the form handling to
-provide clearer error messages. 
+provide clearer error messages.
 
 The PublicPersonChoice for interface classes and the public_person_validator
 for SQLObject classes only allow public teams to be assigned to the
 specified field.
 
-The SQLObject validators will raise an InvalidField exception if an 
-invalid team is passed to the constructor or is used to set one of 
+The SQLObject validators will raise an InvalidField exception if an
+invalid team is passed to the constructor or is used to set one of
 the attributes.
 
 myteam is a private-membership team, so public_person_validator
-will reject it for the BugSubscription.person and 
+will reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
@@ -767,7 +767,7 @@ Searching only for People based on their names or email addresses:
 By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to include
 them as well.
-    
+
     >>> from canonical.launchpad.interfaces import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
@@ -863,6 +863,27 @@ maintainer got omitted from the results:
     (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
 
 
+== Packages a Person is subscribed to ==
+
+IPerson.getBugSubscriberPackages returns this list of packages, sorted
+alphabetically by package name.
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> pmount = ubuntu.getSourcePackage('pmount')
+    >>> pmount.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+    >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> mozilla_firefox.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+
+    >>> [package.name for package in no_priv.getBugSubscriberPackages()]
+    [u'mozilla-firefox', u'pmount']
+
+
 == Pillars owned or driven by a person or team ==
 
 To obtain all distributions, project groups and projects owned or driven by a
@@ -908,6 +929,43 @@ projects.
     distribution: Ubuntu Test (ubuntutest)
     project: Tomcat (tomcat)
 
+
+== Project owned by a person or team ==
+
+To obtain all projects owned by a person or team, we can use the
+getOwnedProjects() method of IPerson.  This method returns
+projects ordered by displayname.
+
+    >>> for project in sabdfl.getOwnedProjects():
+    ...     print project.displayname
+    Derby
+    Gnome Applets
+    Tomcat
+    a52dec
+    alsa-utils
+    gnomebaker
+
+    >>> for project in ubuntu_team.getOwnedProjects():
+    ...     print project.displayname
+    Tomcat
+
+David does not own any projects.
+
+    >>> list(ddaa.getOwnedProjects())
+    []
+
+The results returned can be filtered by providing a token to refine
+the search.
+
+    >>> for project in sabdfl.getOwnedProjects(match_name='gnome'):
+    ...     print project.displayname
+    Gnome Applets
+    gnomebaker
+
+Searching for a non-existent project returns no matches.
+
+    >>> list(sabdfl.getOwnedProjects(match_name='nosuchthing'))
+    []
 
 == Translations ==
 
@@ -993,7 +1051,7 @@ We can get the list of translators that did some translation in Launchpad and
 expressed their interest for a concrete language.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
- 
+
     # Sample data is not complete for this test, so we need to note that
     # another Spanish translator expressed its interest on doing Spanish
     # translations.  That other person is Foo Bar (name16).
@@ -1125,7 +1183,6 @@ Reset firefox so we don't mess up later tests.
 We can ascertain whether a person has uploader rights to a distribution
 or not.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov.isUploader(ubuntu)

@@ -42,7 +42,7 @@ class MockRealm:
             'initialBranches': []}
         return (
             interfaces[0],
-            sshserver.LaunchpadAvatar(avatarId, None, user_dict, None),
+            sshserver.LaunchpadAvatar(user_dict, None),
             lambda: None)
 
 

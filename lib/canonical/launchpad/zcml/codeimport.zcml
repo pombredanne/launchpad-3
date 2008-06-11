@@ -15,7 +15,7 @@
                   rcs_type cvs_root cvs_module svn_branch_url
                   date_last_successful source_product_series
                   update_interval effective_update_interval
-                  import_job results" />
+                  import_job results getImportDetailsForDisplay" />
     <require
       permission="launchpad.Edit"
       attributes="approve invalidate suspend updateFromData" />

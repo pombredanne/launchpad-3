@@ -1,0 +1,33 @@
+= Various utility functions =
+
+
+== safe_hasattr() ==
+
+LAZR provides a safe_hasattr() that doesn't hide exception from the
+caller. This behaviour of the builtin hasattr() is annoying because it
+makes problems harder to diagnose.
+
+    >>> from canonical.lazr.utils import safe_hasattr
+
+    >>> class Oracle(object):
+    ...     @property
+    ...     def is_full_moon(self):
+    ...         return full_moon
+    >>> oracle = Oracle()
+    >>> hasattr(oracle, 'is_full_moon')
+    False
+    >>> safe_hasattr(oracle, 'is_full_moon')
+    Traceback (most recent call last):
+      ...
+    NameError: global name 'full_moon' is not defined
+
+    >>> full_moon = True
+    >>> hasattr(oracle, 'is_full_moon')
+    True
+    >>> safe_hasattr(oracle, 'is_full_moon')
+    True
+
+    >>> hasattr(oracle, 'weather')
+    False
+    >>> safe_hasattr(oracle, 'weather')
+    False

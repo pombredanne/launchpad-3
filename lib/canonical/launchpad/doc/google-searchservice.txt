@@ -173,7 +173,6 @@ the time of the search.
 
     >>> for key in sorted(google_search._default_values):
     ...     print key, ':', repr(google_search._default_values[key])
-    as_sitesearch : 'launchpad.net'
     client : 'google-csbe'
     cx : None
     ie : 'utf8'
@@ -210,8 +209,7 @@ argument to the method. The argument is url encoded and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
-    'http://launchpad.dev:.../cse?as_sitesearch=launchpad.net
-    client=google-csbe
+    'http://launchpad.dev:.../cse?client=google-csbe
     cx=011948274177882366108%3Aixpjdn21yfg
     ie=utf8
     num=20

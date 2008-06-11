@@ -779,11 +779,15 @@ class Bug(SQLBase):
 
     def canMentor(self, user):
         """See `ICanBeMentored`."""
-        return not (not user or
-                    self.is_complete or
-                    self.duplicateof is not None or
-                    self.isMentor(user) or
-                    not user.teams_participated_in)
+        if user is None:
+            return False
+        if self.duplicateof is not None or self.is_complete:
+            return False
+        if bool(self.isMentor(user)):
+            return False
+        if not user.teams_participated_in:
+            return False
+        return True
 
     def isMentor(self, user):
         """See `ICanBeMentored`."""

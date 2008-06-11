@@ -11,11 +11,13 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import import_public_test_keys
-from canonical.launchpad.interfaces import IPackageDiffSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPackageDiffSet)
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.launchpad.scripts.packagediff import (
     ProcessPendingPackageDiffs)
+from canonical.launchpad.database import LibraryFileAlias
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -34,6 +36,15 @@ class TestProcessPendingPackageDiffsScript(unittest.TestCase):
         Store the `FakePackager` object used in the test uploads as `packager`
         so the tests can reuse it if necessary.
         """
+        self.layer.alterConnection(dbuser='launchpad')
+
+        fake_chroot = LibraryFileAlias.get(1)
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        warty['i386'].addOrUpdateChroot(fake_chroot)
+
+        self.layer.txn.commit()
+
         self.layer.alterConnection(dbuser=self.dbuser)
         self.packager = self.uploadTestPackages()
         self.layer.txn.commit()

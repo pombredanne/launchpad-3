@@ -40,7 +40,9 @@ __all__ = [
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
+    'PersonPackagesView',
     'PersonRdfView',
+    'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
     'PersonRelatedProjectsView',
@@ -74,6 +76,7 @@ __all__ = [
     'TeamListView',
     'TeamNavigation',
     'TeamOverviewMenu',
+    'TeamMembershipView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
@@ -99,6 +102,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
+from canonical.lazr import decorates
 from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
@@ -129,6 +133,10 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.questioncollection import IQuestionSet
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
 
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
@@ -757,7 +765,7 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Mentoring offered'
         summary = ('Lists bugs for which %s has offered to mentor someone.'
                    % self.context.displayname)
-        enabled = self.context.mentoring_offers
+        enabled = bool(self.context.mentoring_offers)
         return Link('+mentoring', text, enabled=enabled, summary=summary)
 
     def commentedbugs(self):
@@ -809,7 +817,7 @@ class PersonSpecsMenu(ApplicationMenu):
 
     def mentoring(self):
         text = 'Mentoring offered'
-        enabled = self.context.mentoring_offers
+        enabled = bool(self.context.mentoring_offers)
         return Link('+mentoring', text, enabled=enabled, icon='info')
 
     def workload(self):
@@ -834,8 +842,9 @@ class PersonTranslationsMenu(ApplicationMenu):
         return Link('+imports', text)
 
     def relicensing(self):
-        text = 'Relicense translations'
-        return Link('+relicensing', text, enabled=False)
+        text = 'Translations licensing'
+        enabled = (self.context == self.user)
+        return Link('+licensing', text, enabled=enabled)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -890,16 +899,16 @@ class CommonMenuLinks:
         text = 'Activate Personal Package Archive'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
-        enable_link = (self.context.archive is None)
-        return Link(target, text, summary, icon='edit', enabled=enable_link)
+        enabled = not bool(self.context.archive)
+        return Link(target, text, summary, icon='edit', enabled=enabled)
 
     def show_ppa(self):
         target = '+archive'
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
-        enable_link = (self.context.archive is not None and
-                       check_permission('launchpad.View',
-                                        self.context.archive))
+        archive = self.context.archive
+        enable_link = (archive is not None and
+                       check_permission('launchpad.View', archive))
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
@@ -979,7 +988,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mentoringoffers(self):
         target = '+mentoring'
         text = 'Mentoring offered'
-        enabled = self.context.mentoring_offers
+        enabled = bool(self.context.mentoring_offers)
         return Link(target, text, enabled=enabled, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1076,7 +1085,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring available'
-        enabled = self.context.team_mentorships
+        enabled = bool(self.context.team_mentorships)
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, enabled=enabled,
                     icon='info')
@@ -1145,6 +1154,25 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             text = 'Join the team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon, enabled=enabled)
+
+
+class TeamMembershipView(LaunchpadView):
+    """The view behins ITeam/+members."""
+    @cachedproperty
+    def inactive_memberships(self):
+        return list(self.context.getInactiveMemberships())
+
+    @cachedproperty
+    def invited_memberships(self):
+        return list(self.context.getInvitedMemberships())
+
+    @cachedproperty
+    def proposed_memberships(self):
+        return list(self.context.getProposedMemberships())
+
+    @property
+    def have_pending_members(self):
+        return self.proposed_memberships or self.invited_memberships
 
 
 class BaseListView:
@@ -1402,15 +1430,37 @@ class RedirectToEditLanguagesView(LaunchpadView):
             '%s/+editlanguages' % canonical_url(self.user))
 
 
+class PersonWithKeysAndPreferredEmail:
+    """A decorated person that includes GPG keys and preferred emails."""
+
+    # These need to be predeclared to avoid decorates taking them over.
+    # Would be nice if there was a way of allowing writes to just work
+    # (i.e. no proxying of __set__).
+    gpgkeys = None
+    sshkeys = None
+    preferredemail = None
+    decorates(IPerson, 'person')
+
+    def __init__(self, person):
+        self.person = person
+        self.gpgkeys = []
+        self.sshkeys = []
+
+    def addGPGKey(self, key):
+        self.gpgkeys.append(key)
+
+    def addSSHKey(self, key):
+        self.sshkeys.append(key)
+
+    def setPreferredEmail(self, email):
+        self.preferredemail = email
+
+
 class PersonRdfView:
-    """A view that sets its mime-type to application/rdf+xml"""
+    """A view that embeds PersonRdfContentsView in a standalone page."""
 
     template = ViewPageTemplateFile(
         '../templates/person-foaf.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
     def __call__(self):
         """Render RDF output, and return it as a string encoded in UTF-8.
@@ -1425,6 +1475,54 @@ class PersonRdfView:
         self.request.response.setHeader('Content-Disposition',
                                         'attachment; filename=%s.rdf' %
                                             self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
+
+
+class PersonRdfContentsView:
+    """A view for the contents of Person FOAF RDF."""
+
+    # We need to set the content_type here explicitly in order to
+    # preserve the case of the elements (which is not preserved in the
+    # parsing of the default text/html content-type.)
+    template = ViewPageTemplateFile(
+        '../templates/person-foaf-contents.pt',
+        content_type="application/rdf+xml")
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def buildMemberData(self):
+        members = []
+        members_by_id = {}
+        for member in self.context.allmembers:
+            member = PersonWithKeysAndPreferredEmail(member)
+            members.append(member)
+            members_by_id[member.id] = member
+        if not members:
+            # Empty teams have nothing to offer.
+            return []
+        sshkeyset = getUtility(ISSHKeySet)
+        gpgkeyset = getUtility(IGPGKeySet)
+        emailset = getUtility(IEmailAddressSet)
+        for key in sshkeyset.getByPeople(members):
+            members_by_id[key.personID].addSSHKey(key)
+        for key in gpgkeyset.getGPGKeysForPeople(members):
+            members_by_id[key.ownerID].addGPGKey(key)
+        for email in emailset.getPreferredEmailForPeople(members):
+            members_by_id[email.personID].setPreferredEmail(email)
+        return members
+
+    def __call__(self):
+        """Render RDF output.
+
+        This is only used when rendering this to the end-user, and is
+        only here to avoid us OOPSing if people access +raw-contents via
+        the web. All templates should reuse this view by invoking
+        +rdf-contents/template.
+        """
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
@@ -1563,8 +1661,9 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
-        for package_counts in self.context.getBugSubscriberOpenBugCounts(
-            self.user):
+        package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
+            self.user, self.context.getBugSubscriberPackages())
+        for package_counts in package_counts:
             package = package_counts['package']
             L.append({
                 'package_name': package.displayname,
@@ -2184,33 +2283,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             return None
         return mailing_list.archive_url
 
-    def getLatestUploadedPPAPackages(self):
-        """Return the sourcepackagereleases uploaded to PPAs by this person.
-
-        Results are filtered according to the permission of the requesting
-        user to see private archives.
-        """
-        packages = self.context.getLatestUploadedPPAPackages()
-
-        # For each package we find out which archives it was published in.
-        # If the user has permission to see any of those archives then
-        # the user is permitted to see the package.
-        #
-        # Ideally this check should be done in
-        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
-        # query is virtually impossible!
-        results = []
-        for package in packages:
-            # Make a shallow copy to remove the Zope security.
-            archives = set(package.published_archives)
-            # Ensure the SPR.upload_archive is also considered.
-            archives.add(package.upload_archive)
-            for archive in archives:
-                if check_permission('launchpad.View', archive):
-                    results.append(package)
-                    break
-        return results
-
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
@@ -2602,7 +2674,7 @@ class PersonTranslationView(LaunchpadView):
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
-    label = "Relicense your translations?"
+    label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreement
     field_names = ['allow_relicensing']
 
@@ -2613,6 +2685,11 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if default is None:
             default = True
         return { "allow_relicensing" : default }
+
+    @property
+    def relicensing_url(self):
+        """Return an URL for this view."""
+        return canonical_url(self.context, view_name='+licensing')
 
     @property
     def next_url(self):
@@ -2636,7 +2713,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if allow_relicensing:
             self.request.response.addInfoNotification(_(
                 "Your choice has been saved. "
-                "Thank you for deciding to relicense your translations."))
+                "Thank you for deciding to license your translations under "
+                "BSD license."))
         else:
             self.request.response.addInfoNotification(_(
                 "Your choice has been saved. "
@@ -3922,6 +4000,84 @@ class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
         """See `BranchListingView`."""
         return BranchPersonSearchContext(
             self.context, BranchPersonSearchRestriction.OWNED)
+
+
+class SourcePackageReleaseWithStats:
+    """An ISourcePackageRelease, with extra stats added."""
+
+    implements(ISourcePackageRelease)
+    decorates(ISourcePackageRelease)
+
+    def __init__(self, sourcepackage_release, open_bugs, open_questions):
+        self.context = sourcepackage_release
+        self.open_bugs = open_bugs
+        self.open_questions = open_questions
+
+
+class PersonPackagesView(LaunchpadView):
+    """View for +packages."""
+
+    def getLatestUploadedPPAPackagesWithStats(self):
+        """Return the sourcepackagereleases uploaded to PPAs by this person.
+
+        Results are filtered according to the permission of the requesting
+        user to see private archives.
+        """
+        packages = self.context.getLatestUploadedPPAPackages()
+
+        # For each package we find out which archives it was published in.
+        # If the user has permission to see any of those archives then
+        # the user is permitted to see the package.
+        #
+        # Ideally this check should be done in
+        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
+        # query is virtually impossible!
+        results = []
+        for package in packages:
+            # Make a shallow copy to remove the Zope security.
+            archives = set(package.published_archives)
+            # Ensure the SPR.upload_archive is also considered.
+            archives.add(package.upload_archive)
+            for archive in archives:
+                if check_permission('launchpad.View', archive):
+                    results.append(package)
+                    break
+        return self._addStatsToPackages(results)
+
+    def getLatestMaintainedPackagesWithStats(self):
+        """Return the latest maintained packages, including stats."""
+        return self._addStatsToPackages(
+            self.context.getLatestMaintainedPackages())
+
+    def getLatestUploadedButNotMaintainedPackagesWithStats(self):
+        """Return the latest uploaded packages, including stats.
+
+        Don't include packages that are maintained by the user.
+        """
+        return self._addStatsToPackages(
+            self.context.getLatestUploadedButNotMaintainedPackages())
+
+    def _addStatsToPackages(self, package_releases):
+        """Add stats to the given package releases, and return them."""
+        distro_packages = [
+            package_release.distrosourcepackage
+            for package_release in package_releases]
+        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
+            self.user, distro_packages)
+        open_bugs = {}
+        for bug_count in package_bug_counts:
+            distro_package = bug_count['package']
+            open_bugs[distro_package] = bug_count['open']
+
+        question_set = getUtility(IQuestionSet)
+        package_question_counts = question_set.getOpenQuestionCountByPackages(
+            distro_packages)
+
+        return [
+            SourcePackageReleaseWithStats(
+                package, open_bugs[package.distrosourcepackage],
+                package_question_counts[package.distrosourcepackage])
+            for package in package_releases]
 
 
 class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):

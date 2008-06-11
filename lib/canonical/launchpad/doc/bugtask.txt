@@ -106,14 +106,16 @@ The created bugtasks are guaranteed to implement the correct interface.
 
 == Bug Task Targets ==
 
-The "target" of an IBugTask is one of the following things:
+    >>> from canonical.launchpad.database.distributionsourcepackage import DistributionSourcePackage
+    >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
+
+The "target" of an IBugTask can be one of the items in the following
+list.
 
   * an upstream product
 
     >>> upstream_task.target == evolution
     True
-    >>> print upstream_task.getPackageComponent()
-    None
 
   * a product series
 
@@ -124,8 +126,6 @@ The "target" of an IBugTask is one of the following things:
 
     >>> productseries_task = bugtaskset.createTask(
     ...     owner=sabdfl, bug=bug_one, productseries=firefox_1_0)
-    >>> print productseries_task.getPackageComponent()
-    None
     >>> IProductSeriesBugTask.providedBy(productseries_task)
     True
 
@@ -136,44 +136,39 @@ The "target" of an IBugTask is one of the following things:
 
     >>> distro_task.target == ubuntu
     True
-    >>> print distro_task.getPackageComponent()
-    None
 
   * a distroseries
 
     >>> distro_series_task.target == warty
     True
-    >>> print distro_series_task.getPackageComponent()
-    None
 
   * a distribution sourcepackage
 
-    >>> from canonical.launchpad.database.distributionsourcepackage import DistributionSourcePackage
-    >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
-    >>> distro_sp_task = bugtaskset.get(17)
-    >>> print distro_sp_task.getPackageComponent().name
-    main
-    >>> distro_sp_task = bugtaskset.get(4)
-    >>> print distro_sp_task.getPackageComponent()
-    None
-    >>> expected_target = DistributionSourcePackage(
-    ...     distro_sp_task.distribution,
-    ...     distro_sp_task.sourcepackagename)
-    >>> got_target = distro_sp_task.target
-    >>> IDistributionSourcePackage.providedBy(distro_sp_task.target)
+    >>> def get_expected_target(distro_sp_task):
+    ...      expected_target = DistributionSourcePackage(
+    ...         distro_sp_task.distribution,
+    ...         distro_sp_task.sourcepackagename)
+    ...      return distro_sp_task.target
+    ...
+    >>> debian_ff_task = bugtaskset.get(4)
+    >>> IDistributionSourcePackage.providedBy(debian_ff_task.target)
     True
-    >>> got_target.distribution == expected_target.distribution
+    >>> target = get_expected_target(debian_ff_task)
+    >>> target.distribution.name, target.sourcepackagename.name
+    (u'debian', u'mozilla-firefox')
+
+    >>> ubuntu_linux_task = bugtaskset.get(25)
+    >>> IDistributionSourcePackage.providedBy(ubuntu_linux_task.target)
     True
-    >>> got_target.sourcepackagename == expected_target.sourcepackagename
-    True
+    >>> target = get_expected_target(ubuntu_linux_task)
+    >>> target.distribution.name, target.sourcepackagename.name
+    (u'ubuntu', u'linux-source-2.6.15')
 
   * a distroseries sourcepackage
 
     >>> from canonical.launchpad.database import SourcePackage
     >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> distro_series_sp_task = bugtaskset.get(16)
-    >>> print distro_series_sp_task.getPackageComponent().name
-    main
     >>> expected_target = SourcePackage(
     ...     distroseries=distro_series_sp_task.distroseries,
     ...     sourcepackagename=distro_series_sp_task.sourcepackagename)
@@ -205,6 +200,33 @@ distro series, or product;
 the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
 package).
+
+
+=== getPackageComponent ===
+
+We offer a convenience method on IBugTask which allows you to look up
+the archive component associated to the bugtask's target. Obviously, it
+only applies to tasks that specify package information:
+
+    >>> print upstream_task.getPackageComponent()
+    None
+    >>> print productseries_task.getPackageComponent()
+    None
+    >>> print distro_task.getPackageComponent()
+    None
+    >>> print distro_series_task.getPackageComponent()
+    None
+
+And it only applies to tasks whose packages which are published in
+IDistribution.currentseries (for bugtasks on IDistributions) or the
+bugtask's series (for bugtasks on IDistroSeries)
+
+    >>> print debian_ff_task.getPackageComponent()
+    None
+    >>> print ubuntu_linux_task.getPackageComponent().name
+    main
+    >>> print distro_series_sp_task.getPackageComponent().name
+    main
 
 
 == Editing Bug Tasks ==

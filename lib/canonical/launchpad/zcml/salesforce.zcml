@@ -10,13 +10,13 @@
     </content>
 
     <content class="canonical.launchpad.utilities.Voucher">
-        <allow attributes="id project status term __str__" />
+        <allow interface="canonical.launchpad.interfaces.salesforce.ISalesforceVoucher" />
     </content>
 
     <securedutility
         class="canonical.launchpad.utilities.SalesforceVoucherProxy"
         provides="canonical.launchpad.interfaces.ISalesforceVoucherProxy">
-        <allow interface="canonical.launchpad.interfaces.ISalesforceVoucherProxy" />
+        <allow interface="canonical.launchpad.interfaces.salesforce.ISalesforceVoucherProxy" />
     </securedutility>
 
 </configure>

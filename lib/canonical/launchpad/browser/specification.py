@@ -296,7 +296,7 @@ class SpecificationContextMenu(ContextMenu):
     def givefeedback(self):
         text = 'Give feedback'
         enabled = (self.user is not None and
-                   self.context.getFeedbackRequests(self.user))
+                   bool(self.context.getFeedbackRequests(self.user)))
         return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -346,9 +346,12 @@ class SpecificationContextMenu(ContextMenu):
     def retractmentoring(self):
         text = 'Retract mentorship'
         user = getUtility(ILaunchBag).user
-        enabled = (self.context.isMentor(user) and
-                   not self.context.is_complete and
-                   user)
+        # We should really only allow people to retract mentoring if the
+        # spec's open and the user's already a mentor.
+        if user and not self.context.is_complete:
+            enabled = self.context.isMentor(user)
+        else:
+            enabled = False
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):

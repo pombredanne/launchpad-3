@@ -227,7 +227,7 @@ class TestArchiveOverrider(unittest.TestCase):
         source was picked and correct arguments was passed.
         """
         self.assertCurrentSource(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
@@ -282,23 +282,23 @@ class TestArchiveOverrider(unittest.TestCase):
         Nothing is done and the situation is logged.
         """
         self.assertCurrentSource(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
-            component_name='main', section_name='editors',
+            component_name='main', section_name='web',
             priority_name='extra')
         changer.initialize()
         changer.processSourceChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
             "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'editors'\n"
+            "INFO Override Section to: 'web'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox - 0.9/main/editors' remained the same")
+            "INFO 'mozilla-firefox - 0.9/main/web' remained the same")
 
         self.assertCurrentSource(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
 
     def test_processBinaryChange_success(self):
         """Check if processBinaryChange() picks the correct binary.

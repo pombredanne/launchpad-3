@@ -1,3 +1,14 @@
+launchpad-buildd (46) dapper-cat; urgency=low
+
+  * slave.py: Accept a separate username and password to the
+    ensurePresent() call which, if present, are used to install
+    an auth handler to cope with basic http auth with the http
+    server when fetching files.
+  * slave.py: Ensure that build logs are sanitized so that any
+    user:password@ parts in URLs are removed.
+
+ -- Julian Edwards <julian.edwards@canonical.com>  Tue, 29 Apr 2008 14:25:00 +0100
+
 launchpad-buildd (45) dapper-cat; urgency=low
 
   * slave.py: Stop setting BuilderStatus.WAITING in each failure

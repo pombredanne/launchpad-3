@@ -263,7 +263,7 @@ Merge proposals also have a link formatter, which displays branch titles:
 
 === Code review comments ===
 
-   >>> comment = factory.makeCodeReviewMessage()
+   >>> comment = factory.makeCodeReviewComment()
    >>> print test_tales('comment/fmt:url', comment=comment)
    http://code.launchpad.dev/~person-name.../product-name.../branch.../+merge/.../comments/...
    >>> print test_tales('comment/fmt:link', comment=comment)
