@@ -780,6 +780,18 @@ special = {
             '../doc/google-service-stub.txt',
             layer=GoogleServiceLayer,
             ),
+    # This test is actually run twice to prove that the AppServerLayer
+    # properly isolates the database between tests.
+    'launchpadlib.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
+    'launchpadlib2.txt': LayeredDocFileSuite(
+        '../doc/launchpadlib.txt',
+        layer=AppServerLayer,
+        setUp=browser.setUp, tearDown=browser.tearDown,
+        ),
     }
 
 
