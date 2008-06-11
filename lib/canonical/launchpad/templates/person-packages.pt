@@ -145,7 +145,7 @@
     </td>
     <td style="text-align: right">
       <a tal:attributes="href string:${spr/sourcepackage/fmt:url}/+questions"
-         tal:content="spr/@@+open_questions_count">
+         tal:content="spr/open_questions">
       </a>
     </td>
   </tal:block>
