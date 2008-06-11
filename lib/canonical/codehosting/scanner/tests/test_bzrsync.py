@@ -467,6 +467,7 @@ class TestBzrSync(BzrSyncTestCase):
 
 
         # Make the stacked-on branch.
+        self.switchDbUser(self.lp_db_user)
         db_base_branch = self.makeDatabaseBranch()
         bzr_base_tree = self.makeBzrBranchAndTree(
             db_base_branch, format=stacked_format)
