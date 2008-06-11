@@ -50,7 +50,7 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
     usedfor = IDistroSeries
 
     def breadcrumb(self):
-        return self.context.version
+        return self.context.displayname
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):

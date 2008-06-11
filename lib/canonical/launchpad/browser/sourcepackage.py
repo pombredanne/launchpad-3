@@ -37,13 +37,15 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
+from canonical.lazr.utils import smartquote
+
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
 
     def breadcrumb(self):
-        return self.context.name
+        return smartquote('"%s" package') % (self.context.name)
 
     @stepto('+pots')
     def pots(self):
@@ -74,7 +76,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
         return self.context.distribution.displayname + ' ' + \
-               self.context.distroseries.version + ' source package:'
+               self.context.distroseries.displayname + ' source package:'
 
     def getMainHeading(self):
         return self.context.sourcepackagename

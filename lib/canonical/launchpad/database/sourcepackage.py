@@ -41,6 +41,8 @@ from canonical.launchpad.interfaces import (
     IQuestionTarget, PackagingType, PackagePublishingPocket,
     PackagePublishingStatus, QUESTION_STATUS_DEFAULT_SEARCH)
 
+from canonical.lazr.utils import smartquote
+
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
@@ -222,7 +224,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def displayname(self):
-        return "%s %s" % (
+        return "%s %s %s" % (
+            self.distribution.displayname,
             self.distroseries.displayname, self.sourcepackagename.name)
 
     @property
@@ -237,10 +240,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def title(self):
-        titlestr = self.sourcepackagename.name
-        titlestr += ' in ' + self.distribution.displayname
-        titlestr += ' ' + self.distroseries.displayname
-        return titlestr
+        return smartquote('"%s" source package in %s %s') % (
+            self.sourcepackagename.name, self.distribution.displayname,
+            self.distroseries.displayname)
 
     @property
     def distribution(self):
