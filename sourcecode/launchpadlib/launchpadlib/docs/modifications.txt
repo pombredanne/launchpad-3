@@ -10,10 +10,10 @@ interface which is available through direct attribute access.
     >>> salgado.display_name
     u'Guilherme Salgado'
 
-Some of these attributes can be changed.  For example, a person can change his
-or her display name.  When changing attribute values though, the changes are
-not pushed to the web service until the object is explicitly saved.  This
-allows us to batch the changes over the wire for efficiency.
+Some of these attributes can be changed.  For example, Salgado can change his
+display name.  When changing attribute values though, the changes are not
+pushed to the web service until the entry is explicitly saved.  This allows
+Salgado to batch the changes over the wire for efficiency.
 
     >>> salgado.display_name = u'Salgado'
     >>> launchpad.people.get('salgado').display_name
@@ -25,8 +25,8 @@ Once the changes are saved though, they are saved on the web service.
     >>> launchpad.people.get('salgado').display_name
     u'Salgado'
 
-The person object is a normal Python object like any other.  You can set any
-attribute on the object, but if it doesn't correspond to a web services
+The entry object is a normal Python object like any other.  Salgado can set
+any attribute on the object, but if it doesn't correspond to a web services
 object, it won't be persistent.
 
     >>> salgado.display_name = u'Guilherme Salgado'
@@ -40,24 +40,69 @@ object, it won't be persistent.
     ...
     AttributeError: is_great
 
+Salgado can also set more than one attribute at a time, and all will be
+changed when the entry is saved.
+
+    >>> print salgado.homepage_content
+    None
+    >>> salgado.hide_email_addresses
+    False
+    >>> print salgado.timezone
+    None
+    
+    >>> salgado.homepage_content = u'This is my home page.'
+    >>> salgado.hide_email_addresses = True
+    >>> salgado.timezone = u'Brazil/East'
+    >>> salgado.save()
+    >>> salgado = launchpad.people.get('salgado')
+
+    >>> print salgado.homepage_content
+    This is my home page.
+    >>> salgado.hide_email_addresses
+    True
+    >>> print salgado.timezone
+    Brazil/East
+
+Salgado cannot set his timezone to an illegal value.
+
+    >>> salgado.timezone = 'SouthPole'
+    >>> salgado.save()
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 400: Bad Request
+
+The exception has some useful detail about the error.
+
+    >>> from launchpadlib.errors import HTTPError
+    >>> def print_error_on_save(entry):
+    ...     try:
+    ...         entry.save()
+    ...     except HTTPError, error:
+    ...         pass
+    ...     print error.content
+
+    >>> print_error_on_save(salgado)
+    timezone: u'SouthPole' isn't a valid token
+
 
 == Moving an entry ==
 
-We can actually rename and move Salgado's person by changing the 'name'
+Salgado can actually rename and move his person by changing the 'name'
 attribute.
 
+    >>> salgado = launchpad.people.get('salgado')
     >>> salgado.name = u'guilherme'
     >>> salgado.save()
 
-Once this is done you can no longer access his data through the old name.  But
-you can through the new name.
+Once this is done, he can no longer access his data through the old name.  But
+Salgado's person is available through the new name.
 
     >>> print launchpad.people.get('salgado')
     None
     >>> launchpad.people.get('guilherme').display_name
     u'Guilherme Salgado'
 
-And it's just as easy to move him back to the old name.
+It's just as easy to move Salgado back to the old name.
 
     >>> salgado.name = u'salgado'
     >>> salgado.save()
@@ -81,19 +126,11 @@ Some attributes are read-only, such as a person's karma.
 
 The exception has some interesting details about the error.
 
-    >>> from launchpadlib.errors import HTTPError
-    >>> def print_error_on_save(entry):
-    ...     try:
-    ...         entry.save()
-    ...     except HTTPError, error:
-    ...         pass
-    ...     print error.content
-
     >>> print_error_on_save(salgado)
     karma: You tried to modify a read-only attribute.
 
-You also get useful information if you try to change several read-only
-attributes.
+If Salgado tries to change several read-only attributes at the same time, he
+gets useful feedback about his error.
 
     >>> salgado.date_created = u'2003-06-06T08:59:51.596025+00:00'
     >>> salgado.is_team = True
