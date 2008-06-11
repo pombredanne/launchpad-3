@@ -340,14 +340,17 @@ class IPackageUploadSource(Interface):
         The possible ancestries locations for a give source upload, assuming
         that only PRIMARY archive allows post-RELEASE pockets are:
 
-         1. original archive and pocket (old DEVELOPMENT/SRU/PPA uploads)
-         2. primary_archive and release (NEW SRU/PPA uploads fallback)
+         1. original archive, original distroseries and pocket (old
+            DEVELOPMENT/SRU/PPA uploads);
+         2. primary archive, original distroseries and release pocket (NEW
+            SRU/PPA uploads fallback);
+         3. primary_archive, any distroseries and release pocket (BACKPORTS)
 
         We lookup a source publication with the same name in those location
         and in that order. If an ancestry is found it is returned, otherwise
         it returns None.
 
-        :return: `SourcePackagePublishingHistory` for the corresponding
+        :return: `ISourcePackagePublishingHistory` for the corresponding
              ancestry or None if it wasn't found.
         """
 
