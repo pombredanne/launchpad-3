@@ -956,7 +956,7 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
-person_translations_relicensing = "Relicense your translations"
+person_translations_relicensing = "Translations licensing"
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 

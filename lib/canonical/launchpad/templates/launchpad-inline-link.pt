@@ -4,7 +4,7 @@
 ><a
   tal:condition="context/icon"
   tal:attributes="
-    class string:actions menu-link-${context/name};
+    class string:menu-link-${context/name};
     href context/url;
     style string:
       background: url(${context/icon_url}) center left no-repeat;;
@@ -17,7 +17,7 @@
   tal:condition="not:context/icon"
   style="line-height: 20px;"
   tal:attributes="
-    class string:actions menu-link-${context/name};
+    class string:menu-link-${context/name};
     href context/url;
     title context/summary;
   "
