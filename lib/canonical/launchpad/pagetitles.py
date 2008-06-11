@@ -41,7 +41,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
-from canonical.launchpad.webapp import smartquote
+from canonical.lazr.utils import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 

@@ -31,3 +31,27 @@ makes problems harder to diagnose.
     False
     >>> safe_hasattr(oracle, 'weather')
     False
+
+
+== smartquote() ==
+
+smartquote() converts pairs of feet marks (") in a string to typographical
+quotation marks.
+
+    >>> from canonical.lazr.utils import smartquote
+    >>> smartquote('')
+    u''
+    >>> smartquote('foo "bar" baz')
+    u'foo \u201cbar\u201d baz'
+    >>> smartquote('foo "bar baz')
+    u'foo \u201cbar baz'
+    >>> smartquote('foo bar" baz')
+    u'foo bar\u201d baz'
+    >>> smartquote('""foo " bar "" baz""')
+    u'""foo " bar "" baz""'
+    >>> smartquote('" foo "')
+    u'" foo "'
+    >>> smartquote('"foo".')
+    u'\u201cfoo\u201d.'
+    >>> smartquote('a lot of "foo"?')
+    u'a lot of \u201cfoo\u201d?'

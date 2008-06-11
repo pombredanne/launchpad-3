@@ -170,9 +170,11 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
+    custom_widget, enabled_with_permission, stepthrough, stepto)
 
 from canonical.launchpad import _
+
+from canonical.lazr.utils import smartquote
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
