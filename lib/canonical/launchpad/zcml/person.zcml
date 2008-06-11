@@ -177,6 +177,14 @@
     />
 
   <browser:page
+    name="+edit2.0"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditView"
+    permission="launchpad.Edit"
+    template="../templates/person-edit.pt"
+    />
+
+  <browser:page
     name="+branding"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBrandingView"

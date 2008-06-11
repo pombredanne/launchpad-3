@@ -29,6 +29,7 @@ __all__ = [
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
     'PersonEditSSHKeysView',
+    'PersonEditView',
     'PersonEditViewObsolete',
     'PersonEditWikiNamesView',
     'PersonFacets',
@@ -2947,7 +2948,16 @@ class PersonEditHomePageView(BasePersonEditView):
         'homepage_content', TextAreaWidget, height=30, width=30)
 
 
+class PersonEditView(BasePersonEditView):
+    """The Launchpad 2.0 Person 'Edit' page."""
+
+    field_names = ['displayname', 'name', 'hide_email_addresses',
+        'verbose_bugnotifications', 'timezone']
+    custom_widget('timezone', SelectWidget, size=15)
+
+
 class PersonEditViewObsolete(BasePersonEditView):
+    """The Launchpad 1.0 Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
         'verbose_bugnotifications', 'timezone']
