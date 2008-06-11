@@ -65,6 +65,7 @@ class Entry:
         self._initialize(entry_dict)
 
     def save(self):
+        """Save changes to the entry."""
         representation = {}
         # Find all the dirty attributes and build up a representation of them
         # to be set on the web service.
