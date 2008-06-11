@@ -441,9 +441,9 @@ codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
-codereviewmessage_index = 'Code review comment'
+codereviewcomment_index = 'Code review comment'
 
-codereviewmessage_reply = 'Reply to code review comment'
+codereviewcomment_reply = 'Reply to code review comment'
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -956,7 +956,7 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
-person_translations_relicensing = "Relicense your translations"
+person_translations_relicensing = "Translations licensing"
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 

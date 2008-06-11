@@ -67,8 +67,8 @@ The user receives a confirmation email.
     >
     > Hello ...,
     >
-    > The files you requested from Rosetta are ready for download
-    > from the following location:
+    > The translation files you requested from Launchpad are ready for
+    > download from the following location:
     >
     >     http://localhost:58000/.../launchpad-export.tar.gz
 

@@ -64,6 +64,10 @@ can reach the +edit page.
     >>> browser.getLink('Change details').click()
     >>> browser.url
     'http://launchpad.dev/firefox/stable/+edit'
+    >>> browser.getControl('Name').value
+    'stable'
+    >>> browser.getControl('Status').displayValue
+    ['Active Development']
 
 Then we edit the information about the series. First we try to use a
 name already in use and a branch for a product other than Firefox:
@@ -84,9 +88,11 @@ We'll get a nice error message for the three problems:
     ~carlos/evolution/2.0 is not a branch of Mozilla Firefox.
     Invalid release URL pattern.
 
-We now change it to a unique name, and pick a branch of firefox:
+We now change it to a unique name, a different status, and pick a branch
+of firefox:
 
     >>> browser.getControl('Name').value = 'unstable'
+    >>> browser.getControl('Status').displayValue = ['Experimental']
     >>> browser.getControl('Branch').value = '~name12/firefox/main'
     >>> browser.getControl('Release URL pattern').value = (
     ...     'http://ftp.mozilla.org/pub/mozilla.org/firefox-*.tar.gz')
@@ -95,12 +101,13 @@ We now change it to a unique name, and pick a branch of firefox:
     >>> browser.url
     'http://launchpad.dev/firefox/unstable'
 
-We test if the edited product release is there:
+The new values are then shown in the series' page.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'series-details'))
+    Testing the edit of productseries
+    Status: Experimental
 
     >>> content = find_main_content(browser.contents)
-    >>> print content.find('p').renderContents()
-    Testing the edit of productseries
-
     >>> print content.find('ul', 'branch').find('a')
     <a href="http://code.launchpad.dev/~name12/firefox/main">Mozilla Firefox
     Mainline</a>

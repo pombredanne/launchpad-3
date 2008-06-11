@@ -419,3 +419,9 @@ class ArchivePurpose(DBEnumeratedType):
         This is the archive for obsolete packages.
         """)
 
+    REBUILD = DBItem(6, """
+        Rebuild Archive
+
+        This kind of archive is used for rebuilding packages.
+        """)
+
