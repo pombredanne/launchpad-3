@@ -25,7 +25,8 @@ Language.
     zip_safe    = True,
     setup_requires = [
         'setuptools_bzr',
-        ],
+        ]
+    ),
     extras_require = {
         'nose': ['nose'],
         },
