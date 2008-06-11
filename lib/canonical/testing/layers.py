@@ -150,9 +150,11 @@ def disconnect_stores():
             store = zstorm.get(store_name)
             zstorm.remove(store)
             stores.append(store)
-    transaction.abort()
-    for store in stores:
-        store.close()
+    # If we have any stores, abort the transaction and close them.
+    if stores:
+        transaction.abort()
+        for store in stores:
+            store.close()
 
 
 def reconnect_stores(database_config_section='launchpad'):
