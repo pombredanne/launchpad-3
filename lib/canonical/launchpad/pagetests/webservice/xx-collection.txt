@@ -223,10 +223,10 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/people?ws.op=find&text=")
+  >>> print webservice.get("/beta/~ubuntu-team?ws.op=getMembersByStatus")
   HTTP/1.1 400 Bad Request
   ...
-  text: Required input is missing.
+  status: Required input is missing.
 
 A collection may also expose named operations in response to POST
 requests. These operations are usually factories. Here's a helper

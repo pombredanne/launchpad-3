@@ -157,12 +157,13 @@ Details portlet.
     Contact details
     ...
     OpenID login:
-    (What's this?)
+    (What&rsquo;s this?)
     http://openid.launchpad.dev/+id/name16_oid
 
 Foo Bar can learn about OpenID from the 'What's this?' link.
 
-    >>> admin_browser.getLink(u"What's\xa0this?").url
+    >>> admin_browser.open('http://launchpad.dev/~name16')
+    >>> admin_browser.getLink(u"What&#8217;s\xa0this?").url
     'https://help.launchpad.net/OpenID'
 
 Other users who visit the page do not see the URL.
