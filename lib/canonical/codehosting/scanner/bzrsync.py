@@ -427,8 +427,13 @@ class BzrSync:
         self.bzr_history = bzr_branch.revision_history()
 
     def setFormats(self, bzr_branch):
-        # XXX Bazaar does not provide a public API for learning about format
-        # markers.  Fix this in Bazaar, then here.
+        """Record the stored formats in the database object.
+
+        The previous value is unconditionally overwritten.
+
+        Note that the strings associated with the formats themselves are used,
+        not the strings on disk.
+        """
         def match_title(enum, title, default):
             for value in enum.items:
                 if value.title == title:
@@ -436,6 +441,8 @@ class BzrSync:
             else:
                 return default
 
+        # XXX Bazaar does not provide a public API for learning about format
+        # markers.  Fix this in Bazaar, then here.
         control_string = bzr_branch.bzrdir._format.get_format_string()
         if bzr_branch._format.__class__ is BzrBranchFormat4:
             branch_string = BranchFormat.BZR_BRANCH_4.title

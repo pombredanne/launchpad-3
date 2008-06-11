@@ -166,7 +166,7 @@ class BranchType(DBEnumeratedType):
         """)
 
 
-def _branch_format_enum(num, format, format_string=None):
+def _format_enum(num, format, format_string=None):
     instance = format()
     if format_string is None:
         format_string = instance.get_format_string()
@@ -174,73 +174,88 @@ def _branch_format_enum(num, format, format_string=None):
 
 
 class BranchFormat(DBEnumeratedType):
+    """Branch on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
 
     UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
 
     # Branch 4 was only used with all-in-one formats, so it didn't have its
     # own marker.  It was implied by the control directory marker.
-    BZR_BRANCH_4 = _branch_format_enum(
+    BZR_BRANCH_4 = _format_enum(
         4, BzrBranchFormat4, 'Fake Bazaar Branch 4 marker')
 
-    BRANCH_REFERENCE = _branch_format_enum(1, BranchReferenceFormat)
+    BRANCH_REFERENCE = _format_enum(1, BranchReferenceFormat)
 
-    BZR_BRANCH_5 = _branch_format_enum(5, BzrBranchFormat5)
+    BZR_BRANCH_5 = _format_enum(5, BzrBranchFormat5)
 
-    BZR_BRANCH_6 = _branch_format_enum(6, BzrBranchFormat6)
+    BZR_BRANCH_6 = _format_enum(6, BzrBranchFormat6)
 
-    BZR_LOOM_1 = _branch_format_enum(101, BzrBranchLoomFormat1)
+    BZR_LOOM_1 = _format_enum(101, BzrBranchLoomFormat1)
 
-    BZR_LOOM_2 = _branch_format_enum(106, BzrBranchLoomFormat6)
+    BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
 
 
 
 class RepositoryFormat(DBEnumeratedType):
+    """Repository on-disk format.
+
+    This indicates which (Bazaar) format is used on-disk.  The list must be
+    updated as the list of formats supported by Bazaar is updated.
+    """
 
     UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
 
     # Repository formats prior to format 7 had no marker because they
     # were implied by the control directory format.
-    BZR_REPOSITORY_4 = _branch_format_enum(
+    BZR_REPOSITORY_4 = _format_enum(
         4, RepositoryFormat4, 'Fake Bazaar repository 4 marker')
 
-    BZR_REPOSITORY_5 = _branch_format_enum(
+    BZR_REPOSITORY_5 = _format_enum(
         5, RepositoryFormat5, 'Fake Bazaar repository 5 marker')
 
-    BZR_REPOSITORY_6 = _branch_format_enum(
+    BZR_REPOSITORY_6 = _format_enum(
         6, RepositoryFormat6, 'Fake Bazaar repository 6 marker')
 
-    BZR_REPOSITORY_7 = _branch_format_enum(7, RepositoryFormat7)
+    BZR_REPOSITORY_7 = _format_enum(7, RepositoryFormat7)
 
-    BZR_KNIT_1 = _branch_format_enum(101, RepositoryFormatKnit1)
+    BZR_KNIT_1 = _format_enum(101, RepositoryFormatKnit1)
 
-    BZR_KNIT_3 = _branch_format_enum(103, RepositoryFormatKnit3)
+    BZR_KNIT_3 = _format_enum(103, RepositoryFormatKnit3)
 
-    BZR_KNIT_4 = _branch_format_enum(104, RepositoryFormatKnit4)
+    BZR_KNIT_4 = _format_enum(104, RepositoryFormatKnit4)
 
-    BZR_KNITPACK_1 = _branch_format_enum(201, RepositoryFormatKnitPack1)
+    BZR_KNITPACK_1 = _format_enum(201, RepositoryFormatKnitPack1)
 
-    BZR_KNITPACK_3 = _branch_format_enum(203, RepositoryFormatKnitPack3)
+    BZR_KNITPACK_3 = _format_enum(203, RepositoryFormatKnitPack3)
 
-    BZR_KNITPACK_4 = _branch_format_enum(204, RepositoryFormatKnitPack4)
+    BZR_KNITPACK_4 = _format_enum(204, RepositoryFormatKnitPack4)
 
-    BZR_PACK_DEV_0 = _branch_format_enum(
+    BZR_PACK_DEV_0 = _format_enum(
         300, RepositoryFormatPackDevelopment0)
 
-    BZR_PACK_DEV_0_SUBTREE = _branch_format_enum(
+    BZR_PACK_DEV_0_SUBTREE = _format_enum(
         301, RepositoryFormatPackDevelopment0Subtree)
 
 
 class ControlFormat(DBEnumeratedType):
+    """Control directory (BzrDir) format.
+
+    This indicates what control directory format is on disk.  Must be updated
+    as new formats become available.
+    """
 
     UNRECOGNIZED = DBItem(1000, '!Unrecognized!', 'Unrecognized format')
 
-    BZR_DIR_4 = _branch_format_enum(4, BzrDirFormat4)
+    BZR_DIR_4 = _format_enum(4, BzrDirFormat4)
 
-    BZR_DIR_5 = _branch_format_enum(5, BzrDirFormat5)
+    BZR_DIR_5 = _format_enum(5, BzrDirFormat5)
 
-    BZR_DIR_6 = _branch_format_enum(6, BzrDirFormat6)
+    BZR_DIR_6 = _format_enum(6, BzrDirFormat6)
 
-    BZR_METADIR_1 = _branch_format_enum(1, BzrDirMetaFormat1)
+    BZR_METADIR_1 = _format_enum(1, BzrDirMetaFormat1)
 
 
 class UICreatableBranchType(EnumeratedType):
@@ -450,10 +465,11 @@ class IBranch(IHasOwner):
                       "branch is hosted."))
 
     branch_format = Choice(
-        title=_("Branch Type"), required=True, vocabulary=BranchFormat)
+        title=_("Branch Format"), required=True, vocabulary=BranchFormat)
 
     repository_format = Choice(
-        title=_("Branch Type"), required=True, vocabulary=RepositoryFormat)
+        title=_("Repository Format"), required=True,
+        vocabulary=RepositoryFormat)
 
     control_format = Choice(
         title=_("Control Directory"), required=True, vocabulary=ControlFormat)

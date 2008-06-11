@@ -404,6 +404,7 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @property
     def branch_format_description(self):
+        """Return branch's format, or 'Not recorded' if None."""
         if self.context.branch_format is None:
             return "Not recorded"
         else:
@@ -411,6 +412,7 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @property
     def repository_format_description(self):
+        """Return repository's format, or 'Not recorded' if None."""
         if self.context.repository_format is None:
             return "Not recorded"
         else:

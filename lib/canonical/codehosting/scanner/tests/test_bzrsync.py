@@ -977,8 +977,10 @@ class TestRevisionProperty(BzrSyncTestCase):
 
 
 class TestScanFormatPack(BzrSyncTestCase):
+    """Test scanning of pack-format repositories."""
 
     def testRecognizePack(self):
+        """Ensure scanner records correct formats for pack branches."""
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(self.db_branch.branch_format,
                          BranchFormat.BZR_BRANCH_6)
@@ -989,22 +991,29 @@ class TestScanFormatPack(BzrSyncTestCase):
 
 
 class TestScanFormatKnit(BzrSyncTestCase):
+    """Test scanning of knit-format repositories."""
 
     def makeBzrBranchAndTree(self, db_branch):
         return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'knit')
 
     def testRecognizeKnit(self):
+        """Ensure scanner records correct formats for knit branches."""
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(self.db_branch.branch_format,
                          BranchFormat.BZR_BRANCH_5)
 
 
 class TestScanFormatWeave(BzrSyncTestCase):
+    """Test scanning of weave-format branches.
+
+    Weave is an "all-in-one" format, where branch, repo and tree formats are
+    implied by the control directory format."""
 
     def makeBzrBranchAndTree(self, db_branch):
         return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'weave')
 
     def testRecognizeWeave(self):
+        """Ensure scanner records correct weave formats."""
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(self.db_branch.branch_format,
                          BranchFormat.BZR_BRANCH_4)
@@ -1014,9 +1023,11 @@ class TestScanFormatWeave(BzrSyncTestCase):
                          ControlFormat.BZR_DIR_6)
 
 
-class TestScanFormatWeave(BzrSyncTestCase):
+class TestScanUnrecognizedFormat(BzrSyncTestCase):
+    """Test scanning unrecognized formats"""
 
     def testUnrecognize(self):
+        """Scanner should record UNRECOGNIZED for all format values."""
         class MockFormat:
             def get_format_string(self):
                 return 'Unrecognizable'
@@ -1037,6 +1048,7 @@ class TestScanFormatWeave(BzrSyncTestCase):
                          RepositoryFormat.UNRECOGNIZED)
         self.assertEqual(self.db_branch.control_format,
                          ControlFormat.UNRECOGNIZED)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
