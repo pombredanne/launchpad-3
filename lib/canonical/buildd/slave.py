@@ -17,6 +17,11 @@ from twisted.internet import reactor
 from twisted.internet import process
 from twisted.web import xmlrpc
 
+# cprov 20080611: in python2.4 posixfile.SEEK_END is deprecated and our
+# importfascist-check denies its import. When we migrate to python2.5,
+# we can use os.SEEK_END.
+SEEK_END = 2
+
 devnull = open("/dev/null", "r")
 
 
@@ -368,11 +373,11 @@ class BuildDSlave(object):
     def getLogTail(self):
         """Return the tail of the log.
 
-        If the builder is not logging (self._log is False) return a empty
-        string.
+        If the buildlog is not yet opened for writing (self._log is None),
+        return a empty string.
 
         It safely tries to open the 'buildlog', if it doesn't exist, due to
-        job cleanup or buildlog snitization race-conditions, it also returns
+        job cleanup or buildlog sanitization race-conditions, it also returns
         an empty string.
 
         When the 'buildlog' is present it return up to 2 KiB character of
@@ -391,14 +396,14 @@ class BuildDSlave(object):
             except IOError:
                 ret = ""
             else:
-                # We rely on good OS pratices that keep the file handler
-                # usable once it's oppened. So if open() is ok, subsequent
+                # We rely on good OS practices that keep the file handler
+                # usable once it's opened. So, if open() is ok, a subsequent
                 # seek/tell/read will be safe.
-                rlog.seek(0, 2)
+                rlog.seek(0, SEEK_END)
                 count = rlog.tell()
                 if count > 2048:
                     count = 2048
-                rlog.seek(-count, 2)
+                rlog.seek(-count, SEEK_END)
                 ret = rlog.read(count)
         finally:
             if rlog is not None:
