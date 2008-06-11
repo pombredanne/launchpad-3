@@ -2961,6 +2961,16 @@ class PersonEditView(BasePersonEditView):
         """The URL that the 'Cancel' link should return to."""
         return canonical_url(self.context)
 
+    def htmlJabberIDs(self):
+        """Return the person's Jabber IDs somewhat obfuscated.
+
+        The IDs are encoded using HTML hexadecimal entities to hinder
+        email harvesting. (Jabber IDs are sometime valid email accounts,
+        gmail for example.)
+        """
+        return [convertToHtmlCode(jabber.jabberid)
+                for jabber in self.context.jabberids]
+
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
