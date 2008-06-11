@@ -85,7 +85,7 @@ check: build
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) \
-	  --test '!doc/externalbugtracker-trac.txt|canonical.codehosting.tests.test_acceptance.AcceptanceTests'
+	  --test '!doc/externalbugtracker-trac.txt'
 
 lint:
 	@bash ./utilities/lint.sh
