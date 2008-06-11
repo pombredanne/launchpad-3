@@ -897,7 +897,7 @@ person_deactivate_account = 'Deactivate your Launchpad account'
 person_codesofconduct = ContextDisplayName(
     smartquote("%s's code of conduct signatures"))
 
-person_edit = ContextDisplayName(smartquote("%s's details"))
+person_edit_obsolete = ContextDisplayName(smartquote("%s's details"))
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 

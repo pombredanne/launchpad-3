@@ -29,7 +29,7 @@ __all__ = [
     'PersonEditIRCNicknamesView',
     'PersonEditJabberIDsView',
     'PersonEditSSHKeysView',
-    'PersonEditView',
+    'PersonEditViewObsolete',
     'PersonEditWikiNamesView',
     'PersonFacets',
     'PersonGPGView',
@@ -2961,7 +2961,7 @@ class PersonEditHomePageView(BasePersonEditView):
         'homepage_content', TextAreaWidget, height=30, width=30)
 
 
-class PersonEditView(BasePersonEditView):
+class PersonEditViewObsolete(BasePersonEditView):
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
         'verbose_bugnotifications', 'timezone']

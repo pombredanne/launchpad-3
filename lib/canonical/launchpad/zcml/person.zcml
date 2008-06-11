@@ -171,9 +171,9 @@
   <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.PersonEditView"
+    class="canonical.launchpad.browser.PersonEditViewObsolete"
     permission="launchpad.Edit"
-    template="../templates/person-edit.pt"
+    template="../templates/person-edit-obsolete.pt"
     />
 
   <browser:page
