@@ -1,0 +1,67 @@
+= Modifications =
+
+Objects available through the web interface, such as people, have a readable
+interface which is available through direct attribute access.
+
+    >>> from launchpadlib.testing.helpers import Launchpad
+    >>> launchpad = Launchpad(Launchpad.tokens.salgado_change_anything)
+
+    >>> salgado = launchpad.people.get('salgado')
+    >>> salgado.display_name
+    u'Guilherme Salgado'
+
+Some of these attributes can be changed.  For example, a person can change his
+or her display name.  When changing attribute values though, the changes are
+not pushed to the web service until the object is explicitly saved.  This
+allows us to batch the changes over the wire for efficiency.
+
+    >>> salgado.display_name = u'Salgado'
+    >>> launchpad.people.get('salgado').display_name
+    u'Guilherme Salgado'
+
+Once the changes are saved though, they are saved on the web service.
+
+    >>> salgado.save()
+    >>> launchpad.people.get('salgado').display_name
+    u'Salgado'
+
+The person object is a normal Python object like any other.  You can set any
+attribute on the object, but if it doesn't correspond to a web services
+object, it won't be persistent.
+
+    >>> salgado.display_name = u'Guilherme Salgado'
+    >>> salgado.is_great = True
+    >>> salgado.save()
+    >>> salgado = launchpad.people.get('salgado')
+    >>> salgado.display_name
+    u'Guilherme Salgado'
+    >>> salgado.is_great
+    Traceback (most recent call last):
+    ...
+    AttributeError: is_great
+
+
+== Moving an entry ==
+
+We can actually rename and move Salgado's person by changing the 'name'
+attribute.
+
+    >>> salgado.name = u'guilherme'
+    >>> salgado.save()
+
+Once this is done you can no longer access his data through the old name.  But
+you can through the new name.
+
+    >>> print launchpad.people.get('salgado')
+    None
+    >>> launchpad.people.get('guilherme').display_name
+    u'Guilherme Salgado'
+
+And it's just as easy to move him back to the old name.
+
+    >>> salgado.name = u'salgado'
+    >>> salgado.save()
+    >>> print launchpad.people.get('guilherme')
+    None
+    >>> launchpad.people.get('salgado').display_name
+    u'Guilherme Salgado'
