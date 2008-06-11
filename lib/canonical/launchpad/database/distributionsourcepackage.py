@@ -14,6 +14,8 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
 
+from canonical.launchpad.components.launchpadcontext import (
+    LaunchpadContextMixin)
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IQuestionTarget,
     IStructuralSubscriptionTarget, PackagePublishingStatus)
@@ -35,7 +37,7 @@ from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 
 
-class DistributionSourcePackage(BugTargetBase,
+class DistributionSourcePackage(BugTargetBase, LaunchpadContextMixin,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an

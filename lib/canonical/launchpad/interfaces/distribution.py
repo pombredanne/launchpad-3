@@ -20,6 +20,7 @@ from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.launchpad import ILaunchpadContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
@@ -45,7 +46,7 @@ class DistributionNameField(PillarNameField):
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
     IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
-    ILaunchpadUsage, ISpecificationTarget, IPillar):
+    ILaunchpadUsage, ISpecificationTarget, IPillar, ILaunchpadContext):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")

@@ -50,6 +50,7 @@ __all__ = [
     'IHasSecurityContact',
     'ILaunchBag',
     'ILaunchpadCelebrities',
+    'ILaunchpadContext',
     'ILaunchpadRoot',
     'ILaunchpadSearch',
     'ILaunchpadUsage',
@@ -535,3 +536,15 @@ class ILaunchpadUsage(Interface):
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)
+
+
+class ILaunchpadContext(Interface):
+    """Marker interface for objects used as the context of something."""
+
+    def isWithin(context):
+        """Return True if this context is the given one or is within it.
+
+        An IProduct is said to be within an IProject if the product is part of
+        that project.  Similarly, an IDistributionSourcePackage is said to be
+        within an IDistribution if it is part of the distribution.
+        """

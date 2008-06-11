@@ -22,6 +22,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.launchpad.components.launchpadcontext import (
+    LaunchpadContextMixin)
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -67,7 +69,8 @@ from canonical.launchpad.interfaces import (
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
+              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin,
+              LaunchpadContextMixin):
 
     """A Product."""
 

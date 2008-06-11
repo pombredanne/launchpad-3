@@ -1,0 +1,75 @@
+= ILaunchpadContext =
+
+Some of our content classes may be used as the context of an OAuth
+token so that any application using that token will have access only to
+things in the scope of that context.  The classes that can be used as
+the context of an OAuth token must inherit from ILaunchpadContext, so
+that we have an easy way of finding whether or not any given object is
+within the scope of a token's context and grant or deny access to it.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadContext
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> mozilla = firefox.project
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> evolution = ubuntu.getSourcePackage('evolution')
+
+The ILaunchpadContext defines only the isWithin(context) method, which
+returns True if this context is the given one or is within it.
+
+A product is within itself or its project.
+
+    >>> firefox.isWithin(firefox)
+    True
+    >>> firefox.isWithin(mozilla)
+    True
+    >>> firefox.isWithin(ubuntu)
+    False
+    >>> verifyObject(ILaunchpadContext, firefox)
+    True
+
+A project is only within itself.
+
+    >>> mozilla.isWithin(mozilla)
+    True
+    >>> mozilla.isWithin(firefox)
+    False
+    >>> mozilla.isWithin(ubuntu)
+    False
+    >>> verifyObject(ILaunchpadContext, mozilla)
+    True
+
+A distribution is only within itself.
+
+    >>> ubuntu.isWithin(ubuntu)
+    True
+    >>> ubuntu.isWithin(mozilla)
+    False
+    >>> ubuntu.isWithin(firefox)
+    False
+    >>> verifyObject(ILaunchpadContext, ubuntu)
+    True
+
+A distribution source package is within itself or its distribution.
+
+    >>> evolution.isWithin(evolution)
+    True
+    >>> evolution.isWithin(ubuntu)
+    True
+    >>> evolution.isWithin(firefox)
+    False
+    >>> evolution.isWithin(mozilla)
+    False
+    >>> verifyObject(ILaunchpadContext, evolution)
+    True
+
+An ILaunchpadContext will never be within something which doesn't
+provide ILaunchpadContext as well.
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> firefox.isWithin(salgado)
+    False
