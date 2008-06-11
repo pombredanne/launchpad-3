@@ -18,6 +18,7 @@ __all__ = [
 
 
 import datetime
+from operator import attrgetter
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
@@ -36,7 +37,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.config import config
 
 from canonical.database.sqlbase import (
-    block_implicit_flushes, SQLBase, sqlvalues, quote, quote_like)
+    block_implicit_flushes, cursor, SQLBase, sqlvalues, quote, quote_like)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -58,6 +59,10 @@ from canonical.launchpad.interfaces import (
     IProjectMilestone, ISourcePackage, ISourcePackageNameSet,
     IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.distribution import (
+    IDistributionSet)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
@@ -1933,7 +1938,104 @@ class BugTaskSet:
 
         return orderby_arg
 
-
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
         return BugTask.select(orderBy='id')
+
+    def getBugCountsForPackages(self, user, packages):
+        """See `IBugTaskSet`."""
+        distributions = sorted(
+            set(package.distribution for package in packages),
+            key=attrgetter('name'))
+        counts = []
+        for distribution in distributions:
+            counts.extend(self._getBugCountsForDistribution(
+                user, distribution, packages))
+        return counts
+
+    def _getBugCountsForDistribution(self, user, distribution, packages):
+        """Get bug counts by package, belonging to the given distribution.
+
+        See `IBugTask.getBugCountsForPackages` for more information.
+        """
+        packages = [
+            package for package in packages
+            if package.distribution == distribution]
+        package_name_ids = [
+            package.sourcepackagename.id for package in packages]
+
+        open_bugs_cond = (
+            'BugTask.status %s' % search_value_to_where_condition(
+                any(*UNRESOLVED_BUGTASK_STATUSES)))
+
+        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
+        sums = [
+            sum_template % (open_bugs_cond, 'open_bugs'),
+            sum_template % (
+                'BugTask.importance %s' % search_value_to_where_condition(
+                    BugTaskImportance.CRITICAL), 'open_critical_bugs'),
+            sum_template % (
+                'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
+            sum_template % (
+                'BugTask.status %s' % search_value_to_where_condition(
+                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
+            ]
+
+        conditions = [
+            'Bug.id = BugTask.bug',
+            open_bugs_cond,
+            'BugTask.sourcepackagename IN %s' % sqlvalues(package_name_ids),
+            'BugTask.distribution = %s' % sqlvalues(distribution),
+            'Bug.duplicateof is NULL',
+            ]
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            conditions.append(privacy_filter)
+
+        query = """SELECT BugTask.distribution,
+                          BugTask.sourcepackagename,
+                          %(sums)s
+                   FROM BugTask, Bug
+                   WHERE %(conditions)s
+                   GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
+        cur = cursor()
+        cur.execute(query % dict(
+            sums=', '.join(sums), conditions=' AND '.join(conditions)))
+        distribution_set = getUtility(IDistributionSet)
+        sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        packages_with_bugs = set()
+        counts = []
+        for (distro_id, spn_id, open_bugs,
+             open_critical_bugs, open_unassigned_bugs,
+             open_inprogress_bugs) in shortlist(cur.fetchall()):
+            distribution = distribution_set.get(distro_id)
+            sourcepackagename = sourcepackagename_set.get(spn_id)
+            source_package = distribution.getSourcePackage(sourcepackagename)
+            # XXX: Bjorn Tillenius 2006-12-15:
+            # Add a tuple instead of the distribution package
+            # directly, since DistributionSourcePackage doesn't define a
+            # __hash__ method.
+            packages_with_bugs.add((distribution, sourcepackagename))
+            package_counts = dict(
+                package=source_package,
+                open=open_bugs,
+                open_critical=open_critical_bugs,
+                open_unassigned=open_unassigned_bugs,
+                open_inprogress=open_inprogress_bugs,
+                )
+            counts.append(package_counts)
+
+        # Only packages with open bugs were included in the query. Let's
+        # add the rest of the packages as well.
+        all_packages = set(
+            (distro_package.distribution, distro_package.sourcepackagename)
+            for distro_package in packages)
+        for distribution, sourcepackagename in all_packages.difference(
+                packages_with_bugs):
+            package_counts = dict(
+                package=distribution.getSourcePackage(sourcepackagename),
+                open=0, open_critical=0, open_unassigned=0,
+                open_inprogress=0)
+            counts.append(package_counts)
+
+        return counts

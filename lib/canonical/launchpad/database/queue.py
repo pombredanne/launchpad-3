@@ -1077,15 +1077,19 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         primary_archive = self.packageupload.distroseries.main_archive
         release_pocket = PackagePublishingPocket.RELEASE
+        current_distroseries = self.packageupload.distroseries
         ancestry_locations = [
-            (self.packageupload.archive, self.packageupload.pocket),
-            (primary_archive, release_pocket),
+            (self.packageupload.archive, current_distroseries,
+             self.packageupload.pocket),
+            (primary_archive, current_distroseries, release_pocket),
+            (primary_archive, None, release_pocket),
             ]
 
         ancestry = None
-        for archive, pocket in ancestry_locations:
+        for archive, distroseries, pocket in ancestry_locations:
             ancestries = archive.getPublishedSources(
-                name=self.sourcepackagerelease.name, pocket=pocket,
+                name=self.sourcepackagerelease.name,
+                distroseries=distroseries, pocket=pocket,
                 exact_match=True)
             if ancestries.count() == 0:
                 continue
