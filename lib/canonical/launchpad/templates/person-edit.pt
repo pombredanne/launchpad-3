@@ -23,9 +23,10 @@
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_form/form">
-      <p metal:fill-slot="extra_bottom">
+      <p metal:fill-slot="extra_buttons">
+        Never going to use launchpad again?
         <a tal:attributes="href string:${context/fmt:url}/+deactivate-account"
-          >Deactivate your account</a>
+          >Deactivate your account</a>.
       </p>
     </div>
 
