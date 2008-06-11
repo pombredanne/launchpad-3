@@ -334,6 +334,39 @@ class TestBugzillaXMLRPCTransport:
     timezone = 'UTC'
     utc_offset = 0
 
+    bugs = {
+        1: {'alias': '',
+            'assigned_to': 'test@canonical.com',
+            'component': 'GPPSystems',
+            'creation_time': datetime(2008, 6, 10, 16, 19, 53),
+            'id': 1,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
+            'priority': 'P1',
+            'product': 'HeartOfGold',
+            'resolution': 'FIXED',
+            'severity': 'normal',
+            'status': 'RESOLVED',
+            'summary': "That bloody robot still exists.",
+            },
+        2: {'alias': 'bug-two',
+            'assigned_to': 'marvin@heartofgold.ship',
+            'component': 'Crew',
+            'creation_time': '20080611T09:23:12',
+            'id': 2,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': '20080611T09:24:29',
+            'priority': 'P1',
+            'product': 'HeartOfGold',
+            'resolution': None,
+            'severity': 'high',
+            'status': 'NEW',
+            'summary': 'Collect unknown persons in docking bay 2.',
+            }
+        }
+
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 

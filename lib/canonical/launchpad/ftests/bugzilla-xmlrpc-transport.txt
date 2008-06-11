@@ -55,12 +55,19 @@ IDs to retrieve and returns a list of dicts containing those bugs' data.
     >>> for key in sorted(bug_dict.keys()):
     ...     print "%s: %s" % (key, bug_dict[key])
     alias:
+    assigned_to: test@canonical.com
+    component: GPPSystems
     creation_time: 20080610T16:19:53
     id: 1
-    internals:
+    internals:...
+    is_open: True
     last_change_time: 20080610T16:19:53
-    summary: Our first example Bugzilla bug.
-    status: RESOLVED FIXED
+    priority: P1
+    product: HeartOfGold
+    resolution: FIXED
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists
 
 If more than one ID is specified when get_bugs() is called, more than
 one bug will be returned (assuming they all exist and are accessible).
@@ -69,22 +76,36 @@ one bug will be returned (assuming they all exist and are accessible).
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict.keys()):
     ...         print "%s: %s" % (key, bug_dict[key])
-    ...     print "\n"
+    ...     print
     alias:
+    assigned_to: test@canonical.com
+    component: GPPSystems
     creation_time: 20080610T16:19:53
     id: 1
     internals:...
+    is_open: True
     last_change_time: 20080610T16:19:53
-    summary: Our first example Bugzilla bug.
-    status: RESOLVED FIXED
+    priority: P1
+    product: HeartOfGold
+    resolution: FIXED
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists
 
     alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
     creation_time: 20080611T09:23:12
     id: 2
     internals:...
+    is_open: True
     last_change_time: 20080611T09:24:29
-    summary: Another example Bugzilla bug.
-    status: VERIFIED FIXED
+    priority: P1
+    product: HeartOfGold
+    resolution:
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
 
 Bug aliases can also be used to request remote bugs.
 
@@ -92,12 +113,19 @@ Bug aliases can also be used to request remote bugs.
     >>> for key in sorted(bug_dict.keys()):
     ...     print "%s: %s" % (key, bug_dict[key])
     alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
     creation_time: 20080611T09:23:12
     id: 2
     internals:...
+    is_open: True
     last_change_time: 20080611T09:24:29
-    summary: Another example Bugzilla bug.
-    status: VERIFIED FIXED
+    priority: P1
+    product: HeartOfGold
+    resolution:
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
 
 Passing an invalid bug alias to get_bugs will raise an error.
 
