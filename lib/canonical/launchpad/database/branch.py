@@ -936,7 +936,8 @@ class BranchSet:
             whiteboard=whiteboard, private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created, branch_format=branch_format,
-            repository_format=repository_format, control_format=control_format)
+            repository_format=repository_format,
+            control_format=control_format)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
