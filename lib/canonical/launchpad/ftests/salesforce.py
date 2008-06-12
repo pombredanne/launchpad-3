@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 
-import copy
 import re
 from xmlrpclib import Fault, Transport, loads
 from zope.interface import implements
@@ -77,21 +76,26 @@ class SalesforceXMLRPCTestTransport(Transport):
     simulate network errors or timeouts.
     """
 
-    vouchers = [
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001', 'sabdfl_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000002', 'sabdfl_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000003', 'sabdfl_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004', 'cprov_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005', 'cprov_oid'),
-        ]
-
     voucher_index = 0
     voucher_prefix = 'LPCS%02d-f78df324-0cc2-11dd-0000-%012d'
 
     def __init__(self):
-        self.vouchers = copy.deepcopy(self.vouchers)
+        self.vouchers = [
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001',
+                    'sabdfl_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000002',
+                    'sabdfl_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000003',
+                    'sabdfl_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004',
+                    'cprov_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005',
+                    'cprov_oid'),
+            ]
+
 
     def _createVoucher(self, owner_oid, term_months):
+        """Create a new voucher with the given term and owner."""
         self.voucher_index += 1
         voucher_id = self.voucher_prefix % (term_months, self.voucher_index)
         voucher = Voucher(voucher_id, owner_oid)
@@ -99,6 +103,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         return voucher
 
     def _findVoucher(self, voucher_id):
+        """Find a voucher by id."""
         for voucher in self.vouchers:
             if voucher.voucher_id == voucher_id:
                 return voucher
@@ -189,13 +194,8 @@ class SalesforceXMLRPCTestTransport(Transport):
                         'No vouchers matching product id %s' % lp_project_id)
         return [num_updated]
 
-    def grantVoucher(self,
-                     admin_openid,
-                     approver_openid,
-                     recipient_openid,
-                     recipient_name,
-                     recipient_preferred_email,
-                     term_months):
+    def grantVoucher(self, admin_openid, approver_openid, recipient_openid,
+                     recipient_name, recipient_preferred_email, term_months):
         voucher = self._createVoucher(recipient_openid, term_months)
         return voucher.voucher_id
 
