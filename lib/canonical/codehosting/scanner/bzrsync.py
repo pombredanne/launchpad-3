@@ -462,7 +462,8 @@ class BzrSync:
         self.db_branch.branch_format = match_title(
             BranchFormat, branch_string, BranchFormat.UNRECOGNIZED)
         self.db_branch.repository_format = match_title(
-            RepositoryFormat, repository_string, RepositoryFormat.UNRECOGNIZED)
+            RepositoryFormat, repository_string,
+            RepositoryFormat.UNRECOGNIZED)
 
     def planDatabaseChanges(self):
         """Plan database changes to synchronize with bzrlib data.
@@ -682,4 +683,5 @@ class BzrSync:
         revision_count = len(self.bzr_history)
         if ((last_revision != self.db_branch.last_scanned_id)
                 or (revision_count != self.db_branch.revision_count)):
-            self.db_branch.updateScannedDetails(last_revision, revision_count)
+            self.db_branch.updateScannedDetails(
+                last_revision, revision_count)
