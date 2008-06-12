@@ -1063,6 +1063,8 @@ COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscri
 COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
 COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description.';
+COMMENT ON COLUMN Person.openid_identifier IS 'The key used to generate opaque OpenID identities.';
+COMMENT ON COLUMN Person.old_openid_identifier IS 'The previous openid_identifier, used for transitions to the current openid_identifier.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
