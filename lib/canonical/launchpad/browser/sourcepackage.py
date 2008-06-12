@@ -76,7 +76,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
         return self.context.distribution.displayname + ' ' + \
-               self.context.distroseries.displayname + ' source package:'
+               self.context.distroseries.version + ' source package:'
 
     def getMainHeading(self):
         return self.context.sourcepackagename
