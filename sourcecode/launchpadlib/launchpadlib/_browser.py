@@ -13,7 +13,6 @@ __all__ = [
 
 
 import httplib2
-import urlparse
 import simplejson
 
 from urllib import urlencode
@@ -44,16 +43,11 @@ class Browser:
             self.credentials.consumer,
             self.credentials.access_token)
         # Calculate the headers for the request.
-        scheme, netloc, path, query, fragment = urlparse.urlsplit(url)
-        if ':' in netloc:
-            hostname, port = netloc.split(':', 1)
-        else:
-            hostname = netloc
-        headers = dict(Host=hostname)
+        headers = dict(Host=url.host)
         headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
         response, content = self._connection.request(
-            url, method=method, body=data, headers=headers)
+            str(url), method=method, body=data, headers=headers)
         # Turn non-2xx responses into exceptions.
         if response.status // 100 != 2:
             raise HTTPError(response, content)
