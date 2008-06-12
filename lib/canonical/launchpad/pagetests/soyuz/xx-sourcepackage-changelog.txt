@@ -5,7 +5,7 @@ Browse the changelog of a sourcepackage..
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/hoary/+source/pmount/+changelog")
   >>> print extract_text(find_main_content(user_browser.contents))
-  pmount in Test Distro Hoary change logs
+  pmount in Ubuntu Hoary change logs
   Change logs for this package:
   This is a placeholder changelog for pmount 0.1-2
   pmount (0.1-1) hoary; urgency=low
@@ -19,7 +19,7 @@ Browse the changelog of a sourcepackage..
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/+changelog")
   >>> print extract_text(find_main_content(user_browser.contents))
-  alsa-utils in Test Distro Hoary change logs
+  alsa-utils in Ubuntu Hoary change logs
   Change logs for this package:
   alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
   * Placeholder
@@ -65,7 +65,7 @@ bots from picking them up):
   >>> anon_browser.open(
   ...     "http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/+changelog")
   >>> print extract_text(find_main_content(anon_browser.contents))
-  alsa-utils in Test Distro Hoary change logs
+  alsa-utils in Ubuntu Hoary change logs
   ...
   -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
   alsa-utils (1.0.9a-4) warty; urgency=low
@@ -109,5 +109,5 @@ We should see some changelog information on the main package page.
 
   >>> user_browser.open("http://launchpad.dev/ubuntu/+source/pmount/")
   >>> user_browser.title
-  'Source Package "pmount" in The Test Distribution'
+  'Source Package "pmount" in Ubuntu Linux'
 

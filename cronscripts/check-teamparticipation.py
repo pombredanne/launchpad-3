@@ -18,10 +18,12 @@ import _pythonpath
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database import Person
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 
 
 if __name__ == '__main__':
+    execute_zcml_for_scripts()
     ztm = initZopeless(implicitBegin=False)
 
     # Check self-participation.
