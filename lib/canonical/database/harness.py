@@ -20,6 +20,7 @@ if len(sys.argv) > 1:
 else:
     dbuser = None
 
+import transaction
 from zope.component import getUtility
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 execute_zcml_for_scripts()
@@ -27,8 +28,8 @@ execute_zcml_for_scripts()
 #
 # setup connection to the db
 #
-from canonical.lp import initZopeless
-transactionmgr = initZopeless(dbuser=dbuser)
+#from canonical.lp import initZopeless
+#transactionmgr = initZopeless(dbuser=dbuser)
 
 def switch_db_user(dbuser, commit_first=True):
     global transactionmgr
