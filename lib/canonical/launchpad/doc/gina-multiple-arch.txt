@@ -35,7 +35,7 @@ Create a distribution series and an arch series for dapper:
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> ubuntu = celebs.ubuntu
     >>> drs = getUtility(IDistroSeriesSet)
-    >>> hoary = drs.findByName("hoary")
+    >>> hoary = ubuntu.getSeries("hoary")
     >>> dapper = drs.new(ubuntu, "dapper", "Dapper Dragoon", "My title",
     ...                  "My summary", "My description", "5.10",
     ...                  hoary, celebs.launchpad_developers)
