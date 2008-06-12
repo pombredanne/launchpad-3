@@ -14,13 +14,12 @@ from canonical.launchpad.browser.launchpad import (
     DefaultShortLink)
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackageRelease, ILaunchBag, IBuildSet,
+    IDistributionSourcePackageRelease, IBuildSet,
     IStructuralHeaderPresentation, NotFoundError)
 
 
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, Link, Navigation,
-    GetitemNavigation, stepthrough)
+    ApplicationMenu, Navigation, stepthrough)
 
 
 def distributionsourcepackagerelease_to_structuralheading(dspr):
