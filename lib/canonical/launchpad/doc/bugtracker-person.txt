@@ -56,3 +56,138 @@ be retreived by calling IBugTrackerPersonSet.getByNameAndBugTracker().
     >>> print bugtracker_person_for_bugtracker.person.name
     name12
 
+
+== ensurePersonForBugTracker() ==
+
+BugWatchUpdater has a method, _getPersonForBugTracker(), which is
+responsible for returning the correct Person for a given remote username
+on on a given bugtracker.
+
+Passing a new remote user's details to _getPersonForBugTracker() will
+return a new Person record.
+
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     PersonCreationRationale)
+
+    >>> print getUtility(IPersonSet).getByEmail('new.person@example.com')
+    None
+
+    >>> new_person = bugwatch_updater._getPersonForBugTracker(
+    ...     bugtracker=bug_watch.bugtracker, display_name='New Person',
+    ...     email='new.person@example.com',
+    ...     rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing _getPersonForBugTracker().')
+
+    >>> print new_person.displayname
+    New Person
+
+There won't be a BugTrackerPerson record linking 'New Person' to the
+bugtracker since we have an email address for 'New Person'. That means
+that we can always retrieve them reliably when we encounter them in a
+remote bugtracker.
+
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'New Person', bug_watch.bugtracker)
+
+    >>> print bugtracker_person
+    None
+
+Calling _getPersonForBugTracker() with the same details will return the
+same person.
+
+    >>> other_person = bugwatch_updater._getPersonForBugTracker(
+    ...     bugtracker=bug_watch.bugtracker, display_name='New Person',
+    ...     email='new.person@example.com',
+    ...     rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing _getPersonForBugTracker().')
+
+    >>> other_person == new_person
+    True
+
+_getPersonForBugTracker() can also handle remote users whose email
+addresses aren't provided.
+
+    >>> noemail_person = bugwatch_updater._getPersonForBugTracker(
+    ...     bugtracker=bug_watch.bugtracker, display_name='no-email-person',
+    ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing _getPersonForBugTracker().')
+
+    >>> print noemail_person.name
+    no-email-person-bugzilla-checkwatches-1-1
+
+A BugTrackerPerson record will have been created to map
+'no-email-person' on our example bugtracker to
+'no-email-person-bugzilla-checkwatches-1-1' in Launchpad.
+
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'no-email-person', bug_watch.bugtracker)
+
+    >>> bugtracker_person.person == noemail_person
+    True
+
+_getPersonForBugTracker() handles situations in which bugtrackers have
+been renamed, too, and avoids name collisions when doing so.
+
+We've already imported a comments for 'noemail' on the bugtracker
+'bugzilla-checkwatches-1'.
+
+    >>> bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'noemail', bug_watch.bugtracker)
+
+    >>> print bugtracker_person.person.name
+    noemail-bugzilla-checkwatches-1-1
+
+    >>> print bugtracker_person.bugtracker.name
+    bugzilla-checkwatches-1
+
+    >>> commit()
+
+If we rename the BugTracker and then create another with the same name,
+importing a comment from 'noemail' on that BugTracker should produce a
+new Person rather than re-using the existing one.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bug_watch.bugtracker.name = 'bugzilla-checkwatches-renamed'
+    >>> commit()
+
+    >>> other_bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
+    >>> print other_bug_tracker.name
+    bugzilla-checkwatches-1
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> other_bug = firefox.createBug(
+    ...     CreateBugParams(sample_person, "Yet another test bug",
+    ...         "Yet another test description.",
+    ...         subscribe_reporter=False))
+
+    >>> other_bug_watch = bug.addWatch(
+    ...     other_bug_tracker, '123456', sample_person)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+A new Person has been created for 'noemail' on other_bug_tracker, even
+though that bug tracker's name is the same as one from which we've
+imported previously.
+
+    >>> new_person = bugwatch_updater._getPersonForBugTracker(
+    ...     other_bug_tracker, 'noemail', None,
+    ...     PersonCreationRationale.BUGIMPORT, 'while testing, again')
+
+    >>> original_bugtracker_person = getUtility(
+    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
+    ...         'noemail', bug_watch.bugtracker)
+
+    >>> original_bugtracker_person.person == new_person
+    False
+
+    >>> print new_person.name
+    noemail-bugzilla-checkwatches-1-2
+
+

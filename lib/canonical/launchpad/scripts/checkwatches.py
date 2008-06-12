@@ -562,44 +562,6 @@ class BugWatchUpdater(object):
 
         return bug
 
-    def _getPersonForBugTracker(
-        self, bugtracker, display_name, email, rationale, creation_comment):
-        """Return a Person that is linked to a given bug tracker."""
-        # If we have an email address to work with we can use
-        # ensurePerson() to get the Person we need.
-        if email:
-            return getUtility(IPersonSet).ensurePerson(
-                email, display_name, rationale, creation_comment)
-
-        # First, see if there's already a BugTrackerPerson for this
-        # display_name on this bugtracker. If there is, return it.
-        bugtracker_person_set = getUtility(IBugTrackerPersonSet)
-        bugtracker_person = bugtracker_person_set.getByNameAndBugTracker(
-            display_name, bugtracker)
-
-        if bugtracker_person is not None:
-            return bugtracker_person.person
-
-        # Generate a valid Launchpad name for the Person.
-        canonical_name = (
-            "%s-%s" % (sanitize_name(display_name), bugtracker.name))
-        index = 1
-        person_set = getUtility(IPersonSet)
-        while person_set.getByName(
-            "%s-%d" % (canonical_name, index)) is not None:
-            index += 1
-
-        canonical_name = "%s-%d" % (canonical_name, index)
-        person = person_set.createPersonWithoutEmail(
-            canonical_name, rationale, creation_comment,
-            displayname=display_name)
-
-        # Link the Person to the bugtracker for future reference.
-        bugtracker_person = bugtracker_person_set.linkPersonToBugTracker(
-            display_name, bugtracker, person)
-
-        return person
-
     def importBugComments(self, external_bugtracker, bug_watch):
         """Import all the comments from a remote bug.
 
