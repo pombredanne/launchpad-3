@@ -156,9 +156,11 @@ class LaunchpadObjectFactory:
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
-        # Set the status on the email.
-        email.status = email_address_status
-        email.syncUpdate()
+        # Set the status on the email.  Need to remove the security proxy
+        # first, as status is readonly.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(email).status = email_address_status
+        syncUpdate(email)
         return person
 
     def makeTeam(self, owner, displayname=None, email=None):
