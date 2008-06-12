@@ -43,6 +43,13 @@ class POTranslation(SQLBase):
         """Return a POTranslation object for the given translation, or create
         it if it doesn't exist.
         """
+        if isinstance(key, str):
+            # If this is not a unicode object, it had better be ASCII or
+            # UTF-8.
+            # XXX: JeroenVermeulen 2008-06-06 bug=237868: non-ascii str
+            # strings should be contained in the parser or the browser
+            # code.
+            key = key.decode('UTF-8')
 
         try:
             return cls.byTranslation(key)

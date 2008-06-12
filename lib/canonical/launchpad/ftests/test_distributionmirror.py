@@ -197,15 +197,17 @@ class TestDistributionMirrorSet(unittest.TestCase):
             This function ensures the orderBy argument given to it contains
             the 'random' string in its first item.
             """
-            self.failUnlessEqual(kw['orderBy'][0].expr, 'random')
+            self.failUnlessEqual(kw['orderBy'][0].name, 'random')
             return [1,2,3]
 
         orig_select = DistributionMirror.select
         DistributionMirror.select = classmethod(my_select)
-        login('foo.bar@canonical.com')
-        getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
-            None, MirrorContent.ARCHIVE)
-        DistributionMirror.select = orig_select
+        try:
+            login('foo.bar@canonical.com')
+            getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
+                None, MirrorContent.ARCHIVE)
+        finally:
+            DistributionMirror.select = orig_select
 
     def test_getBestMirrorsForCountry_appends_main_repo_to_the_end(self):
         """Make sure the main mirror is appended to the list of mirrors for a

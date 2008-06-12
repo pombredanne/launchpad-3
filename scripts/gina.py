@@ -25,7 +25,7 @@ import _pythonpath
 
 from optparse import OptionParser
 import os
-import psycopg
+import psycopg2
 import sys
 import time
 
@@ -232,7 +232,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
             try:
                 do_one_sourcepackage(source, kdb, package_root, keyrings,
                                      importer_handler)
-            except psycopg.Error:
+            except psycopg2.Error:
                 log.exception("Database error: unable to create "
                               "SourcePackage for %s. Retrying once.."
                               % package_name)
@@ -250,7 +250,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
             log.exception("Error processing package files for %s" %
                           package_name)
             continue
-        except psycopg.Error:
+        except psycopg2.Error:
             log.exception("Database errors made me give up: unable to create "
                           "SourcePackage for %s" % package_name)
             importer_handler.abort()
@@ -297,7 +297,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 try:
                     do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
-                except psycopg.Error:
+                except psycopg2.Error:
                     log.exception("Database errors when importing a "
                                   "BinaryPackage for %s. Retrying once.."
                                   % package_name)
@@ -318,7 +318,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 log.exception("Database duplication processing %s" %
                               package_name)
                 continue
-            except psycopg.Error:
+            except psycopg2.Error:
                 log.exception("Database errors made me give up: unable to "
                               "create BinaryPackage for %s" % package_name)
                 importer_handler.abort()

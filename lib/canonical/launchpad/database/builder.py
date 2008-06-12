@@ -31,14 +31,14 @@ from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.database.publishing import makePoolPath
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
     CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
-    NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    ProtocolVersionMismatch, pocketsuffix)
+    ILibraryFileAliasSet, NotFoundError, PackagePublishingPocket,
+    PackagePublishingStatus, ProtocolVersionMismatch, pocketsuffix)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
@@ -97,7 +97,7 @@ class Builder(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes', default=None)
     virtualized = BoolCol(dbName='virtualized', default=False, notNull=True)
@@ -557,13 +557,16 @@ class Builder(SQLBase):
             bytes_written = out_file.tell()
             out_file.seek(0)
 
-            return getUtility(ILibrarianClient).addFile(filename,
-                bytes_written, out_file,
+            library_file_id = getUtility(ILibrarianClient).addFile(
+                filename, bytes_written, out_file,
                 contentType=filenameToContentType(filename))
         finally:
             # Finally, remove the temporary file
             out_file.close()
             os.remove(out_file_name)
+
+        library_file = getUtility(ILibraryFileAliasSet)[library_file_id]
+        return library_file.id
 
     @property
     def is_available(self):
