@@ -41,6 +41,56 @@ from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
+
+def update_archive_counters(obj, attr, value):
+    """Updates the archive build counters upon build state change.
+    """
+    if obj._SO_creating:
+        # A new build instance was created.
+        if value == BuildStatus.NEEDSBUILD:
+            # A pending build was created.
+            obj.archive.total_count += 1
+            obj.archive.pending_count += 1
+        elif value == BuildStatus.FULLYBUILT:
+            # A successfully completed build was created.
+            obj.archive.total_count += 1
+            obj.archive.succeeded_count += 1
+        elif value == BuildStatus.SUPERSEDED:
+            # A superseded build was created, no-op.
+            pass
+        elif value == BuildStatus.BUILDING:
+            # A currently building build was created.
+            obj.archive.total_count += 1
+            obj.archive.building_count += 1
+        else:
+            # A failed build was created.
+            obj.archive.total_count += 1
+            obj.archive.failed_count += 1
+    else:
+        # The build state of a build instance was updated.
+        if value == BuildStatus.NEEDSBUILD:
+            # A build is being retried.
+            obj.archive.pending_count += 1
+            obj.archive.failed_count -= 1
+        elif value == BuildStatus.FULLYBUILT:
+            # A build succeeded.
+            obj.archive.succeeded_count += 1
+            obj.archive.building_count -= 1
+        elif value == BuildStatus.SUPERSEDED:
+            # A build was superseded.
+            obj.archive.pending_count -= 1
+            obj.archive.total_count -= 1
+        elif value == BuildStatus.BUILDING:
+            # A build started.
+            obj.archive.building_count += 1
+            obj.archive.pending_count -= 1
+        else:
+            obj.archive.failed_count += 1
+            obj.archive.building_count -= 1
+
+    return value
+
+
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
@@ -52,7 +102,8 @@ class Build(SQLBase):
     distroarchseries = ForeignKey(dbName='distroarchseries',
         foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True,
-                         schema=BuildStatus)
+                         schema=BuildStatus,
+                         storm_validator=update_archive_counters)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
