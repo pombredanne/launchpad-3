@@ -465,6 +465,32 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
+    def usesLaunchpadFor(self):
+        """Return a formatted string saying which LP apps this distro uses."""
+        if (not self.context.full_functionality or
+            not self.context.official_anything):
+            return "nothing."
+        else:
+            # There will be at least one app used if we get here.
+            uses = []
+            if self.context.official_answers:
+                uses.append("Answers")
+            if self.context.official_malone:
+                uses.append("Bug Tracking")
+            if self.context.official_blueprints:
+                uses.append("Blueprints")
+            if self.context.official_rosetta:
+                uses.append("Translations")
+
+            if len(uses) > 1:
+                apps = ", ".join(uses[:-1])
+                apps += " and " + uses[-1]
+            else:
+                apps = uses[0]
+
+            apps += "."
+            return apps
+
 
 class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
