@@ -276,13 +276,11 @@ def check_archive_conflicts(source, archive, include_binaries):
         # The copy is only allowed when the binaries are published, or if not
         # published there must be no FULLYBUILT builds. This way there is no
         # chance of a conflict.
-        fullybuilt_builds = [
-            build for build in source.getBuilds()
-            if build.buildstate == BuildStatus.FULLYBUILT]
-        if len(fullybuilt_builds) > 0:
-            raise CannotCopy(
-                "source has unpublished binaries, please wait for them "
-                "to be published before copying")
+        for build in source.getBuilds():
+            if build.buildstate == BuildStatus.FULLYBUILT:
+                raise CannotCopy(
+                    "source has unpublished binaries, please wait for them "
+                    "to be published before copying")
 
 def check_copy(source, archive, series, pocket, include_binaries):
     """Check if the source can be copied to the given location.
