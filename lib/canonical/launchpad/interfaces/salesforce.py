@@ -55,12 +55,14 @@ class ISalesforceVoucherProxy(Interface):
             project which were updated.
         """
 
-    def grantVoucher(admin, approver, recipient):
+    def grantVoucher(admin, approver, recipient, term_months):
         """An administrator can grant a voucher to a Launchpad user.
 
         :param admin: the admin who is making the grant.
         :param approver: the manager who approved the grant.
         :param recipient: the user who is being given the voucher.
+        :param term_months: integer representing the number of months for the
+            voucher.
         :return: the voucher id of the newly granted voucher.
 
         This call assumes the admin and approver already exist in the

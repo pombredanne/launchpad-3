@@ -228,13 +228,13 @@ A voucher can be created and assigned to a user.
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000004,Reserved,12,unassigned
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000005,Reserved,12,unassigned
 
-    >>> voucher_id = sfv.grantVoucher(mark, mark, cprov)
+    >>> voucher_id = sfv.grantVoucher(mark, mark, cprov, 12)
     >>> print voucher_id
     LPCS12-f78df324-0cc2-11dd-0000-000000000001
 
-    >>> voucher_id = sfv.grantVoucher(mark, mark, cprov)
+    >>> voucher_id = sfv.grantVoucher(mark, mark, cprov, 6)
     >>> print voucher_id
-    LPCS12-f78df324-0cc2-11dd-0000-000000000002
+    LPCS06-f78df324-0cc2-11dd-0000-000000000002
 
     >>> vouchers = sfv.getUnredeemedVouchers(cprov)
     >>> for voucher in vouchers:
@@ -242,4 +242,4 @@ A voucher can be created and assigned to a user.
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000004,Reserved,12,unassigned
     LPCS12-f78df324-0cc2-11dd-8b6b-000000000005,Reserved,12,unassigned
     LPCS12-f78df324-0cc2-11dd-0000-000000000001,Reserved,12,unassigned
-    LPCS12-f78df324-0cc2-11dd-0000-000000000002,Reserved,12,unassigned
+    LPCS06-f78df324-0cc2-11dd-0000-000000000002,Reserved,6,unassigned
