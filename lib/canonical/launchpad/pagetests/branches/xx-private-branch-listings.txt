@@ -244,7 +244,7 @@ There are no branches linked to this bug.
 
 Now link to a private branch.
 
-    >>> landscape_dev_browser.getLink('Add branch').click()
+    >>> landscape_dev_browser.getLink('Link a related branch').click()
     >>> landscape_dev_browser.getControl('Branch').value = (
     ...     '~landscape-developers/landscape/trunk')
     >>> landscape_dev_browser.getControl('Continue').click()

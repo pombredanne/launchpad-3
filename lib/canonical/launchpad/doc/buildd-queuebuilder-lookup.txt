@@ -35,12 +35,14 @@ publications for a given distroseries:
 
 Creating a single source publishing record:
 
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> def create_publication(distroseries, pocket, archive, status):
-    ...     SecureSourcePackagePublishingHistory(
+    ...     pub = SecureSourcePackagePublishingHistory(
     ...         sourcepackagerelease=the_spr, component=the_spr.component,
     ...         section=the_spr.section, datecreated=UTC_NOW, embargo=False,
     ...         distroseries=distroseries, status=status,
     ...         pocket=pocket, archive=archive)
+    ...     syncUpdate(pub)
 
 Create a collection of source publishing records in different
 archives, pockets and statuses. This function creates:
