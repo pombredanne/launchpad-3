@@ -186,12 +186,44 @@ right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
 /* This is currently overridden for Internet Explorer in main-template.pt. */
 
-table.form {margin-top: 1em; margin-bottom: 1em; width: 100%;}
+table.form {margin-top: 1em; width: 100%;}
+  /* http://launchpad.dev/firefox/+edit */
+
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
  * person-pagelet-details.pt. We should move to use tables everywhere
  * and then kill this class I guess. -- kiko, 2007-12-05 */
 table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
+
+/* --- Action links and buttons --- */
+
+/*
+  Action links are those that begin the process of doing something.
+  For example, "Register a branch", "Edit profile", "Link to CVE".
+  When presented inline, they are rendered by launchpad-inline-link.pt.
+
+  Action buttons are those that submit a multi-row form.
+  Often an action button will have an "or _Cancel_" link next to it.
+
+  We want 0.5em horizontal gap between links and buttons in these sections.
+  Using margin-left would cause a bad gap to the left of a leftmost item.
+  Using margin-right would cause a bad gap to the right of a rightmost item.
+  We could fix these problems with :first-child/:last-child, but not in IE.
+  So we do something a little tricky.
+  We go ahead and give each child of the actions container a right margin:
+*/
+.actions * {margin-right: 0.5em;}
+.actions * * {margin-right: 0;} /* because ">" doesn't work in IE6 */
+/*
+  Then in addition to the top/bottom margins of the actions container, we
+  give it a *negative* right margin, cancelling out that of the last child.
+*/
+.actions {margin: 1em -0.5em 1em 0;}
+/*
+  Examples:
+  http://bugs.launchpad.dev/firefox/+bug/1 (after 'Affects' table)
+  http://bugs.launchpad.dev/firefox/+bug/1/+subscribe (bottom button)
+*/
 
 /* --- Other --- */
 
@@ -650,6 +682,52 @@ So it's hidden initially, and then revealed if JavaScript is available.
   margin: 0 20px 0 38px;
   padding-top: 10px;
 }
+
+/*
+Inline help is different from the pop-out help panel. It is contained in
+a <div> and dynamically positioned by JavaScript.
+*/
+#help-pane {
+  position: absolute;
+  border: 5px solid black;
+  padding: 10px;
+  z-index: 3000;  /* This should appear above all other content. */
+  background-color: #fff;
+  width: 25em;
+}
+/* We want the hidden pane to have dimensions so that we can position the
+frame with them.  This works because the element an absolute position, taking
+it out of the page flow. */
+#help-pane.invisible {
+    position: absolute;
+    visibility: hidden;
+    display: block;
+    left: 0px;
+    top: 0px;
+}
+
+#help-body {
+    background: url(spinner.gif) no-repeat center center;
+}
+#help-pane iframe {
+    width: 100%;
+    height: 18em;
+}
+#help-pane iframe.invisible {
+    visibility: hidden;
+    display: block;
+}
+#help-footer {
+  padding: 3px;
+  border-top: 1px solid #ddd;
+  text-align: right;
+}
+#help-footer button {
+  margin-bottom: 10px;
+  margin-top: 3px;
+}
+
+span.help {font-weight: normal;}
 
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
@@ -1730,9 +1808,6 @@ div.popupTitle {
   position: absolute;
   display: none;
 }
-
-/* The icon next to inline action links */
-.inlineLinkIcon {margin-right: 0.5em; margin-left: 0.5em;}
 
 /* Search results*/
 

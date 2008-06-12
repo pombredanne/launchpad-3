@@ -10,8 +10,8 @@ __all__ = [
 
 from zope.schema import Object, TextLine
 
+from canonical.lazr.fields import CollectionField
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import IMessage
 

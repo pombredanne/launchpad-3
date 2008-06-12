@@ -56,7 +56,8 @@ class ResourceOperation:
                 marshaller = getMultiAdapter(
                     (field, self.request), IFieldMarshaller)
                 try:
-                    value = marshaller.marshall(self.request.get(name))
+                    value = marshaller.marshall_from_request(
+                        self.request.form.get(name))
                 except ValueError, e:
                     errors.append("%s: %s" % (name, e))
                     continue

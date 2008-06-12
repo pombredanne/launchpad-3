@@ -36,7 +36,7 @@ newsampledata:
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 
-check_launchpad_storm_on_merge: build dbfreeze_check check_storm
+check_launchpad_storm_on_merge: check_launchpad_on_merge
 
 check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
@@ -84,29 +84,8 @@ check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
-
-check_storm: build
-	# Run tests that should be clean on the Storm branch.  This will
-	# be ramped up to the entire test suite as we go.
-	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY) \
-	  --module canonical.launchpad.database \
-	  --module canonical.launchpad.interfaces \
-	  --module canonical.launchpad.pagetests \
-	  --module canonical.launchpad.webapp \
-	  --module canonical.archivepublisher \
-	  --module canonical.authserver \
-	  --module canonical.config \
-	  --module canonical.database \
-	  --module canonical.ftests \
-	  --module canonical.lazr \
-	  --module canonical.librarian \
-	  --module canonical.lp \
-	  --module canonical.poppy \
-	  --module canonical.testing \
-	  --module canonical.widgets \
-	  --module canonical.zeca
+	  --test '!doc/externalbugtracker-trac.txt'
 
 lint:
 	@bash ./utilities/lint.sh
@@ -299,5 +278,5 @@ tags:
 		check check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
 		sync_branches check_loggerhead_on_merge reload-apache \
-		check_storm check_launchpad_storm_on_merge
+		check_launchpad_storm_on_merge
 

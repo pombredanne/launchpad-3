@@ -1168,6 +1168,47 @@ class PageTestLayer(LaunchpadFunctionalLayer):
 class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        # XXX 2008-06-11 jamesh bug=239086:
+        # Due to bugs in the transaction module's thread local
+        # storage, transactions may be reused by new threads in future
+        # tests.  Therefore we do some cleanup before the pool is
+        # destroyed by TwistedLayer.testTearDown().
+        from twisted.internet import interfaces, reactor
+        if interfaces.IReactorThreads.providedBy(reactor):
+            pool = getattr(reactor, 'threadpool', None)
+            if pool is not None and pool.workers > 0:
+                def cleanup_thread_stores(event):
+                    disconnect_stores()
+                    # Don't exit until the event fires.  This ensures
+                    # that our thread doesn't get added to
+                    # pool.waiters until all threads are processed.
+                    event.wait()
+                event = threading.Event()
+                # Ensure that the pool doesn't grow, and issue one
+                # cleanup job for each thread in the pool.
+                pool.adjustPoolsize(0, pool.workers)
+                for i in range(pool.workers):
+                    pool.callInThread(cleanup_thread_stores, event)
+                event.set()
+
 
 class AppServerLayer(LaunchpadLayer):
     """Environment for starting and stopping the app server."""

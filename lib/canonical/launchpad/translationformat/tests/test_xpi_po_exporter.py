@@ -9,7 +9,6 @@ from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
-from canonical.launchpad.helpers import test_diff
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationFileData,
     ITranslationFormatExporter, ITranslationImportQueue, RosettaImportStatus)
@@ -47,19 +46,16 @@ class XPIPOExporterTestCase(unittest.TestCase):
         :param expected_file: buffer with the expected file content.
         :param export_file: buffer with the output file content.
         """
-        expected_lines = [line for line in expected_file.split('\n')]
+        expected_lines = [line.strip() for line in expected_file.split('\n')]
         # Remove time bombs in tests.
         exported_lines = [
-            line for line in exported_file.split('\n')
+            line.strip() for line in exported_file.split('\n')
             if (not line.startswith('"X-Launchpad-Export-Date:') and
                 not line.startswith('"POT-Creation-Date:') and
                 not line.startswith('"X-Generator: Launchpad'))]
 
         for number, expected_line in enumerate(expected_lines):
-            self.assertEqual(
-                expected_line, exported_lines[number],
-                "Output doesn't match:\n\n %s" % test_diff(
-                    expected_lines, exported_lines))
+            self.assertEqual(expected_line, exported_lines[number])
 
     def setUpTranslationImportQueueForTemplate(self):
         """Return an ITranslationImportQueueEntry for testing purposes."""
@@ -102,18 +98,33 @@ class XPIPOExporterTestCase(unittest.TestCase):
         exported_template = self.translation_exporter.exportTranslationFiles(
             [ITranslationFileData(self.firefox_template)])
 
-        expected_template = dedent('''
+        expected_template = dedent(ur'''
             #, fuzzy
             msgid ""
             msgstr ""
-            "Project-Id-Version: PACKAGE VERSION\\n"
-            "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\\n"
-            "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
-            "Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
-            "Language-Team: LANGUAGE <LL@li.org>\\n"
-            "MIME-Version: 1.0\\n"
-            "Content-Type: text/plain; charset=UTF-8\\n"
-            "Content-Transfer-Encoding: 8bit\\n"
+            "<?xml version=\"1.0\"?>\n"
+            "<RDF xmlns=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n"
+            "     xmlns:em=\"http://www.mozilla.org/2004/em-rdf#\">\n"
+            "  <Description about=\"urn:mozilla:install-manifest\"\n"
+            "               em:id=\"langpack-en-US@firefox.mozilla.org\"\n"
+            "               em:name=\"English U.S. (en-US) Language Pack\"\n"
+            "               em:version=\"2.0\"\n"
+            "               em:type=\"8\"\n"
+            "               em:creator=\"Danilo \u0160egan\">\n"
+            "    <em:contributor>\u0414\u0430\u043d\u0438\u043b\u043e \u0428\u0435\u0433\u0430\u043d</em:contributor>\n"
+            "    <em:contributor>Carlos Perell\u00f3 Mar\u00edn "
+            "&lt;carlos@canonical.com&gt;</em:contributor>\n"
+            "\n"
+            "    <em:targetApplication>\n"
+            "      <Description>\n"
+            "        <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id><!-- firefox --"
+            ">\n"
+            "        <em:minVersion>2.0</em:minVersion>\n"
+            "        <em:maxVersion>2.0.0.*</em:maxVersion>\n"
+            "      </Description>\n"
+            "    </em:targetApplication>\n"
+            "  </Description>\n"
+            "</RDF>\n"
 
             #.  This is a DTD file inside a subdirectory 
             #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.title)
@@ -185,12 +196,12 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
             #: en-US.xpi/chrome/en-US.jar!/test1.properties:5(foozilla.utf8)
             msgctxt "main/test1.properties"
-            msgid "\xd0\x94\xd0\xb0\xd0\xbd=Day"
+            msgid "\u0414\u0430\u043d=Day"
             msgstr ""
             ''').strip()
 
-        self._compareExpectedAndExported(
-            expected_template, exported_template.read())
+        output = exported_template.read().decode("utf-8")
+        self._compareExpectedAndExported(expected_template, output)
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
