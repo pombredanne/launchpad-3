@@ -17,11 +17,24 @@ class Entry:
     """Simple bag-like class for collection entry attributes."""
 
     def __init__(self, entry_dict, browser):
+        """Create an `Entry` instance.
+
+        :param entry_dict: a dictionary containing all the entry's attributes
+            as received from the web service as a JSON dictonary.
+        :type entry_dict: dict
+        :param browser: the browser instance for talking to Launchpad
+        :type browser: `Browser`
+        """
         self._browser = browser
         self._initialize(entry_dict)
 
     def _initialize(self, entry_dict):
-        """Initialize this entry from a JSON dictionary."""
+        """Initialize this entry from a JSON dictionary.
+
+        :param entry_dict: a dictionary containing all the entry's attributes
+            as received from the web service as a JSON dictonary.
+        :type entry_dict: dict
+        """
         # The entry_dict contains lots of information mixed up in the same
         # namespace.  Everything that's a link to other information is
         # contained in a key ending with '_link'.  We'll treat everything else

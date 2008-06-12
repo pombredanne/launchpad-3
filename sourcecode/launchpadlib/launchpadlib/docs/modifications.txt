@@ -65,22 +65,16 @@ changed when the entry is saved.
 
 Salgado cannot set his timezone to an illegal value.
 
-    >>> salgado.timezone = 'SouthPole'
-    >>> salgado.save()
-    Traceback (most recent call last):
-    ...
-    HTTPError: HTTP Error 400: Bad Request
-
-The exception has some useful detail about the error.
-
     >>> from launchpadlib.errors import HTTPError
     >>> def print_error_on_save(entry):
     ...     try:
     ...         entry.save()
     ...     except HTTPError, error:
-    ...         pass
-    ...     print error.content
+    ...         print error.content
+    ...     else:
+    ...         print 'Did not get expected HTTPError!'
 
+    >>> salgado.timezone = 'SouthPole'
     >>> print_error_on_save(salgado)
     timezone: u'SouthPole' isn't a valid token
 
@@ -136,17 +130,6 @@ It's just as easy to move Salgado back to the old name.
     >>> launchpad.people.get('salgado').display_name
     u'Guilherme Salgado'
 
-Salgado then has a change of heart and decides that the team he created isn't
-so awesome after all.
-
-    >>> bassists.name = u'guitarists'
-    >>> bassists.display_name = u'Rocktastic Shredders'
-    >>> bassists.save()
-    >>> print launchpad.people.get('bassists')
-    None
-    >>> launchpad.people.get('guitarists').display_name
-    u'Rocktastic Shredders'
-
 
 == Read-only attributes ==
 
@@ -155,13 +138,6 @@ Some attributes are read-only, such as a person's karma.
     >>> salgado.karma
     0
     >>> salgado.karma = 1000000
-    >>> salgado.save()
-    Traceback (most recent call last):
-    ...
-    HTTPError: HTTP Error 400: Bad Request
-
-The exception has some interesting details about the error.
-
     >>> print_error_on_save(salgado)
     karma: You tried to modify a read-only attribute.
 
