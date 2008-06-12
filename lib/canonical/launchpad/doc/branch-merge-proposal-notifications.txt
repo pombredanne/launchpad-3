@@ -81,7 +81,8 @@ proposal.
     >>> notifications = pop_notifications()
     >>> bmp = factory.makeBranchMergeProposal(
     ...     dependent_branch=bmp.source_branch)
-    >>> [notification] = pop_notifications()
+    >>> notifications = pop_notifications()
+    >>> notification = notifications[0]
     >>> print notification['To']
     Person-... <foo@bar.com>
     >>> print notification['From']
