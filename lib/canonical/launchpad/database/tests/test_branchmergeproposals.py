@@ -8,7 +8,9 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.launchpad.database import BranchMergeProposalGetter
+from canonical.launchpad.database.branch import BranchSet
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposalGetter)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -16,6 +18,8 @@ from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     EmailAddressStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.testing import (
      LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
@@ -492,6 +496,140 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         utility = getUtility(IBranchMergeProposalGetter)
         retrieved = utility.get(merge_proposal.id)
         self.assertEqual(merge_proposal, retrieved)
+
+
+class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
+    """Test the getProposalsForContext method."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Use an administrator so the permission checks for things
+        # like adding landing targets and setting privacy on the branches
+        # are allowed.
+        TestCaseWithFactory.setUp(self, user='foo.bar@canonical.com')
+        # People
+        self.albert = self.factory.makePerson(name='albert')
+        self.bob = self.factory.makePerson(name='bob')
+        self.charles = self.factory.makePerson(name='charles')
+        # A team
+        self.xray = self.factory.makeTeam(owner=self.albert, name='xray')
+        # Get albert to add charles to the team.
+        self.xray.addMember(self.charles, self.albert)
+        # Two products needed.
+        self.mike = self.factory.makeProduct(name='mike')
+        self.november = self.factory.makeProduct(name='nov')
+        # Make branches added by the xray team private for product mike.
+        self.mike.setBranchVisibilityTeamPolicy(
+            self.xray, BranchVisibilityRule.PRIVATE)
+        # Now make some branches.
+        for product in (self.mike, self.november):
+            trunk = self.factory.makeBranch(product=product)
+            for needs_review in (False, True):
+                for owner in (self.albert, self.bob):
+                    self._make_merge_proposal(
+                        trunk, product, owner, needs_review)
+                self._make_merge_proposal(
+                    trunk, product, self.xray, needs_review, self.albert)
+
+    def _make_merge_proposal(self, trunk, product, owner, needs_review,
+                             registrant=None):
+        if needs_review:
+            name = 'review'
+        else:
+            name = 'wip'
+        branch = self.factory.makeBranch(
+            product=product, owner=owner, registrant=registrant, name=name)
+        if registrant is None:
+            registrant = owner
+        bmp = branch.addLandingTarget(
+            registrant=registrant, target_branch=trunk)
+        if needs_review:
+            bmp.requestReview()
+            syncUpdate(bmp)
+
+    def _get_merge_proposals(self, context, status=None,
+                             visible_by_user=None):
+        """Helper method to return tuples of source branch details."""
+        results = BranchMergeProposalGetter.getProposalsForContext(
+            context, status, visible_by_user)
+        return sorted([bmp.source_branch.unique_name for bmp in results])
+
+    def test_all_for_product_restrictions(self):
+        """Queries on product should limit results to that product."""
+        self.assertEqual(
+            ['~albert/nov/review', '~albert/nov/wip',
+             '~bob/nov/review', '~bob/nov/wip',
+             '~xray/nov/review', '~xray/nov/wip'],
+            self._get_merge_proposals(self.november))
+
+    def test_wip_for_product_restrictions(self):
+        """Queries on product should limit results to that product."""
+        self.assertEqual(
+            ['~albert/nov/wip', '~bob/nov/wip', '~xray/nov/wip'],
+            self._get_merge_proposals(
+                self.november,
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_all_for_person_restrictions(self):
+        """Queries on person should limit results to that person."""
+        self.assertEqual(
+            ['~bob/mike/review', '~bob/mike/wip',
+             '~bob/nov/review', '~bob/nov/wip'],
+            self._get_merge_proposals(self.bob))
+
+    def test_wip_for_person_restrictions(self):
+        """Queries on person should limit results to that person."""
+        self.assertEqual(
+            ['~bob/mike/wip', '~bob/nov/wip'],
+            self._get_merge_proposals(
+                self.bob,
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_owner_sees_private_branches(self):
+        """The branch owner should see their private branches."""
+        self.assertEqual(
+            ['~albert/mike/wip', '~albert/nov/wip'],
+            self._get_merge_proposals(
+                self.albert, visible_by_user=self.albert,
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_anonymous_cant_see_private_branches(self):
+        """Anonymous users should not see private branches."""
+        self.assertEqual(
+            ['~albert/nov/wip'],
+            self._get_merge_proposals(
+                self.albert,
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_charles_sees_team_product_branches(self):
+        """Charles should be able to see the private branches."""
+        self.assertEqual(
+            ['~albert/mike/wip', '~bob/mike/wip', '~xray/mike/wip'],
+            self._get_merge_proposals(
+                self.mike, visible_by_user=self.charles,
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_non_member_user_cant_see_private_branches(self):
+        """Users should not see private branches."""
+        self.assertEqual(
+            ['~bob/mike/wip'],
+            self._get_merge_proposals(
+                self.mike, visible_by_user=self.bob,
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
+
+    def test_subscriber_can_see_private_proposal(self):
+        """Subscriptions should allow the user to see the branch."""
+        branch = BranchSet().getByUniqueName('~albert/mike/wip')
+        branch.subscribe(
+            self.bob,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
+        self.assertEqual(
+            ['~albert/mike/wip', '~bob/mike/wip'],
+            self._get_merge_proposals(
+                self.mike, visible_by_user=self.bob,
+                status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
 
 
 def test_suite():

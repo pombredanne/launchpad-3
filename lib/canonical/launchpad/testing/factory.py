@@ -170,7 +170,7 @@ class LaunchpadObjectFactory:
             pass
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None):
         """Create and return a new, arbitrary Team.
 
         The subscription policy of this new team will be OPEN.
@@ -180,7 +180,8 @@ class LaunchpadObjectFactory:
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
         """
-        name = self.getUniqueString('team-name')
+        if name is None:
+            name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
