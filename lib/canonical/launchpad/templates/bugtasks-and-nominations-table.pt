@@ -47,11 +47,11 @@
           define="link context/menu:context/adddistro"
           condition="link/enabled"
           replace="structure link/render" />
+      <tal:nominate
+          define="link context/menu:context/nominate"
+          condition="link/enabled"
+          replace="structure link/render" />
     </tal:also-affects-links>
-    <tal:nominate
-        define="link context/menu:context/nominate"
-        condition="link/enabled"
-        replace="structure link/render" />
   </div>
 </div>
 </tal:root>
