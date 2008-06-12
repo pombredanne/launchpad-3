@@ -7,6 +7,7 @@ from unittest import TestLoader, TestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
@@ -165,6 +166,21 @@ new commit message
         send_merge_proposal_modified_notifications(merge_proposal, event)
         emails = pop_notifications()
         self.assertEqual([], emails)
+
+    def test_forReviewRequest(self):
+        merge_proposal, subscriber_ = self.makeProposalWithSubscriber()
+        candidate = self.factory.makePerson(
+            displayname='Candidate', email='candidate@example.com')
+        requester = self.factory.makePerson(
+            displayname='Requester', email='requester@example.com')
+        request = CodeReviewVoteReference(
+            branch_merge_proposal=merge_proposal, reviewer=candidate,
+            registrant=requester)
+        mailer = BMPMailer.forReviewRequest(request, requester)
+        self.assertEqual(
+            'Requester <requester@example.com>', mailer.from_address)
+        self.assertEqual(
+            set([candidate]), set(mailer._recipients.getRecipientPersons()))
 
 
 def test_suite():

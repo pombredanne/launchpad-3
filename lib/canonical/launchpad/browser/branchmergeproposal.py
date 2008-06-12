@@ -37,7 +37,6 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import (
@@ -430,9 +429,8 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         candidate = data.pop('review_candidate', None)
         review_type = data.pop('review_type', None)
         if candidate is not None:
-            vote_reference = CodeReviewVoteReference(
-                branch_merge_proposal=self.context, reviewer=candidate,
-                registrant=self.user)
+            vote_reference = self.context.nominateReviewer(
+                candidate, self.user, review_type)
             BMPMailer.forReviewRequest(vote_reference, self.user).sendAll()
         form.applyChanges(self, self.form_fields, data, self.adapters)
 
