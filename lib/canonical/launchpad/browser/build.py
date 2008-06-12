@@ -29,11 +29,11 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 def build_to_structuralheading(build):
     """Adapts an `IBuild` into an `IStructuralHeaderPresentation`."""
-    if build.distributionsourcepackagerelease:
+    if build.archive.is_ppa:
+        return IStructuralHeaderPresentation(build.archive)
+    else:
         return IStructuralHeaderPresentation(
             build.distributionsourcepackagerelease)
-    else:
-        return IStructuralHeaderPresentation(build.archive)
 
 
 class BuildUrl:

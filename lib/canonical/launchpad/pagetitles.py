@@ -832,7 +832,7 @@ object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 object_reassignment = ContextTitle('Reassign %s')
 
-object_translations = ContextTitle('Translation templates for %s')
+object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
@@ -1257,7 +1257,7 @@ sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
 
-sourcepackage_export = ContextTitle('Download translations for "%s"')
+sourcepackage_export = ContextTitle('Download translations for %s')
 
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""
