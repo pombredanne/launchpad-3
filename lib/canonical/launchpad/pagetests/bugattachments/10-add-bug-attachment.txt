@@ -1,18 +1,15 @@
 We need to login in order to add attachments.
 
-  >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> anon_browser.getLink('Comment or attach file').click()
+  >>> anon_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
   Traceback (most recent call last):
   ...
   Unauthorized:...
 
 When we're logged in we can access the page.
 
-  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> user_browser.getLink('Comment or attach file').click()
-
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment'
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
 
 Let's add an attachment. First create a file-like object.
 
@@ -56,11 +53,8 @@ And that we stripped the leading and trailing whitespace correctly
 If no description is given it gets set to the attachment filename. It's
 also not necessary to enter a comment in order to add an attachment.
 
-  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> user_browser.getLink('Comment or attach file').click()
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment'
-
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
   >>> bar_file = StringIO('Traceback...')
   >>> user_browser.getControl('Attachment').add_file(
   ...   bar_file, 'text/plain', 'bar.txt')

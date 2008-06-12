@@ -8,6 +8,7 @@ import unittest
 import pytz
 from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import SQLConstant
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.codehosting.codeimport.publish import ensure_series_branch
@@ -140,10 +141,10 @@ class TestCodeImportDeletion(unittest.TestCase):
         """Ensure deleting CodeImport objects deletes associated events."""
         code_import_event = self.factory.makeCodeImportEvent()
         code_import_event_id = code_import_event.id
-        # CodeImportEvent.get should not raise anything.
-        # But since it populates the object cache, we must expire it.
-        CodeImportEvent.get(code_import_event_id).expire()
         CodeImportSet().delete(code_import_event.code_import)
+        # CodeImportEvent.get should not raise anything.
+        # But since it populates the object cache, we must invalidate it.
+        Store.of(code_import_event).invalidate(code_import_event)
         self.assertRaises(
             SQLObjectNotFound, CodeImportEvent.get, code_import_event_id)
 
@@ -151,10 +152,10 @@ class TestCodeImportDeletion(unittest.TestCase):
         """Ensure deleting CodeImport objects deletes associated results."""
         code_import_result = self.factory.makeCodeImportResult()
         code_import_result_id = code_import_result.id
-        # CodeImportResult.get should not raise anything.
-        # But since it populates the object cache, we must expire it.
-        CodeImportResult.get(code_import_result_id).expire()
         CodeImportSet().delete(code_import_result.code_import)
+        # CodeImportResult.get should not raise anything.
+        # But since it populates the object cache, we must invalidate it.
+        Store.of(code_import_result).invalidate(code_import_result)
         self.assertRaises(
             SQLObjectNotFound, CodeImportResult.get, code_import_result_id)
 
