@@ -35,7 +35,7 @@ makes problems harder to diagnose.
 
 == smartquote() ==
 
-smartquote() converts pairs of feet marks (") in a string to typographical
+smartquote() converts pairs of inch marks (") in a string to typographical
 quotation marks.
 
     >>> from canonical.lazr.utils import smartquote

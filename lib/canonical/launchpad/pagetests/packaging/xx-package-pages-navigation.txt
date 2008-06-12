@@ -12,8 +12,10 @@ have functioning application tabs that go to an obvious place.
 == Distribution source package ==
 
 A distribution source package has its own Overview, Bugs, and Answers
-pages. XXX 20080519 mpt: When bug 127884 is fixed it will also have a
-Translations page.
+pages.
+
+(XXX 20080519 mpt: When bug 127884 is fixed, a distribution source package will
+also have a Translations page.)
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/alsa-utils')
     >>> print_navigation(anon_browser.contents)
@@ -71,8 +73,9 @@ source package.
 
 A distribution source package release build should have almost the same
 navigation as its parent distribution source package release.
-XXX 20080611 mpt: A build probably should belong to a distribution *series*
-source package release, but that's more than I can chew off for now.
+
+(XXX 20080611 mpt: A build probably should belong to a distribution *series*
+source package release, but that's more than I can chew off for now.)
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11')
@@ -110,7 +113,8 @@ and Answers.
     * Answers (http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
     Main heading: alsa-utils in Ubuntu Hoary
 
-(XXX: That should eventually be "?alsa-utils? source package in Ubuntu Hoary".)
+(XXX 20080612 mpt: That should eventually be "?alsa-utils? source package in
+Ubuntu Hoary".)
 
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')

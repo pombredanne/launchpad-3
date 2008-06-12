@@ -14,7 +14,7 @@ from canonical.launchpad.browser.launchpad import (
     DefaultShortLink)
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackageRelease, IBuildSet,
+    IBuildSet, IDistributionSourcePackageRelease,
     IStructuralHeaderPresentation, NotFoundError)
 
 
