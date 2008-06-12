@@ -7,12 +7,13 @@ __all__ = ['BugActivity', 'BugActivitySet']
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
+from storm.store import Store
 
 from canonical.launchpad.interfaces import IBugActivity, IBugActivitySet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 class BugActivity(SQLBase):
     """Bug activity log entry."""
@@ -24,7 +25,7 @@ class BugActivity(SQLBase):
     datechanged = UtcDateTimeCol(notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     whatchanged = StringCol(notNull=True)
     oldvalue = StringCol(default=None)
     newvalue = StringCol(default=None)
@@ -39,7 +40,9 @@ class BugActivitySet:
     def new(self, bug, datechanged, person, whatchanged,
             oldvalue=None, newvalue=None, message=None):
         """See IBugActivitySet."""
-        return BugActivity(
+        activity = BugActivity(
             bug=bug, datechanged=datechanged, person=person,
             whatchanged=whatchanged, oldvalue=oldvalue, newvalue=newvalue,
             message=message)
+        Store.of(activity).flush()
+        return activity
