@@ -471,7 +471,7 @@ what kind of object is in the collection, or even that "recipes" is a
 collection at all. To expose the corresponding field to the web
 service we use CollectionField.
 
-    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> from canonical.lazr.fields import CollectionField
     >>> class IDishEntry(IEntry):
     ...     "The part of a dish that we expose through the web service."
     ...     recipes = CollectionField(value_type=Object(schema=IRecipe))

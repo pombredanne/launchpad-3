@@ -134,8 +134,8 @@ in the same path and thus, this method should not get any value.
 
     >>> for template in potemplatesubset:
     ...    print template.path
-    po/evolution-2.2-test.pot
     po/evolution-2.2.pot
+    po/evolution-2.2-test.pot
 
     >>> potemplatesubset.getClosestPOTemplate('po') is None
     True

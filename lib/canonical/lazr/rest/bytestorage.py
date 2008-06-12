@@ -4,19 +4,15 @@
 
 __metaclass__ = type
 __all__ = [
-    'ByteStorageMarshaller',
     'ByteStorageResource',
-]
+    ]
 
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.schema import ValidationError
 
-from canonical.launchpad.webapp import canonical_url
-
 from canonical.lazr.interfaces import IByteStorageResource
 from canonical.lazr.rest.resource import HTTPResource
-from canonical.lazr.rest.schema import SimpleFieldMarshaller
 
 
 class ByteStorageResource(HTTPResource):
@@ -63,15 +59,4 @@ class ByteStorageResource(HTTPResource):
     def do_DELETE(self):
         """See `IByteStorageResource`."""
         self.context.deleteStored()
-
-
-class ByteStorageMarshaller(SimpleFieldMarshaller):
-
-    def representationName(self, field_name):
-        """Represent as a link to another resource."""
-        return field_name + '_link'
-
-    def unmarshall(self, entry, field_name, bytestorage):
-        """Marshall as a link to the byte storage resource."""
-        return "%s/%s" % (canonical_url(entry.context), field_name)
 
