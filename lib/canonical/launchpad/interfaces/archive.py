@@ -122,6 +122,31 @@ class IArchive(IHasOwner):
         'The size of binaries published in the context archive.')
     estimated_size = Attribute('Estimated archive size.')
 
+    total_count = Int(
+        title=_("Total number of builds in archive"), required=True,
+        default=0,
+        description=_("The total number of builds in this archive."))
+
+    pending_count = Int(
+        title=_("Number of pending builds in archive"), required=True,
+        default=0,
+        description=_("The number of pending builds in this archive."))
+
+    succeeded_count = Int(
+        title=_("Number of succeeded builds in archive"), required=True,
+        default=0,
+        description=_("The number of succeeded builds in this archive."))
+
+    building_count = Int(
+        title=_("Number of active builds in archive"), required=True,
+        default=0,
+        description=_("The number of active builds in this archive."))
+
+    failed_count = Int(
+        title=_("Number of failed builds in archive"), required=True,
+        default=0,
+        description=_("The number of failed builds in this archive."))
+
     def getPubConfig():
         """Return an overridden Publisher Configuration instance.
 
