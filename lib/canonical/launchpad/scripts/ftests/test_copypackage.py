@@ -19,7 +19,7 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
-    IComponentSet, IDistributionSet, IPersonSet,
+    IComponentSet, IDistributionSet, ILibraryFileAliasSet, IPersonSet,
     ISourcePackagePublishingHistory, PackagePublishingStatus)
 from canonical.librarian.ftests.harness import (
     cleanupLibrarianFiles, fillLibrarianFile)
@@ -448,8 +448,8 @@ class TestCopyPackage(unittest.TestCase):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
         # Set up a private PPA.
         cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
-        cprov_ppa.private = True
         cprov_ppa.buildd_secret = "secret"
+        cprov_ppa.private = True
 
         # Fudge one of the packages in the cprov's PPA so
         # that its files are in the restricted librarian.
@@ -493,38 +493,40 @@ class TestCopyPackage(unittest.TestCase):
         # libraryfilecontent.  Unfortunately the convoluted user switching
         # is required because librariangc has no permissions to select
         # on the other tables needed for the loop.
-
-        FAKE_CONTENT = "I am fake!"
-        for publishings in (sources, binaries):
-            for published in publishings:
-                for published_file in published.files:
-                    self.layer.txn.commit()
-                    self.layer.switchDbUser('librariangc')
-                    lfa = published_file.libraryfilealias
-                    lfa = removeSecurityProxy(lfa)
-                    lfa.restricted = True
-                    fillLibrarianFile(lfa.content.id, content=FAKE_CONTENT)
-                    lfa.content.filesize = len(FAKE_CONTENT)
-                    self.layer.txn.commit()
-                    self.layer.switchDbUser('launchpad')
-
-        # Also make the changes files restricted.
-        for published in sources:
-            queue = published.sourcepackagerelease.getQueueRecord(
-                distroseries=published.distroseries)
+        def make_files_restricted(file_ids):
             self.layer.txn.commit()
             self.layer.switchDbUser('librariangc')
-            if queue is not None:
-                lfa = removeSecurityProxy(queue).changesfile
-                lfa.restricted = True
+
+            FAKE_CONTENT = "I am fake!"
+            for lfa_id in file_ids:
+                lfa = getUtility(ILibraryFileAliasSet)[lfa_id]
+                naked_lfa = removeSecurityProxy(lfa)
+                naked_lfa.restricted = True
                 fillLibrarianFile(lfa.content.id, content=FAKE_CONTENT)
-                lfa.content.filesize = len(FAKE_CONTENT)
+                naked_content = removeSecurityProxy(lfa.content)
+                naked_content.filesize = len(FAKE_CONTENT)
+
             self.layer.txn.commit()
             self.layer.switchDbUser('launchpad')
 
-        # Now switch the to the user that the script runs as.
-        self.layer.txn.commit()
-        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        sourcefile_ids = []
+        for publishings in (sources, binaries):
+            for published in publishings:
+                for published_file in published.files:
+                    sourcefile_ids.append(
+                        published_file.libraryfilealias.id)
+
+        make_files_restricted(sourcefile_ids)
+
+        # Also make the changes files restricted.
+        changesfile_ids = []
+        for published in sources:
+            queue = published.sourcepackagerelease.getQueueRecord(
+                distroseries=published.distroseries)
+            if queue is not None:
+                changesfile_ids.append(queue.changesfile.id)
+
+        make_files_restricted(changesfile_ids)
 
         # Now we can invoke the unembargo script and check its results.
         test_args = [

@@ -2,15 +2,15 @@
 
 """Database constants."""
 
-from sqlobject.sqlbuilder import SQLConstant
+from storm.expr import SQL
 
-UTC_NOW = SQLConstant("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+UTC_NOW = SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
 
-DEFAULT = SQLConstant("DEFAULT")
+DEFAULT = SQL("DEFAULT")
 
 # We can't use infinity, as psycopg doesn't know how to handle it. And
 # neither does Python I guess.
-#NEVER_EXPIRES = SQLConstant("'infinity'::TIMESTAMP")
+#NEVER_EXPIRES = SQL("'infinity'::TIMESTAMP")
 
-NEVER_EXPIRES = SQLConstant("'3000-01-01'::TIMESTAMP WITHOUT TIME ZONE")
+NEVER_EXPIRES = SQL("'3000-01-01'::TIMESTAMP WITHOUT TIME ZONE")
 

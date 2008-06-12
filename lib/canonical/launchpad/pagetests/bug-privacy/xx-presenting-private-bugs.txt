@@ -22,7 +22,7 @@ title/tooltip):
     >>> print find_tag_by_id(browser.contents, 'container')
     <div...class="private"...</div>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img... title="This bug report was made private by Foo Bar ... ago"...>
+    <img... title="Private"...>
 
 Bugs created before we started recording the date and time and who
 marked the bug private show only a simple message:
@@ -31,7 +31,7 @@ marked the bug private show only a simple message:
     >>> print find_tag_by_id(browser.contents, 'container')
     <div...class="private"...</div>
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img... title="This bug report is private"...>
+    <img... title="Private"...>
 
 But newer bugs that are filed private at creation time (like security
 bugs or where the product requests that bugs are private by default)
@@ -50,7 +50,7 @@ have the full message:
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/...
     >>> print find_tag_by_id(browser.contents, 'privatebadge')
-    <img... title="This bug report was made private by Foo Bar ... ago"...>
+    <img... title="Private"...>
 
 If you visit the private bugs page through its shortcut URL, we don't
 redirect you unless you are actually able to see the bug. The reason for
