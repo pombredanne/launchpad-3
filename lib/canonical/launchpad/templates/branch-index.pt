@@ -140,16 +140,16 @@
             </tal:can-upload>
           </tal:logged-in>
       </tal:hosted-branch>
-
-    </tbody>
+      <tr id='branch-format'>
+        <th>Branch format</th>
+        <td tal:content="view/branch_format_description" />
+      </tr>
+      <tr id='repository-format'>
+        <th>Repository format</th>
+        <td tal:content="view/repository_format_description" />
+      </tr>
+      </tbody>
   </table>
-  <table id="branch-format-table">
-    <tr><td>Branch format</td><td
-        tal:content="view/branch_format_description" /></tr>
-    <tr><td>Repository format</td><td
-        tal:content="view/repository_format_description" /></tr>
-  </table>
-
   <tal:branch-errors tal:replace="structure context/@@+messages" />
 
   <div tal:condition="context/summary" id="branch-summary"
