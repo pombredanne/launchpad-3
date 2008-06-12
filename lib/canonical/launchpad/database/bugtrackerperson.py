@@ -9,6 +9,8 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey, StringCol
+
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -16,6 +18,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.bugtrackerperson import (
     IBugTrackerPerson, IBugTrackerPersonSet, BugTrackerNameAlreadyTaken)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.validators.name import sanitize_name
 
 
 class BugTrackerPerson(SQLBase):

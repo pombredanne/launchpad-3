@@ -34,7 +34,6 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
-from canonical.launchpad.validators.name import sanitize_name
 
 
 class TooMuchTimeSkew(BugWatchUpdateError):
