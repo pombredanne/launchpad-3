@@ -57,6 +57,7 @@ class TestCommProjVocabulary(TestCase):
 
     def test_emptySearch(self):
         """An empty search should return all commercial projects."""
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         results = self.vocab.searchForTerms('')
         self.assertEqual(
             self.num_proprietary, len(results),

@@ -93,6 +93,8 @@ from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.salesforce import (
+    ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.shipit import (
     ShipItConstants, ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (
@@ -944,8 +946,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             WHERE TeamParticipation.person = %(person)s
             AND owner = TeamParticipation.team
             """ % sqlvalues(person=self)]
-        if match_name is not None:
 
+        # We only want to use the extra query if match_name is not None and it
+        # is not the empty string ('' or u'').
+        if match_name:
             like_query = "'%%' || %s || '%%'" % quote_like(match_name)
             quoted_query = quote(match_name)
             clauses.append(
@@ -967,10 +971,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             self.unredeemed_commercial_vouchers = []
             self.redeemed_commercial_vouchers = []
             for voucher in self.commercial_vouchers:
-                if voucher.status == 'UNREDEEMED':
-                    self.unredeemed_commercial_vouchers.append(voucher)
-                else:
+                assert voucher.status in VOUCHER_STATUSES, (
+                    "Voucher %s has unrecoginzed status %s" %
+                    (voucher.voucher_id, voucher.status))
+                if voucher.status == 'Redeemed':
                     self.redeemed_commercial_vouchers.append(voucher)
+                else:
+                    self.unredeemed_commercial_vouchers.append(voucher)
         return (self.unredeemed_commercial_vouchers,
                 self.redeemed_commercial_vouchers)
 

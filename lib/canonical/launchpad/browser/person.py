@@ -1925,12 +1925,10 @@ class PersonVouchersView(LaunchpadFormView):
 
     custom_widget('voucher', LaunchpadDropdownWidget)
     custom_widget('project', SinglePopupWidget)
-    custom_widget('voucher_paste', TextWidget, displayWidth=43)
 
     def setUpFields(self):
         self.form_fields = (self.createProjectField() +
-                            self.createVoucherField() +
-                            self.createVoucherEntryField())
+                            self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -1956,8 +1954,8 @@ class PersonVouchersView(LaunchpadFormView):
             self.context.getCommercialSubscriptionVouchers())
         terms = []
         for voucher in unredeemed:
-            text = "%s (%d months)" % (voucher.id, voucher.term)
-            terms.append(SimpleTerm(voucher, voucher.id, text))
+            text = "%s (%d months)" % (voucher.voucher_id, voucher.term_months)
+            terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
         voucher_vocabulary = SimpleVocabulary(terms)
         field = FormFields(
             Choice(__name__='voucher',
@@ -1969,24 +1967,6 @@ class PersonVouchersView(LaunchpadFormView):
             render_context=self.render_context)
         return field
 
-    def createVoucherEntryField(self):
-        """Create a box for pasting in another voucher id.
-
-        Users may get vouchers in ways other than purchase.  A free-use
-        voucher may be given by one of our team, for example.
-        """
-        return FormFields(TextLine(__name__='voucher_paste',
-                                   title=_('Or enter another voucher'),
-                                   description=_('Enter a voucher you have '
-                                                 'received via email or some '
-                                                 'other means'),
-                                   min_length=43,
-                                   max_length=43,
-                                   required=False),
-                          custom_widget=self.custom_widgets['voucher_paste'],
-                          render_context=self.render_context)
-
-
     @cachedproperty
     def owned_commercial_projects(self):
         commercial_projects = []
@@ -1994,17 +1974,6 @@ class PersonVouchersView(LaunchpadFormView):
             if not project.qualifies_for_free_hosting:
                 commercial_projects.append(project)
         return commercial_projects
-
-    def validate(self, data):
-        """Ensure exactly one voucher is given."""
-        voucher = data.get('voucher')
-        voucher_paste = data.get('voucher_paste')
-        if voucher is None and voucher_paste is None:
-            self.addError("You must select a voucher from the list or enter "
-                          "one manually.")
-        elif voucher is not None and voucher_paste is not None:
-            self.addError("You may only select one voucher -- "
-                          "either from the list or by entering manually.")
 
     @action(_("Cancel"), name="cancel",
             validator='validate_cancel')
@@ -2017,36 +1986,24 @@ class PersonVouchersView(LaunchpadFormView):
         error_msg = None
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
-        if data['voucher'] is not None:
-            voucher = data['voucher']
+        voucher = data['voucher']
+        result = salesforce_proxy.redeemVoucher(voucher.voucher_id,
+                                                self.context,
+                                                project)
+        if result:
+            project.redeemSubscriptionVoucher(
+                voucher=voucher.voucher_id,
+                registrant=self.context,
+                purchaser=self.context,
+                subscription_months=voucher.term_months)
+            self.request.response.addInfoNotification(
+                _("Voucher redeemed successfully"))
+            # Force the page to reload so the just consumed voucher is not
+            # displayed again (since the field has already been created.)
+            self.next_url = self.request.URL
         else:
-            voucher_id = data['voucher_paste']
-            voucher = salesforce_proxy.getVoucher(voucher_id)
-            if voucher is None:
-                error_msg = "The voucher entered is invalid."
-            elif voucher.status != 'UNREDEEMED':
-                error_msg = "The voucher entered has already been redeemed."
-        if error_msg is not None:
-            self.setFieldError('voucher_paste',
-                               error_msg)
-        else:
-            result = salesforce_proxy.redeemVoucher(voucher.id,
-                                                    self.context,
-                                                    project)
-            if result:
-                project.redeemSubscriptionVoucher(
-                    voucher=voucher.id,
-                    registrant=self.context,
-                    purchaser=self.context,
-                    subscription_months=voucher.term)
-                self.request.response.addInfoNotification(
-                    _("Voucher redeemed successfully"))
-                # Force the page to reload so the just consumed voucher is not
-                # displayed again (since the field has already been created.)
-                self.next_url = self.request.URL
-            else:
-                self.error_message = (
-                    "The voucher could not be redeemed at this time.")
+            self.error_message = (
+                "The voucher could not be redeemed at this time.")
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):

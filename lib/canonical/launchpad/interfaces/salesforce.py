@@ -8,12 +8,20 @@ __metaclass__ = type
 __all__ = [
     'ISalesforceVoucher',
     'ISalesforceVoucherProxy',
+    'VOUCHER_STATUSES',
     ]
 
 from zope.interface import Interface
 from zope.schema import Choice, Int, TextLine
 
 from canonical.launchpad import _
+
+
+VOUCHER_STATUSES = [
+    'Unredeemed',
+    'Redeemed',
+    'Reserved',
+    ]
 
 
 class ISalesforceVoucherProxy(Interface):
