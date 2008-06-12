@@ -448,6 +448,7 @@ class TestCopyPackage(unittest.TestCase):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
         # Set up a private PPA.
         cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
+        cprov_ppa.buildd_secret = "secret"
         cprov_ppa.private = True
 
         # Fudge one of the packages in the cprov's PPA so

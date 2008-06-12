@@ -141,6 +141,7 @@ class TestCodeImportDeletion(unittest.TestCase):
         """Ensure deleting CodeImport objects deletes associated events."""
         code_import_event = self.factory.makeCodeImportEvent()
         code_import_event_id = code_import_event.id
+        CodeImportSet().delete(code_import_event.code_import)
         # CodeImportEvent.get should not raise anything.
         # But since it populates the object cache, we must invalidate it.
         Store.of(code_import_event).invalidate(code_import_event)
@@ -151,6 +152,7 @@ class TestCodeImportDeletion(unittest.TestCase):
         """Ensure deleting CodeImport objects deletes associated results."""
         code_import_result = self.factory.makeCodeImportResult()
         code_import_result_id = code_import_result.id
+        CodeImportSet().delete(code_import_result.code_import)
         # CodeImportResult.get should not raise anything.
         # But since it populates the object cache, we must invalidate it.
         Store.of(code_import_result).invalidate(code_import_result)

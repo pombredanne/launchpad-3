@@ -22,6 +22,7 @@ __all__ = [
 
 from datetime import datetime
 import pytz
+from StringIO import StringIO
 import urllib
 
 import simplejson

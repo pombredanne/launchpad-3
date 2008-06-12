@@ -14,6 +14,7 @@ usually done:
 
     <html metal:use-macro="view/macro:page/default" />
 
+
     >>> from canonical.launchpad.ftests import test_tales
     >>> view = FakeView()
 
