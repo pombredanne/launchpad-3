@@ -87,9 +87,9 @@ if __name__ == '__main__':
         parser.error(
             "Parent branch not specified, and could not be discovered.")
 
-   missing_files = gen_missing_files(
-       realpath(join(options.parent, 'sourcecode')),
-       abspath(join(options.target, 'sourcecode')))
+    missing_files = gen_missing_files(
+        realpath(join(options.parent, 'sourcecode')),
+        abspath(join(options.target, 'sourcecode')))
 
     for target, link in missing_files:
         symlink(target, link)
