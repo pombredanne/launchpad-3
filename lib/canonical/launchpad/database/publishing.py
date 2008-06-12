@@ -22,6 +22,7 @@ from warnings import warn
 
 from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol
+from storm.store import Store
 
 from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -36,7 +37,7 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -48,8 +49,9 @@ def makePoolPath(source_name, component_name):
         'pool', poolify(source_name, component_name))
 
 
-class FilePublishingBase(SQLBase):
+class FilePublishingBase:
     """Base class to publish files in the archive."""
+
     def publish(self, diskpool, log):
         """See IFilePublishing."""
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
@@ -87,13 +89,13 @@ class FilePublishingBase(SQLBase):
                 self.libraryfilealiasfilename)
 
 
-class SourcePackageFilePublishing(FilePublishingBase):
+class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     """Source package release files and their publishing status.
 
     Represents the source portion of the pool.
     """
 
-    _idType = str
+    _idType = unicode
     _defaultOrder = "id"
 
     implements(ISourcePackageFilePublishing)
@@ -103,8 +105,9 @@ class SourcePackageFilePublishing(FilePublishingBase):
                               unique=False,
                               notNull=True)
 
-    sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
-         foreignKey='SecureSourcePackagePublishingHistory')
+    sourcepackagepublishing = ForeignKey(
+        dbName='sourcepackagepublishing',
+        foreignKey='SourcePackagePublishingHistory')
 
     libraryfilealias = ForeignKey(
         dbName='libraryfilealias', foreignKey='LibraryFileAlias',
@@ -133,7 +136,7 @@ class SourcePackageFilePublishing(FilePublishingBase):
     @property
     def publishing_record(self):
         """See `IFilePublishing`."""
-        return self.sourcepackagepublishing
+        return self.sourcepackagepublishing.secure_record
 
     @property
     def file_type_name(self):
@@ -150,13 +153,13 @@ class SourcePackageFilePublishing(FilePublishingBase):
         return "other"
 
 
-class BinaryPackageFilePublishing(FilePublishingBase):
+class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
     """A binary package file which is published.
 
     Represents the binary portion of the pool.
     """
 
-    _idType = str
+    _idType = unicode
     _defaultOrder = "id"
 
     implements(IBinaryPackageFilePublishing)
@@ -166,8 +169,9 @@ class BinaryPackageFilePublishing(FilePublishingBase):
                               unique=False, notNull=True,
                               immutable=True)
 
-    binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
-        foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
+    binarypackagepublishing = ForeignKey(
+        dbName='binarypackagepublishing',
+        foreignKey='BinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = ForeignKey(
         dbName='libraryfilealias', foreignKey='LibraryFileAlias',
@@ -201,7 +205,7 @@ class BinaryPackageFilePublishing(FilePublishingBase):
     @property
     def publishing_record(self):
         """See `ArchiveFilePublisherBase`."""
-        return self.binarypackagepublishing
+        return self.binarypackagepublishing.secure_record
 
 
 class ArchiveSafePublisherBase:
@@ -248,7 +252,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -296,7 +300,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -430,7 +434,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     def _getPublishingBinariesBaseClause(self):
@@ -579,6 +583,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             distroarchseries=arch, archive=self.archive, pocket=self.pocket)
         build_queue = build.createBuildQueueEntry()
         build_queue.score()
+        Store.of(build).flush()
 
         if logger is not None:
             logger.debug(
@@ -791,7 +796,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @property

@@ -30,6 +30,8 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from storm.references import Reference
+from storm.store import Store
 
 from canonical.config import config
 from canonical.database import postgresql
@@ -37,8 +39,7 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, flush_database_caches, flush_database_updates, quote, quote_like,
-    sqlvalues, SQLBase)
+    cursor, quote, quote_like, sqlvalues, SQLBase)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -138,8 +139,7 @@ from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.person import (
-    public_person_validator, visibility_validator)
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -149,6 +149,15 @@ class ValidPersonOrTeamCache(SQLBase):
     database triggers.
     """
     # Look Ma, no columns! (apart from id)
+
+
+def validate_person_visibility(person, attr, value):
+    """Prevent teams with inconsistent connections from being made private."""
+    if value != PersonVisibility.PUBLIC:
+        warning = person.visibility_consistency_warning
+        if warning is not None:
+            raise ValueError(warning)
+    return value
 
 
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
@@ -165,9 +174,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
 
-    name = StringCol(dbName='name', alternateID=True, notNull=True)
-
-    def _set_name(self, value):
+    def _validate_name(self, attr, value):
         """Check that rename is allowed."""
         # Renaming a team is prohibited for any team that has a mailing list.
         # This is because renaming a mailing list is not trivial in Mailman
@@ -182,7 +189,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 getUtility(IMailingListSet).get(self.name) is None), (
             'Cannot rename teams with mailing lists')
         # Everything's okay, so let SQLObject do the normal thing.
-        self._SO_set_name(value)
+        return value
+
+    name = StringCol(dbName='name', alternateID=True, notNull=True,
+                     storm_validator=_validate_name)
 
     password = StringCol(dbName='password', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -213,7 +223,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None,
-                           validator=public_person_validator)
+                           storm_validator=validate_public_person)
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -238,7 +248,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None,
-        validator=public_person_validator)
+        storm_validator=validate_public_person)
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
@@ -273,7 +283,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     visibility = EnumCol(
         enum=PersonVisibility,
         default=PersonVisibility.PUBLIC,
-        validator=visibility_validator)
+        storm_validator=validate_person_visibility)
 
     personal_standing = EnumCol(
         enum=PersonalStanding, default=PersonalStanding.UNKNOWN,
@@ -1273,9 +1283,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             tm.dateexpires = expires
             tm.setStatus(status, reviewer, comment)
         else:
-            TeamMembershipSet().new(
+            tm = TeamMembershipSet().new(
                 person, self, status, reviewer, dateexpires=expires,
                 comment=comment)
+            # Accessing the id attribute ensures that the team
+            # creation has been flushed to the database.
+            tm_id = tm.id
             notify(event(person, self))
 
         if not person.is_team and may_subscribe_to_list:
@@ -1544,9 +1557,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         for membership in self.myactivememberships:
             self.leave(membership.team)
-        # Make sure all further queries don't see this person as a member of
-        # any teams.
-        flush_database_updates()
 
         # Deactivate CoC signatures, invalidate email addresses, unassign bug
         # tasks and specs and reassign pillars and teams.
@@ -1681,17 +1691,16 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             WHERE subscriber=%d LIMIT 1
             """ % self.id)
 
-        row = cur.dictfetchone()
-        for column, warning in [
-            ('product_count', 'a project subscriber'),
-            ('productseries_count', 'a project series subscriber'),
-            ('project_count', 'a project subscriber'),
-            ('milestone_count', 'a milestone subscriber'),
-            ('distribution_count', 'a distribution subscriber'),
-            ('distroseries_count', 'a distroseries subscriber'),
-            ('sourcepackagename_count', 'a source package subscriber'),
-            ]:
-            if row[column] > 0:
+        row = cur.fetchone()
+        for count, warning in zip(row, [
+                'a project subscriber',
+                'a project series subscriber',
+                'a project subscriber',
+                'a milestone subscriber',
+                'a distribution subscriber',
+                'a distroseries subscriber',
+                'a source package subscriber']):
+            if count > 0:
                 warnings.add(warning)
 
         # Compose warning string.
@@ -2449,7 +2458,7 @@ class PersonSet:
         return Person.select("Person.teamowner IS NOT NULL",
             orderBy=['-datecreated'], limit=limit)
 
-    def _merge_person_decoration(self, to_person, from_person, skip, cur,
+    def _merge_person_decoration(self, to_person, from_person, skip,
         decorator_table, person_pointer_column, additional_person_columns):
         """Merge a table that "decorates" Person.
 
@@ -2460,7 +2469,6 @@ class PersonSet:
         :from_person:     the IPerson that is being merged away
         :skip:            a list of table/column pairs that have been
                           handled
-        :cur:             a database cursor
         :decorator_table: the name of the table that decorated Person
         :person_pointer_column:
                           the column on decorator_table that UNIQUE'ly
@@ -2481,12 +2489,11 @@ class PersonSet:
         non-unique and will be updated to point to the to_person
         regardless.
         """
-        cur = cursor()
-
+        store = Store.of(to_person)
         # First, update the main UNIQUE pointer row which links the
         # decorator table to Person. We do not update rows if there are
         # already rows in the table that refer to the to_person
-        cur.execute(
+        store.execute(
          """UPDATE %(decorator)s
             SET %(person_pointer)s=%(to_id)d
             WHERE %(person_pointer)s=%(from_id)d
@@ -2502,7 +2509,7 @@ class PersonSet:
         # Person. Since these are assumed to be NOT UNIQUE, we don't
         # have to worry about multiple rows pointing at the to_person.
         for additional_column in additional_person_columns:
-            cur.execute(
+            store.execute(
              """UPDATE %(decorator)s
                 SET %(column)s=%(to_id)d
                 WHERE %(column)s=%(from_id)d
@@ -2524,16 +2531,16 @@ class PersonSet:
         assert getUtility(IMailingListSet).get(from_person.name) is None, (
             "Can't merge teams which have mailing lists into other teams.")
 
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        flush_database_updates()
-
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 
         if from_person.is_team and from_person.allmembers.count() > 0:
             raise AssertionError(
                 "Only teams without active members can be merged")
+
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        store = Store.of(from_person)
 
         # Get a database cursor.
         cur = cursor()
@@ -2595,7 +2602,7 @@ class PersonSet:
 
         # Update PersonLocation, which is a Person-decorator table.
         self._merge_person_decoration(
-            to_person, from_person, skip, cur, 'PersonLocation', 'person',
+            to_person, from_person, skip, 'PersonLocation', 'person',
             ['last_modified_by', ])
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
@@ -3092,9 +3099,9 @@ class PersonSet:
         cur.execute("UPDATE Person SET name = %s WHERE id = %s"
                     % sqlvalues(name, from_person))
 
-        # Since we've updated the database behind SQLObject's back,
+        # Since we've updated the database behind Storm's back,
         # flush its caches.
-        flush_database_caches()
+        store.invalidate()
 
     def getTranslatorsByLanguage(self, language):
         """See `IPersonSet`."""

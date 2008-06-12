@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 
-import copy
+import re
 from xmlrpclib import Fault, Transport, loads
 from zope.interface import implements
 
@@ -20,9 +20,7 @@ from canonical.launchpad.utilities import SalesforceVoucherProxy
 from canonical.launchpad.interfaces import ISalesforceVoucherProxy
 
 
-PRODUCT_TERM_MAP = dict(LPCS12=12,
-                        LPCS06=6)
-
+TERM_RE = re.compile("^LPCS(\d{2})-.*")
 
 class Voucher:
     """Test data for a single voucher."""
@@ -33,7 +31,16 @@ class Voucher:
         self.project_id = None
         self.project_name = None
         product = self.voucher_id.split('-')[0]
-        self.term_months = PRODUCT_TERM_MAP.get(product)
+        self.term_months = self._getTermMonths()
+
+    def _getTermMonths(self):
+        """Pull the term in months from the voucher_id."""
+        match = TERM_RE.match(self.voucher_id)
+        if match is None:
+            raise Fault('GeneralError',
+                        'Invalid voucher id %s' % self.voucher_id)
+        num_months = int(match.group(1))
+        return num_months
 
     def __str__(self):
         return "%s,%s" % (self.voucher_id, self.status)
@@ -62,28 +69,34 @@ class SalesforceXMLRPCTestTransport(Transport):
     simulate network errors or timeouts.
     """
 
-    vouchers = [
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001', 'sabdfl_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000002', 'sabdfl_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000003', 'sabdfl_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004', 'cprov_oid'),
-        Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005', 'cprov_oid'),
-        ]
-
     voucher_index = 0
-    voucher_prefix = 'LPCS12-f78df324-0cc2-11dd-0000-%012d'
+    voucher_prefix = 'LPCS%02d-f78df324-0cc2-11dd-0000-%012d'
 
     def __init__(self):
-        self.vouchers = copy.deepcopy(self.vouchers)
+        self.vouchers = [
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001',
+                    'sabdfl_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000002',
+                    'sabdfl_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000003',
+                    'sabdfl_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004',
+                    'cprov_oid'),
+            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005',
+                    'cprov_oid'),
+            ]
 
-    def _createVoucher(self, owner_oid):
+
+    def _createVoucher(self, owner_oid, term_months):
+        """Create a new voucher with the given term and owner."""
         self.voucher_index += 1
-        voucher_id = self.voucher_prefix % self.voucher_index
+        voucher_id = self.voucher_prefix % (term_months, self.voucher_index)
         voucher = Voucher(voucher_id, owner_oid)
         self.vouchers.append(voucher)
         return voucher
 
     def _findVoucher(self, voucher_id):
+        """Find a voucher by id."""
         for voucher in self.vouchers:
             if voucher.voucher_id == voucher_id:
                 return voucher
@@ -174,13 +187,9 @@ class SalesforceXMLRPCTestTransport(Transport):
                         'No vouchers matching product id %s' % lp_project_id)
         return [num_updated]
 
-    def grantVoucher(self,
-                     admin_openid,
-                     approver_openid,
-                     recipient_openid,
-                     recipient_name,
-                     recipient_preferred_email):
-        voucher = self._createVoucher(recipient_openid)
+    def grantVoucher(self, admin_openid, approver_openid, recipient_openid,
+                     recipient_name, recipient_preferred_email, term_months):
+        voucher = self._createVoucher(recipient_openid, term_months)
         return voucher.voucher_id
 
     def request(self, host, handler, request, verbose=None):

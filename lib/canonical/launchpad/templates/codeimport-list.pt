@@ -50,7 +50,7 @@
 
           <td>
             <a href="code-import"
-               tal:attributes="href codeimport/fmt:url">
+               tal:attributes="href codeimport/branch/fmt:url">
               <span tal:replace="codeimport/product/name">
                 product-name
               </span>/<span tal:replace="codeimport/branch/name">
