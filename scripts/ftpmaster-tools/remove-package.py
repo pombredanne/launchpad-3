@@ -258,9 +258,8 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
-
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     if not Options.distro:
         Options.distro = "ubuntu"
