@@ -57,6 +57,15 @@ class NoBoundRepresentationError(Exception):
     parameter name that makes sense.
     """
 
+
+class UnsupportedMediaTypeError(Exception):
+    """A media type was given that's not supported in this context.
+
+    A resource can only be bound to media types it has representations
+    of.
+    """
+
+
 class WADLBase:
     """A base class for objects that contain WADL-derived information."""
 
@@ -154,9 +163,9 @@ class Resource(WADLResolvableDefinition):
             if media_type == 'application/json':
                 self.representation = simplejson.loads(representation)
             else:
-                raise ValueError("I don't know how to handle a "
-                                 "representation of media type "
-                                 "%s" % media_type)
+                raise UnsupportedMediaTypeError(
+                    "This resource doesn't define a representation for "
+                    "media type %s" % media_type)
         self.media_type = media_type
         if representation is not None:
             self.representation_definition = (
@@ -200,8 +209,8 @@ class Resource(WADLResolvableDefinition):
             representation_tag = representation.resolve_definition().tag
             if representation_tag.attrib.get('mediaType') == media_type:
                 return representation
-        raise ValueError("No definition for representation with "
-                         "media type %s" % media_type)
+        raise UnsupportedMediaTypeError("No definition for representation "
+                                        "with media type %s." % media_type)
 
     def get_method(self, http_method, fixed_params=None):
         """Look up one of this resource's methods by HTTP method.
@@ -215,7 +224,7 @@ class Resource(WADLResolvableDefinition):
                              method.
 
         :returns: A MethodDefinition, or None if there's no definition
-        that fits the given constraints.
+                  that fits the given constraints.
         """
         definition = self.resolve_definition().tag
         for method_tag in definition.findall(wadl_xpath('method')):
@@ -224,19 +233,16 @@ class Resource(WADLResolvableDefinition):
                 if fixed_params is not None:
                     request = method_tag.find(wadl_xpath('request'))
                     if request is None:
-                        # This method that takes no special request
+                        # This method takes no special request
                         # parameters. Skip to the next method.
                         continue
-                    matched_params = {}
-                    for name, fixed_value in fixed_params.items():
-                        params = request.findall(wadl_xpath('param'))
-                        for param in params:
-                            if (param.attrib.get('name') == name
-                                and param.attrib.get('fixed')
-                                == fixed_value):
-                                matched_params[name] = param
-                    if len(matched_params) != len(fixed_params):
-                        # Skip to the next method
+
+                    required_params = set(fixed_params.items())
+                    method_params = set(
+                        (param.attrib.get('name'),
+                         param.attrib.get('fixed'))
+                        for param in request.findall(wadl_xpath('param')))
+                    if not required_params.issubset(method_params):
                         continue
                 return Method(self.application, method_tag)
         return None
@@ -286,6 +292,7 @@ class Method(WADLBase):
 
     @property
     def id(self):
+        """The XML ID of this method definition."""
         return self.tag.attrib.get('id')
 
 
@@ -326,6 +333,7 @@ class RepresentationDefinition(WADLResolvableDefinition):
 
     @property
     def media_type(self):
+        """The media type of the representation described here."""
         return self.resolve_definition().tag.attrib['mediaType']
 
     def _definition_factory(self, id):
@@ -361,8 +369,8 @@ class Parameter(WADLBase):
     def get_value(self):
         """The value of this parameter in the bound representation.
 
-        Raises an error if this parameter's resource is not bound to a
-        representation.
+        :raise NoBoundRepresentationError: If this parameter's
+        resource is not bound to a representation.
         """
         if self.resource_definition.representation is None:
             raise NoBoundRepresentationError(
@@ -382,7 +390,7 @@ class Parameter(WADLBase):
             return self.resource_definition.representation[
                 self.tag.attrib['name']]
 
-        raise NotImplementedError("Don't know how to do path traversal for "
+        raise NotImplementedError("Path traversal not implemented for "
                                   "a representation of media type %s."
                                   % self.resource_definition.media_type)
 

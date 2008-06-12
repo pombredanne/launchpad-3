@@ -42,11 +42,14 @@ The service root resource supports GET.
    >>> get_method.id
    'service-root-get'
 
-The WADL description of a resource knows that representations are
+The WADL description of a resource knows which representations are
 available for that resource. In this case, the server root resource
 has a a JSON representation, and it defines parameters like
 'PersonSetCollectionAdapter_collection_link', a link to a list of
-people in Launchpad.
+people in Launchpad. We should be able to use the get_param() method
+to get the WADL definition of the
+'PersonSetCollectionAdapter_collection_link' parameter and find out
+more about it--for instance, is it a link to another resource?
 
    >>> link_name = 'PersonSetCollectionAdapter_collection_link'
    >>> link_param = service_root.get_param(link_name)
@@ -70,7 +73,7 @@ It has to be of a media type understood by the WADL description.
    >>> service_root.bind('<html>Some HTML</html>', 'text/html')
    Traceback (most recent call last):
    ...
-   ValueError: I don't know how to handle a representation of media type text/html
+   UnsupportedMediaTypeError: This resource doesn't define a representation for media type text/html
 
 We can see what representations there might be for the service root
 resource. There's a JSON representation and a WADL representation.
@@ -79,22 +82,25 @@ resource. There's a JSON representation and a WADL representation.
    >>> [representation.media_type for representation in iter]
    ['application/json', 'application/vd.sun.wadl+xml']
 
-We already have a WADL representation of the service root resource, so
-let's try binding it to a JSON representation.
+Here's the JSON representation.
 
    >>> json_representation = service_root.get_representation_definition(
    ...     'application/json')
    >>> json_representation.media_type
    'application/json'
 
-Here, we use test JSON data from a file to simulate the result of a
-GET request to the service root. The return value is a new Resource
-object that's "bound" to that JSON test data.
+We already have a WADL representation of the service root resource, so
+let's try binding it to that JSON representation. We use test JSON
+data from a file to simulate the result of a GET request to the
+service root.
 
    >>> def bind_to_testdata(resource, filename):
    ...     data = pkg_resources.resource_string(
    ...         'wadllib.docs.testdata', filename + '.json')
    ...     return resource.bind(data, 'application/json')
+
+The return value is a new Resource object that's "bound" to that JSON
+test data.
 
    >>> bound_service_root = bind_to_testdata(service_root, 'root')
 
@@ -118,10 +124,18 @@ This new resource is a collection of people.
    'PersonSetCollectionAdapter'
 
 The "collection of people" resource supports a standard GET request as
-well as a special GET and an overloaded POST.
+well as a special GET and an overloaded POST. The get_method() method
+is used to retrieve WADL definitions of the possible HTTP requests you
+might make. Here's how to get the WADL definition of the standard GET
+request.
 
    >>> get_method = personset_resource.get_method('get')
    >>> get_method.id
+   'PersonSetCollectionAdapter-get'
+
+The method name passed into get_method() is treated case-insensitively.
+
+   >>> personset_resource.get_method('GET').id
    'PersonSetCollectionAdapter-get'
 
 To invoke the special GET request, the client sets the 'ws.op' query
