@@ -36,7 +36,7 @@ except ImportError:
         import cElementTree as ET
     except ImportError:
         import elementtree.ElementTree as ET
-from _utils import uri
+from wadllib._utils import uri
 
 def wadl_tag(tag_name):
     """Scope a tag name with the WADL namespace."""
@@ -192,20 +192,10 @@ class Resource(WADLResolvableDefinition):
                         representation, media_type,
                         self._definition)
 
-    def get_representation_definition_iter(self):
-        """Get an iterator over the representation definitions.
-
-        These are the representations returned in response to a
-        standard GET request.
-        """
-        method_tag = self.get_method('GET')
-        response = method_tag.response
-        for representation in response.get_representation_definition_iter():
-            yield representation
-
     def get_representation_definition(self, media_type):
         """Get a description of one of this resource's representations."""
-        for representation in self.get_representation_definition_iter():
+        default_get_response = self.get_method('GET').response
+        for representation in default_get_response:
             representation_tag = representation.resolve_definition().tag
             if representation_tag.attrib.get('mediaType') == media_type:
                 return representation
@@ -312,7 +302,7 @@ class ResponseDefinition(WADLBase):
         self.application = application
         self.tag = response_tag
 
-    def get_representation_definition_iter(self):
+    def __iter__(self):
         """Get an iterator over the representation definitions.
 
         These are the representations returned in response to an

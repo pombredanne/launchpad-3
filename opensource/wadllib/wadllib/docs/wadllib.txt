@@ -75,14 +75,8 @@ It has to be of a media type understood by the WADL description.
    ...
    UnsupportedMediaTypeError: This resource doesn't define a representation for media type text/html
 
-We can see what representations there might be for the service root
-resource. There's a JSON representation and a WADL representation.
-
-   >>> iter = service_root.get_representation_definition_iter()
-   >>> [representation.media_type for representation in iter]
-   ['application/json', 'application/vd.sun.wadl+xml']
-
-Here's the JSON representation.
+The WADL description of the service root resource has a JSON
+representation. Here it is.
 
    >>> json_representation = service_root.get_representation_definition(
    ...     'application/json')
