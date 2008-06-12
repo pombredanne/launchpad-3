@@ -13,7 +13,6 @@ __all__ = [
     'DistributionView',
     'DistributionPPASearchView',
     'DistributionAllPackagesView',
-    'DistributionBrandingView',
     'DistributionEditView',
     'DistributionSetView',
     'DistributionAddView',
@@ -46,7 +45,6 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, IDistribution, ILaunchBag, ILaunchpadCelebrities,
     IPublishedPackageSet, MirrorContent, MirrorSpeed, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -58,7 +56,7 @@ from canonical.launchpad.components.request_country import (
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu,
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
     StandardLaunchpadFacets, stepthrough, stepto)
@@ -67,6 +65,7 @@ from canonical.launchpad.browser.seriesrelease import (
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets.image import ImageChangeWidget
 
 
 class DistributionNavigation(
@@ -538,12 +537,6 @@ class DistributionAllPackagesView(LaunchpadView):
         self.batchnav = BatchNavigator(results, self.request)
 
 
-class DistributionBrandingView(BrandingChangeView):
-
-    schema = IDistribution
-    field_names = ['icon', 'logo', 'mugshot']
-
-
 class DistributionSetView:
 
     def __init__(self, context, request):
@@ -584,9 +577,14 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'bug_reporting_guidelines', 'official_malone',
-                   'enable_bug_expiration', 'official_blueprints',
-                   'official_rosetta', 'official_answers']
+                   'bug_reporting_guidelines', 'icon', 'logo', 'mugshot',
+                   'official_malone', 'enable_bug_expiration',
+                   'official_blueprints', 'official_rosetta',
+                   'official_answers']
+
+    custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
