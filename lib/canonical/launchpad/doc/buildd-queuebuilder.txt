@@ -231,9 +231,30 @@ distroseries (see bug 181328).
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
     >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from canonical.database.sqlbase import cursor
+
+Show the number of builds for the corresponding archive in the
+following order: total, pending, succeeded, building, failed.
+
+    >>> q = "SELECT total_count, pending_count, succeeded_count, " \
+    ...     "building_count, failed_count FROM archive WHERE id = %s" \
+    ...     % pub_failed.archive.id
+    >>> cur = cursor()
+    >>> cur.execute(q)
+    >>> print cur.fetchall()
+    [(5, 5, 0, 0, 0)]
+
+After the failed build is created the total and the failed number of
+builds will go up by one respectively.
+
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
+    >>> commit()
+    >>> cur = cursor()
+    >>> cur.execute(q)
+    >>> print cur.fetchall()
+    [(6, 5, 0, 0, 1)]
 
 In contrast with the previous case, if we publish the same source in
 warty and hoary, and attach a successfully built build record in the
@@ -251,6 +272,17 @@ build in the hoary context.
     >>> ok_build = pub_success.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FULLYBUILT)
+
+After the creation of the FULLYBUILT build the total and succeeded
+build counters will be incremented by one respectively.
+
+    >>> q = "SELECT total_count, pending_count, succeeded_count, " \
+    ...     "building_count, failed_count FROM archive WHERE id = %s" \
+    ...     % pub_success.archive.id
+    >>> cur = cursor()
+    >>> cur.execute(q)
+    >>> print cur.fetchall()
+    [(7, 5, 1, 0, 1)]
 
 If a source is published in Celso's PPA, a build will be created
 for it respecting only 'architecturehintlist' and PPA-supported
