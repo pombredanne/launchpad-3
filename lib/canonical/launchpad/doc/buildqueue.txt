@@ -41,10 +41,10 @@ The static timestamps, representing when the record was initialised
 instances:
 
     >>> bq.created
-    datetime.datetime(...)
+    datetime.datetime(2005, 6, 15, 9, 14, 12, 820778, tzinfo=<UTC>)
 
     >>> bq.buildstart
-    datetime.datetime(...)
+    datetime.datetime(2005, 6, 15, 9, 20, 12, 820778, tzinfo=<UTC>)
 
 Check Builder foreign key, which indicated which builder 'is processing'
 the job in question:

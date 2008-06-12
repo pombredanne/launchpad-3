@@ -3,14 +3,15 @@
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
 
-    A distribution of GNU/Linux comprises a set of packages, an installer,
-    possibly a live-CD, some amount of metadata associated with the arrangement
-    of those elements and also a lot of information on managing it.
+    A distribution of GNU/Linux comprises a set of packages, an
+    installer, possibly a live-CD, some amount of metadata associated with
+    the arrangement of those elements and also a lot of information on
+    managing it.
 
-In Launchpad, one distribution is mapped to one row in the Distribution table.
-To retrieve a distribution, use the IDistributionSet utility. If you've already
-used IPersonSet to retrieve a Person, or IBugTaskSet to retrieve a task, this
-syntax should look familiar.
+In Launchpad, one distribution is mapped to one row in the Distribution
+table.  To retrieve a distribution, use the IDistributionSet utility. If
+you've already used IPersonSet to retrieve a Person, or IBugTaskSet to
+retrieve a task, this syntax should look familiar.
 
 The IDistributionSet utility is accessed in the usual fashion:
 
@@ -159,7 +160,6 @@ Even if we add a series to Gentoo, no packages have ever been published
 in it, and therefore guessPackageNames will still fail:
 
     >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> distroseriesset = getUtility(IDistroSeriesSet)
     >>> gentoo_two = distroseriesset.new(gentoo, 'gentoo-two', 'Gentoo Two',
     ...                                   'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
@@ -254,10 +254,10 @@ and even on substrings:
 === Finding distroseriess and pockets from distribution names ===
 
 A distribution knows what distroseriess it has. Those distroseriess have
-pockets which have suffixes used by the archive publisher. Because we sometimes
-need to talk about distroseriess such as ubuntu/hoary-security we need some
-way to decompose that into the distroseries and the pocket. Distribution
-can do that for us.
+pockets which have suffixes used by the archive publisher. Because we
+sometimes need to talk about distroseriess such as ubuntu/hoary-security
+we need some way to decompose that into the distroseries and the pocket.
+Distribution can do that for us.
 
 If we ask for a totally unknown distroseries, we raise NotFoundError
     >>> ubuntu.getDistroSeriesAndPocket('unknown')
@@ -487,12 +487,15 @@ We can get only valid specs (those that are not obsolete or superseded):
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
+ ...     # Do this here, otherwise, the change will be flush before
+ ...     # updateLifecycleStatus() acts and an IntegrityError will be
+ ...     # raised.
+ ...     owner = spec.owner
  ...     if spec.name in ['cluster-installation', 'revu']:
  ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
  ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
- ...     shim = spec.updateLifecycleStatus(spec.owner)
- >>> flush_database_updates()
+ ...     shim = spec.updateLifecycleStatus(owner)
  >>> for spec in kubuntu.valid_specifications:
  ...     print spec.name
  kde-desktopfile-langpacks
@@ -515,13 +518,13 @@ They're ordered by dateexpected.
 
     >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
     ...  for milestone in debian.milestones]
-    [(u'3.1', '2056-05-16'), (u'3.1-rc1', '2056-02-16'), (u'woody-rc1', '2028-10-01')]
+    [(u'3.1', '2056-05-16'), (u'3.1-rc1', '2056-02-16'),
+     (u'woody-rc1', '2028-10-01')]
 
 Only milestones which have visible=True are returned by the .milestones
 property.
 
     >>> debian_milestone.visible = False
-    >>> flush_database_updates()
     >>> [milestone.name for milestone in debian.milestones]
     [u'3.1', u'3.1-rc1']
 

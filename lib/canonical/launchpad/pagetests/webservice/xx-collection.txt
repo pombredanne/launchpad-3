@@ -133,6 +133,8 @@ The elements of a collection can be looked up by unique identifier:
   expired_members_collection_link: http://.../~admins/expired_members
   hide_email_addresses: False
   homepage_content: None
+  indirect_participations_collection_link:
+      http://.../~admins/indirect_participations
   invited_members_collection_link: http://.../~admins/invited_members
   irc_nicknames_collection_link: http://.../~admins/irc_nicknames
   is_team: True
@@ -141,13 +143,15 @@ The elements of a collection can be looked up by unique identifier:
   karma: 0
   languages_collection_link: http://.../~admins/languages
   mailing_list_auto_subscribe_policy: Ask me when I join a team
-  member_memberships_collection_link: http://.../~admins/member_memberships
   members_collection_link: http://.../~admins/members
+  members_details_collection_link: http://.../~admins/members_details
+  memberships_details_collection_link: http://.../~admins/memberships_details
   mugshot_link: http://.../~admins/mugshot
   name: admins
   open_membership_invitations_collection_link:
       http://.../~admins/open_membership_invitations
   participants_collection_link: http://.../~admins/participants
+  participations_collection_link: http://.../~admins/participations
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
@@ -156,12 +160,7 @@ The elements of a collection can be looked up by unique identifier:
   subscription_policy: Moderated Team
   super_teams_collection_link: http://.../~admins/super_teams
   team_description: Launchpad Administrators
-  team_memberships_collection_link: http://.../~admins/team_memberships
   team_owner_link: http://.../~sabdfl
-  teams_indirectly_participated_in_collection_link:
-      http://.../~admins/teams_indirectly_participated_in
-  teams_participated_in_collection_link:
-      http://.../~admins/teams_participated_in
   timezone: None
   visibility: Public
   wiki_names_collection_link: http://.../~admins/wiki_names
