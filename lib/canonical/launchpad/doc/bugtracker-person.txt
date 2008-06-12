@@ -87,9 +87,8 @@ bugtracker since we have an email address for 'New Person'. That means
 that we can always retrieve them reliably when we encounter them in a
 remote bugtracker.
 
-    >>> bugtracker_person = getUtility(
-    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
-    ...         'New Person', bugtracker)
+    >>> bugtracker_person = bugtrackerperson_set.getByNameAndBugTracker(
+    ...     'New Person', bugtracker)
 
     >>> print bugtracker_person
     None
@@ -121,9 +120,8 @@ A BugTrackerPerson record will have been created to map
 'no-email-person' on our example bugtracker to
 'no-email-person-bugzilla-checkwatches-1-1' in Launchpad.
 
-    >>> bugtracker_person = getUtility(
-    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
-    ...         'no-email-person', bugtracker)
+    >>> bugtracker_person = bugtrackerperson_set.getByNameAndBugTracker(
+    ...     'no-email-person', bugtracker)
 
     >>> bugtracker_person.person == noemail_person
     True
@@ -131,25 +129,32 @@ A BugTrackerPerson record will have been created to map
 ensurePersonForBugTracker() handles situations in which bugtrackers have
 been renamed, too, and avoids name collisions when doing so.
 
-We've already imported a comments for 'noemail' on the bugtracker
-'bugzilla-checkwatches-1'.
+We'll create a person, 'noemail,' on our example bugtracker.
 
-    >>> bugtracker_person = getUtility(
-    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
-    ...         'noemail', bugtracker)
+    >>> new_person = bugtrackerperson_set.ensurePersonForBugTracker(
+    ...     bugtracker=bugtracker, display_name='noemail',
+    ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
+    ...     creation_comment='whilst testing.')
 
-    >>> print bugtracker_person.person.name
+    >>> print new_person.name
     noemail-bugzilla-checkwatches-1-1
+
+    >>> bugtracker_person = bugtrackerperson_set.getByNameAndBugTracker(
+    ...     'noemail', bugtracker)
 
     >>> print bugtracker_person.bugtracker.name
     bugzilla-checkwatches-1
 
+    >>> from canonical.database.sqlbase import commit
     >>> commit()
 
 If we rename the BugTracker and then create another with the same name,
-importing a comment from 'noemail' on that BugTracker should produce a
-new Person rather than re-using the existing one.
+calling ensurePersonForBugTracker() for 'noemail' on that BugTracker
+should produce a new Person rather than re-using the existing one.
 
+    >>> from canonical.launchpad.interfaces.bug import CreateBugParams
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
     >>> bugtracker.name = 'bugzilla-checkwatches-renamed'
@@ -159,18 +164,9 @@ new Person rather than re-using the existing one.
     >>> print other_bug_tracker.name
     bugzilla-checkwatches-1
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> other_bug = firefox.createBug(
-    ...     CreateBugParams(sample_person, "Yet another test bug",
-    ...         "Yet another test description.",
-    ...         subscribe_reporter=False))
-
-    >>> other_bug_watch = bug.addWatch(
-    ...     other_bug_tracker, '123456', sample_person)
-
     >>> commit()
+
+    >>> from canonical.config import config
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 A new Person has been created for 'noemail' on other_bug_tracker, even
@@ -181,9 +177,9 @@ imported previously.
     ...     other_bug_tracker, 'noemail', None,
     ...     PersonCreationRationale.BUGIMPORT, 'while testing, again')
 
-    >>> original_bugtracker_person = getUtility(
-    ...     IBugTrackerPersonSet).getByNameAndBugTracker(
-    ...         'noemail', bugtracker)
+    >>> original_bugtracker_person = (
+    ...     bugtrackerperson_set.getByNameAndBugTracker(
+    ...         'noemail', bugtracker))
 
     >>> original_bugtracker_person.person == new_person
     False
