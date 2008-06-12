@@ -38,8 +38,8 @@ result in an error.
     ...     foo = EnumCol(enum=PlainFooType, default=DEFAULT)
     Traceback (most recent call last):
     ...
-    TypeError: enum must be a DBEnumeratedType:
-    <class 'canonical.lazr.enum.MetaEnum'>
+    TypeError: <EnumeratedType 'PlainFooType'> must be a
+      DBEnumeratedType: <class 'canonical.lazr.enum.MetaEnum'>
 
     >>> from canonical.lazr import DBEnumeratedType, DBItem
     >>> class FooType(DBEnumeratedType):
@@ -76,7 +76,7 @@ You cannot use integers or strings as EnumCol values:
     >>> t.foo = 2
     Traceback (most recent call last):
     ...
-    TypeError: Need to set an EnumeratedType Enum column to an Item, not an int
+    TypeError: Not a DBItem: <type 'int'>
 
     >>> t.foo = "TWO"
     Traceback (most recent call last):
