@@ -98,8 +98,8 @@ and Answers.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_navigation(anon_browser.contents)
-    Location: Ubuntu > Hoary > ?alsa-utils? package
-    Structural title: Ubuntu Hoary source package:
+    Location: Ubuntu > 5.04 > ?alsa-utils? package
+    Structural title: Ubuntu 5.04 source package:
     alsa-utils
     Tabs:
     * Overview (Not active)
@@ -108,13 +108,15 @@ and Answers.
     * Blueprints (Not active)
     * Translations (http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
     * Answers (http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
-    Main heading: ?alsa-utils? source package in Ubuntu Hoary
+    Main heading: alsa-utils in Ubuntu Hoary
+
+(XXX: That should eventually be "?alsa-utils? source package in Ubuntu Hoary".)
 
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_navigation(anon_browser.contents)
-    Location: Ubuntu > Hoary > ?alsa-utils? package
-    Structural title: Ubuntu Hoary source package:
+    Location: Ubuntu > 5.04 > ?alsa-utils? package
+    Structural title: Ubuntu 5.04 source package:
     alsa-utils
     Tabs:
     * Overview (http://launchpad.dev/ubuntu/hoary/+source/alsa-utils)
