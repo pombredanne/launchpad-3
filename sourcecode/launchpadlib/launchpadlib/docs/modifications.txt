@@ -121,6 +121,14 @@ Salgado's person is available through the new name.
     >>> launchpad.people.get('guilherme').display_name
     u'Guilherme Salgado'
 
+Under the covers though, a refresh of the original object has been retrieved
+from Launchpad, so it's save to continue using, and changing it.
+
+    >>> salgado.display_name = u'Salgado!'
+    >>> salgado.save()
+    >>> launchpad.people.get('guilherme').display_name
+    u'Salgado!'
+
 It's just as easy to move Salgado back to the old name.
 
     >>> salgado.name = u'salgado'
@@ -128,7 +136,7 @@ It's just as easy to move Salgado back to the old name.
     >>> print launchpad.people.get('guilherme')
     None
     >>> launchpad.people.get('salgado').display_name
-    u'Guilherme Salgado'
+    u'Salgado!'
 
 
 == Read-only attributes ==
