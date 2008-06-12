@@ -41,7 +41,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -69,7 +69,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -79,7 +79,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=UTC_NOW)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(

@@ -38,7 +38,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -85,17 +85,17 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
         foreignKey="Person",
-        validator=public_person_validator, dbName="owner", notNull=True)
+        storm_validator=validate_public_person, dbName="owner", notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -163,7 +163,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
 
-    license_info = StringCol(dbName='license_info', default=None)
+    def _validate_license_info(self, attr, value):
+        if not self._SO_creating and value != self.license_info:
+            # Clear the license_reviewed flag if the license changes.
+            self.license_reviewed = False
+        return value
+
+    license_info = StringCol(dbName='license_info', default=None,
+                             storm_validator=_validate_license_info)
     license_approved = BoolCol(dbName='license_approved',
                                notNull=True, default=False)
 
@@ -328,12 +335,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             ProductLicense(product=self, license=license)
 
     licenses = property(_getLicenses, _setLicenses)
-
-    def _set_license_info(self, value):
-        if not self._SO_creating and value != self.license_info:
-            # Clear the license_reviewed flag if the license changes.
-            self.license_reviewed = False
-        self._SO_set_license_info(value)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -744,7 +745,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return ProductSeries.selectOneBy(product=self, name=name)
 
     def newSeries(self, owner, name, summary, branch=None):
-        return ProductSeries(product=self, owner=owner, name=name,
+        # XXX: jamesh 2008-04-11
+        # Set the ID of the new ProductSeries to avoid flush order
+        # loops in ProductSet.createProduct()
+        return ProductSeries(productID=self.id, owner=owner, name=name,
                              summary=summary, user_branch=branch)
 
     def getRelease(self, version):

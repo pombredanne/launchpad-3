@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Announcement(SQLBase):
@@ -38,7 +38,7 @@ class Announcement(SQLBase):
         dbName='date_updated', default=None)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
     project = ForeignKey(dbName='project', foreignKey='Project')
     distribution = ForeignKey(

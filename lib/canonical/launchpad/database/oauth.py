@@ -82,8 +82,9 @@ class OAuthConsumerSet:
         return OAuthConsumer.selectOneBy(key=key)
 
 
-class OAuthToken(SQLBase):
-    """See `IOAuthToken`."""
+class OAuthAccessToken(SQLBase):
+    """See `IOAuthAccessToken`."""
+    implements(IOAuthAccessToken)
 
     consumer = ForeignKey(
         dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
@@ -93,6 +94,9 @@ class OAuthToken(SQLBase):
     date_expires = UtcDateTimeCol(notNull=False, default=None)
     key = StringCol(notNull=True)
     secret = StringCol(notNull=False, default='')
+
+    permission = EnumCol(enum=AccessLevel, notNull=True)
+
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
     project = ForeignKey(
@@ -120,13 +124,6 @@ class OAuthToken(SQLBase):
         else:
             return None
 
-
-class OAuthAccessToken(OAuthToken):
-    """See `IOAuthAccessToken`."""
-    implements(IOAuthAccessToken)
-
-    permission = EnumCol(enum=AccessLevel, notNull=True)
-
     def ensureNonce(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
         timestamp = float(timestamp)
@@ -145,12 +142,48 @@ class OAuthAccessToken(OAuthToken):
                 access_token=self, nonce=nonce, request_timestamp=date)
 
 
-class OAuthRequestToken(OAuthToken):
+class OAuthRequestToken(SQLBase):
     """See `IOAuthRequestToken`."""
     implements(IOAuthRequestToken)
 
+    consumer = ForeignKey(
+        dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=False, default=None)
+    date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
+    date_expires = UtcDateTimeCol(notNull=False, default=None)
+    key = StringCol(notNull=True)
+    secret = StringCol(notNull=False, default='')
+
     permission = EnumCol(enum=OAuthPermission, notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
+
+    product = ForeignKey(
+        dbName='product', foreignKey='Product', notNull=False, default=None)
+    project = ForeignKey(
+        dbName='project', foreignKey='Project', notNull=False, default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution',
+        notNull=False, default=None)
+
+    @property
+    def context(self):
+        """See `IOAuthToken`."""
+        if self.product:
+            return self.product
+        elif self.project:
+            return self.project
+        elif self.distribution:
+            if self.sourcepackagename:
+                return self.distribution.getSourcePackage(
+                    self.sourcepackagename)
+            else:
+                return self.distribution
+        else:
+            return None
 
     def review(self, user, permission, product=None, project=None,
                distribution=None, sourcepackagename=None):

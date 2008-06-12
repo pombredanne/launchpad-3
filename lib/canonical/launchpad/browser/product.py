@@ -56,9 +56,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchListingSort,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranchSet, IBugTracker,
-    ICountry, IDistribution,
+    BranchLifecycleStatusFilter, BranchListingSort,
+    IBranchSet, IBugTracker, ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
     IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
@@ -1404,19 +1403,23 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         # skip subsequent series where the lifecycle status is Merged or
         # Abandoned
         sorted_series = self.sorted_series_list
-        IGNORE_STATUS = (
-            BranchLifecycleStatus.MERGED, BranchLifecycleStatus.ABANDONED)
+        def show_branch(branch):
+            if self.selected_lifecycle_status is None:
+                return True
+            else:
+                return (branch.lifecycle_status in
+                    self.selected_lifecycle_status)
         # The series will always have at least one series, that of the
         # development focus.
         dev_focus_branch = sorted_series[0].series_branch
         result = []
-        if dev_focus_branch is not None:
+        if dev_focus_branch is not None and show_branch(dev_focus_branch):
             result.append(dev_focus_branch)
         for series in sorted_series[1:]:
             branch = series.series_branch
             if (branch is not None and
                 branch not in result and
-                branch.lifecycle_status not in IGNORE_STATUS):
+                show_branch(branch)):
                 result.append(branch)
         return result
 
@@ -1426,7 +1429,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         series_branches = self._getSeriesBranches()
         branch_query = getUtility(IBranchSet).getBranchesForContext(
             context=self.context, visible_by_user=self.user,
-            lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+            lifecycle_statuses=self.selected_lifecycle_status,
             sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch listing to be batched, so only get
         # the batch size - the number of series_branches.
@@ -1506,7 +1509,12 @@ class ProductBranchesView(ProductBranchListingView):
         """
         ProductBranchListingView.initialize(self)
         if self.sort_by == BranchListingSort.DEFAULT:
-            self.request.response.redirect(canonical_url(self.context))
+            redirect_url = canonical_url(self.context)
+            widget = self.widgets['lifecycle']
+            if widget.hasValidInput():
+                redirect_url += (
+                    '?field.lifecycle=' + widget.getInputValue().name)
+            self.request.response.redirect(redirect_url)
 
     @property
     def initial_values(self):
