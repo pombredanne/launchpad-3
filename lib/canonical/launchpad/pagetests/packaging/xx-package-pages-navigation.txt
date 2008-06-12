@@ -132,3 +132,102 @@ Ubuntu Hoary".)
     Main heading: Questions for Ubuntu Hoary alsa-utils
 
 
+== Distribution series source package release ==
+
+A distribution series source package release does not have its own
+Bugs, Translations, or anything else, so it is not part of the
+top-level hierarchy.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/1.0.9a-4ubuntu1')
+    >>> print_navigation(anon_browser.contents)
+    Location: Ubuntu > Hoary > ?alsa-utils? package
+    Structural title: Ubuntu Hoary source package:
+    alsa-utils
+    Tabs:
+    * Overview (http://launchpad.dev/ubuntu/hoary/+source/alsa-utils)
+    * Code (Not active)
+    * Bugs (http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
+    * Blueprints (Not active)
+    * Translations (http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
+    * Answers (http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
+    Main heading: ?alsa-utils? package version 1.0.9a-4ubuntu1 in Ubuntu Hoary
+
+
+== Distribution series architecture ==
+
+Distribution series architectures do not have their own Bugs,
+Translations, or anything else, so they are not part of the top-level
+hierarchy.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
+    >>> print_navigation(anon_browser.contents)
+    Location: Ubuntu > Hoary
+    Structural title: Ubuntu Hoary
+    Tabs:
+    * Overview (http://launchpad.dev/ubuntu/hoary)
+    * Code (Not active)
+    * Bugs (http://bugs.launchpad.dev/ubuntu/hoary)
+    * Blueprints (Not active)
+    * Translations (http://translations.launchpad.dev/ubuntu/hoary)
+    * Answers (http://answers.launchpad.dev/ubuntu/hoary)
+    Main heading: Ubuntu Hoary for i386
+
+
+== Distribution series architecture binary package ==
+
+Distribution series architecture binary packages are not part of the
+top-level hierarchy for the same reason as the architectures themselves.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386/pmount')
+    >>> print_navigation(anon_browser.contents)
+    Location: Ubuntu > Hoary
+    Structural title: Ubuntu Hoary
+    Tabs:
+    * Overview (http://launchpad.dev/ubuntu/hoary)
+    * Code (Not active)
+    * Bugs (http://bugs.launchpad.dev/ubuntu/hoary)
+    * Blueprints (Not active)
+    * Translations (http://translations.launchpad.dev/ubuntu/hoary)
+    * Answers (http://answers.launchpad.dev/ubuntu/hoary)
+    Main heading: "pmount" package in Ubuntu Hoary for i386
+
+But they do link back to the distribution series architecture.
+
+    >>> anon_browser.getLink('Ubuntu Hoary for i386').click()
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu/hoary/i386
+
+
+== Distribution series architecture binary package release ==
+
+Distribution series architecture binary package releases are not part
+of the top-level hierarchy for the same reason as the architectures
+themselves.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
+    >>> print_navigation(anon_browser.contents)
+    Location: Ubuntu > Hoary
+    Structural title: Ubuntu Hoary
+    Tabs:
+    * Overview (http://launchpad.dev/ubuntu/hoary)
+    * Code (Not active)
+    * Bugs (http://bugs.launchpad.dev/ubuntu/hoary)
+    * Blueprints (Not active)
+    * Translations (http://translations.launchpad.dev/ubuntu/hoary)
+    * Answers (http://answers.launchpad.dev/ubuntu/hoary)
+    Main heading: "pmount" package version 0.1-1 in Ubuntu Hoary for i386
+
+But they do link back to the pages for both the distribution series
+architecture and the distribution series architecture binary package.
+
+    >>> anon_browser.getLink('Ubuntu Hoary for i386').click()
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu/hoary/i386
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
+    >>> anon_browser.getLink('"pmount" package').click()
+    >>> print anon_browser.url
+    http://launchpad.dev/ubuntu/hoary/i386
