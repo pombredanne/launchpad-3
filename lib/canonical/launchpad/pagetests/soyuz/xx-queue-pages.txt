@@ -209,9 +209,18 @@ the builds can be created.
 Upload a new "bar" source so we can accept it later.  We need to login to
 upload.
 
-  >>> from canonical.launchpad.scripts.ftests.test_queue import (
-  ...     upload_bar_source)
-  >>> bar_src = upload_bar_source()
+  >>> from canonical.archiveuploader.tests import (
+  ...     datadir, getPolicy, mock_logger_quiet)
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='breezy-autotest')
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+  >>> bar_src.do_accept()
+  True
   >>> bar_queue_id = str(bar_src.queue_root.id)
 
   >>> import transaction

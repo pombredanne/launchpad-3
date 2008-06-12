@@ -7,7 +7,8 @@ Cut off access, slaughter connections and burn the database to the ground.
 
 import sys
 import time
-import psycopg
+import psycopg2
+import psycopg2.extensions
 from signal import SIGTERM, SIGQUIT, SIGKILL, SIGINT
 from optparse import OptionParser
 
@@ -15,9 +16,9 @@ from optparse import OptionParser
 def connect(dbname='template1'):
     """Connect to the database, returning the DB-API connection."""
     if options.user is not None:
-        return psycopg.connect("dbname=%s user=%s" % (dbname, options.user))
+        return psycopg2.connect("dbname=%s user=%s" % (dbname, options.user))
     else:
-        return psycopg.connect("dbname=%s" % dbname)
+        return psycopg2.connect("dbname=%s" % dbname)
 
 
 def send_signal(database, signal):
@@ -31,7 +32,7 @@ def send_signal(database, signal):
         cur.execute('CREATE LANGUAGE "plpythonu"')
 
     # Create a stored procedure to kill a backend process.
-    qdatabase = str(psycopg.QuotedString(database))
+    qdatabase = str(psycopg2.extensions.QuotedString(database))
     cur.execute("""
         CREATE OR REPLACE FUNCTION _pgmassacre_killall(integer)
         RETURNS Boolean AS $$

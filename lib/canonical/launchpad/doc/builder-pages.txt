@@ -135,8 +135,8 @@ where builder 'Frog' is building a job from Celso's private PPA.
     ...    IBuildSet, IBuilderSet, IPersonSet)
 
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
-    >>> cprov.archive.private = True
     >>> cprov.archive.buildd_secret = "secret"
+    >>> cprov.archive.private = True
 
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True

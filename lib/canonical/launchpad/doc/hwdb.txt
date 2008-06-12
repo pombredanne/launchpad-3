@@ -46,6 +46,7 @@ together with the following data:
 The system fingerprint is stored in a separate table, HWSystemFingerprint.
 IHWSystemFingerPrintSet.createFingerprint creates a new row in this table.
 
+    >>> from storm.store import Store
     >>> from canonical.launchpad.interfaces import IHWSystemFingerprintSet
     >>> hw_fingerprint_set = getUtility(IHWSystemFingerprintSet)
     >>> fp = hw_fingerprint_set.createFingerprint(u'IBM T41')
@@ -57,11 +58,11 @@ Each fingerprint string in HWSystemFingerprint must be unique.
     >>> import transaction
     >>> transaction.commit()
     >>> fp = hw_fingerprint_set.createFingerprint(u'IBM T41')
+    >>> Store.of(fp).flush()
     Traceback (most recent call last):
     ...
-    RetryPsycopgIntegrityError: ERROR:  ... violates unique constraint ...
-
-    INSERT INTO HWSystemFingerprint (id, fingerprint) VALUES (2, u'IBM T41')
+    IntegrityError: ... violates unique constraint "hwsystemfingerprint...
+    <BLANKLINE>
 
     >>> transaction.abort()
 
