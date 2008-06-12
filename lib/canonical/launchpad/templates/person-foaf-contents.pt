@@ -2,6 +2,7 @@
         xmlns:foaf="http://xmlns.com/foaf/0.1/"
         xmlns:tal="http://xml.zope.org/namespaces/tal"
         xmlns:metal="http://xml.zope.org/namespaces/metal"
+        xmlns:lp="https://launchpad.net/rdf/launchpad#"
         xmlns:wot="http://xmlns.com/wot/0.1/">
   <tal:is-person condition="not:context/isTeam" define="person context">
     <metal:display-person define-macro="display_person">
@@ -16,7 +17,6 @@
             tal:condition="person/preferredemail"
             tal:content="person/preferredemail/rdf_sha1"
             >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33</foaf:mbox_sha1sum>
-
         <wot:hasKey tal:repeat="gpgkey person/gpgkeys">
           <wot:PubKey>
             <wot:hex_id tal:content="gpgkey/keyid">91CFA34D</wot:hex_id>
@@ -26,6 +26,9 @@
                 tal:attributes="rdf:resource gpgkey/keyserverURL" />
           </wot:PubKey>
         </wot:hasKey>
+        <tal:sshkeys repeat="sshkey person/sshkeys">
+          <lp:sshPubKey tal:content="sshkey/keytext"></lp:sshPubKey>
+        </tal:sshkeys>
       </foaf:Person>
     </metal:display-person>
   </tal:is-person>

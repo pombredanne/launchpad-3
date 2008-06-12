@@ -15,7 +15,7 @@ from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    EmailAddressStatus, IBranchMergeProposalGetter)
+    IBranchMergeProposalGetter)
 from canonical.launchpad.testing import (
      LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
@@ -44,8 +44,7 @@ class TestBranchMergeProposalTransitions(TestCase):
         TestCase.setUp(self)
         login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
-        owner = self.factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        owner = self.factory.makePerson()
         self.target_branch = self.factory.makeBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
 
@@ -207,8 +206,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         TestCase.setUp(self)
         login(ANONYMOUS)
         factory = LaunchpadObjectFactory()
-        owner = factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        owner = factory.makePerson()
         self.target_branch = factory.makeBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
         self.proposals = [
@@ -377,22 +375,30 @@ class TestMergeProposalNotification(TestCaseWithFactory):
     def test_getNotificationRecipients(self):
         """Ensure that recipients can be added/removed with subscribe"""
         bmp = self.factory.makeBranchMergeProposal()
-        self.assertEqual({},
-            bmp.getNotificationRecipients(
-            CodeReviewNotificationLevel.STATUS))
+        # Both of the branch owners are now subscribed to their own
+        # branches with full code review notification level set.
+        source_owner = bmp.source_branch.owner
+        target_owner = bmp.target_branch.owner
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        subscriber_set = set([source_owner, target_owner])
+        self.assertEqual(subscriber_set, set(recipients.keys()))
         source_subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        self.assertEqual([source_subscriber], recipients.keys())
+        subscriber_set.add(source_subscriber)
+        self.assertEqual(subscriber_set, set(recipients.keys()))
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
+        # By specifying no email, they will no longer get email.
+        subscriber_set.remove(source_subscriber)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        self.assertEqual([], recipients.keys())
+        self.assertEqual(subscriber_set, set(recipients.keys()))
 
     def test_getNotificationRecipientLevels(self):
         """Ensure that only recipients with the right level are returned"""
@@ -407,19 +413,29 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             CodeReviewNotificationLevel.STATUS)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        self.assertEqual(set([full_subscriber, status_subscriber]),
-            set(recipients.keys()))
+        # Both of the branch owners are now subscribed to their own
+        # branches with full code review notification level set.
+        source_owner = bmp.source_branch.owner
+        target_owner = bmp.target_branch.owner
+        self.assertEqual(set([full_subscriber, status_subscriber,
+                              source_owner, target_owner]),
+                         set(recipients.keys()))
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        self.assertEqual([full_subscriber], recipients.keys())
+        self.assertEqual(set([full_subscriber, source_owner, target_owner]),
+                         set(recipients.keys()))
 
     def test_getNotificationRecipientsAnyBranch(self):
         dependent_branch = self.factory.makeBranch()
         bmp = self.factory.makeBranchMergeProposal(
             dependent_branch=dependent_branch)
-        self.assertEqual({},
-        bmp.getNotificationRecipients(
-            BranchSubscriptionNotificationLevel.NOEMAIL))
+        recipients = bmp.getNotificationRecipients(
+            CodeReviewNotificationLevel.NOEMAIL)
+        source_owner = bmp.source_branch.owner
+        target_owner = bmp.target_branch.owner
+        dependent_owner = bmp.dependent_branch.owner
+        self.assertEqual(set([source_owner, target_owner, dependent_owner]),
+                         set(recipients.keys()))
         source_subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
@@ -435,7 +451,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertEqual(
-            set([source_subscriber, target_subscriber, dependent_subscriber]),
+            set([source_subscriber, target_subscriber, dependent_subscriber,
+                 source_owner, target_owner, dependent_owner]),
             set(recipients.keys()))
 
 

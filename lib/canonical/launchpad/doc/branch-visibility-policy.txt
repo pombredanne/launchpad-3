@@ -303,7 +303,7 @@ Foo Bar to subscribe the appropriate team at a later date.
     >>> branch.private
     True
     >>> branch.subscribers.count()
-    0
+    1
 
 Steve is a member of the Ubuntu Gnome Team, but not the Launchpad
 Developers team, so branches that are created by Steve are private
@@ -322,8 +322,10 @@ and are subscribed to by the Ubuntu Gnome Team.
     ...     product=evolution, url=None)
     >>> branch.private
     True
-    >>> for subscriber in branch.subscribers:
-    ...     print subscriber.browsername
+    >>> for name in sorted([subscriber.browsername for subscriber
+    ...                     in branch.subscribers]):
+    ...     print name
+    Steve Alexander
     Ubuntu Gnome Team
 
 Since David is a member of VCS Imports but not a member of the other two
@@ -343,7 +345,7 @@ teams that have private branches, David's branch will be public.
     >>> branch.private
     False
     >>> branch.subscribers.count()
-    0
+    1
 
 People that are not members of any of the specified teams get the base
 visibility policy, which for this product is Forbidden.

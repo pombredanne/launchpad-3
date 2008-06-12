@@ -136,7 +136,6 @@ class GoogleSearchService:
     implements(ISearchService)
 
     _default_values = {
-        'as_sitesearch' : 'launchpad.net',
         'client' : 'google-csbe',
         'cx' : None,
         'ie' : 'utf8',
