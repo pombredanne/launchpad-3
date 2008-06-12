@@ -111,11 +111,11 @@ class POFileMenuMixin:
         return Link('+translate', text, icon='languages')
 
     def upload(self):
-        text = 'Import'
+        text = 'Upload a file'
         return Link('+upload', text, icon='edit')
 
     def download(self):
-        text = 'Export'
+        text = 'Download'
         return Link('+export', text, icon='download')
 
 
