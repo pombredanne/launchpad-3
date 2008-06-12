@@ -29,7 +29,7 @@ from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface
-from zope.schema import Int
+from zope.schema import Int, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -37,8 +37,9 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.fields import Summary, Whiteboard
+from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus,
@@ -51,6 +52,7 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
+from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
@@ -386,22 +388,53 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
                           "mark as 'Work in progress'.")
 
 
+class IReviewRequest(Interface):
+
+    whiteboard = Whiteboard(
+        title=_('Whiteboard'), required=False,
+        description=_('Notes about the merge.'))
+
+    review_candidate = PublicPersonChoice(
+        title=_('Reviewer'), required=False,
+        description=_('A person who you want to review this.'),
+        vocabulary='ValidPersonOrTeam')
+
+    review_type = TextLine(
+        title=_('Review type'), required=False)
+
+
 class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     """The view used to request a review of the merge proposal."""
 
-    schema = IBranchMergeProposal
-    field_names = ["whiteboard"]
+    schema = IReviewRequest
     label = "Request review"
+
+    @property
+    def initial_values(self):
+        # Default to reviewing the tip of the source branch.
+        return {'review_candidate': None, 'review_type': None}
+
+    @property
+    def adapters(self):
+        return {IReviewRequest: self.context}
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
     @action('Request review', name='review')
-    @update_and_notify
+    @notify
     def review_action(self, action, data):
         """Set the status to 'Needs review'."""
         self.context.requestReview()
+        candidate = data.pop('review_candidate', None)
+        review_type = data.pop('review_type', None)
+        if candidate is not None:
+            vote_reference = CodeReviewVoteReference(
+                branch_merge_proposal=self.context, reviewer=candidate,
+                registrant=self.user)
+            BMPMailer.forReviewRequest(vote_reference, self.user).sendAll()
+        form.applyChanges(self, self.form_fields, data, self.adapters)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):

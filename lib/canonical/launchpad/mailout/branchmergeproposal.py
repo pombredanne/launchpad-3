@@ -40,6 +40,10 @@ class BMPMailer(BaseMailer):
                             from_address, delta)
         self.merge_proposal = merge_proposal
 
+    @staticmethod
+    def _format_user_address(user):
+        return format_address(user.displayname, user.preferredemail.email)
+
     @classmethod
     def forCreation(klass, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
@@ -52,15 +56,14 @@ class BMPMailer(BaseMailer):
             CodeReviewNotificationLevel.STATUS)
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
-        from_address = format_address(
-            from_user.displayname, from_user.preferredemail.email)
+        from_address = klass._format_user_address(from_user)
         return klass(
             'Merge of %(source_branch)s into %(target_branch)s proposed',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address)
 
-    @staticmethod
-    def forModification(old_merge_proposal, merge_proposal, from_user):
+    @classmethod
+    def forModification(klass, old_merge_proposal, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -71,16 +74,35 @@ class BMPMailer(BaseMailer):
             CodeReviewNotificationLevel.STATUS)
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
-        from_address = format_address(
-            from_user.displayname, from_user.preferredemail.email)
+        from_address = klass._format_user_address(from_user)
         delta = BranchMergeProposalDelta.construct(
                 old_merge_proposal, merge_proposal)
         if delta is None:
             return None
-        return BMPMailer('Proposed merge of %(source_branch)s into'
+        return klass('Proposed merge of %(source_branch)s into'
                          ' %(target_branch)s updated',
                          'branch-merge-proposal-updated.txt', recipients,
                          merge_proposal, from_address, delta)
+
+    @classmethod
+    def forReviewRequest(klass, code_review_vote_reference, from_user):
+        class ReviewSubscription:
+
+            def __init__(self, code_review_vote_reference):
+                self.person = code_review_vote_reference.reviewer
+                merge_proposal = (
+                    code_review_vote_reference.branch_merge_proposal)
+                self.branch = merge_proposal.source_branch
+
+        from_address = klass._format_user_address(from_user)
+        review_subscription = ReviewSubscription(code_review_vote_reference)
+        recipients = {code_review_vote_reference.reviewer:
+            (review_subscription, 'reviewer')}
+        merge_proposal = code_review_vote_reference.branch_merge_proposal
+        return klass(
+            'Request to review proposed merge of %(source_branch)s into '
+            '%(target_branch)s', 'review-requested.txt', recipients,
+            merge_proposal, from_address)
 
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""

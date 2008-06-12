@@ -26,10 +26,8 @@
         Requesting a review will indicate that the changes in
         <tal:source-branch replace="structure context/source_branch/fmt:link"/>
         are ready to be merged into
-        <tal:target-branch replace="structure context/target_branch/fmt:link"/>
-        and that
-        <tal:reviewer replace="structure context/target_branch/code_reviewer/fmt:link"/>
-        should review it.
+        <tal:target-branch replace="structure context/target_branch/fmt:link"
+        />.  You may also request particular people to review it.
       </p>
       <div style="clear: both"></div>
     </div>
