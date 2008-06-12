@@ -782,6 +782,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
+    def isWithin(self, context):
+        """See `ILaunchpadContext`."""
+        return context == self or context == self.project
+
 
 class ProductSet:
     implements(IProductSet)

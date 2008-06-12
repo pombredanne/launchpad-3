@@ -324,3 +324,6 @@ class DistributionSourcePackage(BugTargetBase, LaunchpadContextMixin,
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
 
+    def isWithin(self, context):
+        """See `ILaunchpadContext`."""
+        return context == self or context == self.distribution

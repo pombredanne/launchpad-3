@@ -15,10 +15,4 @@ class LaunchpadContextMixin:
 
     def isWithin(self, context):
         """See `ILaunchpadContext`."""
-        if IProduct.providedBy(self):
-            return context == self or context == self.project
-        elif IDistributionSourcePackage.providedBy(self):
-            return context == self or context == self.distribution
-        else:
-            # This context can't be within any other context.
-            return context == self
+        return context == self

@@ -544,7 +544,8 @@ class ILaunchpadContext(Interface):
     def isWithin(context):
         """Return True if this context is the given one or is within it.
 
-        An IProduct is said to be within an IProject if the product is part of
-        that project.  Similarly, an IDistributionSourcePackage is said to be
-        within an IDistribution if it is part of the distribution.
+        By default a context can only be within itself, but an IProduct is
+        said to be within an IProject if the product is part of that project.
+        Similarly, an IDistributionSourcePackage is said to be within an
+        IDistribution if it is part of the distribution.
         """
