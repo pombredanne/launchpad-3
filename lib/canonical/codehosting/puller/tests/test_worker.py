@@ -20,8 +20,7 @@ from bzrlib import bzrdir
 from bzrlib.branch import BzrBranchFormat7, BranchReferenceFormat
 from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib.tests.repository_implementations.test_repository import (
-            TestCaseWithRepository)
+from bzrlib.tests import repository_implementations
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import local_path_to_url
 from bzrlib.weave import Weave
@@ -35,8 +34,7 @@ from canonical.codehosting.puller.worker import (
     BranchReferenceForbidden, BranchReferenceValueError,
     get_canonical_url_for_branch_name, install_worker_ui_factory,
     PullerWorkerProtocol)
-from canonical.codehosting.tests.helpers import (
-    create_branch_with_one_revision)
+from canonical.codehosting.tests import helpers
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
@@ -184,7 +182,7 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         to_mirror = self.makePullerWorker()
-        tree = create_branch_with_one_revision(to_mirror.source)
+        tree = helpers.create_branch_with_one_revision(to_mirror.source)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
@@ -205,13 +203,19 @@ class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
 
-class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
+class TestPullerWorkerFormats(
+    repository_implementations.TestCaseWithRepository, PullerWorkerMixin,
+    helpers.LoomTestMixin):
 
-    def setUp(self):
-        TestCaseWithRepository.setUp(self)
+    def makePullerWorker(self, *args, **kwargs):
+        worker = PullerWorkerMixin.makePullerWorker(self, *args, **kwargs)
+        def mirror_failed(error):
+            raise
+        worker._mirrorFailed = mirror_failed
+        return worker
 
     def tearDown(self):
-        TestCaseWithRepository.tearDown(self)
+        repository_implementations.TestCaseWithRepository.tearDown(self)
         reset_logging()
 
     def testMirrorKnitAsKnit(self):
@@ -273,8 +277,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
         """Make and return a stacked branch."""
         format = bzrdir.BzrDirMetaFormat1()
         format.set_branch_format(BzrBranchFormat7())
-        format.repository_format = \
-            bzrlib.repofmt.pack_repo.RepositoryFormatPackDevelopment1()
+        format.repository_format = (
+            bzrlib.repofmt.pack_repo.RepositoryFormatPackDevelopment1())
         tree = self._createSourceBranch(
             'base-branch', format, format.repository_format)
         revision_id = tree.branch.last_revision()
@@ -291,6 +295,17 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
             stacked_branch.last_revision(), mirrored_branch.last_revision())
         self.assertEqual(
             stacked_branch.get_stacked_on(), mirrored_branch.get_stacked_on())
+
+    def test_loomBranch(self):
+        # When we mirror a loom branch for the first time....
+        self.repository_format = (
+            bzrlib.repofmt.pack_repo.RepositoryFormatPackDevelopment1())
+        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
+        loom_tree = self.makeLoomBranchAndTree('loom')
+        loom_branch = loom_tree.branch
+        mirrored_branch = self._mirror(loom_branch.base)
+        self.assertEqual(
+            loom_branch.last_revision(), mirrored_branch.last_revision())
 
     def _mirror(self, source_url):
         # Mirror src-branch to dest-branch
