@@ -8,11 +8,15 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'IProductReviewSearch',
     'License',
     ]
 
+import sets
+
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Set, Text, TextLine
+from zope.schema import Bool, Choice, Date, Int, Set, Text, TextLine
+
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -350,9 +354,10 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Whether the project's licensing qualifies for free
         hosting or the project has an up-to-date subscription.""")
 
-    license_approved = Attribute("""
-        Whether a license is manually approved for free hosting
-        after automatic approval fails.""")
+    license_approved = Bool(
+        title=_("License approved"),
+        description=_("""Whether a license is manually approved for free
+                         hosting after automatic approval fails."""))
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):
@@ -508,3 +513,51 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
+
+
+class IProductReviewSearch(Interface):
+    """A search form for products being reviewed."""
+
+    search_text = TextLine(
+      title=_('Search text'),
+      description=_("""Search text in the product's name, displayname, title,
+          summary, and description."""),
+      required=False)
+
+    active = Choice(
+        title=_('Active'), values=[True, False],
+        required=False, default=True)
+
+    license_reviewed = Choice(
+        title=_('License Reviewed'), values=[True, False],
+        required=False, default=False)
+
+    license_info_is_empty = Choice(
+        title=_('Description of additional licenses'),
+        description=_('Either this field or any one of the selected licenses'
+                      ' must match.'),
+        values=['Empty', 'Not Empty'], required=False, default='Not Empty')
+
+    # Zope requires sets.Set() instead of the builtin set().
+    licenses = Set(
+        title=_('Licenses'),
+        value_type=Choice(vocabulary=License),
+        required=False,
+        default=sets.Set(
+            [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+
+    created_after = Date(title=_("Created between"), required=False)
+
+    created_before = Date(title=_("and"), required=False)
+
+    subscription_expires_after = Date(
+        title=_("Subscription expires between"), required=False)
+
+    subscription_expires_before = Date(
+        title=_("and"), required=False)
+
+    subscription_modified_after = Date(
+        title=_("Subscription modified between"), required=False)
+
+    subscription_modified_before = Date(
+        title=_("and"), required=False)

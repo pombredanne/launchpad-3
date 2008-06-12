@@ -178,3 +178,127 @@ hosting; there is no commercial subscription due.
     >>> bzr.license_approved = True
     >>> bzr.qualifies_for_free_hosting, bzr.commercial_subscription_is_due
     (True, False)
+
+= Product License Reviews =
+
+The forReview() method allows searching for products whose license needs to
+be reviewed. You can search by text in the Product table's full text index.
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from datetime import timedelta
+    >>> bzr.licenses = [License.GNU_GPL_V2, License.ECLIPSE]
+    >>> flush_database_updates()
+    >>> for product in product_set.forReview(search_text='gnome'):
+    ...     print product.name
+    evolution
+    gnome-terminal
+    applets
+    gnomebaker
+    python-gnome2-dev
+
+You can search for whether the product is active or not.
+
+    >>> for product in product_set.forReview(active=False):
+    ...     print product.name
+    python-gnome2-dev
+    unassigned
+
+You can search for whether the product is marked reviewed or not.
+
+    >>> for product in product_set.forReview(license_reviewed=True):
+    ...     print product.name
+    alsa-utils
+    python-gnome2-dev
+    unassigned
+
+You can search for products by license. This will match products with
+any one of the licenses listed.
+
+    >>> for product in product_set.forReview(
+    ...     licenses=[License.GNU_GPL_V2, License.BSD]):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     licenses=[License.GNU_GPL_V2, License.MIT]):
+    ...     print product.name
+    bzr
+
+You can search for products whose license_info field is emtpy or not empty.
+This OR the licenses search field must match.
+
+    >>> for product in product_set.forReview(license_info_is_empty=True):
+    ...     print product.name
+    aptoncd
+    arch-mirrors
+    bazaar
+    bzr
+    derby
+    evolution
+    gnome-terminal
+    applets
+    jokosher
+    launchpad
+    firefox
+    thunderbird
+    netapplet
+    redfish
+    landscape
+    tomcat
+    upstart
+    a52dec
+    alsa-utils
+    gnomebaker
+    iso-codes
+    python-gnome2-dev
+    unassigned
+    >>> for product in product_set.forReview(license_info_is_empty=False):
+    ...     print product.name
+    >>> for product in product_set.forReview(license_info_is_empty=False,
+    ...                                      licenses=[License.GNU_GPL_V2]):
+    ...     print product.name
+    bzr
+
+You can search for products based on a date range in which the product
+was created.
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     created_after=bzr.datecreated, created_before=bzr.datecreated):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     created_before=bzr.datecreated-timedelta(seconds=1)):
+    ...     print product.name
+    >>> date_expires = bzr.commercial_subscription.date_expires
+
+You can search for products based on the expiration date of
+its commercial subscription.
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires,
+    ...     subscription_expires_before=date_expires):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires+timedelta(seconds=1)):
+    ...     print product.name
+    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
+
+You can search for products based on the date of that
+its commercial subscription was modified, which only
+happens when a voucher is redeemed.
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_modified_after=date_last_modified,
+    ...     subscription_modified_before=date_last_modified):
+    ...     print product.name
+    bzr
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_modified_after=date_last_modified
+    ...                                 +timedelta(seconds=1)):
+    ...     print product.name
