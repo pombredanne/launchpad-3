@@ -25,7 +25,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -62,10 +62,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
                                default=None)
     user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
@@ -504,17 +504,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
-
-    def getImportDetailsForDisplay(self):
-        assert self.rcstype is not None, (
-            "Only makes sense for series with import details set.")
-        if self.rcstype == RevisionControlSystems.CVS:
-            return '%s %s' % (self.cvsroot, self.cvsmodule)
-        elif self.rcstype == RevisionControlSystems.SVN:
-            return self.svnrepository
-        else:
-            raise AssertionError(
-                'Unknown rcs type: %s'% self.rcstype.title)
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
