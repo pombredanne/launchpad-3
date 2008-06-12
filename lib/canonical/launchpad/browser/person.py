@@ -134,6 +134,7 @@ from canonical.launchpad.interfaces import (
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 
@@ -4007,9 +4008,10 @@ class SourcePackageReleaseWithStats:
     implements(ISourcePackageRelease)
     decorates(ISourcePackageRelease)
 
-    def __init__(self, sourcepackage_release, open_bugs):
+    def __init__(self, sourcepackage_release, open_bugs, open_questions):
         self.context = sourcepackage_release
         self.open_bugs = open_bugs
+        self.open_questions = open_questions
 
 
 class PersonPackagesView(LaunchpadView):
@@ -4064,10 +4066,17 @@ class PersonPackagesView(LaunchpadView):
             self.user, distro_packages)
         open_bugs = {}
         for bug_count in package_bug_counts:
-            open_bugs[bug_count['package']] = bug_count['open']
+            distro_package = bug_count['package']
+            open_bugs[distro_package] = bug_count['open']
+
+        question_set = getUtility(IQuestionSet)
+        package_question_counts = question_set.getOpenQuestionCountByPackages(
+            distro_packages)
+
         return [
             SourcePackageReleaseWithStats(
-                package, open_bugs[package.distrosourcepackage])
+                package, open_bugs[package.distrosourcepackage],
+                package_question_counts[package.distrosourcepackage])
             for package in package_releases]
 
 

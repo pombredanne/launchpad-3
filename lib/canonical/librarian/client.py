@@ -21,6 +21,7 @@ import urllib
 import urllib2
 from urlparse import urljoin
 
+from storm.store import Store
 from zope.interface import implements
 
 from canonical.config import config
@@ -151,12 +152,16 @@ class FileUploadClient:
                 raise UploadFailed, 'Server said: ' + response
 
             # Add rows to DB
-            LibraryFileContent(id=contentID, filesize=size,
-                            sha1=shaDigester.hexdigest(),
-                            md5=md5Digester.hexdigest())
-            LibraryFileAlias(id=aliasID, contentID=contentID, filename=name,
-                            mimetype=contentType, expires=expires,
-                            restricted=self.restricted)
+            content = LibraryFileContent(
+                id=contentID, filesize=size,
+                sha1=shaDigester.hexdigest(),
+                md5=md5Digester.hexdigest())
+            alias = LibraryFileAlias(
+                id=aliasID, content=content, filename=name.decode('UTF-8'),
+                mimetype=contentType, expires=expires,
+                restricted=self.restricted)
+
+            Store.of(content).flush()
 
             assert isinstance(aliasID, (int, long)), \
                     "aliasID %r not an integer" % (aliasID,)
