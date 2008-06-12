@@ -297,6 +297,29 @@ class XpiTestCase(unittest.TestCase):
         # Both must match.
         self.assertEquals(first_import_potmsgsets, second_import_potmsgsets)
 
+    def test_TemplateSearching(self):
+        """Test that searching works correctly for template strings."""
+        entry = self.setUpTranslationImportQueueForTemplate('en-US')
+
+        # Now, we tell the PO template to import from the file data it has.
+        (subject, body) = self.firefox_template.importFromQueue(entry)
+
+        # The status is now IMPORTED:
+        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+
+        potmsgsets = list(self.spanish_firefox.findPOTMsgSetsContaining(
+            text='zilla'))
+
+        message_list = []
+        for message in potmsgsets:
+            message_list.append(message.singular_text)
+
+        self.assertEquals(len(potmsgsets), 3)
+
+        self.assertEquals([u'SomeZilla', u'FooZilla!',
+                           u'FooZilla Zilla Thingy'],
+                          message_list)
+
     def test_TranslationImport(self):
         """Test XPI translation file import."""
         # Prepare the import queue to handle a new .xpi import.
