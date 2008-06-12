@@ -1025,6 +1025,7 @@ class IPersonRelatedSoftwareMenu(Interface):
 
 
 class PersonOverviewNavigationMenu(NavigationMenu):
+    """The top-level menu of actions a Person may take."""
 
     usedfor = IPerson
     facet = 'overview'
@@ -1053,6 +1054,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
 
 
 class PersonEditNavigationMenu(NavigationMenu):
+    """A sub-menu for different aspects of editing a Person's profile."""
 
     usedfor = IPersonEditMenu
     facet = 'overview'
