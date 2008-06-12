@@ -90,8 +90,8 @@ still in the build queue.
 In order to test build retrying action we have to make ubuntu/warty
 active for development.
 
+    >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, DistroSeriesStatus)
     >>> from canonical.launchpad.ftests import login, logout
@@ -99,8 +99,8 @@ active for development.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
     >>> warty.status = DistroSeriesStatus.DEVELOPMENT
-    >>> flush_database_updates()
     >>> logout()
+    >>> transaction.commit()
 
 With anonymous access, Retry Build link should not be there.
 
@@ -146,24 +146,22 @@ source package, however, the build retry link becomes avaialable.
 Let's grant the package specific upload permissions first.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePermissionType, IComponentSet, IPersonSet,
-    ...     ISourcePackageNameSet)
+    ...     ArchivePermissionType, IPersonSet, ISourcePackageNameSet)
     >>> from canonical.launchpad.database import ArchivePermission
     >>> login('foo.bar@canonical.com')
-    >>> main_component = getUtility(IComponentSet)['main']
     >>> noteam_person = getUtility(IPersonSet).getByEmail(
     ...     'no-team-memberships@test.com')
-    >>> pmount_name = getUtility(ISourcePackageNameSet).findByName("pmount")
+    >>> pmount_name = getUtility(ISourcePackageNameSet)['pmount']
     >>> discard = ArchivePermission(
     ...     archive=ubuntu.main_archive, person=noteam_person,
     ...     permission=ArchivePermissionType.UPLOAD,
-    ...     sourcepackagename=pmount_name, component=main_component)
+    ...     sourcepackagename=pmount_name, component=None)
+    >>> logout()
+    >>> transaction.commit()
 
 Now even the unprivileged user (not a member of any team) will have
 access to the rebuild link.
 
-    >>> from zope.security.management import endInteraction
-    >>> endInteraction()
     >>> noteam_browser.open(
     ...     "http://launchpad.dev/+builds/+build/9")
     >>> noteam_browser.getLink("Retry build").click()

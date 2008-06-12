@@ -3,11 +3,13 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IDistribution, IProduct, QuestionAction)
 from canonical.launchpad.mailnotification import get_bug_delta
 
 
+@block_implicit_flushes
 def bug_created(bug, event):
     """Assign karma to the user which created <bug>."""
     # All newly created bugs get at least one bugtask associated with
@@ -29,6 +31,7 @@ def _assign_karma_using_bugtask_context(person, bugtask, actionname):
         sourcepackagename=bugtask.sourcepackagename)
 
 
+@block_implicit_flushes
 def bugtask_created(bugtask, event):
     """Assign karma to the user which created <bugtask>."""
     _assign_karma_using_bugtask_context(event.user, bugtask, 'bugtaskcreated')
@@ -44,11 +47,13 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
         _assign_karma_using_bugtask_context(person, task, actionname)
 
 
+@block_implicit_flushes
 def bug_comment_added(bugmessage, event):
     """Assign karma to the user which added <bugmessage>."""
     _assignKarmaUsingBugContext(event.user, bugmessage.bug, 'bugcommentadded')
 
 
+@block_implicit_flushes
 def bug_modified(bug, event):
     """Check changes made to <bug> and assign karma to user if needed."""
     user = event.user
@@ -66,16 +71,19 @@ def bug_modified(bug, event):
             _assignKarmaUsingBugContext(user, bug, actionname)
 
 
+@block_implicit_flushes
 def bugwatch_added(bugwatch, event):
     """Assign karma to the user which added :bugwatch:."""
     _assignKarmaUsingBugContext(event.user, bugwatch.bug, 'bugwatchadded')
 
 
+@block_implicit_flushes
 def cve_added(cve, event):
     """Assign karma to the user which added :cve:."""
     _assignKarmaUsingBugContext(event.user, cve.bug, 'bugcverefadded')
 
 
+@block_implicit_flushes
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
     user = event.user
@@ -99,12 +107,14 @@ def bugtask_modified(bugtask, event):
             user, bugtask, 'bugtaskimportancechanged')
 
 
+@block_implicit_flushes
 def spec_created(spec, event):
     """Assign karma to the user who created the spec."""
     event.user.assignKarma(
         'addspec', product=spec.product, distribution=spec.distribution)
 
 
+@block_implicit_flushes
 def spec_modified(spec, event):
     """Check changes made to the spec and assign karma if needed."""
     user = event.user
@@ -141,12 +151,14 @@ def _assignKarmaUsingQuestionContext(person, question, actionname):
         sourcepackagename=question.sourcepackagename)
 
 
+@block_implicit_flushes
 def question_created(question, event):
     """Assign karma to the user which created <question>."""
     _assignKarmaUsingQuestionContext(
         question.owner, question, 'questionasked')
 
 
+@block_implicit_flushes
 def question_modified(question, event):
     """Check changes made to <question> and assign karma to user if needed."""
     user = event.user
@@ -174,6 +186,7 @@ QuestionAction2KarmaAction = {
 }
 
 
+@block_implicit_flushes
 def question_comment_added(questionmessage, event):
     """Assign karma to the user which added <questionmessage>."""
     question = questionmessage.question
@@ -183,6 +196,7 @@ def question_comment_added(questionmessage, event):
             questionmessage.owner, question, karma_action)
 
 
+@block_implicit_flushes
 def question_bug_added(questionbug, event):
     """Assign karma to the user which added <questionbug>."""
     question = questionbug.question
@@ -203,12 +217,14 @@ def get_karma_context_parameters(context):
     return params
 
 
+@block_implicit_flushes
 def faq_created(faq, event):
     """Assign karma to the user who created the FAQ."""
     context = get_karma_context_parameters(faq.target)
     faq.owner.assignKarma('faqcreated', **context)
 
 
+@block_implicit_flushes
 def faq_edited(faq, event):
     """Assign karma to user who edited a FAQ."""
     user = event.user
@@ -218,6 +234,7 @@ def faq_edited(faq, event):
     if old_faq.content != faq.content or old_faq.title != faq.title:
         user.assignKarma('faqedited', **context)
 
+@block_implicit_flushes
 def branch_created(branch, event):
     """Assign karma to the user who registered the branch."""
     if branch.product is None:
@@ -225,6 +242,7 @@ def branch_created(branch, event):
         return
     branch.registrant.assignKarma('branchcreated', product=branch.product)
 
+@block_implicit_flushes
 def bug_branch_created(bug_branch, event):
     """Assign karma to the user who linked the bug to the branch."""
     product = bug_branch.branch.product
@@ -233,6 +251,7 @@ def bug_branch_created(bug_branch, event):
         return
     bug_branch.registrant.assignKarma('bugbranchcreated', product=product)
 
+@block_implicit_flushes
 def spec_branch_created(spec_branch, event):
     """Assign karma to the user who linked the spec to the branch."""
     product = spec_branch.branch.product
