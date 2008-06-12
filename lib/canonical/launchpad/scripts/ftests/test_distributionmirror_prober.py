@@ -566,7 +566,9 @@ class TestMirrorCDImageProberCallbacks(unittest.TestCase):
         callbacks.ensureOrDeleteMirrorCDImageSeries(not_all_success)
         # If the prober gets at least one 404 status, we need to make sure
         # there's no MirrorCDImageSeries for that series and flavour.
-        self.assertRaises(SQLObjectNotFound, mirror_cdimage_series.sync)
+        self.assertRaises(
+            SQLObjectNotFound, mirror_cdimage_series.get,
+            mirror_cdimage_series.id)
 
     def test_expected_failures_are_ignored(self):
         # Any errors included in callbacks.expected_failures are simply
@@ -666,7 +668,8 @@ class TestArchiveMirrorProberCallbacks(unittest.TestCase):
         # MirrorDistroSeriesSource/MirrorDistroArchSeries referent to
         # that url
         self.assertRaises(
-            SQLObjectNotFound, mirror_distro_series_source.sync)
+            SQLObjectNotFound, mirror_distro_series_source.get,
+            mirror_distro_series_source.id)
 
 
 class TestProbeFunctionSemaphores(unittest.TestCase):

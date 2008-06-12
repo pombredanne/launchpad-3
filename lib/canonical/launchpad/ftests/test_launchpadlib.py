@@ -19,6 +19,7 @@ import unittest
 import launchpadlib
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+from canonical.testing.layers import AppServerLayer
 
 topdir = os.path.dirname(launchpadlib.__file__)
 
@@ -40,9 +41,8 @@ def test_suite():
     # Sort the tests.
     for filename in sorted(doctest_files):
         path = doctest_files[filename]
-        # XXX BarryWarsaw 14-May-2008: Add layer=AppServerLayer when that
-        # branch (currently in review) lands.
-        doctest = LayeredDocFileSuite(path, package=launchpadlib)
+        doctest = LayeredDocFileSuite(path, package=launchpadlib,
+                                      layer=AppServerLayer)
         suite.addTest(doctest)
 
     return suite
