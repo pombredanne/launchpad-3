@@ -171,13 +171,14 @@ Search for a user's launchpad name, a user will find the user in the
 
 == Searches with no results ==
 
-Searches that don't return any results display a kind message to the
-user.
+Searches that don't return any results display a explanation message to
+the user. The text field is focused so that the user can try another
+search.
 
     >>> search_for('fnord')
     >>> print extract_text(find_main_content(anon_browser.contents))
     Pages matching "fnord" in Launchpad
-    ...
+    <!-- setFocusByName('field.text'); // -->
     Your search for &ldquo;fnord&rdquo; did not return any results.
 
 
@@ -191,6 +192,25 @@ the page is identical to the page visited without performing a search.
     >>> print anon_browser.title
     Search Launchpad
     >>> print_search_results()
+
+
+== Search limits ==
+
+The Google Custom Search Engine restricts the search to 10 terms and
+they cannot exceed 2048 characters. Testing revealed that 29 terms were
+actually honored by Google. Phrases are not terms; each word in the
+phrase was a term. Launchpad does not impose a restriction on the
+number of terms since sending more terms does not represent an error.
+Launchpad imposes an artificial limit to 250 characters.
+
+The user cannot enter more than 250 characters to in the search field.
+
+    >>> too_many_characters = '12345 7890' * 25 + 'n'
+    >>> search_for(too_many_characters)
+    >>> for message in get_feedback_messages(anon_browser.contents):
+    ...     print message
+    There is 1 error.
+    The search text cannot exceed 250 characters.
 
 
 == Searching from any page ==

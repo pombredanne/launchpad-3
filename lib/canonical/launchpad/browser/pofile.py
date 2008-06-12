@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Browser code for Translation files."""
 
 __metaclass__ = type
@@ -316,6 +316,10 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+        if (self.user is not None and
+            self.user.translations_relicensing_agreement is None):
+            return self.request.response.redirect(
+                canonical_url(self.user, view_name='+licensing'))
 
         # The handling of errors is slightly tricky here. Because this
         # form displays multiple POMsgSetViews, we need to track the

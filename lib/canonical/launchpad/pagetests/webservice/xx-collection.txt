@@ -133,6 +133,8 @@ The elements of a collection can be looked up by unique identifier:
   expired_members_collection_link: http://.../~admins/expired_members
   hide_email_addresses: False
   homepage_content: None
+  indirect_participations_collection_link:
+      http://.../~admins/indirect_participations
   invited_members_collection_link: http://.../~admins/invited_members
   irc_nicknames_collection_link: http://.../~admins/irc_nicknames
   is_team: True
@@ -141,25 +143,24 @@ The elements of a collection can be looked up by unique identifier:
   karma: 0
   languages_collection_link: http://.../~admins/languages
   mailing_list_auto_subscribe_policy: Ask me when I join a team
-  member_memberships_collection_link: http://.../~admins/member_memberships
   members_collection_link: http://.../~admins/members
+  members_details_collection_link: http://.../~admins/members_details
+  memberships_details_collection_link: http://.../~admins/memberships_details
   mugshot_link: http://.../~admins/mugshot
   name: admins
   open_membership_invitations_collection_link:
       http://.../~admins/open_membership_invitations
   participants_collection_link: http://.../~admins/participants
+  participations_collection_link: http://.../~admins/participations
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
   self_link: http://.../~admins
+  sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
+  super_teams_collection_link: http://.../~admins/super_teams
   team_description: Launchpad Administrators
-  team_memberships_collection_link: http://.../~admins/team_memberships
   team_owner_link: http://.../~sabdfl
-  teams_indirectly_participated_in_collection_link:
-      http://.../~admins/teams_indirectly_participated_in
-  teams_participated_in_collection_link:
-      http://.../~admins/teams_participated_in
   timezone: None
   visibility: Public
   wiki_names_collection_link: http://.../~admins/wiki_names
@@ -221,10 +222,10 @@ empty list of results:
 
 Custom operations may have custom error handling.
 
-  >>> print webservice.get("/beta/people?ws.op=find&text=")
+  >>> print webservice.get("/beta/~ubuntu-team?ws.op=getMembersByStatus")
   HTTP/1.1 400 Bad Request
   ...
-  text: Required input is missing.
+  status: Required input is missing.
 
 A collection may also expose named operations in response to POST
 requests. These operations are usually factories. Here's a helper
@@ -233,7 +234,7 @@ the collection of people.
 
   >>> def create_team(name, display_name):
   ...     return webservice.named_post(
-  ...         "/beta/people", "create_team", {},
+  ...         "/beta/people", "newTeam", {},
   ...         name=name, display_name=display_name)
 
   >>> print webservice.get('/beta/~serviceteam')

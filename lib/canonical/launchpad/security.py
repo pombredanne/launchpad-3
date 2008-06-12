@@ -12,8 +12,8 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportSet,
-    ICodeReviewMessage, IDistribution, IDistributionMirror, IDistroSeries,
+    ICodeImportJobWorkflow, ICodeImportMachine,
+    ICodeReviewComment, IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
     IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
     ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
@@ -911,17 +911,6 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     usedfor = IBazaarApplication
 
 
-class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImport listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportSet
-
-
 class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
@@ -1419,23 +1408,23 @@ class BranchMergeProposalView(AuthorizationBase):
                 AccessBranch(self.obj.target_branch).checkUnauthenticated())
 
 
-class CodeReviewMessageView(AuthorizationBase):
+class CodeReviewCommentView(AuthorizationBase):
     permission = 'launchpad.View'
-    usedfor = ICodeReviewMessage
+    usedfor = ICodeReviewComment
 
     def checkAuthenticated(self, user):
-        """Is the user able to view the code review message?
+        """Is the user able to view the code review comment?
 
-        The user can see a code review message if they can see the branch
+        The user can see a code review comment if they can see the branch
         merge proposal.
         """
         bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
         return bmp_checker.checkAuthenticated(user)
 
     def checkUnauthenticated(self):
-        """Are not-logged-in people able to view the code review message?
+        """Are not-logged-in people able to view the code review comment?
 
-        They can see a code review message if they can see the branch merge
+        They can see a code review comment if they can see the branch merge
         proposal.
         """
         bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)

@@ -34,6 +34,7 @@ def call(cmd, **kw):
     return rv
 
 def main(options, databases):
+    global return_code
     #Need longer file names if this is used more than daily
     #today = datetime.now().strftime('%Y%m%d_%H:%M:%S')
     today = datetime.now().strftime('%Y%m%d')
@@ -68,7 +69,7 @@ def main(options, databases):
             database,
             ]
 
-        rv = call(cmd, stdin=subprocess.PIPE)
+        rv = call(cmd, stdin=subprocess.PIPE) # Sets return_code on failure.
         if rv != 0:
             log.critical("Failed to backup %s (%d)" % (database, rv))
             continue
@@ -76,7 +77,6 @@ def main(options, databases):
 
         log.info("Backed up %s (%0.2fMB)" % (database, size/MB))
 
-    global return_code
     return return_code
 
 if __name__ == '__main__':
@@ -117,4 +117,3 @@ if __name__ == '__main__':
         log.setLevel(logging.ERROR)
 
     sys.exit(main(options, databases))
-

@@ -1116,6 +1116,16 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                 'branch': branch_title,
                }
 
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        # The url of a code import is the associated branch.
+        # This is still here primarily for supporting branch deletion,
+        # which does a fmt:link of the other entities that will be deleted.
+        url = canonical_url(
+            self._context.branch, path_only_if_possible=True,
+            view_name=view_name)
+        return url
+
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
@@ -1172,8 +1182,8 @@ class SpecificationFormatterAPI(CustomizableFormatter):
         return {'title': self._context.title}
 
 
-class CodeReviewMessageFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for CodeReviewMessage objects"""
+class CodeReviewCommentFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for CodeReviewComment objects"""
 
     _link_summary_template = _('Comment by %(author)s')
     _link_permission = 'zope.Public'

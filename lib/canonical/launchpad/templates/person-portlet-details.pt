@@ -90,15 +90,18 @@
         <tal:private_membership condition="can_view_membership">
           <tal:active content="context/all_member_count" />
             active members<br />
-          <tal:proposed condition="context/proposed_member_count">
-            <tal:proposed_count content="context/proposed_member_count" />
+          <tal:proposed define="proposed_member_count context/proposed_member_count"
+                        condition="proposed_member_count">
+            <tal:proposed_count content="proposed_member_count" />
             proposed members<br />
           </tal:proposed>
-          <tal:invited condition="context/invited_member_count">
+          <tal:invited define="invited_member_count context/invited_member_count"
+                       condition="invited_member_count">
             <tal:invited_count content="context/invited_member_count" />
             invited members<br />
           </tal:invited>
-          <tal:inactive condition="context/inactive_member_count">
+          <tal:inactive define="inactive_member_count context/inactive_member_count"
+                       condition="inactive_member_count">
             <tal:inactive_count content="context/inactive_member_count" />
             inactive members<br />
           </tal:inactive>
