@@ -12,7 +12,8 @@ import _pythonpath
 
 import sys, os.path, popen2
 from optparse import OptionParser
-import psycopg
+import psycopg2
+import psycopg2.extensions
 
 from canonical import lp
 from canonical.config import config
@@ -141,7 +142,7 @@ ALL_FTI = [
 def quote(s):
     """SQL quoted string"""
     if s is not None:
-        return psycopg.QuotedString(s)
+        return psycopg2.extensions.QuotedString(s)
     else:
         return 'NULL'
 
@@ -183,20 +184,20 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     try:
         execute(con, "DROP TRIGGER tsvectorupdate ON %s" % table)
         con.commit()
-    except psycopg.ProgrammingError:
+    except psycopg2.DatabaseError:
         con.rollback()
 
     # Drop the fti index if it exists
     try:
         execute(con, "DROP INDEX %s" % index)
         con.commit()
-    except psycopg.ProgrammingError:
+    except psycopg2.DatabaseError:
         con.rollback()
 
     # Create the 'fti' column if it doesn't already exist
     try:
         execute(con, "SELECT fti FROM %s LIMIT 1" % table)
-    except psycopg.ProgrammingError:
+    except psycopg2.DatabaseError:
         con.rollback()
         execute(con, "ALTER TABLE %s ADD COLUMN fti tsvector" % table)
 
@@ -257,7 +258,7 @@ def liverebuild(con):
                     """ % (table, id + 1, id + batch_size)
                 log.debug(query)
                 cur.execute(query)
-            except psycopg.Error:
+            except psycopg2.Error:
                 # No commit - we are in autocommit mode
                 log.exception('psycopg error')
                 con = connect(lp.dbuser)
@@ -272,7 +273,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
     try:
         execute(con, 'SET search_path = ts2, public;')
-    except psycopg.ProgrammingError:
+    except psycopg2.DatabaseError:
         con.rollback()
         execute(con, 'CREATE SCHEMA ts2')
         execute(con, 'SET search_path = ts2, public;')
@@ -284,7 +285,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         execute(con, 'SELECT * from pg_ts_cfg')
         log.debug('tsearch2 already installed. Updating dictionaries.')
         con.commit()
-    except psycopg.ProgrammingError:
+    except psycopg2.DatabaseError:
         con.rollback()
         log.debug('Installing tsearch2')
         if config.database.dbhost:
@@ -440,7 +441,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
         LANGUAGE plpythonu IMMUTABLE
         RETURNS NULL ON NULL INPUT
         """ % quote(text_func))
-    #print psycopg.QuotedString(text_func)
+    #print psycopg2.extensions.QuotedString(text_func)
     execute(con, r"""
         CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS %s
         LANGUAGE plpythonu IMMUTABLE

@@ -83,6 +83,9 @@ class DistroMirrorProber(LaunchpadCronScript):
         else:
             self.logger.debug("Not using any proxy.")
 
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.txn.begin()
+
         # Using a script argument to control a config variable is not a great
         # idea, but to me this seems better than passing the no_remote_hosts
         # value through a lot of method/function calls, until it reaches the
@@ -93,9 +96,6 @@ class DistroMirrorProber(LaunchpadCronScript):
         self.logger.info('Probing %s Mirrors' % content_type.title)
 
         mirror_set = getUtility(IDistributionMirrorSet)
-
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
             content_type, ignore_last_probe=self.options.force,
