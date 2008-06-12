@@ -22,6 +22,8 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.validators.name import name_validator
+
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -44,6 +46,11 @@ class IArchive(IHasOwner):
     owner = Choice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_("""The PPA owner."""))
+
+    name = TextLine(
+        title=_("Name"), required=True,
+        constraint=name_validator,
+        description=_("The name of this archive."))
 
     description = Text(
         title=_("PPA contents description"), required=False,
@@ -334,14 +341,21 @@ class IArchiveSet(Interface):
     number_of_ppa_binaries = Attribute(
         'Number of published binaries in public PPAs.')
 
-    def new(distribution=None, purpose=None, owner=None, description=None):
+    def new(purpose, owner, name=None, distribution=None, description=None):
         """Create a new archive.
 
-        If purpose is ArchivePurpose.PPA, owner must be set.
-        """
+        :param purpose: `ArchivePurpose`;
+        :param owner: `IPerson` owning the Archive;
+        :param name: optional text to be used as the archive name, if not
+            given it uses the names defined in
+            `IArchiveSet._getDefaultArchiveNameForPurpose`;
+        :param distribution: optional `IDistribution` to which the archive
+            will be attached;
+        :param description: optional text to be set as the archive
+            description;
 
-    def ensure(owner, distribution, purpose, description):
-        """Ensure the owner has a valid archive."""
+        :return: an `IArchive` object.
+        """
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
@@ -349,8 +363,14 @@ class IArchiveSet(Interface):
     def getPPAByDistributionAndOwnerName(distribution, name):
         """Return a single PPA the given (distribution, name) pair."""
 
-    def getByDistroPurpose(distribution, purpose):
-        """Return the IArchive with the given distribution and purpose."""
+    def getByDistroPurpose(distribution, purpose, name=None):
+        """Return the IArchive with the given distribution and purpose.
+
+        It uses the default names defined in
+        `IArchiveSet._getDefaultArchiveNameForPurpose`.
+
+        :raises AssertionError if used for with ArchivePurpose.PPA.
+        """
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""

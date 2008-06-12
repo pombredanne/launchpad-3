@@ -49,6 +49,8 @@ class Archive(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
 
+    name = StringCol(dbName='name', notNull=True)
+
     description = StringCol(dbName='description', notNull=False, default=None)
 
     distribution = ForeignKey(
@@ -664,34 +666,59 @@ class ArchiveSet:
 
         return Archive.selectOne(query, clauseTables=['Person'])
 
-    def getByDistroPurpose(self, distribution, purpose):
-        """See `IArchiveSet`."""
-        return Archive.selectOneBy(distribution=distribution, purpose=purpose)
+    def _getDefaultArchiveNameByPurpose(self, purpose):
+        """Return the default for a archive in a given purpose.
 
-    def new(self, distribution=None, purpose=None, owner=None,
-            description=None):
+        The default names are:
+
+         * PRIMARY: 'primary';
+         * PARTNER: 'partner';
+         * PPA: 'default'.
+
+        If the given purpose is not in this list, i.e. doesn't have a default
+        name, it raises a `AssertionError`.
+
+        :param purpose: queried `ArchivePurpose`.
+
+        :return: the name text to be used as name.
+        """
+        name_by_purpose = {
+            ArchivePurpose.PRIMARY: 'primary',
+            ArchivePurpose.PPA: 'default',
+            ArchivePurpose.PARTNER: 'partner',
+            }
+
+        if purpose not in name_by_purpose.keys():
+            raise AssertionError(
+                "'%s' purpose has no default name." % purpose.name)
+
+        return name_by_purpose[purpose]
+
+    def getByDistroPurpose(self, distribution, purpose, name=None):
         """See `IArchiveSet`."""
         if purpose == ArchivePurpose.PPA:
-            assert owner, "Owner required when purpose is PPA."
+            raise AssertionError(
+                "This method should not be used to lookup PPAs. "
+                "Use 'getPPAByDistributionAndOwnerName' instead.")
 
+        if name is None:
+            name = self._getDefaultArchiveNameByPurpose(purpose)
+
+        return Archive.selectOneBy(
+            distribution=distribution, purpose=purpose, name=name)
+
+    def new(self, purpose, owner, name=None, distribution=None,
+            description=None):
+        """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
 
-        return Archive(owner=owner, distribution=distribution,
-                       description=description, purpose=purpose)
+        if name is None:
+            name = self._getDefaultArchiveNameByPurpose(purpose)
 
-    def ensure(self, owner, distribution, purpose, description=None):
-        """See `IArchiveSet`."""
-        if owner is not None:
-            archive = owner.archive
-            if archive is None:
-                archive = self.new(distribution=distribution, purpose=purpose,
-                                   owner=owner, description=description)
-        else:
-            archive = self.getByDistroPurpose(distribution, purpose)
-            if archive is None:
-                archive = self.new(distribution, purpose)
-        return archive
+        return Archive(
+            owner=owner, distribution=distribution, name=name,
+            description=description, purpose=purpose)
 
     def __iter__(self):
         """See `IArchiveSet`."""
