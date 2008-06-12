@@ -35,10 +35,11 @@ doesn't already exist, use POTranslation.getOrCreateTranslation.
 If you want to pass non-ascii characters to either of these, it had better be
 either UTF-8 string or, better, a unicode object.
 
+    >>> got = POTranslation.getOrCreateTranslation('\xc3\x81')
+    >>> got = POTranslation.getOrCreateTranslation(u'\u00c2')
+
     >>> got = POTranslation.getOrCreateTranslation('\xc0')
     Traceback (most recent call last):
     ...
-    UnicodeDecodeError: 'utf8' codec can't decode bytes in position 103-104: invalid data
-    >>> got = POTranslation.getOrCreateTranslation('\xc3\x81')
-    >>> got = POTranslation.getOrCreateTranslation(u'\u00c2')
+    UnicodeDecodeError: 'utf8' codec can't decode byte 0xc0 in position...
 
