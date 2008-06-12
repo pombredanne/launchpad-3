@@ -25,6 +25,15 @@ class Entry:
         :param browser: the browser instance for talking to Launchpad
         :type browser: `Browser`
         """
+        # Initialize this here in a semi-magical way so as to stop a
+        # particular infinite loop that would follow.  Setting self._browser
+        # calls __setattr__() but that turns around immediately and gets
+        # self._attributes.  If this latter was not in the instance
+        # dictionary, that would end up calling __getattr__(), which would
+        # again reference self._attributes.  This is where the infloop would
+        # occur.  Poking this directly into self.__dict__ means that the check
+        # for self._attributes won't call __getattr__(), breaking the cycle.
+        self.__dict__['_attributes'] = {}
         self._browser = browser
         self._initialize(entry_dict)
 
@@ -51,16 +60,12 @@ class Entry:
                 self._attributes[key] = value
 
     def __setattr__(self, name, value):
-        if name.startswith('_'):
-            # Short-circuit any non-public attributes.  We have to do this so
-            # our own implementation-specific attributes will work.
-            super(Entry, self).__setattr__(name, value)
-        elif name in self._attributes:
+        if name in self._attributes:
+            # This is a special web service attribute, so track it separately
+            # and mark it as dirty for any future save().
             self._attributes[name] = value
             self._dirty_attributes.add(name)
         else:
-            # It's a 'plain' attribute that the web service doesn't know
-            # about, so just set it like normal.
             super(Entry, self).__setattr__(name, value)
 
     def __getattr__(self, name):

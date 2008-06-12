@@ -3,8 +3,8 @@
 Objects available through the web interface, such as people, have a readable
 interface which is available through direct attribute access.
 
-    >>> from launchpadlib.testing.helpers import salgado_change_anything
-    >>> launchpad = salgado_change_anything.login()
+    >>> from launchpadlib.testing.helpers import salgado_with_full_permissions
+    >>> launchpad = salgado_with_full_permissions.login()
 
     >>> salgado = launchpad.people.get('salgado')
     >>> salgado.display_name
@@ -20,6 +20,17 @@ Salgado to batch the changes over the wire for efficiency.
     u'Guilherme Salgado'
 
 Once the changes are saved though, they are saved on the web service.
+
+XXX BarryWarsaw 12-Jun-2008 We currently make no guarantees about the
+synchronization between the local object's state and the remote object's
+state.  Future development will add a "conditional PATCH" feature based on
+Last-Modified/ETag headers; this will serve as a transction number, so that if
+the two objects get out of sync, the .save() would fail.  Since this is not
+yet implemented, we will do a .get() every time we want to guarantee that we
+have the up-to-date state of the object.  The only other time we can make this
+guarantee is when we change an attribute that causes a 301 'Moved permanently'
+HTTP error, because we implicitly re-fetch the object's state in that case.
+However, this latter condition is not exposed through the web service.
 
     >>> salgado.save()
     >>> launchpad.people.get('salgado').display_name

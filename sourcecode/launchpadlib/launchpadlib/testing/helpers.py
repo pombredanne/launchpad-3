@@ -7,8 +7,8 @@ __metaclass__ = type
 __all__ = [
     'TestableLaunchpad',
     'nopriv_read_nonprivate',
-    'salgado_change_anything',
     'salgado_read_nonprivate',
+    'salgado_with_full_permissions',
     ]
 
 
@@ -35,6 +35,6 @@ class KnownTokens:
             'launchpad-library', self.token_string, self.access_secret)
 
 
-salgado_change_anything = KnownTokens('salgado-change-anything', 'test')
+salgado_with_full_permissions = KnownTokens('salgado-change-anything', 'test')
 salgado_read_nonprivate = KnownTokens('salgado-read-nonprivate', 'secret')
 nopriv_read_nonprivate = KnownTokens('nopriv-read-nonprivate', 'mystery')
