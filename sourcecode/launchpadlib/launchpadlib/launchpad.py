@@ -8,8 +8,17 @@ __all__ = [
     ]
 
 
-import simplejson
+from urlparse import urljoin
+
 from launchpadlib._browser import Browser
+from launchpadlib.collection import Collection, Entry
+from launchpadlib.errors import UnexpectedResponseError
+from launchpadlib.person import People, Person
+
+
+class _FakeBugCollection(Collection):
+    def _entry(self, entry_dict):
+        return Entry(entry_dict)
 
 
 class Launchpad:
@@ -30,7 +39,7 @@ class Launchpad:
         self.credentials = credentials
         # Get the root resource.
         self._browser = Browser(self.credentials)
-        response = simplejson.loads(self._browser.get(self.SERVICE_ROOT))
+        response = self._browser.get(self.SERVICE_ROOT)
         self._person_set_link = response.get(
             'PersonSetCollectionAdapter_collection_link')
         self._bug_set_link = response.get(
@@ -38,14 +47,37 @@ class Launchpad:
 
     @property
     def people(self):
-        # XXX Temporary
         if self._person_set_link is None:
             return None
-        return []
+        return People(self._browser, self._person_set_link)
 
     @property
     def bugs(self):
         # XXX Temporary
         if self._bug_set_link is None:
             return None
-        return []
+        return _FakeBugCollection(self._browser, self._bug_set_link)
+
+    def create_team(self, name, display_name):
+        """Create a new team.
+
+        :param name: The name of the team
+        :type name: string
+        :param display_name: The 'display name' of the team
+        :type display_name: string
+        :return: the new team
+        :rtype: `Person`
+        :raises ResponseError: when an unexpected response occurred.
+        """
+        url = urljoin(self.SERVICE_ROOT + '/', 'people')
+        # If the team got created, a 201 status will be returned.  When that
+        # happens, we dig the 'Location' header out of the response and create
+        # a new Person instance with that base url.
+        response, content = self._browser.post(
+            url, 'create_team', name=name, display_name=display_name)
+        if response.status == 201:
+            # We know this has to be a person, so create and return the
+            # appropriate instance.
+            data = self._browser.get(response['location'])
+            return Person(data)
+        raise UnexpectedResponseError(response, content)
