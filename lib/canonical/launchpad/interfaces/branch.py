@@ -465,14 +465,15 @@ class IBranch(IHasOwner):
                       "branch is hosted."))
 
     branch_format = Choice(
-        title=_("Branch Format"), required=True, vocabulary=BranchFormat)
+        title=_("Branch Format"), required=False, vocabulary=BranchFormat)
 
     repository_format = Choice(
-        title=_("Repository Format"), required=True,
+        title=_("Repository Format"), required=False,
         vocabulary=RepositoryFormat)
 
     control_format = Choice(
-        title=_("Control Directory"), required=True, vocabulary=ControlFormat)
+        title=_("Control Directory"), required=False,
+        vocabulary=ControlFormat)
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
