@@ -1,7 +1,8 @@
-#!/usr/bin/python
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""The wadllib library helps a web client navigate the resources
+"""Navigate the resources exposed by a web service.
+
+The wadllib library helps a web client navigate the resources
 exposed by a web service. The service defines its resources in a
 single WADL file. wadllib parses this file and gives access to the
 resources defined inside. The client code can see the capabilities of
@@ -10,6 +11,8 @@ a given resource and make the corresponding HTTP requests.
 If a request returns a representation of the resource, the client can
 bind the string representation to the wadllib Resource object.
 """
+
+__metaclass__ = type
 
 __all__ = [
     'Application',
@@ -24,8 +27,6 @@ __all__ = [
     'WADLError',
     ]
 
-__metaclass__ = type
-
 from urlparse import urlparse
 import simplejson
 try:
@@ -35,14 +36,17 @@ except ImportError:
         import cElementTree as ET
     except ImportError:
         import elementtree.ElementTree as ET
+from _utils import uri
 
 def wadl_tag(tag_name):
     """Scope a tag name with the WADL namespace."""
     return '{http://research.sun.com/wadl/2006/10}' + tag_name
 
+
 def wadl_xpath(tag_name):
     """Turn a tag name into an XPath path."""
     return './' + wadl_tag(tag_name)
+
 
 class NoBoundRepresentationError(Exception):
     """An unbound resource was used where wadllib expected a bound resource.
@@ -55,12 +59,6 @@ class NoBoundRepresentationError(Exception):
 
 class WADLBase:
     """A base class for objects that contain WADL-derived information."""
-
-    def _url_path_join(self, url, path):
-        """Tack an extra path variable onto a URL."""
-        if url[-1] == '/':
-            return url + path
-        return url + '/' + path
 
 
 class WADLResolvableDefinition(WADLBase):
@@ -152,7 +150,7 @@ class Resource(WADLResolvableDefinition):
             self.tag = resource_type
 
         self.representation = None
-        if representation != None:
+        if representation is not None:
             if media_type == 'application/json':
                 self.representation = simplejson.loads(representation)
             else:
@@ -221,7 +219,8 @@ class Resource(WADLResolvableDefinition):
         """
         definition = self.resolve_definition().tag
         for method_tag in definition.findall(wadl_xpath('method')):
-            if method_tag.attrib.get('name').lower() == http_method.lower():
+            name = method_tag.attrib.get('name', '').lower()
+            if name == http_method.lower():
                 if fixed_params is not None:
                     request = method_tag.find(wadl_xpath('request'))
                     if request is None:
@@ -236,7 +235,7 @@ class Resource(WADLResolvableDefinition):
                                 and param.attrib.get('fixed')
                                 == fixed_value):
                                 matched_params[name] = param
-                    if len(matched_params) != len(fixed_params.keys()):
+                    if len(matched_params) != len(fixed_params):
                         # Skip to the next method
                         continue
                 return Method(self.application, method_tag)
@@ -527,4 +526,4 @@ class Application(WADLBase):
             raise WADLError("More than one resource defined with path %s"
                             % path)
         return Resource(
-            self, self._url_path_join(self.resource_base, path), matching[0])
+            self, uri.merge(self.resource_base, path, True), matching[0])

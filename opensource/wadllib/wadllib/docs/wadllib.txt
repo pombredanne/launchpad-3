@@ -8,7 +8,6 @@ file.
    >>> import pkg_resources
    >>> from wadllib.application import Application
 
-
 The first argument to the Application constructor is the URL at which
 the WADL file was found. The second argument may be raw WADL markup.
 
@@ -150,7 +149,6 @@ name or the fixed parameters.
    >>> print personset_resource.get_method(
    ...     'post', fixed_params={'ws_op' : 'nosuchparam'})
    None
-
 
 Let's say the browser makes a GET request to the person set resource
 and gets back a representation. We can bind that representation to our
