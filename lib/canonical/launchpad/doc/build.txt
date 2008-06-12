@@ -86,13 +86,21 @@ launchpad build daemon.
     ...
     ... SELECT init_archive_stats();"""
 
+Before the archive build counters are initialized they will be all
+zero.
+
     >>> cur = cursor()
     >>> cur.execute(q)
     >>> print cur.fetchall()
     [(0, 0, 0, 0, 0)]
 
+Now the archive counters are initialized.
+
     >>> cur = cursor()
     >>> cur.execute(initq)
+
+Then show the archive build counters (in the following order: total,
+pending, succeeded, building, failed).
 
     >>> cur = cursor()
     >>> cur.execute(q)
@@ -250,6 +258,15 @@ retried.
     >>> active_build.can_be_retried
     True
 
+These are the archive build counters before the build is retried.
+The order is as follows: order: total, pending, succeeded, building,
+failed.
+
+    >>> cur = cursor()
+    >>> cur.execute(q)
+    >>> print cur.fetchall()
+    [(15, 1, 8, 1, 5)]
+
 Retry Build record in question:
 
     >>> active_build.retry()
@@ -273,6 +290,14 @@ it won't interfere in the next tests.
     >>> warty.status = DistroSeriesStatus.SUPPORTED
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
+
+The archive build counters will reflect the retried build (counter
+order: total, pending, succeeded, building, failed).
+
+    >>> cur = cursor()
+    >>> cur.execute(q)
+    >>> print cur.fetchall()
+    [(15, 2, 8, 1, 4)]
 
 Initialize all the required arguments to create a binary package for a
 given build record entry.

@@ -70,8 +70,12 @@ def update_archive_counters(obj, attr, value):
         # The build state of a build instance was updated.
         if value == BuildStatus.NEEDSBUILD:
             # A build is being retried.
+            print "b>> pending: %s" % obj.archive.pending_count
+            print "b>> failed: %s" % obj.archive.failed_count
             obj.archive.pending_count += 1
             obj.archive.failed_count -= 1
+            print "a>> pending: %s" % obj.archive.pending_count
+            print "a>> failed: %s" % obj.archive.failed_count
         elif value == BuildStatus.FULLYBUILT:
             # A build succeeded.
             obj.archive.succeeded_count += 1
