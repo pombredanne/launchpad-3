@@ -823,12 +823,12 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
+        # EmailAddress.{person,status} are readonly fields, so we need to
+        # remove the security proxy before changing them.
+        from zope.security.proxy import removeSecurityProxy
         # As a person can have at most one preferred email, ensure
         # that this new email does not have the PREFERRED status.
-        email.status = EmailAddressStatus.NEW
-        # EmailAddress.person is a readonly field, so we need to remove the
-        # security proxy here.
-        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(email).status = EmailAddressStatus.NEW
         removeSecurityProxy(email).person = requester.id
         requester.validateAndEnsurePreferredEmail(email)
 
