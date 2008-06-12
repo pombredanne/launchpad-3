@@ -75,20 +75,20 @@ class WADLResolvableDefinition(WADLBase):
         self._definition = None
         self.application = application
 
-    def resolveDefinition(self):
+    def resolve_definition(self):
         """Return the definition of this object, wherever it is.
 
         Resource is a good example. A WADL <resource> tag
         may contain a large number of nested tags describing a
         resource, or it may just contain a 'type' attribute that
         references a <resource_type> which contains those same
-        tags. Resource.resolveDefinition() will return the original
+        tags. Resource.resolve_definition() will return the original
         Resource object in the first case, and a
         ResourceType object in the second case.
         """
         if self._definition is not None:
             return self._definition
-        object_url = self._getDefinitionURL()
+        object_url = self._get_definition_url()
         if object_url is None:
             # The object contains its own definition.
             # XXX leonardr 2008-05-28:
@@ -97,8 +97,8 @@ class WADLResolvableDefinition(WADLBase):
             return self
         # The object makes reference to some other object. Resolve
         # its URL and return it.
-        xml_id = self.application.lookupXMLID(object_url)
-        definition = self._definitionFactory(xml_id)
+        xml_id = self.application.lookup_xml_id(object_url)
+        definition = self._definition_factory(xml_id)
         if definition is None:
             # XXX leonardr 2008-06-
             # This code path is not tested in Launchpad.
@@ -109,14 +109,14 @@ class WADLResolvableDefinition(WADLBase):
         self._definition = definition
         return definition
 
-    def _definitionFactory(self, id):
+    def _definition_factory(self, id):
         """Transform an XML ID into a wadllib wrapper object.
 
         Which kind of object it is depends on the subclass.
         """
         raise NotImplementedError()
 
-    def _getDefinitionURL(self):
+    def _get_definition_url(self):
         """Find the URL that identifies an external reference.
 
         How to do this depends on the subclass.
@@ -145,7 +145,7 @@ class Resource(WADLResolvableDefinition):
         if isinstance(resource_type, basestring):
             # We were passed the URL to a resource type. Look up the
             # type object itself
-            self.tag = self.application.getResourceType(resource_type).tag
+            self.tag = self.application.get_resource_type(resource_type).tag
         else:
             # We were passed an XML tag that describes a resource or
             # resource type.
@@ -161,8 +161,8 @@ class Resource(WADLResolvableDefinition):
                                  "%s" % media_type)
         self.media_type = media_type
         if representation is not None:
-            self.representation_definition = self.getRepresentationDefinition(
-                self.media_type)
+            self.representation_definition = (
+                self.get_representation_definition(self.media_type))
 
     @property
     def url(self):
@@ -185,27 +185,27 @@ class Resource(WADLResolvableDefinition):
                         representation, media_type,
                         self._definition)
 
-    def getRepresentationDefinitionIter(self):
+    def get_representation_definition_iter(self):
         """Get an iterator over the representation definitions.
 
         These are the representations returned in response to a
         standard GET request.
         """
-        method_tag = self.getMethod('GET')
+        method_tag = self.get_method('GET')
         response = method_tag.response
-        for representation in response.getRepresentationDefinitionIter():
+        for representation in response.get_representation_definition_iter():
             yield representation
 
-    def getRepresentationDefinition(self, media_type):
+    def get_representation_definition(self, media_type):
         """Get a description of one of this resource's representations."""
-        for representation in self.getRepresentationDefinitionIter():
-            representation_tag = representation.resolveDefinition().tag
+        for representation in self.get_representation_definition_iter():
+            representation_tag = representation.resolve_definition().tag
             if representation_tag.attrib.get('mediaType') == media_type:
                 return representation
         raise ValueError("No definition for representation with "
                          "media type %s" % media_type)
 
-    def getMethod(self, http_method, fixed_params=None):
+    def get_method(self, http_method, fixed_params=None):
         """Look up one of this resource's methods by HTTP method.
 
         :param http_method: The HTTP method used to invoke the desired
@@ -219,7 +219,7 @@ class Resource(WADLResolvableDefinition):
         :returns: A MethodDefinition, or None if there's no definition
         that fits the given constraints.
         """
-        definition = self.resolveDefinition().tag
+        definition = self.resolve_definition().tag
         for method_tag in definition.findall(wadl_xpath('method')):
             if method_tag.attrib.get('name').lower() == http_method.lower():
                 if fixed_params is not None:
@@ -242,22 +242,22 @@ class Resource(WADLResolvableDefinition):
                 return Method(self.application, method_tag)
         return None
 
-    def getParam(self, param_name):
+    def get_param(self, param_name):
         """Find the value of a parameter within the representation."""
         if self.representation is None:
             raise NoBoundRepresentationError(
                 "Resource is not bound to any representation.")
-        representation_tag = self.representation_definition.resolveDefinition().tag
+        representation_tag = self.representation_definition.resolve_definition().tag
         for param_tag in representation_tag.findall(wadl_xpath('param')):
             if param_tag.attrib.get('name') == param_name:
                 return Parameter(self, param_tag)
         return None
 
-    def _definitionFactory(self, id):
+    def _definition_factory(self, id):
         """Given an ID, find a ResourceType for that ID."""
         return self.application.resource_types.get(id)
 
-    def _getDefinitionURL(self):
+    def _get_definition_url(self):
         """Return the URL that shows where a resource is 'really' defined.
 
         If a resource's capabilities are defined by reference, the
@@ -306,7 +306,7 @@ class ResponseDefinition(WADLBase):
         self.application = application
         self.tag = response_tag
 
-    def getRepresentationDefinitionIter(self):
+    def get_representation_definition_iter(self):
         """Get an iterator over the representation definitions.
 
         These are the representations returned in response to an
@@ -327,13 +327,13 @@ class RepresentationDefinition(WADLResolvableDefinition):
 
     @property
     def media_type(self):
-        return self.resolveDefinition().tag.attrib['mediaType']
+        return self.resolve_definition().tag.attrib['mediaType']
 
-    def _definitionFactory(self, id):
+    def _definition_factory(self, id):
         """Turn a representation ID into a RepresentationDefinition."""
         return self.application.representation_definitions.get(id)
 
-    def _getDefinitionURL(self):
+    def _get_definition_url(self):
         """Find the URL containing the representation's 'real' definition.
 
         If a representation's structure is defined by reference, the
@@ -359,7 +359,7 @@ class Parameter(WADLBase):
         self.resource_definition = resource_definition
         self.tag = tag
 
-    def getValue(self):
+    def get_value(self):
         """The value of this parameter in the bound representation.
 
         Raises an error if this parameter's resource is not bound to a
@@ -400,13 +400,13 @@ class Parameter(WADLBase):
         link_tag = self.tag.find(wadl_xpath('link'))
         if link_tag is None:
             raise ValueError("This parameter isn't a link to anything.")
-        return Link(self, link_tag).resolveDefinition()
+        return Link(self, link_tag).resolve_definition()
 
 
 class Link(WADLResolvableDefinition):
     """A link from one resource to another.
 
-    Calling resolveDefinition() on a Link will give you a Resource for the
+    Calling resolve_definition() on a Link will give you a Resource for the
     type of resource linked to.
     """
 
@@ -420,13 +420,13 @@ class Link(WADLResolvableDefinition):
         self.parameter = parameter
         self.tag = link_tag
 
-    def _definitionFactory(self, id):
+    def _definition_factory(self, id):
         """Turn a resource type ID into a ResourceType."""
         return Resource(
-            self.application, self.parameter.getValue(),
+            self.application, self.parameter.get_value(),
             self.application.resource_types.get(id).tag)
 
-    def _getDefinitionURL(self):
+    def _get_definition_url(self):
         """Find the URL containing the definition ."""
         type = self.tag.attrib.get('resource_type')
         if type is None:
@@ -472,9 +472,9 @@ class Application(WADLBase):
             id = resource_type.attrib['id']
             self.resource_types[id] = ResourceType(resource_type)
 
-    def getResourceType(self, resource_type_url):
+    def get_resource_type(self, resource_type_url):
         """Retrieve a resource type by the URL of its description."""
-        xml_id = self.lookupXMLID(resource_type_url)
+        xml_id = self.lookup_xml_id(resource_type_url)
         resource_type = self.resource_types.get(xml_id)
         if resource_type is None:
             raise KeyError('No such XML ID: "%s"' % resource_type_url)
@@ -488,7 +488,7 @@ class Application(WADLBase):
         raise NotImplementedError("Can't look up definition in another "
                                   "url (%s)" % resource_type_url)
 
-    def lookupXMLID(self, url):
+    def lookup_xml_id(self, url):
         """A helper method for locating a part of a WADL document.
 
         :param url: The URL (with anchor) of the desired part of the
@@ -511,7 +511,7 @@ class Application(WADLBase):
         raise NotImplementedError("Can't look up definition in another "
                                   "url (%s)" % url)
 
-    def getResourceByPath(self, path):
+    def get_resource_by_path(self, path):
         """Locate one of the resources described by this document.
 
         :param path: The path to the resource.

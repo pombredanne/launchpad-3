@@ -29,17 +29,17 @@ The preferred technique for finding a resource is to start at one of
 the resources defined in the WADL file, and follow links. This code
 retrieves the definition of the root resource.
 
-   >>> service_root = wadl.getResourceByPath('')
+   >>> service_root = wadl.get_resource_by_path('')
    >>> service_root.url
    'http://api.launchpad.dev/beta/'
 
 The service root resource supports GET.
 
-   >>> get_method = service_root.getMethod('get')
+   >>> get_method = service_root.get_method('get')
    >>> get_method.id
    'service-root-get'
 
-   >>> get_method = service_root.getMethod('GET')
+   >>> get_method = service_root.get_method('GET')
    >>> get_method.id
    'service-root-get'
 
@@ -50,7 +50,7 @@ has a a JSON representation, and it defines parameters like
 people in Launchpad.
 
    >>> link_name = 'PersonSetCollectionAdapter_collection_link'
-   >>> link_param = service_root.getParam(link_name)
+   >>> link_param = service_root.get_param(link_name)
    Traceback (most recent call last):
    ...
    NoBoundRepresentationError: Resource is not bound to any representation.
@@ -76,14 +76,14 @@ It has to be of a media type understood by the WADL description.
 We can see what representations there might be for the service root
 resource. There's a JSON representation and a WADL representation.
 
-   >>> iter = service_root.getRepresentationDefinitionIter()
+   >>> iter = service_root.get_representation_definition_iter()
    >>> [representation.media_type for representation in iter]
    ['application/json', 'application/vd.sun.wadl+xml']
 
 We already have a WADL representation of the service root resource, so
 let's try binding it to a JSON representation.
 
-   >>> json_representation = service_root.getRepresentationDefinition(
+   >>> json_representation = service_root.get_representation_definition(
    ...     'application/json')
    >>> json_representation.media_type
    'application/json'
@@ -104,8 +104,8 @@ Now the bound resource object has a JSON representation, and now
 follow the 'PersonSetCollectionAdapter_collection_link' to a
 new Resource object.
 
-   >>> link_param = bound_service_root.getParam(link_name)
-   >>> link_param.getValue()
+   >>> link_param = bound_service_root.get_param(link_name)
+   >>> link_param.get_value()
    u'http://api.launchpad.dev/beta/people'
    >>> personset_resource = link_param.linked_resource
    >>> personset_resource.__class__
@@ -121,14 +121,14 @@ This new resource is a collection of people.
 The "collection of people" resource supports a standard GET request as
 well as a special GET and an overloaded POST.
 
-   >>> get_method = personset_resource.getMethod('get')
+   >>> get_method = personset_resource.get_method('get')
    >>> get_method.id
    'PersonSetCollectionAdapter-get'
 
 To invoke the special GET request, the client sets the 'ws.op' query
 variable to the fixed string 'find':
 
-   >>> find_method = personset_resource.getMethod(
+   >>> find_method = personset_resource.get_method(
    ...     'get', fixed_params={'ws.op' : 'findPerson'})
    >>> find_method.id
    'PersonSetCollectionAdapter-findPerson'
@@ -136,7 +136,7 @@ variable to the fixed string 'find':
 To invoke the overloaded POST request, the client sets the 'ws.op'
 query variable to the fixed string 'newTeam':
 
-   >>> create_team_method = personset_resource.getMethod(
+   >>> create_team_method = personset_resource.get_method(
    ...     'post', fixed_params={'ws.op' : 'newTeam'})
    >>> create_team_method.id
    'PersonSetCollectionAdapter-newTeam'
@@ -144,10 +144,10 @@ query variable to the fixed string 'newTeam':
 findMethod() returns None when there's no WADL method matching the
 name or the fixed parameters.
 
-   >>> print personset_resource.getMethod('nosuchmethod')
+   >>> print personset_resource.get_method('nosuchmethod')
    None
 
-   >>> print personset_resource.getMethod(
+   >>> print personset_resource.get_method(
    ...     'post', fixed_params={'ws_op' : 'nosuchparam'})
    None
 
@@ -157,25 +157,25 @@ and gets back a representation. We can bind that representation to our
 description of the person set resource.
 
    >>> bound_personset = bind_to_testdata(personset_resource, 'personset')
-   >>> bound_personset.getParam("start").getValue()
+   >>> bound_personset.get_param("start").get_value()
    0
-   >>> bound_personset.getParam("total_size").getValue()
+   >>> bound_personset.get_param("total_size").get_value()
    63
 
 We can keep following links indefinitely, so long as we bind to a
 representation to each resource as we get it, and use the
 representation to find the next link.
 
-   >>> next_page_link = bound_personset.getParam("next_collection_link")
-   >>> next_page_link.getValue()
+   >>> next_page_link = bound_personset.get_param("next_collection_link")
+   >>> next_page_link.get_value()
    u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
    >>> page_two = next_page_link.linked_resource
    >>> bound_page_two = bind_to_testdata(page_two, 'personset-page2')
    >>> bound_page_two.url
    u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
-   >>> bound_page_two.getParam("start").getValue()
+   >>> bound_page_two.get_param("start").get_value()
    5
-   >>> bound_page_two.getParam("next_collection_link").getValue()
+   >>> bound_page_two.get_param("next_collection_link").get_value()
    u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
 
 
@@ -190,8 +190,8 @@ by following links.
    ...     "http://api.launchpad.dev/beta/#PersonEntryAdapter")
 
    >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
-   >>> languages_link = bound_limi.getParam("languages_collection_link")
-   >>> languages_link.getValue()
+   >>> languages_link = bound_limi.get_param("languages_collection_link")
+   >>> languages_link.get_value()
    u'http://api.launchpad.dev/beta/~limi/languages'
 
 
@@ -199,12 +199,12 @@ by following links.
 
 You'll get None if you try to look up a nonexistent resource.
 
-   >>> print wadl.getResourceByPath('nosuchresource')
+   >>> print wadl.get_resource_by_path('nosuchresource')
    None
 
 You'll get an exception if you try to look up a nonexistent resource
 type.
 
-   >>> print wadl.getResourceType('#nosuchtype')
+   >>> print wadl.get_resource_type('#nosuchtype')
    Traceback (most recent call last):
    KeyError: 'No such XML ID: "#nosuchtype"'
