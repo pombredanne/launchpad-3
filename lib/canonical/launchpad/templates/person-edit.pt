@@ -27,111 +27,35 @@
       <div metal:fill-slot="extra_bottom">
         <table>
           <tbody>
-            <tal:wikinames tal:condition="context/allwikis">
-              <tr>
-                <th>Wiki:</th>
-                <td>
-                  <span tal:repeat="wiki context/allwikis">
-                    <a tal:content="wiki/url"
-                       tal:attributes="href wiki/url"
-                     >WikiName</a><tal:block
-                                   condition="not: repeat/wiki/end">,
-                     </tal:block>
-                  </span>
-                </td>
-              </tr>
-              <tr>
-                <td>&nbsp;</td>
-                <td><span
-                     tal:replace="
-                     structure context/menu:overview/editwikinames/render"
-                     >Edit your wiki names</span></td>
-              </tr>
-            </tal:wikinames>
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editwikinames/render"
+                 >Edit your wiki names</span>
+            </p>
 
-            <tal:ircnames tal:repeat="ircnick context/ircnicknames">
-              <tr>
-                <th>IRC:</th>
-                <td><code style="font-size: 120%"
-                          tal:content="ircnick/nickname"/>
-                    on network <code style="font-size: 120%"
-                                     tal:content="ircnick/network" />
-                </td>
-              </tr>
-              <tr>
-                <td>&nbsp;</td>
-                <td><span
-                     tal:replace="
-                     structure context/menu:overview/editircnicknames/render"
-                     >Edit your IRC contact names</span></td>
-              </tr>
-            </tal:ircnames>
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editircnicknames/render"
+                 >Edit your IRC contact names</span>
+            </p>
 
-            <tal:jabberids tal:condition="context/jabberids">
-              <tr>
-                <th>Jabber:</th>
-                <td>
-                  <tal:block repeat="jabberid view/htmlJabberIDs">
-                    <span tal:replace="structure jabberid"
-                      /><span
-                         tal:condition="not: repeat/jabberid/end">,</span>
-                  </tal:block>
-                </td>
-              </tr>
-              <tr>
-                <td>&nbsp;</td>
-                <td><span
-                     tal:replace="
-                     structure context/menu:overview/editjabberids/render"
-                     >Edit your Jabber contact names</span></td>
-              </tr>
-            </tal:jabberids>
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editjabberids/render"
+                 >Edit your Jabber contact names</span>
+            </p>
 
-            <tal:keys condition="context/sshkeys">
-              <tal:key repeat="sshkey context/sshkeys">
-                <tr>
-                  <th tal:condition="repeat/sshkey/start">
-                    SSH Keys:</th>
-                  <th tal:condition="not: repeat/sshkey/start">
-                  </th>
-                  <td tal:content="sshkey/comment" />
-                </tr>
-                <tr tal:condition="repeat/sshkey/end">
-                  <td>&nbsp;</td>
-                  <td>
-                    <small><a href="+sshkeys">(view key text)</a></small>
-                  </td>
-                </tr>
-              </tal:key>
-              <tr>
-                <td>&nbsp;</td>
-                <td><span
-                     tal:replace="
-                     structure context/menu:overview/editsshkeys/render"
-                     >Change your SSH keys</span></td>
-              </tr>
-            </tal:keys>
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editsshkeys/render"
+                 >Change your SSH keys</span>
+            </p>
 
-            <tal:gpgkeys tal:condition="context/gpgkeys">
-              <tr>
-                <th>OpenPGP keys:</th>
-                <td>
-                  <tal:block repeat="key context/gpgkeys">
-                    <a tal:attributes="href key/keyserverURL">
-                      <span tal:replace="key/keyid"
-                        /></a><span
-                               tal:condition="not: repeat/key/end">,</span>
-                  </tal:block>
-                </td>
-              </tr>
-              <tr>
-                <td>&nbsp;</td>
-                <td><span
-                     tal:replace="
-                     structure context/menu:overview/editpgpkeys/render"
-                     >Change your OpenPGP keys</span></td>
-              </tr>
-            </tal:gpgkeys>
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editpgpkeys/render"
+                 >Change your OpenPGP keys</span>
+            </p>
           </tbody>
         </table>
       </div>
