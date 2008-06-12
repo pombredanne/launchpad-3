@@ -30,9 +30,7 @@
         tal:content="structure context/description/fmt:text-to-html"
       />
       <p id="uses">
-        <tal:title replace="context/title"/>
-        uses Launchpad for
-        <tal:uses replace="view/usesLaunchpadFor" />
+        <tal:uses content="structure view/usesLaunchpadFor" />
       </p>
       <ul class="buttons">
         <li>
