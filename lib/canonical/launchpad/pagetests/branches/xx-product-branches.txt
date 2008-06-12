@@ -154,8 +154,6 @@ be shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    lp://dev/firefox
-      Series: trunk                          Abandoned ...
     lp://dev/~sabdfl/firefox/release-0.8     New ...
 
 
