@@ -215,15 +215,6 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     uploadQueueSetUp(test)
     login(ANONYMOUS)
 
-def translationMessageDestroySetUp(test):
-    """Set up the TranslationMessage.destroySelf() test."""
-    LaunchpadZopelessLayer.switchDbUser('rosettaadmin')
-    setUp(test)
-
-def translationMessageDestroyTearDown(test):
-    """Tear down the TranslationMessage.destroySelf() test."""
-    tearDown(test)
-
 def manageChrootSetup(test):
     """Set up the manage-chroot.txt test."""
     setUp(test)
@@ -360,6 +351,12 @@ special = {
             layer=LaunchpadZopelessLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'buildd-slave.txt': LayeredDocFileSuite(
+            '../doc/buildd-slave.txt',
+            setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer,
+            stdout_logging_level=logging.WARNING
+            ),
     'buildd-scoring.txt': LayeredDocFileSuite(
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,
@@ -419,12 +416,12 @@ special = {
     'launchpadform.txt': LayeredDocFileSuite(
             '../doc/launchpadform.txt',
             setUp=setUp, tearDown=tearDown,
-            layer=FunctionalLayer
+            layer=LaunchpadFunctionalLayer
             ),
     'launchpadformharness.txt': LayeredDocFileSuite(
             '../doc/launchpadformharness.txt',
             setUp=setUp, tearDown=tearDown,
-            layer=FunctionalLayer
+            layer=LaunchpadFunctionalLayer
             ),
     'bug-export.txt': LayeredDocFileSuite(
             '../doc/bug-export.txt',
@@ -726,6 +723,7 @@ special = {
             ),
     'publishing.txt': LayeredDocFileSuite(
             '../doc/publishing.txt',
+            setUp=setUp,
             layer=LaunchpadZopelessLayer,
             ),
     'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
@@ -740,8 +738,10 @@ special = {
             ),
     'translationmessage-destroy.txt': LayeredDocFileSuite(
             '../doc/translationmessage-destroy.txt',
-            setUp=translationMessageDestroySetUp,
-            tearDown=translationMessageDestroyTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'translationsoverview.txt': LayeredDocFileSuite(
+            '../doc/translationsoverview.txt',
             layer=LaunchpadZopelessLayer
             ),
     'manage-chroot.txt': LayeredDocFileSuite(
@@ -780,18 +780,10 @@ special = {
             '../doc/google-service-stub.txt',
             layer=GoogleServiceLayer,
             ),
-    # This test is actually run twice to prove that the AppServerLayer
-    # properly isolates the database between tests.
-    'launchpadlib.txt': LayeredDocFileSuite(
-        '../doc/launchpadlib.txt',
-        layer=AppServerLayer,
-        setUp=browser.setUp, tearDown=browser.tearDown,
-        ),
-    'launchpadlib2.txt': LayeredDocFileSuite(
-        '../doc/launchpadlib.txt',
-        layer=AppServerLayer,
-        setUp=browser.setUp, tearDown=browser.tearDown,
-        ),
+    'karmacache.txt': LayeredDocFileSuite(
+        '../doc/karmacache.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 

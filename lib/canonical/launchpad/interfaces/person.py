@@ -36,7 +36,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -504,7 +504,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_('List of languages known by this person'),
             readonly=True, required=False,
-            value_type=Object(schema=ILanguage)))
+            value_type=Reference(schema=ILanguage)))
     translatable_languages = Attribute(
         _('Languages this person knows, apart from English'))
 
@@ -589,17 +589,17 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     allwikis = exported(
         CollectionField(title=_("All WikiNames of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IWikiName)),
+                        value_type=Reference(schema=IWikiName)),
         exported_as='wiki_names')
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IIrcID)),
+                        value_type=Reference(schema=IIrcID)),
         exported_as='irc_nicknames')
     jabberids = exported(
         CollectionField(title=_("List of Jabber IDs of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IJabberID)),
+                        value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
     branches = Attribute(
         "All branches related to this person. They might be registered, "
@@ -614,26 +614,28 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_("All `ITeamMembership`s for Teams this Person is an "
                     "active member of."),
-            value_type=Object(schema=ITeamMembership),
+            value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
-        exported_as='team_memberships')
+        exported_as='memberships_details')
     open_membership_invitations = exported(
         CollectionField(
             title=_('Open membership invitations.'),
             description=_("All TeamMemberships which represent an invitation "
                           "(to join a team) sent to this person."),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=ITeamMembership)))
     teams_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is a participant.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=Interface)),
+        exported_as='participations')
     teams_indirectly_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is an indirect member.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=Interface)),
+        exported_as='indirect_participations')
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -646,7 +648,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             description=_(
                 "Confirmed e-mails are the ones in the VALIDATED state"),
             readonly=True, required=False,
-            value_type=Object(schema=IEmailAddress)),
+            value_type=Reference(schema=IEmailAddress)),
         exported_as='confirmed_email_addresses')
     unvalidatedemails = Attribute(
         "Emails this person added in Launchpad but are not yet validated.")
@@ -682,7 +684,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       readonly=True)
 
     preferredemail = exported(
-        Object(title=_("Preferred email address"),
+        Reference(title=_("Preferred email address"),
                description=_("The preferred email address for this person. "
                              "The one we'll use to communicate with them."),
                readonly=True, required=False, schema=IEmailAddress),
@@ -1174,12 +1176,12 @@ class IPersonViewRestricted(Interface):
     activemembers = exported(
         CollectionField(
             title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='members')
     adminmembers = exported(
         CollectionField(
             title=_("List of this team's admins."),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
@@ -1192,7 +1194,7 @@ class IPersonViewRestricted(Interface):
                 "way or another, are a part of this team. If you want a "
                 "method to check if a given person is a member of a team, "
                 "you should probably look at IPerson.inTeam()."),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='participants')
     approvedmembers = Attribute("List of members with APPROVED status")
     deactivated_member_count = Attribute("Number of deactivated members")
@@ -1201,13 +1203,13 @@ class IPersonViewRestricted(Interface):
         CollectionField(
             title=_(
                 "All members whose membership is in the DEACTIVATED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
         CollectionField(
             title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='expired_members')
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
@@ -1215,7 +1217,7 @@ class IPersonViewRestricted(Interface):
     invited_members = exported(
         CollectionField(
             title=_("All members whose membership is in the INVITED state"),
-            value_type=Object(schema=Interface)))
+            value_type=Reference(schema=Interface)))
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
         CollectionField(
@@ -1225,13 +1227,14 @@ class IPersonViewRestricted(Interface):
                 "APPROVED status.  The results are ordered using "
                 "Person.sortingColumns."),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=ITeamMembership)),
+        exported_as='members_details')
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     proposedmembers = exported(
         CollectionField(
             title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
@@ -1924,6 +1927,8 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
 IPersonPublic['super_teams'].value_type.schema = ITeam
+IPersonPublic['teams_participated_in'].value_type.schema = ITeam
+IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
