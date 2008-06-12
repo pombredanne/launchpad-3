@@ -228,7 +228,8 @@ class LaunchpadScript:
     #
 
     def lock_and_run(self, blocking=False, skip_delete=False,
-                     use_web_security=False, implicit_begin=True):
+                     use_web_security=False, implicit_begin=True,
+                     isolation=ISOLATION_LEVEL_DEFAULT):
         """Call lock_or_die(), and then run() the script.
 
         Will die with sys.exit(1) if the locking call fails.
@@ -236,7 +237,7 @@ class LaunchpadScript:
         self.lock_or_die(blocking=blocking)
         try:
             self.run(use_web_security=use_web_security,
-                     implicit_begin=implicit_begin)
+                     implicit_begin=implicit_begin, isolation=isolation)
         finally:
             self.unlock(skip_delete=skip_delete)
 

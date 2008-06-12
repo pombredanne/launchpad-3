@@ -532,6 +532,9 @@ a distribution question:
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()
 
+    # Reassign back the question to ubuntu
+    >>> question_three.target = ubuntu
+
 
 == The QuestionLanguage vocabulary ==
 
@@ -839,7 +842,7 @@ states on that target.
     >>> view = getMultiAdapter(
     ...     (firefox, LaunchpadTestRequest()), name='+open_questions_count')
     >>> view()
-    u'4'
+    u'3'
 
 
 == QuestionSOP ==
