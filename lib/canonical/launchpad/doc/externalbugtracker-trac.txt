@@ -348,7 +348,7 @@ watch hasn't altered:
     >>> from datetime import datetime, timedelta
     >>> from operator import attrgetter
     >>> sorted_bug_watches = sorted(
-    ...     bug_watch for bug_watch in example_bug_tracker.watches,
+    ...     (bug_watch for bug_watch in example_bug_tracker.watches),
     ...     key=attrgetter('remotebug'))
     >>> bug_watch = sorted_bug_watches[-1]
     >>> now = datetime.now(pytz.timezone('UTC'))
