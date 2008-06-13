@@ -273,10 +273,7 @@ class UserDetailsStorageTest(DatabaseTest):
         cur = cursor()
         cur.execute(
             "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  '%s', "
-            "  2)"  # 2 == Validated
+            "VALUES (1, %s, 2)"  # 2 == Validated
             % sqlvalues(u'm\xe3rk@hbd.com'))
         transaction.commit()
         userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
