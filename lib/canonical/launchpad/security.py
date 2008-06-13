@@ -423,14 +423,6 @@ class AdminShippingRequestSetByShipItAdmins(
     usedfor = IShippingRequestSet
 
 
-class EditSeriesSourceByVCSImports(AuthorizationBase):
-    permission = 'launchpad.EditSource'
-    usedfor = IProductSeries
-
-    def checkAuthenticated(self, user):
-        return True
-
-
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IMilestone

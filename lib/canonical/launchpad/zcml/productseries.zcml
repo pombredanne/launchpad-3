@@ -18,7 +18,7 @@
                             status releasefileglob"
             />
         <require
-            permission="launchpad.EditSource"
+            permission="launchpad.AnyPerson"
             set_attributes="importstatus rcstype cvsroot cvsmodule
                 cvstarfileurl cvsbranch svnrepository"
             />
@@ -238,7 +238,7 @@
         class="canonical.launchpad.browser.ProductSeriesSourceView"
         template="../templates/productseries-source.pt"
         facet="overview"
-        permission="launchpad.EditSource"
+        permission="launchpad.AnyPerson"
         />
 
     <browser:page
@@ -247,7 +247,7 @@
         class="canonical.launchpad.browser.ProductSeriesLinkBranchView"
         template="../templates/productseries-linkbranch.pt"
         facet="overview"
-        permission="launchpad.EditSource"
+        permission="launchpad.Edit"
         />
 
     <browser:page
@@ -256,7 +256,7 @@
         class="canonical.launchpad.browser.ProductSeriesLinkBranchFromCodeView"
         template="../templates/productseries-linkbranch.pt"
         facet="overview"
-        permission="launchpad.EditSource"
+        permission="launchpad.Edit"
         />
 
     <browser:editform

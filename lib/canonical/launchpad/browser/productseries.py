@@ -149,7 +149,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.EditSource')
+    @enabled_with_permission('launchpad.AnyPerson')
     def editsource(self):
         text = 'Edit source'
         return Link('+source', text, icon='edit')
@@ -630,16 +630,13 @@ class UIRevisionControlSystems(EnumeratedType):
 
 
 class ProductSeriesSourceView(LaunchpadEditFormView):
-    """View for editing upstream RCS details for the product series.
+    """View for editing informational upstream RCS details for the series.
 
-    This form is protected by the launchpad.EditSource permission,
-    which basically allows anyone to edit the details until the import
-    has been certified (at which point only vcs-imports team members
-    can edit it).
+    Anyone can edit these details.
 
     In addition, users with launchpad.Admin (i.e. vcs-imports team
     members or administrators) permission are provided with a few
-    extra buttons to certify the import or reset failed test imports.
+    extra buttons.
     """
     schema = IProductSeries
     # The rcstype field is now create separately below.
