@@ -783,16 +783,6 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                         series.product.displayname,
                         series.displayname))
 
-        if self.resettoautotest_action.submitted():
-            if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
-                self.addError('Cannot rerun import without CVS or '
-                              'Subversion details.')
-        elif self.certify_action.submitted():
-            if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
-                self.addError('Cannot certify import without CVS or '
-                              'Subversion details.')
-            if self.context.syncCertified():
-                self.addError('Import has already been approved.')
 
     def isAdmin(self, action=None):
         # The optional action parameter is so this method can be
@@ -813,44 +803,6 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                 self.context.importstatus = ImportStatus.TESTING
         self.request.response.addInfoNotification(
             'Upstream source details updated.')
-
-    def allowResetToAutotest(self, action):
-        return self.isAdmin() and self.context.autoTestFailed()
-
-    @action(_('Rerun import in the Autotester'), name='resettoautotest',
-            condition=allowResetToAutotest)
-    def resettoautotest_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.importstatus = ImportStatus.TESTING
-        self.request.response.addInfoNotification(
-            'Source import reset to TESTING')
-
-    def allowCertify(self, action):
-        return self.isAdmin() and not self.context.syncCertified()
-
-    @action(_('Approve import for production and publication'),
-            name='certify', condition=allowCertify)
-    def certify_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.certifyForSync()
-        self.request.response.addInfoNotification(
-            'Source import certified for publication')
-
-    @action(_('Mark Import TESTFAILED'), name='testfailed',
-            condition=isAdmin)
-    def testfailed_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.markTestFailed()
-        self.request.response.addInfoNotification(
-            'Source import marked as TESTFAILED.')
-
-    @action(_('Mark Import DONTSYNC'), name='dontsync',
-            condition=isAdmin)
-    def dontsync_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.markDontSync()
-        self.request.response.addInfoNotification(
-            'Source import marked as DONTSYNC.')
 
     @action(_('Delete Import'), name='delete',
             condition=isAdmin)
