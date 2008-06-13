@@ -51,7 +51,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
-from canonical.launchpad.mailout.branchmergeproposal import BMPMailer
+from canonical.launchpad.mailout.branchmergeproposal import (
+    BMPMailer, RecipientReason)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
@@ -431,7 +432,10 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
         if candidate is not None:
             vote_reference = self.context.nominateReviewer(
                 candidate, self.user, review_type)
-            BMPMailer.forReviewRequest(vote_reference, self.user).sendAll()
+            reason = RecipientReason.forReviewer(vote_reference, candidate)
+            mailer = BMPMailer.forReviewRequest(
+                reason, self.context, self.user)
+            mailer.sendAll()
         form.applyChanges(self, self.form_fields, data, self.adapters)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
