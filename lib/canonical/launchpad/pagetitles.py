@@ -934,6 +934,10 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
+def person_mergeproposals(context, view):
+    """Return the view's heading."""
+    return view.heading
+
 person_oauth_tokens = "Applications you authorized to access Launchpad"
 
 person_packages = ContextDisplayName('Packages maintained by %s')

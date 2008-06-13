@@ -12,6 +12,7 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
+    'IBranchMergeProposalListingBatchNavigator',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -21,6 +22,7 @@ from zope.schema import Choice, Datetime, Int, List
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -381,6 +383,10 @@ class IBranchMergeProposal(Interface):
 
     def deleteProposal():
         """Delete the proposal to merge."""
+
+
+class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
+    """A marker interface for registering the appropriate listings."""
 
 
 class IBranchMergeProposalGetter(Interface):

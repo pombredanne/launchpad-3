@@ -10,9 +10,11 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'PeopleListView',
+    'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
+    'PersonApprovedMergesView',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBranchesMenu',
     'PersonBranchesView',
@@ -133,12 +135,16 @@ from canonical.launchpad.interfaces import (
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
@@ -4065,3 +4071,25 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
+
+
+class PersonActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the person that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+
+class PersonApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals that have been approved for the person."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
