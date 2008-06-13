@@ -1,0 +1,7 @@
+= Person notifications =
+
+XXX: Need to write the test.
+
+
+    >>> 1 == 2
+    True
