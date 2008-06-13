@@ -101,12 +101,6 @@
 
       <input tal:replace="structure view/rcstype_emptymarker" />
 
-      <tal:has-import-status condition="context/importstatus">
-        <h2>Import Status</h2>
-        <p>The current import status is:
-          <b tal:content="context/importstatus/title">$title</b>. </p>
-      </tal:has-import-status>
-
       <script type="text/javascript">
         //<![CDATA[
         function updateWidgets() {
