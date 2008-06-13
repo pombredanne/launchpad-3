@@ -64,7 +64,7 @@ Now we are able to use the search box in this page:
 
 Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
 
-    >>> browser.getLink("mozilla-firefox").click()
+    >>> browser.getLink(url="mozilla-firefox/0.9").click()
     >>> browser.title
     'mozilla-firefox 0.9 (i386 binary) in ubuntu warty'
 

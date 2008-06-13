@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import logging
 import os
 import subprocess
 import sys
@@ -14,9 +15,9 @@ from canonical.config import config
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    BuildStatus, IComponentSet)
-from canonical.launchpad.scripts import FakeLogger
+from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.buildd import RetryDepwait
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.testing import (
@@ -103,11 +104,13 @@ class TestRetryDepwait(unittest.TestCase):
 
         retry_depwait = RetryDepwait(
             name='retry-depwait', test_args=test_args)
-        # Swallowing all log messages.
-        retry_depwait.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        retry_depwait.logger.message = message
+        retry_depwait.logger = QuietFakeLogger()
+
+        # `IBuildSet.retryDepwait` retrieve a specific logger instance
+        # from the global registry, we have to silence that too.
+        root_logger = logging.getLogger('retry-depwait')
+        root_logger.setLevel(logging.CRITICAL)
+
         return retry_depwait
 
     def testUnknownDistribution(self):

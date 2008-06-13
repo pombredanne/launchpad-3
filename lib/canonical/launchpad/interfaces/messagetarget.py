@@ -10,13 +10,12 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
 
 from canonical.lazr.rest.declarations import exported
-from canonical.lazr.rest.schema import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class IMessageTarget(Interface):

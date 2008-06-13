@@ -570,14 +570,10 @@ Bug 3989 -- StuarBishop 20060713
     ('', '')
     >>> process.returncode
     0
+    >>> transaction.abort()
 
 Here we can see that the membership that was active is now flagged as expired
 while the one that was inactive hasn't changed.
-
-    # These two objects were updated in another transaction, so we need to
-    # expire them.
-    >>> removeSecurityProxy(foobar_on_admins).expire()
-    >>> removeSecurityProxy(sp_on_ubuntu_translators).expire()
 
     >>> foobar_on_admins = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name16'), personset.getByName('admins'))

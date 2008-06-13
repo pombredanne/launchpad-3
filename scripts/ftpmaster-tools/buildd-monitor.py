@@ -14,6 +14,7 @@ from sqlobject import SQLObjectNotFound
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.database import Builder
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from twisted.internet import stdio
 from twisted.protocols import basic
@@ -160,5 +161,6 @@ def main(tm):
 if __name__ == '__main__':
     # for main, the only think to setup is the initZopeless
     # environment and the application wrapper.
+    execute_zcml_for_scripts()
     tm = initZopeless(dbuser=config.builddmaster.dbuser)
     main(tm)
