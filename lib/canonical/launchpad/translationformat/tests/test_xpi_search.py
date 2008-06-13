@@ -73,5 +73,18 @@ class XpiSearchTestCase(unittest.TestCase):
                           message_list)
 
 
+    def test_TemplateSearchingForMsgIDs(self):
+        """Test that searching returns no results for internal msg IDs."""
+        entry = self.setUpTranslationImportQueueForTemplate('en-US')
+
+        # The status is now IMPORTED:
+        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+
+        potmsgsets = list(self.spanish_firefox.findPOTMsgSetsContaining(
+            text='foozilla.title'))
+
+        self.assertEquals(len(potmsgsets), 0)
+
+
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)
