@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Utils import make_msgid
+from email.Utils import make_msgid, formatdate
 from StringIO import StringIO
 
 import pytz
@@ -61,6 +61,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
+from canonical.launchpad.mail.signedmessage import SignedMessage
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -103,6 +104,9 @@ class LaunchpadObjectFactory:
         # Initialise the unique identifier.
         self._integer = 0
 
+    def getUniqueEmailAddress(self):
+        return "%s@example.com" % self.getUniqueString('email')
+
     def getUniqueInteger(self):
         """Return an integer unique to this factory instance."""
         self._integer += 1
@@ -142,21 +146,20 @@ class LaunchpadObjectFactory:
         :param displayname: The display name to use for the person.
         """
         if email is None:
-            email = "%s@example.com" % self.getUniqueString('email')
+            email = self.getUniqueEmailAddress()
         if name is None:
             name = self.getUniqueString('person-name')
         if password is None:
             password = self.getUniqueString('password')
-        else:
-            # If a password was specified, validate the email address,
-            # unless told otherwise.
-            if email_address_status is None:
-                email_address_status = EmailAddressStatus.VALIDATED
+        # By default, make the email address preferred.
+        if email_address_status is None:
+            email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
+
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.VALIDATED:
@@ -284,8 +287,7 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson(
-                password=self.getUniqueString('password'))
+            registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
@@ -325,8 +327,7 @@ class LaunchpadObjectFactory:
         :param person_displayname: The displayname for the created Person
         """
         branch = self.makeBranch(title=branch_title)
-        person = self.makePerson(displayname=person_displayname,
-            email_address_status=EmailAddressStatus.VALIDATED)
+        person = self.makePerson(displayname=person_displayname)
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
@@ -387,6 +388,22 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
+    def makeSignedMessage(self, msgid=None, body=None, subject=None):
+        mail = SignedMessage()
+        mail['From'] = self.getUniqueEmailAddress()
+        if subject is None:
+            subject = self.getUniqueString('subject')
+        mail['Subject'] = subject
+        if msgid is None:
+            msgid = make_msgid('launchpad')
+        if body is None:
+            body = self.getUniqueString('body')
+        mail['Message-Id'] = msgid
+        mail['Date'] = formatdate()
+        mail.set_payload(body)
+        mail.parsed_string = mail.as_string()
+        return mail
+
     def makeSpecification(self, product=None):
         """Create and return a new, arbitrary Blueprint.
 
@@ -405,7 +422,7 @@ class LaunchpadObjectFactory:
             product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None):
+                       cvs_module=None, product=None, branch_name=None):
         """Create and return a new, arbitrary code import.
 
         The code import will be an import from a Subversion repository located
@@ -414,11 +431,12 @@ class LaunchpadObjectFactory:
         if svn_branch_url is cvs_root is cvs_module is None:
             svn_branch_url = self.getUniqueURL()
 
-        product = self.makeProduct()
-        branch_name = self.getUniqueString('name')
+        if product is None:
+            product = self.makeProduct()
+        if branch_name is None:
+            branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
-        registrant = self.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -521,10 +539,10 @@ class LaunchpadObjectFactory:
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
             source_product_series_id)
 
-    def makeCodeReviewMessage(self, sender=None, subject=None, body=None,
+    def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None):
         if sender is None:
-            sender = self.makePerson(password='password')
+            sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -533,15 +551,17 @@ class LaunchpadObjectFactory:
             merge_proposal = parent.branch_merge_proposal
         else:
             merge_proposal = self.makeBranchMergeProposal(registrant=sender)
-        return merge_proposal.createMessage(
+        return merge_proposal.createComment(
             sender, subject, body, vote, vote_tag, parent)
 
-    def makeMessage(self, subject=None, content=None, parent=None):
+    def makeMessage(self, subject=None, content=None, parent=None,
+                    owner=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         rfc822msgid = make_msgid("launchpad")
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
             owner=owner, parent=parent)

@@ -26,22 +26,29 @@ from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
-    ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
-    PackageDiffAlreadyRequested, PackagePublishingStatus, PackageUploadStatus,
-    NotFoundError, SourcePackageFileType, SourcePackageFormat,
-    SourcePackageUrgency, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
+from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.packagediff import (
+    PackageDiffAlreadyRequested)
+from canonical.launchpad.interfaces.package import PackageUploadStatus
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
+from canonical.launchpad.interfaces.sourcepackage import (
+    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.packagediff import PackageDiff
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
+from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
 class SourcePackageRelease(SQLBase):
@@ -51,13 +58,13 @@ class SourcePackageRelease(SQLBase):
     section = ForeignKey(foreignKey='Section', dbName='section')
     creator = ForeignKey(
         dbName='creator', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=True)
     maintainer = ForeignKey(
         dbName='maintainer', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
@@ -217,18 +224,6 @@ class SourcePackageRelease(SQLBase):
                 return release
         else:
             return None
-
-    def countOpenBugsInUploadedDistro(self, user):
-        """See ISourcePackageRelease."""
-        upload_distro = self.upload_distroseries.distribution
-        params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
-            user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # XXX: kiko 2006-03-07:
-        # We need to omit duplicates here or else our bugcounts are
-        # inconsistent. This is a wart, and we need to stop spreading
-        # these things over the code.
-        params.omit_dupes = True
-        return upload_distro.searchTasks(params).count()
 
     @property
     def current_publishings(self):

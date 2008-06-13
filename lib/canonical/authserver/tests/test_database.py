@@ -69,10 +69,11 @@ class DatabaseTest(unittest.TestCase):
         :param branch_id: The id of a row in the Branch table. An int.
         :return: A timestamp or None.
         """
-        self.cursor.execute(
+        cur = cursor()
+        cur.execute(
             "SELECT next_mirror_time FROM branch WHERE id = %s"
             % sqlvalues(branch_id))
-        return self.cursor.fetchone()[0]
+        return cur.fetchone()[0]
 
     def setNextMirrorTime(self, branch_id, next_mirror_time):
         """Set next_mirror_time on the branch with the given id."""
@@ -269,13 +270,15 @@ class UserDetailsStorageTest(DatabaseTest):
         self.assertEqual(goodDict, userDict)
 
         # Unicode email addresses are handled too.
-        self.cursor.execute(
+        cur = cursor()
+        cur.execute(
             "INSERT INTO EmailAddress (person, email, status) "
             "VALUES ("
             "  1, "
             "  '%s', "
             "  2)"  # 2 == Validated
             % sqlvalues(u'm\xe3rk@hbd.com'))
+        transaction.commit()
         userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
         goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
         self.assertEqual(goodDict, userDict)
@@ -396,7 +399,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             """
             % branchID)
         self.assertEqual(
-            ['name12', 'firefox', 'foo', None, None, 12], cur.fetchone())
+            ('name12', 'firefox', 'foo', None, None, 12), cur.fetchone())
 
     def test_createBranch_junk(self):
         # Create a branch with NULL product too:
@@ -413,7 +416,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             """
             % branchID)
         self.assertEqual(
-            ['sabdfl', None, 'foo', None, None, 1], cur.fetchone())
+            ('sabdfl', None, 'foo', None, None, 1), cur.fetchone())
 
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
@@ -663,6 +666,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
         [current_db_time] = cur.fetchone()
+        transaction.commit()
 
         storage = DatabaseUserDetailsStorageV2(None)
         storage._requestMirrorInteraction(1, hosted_branch_id)
@@ -690,6 +694,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
         [current_db_time] = cur.fetchone()
+        transaction.commit()
 
         store._requestMirrorInteraction(salgado.id, branch_id)
         self.assertTrue(
@@ -839,10 +844,11 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(success, True)
 
         # verify that last_mirror_attempt is set
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[1], None)
 
@@ -871,11 +877,12 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage._mirrorFailedInteraction(1, "failed")
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures,
                 mirror_status_message
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 1)
@@ -895,11 +902,12 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures,
                    last_mirrored_id
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
@@ -914,10 +922,11 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
@@ -932,10 +941,11 @@ class BranchDetailsStorageTest(DatabaseTest):
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
         self.assertEqual(success, True, '_recordSuccessInteraction failed')
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT name, hostname, date_started, date_completed
                 FROM ScriptActivity where name = 'test-recordsuccess'""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertEqual(row[0], 'test-recordsuccess')
         self.assertEqual(row[1], 'vostok')
         self.assertEqual(row[2], started.replace(tzinfo=None))

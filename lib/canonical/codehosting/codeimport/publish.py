@@ -2,45 +2,20 @@
 
 """Publish a vcs import branch from the importd slave.
 
-This module is the back-end for scripts/importd-publish.py.
+XXX MichaelHudson 2008-06-06, bug=232076 we only need the code that
+remains in this module to test the conversion from old-style to
+new-style import.  When that code is deleted, this module can go too.
 """
 
 __metaclass__ = type
 
-__all__ = ['ImportdPublisher']
+__all__ = ['ensure_series_branch']
 
-
-import os
 
 from zope.component import getUtility
 
-from bzrlib.transport import get_transport
-from bzrlib.workingtree import WorkingTree
-
-from canonical.codehosting.codeimport.worker import BazaarBranchStore
-from canonical.database.sqlbase import begin, commit
 from canonical.launchpad.interfaces import (
-    BranchType, ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
-
-
-class ImportdPublisher:
-    """Publish a vcs import branch."""
-
-    def __init__(self, log, workingdir, series_id, push_prefix):
-        self.logger = log
-        self.workingdir = workingdir
-        self.series_id = series_id
-        self.push_prefix = push_prefix
-        self._store = BazaarBranchStore(get_transport(self.push_prefix))
-
-    def publish(self):
-        begin()
-        series = getUtility(IProductSeriesSet)[self.series_id]
-        ensure_series_branch(series)
-        branch = series.import_branch
-        commit()
-        local = os.path.join(self.workingdir, 'bzrworking')
-        self._store.push(branch.id, WorkingTree.open(local))
+    BranchType, ILaunchpadCelebrities, IBranchSet)
 
 
 def ensure_series_branch(series):

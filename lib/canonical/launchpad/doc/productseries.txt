@@ -1,5 +1,4 @@
-ProductSeries
-=============
+= ProductSeries =
 
 A Launchpad Product models a single piece of software. However for
 release management purposes, a Product often has to be split in several
@@ -7,95 +6,99 @@ discrete entities which must be considered separately for packaging,
 translations, version control, etc. We call these entities
 ProductSeries.
 
->>> from zope.component import getUtility
->>> from canonical.launchpad.webapp.testing import verifyObject
->>> from canonical.launchpad.interfaces import (
-...     IHasTranslationImports, IPersonSet, IProductSeries, IProductSet,
-...     IProjectSet, NotFoundError)
->>> from canonical.database.sqlbase import flush_database_updates
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IHasTranslationImports, IPersonSet, IProductSeries, IProductSet)
+    >>> from canonical.database.sqlbase import flush_database_updates
 
 First, get a product that has some ProductSeries in the sample data.
 
->>> productset = getUtility(IProductSet)
->>> firefox = productset['firefox']
+    >>> productset = getUtility(IProductSet)
+    >>> firefox = productset['firefox']
 
 A ProductSeries can be retrieved using the associated product and the
 series name.
 
->>> trunk = firefox.getSeries('trunk')
+    >>> trunk = firefox.getSeries('trunk')
 
 Verify that the resulting object correctly implements the IProductSeries
 interface.
 
->>> verifyObject(IProductSeries, trunk)
-True
->>> IProductSeries.providedBy(trunk)
-True
+    >>> verifyObject(IProductSeries, trunk)
+    True
+    >>> IProductSeries.providedBy(trunk)
+    True
 
 and IHasTranslationImports.
 
->>> verifyObject(IHasTranslationImports, trunk)
-True
->>> IHasTranslationImports.providedBy(trunk)
-True
+    >>> verifyObject(IHasTranslationImports, trunk)
+    True
+    >>> IHasTranslationImports.providedBy(trunk)
+    True
 
 And verify that it looks like the series we think it should be.
 
->>> trunk.product == firefox
-True
->>> trunk.name
-u'trunk'
+    >>> trunk.product == firefox
+    True
+    >>> trunk.name
+    u'trunk'
 
 It's also possible to ask a product for all its associated series.
 
->>> onedotzero = firefox.getSeries('1.0')
->>> list(firefox.serieses) == [onedotzero, trunk]
-True
+    >>> onedotzero = firefox.getSeries('1.0')
+    >>> list(firefox.serieses) == [onedotzero, trunk]
+    True
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.
 
->>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from canonical.launchpad.interfaces import IProductSeriesSet
 
->>> firefox_1_0 = getUtility(IProductSeriesSet).get(2)
->>> print firefox_1_0.product.name
-firefox
->>> print firefox_1_0.name
-1.0
+    >>> firefox_1_0 = getUtility(IProductSeriesSet).get(2)
+    >>> print firefox_1_0.product.name
+    firefox
+    >>> print firefox_1_0.name
+    1.0
 
 New ProductSeries are created using Product.newSeries.
 
->>> owner = getUtility(IPersonSet).getByName('carlos')
->>> summary = "Experimental port of Firefox to the Emacs operating system."
->>> emacs = firefox.newSeries(owner, 'emacs', summary)
+    >>> owner = getUtility(IPersonSet).getByName('carlos')
+    >>> summary = "Experimental port of Firefox to the Emacs operating system."
+    >>> emacs = firefox.newSeries(owner, 'emacs', summary)
+
+A newly created series is assumed to be in the development state.
+
+    >>> emacs.status.title
+    'Active Development'
 
 Let's check that the new series is properly associated to its product.
 
->>> flush_database_updates()
->>> firefox.getSeries('emacs') == emacs
-True
+    >>> flush_database_updates()
+    >>> firefox.getSeries('emacs') == emacs
+    True
 
 ProductSeriesSet implements two methods to search the database for
 IProductSeries that have RCS details set. It returns an IProductSeries
 or None.
 
->>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from canonical.launchpad.interfaces import IProductSeriesSet
 
->>> cvsroot = ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
->>> cvsmodule = 'evolution'
->>> cvsbranch = 'MAIN'
->>> svnrepository = 'svn://testing.com'
->>> productseriesset = getUtility(IProductSeriesSet)
->>> productseries = productseriesset.getByCVSDetails(cvsroot, cvsmodule,
-...     cvsbranch)
->>> productseries.name
-u'trunk'
+    >>> cvsroot = ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
+    >>> cvsmodule = 'evolution'
+    >>> cvsbranch = 'MAIN'
+    >>> svnrepository = 'svn://testing.com'
+    >>> productseriesset = getUtility(IProductSeriesSet)
+    >>> productseries = productseriesset.getByCVSDetails(cvsroot, cvsmodule,
+    ...     cvsbranch)
+    >>> productseries.name
+    u'trunk'
 
->>> productseries = productseriesset.getBySVNDetails(svnrepository)
->>> print productseries
-None
+    >>> productseries = productseriesset.getBySVNDetails(svnrepository)
+    >>> print productseries
+    None
 
-Specification Listings
-======================
+
+== Specification Listings ==
 
 We should be able to get lists of specifications in different states
 related to a productseries.
@@ -103,146 +106,145 @@ related to a productseries.
 Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
- >>> onezero = firefox.getSeries("1.0")
- >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> onezero = firefox.getSeries("1.0")
+    >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
 
- >>> from canonical.database.constants import UTC_NOW
- >>> carlos = getUtility(IPersonSet).getByName('carlos')
- >>> from canonical.launchpad.database import Specification
- >>> a = Specification(name='a', title='A', summary='AA', owner=carlos,
- ...                   product=firefox, productseries=onezero,
- ...                   specurl='http://wbc.com/two', goal_proposer=carlos,
- ...                   date_goal_proposed=UTC_NOW)
- >>> b = Specification(name='b', title='b', summary='bb', owner=carlos,
- ...                   product=firefox, productseries=onezero,
- ...                   specurl='http://fds.com/adsf', goal_proposer=carlos,
- ...                   date_goal_proposed=UTC_NOW)
+    >>> from canonical.database.constants import UTC_NOW
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> from canonical.launchpad.database import Specification
+    >>> a = Specification(name='a', title='A', summary='AA', owner=carlos,
+    ...                   product=firefox, productseries=onezero,
+    ...                   specurl='http://wbc.com/two', goal_proposer=carlos,
+    ...                   date_goal_proposed=UTC_NOW)
+    >>> b = Specification(name='b', title='b', summary='bb', owner=carlos,
+    ...                   product=firefox, productseries=onezero,
+    ...                   specurl='http://fds.com/adsf', goal_proposer=carlos,
+    ...                   date_goal_proposed=UTC_NOW)
 
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
- >>> from canonical.launchpad.interfaces import (
- ...     SpecificationDefinitionStatus, SpecificationGoalStatus,
- ...     SpecificationImplementationStatus)
- >>> a.definition_status = b.definition_status = SpecificationDefinitionStatus.APPROVED
- >>> a.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
- >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
- >>> a.acceptBy(a.owner)
- >>> shim = a.updateLifecycleStatus(a.owner)
- >>> b.declineBy(b.owner)
- >>> shim = b.updateLifecycleStatus(b.owner)
+    >>> from canonical.launchpad.interfaces import (
+    ...     SpecificationDefinitionStatus, SpecificationImplementationStatus)
+    >>> a.definition_status = b.definition_status = SpecificationDefinitionStatus.APPROVED
+    >>> a.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
+    >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
+    >>> a.acceptBy(a.owner)
+    >>> shim = a.updateLifecycleStatus(a.owner)
+    >>> b.declineBy(b.owner)
+    >>> shim = b.updateLifecycleStatus(b.owner)
 
- >>> from canonical.database.sqlbase import flush_database_updates
- >>> flush_database_updates()
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 If we ask for ALL specs we should see them both.
 
- >>> filter = [SpecificationFilter.ALL]
- >>> for s in onezero.specifications(filter=filter):
- ...     print s.name
- a
- b
+    >>> filter = [SpecificationFilter.ALL]
+    >>> for s in onezero.specifications(filter=filter):
+    ...     print s.name
+    a
+    b
 
 With a productseries, we can ask for ACCEPTED, PROPOSED and DECLINED
 specs:
 
- >>> filter=[SpecificationFilter.ACCEPTED]
- >>> for spec in onezero.specifications(filter=filter):
- ...     print spec.name, spec.goalstatus.title
- a Accepted
+    >>> filter=[SpecificationFilter.ACCEPTED]
+    >>> for spec in onezero.specifications(filter=filter):
+    ...     print spec.name, spec.goalstatus.title
+    a Accepted
 
- >>> filter=[SpecificationFilter.PROPOSED]
- >>> onezero.specifications(filter=filter).count()
- 0
+    >>> filter=[SpecificationFilter.PROPOSED]
+    >>> onezero.specifications(filter=filter).count()
+    0
 
- >>> filter=[SpecificationFilter.DECLINED]
- >>> onezero.specifications(filter=filter).count()
- 1
+    >>> filter=[SpecificationFilter.DECLINED]
+    >>> onezero.specifications(filter=filter).count()
+    1
 
 We should see one informational spec if we ask just for that, the
 accepted one.
 
- >>> filter = [SpecificationFilter.INFORMATIONAL]
- >>> for s in onezero.specifications(filter=filter):
- ...     print s.name
- a
+    >>> filter = [SpecificationFilter.INFORMATIONAL]
+    >>> for s in onezero.specifications(filter=filter):
+    ...     print s.name
+    a
 
 If we specifically ask for declined informational, we will get that:
 
- >>> filter = [
- ...    SpecificationFilter.INFORMATIONAL, SpecificationFilter.DECLINED]
- >>> for s in onezero.specifications(filter=filter):
- ...     print s.name
- b
+    >>> filter = [
+    ...    SpecificationFilter.INFORMATIONAL, SpecificationFilter.DECLINED]
+    >>> for s in onezero.specifications(filter=filter):
+    ...     print s.name
+    b
 
 There are is one completed, accepted spec for 1.0:
 
- >>> filter = [SpecificationFilter.COMPLETE]
- >>> for spec in onezero.specifications(filter=filter):
- ...    print spec.name, spec.is_complete, spec.goalstatus.title
- a True Accepted
+    >>> filter = [SpecificationFilter.COMPLETE]
+    >>> for spec in onezero.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete, spec.goalstatus.title
+    a True Accepted
 
 There is one completed, declined spec:
 
- >>> filter = [SpecificationFilter.COMPLETE, SpecificationFilter.DECLINED]
- >>> for spec in onezero.specifications(filter=filter):
- ...    print spec.name, spec.is_complete, spec.goalstatus.title
- b True Declined
+    >>> filter = [SpecificationFilter.COMPLETE, SpecificationFilter.DECLINED]
+    >>> for spec in onezero.specifications(filter=filter):
+    ...    print spec.name, spec.is_complete, spec.goalstatus.title
+    b True Declined
 
 Now lets make b incomplete, but accepted.
 
- >>> b.implementation_status = SpecificationImplementationStatus.BETA
- >>> b.definition_status = SpecificationDefinitionStatus.NEW
- >>> shim = b.acceptBy(b.owner)
- >>> shim = b.updateLifecycleStatus(b.owner)
- >>> flush_database_updates()
+    >>> b.implementation_status = SpecificationImplementationStatus.BETA
+    >>> b.definition_status = SpecificationDefinitionStatus.NEW
+    >>> shim = b.acceptBy(b.owner)
+    >>> shim = b.updateLifecycleStatus(b.owner)
+    >>> flush_database_updates()
 
 And if we ask just for specs, we get BOTH the incomplete and the
 complete ones that have been accepted.
 
- >>> for spec in onezero.specifications():
- ...     print spec.name, spec.is_complete, spec.goalstatus.title
- a True Accepted
- b False Accepted
+    >>> for spec in onezero.specifications():
+    ...     print spec.name, spec.is_complete, spec.goalstatus.title
+    a True Accepted
+    b False Accepted
 
 We can search for text in specifications (in this case there are no
 matches):
 
- >>> print len(list(onezero.specifications(filter=['new'])))
- 0
+    >>> print len(list(onezero.specifications(filter=['new'])))
+    0
 
-Lifecycle Management
-====================
+
+== Lifecycle Management ==
 
 In the example above, we use the acceptBy and updateLifecycleStatus methods on
 a specification. These help us keep the full record of who moved the spec
 through each relevant stage of its existence.
 
- >>> b.goal_decider is None
- False
- >>> b.goal_decider.name
- u'carlos'
- >>> b.date_completed is None
- True
+    >>> b.goal_decider is None
+    False
+    >>> b.goal_decider.name
+    u'carlos'
+    >>> b.date_completed is None
+    True
 
 There's a method which will tell us if status changes we have just made will
 change the overall state of the spec to "completed".
 
- >>> jdub = getUtility(IPersonSet).getByName('jdub')
- >>> b.definition_status = SpecificationDefinitionStatus.APPROVED
- >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
- >>> print b.updateLifecycleStatus(jdub).title
- Complete
- >>> b.completer.name
- u'jdub'
- >>> b.date_completed is None
- False
+    >>> jdub = getUtility(IPersonSet).getByName('jdub')
+    >>> b.definition_status = SpecificationDefinitionStatus.APPROVED
+    >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
+    >>> print b.updateLifecycleStatus(jdub).title
+    Complete
+    >>> b.completer.name
+    u'jdub'
+    >>> b.date_completed is None
+    False
 
-Drivers
-=======
+
+== Drivers ==
 
 Products, projects and product series have drivers, who are people that
 have permission to approve bugs and features for specific releases. The
@@ -267,121 +269,116 @@ rules are that:
     other words, we use the "highest" owner as the fallback, which is
     either the product owner or the project owner if there is a project.
 
-
 We test these rules below. We will create the project, product and
 series directly so that we don't have to deal with security permissions
 checks when setting and resetting the driver attributes.
 
- >>> from canonical.launchpad.database import (
- ...    Project, Product, ProductSeries)
- >>> from canonical.database.sqlbase import flush_database_updates
- >>> carlos = getUtility(IPersonSet).getByName('carlos')
- >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
- >>> jblack = getUtility(IPersonSet).getByName('jblack')
- >>> project = Project(name='testproj', displayname='Test Project',
- ...     title='Test Project Title', homepageurl='http://foo.com/url',
- ...     summary='summary', description='description', owner=carlos.id)
- >>> product = Product(owner=sabdfl, name='testprod',
- ...     displayname='Test Product', title='Test product title',
- ...     summary='summary', project=project)
- >>> series = ProductSeries(owner=jblack, name='1.0', product=product,
- ...     summary='Series summary')
-
+    >>> from canonical.launchpad.database import (
+    ...    Project, Product, ProductSeries)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> jblack = getUtility(IPersonSet).getByName('jblack')
+    >>> project = Project(name='testproj', displayname='Test Project',
+    ...     title='Test Project Title', homepageurl='http://foo.com/url',
+    ...     summary='summary', description='description', owner=carlos.id)
+    >>> product = Product(owner=sabdfl, name='testprod',
+    ...     displayname='Test Product', title='Test product title',
+    ...     summary='summary', project=project)
+    >>> series = ProductSeries(owner=jblack, name='1.0', product=product,
+    ...     summary='Series summary')
 
 First, lets see what we get for the series drivers before we have
 anything actually written.
 
 If there is a project on the product, we would expect the project owner:
 
- >>> print series.product.project.name
- testproj
- >>> for d in series.drivers:
- ...     print d.name
- carlos
-
+    >>> print series.product.project.name
+    testproj
+    >>> for d in series.drivers:
+    ...     print d.name
+    carlos
 
 If there is NO project on the product, then we expect the product owner:
 
- >>> product.project = None
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- sabdfl
-
+    >>> product.project = None
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    sabdfl
 
 Now lets put the project back:
 
- >>> product.project = project.id
- >>> flush_database_updates()
-
+    >>> product.project = project.id
+    >>> flush_database_updates()
 
 And lets see what happens if we have an explicit driver on any of
 project, product or series:
 
- >>> cprov = getUtility(IPersonSet).getByName('cprov')
- >>> edgar = getUtility(IPersonSet).getByName('edgar')
- >>> danner = getUtility(IPersonSet).getByName('danner')
- >>> jblack = getUtility(IPersonSet).getByName('jblack')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> edgar = getUtility(IPersonSet).getByName('edgar')
+    >>> danner = getUtility(IPersonSet).getByName('danner')
+    >>> jblack = getUtility(IPersonSet).getByName('jblack')
 
- >>> project.driver = danner
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- danner
+    >>> project.driver = danner
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    danner
 
- >>> project.driver = None
- >>> product.driver = edgar
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- edgar
+    >>> project.driver = None
+    >>> product.driver = edgar
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    edgar
 
- >>> project.driver = None
- >>> product.driver = None
- >>> series.driver = cprov
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- carlos
- cprov
+    >>> project.driver = None
+    >>> product.driver = None
+    >>> series.driver = cprov
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    carlos
+    cprov
 
 OK, now let's test pairs of drivers:
 
- >>> project.driver = None
- >>> product.driver = edgar
- >>> series.driver = cprov
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- cprov
- edgar
+    >>> project.driver = None
+    >>> product.driver = edgar
+    >>> series.driver = cprov
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    cprov
+    edgar
 
- >>> project.driver = sabdfl
- >>> product.driver = danner
- >>> series.driver = None
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- danner
- sabdfl
+    >>> project.driver = sabdfl
+    >>> product.driver = danner
+    >>> series.driver = None
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    danner
+    sabdfl
 
- >>> project.driver = jdub
- >>> product.driver = None
- >>> series.driver = edgar
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- edgar
- jdub
+    >>> project.driver = jdub
+    >>> product.driver = None
+    >>> series.driver = edgar
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    edgar
+    jdub
 
 And finally the case where they are all set:
 
- >>> project.driver = cprov
- >>> product.driver = danner
- >>> series.driver = edgar
- >>> flush_database_updates()
- >>> for d in series.drivers:
- ...     print d.name
- cprov
- danner
- edgar
+    >>> project.driver = cprov
+    >>> product.driver = danner
+    >>> series.driver = edgar
+    >>> flush_database_updates()
+    >>> for d in series.drivers:
+    ...     print d.name
+    cprov
+    danner
+    edgar

@@ -13,14 +13,18 @@ import tempfile
 
 from zope.component import getUtility
 from zope.interface import implements
+
 from sqlobject import ForeignKey
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
+
+from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.utils import copy_and_close
+
 from canonical.launchpad.interfaces import (
     IPackageDiff, IPackageDiffSet)
-from canonical.librarian.interfaces import ILibrarianClient
 
 
 def perform_deb_diff(tmp_dir, out_filename, from_files, to_files):
@@ -85,23 +89,9 @@ def download_file(destination_path, libraryfile):
     :param libraryfile: The librarian file that is to be downloaded.
     :type libraryfile: ``LibraryFileAlias``
     """
-    # We will download librarian files in 256 Kb chunks in order
-    # to avoid excessive memory usage.
-    chunksize = 256*1024
-
-    destination_file = None
-    try:
-        libraryfile.open()
-        destination_file = open(destination_path, 'w')
-        chunk = libraryfile.read(chunksize)
-        while chunk:
-            destination_file.write(chunk)
-            chunk = libraryfile.read(chunksize)
-    finally:
-        libraryfile.close()
-        if destination_file is not None:
-            destination_file.close()
-
+    libraryfile.open()
+    destination_file = open(destination_path, 'w')
+    copy_and_close(libraryfile, destination_file)
 
 class PackageDiff(SQLBase):
     """A Package Diff request."""

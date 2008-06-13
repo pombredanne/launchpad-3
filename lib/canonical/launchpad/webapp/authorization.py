@@ -20,10 +20,12 @@ from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.lazr.interfaces import IObjectPrivacy
 
+from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, ILaunchpadPrincipal, IAuthorization)
 
 steveIsFixingThis = False
+
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
     classProvides(ISecurityPolicy)
@@ -71,6 +73,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             pass
         return True
 
+    @block_implicit_flushes
     def checkPermission(self, permission, object):
         """Check the permission, object, user against the launchpad
         authorization policy.

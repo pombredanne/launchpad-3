@@ -4,7 +4,8 @@
 import unittest
 
 import zope.event
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
@@ -60,6 +61,15 @@ class TestCase(unittest.TestCase):
             self.fail(
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
+
+    def assertIsInstance(self, instance, assert_class):
+        """Assert that an instance is an instance of assert_class.
+
+        instance and assert_class have the same semantics as the parameters
+        to isinstance.
+        """
+        self.assertTrue(zope_isinstance(instance, assert_class),
+            '%r is not an instance of %r' % (instance, assert_class))
 
 
 class TestCaseWithFactory(TestCase):
