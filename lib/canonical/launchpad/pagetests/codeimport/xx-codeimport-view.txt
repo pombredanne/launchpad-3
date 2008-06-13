@@ -1,84 +1,37 @@
-Currently, the pages relating to code imports are only visible to
-members of the vcs-imports team and Launchpad admins.  We log in as
-David Allouche, a member of vcs-imports (and not an admin):
-
-    >>> browser.addHeader('Authorization',
-    ...                   'Basic david.allouche@canonical.com:test')
+= Code imports =
 
 For now, there is no link to the page that lists all code imports, so
 we browse there directly:
 
     >>> browser.open('http://code.launchpad.dev/+code-imports')
-    >>> browser.title
-    'Code Imports'
+    >>> print browser.title
+    Code Imports
 
-Admins can also browse to this page, although anonymous and ordinary
-users cannot:
+Any user can look at the current list of imports.
 
-    >>> admin_browser.open('http://code.launchpad.dev/+code-imports')
-    >>> admin_browser.url
-    'http://code.launchpad.dev/+code-imports'
     >>> anon_browser.open('http://code.launchpad.dev/+code-imports')
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
-    >>> user_browser.open('http://code.launchpad.dev/+code-imports')
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
+    >>> print anon_browser.title
+    Code Imports
 
 There are two CodeImports in the sample data and they both show up in
 the page:
 
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> names
-    [u'gnome-terminal/import', u'evolution/import']
+    >>> for name in names:
+    ...     print name
+    gnome-terminal/import
+    evolution/import
 
-If we click on the code import's name, we go to the page for that
-import:
+If we click on the code import's name, we go to the associated branch
+for that import:
 
     >>> browser.getLink('gnome-terminal/import').click()
     >>> browser.url
-    'http://code.launchpad.dev/~vcs-imports/gnome-terminal/import/+code-import'
-    >>> browser.title
-    'Code Import for gnome-terminal'
-
-It displays some information about the code import, for example the
-review status and the URL of the Subversion branch the import is from:
-
-    >>> extract_text(
-    ...     find_tag_by_id(browser.contents, 'review-status'))
-    u'Reviewed'
-    >>> extract_text(
-    ...     find_tag_by_id(browser.contents, 'subversion-url'))
-    u'http://svn.example.org/svnroot/gnome-terminal/trunk'
-
-There is also a link to the associated branch:
-
-    >>> browser.getLink('GNOME Terminal Import Branch').url
     'http://code.launchpad.dev/~vcs-imports/gnome-terminal/import'
 
-and to the person requesting the import:
 
-    >>> browser.getLink('No Privileges Person').url
-    'http://code.launchpad.dev/~no-priv'
-
-There's a similar page for the other import, which uses CVS:
-
-    >>> browser.open('http://code.launchpad.dev/+code-imports')
-    >>> browser.getLink('evolution/import').click()
-    >>> browser.url
-    'http://code.launchpad.dev/~vcs-imports/evolution/import/+code-import'
-    >>> extract_text(
-    ...     find_tag_by_id(browser.contents, 'review-status'))
-    u'Pending Review'
-    >>> extract_text(
-    ...     find_tag_by_id(browser.contents, 'cvs-root'))
-    u':pserver:anonymous@anoncvs.example.org:/cvs/gnome'
-    >>> extract_text(
-    ...     find_tag_by_id(browser.contents, 'cvs-module'))
-    u'evolution'
+= Filtering the code import list =
 
 The code import listing is filterable, though only on review status so
 far.  There are no invalid imports in the sample data, so if we filter
@@ -93,9 +46,9 @@ internals a bit.
     ['Any']
     >>> control.displayValue = ["Invalid"]
     >>> browser.getControl(name="submit").click()
-    >>> extract_text(
+    >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'no-imports'))
-    u'No matching code imports found!'
+    No matching code imports found!
 
 Of course selecting the "Any" filtering option ensures that all
 imports appear again.
@@ -104,8 +57,10 @@ imports appear again.
     >>> browser.getControl(name="submit").click()
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> names
-    [u'gnome-terminal/import', u'evolution/import']
+    >>> for name in names:
+    ...     print name
+    gnome-terminal/import
+    evolution/import
 
 If we create a lot of imports, the listing view will be batched.
 

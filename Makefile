@@ -36,6 +36,8 @@ newsampledata:
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
 
+check_launchpad_storm_on_merge: check_launchpad_on_merge
+
 check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
@@ -274,5 +276,6 @@ tags:
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches check_loggerhead_on_merge reload-apache
+		sync_branches check_loggerhead_on_merge reload-apache \
+		check_launchpad_storm_on_merge
 
