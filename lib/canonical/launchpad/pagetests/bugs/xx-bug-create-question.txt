@@ -14,7 +14,7 @@ a bug. An anonymous user cannot create a question.
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> anon_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
-    >>> anon_browser.getLink('Convert to question').click()
+    >>> anon_browser.getLink('Convert to a question').click()
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -27,7 +27,7 @@ is really a question. He chooses to make a question from it.
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10')
     >>> user_browser.title
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
-    >>> user_browser.getLink('Convert to question').click()
+    >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.title
     'Bug #10 - Convert this bug to a question'
 
@@ -89,7 +89,7 @@ is the bug owner. He sees the link to the question in the 'Related
 questions' portlet, and uses it to go to the question page.
 
     >>> print extract_text(content(['img'], src='/@@/bug-medium')[0].parent)
-    Bug #10, first reported on 2004-01-10 by Foo Bar
+    Bug #10
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
     >>> question_anchor = portlet.div.a
@@ -128,7 +128,7 @@ into a question.
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
     >>> user_browser.title
     'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
-    >>> user_browser.getLink('Convert to question').click()
+    >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.title
     'Bug #9 - Convert this bug to a question'
     >>> find_main_content(user_browser.contents).p
@@ -144,7 +144,7 @@ the question.
     ...
     LookupError: ...
 
-    >>> user_browser.getControl('Convert to question').click()
+    >>> user_browser.getControl('Convert to a question').click()
     Traceback (most recent call last):
     ...
     LookupError: ...
@@ -177,7 +177,7 @@ could not be created.
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
-    >>> user_browser.getLink('Convert to question').click()
+    >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.getControl('Comment').value = 'This will succeed.'
     >>> user_browser.getControl('Convert this Bug into a Question').click()
     >>> user_browser.title
@@ -197,19 +197,19 @@ could not be created.
 == Remove the question ==
 
 After a question is created from a bug, the bug's Action menu displays
-the 'Convert back to bug' link. No Privileges Person decides to
+the 'Convert back to a bug' link. No Privileges Person decides to
 reactivate a bug report.
 
     >>> user_browser.title
     'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
-    >>> user_browser.getLink('Convert back to bug').click()
+    >>> user_browser.getLink('Convert back to a bug').click()
     >>> user_browser.title
     'Bug #12 - Convert this question back to a bug'
 
-The 'Convert back to bug' page explains what will happen if No
+The 'Convert back to a bug' page explains what will happen if No
 Privileges Person chooses to reactivate the bug. There is an optional
 field for a comment. No other input is needed. No Privileges Person
-uses the 'Convert Back to Bug' button.
+uses the 'Convert back to a bug' button.
 
     >>> find_main_content(user_browser.contents).p
     <p>... Reactivate this bug report by removing the question created

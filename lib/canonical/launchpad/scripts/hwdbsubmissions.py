@@ -15,7 +15,6 @@ from datetime import datetime, timedelta
 from logging import getLogger
 import os
 import re
-from tempfile import NamedTemporaryFile
 
 try:
     import xml.elementtree.cElementTree as etree
@@ -27,8 +26,9 @@ except ImportError:
 
 import pytz
 
+from canonical.lazr.xml import RelaxNGValidator
+
 from canonical.config import config
-from canonical.launchpad.helpers import simple_popen2
 from canonical.launchpad.interfaces.hwdb import HWBus
 
 _relax_ng_files = {
@@ -57,72 +57,6 @@ PCI_SUBCLASS_BRIDGE_CARDBUS = 7
 
 PCI_CLASS_SERIALBUS_CONTROLLER = 12
 PCI_SUBCLASS_SERIALBUS_USB = 3
-
-class RelaxNGValidator:
-    """A validator for Relax NG schemas."""
-
-    def __init__(self, relax_ng_filename):
-        """Create a validator instance.
-
-        :param relax_ng_filename: The name of a file containing the schema.
-        """
-        self.relax_ng_filename = relax_ng_filename
-        self._errors = ''
-
-    def validate(self, xml):
-        """Validate the string xml
-
-        :return: True, if xml is valid, else False.
-        """
-        # XXX Abel Deuring, 2008-03-20
-        # The original implementation of the validation used the lxml
-        # package. Unfortunately, running lxml's Relax NG validator
-        # caused segfaults during PQM test runs, hence this class uses
-        # an external validator.
-
-        # Performance penalty of the external validator:
-        # Using the lxml validator, the tests in this module need ca.
-        # 3 seconds on a 2GHz Core2Duo laptop.
-        # If the xml data to be validated is passed to xmllint via
-        # canonical.launchpad.helpers.simple_popen2, the run time
-        # of the tests is 38..40 seconds; if the validation input
-        # is not passed via stdin but saved in a temporary file,
-        # the tests need 28..30 seconds.
-
-        xml_file = NamedTemporaryFile()
-        xml_file.write(xml)
-        xml_file.flush()
-        command = 'xmllint -noout -relaxng %s %s'% (self.relax_ng_filename,
-                                                    xml_file.name)
-        result = simple_popen2(command, '').strip()
-
-        # The output consists of lines describing possible errors; the
-        # last line is either "(file) fails to validate" or
-        # "(file) validates".
-        parts = result.rsplit('\n', 1)
-        if len(parts) > 1:
-            self._errors = parts[0]
-            status = parts[1]
-        else:
-            self._errors = ''
-            status = parts[0]
-        if status == xml_file.name + ' fails to validate':
-            return False
-        elif status == xml_file.name + ' validates':
-            return True
-        else:
-            raise AssertionError(
-                'Unexpected result of running xmllint: %s' % result)
-
-    @property
-    def error_log(self):
-        """A string with the errors detected by the validator.
-
-        Each line contains one error; if the validation was successful,
-        error_log is the empty string.
-        """
-        return self._errors
-
 
 class SubmissionParser:
     """A Parser for the submissions to the hardware database."""
@@ -1314,3 +1248,102 @@ class HALDevice:
             else:
                 result.extend(sub_device.getRealChildren())
         return result
+
+    def getVendorOrProduct(self, type_):
+        """Return the vendor or product of this device.
+
+        :return: The vendor or product data for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        # HAL does not store vendor data very consistently. Try to find
+        # the data in several places.
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+
+        bus = self.getProperty('info.bus')
+        if self.udi == '/org/freedesktop/Hal/devices/computer':
+            # HAL sets info.product to "Computer", provides no property
+            # info.vendor and info.bus is "unknown", hence the logic
+            # below does not work properly.
+            return self.getProperty('system.' + type_)
+        elif bus == 'scsi':
+            if type_ == 'vendor':
+                result = self.getProperty('scsi.vendor').strip()
+                if result == 'ATA':
+                    # A weirdness of the kernel's SCSI emulation layer
+                    # for the IDE and SATA busses: The HAL property
+                    # scsi.vendor is always 'ATA', and the vendor name
+                    # is stored as the first part of the SCSI model
+                    # string.
+                    #
+                    # The assumption below that the vendor name does not
+                    # contain any spaces is not necessarily correct, but
+                    # it is hard to find a better heuristic to separate
+                    # the vendor name from the product name.
+                    return self.getProperty('scsi.model').split(' ', 1)[0]
+                return result
+            else:
+                # What is called elsewhere "product", is called "model"
+                # for the SCSI bus.
+                result = self.getProperty('scsi.model').strip()
+                if self.getProperty('scsi.vendor') == 'ATA':
+                    return result.split(' ', 1)[1]
+                return result
+        else:
+            result = self.getProperty('info.' + type_)
+            if result is None:
+                if bus is None:
+                    return None
+                else:
+                    return self.getProperty('%s.%s' % (bus, type_))
+            else:
+                return result
+
+    @property
+    def vendor(self):
+        """The vendor of this device."""
+        return self.getVendorOrProduct('vendor')
+
+
+    @property
+    def product(self):
+        """The vendor of this device."""
+        return self.getVendorOrProduct('product')
+
+
+    def getVendorOrProductID(self, type_):
+        """Return the vendor or product ID for this device.
+
+        :return: The vendor or product ID for this device.
+        :param type_: 'vendor' or 'product'
+        """
+        assert type_ in ('vendor', 'product'), (
+            'Unexpected value of type_: %r' % type_)
+        bus = self.getProperty('info.bus')
+        if bus is None:
+            return None
+        elif (bus == 'scsi'
+              or self.udi == '/org/freedesktop/Hal/devices/computer'):
+            # The SCSI specification does not distinguish between a
+            # vendor/model ID and vendor/model name: the SCSI INQUIRY
+            # command returns an 8 byte string as the vendor name and
+            # a 16 byte string as the model name. We use these strings
+            # as the vendor/product name as well as the vendor/product
+            # ID.
+            #
+            # Similary, HAL does not provide a vendor or product ID
+            # for the host system itself, so we use the vendor resp.
+            # product name as the vendor/product ID for systems too.
+            return self.getVendorOrProduct(type_)
+        else:
+            return self.getProperty('%s.%s_id' % (bus, type_))
+
+    @property
+    def vendor_id(self):
+        """The vendor ID of this device."""
+        return self.getVendorOrProductID('vendor')
+
+    @property
+    def product_id(self):
+        """The product ID of this device."""
+        return self.getVendorOrProductID('product')

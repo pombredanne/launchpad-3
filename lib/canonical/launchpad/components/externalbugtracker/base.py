@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_bugwatcherrortype_for_error',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
@@ -19,15 +18,15 @@ __all__ = [
     'UnsupportedBugTrackerVersion',
     ]
 
-import socket
+
 import urllib
 import urllib2
 
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BugWatchErrorType, IExternalBugTracker)
+from canonical.launchpad.interfaces.externalbugtracker import (
+    IExternalBugTracker)
 
 
 # The user agent we send in our requests
@@ -35,7 +34,7 @@ LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 
 
 #
-# Exceptions caught in scripts/checkwatches.py
+# Errors.
 #
 
 
@@ -80,7 +79,7 @@ class BugTrackerConnectError(BugWatchUpdateError):
 
 
 #
-# Exceptions caught locally
+# Warnings.
 #
 
 
@@ -114,23 +113,9 @@ class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
 
-_exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
-   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
-   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (socket.timeout, BugWatchErrorType.TIMEOUT)]
-
-def get_bugwatcherrortype_for_error(error):
-    """Return the correct `BugWatchErrorType` for a given error."""
-    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
-        if isinstance(error, exc_type):
-            return bugwatcherrortype
-    else:
-        return BugWatchErrorType.UNKNOWN
-
+#
+# Everything else.
+#
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
