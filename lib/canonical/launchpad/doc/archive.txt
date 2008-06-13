@@ -945,7 +945,7 @@ A new Archive can be created by passing a name and an owner
     >>> sandbox_archive.owner == name16
     True
 
-PPAs are created with 'default' name.
+PPAs are created with the name attribute set to 'default'.
 
     >>> print sandbox_archive.name
     default
@@ -1375,14 +1375,15 @@ AssertionError.
     ...
     AssertionError: 'REBUILD' purpose has no default name.
 
-Passing the 'name', additionally to the owner, purpose and
+Passing the 'name', in additional to the owner, purpose and
 distribution, does the trick.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
     ...     distribution=ubuntutest, name='test-rebuild-one')
 
-The name is used as provided, so callsites should validate it when necessary.
+The name is used as provided, so callsites should validate it when
+necessary.
 
     >>> print rebuild_archive.name
     test-rebuild-one

@@ -675,10 +675,10 @@ class ArchiveSet:
          * PARTNER: 'partner';
          * PPA: 'default'.
 
-        If the given purpose is not in this list, i.e. doesn't have a default
-        name, it raises a `AssertionError`.
-
         :param purpose: queried `ArchivePurpose`.
+
+        :raise: `AssertionError` If the given purpose is not in this list,
+            i.e. doesn't have a default name.
 
         :return: the name text to be used as name.
         """

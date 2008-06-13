@@ -1387,6 +1387,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             # XXX cprov 20080612: Implicitly creating a PARTNER archive for
             # the destination distroseries is bad. Why are we copying
             # partner to a series in another distribution anyway ?
+            # See bug #239807 for further information.
             target_archive = archive_set.getByDistroPurpose(
                 self.distribution, archive.purpose)
             if target_archive is None:
