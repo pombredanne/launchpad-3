@@ -17,15 +17,23 @@
         <img src="/@@/warning" alt="[Not published]"
              title="This is not yet a public announcement"
              tal:condition="not: announcement/published" />
-        <a tal:attributes="href announcement/fmt:url">
-          <strong tal:content="announcement/title" /><br />
-          <tal:summary replace="announcement/summary/fmt:shorten/200" />
-        </a>
+        <a
+          tal:attributes="href announcement/fmt:url"
+          tal:content="announcement/title"
+        />
       </li>
     </ul>
-  <a href="+announcements">&raquo; See all announcements...</a><br />
-  <a tal:condition="context/required:launchpad.Edit"
-     href="+announce">&raquo; Make a new announcement...</a>
+    <div
+      tal:define="link context/menu:overview/announcements"
+      tal:condition="link/enabled"
+      tal:content="structure link/render"
+    />
+    <div
+      class="actions"
+      tal:define="link context/menu:overview/announce"
+      tal:condition="link/enabled"
+      tal:content="structure link/render"
+    />
   </div>
 </div>
 </tal:news>
