@@ -320,7 +320,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['bugsupervisor', 'securitycontact', 'cve']
+    links = ['bugsupervisor', 'securitycontact', 'cve', 'filebug']
 
     def cve(self):
         text = 'CVE reports'
@@ -335,6 +335,10 @@ class DistributionBugsMenu(ApplicationMenu):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
 
 
 class DistributionBountiesMenu(ApplicationMenu):
@@ -386,7 +390,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit', 'imports', 'language_pack_admin']
+    links = ['edit', 'imports', 'language_pack_admin', 'help_translate']
 
     def imports(self):
         text = 'See import queue'
@@ -396,10 +400,27 @@ class DistributionTranslationsMenu(ApplicationMenu):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
+    def help_translate(self):
+        text = 'Help translate'
+        link = canonical_url(self.context, rootsite='translations')
+        return Link(link, text, icon='translation')
+
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def language_pack_admin(self):
         text = 'Change language pack admins'
         return Link('+select-language-pack-admin', text, icon='edit')
+
+
+class DistributionAnswersMenu(ApplicationMenu):
+    """Menu for the answers facet of distributions."""
+
+    usedfor = IDistribution
+    facet = 'answers'
+    links = ['new']
+
+    def new(self):
+        text = 'Ask a question'
+        return Link('+addquestion', text, icon='question')
 
 
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
