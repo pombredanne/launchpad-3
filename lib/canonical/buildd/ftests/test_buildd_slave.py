@@ -1,17 +1,21 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-"""Buildd tests.
+"""Buildd Slave tests.
 
-Build log sanitization (removal of passwords from buildlog URLs) tests.
+This file contains the follwoing tests:
+
+ * Basic authentication handling (used to download private sources);
+ * Build log sanitization (removal of passwords from private buildlog);
+ * Build log(tail) mechanisms (limited output from the end of the buildlog).
+
 """
 
 __metaclass__ = type
 
-__all__ = ['BuildlogSecurityTests']
+__all__ = ['LaunchpadBuilddSlaveTests']
 
 import difflib
 import os
 import shutil
-import tempfile
 import urllib2
 import unittest
 
@@ -27,7 +31,7 @@ def read_file(path):
         file_object.close()
 
 
-class BuildlogSecurityTests(BuilddTestCase):
+class LaunchpadBuilddSlaveTests(BuilddTestCase):
     """Unit tests for scrubbing (removal of passwords) of buildlog files."""
 
     def testBasicAuth(self):
@@ -38,11 +42,17 @@ class BuildlogSecurityTests(BuilddTestCase):
 
         opener = self.slave.setupAuthHandler(url, user, password)
 
-        # Inspect the opener.
+        # Inspect the openers and ensure the wanted handler is installed.
+        basic_auth_handler = None
         for handler in opener.handlers:
             if isinstance(handler, urllib2.HTTPBasicAuthHandler):
+                basic_auth_handler = handler
                 break
-        password_mgr = handler.passwd
+        self.assertTrue(
+            basic_auth_handler is not None,
+            "No basic auth handler installed.")
+
+        password_mgr = basic_auth_handler.passwd
         stored_user, stored_pass = password_mgr.find_user_password(None, url)
         self.assertEqual(user, stored_user)
         self.assertEqual(password, stored_pass)
@@ -130,6 +140,32 @@ class BuildlogSecurityTests(BuilddTestCase):
         self.makeLog(4096)
         log_tail = self.slave.getLogTail()
         self.assertEqual(len(log_tail), 2048)
+
+    def testLogtailWhenLogFileVanishes(self):
+        """Slave.getLogTail doesn't get hurt if the logfile has vanished.
+
+        This is a common race-condition in our slaves, since they get
+        pooled all the time when they are building.
+
+        Sometimes the getLogTail calls coincides with the job
+        cleanup/sanitization, so there is no buildlog to inspect and thus
+        we expect an empty string to be returned instead of a explosion.
+        """
+        # Create some log content and read it.
+        self.makeLog(2048)
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 2048)
+
+        # Read it again for luck.
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 2048)
+
+        # Remove the buildlog file
+        os.remove(self.slave.cachePath('buildlog'))
+
+        # Instead of shocking the getLogTail call, return an empty string.
+        log_tail = self.slave.getLogTail()
+        self.assertEqual(len(log_tail), 0)
 
 
 def test_suite():

@@ -385,8 +385,10 @@ class ArchivePurpose(DBEnumeratedType):
 
     A distribution can be associated with different archives and this
     schema item enumerates the different archive types and their purpose.
-    For example, old distro releases may need to be obsoleted so their
-    archive would be OBSOLETE_ARCHIVE.
+
+    For example, Partner/ISV software in ubuntu is stored in a separate
+    archive. PPAs are separate archives and contain packages that 'overlay'
+    the ubuntu PRIMARY archive.
     """
 
     PRIMARY = DBItem(1, """
@@ -401,22 +403,10 @@ class ArchivePurpose(DBEnumeratedType):
         This is a Personal Package Archive.
         """)
 
-    EMBARGOED = DBItem(3, """
-        Embargoed Archive
-
-        This is the archive for embargoed packages.
-        """)
-
     PARTNER = DBItem(4, """
         Partner Archive
 
         This is the archive for partner packages.
-        """)
-
-    OBSOLETE = DBItem(5, """
-        Obsolete Archive
-
-        This is the archive for obsolete packages.
         """)
 
     REBUILD = DBItem(6, """
@@ -424,4 +414,3 @@ class ArchivePurpose(DBEnumeratedType):
 
         This kind of archive is used for rebuilding packages.
         """)
-
