@@ -477,3 +477,81 @@ empty library file, which is what the user expects.
 
     >>> get_diff_results(diff)
     ''
+
+Now we will simulate a version collision when generating the diff.
+
+First we upload a version of 'collision' source package to the ubuntu
+primary archive.
+
+    >>> packager = FakePackager(
+    ...     'collision', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+
+    >>> packager.buildUpstream(suite='breezy-autotest')
+    >>> packager.buildSource()
+    >>> collision_ubuntu_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', policy='sync')
+    >>> collision_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    0
+
+Then we taint the package content and rebuild the same source package
+version before uploading it again to Foo Bar's PPA.
+
+    >>> packager._appendContents('I am evil.')
+    >>> packager.buildSource()
+
+    >>> collision_ppa_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', archive=foobar.archive)
+    >>> [diff] = collision_ppa_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    1.0-1 (in Ubuntu) to 1.0-1
+
+Note that, despite of having the same name and version, the diff.gz
+and dsc files have different contents.
+
+    >>> file_set = set()
+
+    >>> for file in diff.from_source.files:
+    ...     lfa = file.libraryfile
+    ...     file_set.add((lfa.filename, lfa.content.md5))
+
+    >>> for file in diff.to_source.files:
+    ...     lfa = file.libraryfile
+    ...     file_set.add((lfa.filename, lfa.content.md5))
+
+    >>> distinct_files = [filename for filename, md5 in file_set]
+    >>> for filename in sorted(distinct_files):
+    ...     print filename
+    collision_1.0-1.diff.gz
+    collision_1.0-1.diff.gz
+    collision_1.0-1.dsc
+    collision_1.0-1.dsc
+    collision_1.0.orig.tar.gz
+
+Such situation can happen due to the lack of consistency checks
+between versions in ubuntu primary archive and versions in PPAs. From
+the Soyuz code point of view the packages are consistent in their own
+context and the fact that 'apt' might get in trouble when installing
+packages from the PPA is considered an PPA maintainer issue, at
+moment.
+
+Let's do the commit dance again and generate the diff.
+
+    >>> transaction.commit()
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+The package-diff subsystem has dealt with the filename conflicts and
+the diff was properly generated.
+
+    >>> diff.date_fulfilled is not None
+    True
+
+    >>> print diff.diff_content.filename
+    collision_1.0-1_1.0-1.diff.gz
+
+    >>> print get_diff_results(diff)
+    --- collision-1.0/contents
+    +++ collision-1.0/contents
+    @@ -2,0 +3 @@
+    +I am evil.
+    <BLANKLINE>

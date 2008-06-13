@@ -155,20 +155,19 @@ class PackageDiff(SQLBase):
 
             # Iterate over the packages to be diff'ed.
             for direction, package in packages.iteritems():
-                # Download the files associated with each package.
+                # Create distinct directory locations for
+                # 'from' and 'to' files.
+                relative_path = os.path.join(tmp_dir, direction)
+                os.makedirs(relative_path)
+
+                # Download the files associated with each package in
+                # their corresponding relative location.
                 for file in package.files:
                     the_name = file.libraryfile.filename
-                    downloaded[direction].append(the_name)
-
-                    # Was this file downloaded already?
-                    if the_name in files_seen:
-                        # Yes, skip it.
-                        continue
-
-                    # This file is new, download it.
-                    destination_path = os.path.join(tmp_dir, the_name)
+                    relative_location = os.path.join(direction, the_name)
+                    downloaded[direction].append(relative_location)
+                    destination_path = os.path.join(relative_path, the_name)
                     download_file(destination_path, file.libraryfile)
-                    files_seen.append(the_name)
 
             # All downloads are done. Construct the name of the resulting
             # diff file.
