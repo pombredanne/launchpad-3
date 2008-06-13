@@ -58,12 +58,13 @@ changed when the entry is saved.
     None
     >>> salgado.hide_email_addresses
     False
-    >>> print salgado.timezone
-    None
+    >>> print salgado.mailing_list_auto_subscribe_policy
+    Ask me when I join a team
     
     >>> salgado.homepage_content = u'This is my home page.'
     >>> salgado.hide_email_addresses = True
-    >>> salgado.timezone = u'Brazil/East'
+    >>> salgado.mailing_list_auto_subscribe_policy = (
+    ...     u'Never subscribe to mailing lists')
     >>> salgado.save()
     >>> salgado = launchpad.people.get('salgado')
 
@@ -71,8 +72,8 @@ changed when the entry is saved.
     This is my home page.
     >>> salgado.hide_email_addresses
     True
-    >>> print salgado.timezone
-    Brazil/East
+    >>> print salgado.mailing_list_auto_subscribe_policy
+    Never subscribe to mailing lists
 
 Salgado cannot set his timezone to an illegal value.
 
@@ -81,7 +82,8 @@ Salgado cannot set his timezone to an illegal value.
     ...     try:
     ...         entry.save()
     ...     except HTTPError, error:
-    ...         print error.content
+    ...         for line in sorted(error.content.splitlines()):
+    ...             print line
     ...     else:
     ...         print 'Did not get expected HTTPError!'
 
@@ -166,6 +168,6 @@ gets useful feedback about his error.
     >>> salgado.date_created = u'2003-06-06T08:59:51.596025+00:00'
     >>> salgado.is_team = True
     >>> print_error_on_save(salgado)
-    is_team: You tried to modify a read-only attribute.
     date_created: You tried to modify a read-only attribute.
+    is_team: You tried to modify a read-only attribute.
     karma: You tried to modify a read-only attribute.
