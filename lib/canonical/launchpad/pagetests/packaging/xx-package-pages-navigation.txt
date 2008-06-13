@@ -141,8 +141,8 @@ top-level hierarchy.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_navigation(anon_browser.contents)
-    Location: Ubuntu > Hoary > ?alsa-utils? package
-    Structural title: Ubuntu Hoary source package:
+    Location: Ubuntu > 5.04 > ?alsa-utils? package
+    Structural title: Ubuntu 5.04 source package:
     alsa-utils
     Tabs:
     * Overview (http://launchpad.dev/ubuntu/hoary/+source/alsa-utils)
@@ -151,7 +151,7 @@ top-level hierarchy.
     * Blueprints (Not active)
     * Translations (http://translations.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
     * Answers (http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils)
-    Main heading: ?alsa-utils? package version 1.0.9a-4ubuntu1 in Ubuntu Hoary
+    Main heading: alsa-utils 1.0.9a-4ubuntu1 (source) in ubuntu hoary
 
 
 == Distribution series architecture ==
