@@ -166,7 +166,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -1020,6 +1020,101 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+
+class IPersonEditMenu(Interface):
+    """A marker interface for the 'Edit Profile' navigation menu."""
+
+
+class IPersonRelatedSoftwareMenu(Interface):
+    """A marker interface for the 'Related Software' navigation menu."""
+
+
+class PersonOverviewNavigationMenu(NavigationMenu):
+    """The top-level menu of actions a Person may take."""
+
+    usedfor = IPerson
+    facet = 'overview'
+    title = 'Profile'
+    links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def profile(self):
+        target = '+index'
+        text = 'Profile'
+        return Link(target, text, menu=IPersonEditMenu)
+
+    def related_software(self):
+        target = '+projects'
+        text = 'Related Software'
+        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        return Link(target, text)
+
+    def show_ppa(self):
+        target = '+archive'
+        text = 'Personal Package Archive'
+        return Link(target, text)
+
+
+class PersonEditNavigationMenu(NavigationMenu):
+    """A sub-menu for different aspects of editing a Person's profile."""
+
+    usedfor = IPersonEditMenu
+    facet = 'overview'
+    title = 'Personal'
+    links = ('personal', 'contact_details', 'email_settings',
+             'sshkeys', 'gpgkeys', 'passwords')
+
+    def personal(self):
+        target = '+edit'
+        text = 'Personal'
+        return Link(target, text)
+
+    def contact_details(self):
+        target = '+editcontactdetails'
+        text = 'Contact Details'
+        return Link(target, text)
+
+    def email_settings(self):
+        target = '+editemails'
+        text = 'E-mail Settings'
+        return Link(target, text)
+
+    def sshkeys(self):
+        target = '+editsshkeys'
+        text = 'SSH Keys'
+        return Link(target, text)
+
+    def gpgkeys(self):
+        target = '+editpgpkeys'
+        text = 'GPG Keys'
+        return Link(target, text)
+
+    def passwords(self):
+        target = '+changepassword'
+        text = 'Passwords'
+        return Link(target, text)
+
+
+class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
+
+    usedfor = IPersonRelatedSoftwareMenu
+    facet = 'overview'
+    title = 'Related Software'
+    links = ('participation', 'assigned_packages')
+
+    def participation(self):
+        target = '+projects'
+        text = 'Participation'
+        return Link(target, text)
+
+    def assigned_packages(self):
+        target = '+packages'
+        text = 'Assigned Packages'
+        return Link(target, text)
 
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -2327,6 +2422,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
 class PersonRelatedProjectsView(LaunchpadView):
 
+    implements(IPersonRelatedSoftwareMenu)
+
     # Safety net for the Registry Admins case which is the owner/driver of
     # lots of projects.
     max_results_to_display = config.launchpad.default_batch_size
@@ -2552,6 +2649,8 @@ class PersonEditJabberIDsView(LaunchpadView):
 
 class PersonEditSSHKeysView(LaunchpadView):
 
+    implements(IPersonEditMenu)
+
     info_message = None
     error_message = None
 
@@ -2729,6 +2828,9 @@ class PersonGPGView(LaunchpadView):
     it. Also supports removing the token generated for validation (in
     the case you want to give up on importing the key).
     """
+
+    implements(IPersonEditMenu)
+
     key = None
     fingerprint = None
 
@@ -2905,6 +3007,8 @@ class PersonGPGView(LaunchpadView):
 
 class PersonChangePasswordView(LaunchpadFormView):
 
+    implements(IPersonEditMenu)
+
     label = "Change your password"
     schema = IPersonChangePassword
     field_names = ['currentpassword', 'password']
@@ -2948,6 +3052,8 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
+
+    implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
         'verbose_bugnotifications', 'timezone']
@@ -3181,6 +3287,8 @@ class PersonEditEmailsView(LaunchpadFormView):
     the system associated with their account, and remove associated
     emails.
     """
+
+    implements(IPersonEditMenu)
 
     schema = IEmailAddress
 

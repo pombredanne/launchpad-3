@@ -708,6 +708,7 @@ class TestBugWatch:
         self.remotebug = str(self.id)
         self.bug = bug
         self.failing = failing
+        self.url = 'http://bugs.example.com/issues/%d' % id
 
     def updateStatus(self, new_remote_status, new_malone_status):
         """See `IBugWatch`."""
