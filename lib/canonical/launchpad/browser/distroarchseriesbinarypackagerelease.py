@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroArchSeriesBinaryPackageReleaseFacets',
+    'distroarchseriesbinarypackagerelease_to_structuralheading',
     'DistroArchSeriesBinaryPackageReleaseNavigation',
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
@@ -11,19 +11,17 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackageRelease)
+    IDistroArchSeriesBinaryPackageRelease, IStructuralHeaderPresentation)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation)
 
 
-class DistroArchSeriesBinaryPackageReleaseFacets(StandardLaunchpadFacets):
-    # XXX mpt 2006-10-04: A DistroArchSeriesBinaryPackageRelease is not a
-    # structural object. It should inherit all navigation from its source
-    # package.
-
-    usedfor = IDistroArchSeriesBinaryPackageRelease
-    enable_only = ['overview', ]
+def distroarchseriesbinarypackagerelease_to_structuralheading(dasbpr):
+    """Adapt an `IDistroArchSeriesBinaryPackageRelease` into an
+    `IStructuralHeaderPresentation`.
+    """
+    return IStructuralHeaderPresentation(dasbpr.distroseries)
 
 
 class DistroArchSeriesBinaryPackageReleaseOverviewMenu(ApplicationMenu):
@@ -35,9 +33,6 @@ class DistroArchSeriesBinaryPackageReleaseOverviewMenu(ApplicationMenu):
 
 class DistroArchSeriesBinaryPackageReleaseNavigation(Navigation):
     usedfor = IDistroArchSeriesBinaryPackageRelease
-
-    def breadcrumb(self):
-        return self.context.version
 
 
 class DistroArchSeriesBinaryPackageReleaseView:
