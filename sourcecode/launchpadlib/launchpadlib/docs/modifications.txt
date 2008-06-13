@@ -3,8 +3,8 @@
 Objects available through the web interface, such as people, have a readable
 interface which is available through direct attribute access.
 
-    >>> from launchpadlib.testing.helpers import salgado_change_anything
-    >>> launchpad = salgado_change_anything.login()
+    >>> from launchpadlib.testing.helpers import salgado_with_full_permissions
+    >>> launchpad = salgado_with_full_permissions.login()
 
     >>> salgado = launchpad.people.get('salgado')
     >>> salgado.display_name
@@ -20,6 +20,17 @@ Salgado to batch the changes over the wire for efficiency.
     u'Guilherme Salgado'
 
 Once the changes are saved though, they are saved on the web service.
+
+XXX BarryWarsaw 12-Jun-2008 We currently make no guarantees about the
+synchronization between the local object's state and the remote object's
+state.  Future development will add a "conditional PATCH" feature based on
+Last-Modified/ETag headers; this will serve as a transction number, so that if
+the two objects get out of sync, the .save() would fail.  Since this is not
+yet implemented, we will do a .get() every time we want to guarantee that we
+have the up-to-date state of the object.  The only other time we can make this
+guarantee is when we change an attribute that causes a 301 'Moved permanently'
+HTTP error, because we implicitly re-fetch the object's state in that case.
+However, this latter condition is not exposed through the web service.
 
     >>> salgado.save()
     >>> launchpad.people.get('salgado').display_name
@@ -47,12 +58,13 @@ changed when the entry is saved.
     None
     >>> salgado.hide_email_addresses
     False
-    >>> print salgado.timezone
-    None
+    >>> print salgado.mailing_list_auto_subscribe_policy
+    Ask me when I join a team
     
     >>> salgado.homepage_content = u'This is my home page.'
     >>> salgado.hide_email_addresses = True
-    >>> salgado.timezone = u'Brazil/East'
+    >>> salgado.mailing_list_auto_subscribe_policy = (
+    ...     u'Never subscribe to mailing lists')
     >>> salgado.save()
     >>> salgado = launchpad.people.get('salgado')
 
@@ -60,27 +72,22 @@ changed when the entry is saved.
     This is my home page.
     >>> salgado.hide_email_addresses
     True
-    >>> print salgado.timezone
-    Brazil/East
+    >>> print salgado.mailing_list_auto_subscribe_policy
+    Never subscribe to mailing lists
 
 Salgado cannot set his timezone to an illegal value.
-
-    >>> salgado.timezone = 'SouthPole'
-    >>> salgado.save()
-    Traceback (most recent call last):
-    ...
-    HTTPError: HTTP Error 400: Bad Request
-
-The exception has some useful detail about the error.
 
     >>> from launchpadlib.errors import HTTPError
     >>> def print_error_on_save(entry):
     ...     try:
     ...         entry.save()
     ...     except HTTPError, error:
-    ...         pass
-    ...     print error.content
+    ...         for line in sorted(error.content.splitlines()):
+    ...             print line
+    ...     else:
+    ...         print 'Did not get expected HTTPError!'
 
+    >>> salgado.timezone = 'SouthPole'
     >>> print_error_on_save(salgado)
     timezone: u'SouthPole' isn't a valid token
 
@@ -127,6 +134,14 @@ Salgado's person is available through the new name.
     >>> launchpad.people.get('guilherme').display_name
     u'Guilherme Salgado'
 
+Under the covers though, a refresh of the original object has been retrieved
+from Launchpad, so it's save to continue using, and changing it.
+
+    >>> salgado.display_name = u'Salgado!'
+    >>> salgado.save()
+    >>> launchpad.people.get('guilherme').display_name
+    u'Salgado!'
+
 It's just as easy to move Salgado back to the old name.
 
     >>> salgado.name = u'salgado'
@@ -134,18 +149,7 @@ It's just as easy to move Salgado back to the old name.
     >>> print launchpad.people.get('guilherme')
     None
     >>> launchpad.people.get('salgado').display_name
-    u'Guilherme Salgado'
-
-Salgado then has a change of heart and decides that the team he created isn't
-so awesome after all.
-
-    >>> bassists.name = u'guitarists'
-    >>> bassists.display_name = u'Rocktastic Shredders'
-    >>> bassists.save()
-    >>> print launchpad.people.get('bassists')
-    None
-    >>> launchpad.people.get('guitarists').display_name
-    u'Rocktastic Shredders'
+    u'Salgado!'
 
 
 == Read-only attributes ==
@@ -155,13 +159,6 @@ Some attributes are read-only, such as a person's karma.
     >>> salgado.karma
     0
     >>> salgado.karma = 1000000
-    >>> salgado.save()
-    Traceback (most recent call last):
-    ...
-    HTTPError: HTTP Error 400: Bad Request
-
-The exception has some interesting details about the error.
-
     >>> print_error_on_save(salgado)
     karma: You tried to modify a read-only attribute.
 
@@ -171,6 +168,6 @@ gets useful feedback about his error.
     >>> salgado.date_created = u'2003-06-06T08:59:51.596025+00:00'
     >>> salgado.is_team = True
     >>> print_error_on_save(salgado)
-    is_team: You tried to modify a read-only attribute.
     date_created: You tried to modify a read-only attribute.
+    is_team: You tried to modify a read-only attribute.
     karma: You tried to modify a read-only attribute.

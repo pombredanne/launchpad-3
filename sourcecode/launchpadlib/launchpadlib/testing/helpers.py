@@ -5,16 +5,17 @@
 
 __metaclass__ = type
 __all__ = [
+    'TestableLaunchpad',
     'nopriv_read_nonprivate',
-    'salgado_change_anything',
     'salgado_read_nonprivate',
+    'salgado_with_full_permissions',
     ]
 
 
-from launchpadlib.launchpad import Launchpad as _Launchpad
+from launchpadlib.launchpad import Launchpad
 
 
-class Launchpad(_Launchpad):
+class TestableLaunchpad(Launchpad):
     """A base class for talking to the testing root service."""
 
     # Use our test service root.
@@ -30,10 +31,10 @@ class KnownTokens:
 
     def login(self):
         """Login using these credentials."""
-        return Launchpad.login(
+        return TestableLaunchpad.login(
             'launchpad-library', self.token_string, self.access_secret)
 
 
-salgado_change_anything = KnownTokens('salgado-change-anything', 'test')
+salgado_with_full_permissions = KnownTokens('salgado-change-anything', 'test')
 salgado_read_nonprivate = KnownTokens('salgado-read-nonprivate', 'secret')
 nopriv_read_nonprivate = KnownTokens('nopriv-read-nonprivate', 'mystery')
