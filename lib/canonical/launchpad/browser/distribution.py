@@ -49,7 +49,6 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -485,6 +484,31 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
 
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
+
+    def usesLaunchpadFor(self):
+        """Return a string of LP apps (comma-separated) this distro uses."""
+        if (not self.context.full_functionality or
+            not self.context.official_anything):
+            return "%s does not use Launchpad." % self.context.title
+        else:
+            # There will be at least one app used if we get here.
+            uses = []
+            if self.context.official_answers:
+                uses.append("<strong>Answers</strong>")
+            if self.context.official_malone:
+                uses.append("<strong>Bug Tracking</strong>")
+            if self.context.official_blueprints:
+                uses.append("<strong>Blueprints</strong>")
+            if self.context.official_rosetta:
+                uses.append("<strong>Translations</strong>")
+
+            if len(uses) > 1:
+                apps = ", ".join(uses[:-1])
+                apps += " and " + uses[-1]
+            else:
+                apps = uses[0]
+
+            return "%s uses Launchpad for %s." % (self.context.title, apps)
 
 
 class DistributionPPASearchView(LaunchpadView):
