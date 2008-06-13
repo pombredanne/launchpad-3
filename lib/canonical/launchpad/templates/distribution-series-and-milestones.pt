@@ -1,0 +1,35 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-series"
+  tal:condition="context/serieses">
+  <div id="sandm" class="portletBody portletContent">
+    <h2>Series &amp; milestones</h2>
+    <ul class="distroseries" tal:condition="context/serieses">
+      <tal:per_series repeat="series context/serieses">
+        <li tal:condition="series/active">
+          <a tal:attributes="href series/fmt:url">
+            <tal:version replace="series/version" />
+            &#8220;<tal:codename replace="series/displayname" />&#8221; series
+          </a>
+          - <tal:status replace="series/status/name/fmt:lower" />
+        <tal:milestones
+             define="milestones series/milestones"
+             tal:condition="milestones">
+          Milestones:
+            <a tal:repeat="milestone milestones"
+               tal:content="milestone/name"
+               tal:attributes="href milestone/fmt:url" >
+               milestone name
+            </a>
+        </tal:milestones>
+        </li>
+      </tal:per_series>
+    </ul>
+    <ul>
+      <li><a href="+series">All series</a></li>
+      <li><a href="+milestones">All milestones</a></li>
+    </ul>
+  </div>
+</div>
