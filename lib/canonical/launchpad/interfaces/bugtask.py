@@ -63,7 +63,7 @@ from canonical.lazr.rest.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry, export_operation_as,
     export_write_operation, exported, operation_parameters,
     rename_parameters_as, webservice_error)
-from canonical.lazr.rest.schema import CollectionField, Reference
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class BugTaskImportance(DBEnumeratedType):
