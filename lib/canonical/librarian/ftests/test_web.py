@@ -260,7 +260,7 @@ class DeletedContentTestCase(unittest.TestCase):
     def test_deletedContentNotFound(self):
         # Use a user with rights to change the deleted flag in the db.
         # This currently means a superuser.
-        LaunchpadZopelessLayer.switchDbUser('')
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
 
         alias = getUtility(ILibraryFileAliasSet).create(
                 'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain'

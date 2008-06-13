@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
+from storm.references import Reference
 from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
 from canonical.config import config
@@ -38,7 +39,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 VALID_TRANSITION_GRAPH = {
@@ -81,7 +82,7 @@ class BranchMergeProposal(SQLBase):
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     source_branch = ForeignKey(
         dbName='source_branch', foreignKey='Branch', notNull=True)
@@ -100,7 +101,7 @@ class BranchMergeProposal(SQLBase):
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
     reviewed_revision_id = StringCol(default=None)
 
@@ -118,20 +119,18 @@ class BranchMergeProposal(SQLBase):
 
     merge_reporter = ForeignKey(
         dbName='merge_reporter', foreignKey='Person',
-        validator=public_person_validator, notNull=False,
+        storm_validator=validate_public_person, notNull=False,
         default=None)
 
     @property
     def address(self):
         return 'mp+%d@%s' % (self.id, config.vhost.code.hostname)
 
-    @property
-    def supersedes(self):
-        return BranchMergeProposal.selectOneBy(superseded_by=self)
-
     superseded_by = ForeignKey(
         dbName='superseded_by', foreignKey='BranchMergeProposal',
         notNull=False, default=None)
+
+    supersedes = Reference("<primary key>", "superseded_by", on_remote=True)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
@@ -380,7 +379,6 @@ class BranchMergeProposal(SQLBase):
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
-            self.supersedes.syncUpdate()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):

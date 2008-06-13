@@ -17,7 +17,7 @@ from zope.interface import Interface
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import Reference
+from canonical.lazr.fields import Reference
 
 from canonical.launchpad import _
 

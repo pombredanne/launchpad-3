@@ -202,10 +202,6 @@
       template="../templates/null.pt"
       />
     <browser:page
-      name="+packages"
-      template="../templates/person-packages.pt"
-      />
-    <browser:page
       name="+participation"
       template="../templates/person-participation.pt"
       />
@@ -240,6 +236,14 @@
       template="../templates/team-listing.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.person.PersonPackagesView"
+    name="+packages"
+    template="../templates/person-packages.pt"
+    />
 
   <!-- The bounty system is kept maintained but not available for users.
   This is achieved by putting it on the PageTestLayer. -->
@@ -305,6 +309,16 @@
     class="canonical.launchpad.browser.PersonTranslationView"
     permission="zope.Public"
     template="../templates/person-translations.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+licensing"
+    facet="translations"
+    class="canonical.launchpad.browser.PersonTranslationRelicensingView"
+    permission="launchpad.Edit"
+    template="../templates/person-translations-relicensing.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
