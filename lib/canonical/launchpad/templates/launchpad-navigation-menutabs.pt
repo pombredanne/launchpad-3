@@ -6,11 +6,11 @@
   <h2
     tal:condition="view/title|nothing"
     tal:content="string:${view/title}:"
-  >Subtitle</h2>
+  >Subtitle:</h2>
   <div class="navigation menu">
 
   <tal:XXX replace="nothing">
-    20080513 mpt: The HTML comment works around bug 229931.
+    # XXX mpt 20080513: The HTML comment works around bug 229931.
   </tal:XXX>
   <!-- :-) --><tal:item repeat="link view/links"
     ><a

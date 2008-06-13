@@ -6,11 +6,12 @@
   condition="nothing"
 >
   <tal:XXX condition="nothing">
-    mpt 20080612:
-    This template will describe, in one or two sentences at the end of the
-    translation page, who can translate this file (see TranslationPageTwoZero).
-    It is hidden using condition="nothing" until it is finished.
-    In the meantime, the full-blown details portlet is shown instead.
+    # XXX mpt 20080612:
+    # This template will describe, in one or two sentences at the end of the
+    # translation page, who can translate this file (see
+    # TranslationPageTwoZero). It is hidden using condition="nothing" until it
+    # is finished. In the meantime, the full-blown details portlet is shown
+    # instead.
   </tal:XXX>
   <p class="discreet">
     This template is <strong>open</strong> to anyone to translate.
@@ -27,5 +28,5 @@
   </p>
   <p class="discreet">
     This template is <strong>closed</strong>, translatable only by <a>Just a testing team</a>.
-  </p>  
+  </p>
 </tal:root>
