@@ -35,27 +35,15 @@
             <span tal:content="format/title">translation format</span>
           </label>
         </div>
-        <div class="formControls">
+        <p>
+          If the file is not available immediately, Launchpad will e-mail
+          <code tal:content="view/user/preferredemail/email">user@domain</code>
+          with a link to the file once it is ready.
+        </p>
+        <div class="actions">
           <input type="submit" value="Confirm Download" />
         </div>
       </form>
-    </div>
-    <div metal:fill-slot="help">
-      <p>
-        From this form, you can request file downloading with the
-        translations available in Launchpad.
-      </p>
-      <p>
-        Export process would be quite slow and thus, most of the time, you
-        will need to wait until the system process your request and sends you
-        a notification email to
-        <code tal:content="view/user/preferredemail/email">user@domain</code>
-        with a link where you will be able to get the exported file.
-      </p>
-      <p>
-        However, as an optimisation to this process, if we already have
-        available the requested file, the system will send you it directly.
-      </p>
     </div>
   </body>
 </html>
