@@ -385,12 +385,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def syncCertified():
         """is the series source sync enabled?"""
 
-    def autoSyncEnabled():
-        """is the series source enabled for automatic syncronisation?"""
-
-    def autoTestFailed():
-        """has the series source failed automatic testing by roomba?"""
-
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series
@@ -398,20 +392,6 @@ class IProductSeriesSourceAdmin(Interface):
 
     def certifyForSync():
         """enable this to sync"""
-
-    def markTestFailed():
-        """Mark this import as TESTFAILED.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
-
-    def markDontSync():
-        """Mark this import as DONTSYNC.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
 
     def markStopped():
         """Mark this import as STOPPED.
@@ -426,9 +406,6 @@ class IProductSeriesSourceAdmin(Interface):
 
         Use with care!
         """
-
-    def enableAutoSync():
-        """Enable this series RCS for automatic synchronisation."""
 
 
 class IProductSeriesSet(Interface):
