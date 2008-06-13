@@ -29,6 +29,9 @@
         class="description"
         tal:content="structure context/description/fmt:text-to-html"
       />
+      <p id="uses">
+        <tal:uses content="structure view/usesLaunchpadFor" />
+      </p>
       <ul class="buttons">
         <li>
           <a href="+filebug">
