@@ -63,7 +63,7 @@ class DistroArchSeries(SQLBase):
     def default_processor(self):
         """See IDistroArchSeries"""
         # XXX cprov 2005-08-31:
-        # I could possibly be better designed, let's think about it in
+        # This could possibly be better designed; let's think about it in
         # the future. Pick the first processor we found for this
         # distroarchseries.processorfamily. The data model should
         # change to have a default processor for a processorfamily
@@ -85,7 +85,9 @@ class DistroArchSeries(SQLBase):
     @property
     def displayname(self):
         """See IDistroArchSeries."""
-        return '%s %s' % (self.distroseries.name, self.architecturetag)
+        return '%s %s %s' % (
+            self.distroseries.distribution.displayname,
+            self.distroseries.displayname, self.architecturetag)
 
     def updatePackageCount(self):
         """See IDistroArchSeries """
