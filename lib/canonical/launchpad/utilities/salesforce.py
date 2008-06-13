@@ -158,3 +158,12 @@ class SalesforceVoucherProxy:
         num_updated = self.server.updateProjectName(project.id,
                                                     project.displayname)
         return num_updated
+
+    @fault_mapper
+    def grantVoucher(self, admin, approver, recipient, term_months):
+        """See `ISalesforceVoucherProxy`."""
+        voucher_id = self.server.grantVoucher(
+            admin.openid_identifier, approver.openid_identifier,
+            recipient.openid_identifier, recipient.name,
+            recipient.preferredemail.email, term_months)
+        return voucher_id
