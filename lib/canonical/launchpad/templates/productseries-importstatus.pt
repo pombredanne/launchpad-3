@@ -50,9 +50,7 @@
 
       <p>
         If the code is in CVS or Subversion you can
-        import the branch to Bazaar.
-        The first step of this is to specify the
-        <a href="+source">upstream location</a>.
+        <a tal:attributes="href view/request_import_link">request that the branch be imported to Bazaar</a>.
       </p>
 
     </tal:edit-link>

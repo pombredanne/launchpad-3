@@ -22,12 +22,18 @@
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
-    <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
-      For more details on importing source code into Launchpad,
-      see the help wiki page
-      <a href="https://help.launchpad.net/VcsImports">
-          VcsImports</a>.
-    </p>
+    <div metal:fill-slot="extra_info" tal:condition="not:view/errors">
+      <p class="warning message">
+        Note that this is no longer the page for requesting a code
+        import.  You should go to <a tal:attributes="href
+        view/request_import_link"
+        tal:content="view/request_import_link">somewhere</a> instead.
+      </p>
+      <p>
+        You can still enter informational details here which will be
+        shown on the series page.
+      </p>
+    </div>
 
     <metal:formbody fill-slot="widgets">
 

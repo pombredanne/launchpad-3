@@ -502,6 +502,11 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
         return self.context.datefinished == self.context.datelastsynced
 
     @property
+    def request_import_link(self):
+        """XXX."""
+        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
+
+    @property
     def lastVcsImportAttemptAge(self):
         """How long ago was a vcs-import sync last attempted."""
         assert self.context.datefinished is not None
@@ -684,6 +689,11 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     "branch of this series.")),
             custom_widget=self.custom_widgets['rcstype'],
             render_context=self.render_context)
+
+    @property
+    def request_import_link(self):
+        """XXX."""
+        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
