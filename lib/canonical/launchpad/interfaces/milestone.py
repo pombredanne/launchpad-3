@@ -134,6 +134,7 @@ class IProjectMilestone(IMilestone):
 
 class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
+    export_as_webservice_entry()
 
     milestones = Attribute(_(
         "The visible and active milestones associated with this object, "

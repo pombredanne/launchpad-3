@@ -9,6 +9,7 @@ Project groups are available at their canonical URL on the API virtual host.
     >>> mozilla_project = webservice.get('/beta/mozilla').jsonBody()
     >>> pprint_entry(mozilla_project)
     name: u'mozilla'
+    resource_type_link: u'...'
     self_link: u'http://.../beta/mozilla'
 
 
@@ -20,6 +21,7 @@ Projects are available at their canonical URL on the API virtual host.
     >>> pprint_entry(firefox)
     name: u'firefox'
     project_group_link: u'http://.../beta/mozilla'
+    resource_type_link: u'...'
     self_link: u'http://.../beta/firefox'
 
 
@@ -33,6 +35,7 @@ virtual host.
     >>> pprint_entry(firefox_1_0)
     name: u'1.0'
     project_link: u'http://.../beta/firefox'
+    resource_type_link: u'...'
     self_link: u'http://.../beta/firefox/1.0'
 
 
@@ -43,6 +46,7 @@ Project releases are available at their canonical URL on the API virtual host.
     >>> firefox_1_0_0 = webservice.get('/beta/firefox/1.0/1.0.0').jsonBody()
     >>> pprint_entry(firefox_1_0_0)
     project_series_link: u'http://.../beta/firefox/1.0'
+    resource_type_link: u'...'
     self_link: u'http://.../beta/firefox/1.0/1.0.0'
     version: u'1.0.0'
 
@@ -56,6 +60,7 @@ host.
     ...     '/beta/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
     name: u'1.0'
+    resource_type_link: u'...'
     self_link: u'http://.../beta/firefox/+milestone/1.0'
     target_link: u'http://.../beta/firefox'
 
