@@ -27,7 +27,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
-    CodeImportReviewStatus, EmailAddressStatus, ICodeImportEventSet,
+    CodeImportReviewStatus, ICodeImportEventSet,
     ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
@@ -909,8 +909,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     def deleteJob(self, code_import_id):
         """Cause the code import job associated to the import to be deleted.
         """
-        user = self.factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        user = self.factory.makePerson()
         getUtility(ICodeImportSet).get(code_import_id).suspend(
             {}, user)
         flush_database_updates()
