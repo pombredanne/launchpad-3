@@ -162,15 +162,15 @@ hierarchy.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
     >>> print_navigation(anon_browser.contents)
-    Location: Ubuntu > Hoary
+    Location: Ubuntu > 5.04
     Structural title: Ubuntu Hoary
     Tabs:
     * Overview (http://launchpad.dev/ubuntu/hoary)
     * Code (Not active)
     * Bugs (http://bugs.launchpad.dev/ubuntu/hoary)
-    * Blueprints (Not active)
+    * Blueprints (http://blueprints.launchpad.dev/ubuntu/hoary)
     * Translations (http://translations.launchpad.dev/ubuntu/hoary)
-    * Answers (http://answers.launchpad.dev/ubuntu/hoary)
+    * Answers (Not active)
     Main heading: Ubuntu Hoary for i386
 
 

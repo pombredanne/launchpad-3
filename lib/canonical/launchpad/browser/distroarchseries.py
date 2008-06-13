@@ -3,9 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroArchSeriesNavigation',
+    'distroarchseries_to_structuralheading',
     'DistroArchSeriesContextMenu',
-    'DistroArchSeriesFacets',
     'DistroArchSeriesView',
     'DistroArchSeriesAddView',
     'DistroArchSeriesBinariesView',
@@ -13,27 +12,20 @@ __all__ = [
 
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
-    Link, StandardLaunchpadFacets)
+    Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
-from canonical.launchpad.interfaces import IDistroArchSeries
+from canonical.launchpad.interfaces import (
+    IDistroArchSeries, IStructuralHeaderPresentation)
 
 
-class DistroArchSeriesNavigation(GetitemNavigation):
-
-    usedfor = IDistroArchSeries
-
-    def breadcrumb(self):
-        return self.context.architecturetag
-
-class DistroArchSeriesFacets(StandardLaunchpadFacets):
-    # XXX mpt 2006-10-04: a DistroArchSeries is not a structural
-    # object: it should inherit all navigation from its distro release.
-
-    usedfor = IDistroArchSeries
-    enable_only = ['overview']
+def distroarchseries_to_structuralheading(distroarchseries):
+    """Adapt an `IDistroArchSeries` into an
+    `IStructuralHeaderPresentation`.
+    """
+    return IStructuralHeaderPresentation(distroarchseries.distroseries)
 
 
 class DistroArchSeriesContextMenu(ContextMenu):
