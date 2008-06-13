@@ -392,6 +392,9 @@ class IProductSeriesSourceAdmin(Interface):
 
     def certifyForSync():
         """enable this to sync"""
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
     def markStopped():
         """Mark this import as STOPPED.
@@ -399,6 +402,9 @@ class IProductSeriesSourceAdmin(Interface):
         See `ImportStatus` for what this means.  This method also clears
         timestamps and other ancillary data.
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
     def deleteImport():
         """Do our best to forget that this series ever had an import
@@ -406,6 +412,9 @@ class IProductSeriesSourceAdmin(Interface):
 
         Use with care!
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
 
 class IProductSeriesSet(Interface):
