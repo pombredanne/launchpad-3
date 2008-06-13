@@ -364,7 +364,12 @@ class TestBugzillaXMLRPCTransport:
             'severity': 'high',
             'status': 'NEW',
             'summary': 'Collect unknown persons in docking bay 2.',
-            }
+            },
+        }
+
+    # Map aliases onto bugs.
+    bug_aliases = {
+        'bug-two': 2,
         }
 
     # Map namespaces onto method names.
@@ -409,6 +414,29 @@ class TestBugzillaXMLRPCTransport:
             'utc_time': utc_time,
             'tz_name': self.timezone,
             }
+
+    def get_bugs(self, arguments):
+        """Return a list of bug dicts for a given set of bug IDs."""
+        bug_ids = arguments['ids']
+        bugs_to_return = []
+
+        for id in bug_ids:
+            # If the ID is an int, look up the bug directly.
+            try:
+                id = int(id)
+                # XXX 2008-06-13 gmb:
+                #     We need to do some error handling here but at the
+                #     moment we don't know for sure how the Bugzilla
+                #     interface is going to raise errors about bad bug
+                #     IDs.
+                bugs_to_return.append(self.bugs[int(id)])
+            except ValueError:
+                # XXX 2008-06-13 gmb:
+                #     We need to do error handling for bug aliases, too.
+                #     Same problem as above, though.
+                bugs_to_return.append(self.bugs[self.bug_aliases[id]])
+
+        return bugs_to_return
 
 
 class TestMantis(Mantis):
