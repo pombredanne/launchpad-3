@@ -36,7 +36,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -46,10 +46,10 @@ from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_factory_operation, export_operation_as,
+   export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
    operation_parameters, rename_parameters_as, REQUEST_USER, webservice_error)
-from canonical.lazr.fields import CollectionField
+from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 
@@ -74,6 +74,7 @@ from canonical.launchpad.interfaces.teammembership import (
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 from canonical.launchpad.interfaces.wikiname import IWikiName
+from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -503,7 +504,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_('List of languages known by this person'),
             readonly=True, required=False,
-            value_type=Object(schema=ILanguage)))
+            value_type=Reference(schema=ILanguage)))
     translatable_languages = Attribute(
         _('Languages this person knows, apart from English'))
 
@@ -588,17 +589,17 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     allwikis = exported(
         CollectionField(title=_("All WikiNames of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IWikiName)),
+                        value_type=Reference(schema=IWikiName)),
         exported_as='wiki_names')
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IIrcID)),
+                        value_type=Reference(schema=IIrcID)),
         exported_as='irc_nicknames')
     jabberids = exported(
         CollectionField(title=_("List of Jabber IDs of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IJabberID)),
+                        value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
     branches = Attribute(
         "All branches related to this person. They might be registered, "
@@ -613,26 +614,28 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_("All `ITeamMembership`s for Teams this Person is an "
                     "active member of."),
-            value_type=Object(schema=ITeamMembership),
+            value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
-        exported_as='team_memberships')
+        exported_as='memberships_details')
     open_membership_invitations = exported(
         CollectionField(
             title=_('Open membership invitations.'),
             description=_("All TeamMemberships which represent an invitation "
                           "(to join a team) sent to this person."),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=ITeamMembership)))
     teams_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is a participant.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=Interface)),
+        exported_as='participations')
     teams_indirectly_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is an indirect member.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=Interface)),
+        exported_as='indirect_participations')
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -645,7 +648,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             description=_(
                 "Confirmed e-mails are the ones in the VALIDATED state"),
             readonly=True, required=False,
-            value_type=Object(schema=IEmailAddress)),
+            value_type=Reference(schema=IEmailAddress)),
         exported_as='confirmed_email_addresses')
     unvalidatedemails = Attribute(
         "Emails this person added in Launchpad but are not yet validated.")
@@ -681,7 +684,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       readonly=True)
 
     preferredemail = exported(
-        Object(title=_("Preferred email address"),
+        Reference(title=_("Preferred email address"),
                description=_("The preferred email address for this person. "
                              "The one we'll use to communicate with them."),
                readonly=True, required=False, schema=IEmailAddress),
@@ -692,13 +695,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         description=_("The person's preferred email if they have"
                       "one and do not choose to hide it. Otherwise"
                       "the empty string."),
-        readonly=True)
-
-    preferredemail_sha1 = TextLine(
-        title=_("SHA-1 Hash of Preferred Email"),
-        description=_("The SHA-1 hash of the preferred email address and "
-                      "a mailto: prefix as a hexadecimal string. This is "
-                      "used as a key by FOAF RDF spec"),
         readonly=True)
 
     verbose_bugnotifications = Bool(
@@ -755,6 +751,43 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         title=_("Whether person agrees to relicense their translations"),
         readonly=False)
 
+    sub_teams = exported(
+        CollectionField(
+            title=_("All subteams of this team."),
+            description=_("""
+                A subteam is any team that is a member (either directly or
+                indirectly) of this team. As an example, let's say we have
+                this hierarchy of teams:
+
+                Rosetta Translators
+                    Rosetta pt Translators
+                        Rosetta pt_BR Translators
+
+                In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
+                Translators' are subteams of the 'Rosetta Translators' team,
+                and all members of both subteams are considered members of
+                "Rosetta Translators".
+                """),
+            readonly=True, required=False,
+            value_type=Reference(schema=Interface)))
+
+    super_teams = exported(
+        CollectionField(
+            title=_("All superteams of this team."),
+            description=_("""
+                A superteam is any team that this team is a member of. For
+                example, let's say we have this hierarchy of teams, and we are
+                the "Rosetta pt_BR Translators":
+
+                Rosetta Translators
+                    Rosetta pt Translators
+                        Rosetta pt_BR Translators
+
+                In this case, we will return both 'Rosetta pt Translators' and
+                'Rosetta Translators', because we are member of both of them.
+                """),
+            readonly=True, required=False,
+            value_type=Reference(schema=Interface)))
 
     @invariant
     def personCannotHaveIcon(person):
@@ -805,22 +838,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         (A to Z) by name.
         """
 
-    def getBugSubscriberOpenBugCounts(user):
-        """Return open bug counts for this bug subscriber's packages.
-
-            :user: The user doing the search. Private bugs that this
-                   user doesn't have access to won't be included in the
-                   count.
-
-        Returns a list of dictionaries, where each dict contains:
-
-            'package': The package the bugs are open on.
-            'open': The number of open bugs.
-            'open_critical': The number of open critical bugs.
-            'open_unassigned': The number of open unassigned bugs.
-            'open_inprogress': The number of open bugs that ar In Progress.
-        """
-
     def setContactAddress(email):
         """Set the given email address as this team's contact address.
 
@@ -844,6 +861,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The product_name may be None.
         """
 
+    @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
         given team.
@@ -887,6 +906,12 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         owns or drives.
         """
 
+    def getOwnedProjects(match_name=None):
+        """Projects owned by this person or teams to which she belongs.
+
+        :param match_name: string optional project name to screen the results.
+        """
+
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """Assign karma for the action named <action_name> to this person.
@@ -909,6 +934,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         Iterate no more than the given limit.
         """
 
+    @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @export_read_operation()
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 
@@ -1027,38 +1054,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         of this team.
         """
 
-    def getSubTeams():
-        """Return all subteams of this team.
-
-        A subteam is any team that is (either directly or indirectly) a
-        member of this team. As an example, let's say we have this hierarchy
-        of teams:
-
-        Rosetta Translators
-            Rosetta pt Translators
-                Rosetta pt_BR Translators
-
-        In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
-        Translators' are subteams of the 'Rosetta Translators' team, and all
-        members of both subteams are considered members of "Rosetta
-        Translators".
-        """
-
-    def getSuperTeams():
-        """Return all superteams of this team.
-
-        A superteam is any team that this team is a member of. For example,
-        let's say we have this hierarchy of teams, and we are the
-        "Rosetta pt_BR Translators":
-
-        Rosetta Translators
-            Rosetta pt Translators
-                Rosetta pt_BR Translators
-
-        In this case, we will return both 'Rosetta pt Translators' and
-        'Rosetta Translators', because we are member of both of them.
-        """
-
     def getLatestApprovedMembershipsForPerson(limit=5):
         """Return the <limit> latest approved membrships for this person."""
 
@@ -1161,11 +1156,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         consider using `IMailinglist.subscribe()` directly.
 
         :param mailinglist: The list to subscribe to.  No action is
-        	taken if the list is None, or in an unusable state.
+                taken if the list is None, or in an unusable state.
 
         :param requester: The person requesting the list subscription,
-        	if not the user himself.  The default assumes the user
-        	themself is making the request.
+                if not the user himself.  The default assumes the user
+                themself is making the request.
 
         :return: True if the user was subscribed, false if they weren't.
         """
@@ -1181,12 +1176,12 @@ class IPersonViewRestricted(Interface):
     activemembers = exported(
         CollectionField(
             title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='members')
     adminmembers = exported(
         CollectionField(
             title=_("List of this team's admins."),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
@@ -1199,7 +1194,7 @@ class IPersonViewRestricted(Interface):
                 "way or another, are a part of this team. If you want a "
                 "method to check if a given person is a member of a team, "
                 "you should probably look at IPerson.inTeam()."),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='participants')
     approvedmembers = Attribute("List of members with APPROVED status")
     deactivated_member_count = Attribute("Number of deactivated members")
@@ -1208,13 +1203,13 @@ class IPersonViewRestricted(Interface):
         CollectionField(
             title=_(
                 "All members whose membership is in the DEACTIVATED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
         CollectionField(
             title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='expired_members')
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
@@ -1222,7 +1217,7 @@ class IPersonViewRestricted(Interface):
     invited_members = exported(
         CollectionField(
             title=_("All members whose membership is in the INVITED state"),
-            value_type=Object(schema=Interface)))
+            value_type=Reference(schema=Interface)))
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
         CollectionField(
@@ -1232,13 +1227,14 @@ class IPersonViewRestricted(Interface):
                 "APPROVED status.  The results are ordered using "
                 "Person.sortingColumns."),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=ITeamMembership)),
+        exported_as='members_details')
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     proposedmembers = exported(
         CollectionField(
             title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
@@ -1581,7 +1577,6 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    @export_operation_as('create_team')
     @call_with(teamowner=REQUEST_USER)
     @rename_parameters_as(
         displayname='display_name', teamdescription='team_description',
@@ -1603,6 +1598,9 @@ class IPersonSet(Interface):
     def get(personid):
         """Return the person with the given id or None if it's not found."""
 
+    @operation_parameters(
+        email=TextLine(required=True, constraint=email_validator))
+    @export_read_operation()
     def getByEmail(email):
         """Return the person with the given email address.
 
@@ -1619,6 +1617,7 @@ class IPersonSet(Interface):
     def getByOpenIdIdentifier(openid_identity):
         """Return the person with the given OpenID identifier, or None."""
 
+    @export_read_operation()
     def getAllTeams(orderBy=None):
         """Return all Teams, ignoring the merged ones.
 
@@ -1638,19 +1637,9 @@ class IPersonSet(Interface):
         current will not appear in the returned list.
         """
 
+    @export_read_operation()
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
-
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in Person._defaultOrder.
-        """
-
-    def getAllValidPersons(orderBy=None):
-        """Return all valid persons, but not teams.
-
-        A valid person is any person with a preferred email address.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -1689,6 +1678,9 @@ class IPersonSet(Interface):
         address.
         """
 
+    @operation_parameters(
+        text=TextLine(title=_("Search text"), default=u""))
+    @export_read_operation()
     def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
@@ -1710,7 +1702,10 @@ class IPersonSet(Interface):
         address.
         """
 
-    def findTeam(text, orderBy=None):
+    @operation_parameters(
+        text=TextLine(title=_("Search text"), default=u""))
+    @export_read_operation()
+    def findTeam(text="", orderBy=None):
         """Return all Teams whose name, displayname or email address
         match <text>.
 
@@ -1848,7 +1843,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner', 
+    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1930,9 +1925,16 @@ for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
              'invited_members', 'deactivatedmembers', 'expiredmembers']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
+IPersonPublic['sub_teams'].value_type.schema = ITeam
+IPersonPublic['super_teams'].value_type.schema = ITeam
+IPersonPublic['teams_participated_in'].value_type.schema = ITeam
+IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
+
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
-    (IPersonEditRestricted['join'], 'team'), 
+    (IPersonPublic['findPathToTeam'], 'team'),
+    (IPersonPublic['inTeam'], 'team'),
+    (IPersonEditRestricted['join'], 'team'),
     (IPersonEditRestricted['leave'], 'team'),
     (IPersonEditRestricted['addMember'], 'person'),
     (IPersonEditRestricted['acceptInvitationToBeMemberOf'], 'team'),

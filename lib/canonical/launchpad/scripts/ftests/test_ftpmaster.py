@@ -11,8 +11,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet, ISectionSet, PackagePublishingPocket,
-    PackagePublishingPriority)
+    IComponentSet, IDistributionSet, IDistroSeriesSet, ISectionSet,
+    PackagePublishingPocket, PackagePublishingPriority)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError)
@@ -227,7 +227,7 @@ class TestArchiveOverrider(unittest.TestCase):
         source was picked and correct arguments was passed.
         """
         self.assertCurrentSource(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
@@ -282,23 +282,23 @@ class TestArchiveOverrider(unittest.TestCase):
         Nothing is done and the situation is logged.
         """
         self.assertCurrentSource(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
-            component_name='main', section_name='editors',
+            component_name='main', section_name='web',
             priority_name='extra')
         changer.initialize()
         changer.processSourceChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
             "INFO Override Component to: 'main'\n"
-            "INFO Override Section to: 'editors'\n"
+            "INFO Override Section to: 'web'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox - 0.9/main/editors' remained the same")
+            "INFO 'mozilla-firefox - 0.9/main/web' remained the same")
 
         self.assertCurrentSource(
-            self.warty, 'mozilla-firefox', '0.9', 'main', 'editors')
+            self.warty, 'mozilla-firefox', '0.9', 'main', 'web')
 
     def test_processBinaryChange_success(self):
         """Check if processBinaryChange() picks the correct binary.
@@ -350,15 +350,25 @@ class TestArchiveOverrider(unittest.TestCase):
         self.assertCurrentBinary(
             hoary_hppa, 'pmount', '2:1.9-1', 'main', 'base', 'EXTRA')
 
+        potato = getUtility(IDistroSeriesSet).new(
+            self.ubuntu, 'potato', 'Potato', 'Ubuntu potato', 'summary',
+            'no', '2.2', self.warty, self.warty.owner)
+        potato_i386 = potato.newArch(
+            'i386', self.warty['i386'].processorfamily, True, potato.owner)
+        potato_hppa = potato.newArch(
+            'hppa', self.warty['hppa'].processorfamily, True, potato.owner)
+
+        removeSecurityProxy(self.hoary).parentseries = potato
+
         pmount_i386 = hoary_i386.getBinaryPackage('pmount')['0.1-1']
         i386_build = removeSecurityProxy(
             pmount_i386.binarypackagerelease.build)
-        i386_build.distroarchseries = self.warty['i386']
+        i386_build.distroarchseries = potato_i386
 
         pmount_hppa = hoary_hppa.getBinaryPackage('pmount')['2:1.9-1']
         hppa_build = removeSecurityProxy(
             pmount_hppa.binarypackagerelease.build)
-        hppa_build.distroarchseries = self.warty['hppa']
+        hppa_build.distroarchseries = potato_hppa
 
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
@@ -445,13 +455,13 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO Override Component to: 'main'\n"
             "INFO Override Section to: 'web'\n"
             "INFO Override Priority to: 'EXTRA'\n"
-            "INFO 'mozilla-firefox-1.0/main/base/IMPORTANT' "
+            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
+                "binary overridden in warty hppa\n"
+            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
                 "binary overridden in warty i386\n"
             "INFO 'mozilla-firefox-0.9/main/base/EXTRA' "
                 "binary overridden in warty hppa\n"
-            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
-                "binary overridden in warty hppa\n"
-            "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
+            "INFO 'mozilla-firefox-1.0/main/base/IMPORTANT' "
                 "binary overridden in warty i386")
 
         self.assertCurrentBinary(

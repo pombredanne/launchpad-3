@@ -348,6 +348,30 @@ bug. DebBugs comment IDs are RFC822 message IDs.
     >>> print comment_ids
     ['<20040309081430.98BF411EE67@tux>']
 
+getCommentIds() will only return a given comment ID once, even if that
+comment ID exists several times in the DebBugs comment log. To
+demonstrate this we'll use a data file that contains two copies of the
+same comment.
+
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-duplicate-comment-ids.txt')
+
+If we query the DebBugs database directly we'll see that there are two
+copies of the same comment.
+
+    >>> import email
+    >>> debian_bug = external_debbugs._findBug(bug_watch.remotebug)
+    >>> for comment in debian_bug.comments:
+    ...     comment_email = email.message_from_string(comment)
+    ...     print comment_email['message-id']
+    <20040309081430.98BF411EE67@tux>
+    <20040309081430.98BF411EE67@tux>
+
+However, getCommentIds() will only return the comment ID once.
+
+    >>> external_debbugs.getCommentIds(bug_watch)
+    ['<20040309081430.98BF411EE67@tux>']
+
 The debbugs implementation of fetchComments() doesn't actually do
 anything, since DebBugs comments are stored locally and there is no need
 to pre-fetch them. It exists, nevertheless, so that

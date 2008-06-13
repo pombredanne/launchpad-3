@@ -87,7 +87,7 @@ warnings.filterwarnings(
         'ignore', 'PyCrypto', RuntimeWarning, 'twisted[.]conch[.]ssh'
         )
 warnings.filterwarnings(
-        'ignore', 'twisted.python.plugin', DeprecationWarning, 'buildbot'
+        'ignore', 'twisted.python.plugin', DeprecationWarning,
         )
 warnings.filterwarnings(
         'ignore', 'The concrete concept of a view has been deprecated.',

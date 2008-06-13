@@ -1,0 +1,65 @@
+= The set of people and teams =
+
+The set of people and teams in Launchpad is represented by the
+collection found at /people.  By default it lists all non-merged
+people and teams
+
+    >>> people = webservice.get("/beta/people").jsonBody()
+    >>> len(people['entries'])
+    5
+    >>> people['next_collection_link']
+    u'http://api.launchpad.dev/beta/people?ws.start=5...'
+
+
+== Custom operations ==
+
+But it also offer operations to filter that list.  For example, the
+find operation will search for people and teams matching the given
+search text.
+
+    >>> search = webservice.get(
+    ...     "/beta/people?ws.op=find&text=salgado").jsonBody()
+    >>> sorted(person['name'] for person in search['entries'])
+    [u'salgado']
+
+There are also operations to search only for people or only for teams.
+
+    >>> search = webservice.get(
+    ...     "/beta/people?ws.op=findTeam&text=salgado").jsonBody()
+    >>> sorted(person['name'] for person in search['entries'])
+    []
+
+    >>> search = webservice.get(
+    ...     "/beta/people?ws.op=findPerson&text=salgado").jsonBody()
+    >>> sorted(person['name'] for person in search['entries'])
+    [u'salgado']
+
+It's also possible to get a list with all the people (including the ones
+whose account is inactive) or all the teams.
+
+    >>> people = webservice.get(
+    ...     "/beta/people?ws.op=getAllPersons").jsonBody()
+    >>> len(people['entries'])
+    5
+
+    >>> teams = webservice.get(
+    ...     "/beta/people?ws.op=getAllTeams").jsonBody()
+    >>> len(people['entries'])
+    5
+
+If you know the email address of a person/team, it's possible to
+retrieve it using that email.
+
+    >>> daf = webservice.get(
+    ...     "/beta/people?ws.op=getByEmail&email=daf@canonical.com").jsonBody()
+    >>> daf['name']
+    u'daf'
+
+When looking up a person by email address, you have to provide a valid
+email address.
+
+    >>> print webservice.get(
+    ...     "/beta/people?ws.op=getByEmail&email=daf@")
+    HTTP/1.1 400 Bad Request
+    ...
+    email: Invalid email 'daf@'.

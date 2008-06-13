@@ -11,9 +11,8 @@ import urllib
 
 import tickcount
 
-import sqlos.connection
-from sqlos.interfaces import IConnectionName
-
+from psycopg2.extensions import TransactionRollbackError
+from storm.exceptions import DisconnectionError, IntegrityError
 import transaction
 
 from zope.app import zapi  # used to get at the adapters service
@@ -121,30 +120,6 @@ class LaunchpadBrowserPublication(
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
-    @staticmethod
-    def clearSQLOSCache():
-        # Big boot for fixing SQLOS transaction issues - nuke the
-        # connection cache at the start of a transaction. This shouldn't
-        # affect performance much, as psycopg does connection pooling.
-        #
-        # XXX Steve Alexander 2004-12-14: Move this to SQLOS, in a method
-        # that is subscribed to the transaction begin event rather than
-        # hacking it into traversal.
-        name = getUtility(IConnectionName).name
-        key = (thread.get_ident(), name)
-        cache = sqlos.connection.connCache
-        connection = cache.pop(key, None)
-        if connection is not None:
-            connection._makeObsolete()
-        # SQLOS Connection objects also only register themselves for
-        # the transaction in which they are instantiated - this is
-        # no longer a problem as we are nuking the connection cache,
-        # but it is still an issue in SQLOS that needs to be fixed.
-        #name = getUtility(IConnectionName).name
-        #con = sqlos.connection.getConnection(None, name)
-        #t = transaction.get_transaction()
-        #t.join(con._dm)
-
     def beforeTraversal(self, request):
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
@@ -166,7 +141,6 @@ class LaunchpadBrowserPublication(
         newInteraction(request)
         transaction.begin()
 
-        self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
 
         # Set the default layer.
@@ -318,9 +292,11 @@ class LaunchpadBrowserPublication(
 
         # launchpad.pageid contains an identifier of the form
         # ContextName:ViewName. It will end up in the page log.
-        unrestricted_ob = removeSecurityProxy(ob)
+        view = removeSecurityProxy(ob)
+        # It's possible that the view is a bounded method.
+        view = getattr(view, 'im_self', view)
         context = removeSecurityProxy(
-            getattr(unrestricted_ob, 'context', None))
+            getattr(view, 'context', None))
         if context is None:
             pageid = ''
         else:
@@ -328,10 +304,10 @@ class LaunchpadBrowserPublication(
             # is accessible in the instance __name__ attribute. We use
             # that if it's available, otherwise fall back to the class
             # name.
-            if getattr(unrestricted_ob, '__name__', None) is not None:
-                view_name = unrestricted_ob.__name__
+            if getattr(view, '__name__', None) is not None:
+                view_name = view.__name__
             else:
-                view_name = unrestricted_ob.__class__.__name__
+                view_name = view.__class__.__name__
             pageid = '%s:%s' % (context.__class__.__name__, view_name)
         # The view name used in the pageid usually comes from ZCML and so
         # it will be a unicode string although it shouldn't.  To avoid
@@ -444,8 +420,9 @@ class LaunchpadBrowserPublication(
         # Reraise Retry exceptions rather than log.
         # XXX stub 20070317: Remove this when the standard
         # handleException method we call does this (bug to be fixed upstream)
-        if (retry_allowed
-            and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
+        if retry_allowed and isinstance(
+            exc_info[1], (Retry, DisconnectionError, IntegrityError,
+                          TransactionRollbackError)):
             if request.supportsRetry():
                 # Remove variables used for counting ticks as this request is
                 # going to be retried.

@@ -1,5 +1,6 @@
 from unittest import TestLoader
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ICodeReviewVote
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.testing import verifyObject
@@ -19,7 +20,8 @@ class TestCodeReviewVote(TestCaseWithFactory):
         self.assertEqual(registrant, vote.registrant)
         self.assertEqual(merge_proposal, vote.branch_merge_proposal)
         self.assertEqual([vote], list(merge_proposal.votes))
-        self.assertIsDBNow(vote.date_created)
+        self.assertSqlAttributeEqualsDate(
+            vote, 'date_created', UTC_NOW)
         assert verifyObject(ICodeReviewVote, vote), ('Implements the'
             ' expected interface.')
 

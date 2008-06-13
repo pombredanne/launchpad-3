@@ -222,7 +222,14 @@ class DebBugs(ExternalBugTracker):
         comment_ids = []
         for comment in debian_bug.comments:
             parsed_comment = email.message_from_string(comment)
-            comment_ids.append(parsed_comment['message-id'])
+
+            # It's possible for the same message to appear several times
+            # in a DebBugs comment log, since each control command in a
+            # message results in that message being recorded once
+            # against the bug that the command affects. We only want to
+            # know about the comment once, though.
+            if parsed_comment['message-id'] not in comment_ids:
+                comment_ids.append(parsed_comment['message-id'])
 
         return comment_ids
 

@@ -3,19 +3,22 @@
 
 """Tests that get run automatically on a merge."""
 
-import sys, re, time
-import os, os.path, errno
+import sys, time
+import os, errno
 import tabnanny
 from StringIO import StringIO
-import psycopg
+import psycopg2
 from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
 from select import select
 
-# Die and kill the kids if no output for 60 minutes. Tune this if if your
-# slow arsed machine needs it. The main use for this is to keep the pqm
-# queue flowing without having to give it a lifeless enema.
-TIMEOUT = 60 * 60 
+# The TIMEOUT setting (expressed in seconds) affects how long a test will run
+# before it is deemed to be hung, and then appropriately terminated.
+# It's principal use is preventing a PQM job from hanging indefinitely and
+# backing up the queue.
+# e.g. Usage: TIMEOUT = 60 * 15
+# This will set the timeout to 15 minutes.
+TIMEOUT = 60 * 15
 
 def main():
     """Call test.py with whatever arguments this script was run with.
@@ -28,7 +31,7 @@ def main():
     here = os.path.dirname(os.path.realpath(__file__))
 
     # Tabnanny
-    # NB. If tabnanny raises an exception, run 
+    # NB. If tabnanny raises an exception, run
     # python /usr/lib/python2.4/tabnanny.py -vv lib/canonical
     # for more detailed output.
     org_stdout = sys.stdout
@@ -44,7 +47,7 @@ def main():
 
     # Sanity check PostgreSQL version. No point in trying to create a test
     # database when PostgreSQL is too old.
-    con = psycopg.connect('dbname=template1')
+    con = psycopg2.connect('dbname=template1')
     cur = con.cursor()
     cur.execute('show server_version')
     server_version = cur.fetchone()[0]
@@ -62,12 +65,12 @@ def main():
 
     # Drop the template database if it exists - the Makefile does this
     # too, but we can explicity check for errors here
-    con = psycopg.connect('dbname=template1')
+    con = psycopg2.connect('dbname=template1')
     con.set_isolation_level(0)
     cur = con.cursor()
     try:
         cur.execute('drop database launchpad_ftest_template')
-    except psycopg.ProgrammingError, x:
+    except psycopg2.ProgrammingError, x:
         if 'does not exist' not in str(x):
             raise
     cur.execute("""
@@ -83,7 +86,6 @@ def main():
         return 1
     cur.close()
     con.close()
-    
 
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
@@ -95,7 +97,7 @@ def main():
 
     # Sanity check the database. No point running tests if the
     # bedrock is crumbling.
-    con = psycopg.connect('dbname=launchpad_ftest_template')
+    con = psycopg2.connect('dbname=launchpad_ftest_template')
     cur = con.cursor()
     cur.execute('show search_path')
     search_path = cur.fetchone()[0]
@@ -129,7 +131,6 @@ def main():
     del cur
     con.close()
     del con
-    
 
     print 'Running tests.'
     os.chdir(here)
@@ -151,11 +152,12 @@ def main():
         if len(rlist) == 0:
             if proc.poll() is not None:
                 break
-            print '\nTests hung - no output for %d seconds. Killing.' % TIMEOUT
+            print ("\nA test appears to be hung. There has been no output for"
+                " %d seconds. Sending SIGTERM." % TIMEOUT)
             killem(proc.pid, SIGTERM)
             time.sleep(3)
             if proc.poll() is not None:
-                print '\nNot dead yet! - slaughtering mercilessly'
+                print ("\nSIGTERM did not work. Sending SIGKILL.")
                 killem(proc.pid, SIGKILL)
             # Drain the subprocess's stdout and stderr.
             sys.stdout.write(proc.stdout.read())
@@ -169,7 +171,7 @@ def main():
 
     rv = proc.wait()
     if rv == 0:
-        print '\nSuccessfully run tests.'
+        print '\nSuccessfully ran all tests.'
     else:
         print '\nTests failed (exit code %d)' % rv
 

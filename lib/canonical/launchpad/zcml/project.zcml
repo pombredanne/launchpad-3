@@ -263,7 +263,7 @@
         facet="overview"
         class="canonical.launchpad.browser.ProjectAddProductView"
         permission="launchpad.AnyPerson"
-        template="../templates/product-add.pt"
+        template="../templates/product-add-from-project.pt"
         />
 
     <browser:addform

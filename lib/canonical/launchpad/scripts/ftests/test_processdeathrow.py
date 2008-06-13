@@ -60,7 +60,7 @@ class TestProcessDeathRow(TestCase):
         """Clean up after ourselves."""
         self.tearDownPrimaryArchive()
         self.tearDownPPA()
-        
+
     def setupPrimaryArchive(self):
         """Create pending removal publications in ubuntutest PRIMARY archive.
 

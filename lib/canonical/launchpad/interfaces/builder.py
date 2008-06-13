@@ -149,6 +149,19 @@ class IBuilder(IHasOwner):
             file.
         """
 
+    def cachePrivateSourceOnSlave(logger, build_queue_item):
+        """Ask the slave to download source files for a private build.
+
+        The slave will cache the files for the source in build_queue_item
+        to its local disk in preparation for a private build.  Private builds
+        will always take the source files from the archive rather than the
+        librarian since the archive has more granular access to each
+        archive's files.
+
+        :param logger: A logger used for providing debug information.
+        :param build_queue_item: The `IBuildQueue` being built.
+        """
+
     def checkCanBuildForDistroArchSeries(distro_arch_series):
         """Check that the slave can compile for the given distro_arch_release.
 

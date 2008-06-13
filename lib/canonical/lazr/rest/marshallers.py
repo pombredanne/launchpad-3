@@ -98,10 +98,6 @@ class SimpleFieldMarshaller:
     # Set this to type or tuple of types that the JSON value must be of.
     _type = None
 
-    # The error message to use if the isinstance fails on the _type. The
-    # value will be interpreted in the message.
-    _type_error_message = None
-
     def __init__(self, field, request):
         self.field = field
         self.request = request
@@ -147,7 +143,14 @@ class SimpleFieldMarshaller:
         """
         if self._type is not None:
             if not isinstance(value, self._type):
-                raise ValueError(self._type_error_message % value)
+                if isinstance(self._type, (tuple, list)):
+                    expected_name = ", ".join(
+                        a_type.__name__ for a_type in self._type)
+                else:
+                    expected_name = self._type.__name__
+                raise ValueError(
+                    "got '%s', expected %s: %r" % (
+                        type(value).__name__, expected_name, value))
         return value
 
     @property
@@ -170,21 +173,18 @@ class BoolFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
 
     _type = bool
-    _type_error_message = 'not a boolean: %r'
 
 
 class IntFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
 
     _type = int
-    _type_error_message = 'not an integer: %r'
 
 
 class FloatFieldMarshaller(SimpleFieldMarshaller):
     """A marshaller that transforms its value into an integer."""
 
     _type = (float, int)
-    _type_error_message = 'not a float: %r'
 
     def _marshall_from_json_data(self, value):
         """See `SimpleFieldMarshaller`.
@@ -463,5 +463,4 @@ class ObjectLookupFieldMarshaller(SimpleFieldMarshaller,
         # to the object underlying a resource, we need to strip its
         # security proxy.
         return removeSecurityProxy(resource).context
-
 

@@ -158,16 +158,31 @@ is displayed to direct the owner to purchase a subscription.
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-missing-license')
     None
+    >>> owner_browser.getLink('Purchase a subscription.').click()
+    >>> owner_browser.url
+    'http://launchpad.dev/firefox/+purchase-subscription'
+    >>> owner_browser.getLink('Canonical Shop')
+    <Link...url='https://shop.canonical.com'...>
+    >>> owner_browser.getLink('voucher management page')
+    <Link...url='http://launchpad.dev/people/+me/+vouchers'...>
 
-A non-owner does not see that a commercial subscription is due.
+A non-owner does not see that a commercial subscription is due,
+and the +purchase-subscription page will display an error. A user would
+have to load that page directly, since the link is not displayed.
 
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> print find_tag_by_id(user_browser.contents,
     ...                      'portlet-requires-subscription')
     None
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/firefox/+purchase-subscription')
+    >>> print find_tag_by_id(user_browser.contents, 'permission-error')
+    <div...class="error message"...
+    You do not have permission to purchase a subscription for this project...
 
 If the project qualifies for free hosting, neither portlet
-is displayed.
+is displayed, and the +purchase-subscription page will display
+an error.
 
     >>> firefox.licenses = [License.GNU_GPL_V2]
     >>> flush_database_updates()
@@ -179,6 +194,11 @@ is displayed.
     >>> print find_tag_by_id(owner_browser.contents,
     ...                      'portlet-missing-license')
     None
+    >>> owner_browser.open(
+    ...     'http://launchpad.dev/firefox/+purchase-subscription')
+    >>> print find_tag_by_id(owner_browser.contents, 'free-hosting-error')
+    <div...class="error message"...
+    This project does not require a commercial subscription to be purchased...
 
 If the is_subscription_feature_active config variable is false,
 then the owner will not get a warning that the subscription is due.

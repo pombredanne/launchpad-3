@@ -2,7 +2,7 @@
 
 TestTracXMLRPCTransport is an XML-RPC transport which simulates the LP
 Trac plugin. It can be used to avoid network traffic while testing, and
-it implements the same API taht  Trac instances having the LP plugin
+it implements the same API that Trac instances having the LP plugin
 installed implement.
 
     >>> import xmlrpclib

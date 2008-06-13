@@ -74,6 +74,12 @@
           <h2>What&#8217;s new here?</h2>
           <ul>
            <li class="news">
+              <a href="http://news.launchpad.net/cool-new-stuff/review-branch-merge-proposals-in-launchpad">
+                <strong>Code merger reviews</strong><br />
+                Review proposed branch mergers, using comments and voting, direct in Launchpad.
+              </a>
+           </li>
+           <li class="news">
               <a href="http://news.launchpad.net/?p=80">
                 <strong>Site-wide search improvements</strong><br />
                 We have significantly enhanced our site-wide search feature to
@@ -109,16 +115,9 @@
                 have upload permission.
               </a>
             </li>
-            <li class="news">
-              <a href="http://news.launchpad.net/?p=66">
-                <strong>Meet the bug supervisor</strong><br />
-                Bug contacts are now called bug supervisors. Read our blog
-                post to find out why.
-              </a>
-            </li>
           </ul>
           <div class="discreet" style="text-align: right">
-            Updated 2008-05-28.
+            Updated 2008-05-30.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>

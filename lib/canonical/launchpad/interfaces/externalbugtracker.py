@@ -46,8 +46,7 @@ class IExternalBugTracker(Interface):
     def getCurrentDBTime():
         """Return the current time of the bug tracker's DB server.
 
-        The local time should be returned, as a timezone-aware datetime
-        instance.
+        The current time will be returned as a timezone-aware datetime.
         """
 
     def getModifiedRemoteBugs(remote_bug_ids, last_checked):

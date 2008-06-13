@@ -318,8 +318,8 @@ This time, her message is on topic and is accepted.
     ...
     List-Id: <itest-one.lists.launchpad.dev>
     List-Help: <http://help.launchpad.dev/ListHelp>
-    List-Subscribe: <http://launchpad.dev/people/+me/+editemails>
-    List-Unsubscribe: <http://launchpad.dev/people/+me/+editemails>
+    List-Subscribe: <http://launchpad.dev/~itest-one>
+    List-Unsubscribe: <http://launchpad.dev/~itest-one>
     List-Post: <mailto:itest-one@lists.launchpad.dev>
     List-Archive: <http://lists.launchpad.dev/itest-one>
     List-Owner: <http://launchpad.dev/~itest-one>
@@ -332,7 +332,7 @@ This time, her message is on topic and is accepted.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -397,7 +397,7 @@ Here's the copy sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -418,7 +418,7 @@ Here's the copy sent to Anne...
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -488,7 +488,7 @@ However, once she validates this address, she can post from it.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
@@ -507,7 +507,7 @@ However, once she validates this address, she can post from it.
     _______________________________________________
     Mailing list: http://launchpad.dev/~itest-one
     Post to     : itest-one@lists.launchpad.dev
-    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    Unsubscribe : http://launchpad.dev/~itest-one
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>

@@ -49,7 +49,9 @@ class ProcessPendingPackageDiffs(LaunchpadCronScript):
 
         # Iterate over all pending packagediffs.
         for packagediff in pending_diffs:
-            self.logger.debug('Performing %s' % packagediff.title)
+            self.logger.debug(
+                'Performing package diff for %s from %s' % (
+                    packagediff.from_source.name, packagediff.title))
             packagediff.performDiff()
             if not self.options.dryrun:
                 self.logger.debug('Commiting the transaction.')

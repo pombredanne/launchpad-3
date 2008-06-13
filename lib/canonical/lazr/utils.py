@@ -8,8 +8,10 @@ __all__ = [
     ]
 
 
-marker = object()
+missing = object()
+
+
 def safe_hasattr(ob, name):
     """hasattr() that doesn't hide exceptions."""
-    return getattr(ob, name, marker) is not marker
+    return getattr(ob, name, missing) is not missing
 

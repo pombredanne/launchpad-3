@@ -16,8 +16,7 @@ $LPCURRENT/scripts/process-accepted.py -v --ppa ubuntu
 $LPCURRENT/scripts/publish-distro.py -v --ppa -d ubuntu
 
 # Publish private PPAs.
-# Disabled until private PPAs go live.
-# $LPCURRENT/scripts/publish-distro.py -v --private-ppa -d ubuntu
+$LPCURRENT/scripts/publish-distro.py -v --private-ppa -d ubuntu
 
 # Removed because this is too slow to run for every pass of this script.
 # It will be put in its own cron job and will run daily.
