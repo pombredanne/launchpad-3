@@ -3,7 +3,7 @@ automatically chosen if a packaging link is found.
 
     >>> user_browser.open(
     ...  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/8')
-    >>> user_browser.getLink('Project').click()
+    >>> user_browser.getLink('Also affects project').click()
     >>> user_browser.url
     'http://.../ubuntu/+source/mozilla-firefox/+bug/8/+choose-affected-product'
     >>> user_browser.getControl(name='field.product').value
@@ -21,7 +21,7 @@ then the product widget will have no initial value.
     >>> user_browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/8'
 
-    >>> user_browser.getLink('Project').click()
+    >>> user_browser.getLink('Also affects project').click()
     >>> user_browser.getControl('Project').value
     ''
 
@@ -43,7 +43,7 @@ Now the upstream product will be chosen automatically also for pmount.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/pmount/+bug/8')
-    >>> user_browser.getLink('Project').click()
+    >>> user_browser.getLink('Also affects project').click()
     >>> user_browser.url
     'http://.../ubuntu/+source/pmount/+bug/8/+choose-affected-product'
     >>> user_browser.getControl(name='field.product').value
