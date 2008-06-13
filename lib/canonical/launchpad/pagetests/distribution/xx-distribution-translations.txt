@@ -119,13 +119,15 @@ we should not have a link to it.
 
 Administrator can change the translation focus for a distribution.
 
-    >>> admin_browser.open('http://launchpad.dev/ubuntu')
-    >>> admin_browser.getLink('Change distribution details').click()
-    >>> admin_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> editor_browser.open('http://launchpad.dev/ubuntu')
+    >>> editor_browser.getLink('Change distribution details').click()
+    >>> editor_browser.getControl('Translation Focus').displayValue
     ['ubuntu hoary']
-    >>> admin_browser.getControl('Translation Focus').displayValue = [
+    >>> editor_browser.getControl('Translation Focus').displayValue = [
     ...     'ubuntu grumpy']
-    >>> admin_browser.getControl('Change').click()
-    >>> admin_browser.getLink('Change distribution details').click()
-    >>> admin_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser.getControl('Change').click()
+    >>> editor_browser.getLink('Change distribution details').click()
+    >>> editor_browser.getControl('Translation Focus').displayValue
     ['ubuntu grumpy']
