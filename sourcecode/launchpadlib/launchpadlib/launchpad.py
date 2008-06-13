@@ -8,8 +8,18 @@ __all__ = [
     ]
 
 
-import simplejson
 from launchpadlib._browser import Browser
+from launchpadlib._utils.uri import URI
+from launchpadlib.collection import Collection, Entry
+from launchpadlib.person import People
+
+
+# XXX BarryWarsaw 05-Jun-2008 this is a placeholder to satisfy the interface
+# required by the Launchpad.bugs property below.  It is temporary and will go
+# away when we flesh out the bugs interface.
+class _FakeBugCollection(Collection):
+    def _entry(self, entry_dict):
+        return Entry(entry_dict)
 
 
 class Launchpad:
@@ -27,10 +37,11 @@ class Launchpad:
         :param credentials: The credentials used to access Launchpad.
         :type credentials: `Credentials`
         """
+        self._root = URI(self.SERVICE_ROOT)
         self.credentials = credentials
         # Get the root resource.
         self._browser = Browser(self.credentials)
-        response = simplejson.loads(self._browser.get(self.SERVICE_ROOT))
+        response = self._browser.get(self._root)
         self._person_set_link = response.get(
             'PersonSetCollectionAdapter_collection_link')
         self._bug_set_link = response.get(
@@ -38,14 +49,13 @@ class Launchpad:
 
     @property
     def people(self):
-        # XXX Temporary
         if self._person_set_link is None:
             return None
-        return []
+        return People(self._browser, URI(self._person_set_link))
 
     @property
     def bugs(self):
         # XXX Temporary
         if self._bug_set_link is None:
             return None
-        return []
+        return _FakeBugCollection(self._browser, URI(self._bug_set_link))
