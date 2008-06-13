@@ -32,7 +32,7 @@ class Browser:
         self.credentials = credentials
         self._connection = httplib2.Http()
 
-    def _request(self, url, data=None, method='GET'):
+    def _request(self, url, data=None, method='GET', **extra_headers):
         """Create an authenticated request object."""
         oauth_request = OAuthRequest.from_consumer_and_token(
             self.credentials.consumer,
@@ -44,6 +44,7 @@ class Browser:
             self.credentials.access_token)
         # Calculate the headers for the request.
         headers = dict(Host=url.host)
+        headers.update(extra_headers)
         headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
         response, content = self._connection.request(
@@ -54,12 +55,17 @@ class Browser:
         return response, content
 
     def get(self, url):
-        """Get the resource at the requested url."""
+        """GET the resource at the requested url."""
         response, content = self._request(url)
         return simplejson.loads(content)
 
     def post(self, url, method_name, **kws):
-        """Post a request to the web service."""
+        """POST a request to the web service."""
         kws['ws.op'] = method_name
         data = urlencode(kws)
         return self._request(url, data, 'POST')
+
+    def patch(self, url, representation):
+        """PATCH the object at url with the updated representation."""
+        self._request(url, simplejson.dumps(representation), 'PATCH',
+                      **{'Content-Type': 'application/json'})
