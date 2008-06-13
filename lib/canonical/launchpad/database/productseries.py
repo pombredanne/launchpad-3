@@ -466,10 +466,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.cvstarfileurl = None
         self.svnrepository = None
 
-    def syncCertified(self):
-        """Return true or false indicating if the sync is enabled"""
-        return self.dateprocessapproved is not None
-
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(

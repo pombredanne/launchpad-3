@@ -382,9 +382,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     new_style_import = Attribute(_("The new-style import that was created "
         "from this import, if any."))
 
-    def syncCertified():
-        """is the series source sync enabled?"""
-
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series

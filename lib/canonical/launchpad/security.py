@@ -428,12 +428,7 @@ class EditSeriesSourceByVCSImports(AuthorizationBase):
     usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        if user.inTeam(vcs_imports):
-            return True
-        elif not self.obj.syncCertified():
-            return True
-        return False
+        return True
 
 
 class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
