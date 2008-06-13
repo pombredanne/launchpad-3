@@ -232,6 +232,6 @@ architecture and the distribution series architecture binary package.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
-    >>> anon_browser.getLink('"pmount" package').click()
+    >>> anon_browser.getLink('pmount').click()
     >>> print anon_browser.url
     http://launchpad.dev/ubuntu/hoary/i386/pmount

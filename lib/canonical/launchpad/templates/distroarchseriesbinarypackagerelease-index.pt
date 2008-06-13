@@ -24,10 +24,11 @@
           tal:attributes="href context/distroarchseries/fmt:url"
           tal:content="context/distroarchseries/displayname"
         />:
-        <a
-          tal:attributes="href context/binarypackage/fmt:url"
-          tal:content="context/distroarchseriesbinarypackage/displayname"
-        />
+        <a tal:attributes="href context/distroarchseriesbinarypackage/fmt:url">
+          &ldquo;<tal:packagename
+            replace="context/distroarchseriesbinarypackage/name"
+          />&rdquo; package
+        </a>
       </div>
       <h1 tal:content="context/title">Name of package</h1>
 
