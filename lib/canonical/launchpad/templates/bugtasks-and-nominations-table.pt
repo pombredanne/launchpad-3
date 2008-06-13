@@ -38,17 +38,18 @@
      class="clearfix"
      tal:define="current_bugtask view/currentBugTask">
   <div style="text-align: left; float: left;">
-    <tal:also-affects-links condition="view/displayAlsoAffectsLinks">
+    <tal:also-affects-links condition="view/displayAlsoAffectsLinks"
+                            define="context_menu context/menu:context">
       <tal:addupstream
-          define="link context/menu:context/addupstream"
+          define="link context_menu/addupstream"
           condition="link/enabled"
           replace="structure link/render" />
       <tal:adddistro
-          define="link context/menu:context/adddistro"
+          define="link context_menu/adddistro"
           condition="link/enabled"
           replace="structure link/render" />
       <tal:nominate
-          define="link context/menu:context/nominate"
+          define="link context_menu/nominate"
           condition="link/enabled"
           replace="structure link/render" />
     </tal:also-affects-links>
