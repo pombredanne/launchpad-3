@@ -1,0 +1,5 @@
+Copyright (C) 2008 Canonical Ltd.  All rights reserved.
+
+wadllib is a client-side package for inspecting and navigating between
+HTTP resources described using the Web Application Description
+Language.

@@ -5,7 +5,7 @@ deleted again from the bug attachment edit page.
 
     >>> from cStringIO import StringIO
     >>> user_browser.open('http://launchpad.dev/bugs/2')
-    >>> user_browser.getLink('Comment or attach file').click()
+    >>> user_browser.open(user_browser.url + '/+addcomment')
     >>> foo_file = StringIO('V1agra.')
     >>> user_browser.getControl('Attachment').add_file(
     ...   foo_file, 'text/plain', 'foo.txt')

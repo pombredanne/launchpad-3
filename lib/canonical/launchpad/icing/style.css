@@ -225,6 +225,27 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
   http://bugs.launchpad.dev/firefox/+bug/1/+subscribe (bottom button)
 */
 
+/* --- Batch navigation links --- */
+
+/* Next links have icons: */
+.batch-navigation-links .next {
+  background: center right no-repeat;
+  padding-right: 14px;
+}
+.batch-navigation-links .next {background-image: url(/@@/arrowRight);}
+.batch-navigation-links .next.inactive {
+  background-image: url(/@@/batch-next-inactive);
+}
+/* And all the links have spacing between them: */
+.batch-navigation-links .previous, .batch-navigation-links .next,
+.batch-navigation-links .last {
+  margin-left: 0.25em;
+}
+.batch-navigation-links .first, .batch-navigation-links .previous,
+.batch-navigation-links .next {
+  margin-right: 0.25em;
+}
+
 /* --- Other --- */
 
 /* No border on images that are links. */

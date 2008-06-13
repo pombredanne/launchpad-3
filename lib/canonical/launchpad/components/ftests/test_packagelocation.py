@@ -3,9 +3,12 @@
 
 import unittest
 
-from canonical.launchpad.interfaces import ArchivePurpose
+from zope.component import getUtility
+
 from canonical.launchpad.components.packagelocation import (
     PackageLocationError, build_package_location)
+from canonical.launchpad.interfaces.archive import ArchivePurpose
+from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -93,6 +96,23 @@ class TestPackageLocation(unittest.TestCase):
         location_ubuntu_hoary_again = self.getPackageLocation()
         self.assertEqual(location_ubuntu_hoary, location_ubuntu_hoary_again)
 
+        self.assertTrue(location_ubuntu_hoary.component is None)
+        self.assertTrue(location_ubuntu_hoary_again.component is None)
+
+        universe = getUtility(IComponentSet)['universe']
+        restricted = getUtility(IComponentSet)['restricted']
+
+        location_ubuntu_hoary.component = universe
+        self.assertNotEqual(
+            location_ubuntu_hoary, location_ubuntu_hoary_again)
+
+        location_ubuntu_hoary_again.component = universe
+        self.assertEqual(location_ubuntu_hoary, location_ubuntu_hoary_again)
+
+        location_ubuntu_hoary.component = restricted
+        self.assertNotEqual(
+            location_ubuntu_hoary, location_ubuntu_hoary_again)
+
         location_ubuntu_warty_security = self.getPackageLocation(
             suite='warty-security')
         self.assertNotEqual(location_ubuntu_hoary,
@@ -116,6 +136,13 @@ class TestPackageLocation(unittest.TestCase):
         location_ubuntu_hoary = self.getPackageLocation()
         self.assertEqual(str(location_ubuntu_hoary),
                          'Primary Archive for Ubuntu Linux: hoary-RELEASE')
+
+        universe = getUtility(IComponentSet)['universe']
+        location_ubuntu_hoary.component = universe
+
+        self.assertEqual(
+            str(location_ubuntu_hoary),
+            'Primary Archive for Ubuntu Linux: hoary-RELEASE (universe)')
 
         location_ubuntu_warty_security = self.getPackageLocation(
             suite='warty-security')

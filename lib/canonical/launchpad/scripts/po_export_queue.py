@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 import os
-import psycopg
+import psycopg2
 import textwrap
 import traceback
 from StringIO import StringIO
@@ -184,7 +184,7 @@ def process_request(person, objects, format, logger):
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise
-    except psycopg.Error:
+    except psycopg2.Error:
         # It's a DB exception, we don't catch it either, the export
         # should be done again in a new transaction.
         raise
@@ -236,7 +236,7 @@ def process_queue(transaction_manager, logger):
 
     try:
         process_request(person, objects, format, logger)
-    except psycopg.Error:
+    except psycopg2.Error:
         # We had a DB error, we don't try to recover it here, just exit
         # from the script and next run will retry the export.
         logger.error(
