@@ -31,6 +31,38 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
         mailer.sendAll()
 
 
+class RecipientReason:
+
+    def __init__(self, subscriber, recipient, branch, mail_header):
+        self.subscriber = subscriber
+        self.recipient = recipient
+        self.branch = branch
+        self.mail_header = mail_header
+
+    @classmethod
+    def forBranchSubscriber(klass, subscription, recipient, rationale):
+        return klass(
+            subscription.person, recipient, subscription.branch, rationale)
+
+    @classmethod
+    def forReviewer(klass, vote_reference, recipient):
+        branch = vote_reference.branch_merge_proposal.source_branch
+        return klass(vote_reference.reviewer, recipient, branch, 'reviewer')
+
+    def getReason(self):
+        """Return a string explaining why the recipient is a recipient."""
+        entity = 'You are'
+        if self.recipient != self.subscriber:
+            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
+                '%s does not participate in team %s.' %
+                (self.recipient.displayname, self.subscriber.displayname))
+            entity = 'Your team %s is' % self.subscriber.displayname
+        branch_name = self.branch.displayname
+        return '%s subscribed to branch %s.' % (entity, branch_name)
+
+
+
+
 class BMPMailer(BaseMailer):
     """Send mailings related to BranchMergeProposal events."""
 

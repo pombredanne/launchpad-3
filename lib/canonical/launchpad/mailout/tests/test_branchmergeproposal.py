@@ -7,17 +7,17 @@ from unittest import TestLoader, TestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.database import (
-    CodeReviewVoteReference, RecipientReason)
+from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branchmergeproposal import (
-    BMPMailer, send_merge_proposal_modified_notifications)
+    BMPMailer, send_merge_proposal_modified_notifications, RecipientReason)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 
 
 class TestMergeProposalMailing(TestCase):
@@ -155,6 +155,54 @@ new commit message
             'Requester <requester@example.com>', mailer.from_address)
         self.assertEqual(
             set([candidate]), set(mailer._recipients.getRecipientPersons()))
+
+
+class TestRecipientRationale(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # need to set target_branch.date_last_modified
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def makeProposalWithSubscription(self, subscriber=None):
+        if subscriber is None:
+            subscriber = self.factory.makePerson()
+        source_branch = self.factory.makeBranch(title='foo')
+        merge_proposal = source_branch.addLandingTarget(subscriber,
+            self.factory.makeBranch(product=source_branch.product))
+        subscription = merge_proposal.source_branch.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        return merge_proposal, subscription
+
+    def test_fromBranchSubscription(self):
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        subscriber = subscription.person
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscriber, '')
+        self.assertEqual(subscriber, reason.subscriber)
+        self.assertEqual(subscriber, reason.recipient)
+        self.assertEqual(merge_proposal.source_branch, reason.branch)
+
+    def test_getReasonPerson(self):
+        """Ensure the correct reason is generated for individuals."""
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscription.person, '')
+        self.assertEqual('You are subscribed to branch foo.',
+            reason.getReason())
+
+    def test_getReasonTeam(self):
+        """Ensure the correct reason is generated for teams."""
+        team_member = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com')
+        team = self.factory.makeTeam(team_member, displayname='Qux')
+        bmp, subscription = self.makeProposalWithSubscription(team)
+        reason = RecipientReason.forBranchSubscriber(subscription,
+        team_member, '')
+        self.assertEqual('Your team Qux is subscribed to branch foo.',
+            reason.getReason())
 
 
 def test_suite():

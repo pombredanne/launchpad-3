@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
-    'RecipientReason',
     ]
 
 from email.Utils import make_msgid
@@ -39,6 +38,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,)
+from canonical.launchpad.mailout.branchmergeproposal import RecipientReason
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -70,36 +70,6 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
-
-
-class RecipientReason:
-
-    def __init__(self, subscriber, recipient, branch, mail_header):
-        self.subscriber = subscriber
-        self.recipient = recipient
-        self.branch = branch
-        self.mail_header = mail_header
-
-    @classmethod
-    def forBranchSubscriber(klass, subscription, recipient, rationale):
-        return klass(
-            subscription.person, recipient, subscription.branch, rationale)
-
-    @classmethod
-    def forReviewer(klass, vote_reference, recipient):
-        branch = vote_reference.branch_merge_proposal.source_branch
-        return klass(vote_reference.reviewer, recipient, branch, 'reviewer')
-
-    def getReason(self):
-        """Return a string explaining why the recipient is a recipient."""
-        entity = 'You are'
-        if self.recipient != self.subscriber:
-            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
-                '%s does not participate in team %s.' %
-                (self.recipient.displayname, self.subscriber.displayname))
-            entity = 'Your team %s is' % self.subscriber.displayname
-        branch_name = self.branch.displayname
-        return '%s subscribed to branch %s.' % (entity, branch_name)
 
 
 class BranchMergeProposal(SQLBase):
