@@ -326,6 +326,11 @@
       template="../templates/object-milestones.pt"
       />
     <browser:page
+      name="+series-and-milestones"
+      facet="overview"
+      template="../templates/distribution-series-and-milestones.pt"
+      />
+    <browser:page
       name="+portlet-bounties"
       template="../templates/object-portlet-bounties.pt"
       />

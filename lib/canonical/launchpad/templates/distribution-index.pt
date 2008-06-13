@@ -69,8 +69,7 @@
         <div class="section"
              tal:content="structure context/@@+portlet-latestannouncements"
              />
-        <div class="section"
-             tal:content="structure context/@@+portlet-series" />
+        <tal:series replace="structure context/@@+series-and-milestones" />
         <div
           class="section"
           tal:condition="context/currentseries"
