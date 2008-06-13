@@ -367,6 +367,12 @@ class TestBugzillaXMLRPCTransport:
             }
         }
 
+    # Map namespaces onto method names.
+    methods = {
+        'Bug': ['get_bugs'],
+        'Launchpad': ['time'],
+        }
+
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 
@@ -375,11 +381,15 @@ class TestBugzillaXMLRPCTransport:
         called, with the extracted arguments passed on to it.
         """
         args, method_name = xmlrpclib.loads(request)
-        prefix = 'Launchpad.'
-        assert method_name.startswith(prefix), (
-            'All methods should be in the Launchpad namespace')
+        method_prefix, method_name = method_name.split('.')
 
-        method_name = method_name[len(prefix):]
+        assert method_prefix in self.methods, (
+            "All methods should be in one of the following namespaces: %s"
+            % self.methods.keys())
+
+        assert method_name in self.methods[method_prefix], (
+            "No method '%s' in namespace '%s'." % (method_name, method_prefix))
+
         method = getattr(self, method_name)
         return method(*args)
 
