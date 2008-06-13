@@ -148,6 +148,7 @@ run_all_quickly_and_quietly: stop_quickly_and_quietly
 		 $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
 		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
+		 -C $(CONFFILE) > $(HOME)/${LPCONFIG}-quiet.log 2>&1
 
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
