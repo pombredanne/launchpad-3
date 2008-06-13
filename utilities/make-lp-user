@@ -75,11 +75,19 @@ def add_person_to_teams(person, team_names):
     A list of teams joined will be printed to stdout.
     """
     person_set = getUtility(IPersonSet)
+    teams_joined = []
     for team_name in team_names:
         team = person_set.getByName(team_name)
+        if team is None:
+            print "ERROR: %s not found." % (team_name,)
+            continue
+        if not team.is_team:
+            print "ERROR: %s is not a team." % (team_name,)
+            continue
         team.addMember(
             person, person, status=TeamMembershipStatus.APPROVED)
-    print "teams:    %s" % ' '.join(team_names)
+        teams_joined.append(team_name)
+    print "teams:    %s" % ' '.join(teams_joined)
 
 
 def add_ssh_public_keys(person):
@@ -111,6 +119,9 @@ def add_ssh_public_keys(person):
 
 def main(arguments):
     """Run the script."""
+    if len(arguments) == 0:
+        print __doc__
+        return 2
     execute_zcml_for_scripts()
     username, teams = arguments[0], arguments[1:]
     transaction.begin()
