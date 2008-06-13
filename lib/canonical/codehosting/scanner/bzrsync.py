@@ -441,7 +441,8 @@ class BzrSync:
             else:
                 return default
 
-        # XXX Bazaar does not provide a public API for learning about format
+        # XXX: Aaron Bentley 2008-06-13
+        # Bazaar does not provide a public API for learning about format
         # markers.  Fix this in Bazaar, then here.
         control_string = bzr_branch.bzrdir._format.get_format_string()
         if bzr_branch._format.__class__ is BzrBranchFormat4:

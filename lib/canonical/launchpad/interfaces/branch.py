@@ -198,7 +198,6 @@ class BranchFormat(DBEnumeratedType):
     BZR_LOOM_2 = _format_enum(106, BzrBranchLoomFormat6)
 
 
-
 class RepositoryFormat(DBEnumeratedType):
     """Repository on-disk format.
 

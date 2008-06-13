@@ -18,7 +18,8 @@ class TestFormatSupport(TestCase):
 
     While ideally we would ensure that the lists of markers were the same,
     early branch and repo formats did not use markers.  (The branch/repo
-    was implied by the control dir format.)"""
+    was implied by the control dir format.)
+    """
 
     def test_control_format_complement(self):
         self.bzrlib_is_subset(BzrDirFormat._formats.keys(), ControlFormat)
