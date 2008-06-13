@@ -69,6 +69,12 @@ class DistroArchSeriesBinaryPackageRelease:
             self.distribution,
             self.build.sourcepackagerelease)
 
+    @property
+    def distroarchseriesbinarypackage(self):
+        """See IDistroArchSeriesBinaryPackage."""
+        return self.distroarchseries.getBinaryPackage(
+            self.binarypackagename)
+
     # XXX: kiko, 2006-02-01: I'd like to rename this to
     # current_published_publishing_record, because that's what it
     # returns, but I don't want to do that right now.
