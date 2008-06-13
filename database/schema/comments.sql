@@ -1847,6 +1847,7 @@ COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation ration
 --OpenIDRPSummary
 COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
 COMMENT ON COLUMN OpenIDRPSummary.person IS 'The person who used the RP.';
+COMMENT ON COLUMN OpenIDRPSummary.identifier IS 'The OpenID identifier used to login.';
 COMMENT ON COLUMN OpenIDRPSummary.trust_root IS 'The trust root for the RP';
 COMMENT ON COLUMN OpenIDRPSummary.identifier IS 'The OpenID identifier used to login.';
 COMMENT ON COLUMN OpenIDRPSummary.date_created IS 'The creation date of this summary; the first time the person used the RP.';

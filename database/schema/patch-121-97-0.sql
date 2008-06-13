@@ -8,8 +8,8 @@ CREATE TABLE OpenIDRPSummary (
     id SERIAL PRIMARY KEY,
     person INTEGER NOT NULL
         REFERENCES Person(id),
-    trust_root text NOT NULL,
     identifier text NOT NULL,
+    trust_root text NOT NULL,
     date_created TIMESTAMP without time zone
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     date_last_used TIMESTAMP without time zone
@@ -20,13 +20,13 @@ CREATE TABLE OpenIDRPSummary (
         UNIQUE (person, trust_root, identifier)
 );
 
-CREATE UNIQUE INDEX openidrpsummary__person__idx
-    ON openidrpsummary USING btree (person);
+CREATE INDEX openidrpsummary__person__idx
+    ON openidrpsummary(person);
 
-CREATE UNIQUE INDEX openidrpsummary__trust_root__idx
-    ON openidrpsummary USING btree (trust_root);
+CREATE INDEX openidrpsummary__trust_root__idx
+    ON openidrpsummary(trust_root);
 
-CREATE UNIQUE INDEX openidrpsummary__identifier__idx
-    ON openidrpsummary USING btree (identifier);
+CREATE INDEX openidrpsummary__identifier__idx
+    ON openidrpsummary(identifier);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 97, 0);
