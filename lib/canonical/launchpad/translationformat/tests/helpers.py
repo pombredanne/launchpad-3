@@ -9,7 +9,7 @@ __all__ = [
     'is_valid_mofile',
     ]
 
-import transaction
+from canonical.database.sqlbase import commit
 
 from zope.component import getUtility
 
@@ -18,8 +18,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import FakeLogger
 
 
-def import_pofile_or_potemplate(file_contents, person, series, pofile=None,
-    potemplate=None, is_imported=True):
+def import_pofile_or_potemplate(file_contents, person, series=None,
+    pofile=None, potemplate=None, is_imported=True):
     """Import a `POFile` or `POTemplate` from the given string.
 
     :param file_contents: text of "file" to import.
@@ -32,19 +32,38 @@ def import_pofile_or_potemplate(file_contents, person, series, pofile=None,
     """
     translation_import_queue = getUtility(ITranslationImportQueue)
     if pofile is not None:
-        entry = translation_import_queue.addOrUpdateEntry(
-            pofile.path, file_contents, is_imported, person,
-            productseries=series, pofile=pofile)
+        if pofile.potemplate.distroseries is None:
+            if series is None:
+                series = pofile.potemplate.productseries
+            entry = translation_import_queue.addOrUpdateEntry(
+                pofile.path, file_contents, is_imported, person,
+                productseries=series, pofile=pofile)
+        else:
+            entry = translation_import_queue.addOrUpdateEntry(
+                pofile.path, file_contents, is_imported, person,
+                distroseries=pofile.potemplate.distroseries,
+                sourcepackagename=pofile.potemplate.sourcepackagename,
+                pofile=pofile)
         target = pofile
     else:
         # A POTemplate can only be 'imported', so setting the is_imported flag
         # makes no difference.
-        entry = translation_import_queue.addOrUpdateEntry(
-            potemplate.path, file_contents, True, person,
-            productseries=series, potemplate=potemplate)
+        if potemplate.distroseries is None:
+            if series is None:
+                series = potemplate.productseries
+            entry = translation_import_queue.addOrUpdateEntry(
+                potemplate.path, file_contents, True, person,
+                productseries=series, potemplate=potemplate)
+        else:
+            entry = translation_import_queue.addOrUpdateEntry(
+                potemplate.path, file_contents, True, person,
+                distroseries=potemplate.distroseries,
+                sourcepackagename=potemplate.sourcepackagename,
+                potemplate=potemplate)
         target = potemplate
     # Allow Librarian to see the change.
-    transaction.commit()
+    commit()
+
     entry.status = RosettaImportStatus.APPROVED
     (subject, body) = target.importFromQueue(entry, FakeLogger())
     return entry
