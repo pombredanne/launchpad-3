@@ -15,6 +15,7 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
+from storm.references import Reference
 
 from canonical.config import config
 
@@ -66,13 +67,8 @@ class Build(SQLBase):
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
     estimated_build_duration = IntervalCol(default=None)
 
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`"""
-        # XXX cprov 2005-10-25 bug=3424:
-        # Would be nice if we can use fresh sqlobject feature 'singlejoin'
-        # instead.
-        return BuildQueue.selectOneBy(build=self)
+    buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
+                                  on_remote=True)
 
     @property
     def current_component(self):

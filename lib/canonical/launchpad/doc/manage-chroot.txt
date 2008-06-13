@@ -195,3 +195,4 @@ results in an appropriate error.
     DEBUG   Initialising ChrootManager for 'The Hoary Hedgehog Release for i386 (x86)'
     Librarian upload failed: (111, 'Connection refused')
 
+    >>> LibrarianLayer.reveal()

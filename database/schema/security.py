@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-import psycopg, sys, os, sets
+import sys, os, sets
 from ConfigParser import SafeConfigParser
 from optparse import OptionParser
 from fti import quote_identifier
