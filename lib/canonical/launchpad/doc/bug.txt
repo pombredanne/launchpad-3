@@ -815,7 +815,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
     Ubuntu
     Hoary
     mozilla-firefox in debian
-    Woody mozilla-firefox
+    Debian Woody mozilla-firefox
 
 You can also get a list of the "LP pillars" affected by a particular bug.
 
@@ -855,7 +855,7 @@ use getBugTask() to get it.
     >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
     >>> mozilla_in_woody_task = bug_two.getBugTask(mozilla_in_woody)
     >>> mozilla_in_woody_task.target.displayname
-    u'Woody mozilla-firefox'
+    u'Debian Woody mozilla-firefox'
 
 If the bug isn't targeted to the target, None is returned.
 
