@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'distroarchseries_to_structuralheading',
+    'DistroArchSeriesNavigation',
     'DistroArchSeriesContextMenu',
     'DistroArchSeriesView',
     'DistroArchSeriesAddView',
@@ -26,6 +27,11 @@ def distroarchseries_to_structuralheading(distroarchseries):
     `IStructuralHeaderPresentation`.
     """
     return IStructuralHeaderPresentation(distroarchseries.distroseries)
+
+
+class DistroArchSeriesNavigation(GetitemNavigation):
+
+    usedfor = IDistroArchSeries
 
 
 class DistroArchSeriesContextMenu(ContextMenu):

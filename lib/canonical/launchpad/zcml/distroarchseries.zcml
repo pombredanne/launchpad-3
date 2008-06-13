@@ -36,6 +36,11 @@
         path_expression="architecturetag"
         attribute_to_parent="distroseries" />
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistroArchSeriesNavigation"
+        />
+
     <browser:pages
         for="canonical.launchpad.database.DistroArchSeries"
         permission="zope.Public"
