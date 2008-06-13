@@ -106,23 +106,19 @@ class BMPMailer(BaseMailer):
 
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""
-        entity = 'You are'
         subscription = self._recipients.getReason(
             recipient.preferredemail.email)[0]
-        subscriber = subscription.person
-        if recipient != subscriber:
-            assert recipient.hasParticipationEntryFor(subscriber), (
-                '%s does not participate in team %s.' %
-                (recipient.displayname, subscriber.displayname))
-            entity = 'Your team %s is' % subscriber.displayname
-        branch_name = subscription.branch.displayname
-        return '%s subscribed to branch %s.' % (entity, branch_name)
+        from zope.security.proxy import removeSecurityProxy
+        subscription = removeSecurityProxy(subscription)
+        return subscription.getReason()
 
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
         headers = BaseMailer._getHeaders(self, recipient)
         subscription, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
+        from zope.security.proxy import removeSecurityProxy
+        subscription = removeSecurityProxy(subscription)
         headers['X-Launchpad-Branch'] = subscription.branch.unique_name
         return headers
 
