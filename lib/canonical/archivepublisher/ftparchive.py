@@ -5,7 +5,7 @@ from select import select
 import subprocess
 from StringIO import StringIO
 
-from canonical.database.sqlbase import expire_from_cache, sqlvalues
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory,
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
@@ -371,15 +371,11 @@ class FTPArchiveHandler:
         for pub in source_publications:
             updateOverride(pub, pub.sourcepackagerelease.name,
                            pub.distroseries.name)
-            expire_from_cache(pub.sourcepackagerelease)
-            expire_from_cache(pub)
 
         for pub in binary_publications:
             updateOverride(pub, pub.binarypackagerelease.name,
                            pub.distroarchseries.distroseries.name,
                            pub.priority)
-            expire_from_cache(pub.binarypackagerelease)
-            expire_from_cache(pub)
 
         # Now generate the files on disk...
         for distroseries in overrides:
