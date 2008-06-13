@@ -689,10 +689,12 @@ that implementsIResourceGETOperation.
     >>> from canonical.lazr.rest import ResourceGETOperation
     >>> from zope.schema import TextLine
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> from canonical.lazr.fields import Reference
     >>> from canonical.lazr.interfaces import IResourceGETOperation
     >>> class FindRecipesOperation(ResourceGETOperation):
     ...    """An operation that searches for recipes across cookbooks."""
     ...    params = [ TextLine(__name__='name') ]
+    ...    return_type = CollectionField(value_type=Reference(schema=IRecipe))
     ...
     ...    def call(self, name):
     ...        try:
@@ -715,6 +717,7 @@ resource as a custom operation called 'find_similar_recipes'.
     >>> class FindSimilarRecipesOperation(ResourceGETOperation):
     ...    """Finds recipes with the same name."""
     ...    params = []
+    ...    return_type = CollectionField(value_type=Reference(schema=IRecipe))
     ...
     ...    def call(self):
     ...        try:
@@ -740,6 +743,7 @@ a named factory operation for creating a new cookbook.
     ...         TextLine(
     ...             __name__='cuisine', default=u'Brazilian', required=False),
     ...     )
+    ...    return_type = Object(schema=IRecipe)
     ...
     ...     def call(self, author_name, title, cuisine):
     ...         cookbook = CookbookSet().newCookbook(

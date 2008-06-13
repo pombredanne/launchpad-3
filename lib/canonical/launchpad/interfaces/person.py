@@ -36,7 +36,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -48,7 +48,8 @@ from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
-   operation_parameters, rename_parameters_as, REQUEST_USER, webservice_error)
+   operation_parameters, operation_returns, rename_parameters_as,
+   REQUEST_USER, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
@@ -862,6 +863,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @operation_returns(None) # Will be set to a collection of IPerson below.
     @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
@@ -1943,6 +1945,14 @@ params_to_fix = [
 for method, name in params_to_fix:
     method.queryTaggedValue(
         'lazr.webservice.exported')['params'][name].schema = IPerson
+
+# Fix schema of operation return values.
+return_values_to_fix = [
+    (IPersonPublic['findPathToTeam'],
+     CollectionField(value_type=Object(schema=IPerson)),)]
+for method, value in return_values_to_fix:
+    method.queryTaggedValue(
+        'lazr.webservice.exported')['return_type'] = value
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

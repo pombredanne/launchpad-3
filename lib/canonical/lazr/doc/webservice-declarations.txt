@@ -289,14 +289,18 @@ exported.
     creating and the name of the fields in the schema that are passed as
     parameters.
 
-The specification of the web service's acceptable method
-parameters should be described using the @operation_parameters
-decorator, which takes normal IField instances.
+The specification of the web service's acceptable method parameters
+should be described using the @operation_parameters decorator, which
+takes normal IField instances. The @operation_returns decorator
+should be used to descibe the type of the method's return value--this
+also takes an IField instance.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     export_operation_as, export_factory_operation,
-    ...     export_read_operation, operation_parameters, rename_parameters_as)
+    ...     export_read_operation, operation_parameters,
+    ...     operation_returns, rename_parameters_as)
     >>> from canonical.lazr.interface import copy_field
+    >>> from canonical.lazr.fields import Reference
     >>> class IBookSetOnSteroids(IBookSet):
     ...     """IBookSet supporting some methods."""
     ...     export_as_webservice_collection(IBook)
@@ -304,6 +308,8 @@ decorator, which takes normal IField instances.
     ...     @collection_default_content()
     ...     @operation_parameters(
     ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
+    ...     @operation_returns(
+    ...         CollectionField(value_type=Reference(schema=IBook)))
     ...     @export_read_operation()
     ...     def searchBooks(text):
     ...         """Return list of books containing 'text'."""
@@ -341,8 +347,10 @@ specify that this parameter should contain the logged in user.
     ...     def checkout(who, kind):
     ...         """Check this book out."""
 
-Like other declarations, these will add tagged value on the interface
-method.
+Like other declarations, these will add tagged values to the interface
+method. We didn't have to specify the return type for the factory
+operation, because a factory operation always returns the
+newly-created object.
 
     >>> print_export_tag(IBookSetOnSteroids['new'])
     as: 'create_book'
@@ -351,18 +359,26 @@ method.
     params: {'author': <...TextLine...>,
         'base_price': <...Float...>,
         'title': <...TextLine...>}
+    return_type: <zope.schema._field.Object object...>
     type: 'factory'
+
+We did specify the return type for the 'searchBooks' method: it
+returns a collection.
 
     >>> print_export_tag(IBookSetOnSteroids['searchBooks'])
     as: 'searchBooks'
     call_with: {}
     params: {'text': <...TextLine...>}
+    return_type: <canonical.lazr.fields.CollectionField object...>
     type: 'read_operation'
+
+The 'checkout' method doesn't return anything.
 
     >>> print_export_tag(IBookOnSteroids['checkout'])
     as: 'checkout'
     call_with: {'kind': 'normal', 'who': <object...>}
     params: {}
+    return_type: None
     type: 'write_operation'
 
 Parameters that are not renamed are exported under the same name:
@@ -393,6 +409,7 @@ schema.
     params: {'author': <...TextLine...>,
         'collection': <...TextLine...>,
         'title': <...TextLine...>}
+    return_type: <zope.schema._field.Object object...>
     type: 'factory'
 
 Parameters default and required attributes are set automatically based
@@ -632,12 +649,14 @@ base interface isn't exported itself.
     as: 'rename'
     call_with: {}
     params: {'new_name': <...TextLine...>}
+    return_type: None
     type: 'write_operation'
     == talk_to ==
     as: 'talk_to'
     call_with: {}
     params: {'msg': <...TextLine...>,
         'to': <...Object...>}
+    return_type: None
     type: 'write_operation'
 
 
