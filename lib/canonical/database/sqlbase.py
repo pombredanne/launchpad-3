@@ -165,17 +165,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
-    def reset(self):
-        raise AssertionError("SQLBase.reset() not handled.")
-        if not self._SO_createValues:
-            return
-        self._SO_writeLock.acquire()
-        try:
-            self.dirty = False
-            self._SO_createValues = {}
-        finally:
-            self._SO_writeLock.release()
-
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
