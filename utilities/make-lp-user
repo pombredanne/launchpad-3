@@ -1,4 +1,28 @@
 #!/usr/bin/python2.4
+"""Create a user for testing the local Launchpad.
+
+Usage: make-lp-user <username> [<team1> <team2> ...]
+
+This script will create a usable Launchpad user in the development database to
+help you test a locally running copy of Launchpad.
+
+You can add this user to teams by specifying them on the command-line. For
+example:
+
+  make-lp-user fred vcs-imports bazaar-experts
+
+will create a user 'fred' and add them to the 'vcs-imports' and
+'bazaar-experts' teams.
+
+In addition, this script will look in your ~/.ssh directory for public keys
+and register them for the created user.
+
+The login details will be printed to stdout.
+
+Please note that this script is for testing purposes only. Do NOT use it in
+production environments.
+"""
+
 import _pythonpath
 
 import os
@@ -26,6 +50,13 @@ factory = LaunchpadObjectFactory()
 
 
 def make_person(username):
+    """Create and return a person with the given username.
+
+    The email address for the user will be <username>@example.com. The
+    password will be the value of `DEFAULT_PASSWORD`.
+
+    These details will be printed to stdout.
+    """
     email = '%s@example.com' % username
     person = factory.makePerson(
         name=username, password=DEFAULT_PASSWORD, email=email)
@@ -36,6 +67,13 @@ def make_person(username):
 
 
 def add_person_to_teams(person, team_names):
+    """Add `person` to the teams named in `team_names`.
+
+    `person` is provided as its own review, team membership status is always
+    `APPROVED`. This function will add users even to restricted teams.
+
+    A list of teams joined will be printed to stdout.
+    """
     person_set = getUtility(IPersonSet)
     for team_name in team_names:
         team = person_set.getByName(team_name)
@@ -45,6 +83,11 @@ def add_person_to_teams(person, team_names):
 
 
 def add_ssh_public_keys(person):
+    """Look for public keys and register them for `person`.
+
+    This function looks in ~/.ssh/id_rsa.pub and ~/.ssh/id_dsa.pub for SSH
+    public keys and registers them as SSH keys for `person`.
+    """
     ssh_dir = os.path.expanduser('~/.ssh')
     key_set = getUtility(ISSHKeySet)
     key_guesses = [
@@ -67,6 +110,7 @@ def add_ssh_public_keys(person):
 
 
 def main(arguments):
+    """Run the script."""
     execute_zcml_for_scripts()
     username, teams = arguments[0], arguments[1:]
     transaction.begin()
