@@ -10,7 +10,7 @@
       <tal:per_series repeat="series context/serieses">
         <li tal:condition="series/active">
           <a tal:attributes="href series/fmt:url">
-            <tal:version replace="series/version" />
+            <tal:version replace="series/version">3.0</tal:version>
             &#8220;<tal:codename replace="series/displayname" />&#8221; series
           </a>
           - <tal:status replace="series/status/name/fmt:lower" />

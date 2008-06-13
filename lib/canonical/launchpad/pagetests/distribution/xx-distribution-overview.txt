@@ -30,8 +30,8 @@ Some distributions have listings of major versions, for example Debian:
     All series
     All milestones
 
-Each series and milestone are clickable links that take you to that
-series and milestone.
+Each series and milestone are links that take you to that
+series and milestone page.
 
     >>> anon_browser.getLink(url='/debian/sarge').text
     '3.1 \xe2\x80\x9cSarge\xe2\x80\x9d series'
