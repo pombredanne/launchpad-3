@@ -1,13 +1,14 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Run the standalone launchpadlib tests.
+"""Run the standalone tests in an opensource package.
 
 XXX BarryWarsaw 14-May-2008: This shim is here so that the tests within the
-launchpadlib package will run as part of Launchpad's standard test suite.
-Those tests cannot yet be run on their own, since they require a running
-Launchpad appserver (but not the real Launchpad!).  Eventually, there will be
-mock objects in the package's test suite so that it can be run on its own
-outside the Launchpad development environment.
+launchpadlib and wadllib packages (living in the opensource directory) will
+run as part of Launchpad's standard test suite.  Those tests cannot yet be run
+on their own, since they require a running Launchpad appserver, but not the
+real Launchpad!.  Eventually, there will be mock objects in the packages' test
+suites so that they can be run on their own outside the Launchpad development
+environment.
 """
 
 __metaclass__ = type
@@ -21,13 +22,11 @@ import launchpadlib
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import AppServerLayer
 
-topdir = os.path.dirname(launchpadlib.__file__)
 
+def add_testable_opensource_package(suite, package):
+    """Sniff out all the doctests in `package` and add them to `suite`."""
+    topdir = os.path.dirname(package.__file__)
 
-def test_suite():
-    suite = unittest.TestSuite()
-
-    # Find all the doctests in launchpadlib.
     packages = []
     for dirpath, dirnames, filenames in os.walk(topdir):
         if 'docs' in dirnames:
@@ -41,8 +40,12 @@ def test_suite():
     # Sort the tests.
     for filename in sorted(doctest_files):
         path = doctest_files[filename]
-        doctest = LayeredDocFileSuite(path, package=launchpadlib,
-                                      layer=AppServerLayer)
+        doctest = LayeredDocFileSuite(
+            path, package=package, layer=AppServerLayer)
         suite.addTest(doctest)
 
+
+def test_suite():
+    suite = unittest.TestSuite()
+    add_testable_opensource_package(suite, launchpadlib)
     return suite
