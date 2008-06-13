@@ -85,20 +85,9 @@ class BMPMailer(BaseMailer):
                          merge_proposal, from_address, delta)
 
     @classmethod
-    def forReviewRequest(klass, code_review_vote_reference, from_user):
-        class ReviewSubscription:
-
-            def __init__(self, code_review_vote_reference):
-                self.person = code_review_vote_reference.reviewer
-                merge_proposal = (
-                    code_review_vote_reference.branch_merge_proposal)
-                self.branch = merge_proposal.source_branch
-
+    def forReviewRequest(klass, reason, merge_proposal, from_user):
         from_address = klass._format_user_address(from_user)
-        review_subscription = ReviewSubscription(code_review_vote_reference)
-        recipients = {code_review_vote_reference.reviewer:
-            (review_subscription, 'reviewer')}
-        merge_proposal = code_review_vote_reference.branch_merge_proposal
+        recipients = {reason.subscriber: reason}
         return klass(
             'Request to review proposed merge of %(source_branch)s into '
             '%(target_branch)s', 'review-requested.txt', recipients,

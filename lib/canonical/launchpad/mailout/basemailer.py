@@ -43,8 +43,11 @@ class BaseMailer:
         self._subject_template = subject
         self._template_name = template_name
         self._recipients = NotificationRecipientSet()
-        for recipient, (subscription, rationale) in recipients.iteritems():
-            self._recipients.add(recipient, subscription, rationale)
+        for recipient, subscription in recipients.iteritems():
+            from zope.security.proxy import removeSecurityProxy
+            subscription = removeSecurityProxy(subscription)
+            self._recipients.add(
+                recipient, subscription, subscription.mail_header)
         self.from_address = from_address
         self.delta = delta
 

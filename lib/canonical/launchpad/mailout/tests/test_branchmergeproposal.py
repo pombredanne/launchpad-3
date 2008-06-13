@@ -7,7 +7,8 @@ from unittest import TestLoader, TestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
-from canonical.launchpad.database import CodeReviewVoteReference
+from canonical.launchpad.database import (
+    CodeReviewVoteReference, RecipientReason)
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
@@ -147,7 +148,9 @@ new commit message
         request = CodeReviewVoteReference(
             branch_merge_proposal=merge_proposal, reviewer=candidate,
             registrant=requester)
-        mailer = BMPMailer.forReviewRequest(request, requester)
+        request = RecipientReason.forReviewer(request, candidate)
+        mailer = BMPMailer.forReviewRequest(
+            request, merge_proposal, requester)
         self.assertEqual(
             'Requester <requester@example.com>', mailer.from_address)
         self.assertEqual(

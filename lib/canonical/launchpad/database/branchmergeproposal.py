@@ -74,14 +74,21 @@ VALID_TRANSITION_GRAPH = {
 
 class RecipientReason:
 
-    def __init__(self, subscriber, recipient, branch):
+    def __init__(self, subscriber, recipient, branch, mail_header):
         self.subscriber = subscriber
         self.recipient = recipient
         self.branch = branch
+        self.mail_header = mail_header
 
     @classmethod
-    def forBranchSubscriber(klass, subscription, recipient):
-        return klass(subscription.person, recipient, subscription.branch)
+    def forBranchSubscriber(klass, subscription, recipient, rationale):
+        return klass(
+            subscription.person, recipient, subscription.branch, rationale)
+
+    @classmethod
+    def forReviewer(klass, vote_reference, recipient):
+        branch = vote_reference.branch_merge_proposal.source_branch
+        return klass(vote_reference.reviewer, recipient, branch, 'reviewer')
 
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
@@ -202,10 +209,8 @@ class BranchMergeProposal(SQLBase):
                     recipient)
                 if (subscription.review_level < min_level):
                     continue
-                recipients[recipient] = (
-                    RecipientReason.forBranchSubscriber(
-                        subscription, recipient),
-                    rationale)
+                recipients[recipient] = RecipientReason.forBranchSubscriber(
+                    subscription, recipient, rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):

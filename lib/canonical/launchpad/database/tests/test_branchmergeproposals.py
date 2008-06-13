@@ -380,7 +380,7 @@ class TestRecipientRationale(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscriber)
+            subscription, subscriber, '')
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
         self.assertEqual(merge_proposal.source_branch, reason.branch)
@@ -389,7 +389,7 @@ class TestRecipientRationale(TestCaseWithFactory):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person)
+            subscription, subscription.person, '')
         self.assertEqual('You are subscribed to branch foo.',
             reason.getReason())
 
@@ -399,7 +399,8 @@ class TestRecipientRationale(TestCaseWithFactory):
             displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
-        reason = RecipientReason.forBranchSubscriber(subscription, team_member)
+        reason = RecipientReason.forBranchSubscriber(subscription,
+        team_member, '')
         self.assertEqual('Your team Qux is subscribed to branch foo.',
             reason.getReason())
 
