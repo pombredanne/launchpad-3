@@ -19,9 +19,11 @@ __all__ = [
     'ProductView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
+    'ProductActiveReviewsView',
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
+    'ProductApprovedMergesView',
     'ProductBranchListingView',
     'ProductBrandingView',
     'ProductEditView',
@@ -62,10 +64,14 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposalGetter, BranchMergeProposalStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -407,7 +413,8 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', 'list_branches']
+    links = ['branch_add', 'list_branches', 'active_reviews',
+             'approved_merges']
 
     def branch_add(self):
         text = 'Register branch'
@@ -418,6 +425,12 @@ class ProductBranchesMenu(ApplicationMenu):
         text = 'List branches'
         summary = 'List the branches for this project'
         return Link('+branches', text, summary, icon='add')
+
+    def active_reviews(self):
+        return Link('+activereviews', 'active reviews')
+
+    def approved_merges(self):
+        return Link('+approvedmerges', 'approved merges')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -1392,6 +1405,21 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         return len([person for person in self._branch_owners
                     if person.isTeam()])
 
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""
         # XXX: thumper 2008-04-22
@@ -1522,3 +1550,34 @@ class ProductBranchesView(ProductBranchListingView):
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.LIFECYCLE,
             }
+
+class ProductActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the person that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class ProductApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals that have been approved for the person."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname

@@ -23,6 +23,7 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
     'PersonDynMenu',
@@ -136,12 +137,11 @@ from canonical.launchpad.interfaces import (
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-
-from canonical.launchpad.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
 
@@ -707,7 +707,8 @@ class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
+    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
+             'active_reviews', 'approved_merges']
 
     def all_related(self):
         return Link(canonical_url(self.context, rootsite='code'),
@@ -721,6 +722,12 @@ class PersonBranchesMenu(ApplicationMenu):
 
     def subscribed(self):
         return Link('+subscribedbranches', 'subscribed')
+
+    def active_reviews(self):
+        return Link('+activereviews', 'active reviews')
+
+    def approved_merges(self):
+        return Link('+approvedmerges', 'approved merges')
 
     def addbranch(self):
         if self.user is None:
@@ -3974,6 +3981,21 @@ class PersonBranchCountMixin:
             return False
         return self.user.inTeam(self.context)
 
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
 
 class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person."""
@@ -4137,6 +4159,21 @@ class PersonOAuthTokensView(LaunchpadView):
                 "revoked already?" % consumer.key)
 
 
+class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
+    """A view to render the code page summary for a person."""
+
+    __used_for__ = IPerson
+
+    @property
+    def show_summary(self):
+        """Right now we show the summary if the person has branches.
+
+        When we add support for reviews commented on, we'll want to add
+        support for showing the summary even if there are no branches.
+        """
+        return self.total_branch_count
+
+
 class PersonActiveReviewsView(BranchMergeProposalListingView):
     """Branch merge proposals for the person that are needing review."""
 
@@ -4146,6 +4183,11 @@ class PersonActiveReviewsView(BranchMergeProposalListingView):
     @property
     def heading(self):
         return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
 
 
 class PersonApprovedMergesView(BranchMergeProposalListingView):
@@ -4157,3 +4199,8 @@ class PersonApprovedMergesView(BranchMergeProposalListingView):
     @property
     def heading(self):
         return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname

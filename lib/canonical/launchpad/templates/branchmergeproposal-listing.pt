@@ -52,7 +52,8 @@
           </span>
           <tal:date replace="proposal/date_reviewed/fmt:displaydate"/>
         </td>
-        <td tal:condition="context/show_column/vote_summary|nothing">
+        <td tal:condition="context/show_column/vote_summary|nothing"
+            tal:content="proposal/vote_summary">
           Vote Summary
         </td>
       </tr>

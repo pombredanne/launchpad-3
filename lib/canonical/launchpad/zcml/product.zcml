@@ -372,6 +372,24 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.product.ProductActiveReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+activereviews"
+    template="../templates/product-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.product.ProductApprovedMergesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+approvedmerges"
+    template="../templates/product-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
     class="canonical.launchpad.browser.ProductCodeIndexView"
     facet="branches"
     permission="zope.Public"

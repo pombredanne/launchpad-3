@@ -16,7 +16,7 @@
 
   <h1 tal:content="view/heading">Bazaar branches</h1>
 
-  <tal:summary replace="structure context/@@+codesummary"/>
+  <tal:branch-summary content="structure context/@@+branch-summary" />
 
   <tal:has-proposals condition="view/proposal_count">
     <div tal:replace="structure view/proposals/@@+listing" />

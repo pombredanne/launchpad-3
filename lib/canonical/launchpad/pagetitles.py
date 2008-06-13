@@ -1032,6 +1032,10 @@ product_edit = 'Change project details'
 
 product_index = ContextTitle('%s in Launchpad')
 
+def product_mergeproposals(context, view):
+    """Return the view's heading."""
+    return view.heading
+
 product_new = 'Register a project in Launchpad'
 
 product_new_guided = 'Before you register your project...'

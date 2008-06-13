@@ -34,32 +34,9 @@
     </p>
   </div>
 
-  <tal:has-branches condition="view/total_branch_count">
+  <tal:summary replace="structure context/@@+codesummary"/>
 
-    <div id="page-summary">
-      <p>
-        <tal:link
-            define="link context/menu:branches/all_related"
-            replace="structure link/render"
-            />:
-        <strong class="count" tal:content="view/total_branch_count">100</strong>
-        (<strong class="count" tal:content="view/registered_branch_count">100</strong>
-        <tal:link
-            define="link context/menu:branches/registered"
-            replace="structure link/render"
-            />,
-        <strong class="count" tal:content="view/owned_branch_count">100</strong>
-        <tal:link
-            define="link context/menu:branches/owned"
-            replace="structure link/render"
-            />,
-        <strong class="count" tal:content="view/subscribed_branch_count">100</strong>
-        <tal:link
-            define="link context/menu:branches/subscribed"
-            replace="structure link/render"
-            />)
-      </p>
-    </div>
+  <tal:has-branches condition="view/total_branch_count">
 
     <tal:branchlisting
         content="structure branches/@@+branch-listing" />
