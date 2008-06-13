@@ -28,7 +28,6 @@ __all__ = [
     'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
-    'ISelectResultsSlicable',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
@@ -41,8 +40,6 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -780,18 +777,6 @@ class IProductSeriesBugTask(IBugTask):
     productseries = Choice(
         title=_("Series"), required=True,
         vocabulary='ProductSeries')
-
-
-# XXX: Brad Bollenbach 2005-02-03 bugs=121:
-# This interface should be removed when spiv pushes a fix upstream for
-# the bug that makes this hackery necessary.
-class ISelectResultsSlicable(ISelectResults):
-    """ISelectResults (from SQLOS) should be specifying __getslice__.
-
-    This interface defines the missing __getslice__ method.
-    """
-    def __getslice__(i, j):
-        """Called to implement evaluation of self[i:j]."""
 
 
 class BugTaskSearchParams:

@@ -6,6 +6,7 @@ __metaclass__ = type
 from cStringIO import StringIO
 from unittest import TestCase, TestLoader
 
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -17,23 +18,22 @@ from canonical.testing import LaunchpadZopelessLayer
 class TestRewriteMapScript(TestCase):
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        TestCase.setUp(self)
+    def getRewriteFileLines(self):
+        """Create the rewrite file and return the contents."""
         LaunchpadZopelessLayer.switchDbUser(config.supermirror.dbuser)
+        file = StringIO()
+        rewritemap.write_map(file)
+        return file.getvalue().splitlines()
 
     def test_file_generation(self):
         """A simple smoke test for the rewritemap cronscript."""
-        file = StringIO()
-        rewritemap.write_map(file)
-        lines = file.getvalue().splitlines()
+        lines = self.getRewriteFileLines()
         self.failUnless('~name12/gnome-terminal/main\t00/00/00/0f' in lines,
                 'expected line not found in %r' % (lines,))
 
     def test_file_generation_junk_product(self):
         """Like test_file_generation, but demonstrating a +junk product."""
-        file = StringIO()
-        rewritemap.write_map(file)
-        lines = file.getvalue().splitlines()
+        lines = self.getRewriteFileLines()
         self.failUnless('~spiv/+junk/feature\t00/00/00/16' in lines,
                 'expected line not found in %r' % (lines,))
 
@@ -43,10 +43,9 @@ class TestRewriteMapScript(TestCase):
         branch_unique_name = '~name12/gnome-terminal/scanned'
         branch = getUtility(IBranchSet).getByUniqueName(branch_unique_name)
         branch.private = True
+        transaction.commit()
         # Now create the rewrite map.
-        file = StringIO()
-        rewritemap.write_map(file)
-        lines = file.getvalue().splitlines()
+        lines = self.getRewriteFileLines()
         self.failIf('~name12/gnome-terminal/scanned\t00/00/00/1b' in lines,
                     'private branch %s should not be in %r' %
                     (branch_unique_name, lines))
@@ -56,10 +55,9 @@ class TestRewriteMapScript(TestCase):
         branch_unique_name = '~name12/gnome-terminal/scanned'
         branch = getUtility(IBranchSet).getByUniqueName(branch_unique_name)
         branch.branch_type = BranchType.REMOTE
+        transaction.commit()
         # Now create the rewrite map.
-        file = StringIO()
-        rewritemap.write_map(file)
-        lines = file.getvalue().splitlines()
+        lines = self.getRewriteFileLines()
         self.failIf('~name12/gnome-terminal/scanned\t00/00/00/1b' in lines,
                     'remote branch %s should not be in %r' %
                     (branch_unique_name, lines))

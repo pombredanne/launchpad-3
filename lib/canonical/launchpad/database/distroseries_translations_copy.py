@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [ 'copy_active_translations' ]
 
-from psycopg import DatabaseError
+from psycopg2 import DatabaseError
 from zope.interface import implements
 
 from canonical.database.multitablecopy import MultiTableCopy
