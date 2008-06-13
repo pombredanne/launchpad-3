@@ -52,29 +52,24 @@ class XpiSearchTestCase(unittest.TestCase):
             person=self.importer,
             potemplate=self.firefox_template)
 
-    def test_TemplateSearching(self):
-        """Test that searching works correctly for template strings."""
+    def test_templateSearching(self):
+        """Searching through XPI template returns English 'translations'."""
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # The status is now IMPORTED:
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
-        potmsgsets = list(self.spanish_firefox.findPOTMsgSetsContaining(
-            text='zilla'))
-
-        message_list = []
-        for message in potmsgsets:
-            message_list.append(message.singular_text)
-
-        self.assertEquals(len(potmsgsets), 3)
+        potmsgsets = self.spanish_firefox.findPOTMsgSetsContaining(
+            text='zilla')
+        message_list = [message.singular_text for message in potmsgsets]
 
         self.assertEquals([u'SomeZilla', u'FooZilla!',
                            u'FooZilla Zilla Thingy'],
                           message_list)
 
 
-    def test_TemplateSearchingForMsgIDs(self):
-        """Test that searching returns no results for internal msg IDs."""
+    def test_templateSearchingForMsgIDs(self):
+        """Searching returns no results for internal msg IDs."""
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # The status is now IMPORTED:
@@ -83,7 +78,7 @@ class XpiSearchTestCase(unittest.TestCase):
         potmsgsets = list(self.spanish_firefox.findPOTMsgSetsContaining(
             text='foozilla.title'))
 
-        self.assertEquals(len(potmsgsets), 0)
+        self.assertEquals(potmsgsets, [])
 
 
 def test_suite():
