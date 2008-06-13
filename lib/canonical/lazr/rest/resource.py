@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BatchingResourceMixin',
     'Collection',
     'CollectionResource',
     'Entry',
@@ -12,6 +13,7 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'ResourceJSONEncoder',
     'RESTUtilityBase',
     'ScopedCollection',
     'ServiceRootResource',
@@ -287,7 +289,7 @@ class BatchingResourceMixin:
         return batch
 
 
-class CustomOperationResourceMixin(BatchingResourceMixin):
+class CustomOperationResourceMixin:
 
     """A mixin for resources that implement a collection-entry pattern."""
 
@@ -303,7 +305,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         operation = getMultiAdapter((self.context, self.request),
                                     IResourceGETOperation,
                                     name=operation_name)
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def handleCustomPOST(self, operation_name):
         """Execute a custom write-type operation triggered through POST.
@@ -321,7 +323,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         except ComponentLookupError:
             self.request.response.setStatus(400)
             return "No such operation: " + operation_name
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def do_POST(self):
         """Invoke a custom operation.
@@ -338,24 +340,6 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
             return "No operation name given."
         del self.request.form['ws.op']
         return self.handleCustomPOST(operation_name)
-
-    def _processCustomOperationResult(self, result):
-        """Process the result of a custom operation."""
-        if isinstance(result, (basestring, NoneType)):
-            # The operation took care of everything and just needs
-            # this string served to the client.
-            return result
-
-        # The operation returned a collection or entry. It will be
-        # serialized to JSON.
-        try:
-            iterator = iter(result)
-        except TypeError:
-            # Result is a single entry
-            return EntryResource(result, self.request)
-
-        # Serve a single batch from the collection.
-        return self.batch(result, self.request)
 
 
 class ReadOnlyResource(HTTPResource):
@@ -729,7 +713,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return ''
 
 
-class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
+class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
+                         CustomOperationResourceMixin):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 

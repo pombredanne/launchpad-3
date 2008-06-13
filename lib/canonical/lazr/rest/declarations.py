@@ -54,7 +54,6 @@ from canonical.lazr.decorates import Passthrough
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
-from canonical.lazr.rest.fields import Reference
 from canonical.lazr.rest.resource import Collection, Entry
 from canonical.lazr.rest.operation import ResourceOperation
 from canonical.lazr.security import protect_schema
@@ -472,7 +471,7 @@ class export_factory_operation(_export_operation):
             method, annotations)
         annotations['creates'] = self.interface
         annotations['params'] = self.params
-        annotations['return_type'] = Reference(schema=self.interface)
+        annotations['return_type'] = Object(schema=self.interface)
 
 
 class export_read_operation(_export_operation):
@@ -631,18 +630,7 @@ class BaseResourceOperationAdapter(ResourceOperation):
         """See `ResourceOperation`."""
         params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
-
-        # The webservice passes string results straight to the client.
-        # Otherwise, it will try to convert iterable to collection, and other
-        # objects to entries. We want to marshall simple values using json.
-        basic_types = (basestring, bool, int, float, types.NoneType)
-        if isinstance(result, basic_types):
-            response = self.request.response
-            response.setHeader('Content-Type', 'application/json')
-            return simplejson.dumps(result)
-        else:
-            # Use the default webservice encoding.
-            return result
+        return self.processResult(result)
 
 
 class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):

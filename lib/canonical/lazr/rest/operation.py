@@ -2,12 +2,18 @@
 
 """Base classes for one-off HTTP operations."""
 
-from zope.component import getMultiAdapter
+import simplejson
+import types
+
+from zope.component import getMultiAdapter, queryAdapter
 from zope.interface import implements
 from zope.schema.interfaces import RequiredMissing, ValidationError
 
 from canonical.lazr.interfaces import (
-    IFieldMarshaller, IResourceGETOperation, IResourcePOSTOperation)
+    ICollection, IEntry, IFieldMarshaller, IResourceGETOperation,
+    IResourcePOSTOperation)
+from canonical.lazr.rest.resource import (
+    BatchingResourceMixin, EntryResource, ResourceJSONEncoder)
 
 __metaclass__ = type
 __all__ = [
@@ -17,8 +23,10 @@ __all__ = [
 ]
 
 
-class ResourceOperation:
+class ResourceOperation(BatchingResourceMixin):
     """A one-off operation associated with a resource."""
+
+    JSON_TYPE = 'application/json'
 
     def __init__(self, context, request):
         self.context = context
@@ -27,11 +35,46 @@ class ResourceOperation:
     def __call__(self):
         values, errors = self.validate()
         if len(errors) == 0:
-            return self.call(**values)
+            return self.processResult(self.call(**values))
         else:
             self.request.response.setStatus(400)
             self.request.response.setHeader('Content-type', 'text/plain')
             return "\n".join(errors)
+
+    def processResult(self, result):
+        """Process the result of a custom operation."""
+        if (self.request.response.getHeader('Content-Type') is not None
+            or self.request.response.getStatus() != 599):
+            # The operation took care of everything and just needs
+            # this object served to the client.
+            return result
+
+        basic_types = (basestring, bool, int, float, types.NoneType,
+                       types.TupleType, types.ListType, types.DictionaryType)
+        if not isinstance(result, basic_types):
+            try:
+                iterator = iter(result)
+                # Since that didn't throw an exception, we have a collection
+                # or a list of something.
+                self.request.response.setHeader('Content-Type', self.JSON_TYPE)
+                return self.batch(result, self.request)
+            except TypeError:
+                pass
+
+            if queryAdapter(result, IEntry):
+                # We have an individual entry. Dump it to JSON.
+                result = EntryResource(result, self.request)
+            else:
+                # The result can't be serialized to JSON.
+                raise ValueError(
+                    "Operation result (%s) can't be serialized to JSON"
+                    % result)
+
+        json_representation = simplejson.dumps(
+            result, cls=ResourceJSONEncoder)
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-Type', self.JSON_TYPE)
+        return json_representation
 
     def validate(self):
         """Validate incoming arguments against the operation schema.

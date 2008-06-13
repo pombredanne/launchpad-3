@@ -743,7 +743,7 @@ a named factory operation for creating a new cookbook.
     ...         TextLine(
     ...             __name__='cuisine', default=u'Brazilian', required=False),
     ...     )
-    ...    return_type = Object(schema=IRecipe)
+    ...     return_type = Object(schema=IRecipe)
     ...
     ...     def call(self, author_name, title, cuisine):
     ...         cookbook = CookbookSet().newCookbook(
