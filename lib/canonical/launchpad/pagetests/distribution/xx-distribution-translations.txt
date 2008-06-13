@@ -116,3 +116,16 @@ we should not have a link to it.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+Administrator can change the translation focus for a distribution.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu')
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> admin_browser.getControl('Translation Focus').displayValue
+    ['ubuntu hoary']
+    >>> admin_browser.getControl('Translation Focus').displayValue = [
+    ...     'ubuntu grumpy']
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> admin_browser.getControl('Translation Focus').displayValue
+    ['ubuntu grumpy']

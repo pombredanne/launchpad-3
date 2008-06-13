@@ -586,7 +586,8 @@ class DistributionEditView(LaunchpadEditFormView):
     field_names = ['displayname', 'title', 'summary', 'description',
                    'bug_reporting_guidelines', 'official_malone',
                    'enable_bug_expiration', 'official_blueprints',
-                   'official_rosetta', 'official_answers']
+                   'official_rosetta', 'official_answers',
+                   'translation_focus', ]
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
@@ -596,7 +597,7 @@ class DistributionEditView(LaunchpadEditFormView):
         if not self.isAdmin():
             self.form_fields = self.form_fields.omit(
                 'official_malone', 'official_rosetta', 'official_answers',
-                'enable_bug_expiration')
+                'enable_bug_expiration', 'translation_focus')
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
