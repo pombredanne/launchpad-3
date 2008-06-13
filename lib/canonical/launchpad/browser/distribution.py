@@ -410,18 +410,6 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionAnswersMenu(ApplicationMenu):
-    """Menu for the answers facet of distributions."""
-
-    usedfor = IDistribution
-    facet = 'answers'
-    links = ['new']
-
-    def new(self):
-        text = 'Ask a question'
-        return Link('+addquestion', text, icon='question')
-
-
 class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
     """Default Distribution view class."""
 
