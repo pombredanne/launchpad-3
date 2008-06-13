@@ -8,7 +8,8 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.launchpad.database import BranchMergeProposalGetter
+from canonical.launchpad.database import (
+    BranchMergeProposalGetter, RecipientReason)
 from canonical.launchpad.interfaces import WrongBranchMergeProposal
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -354,6 +355,53 @@ class TestMergeProposalGetComment(TestCase):
         """Tests that we can get a comment."""
         self.assertRaises(WrongBranchMergeProposal,
                           self.merge_proposal2.getComment, self.comment.id)
+
+
+class TestRecipientRationale(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # need to set target_branch.date_last_modified
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def makeProposalWithSubscription(self, subscriber=None):
+        if subscriber is None:
+            subscriber = self.factory.makePerson()
+        source_branch = self.factory.makeBranch(title='foo')
+        merge_proposal = source_branch.addLandingTarget(subscriber,
+            self.factory.makeBranch(product=source_branch.product))
+        subscription = merge_proposal.source_branch.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        return merge_proposal, subscription
+
+    def test_fromBranchSubscription(self):
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        subscriber = subscription.person
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscriber)
+        self.assertEqual(subscriber, reason.subscriber)
+        self.assertEqual(subscriber, reason.recipient)
+        self.assertEqual(merge_proposal.source_branch, reason.branch)
+
+    def test_getReasonPerson(self):
+        """Ensure the correct reason is generated for individuals."""
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscription.person)
+        self.assertEqual('You are subscribed to branch foo.',
+            reason.getReason())
+
+    def test_getReasonTeam(self):
+        """Ensure the correct reason is generated for teams."""
+        team_member = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com')
+        team = self.factory.makeTeam(team_member, displayname='Qux')
+        bmp, subscription = self.makeProposalWithSubscription(team)
+        reason = RecipientReason.forBranchSubscriber(subscription, team_member)
+        self.assertEqual('Your team Qux is subscribed to branch foo.',
+            reason.getReason())
 
 
 class TestMergeProposalNotification(TestCaseWithFactory):

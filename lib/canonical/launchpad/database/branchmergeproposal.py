@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
     'BranchMergeProposalGetter',
+    'RecipientReason',
     ]
 
 from email.Utils import make_msgid
@@ -69,6 +70,29 @@ VALID_TRANSITION_GRAPH = {
     # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
+
+
+class RecipientReason:
+
+    def __init__(self, subscriber, recipient, branch):
+        self.subscriber = subscriber
+        self.recipient = recipient
+        self.branch = branch
+
+    @classmethod
+    def forBranchSubscriber(klass, subscription, recipient):
+        return klass(subscription.person, recipient, subscription.branch)
+
+    def getReason(self):
+        """Return a string explaining why the recipient is a recipient."""
+        entity = 'You are'
+        if self.recipient != self.subscriber:
+            assert self.recipient.hasParticipationEntryFor(self.subscriber), (
+                '%s does not participate in team %s.' %
+                (self.recipient.displayname, self.subscriber.displayname))
+            entity = 'Your team %s is' % self.subscriber.displayname
+        branch_name = self.branch.displayname
+        return '%s subscribed to branch %s.' % (entity, branch_name)
 
 
 class BranchMergeProposal(SQLBase):

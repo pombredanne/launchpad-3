@@ -62,35 +62,6 @@ Baz Qux has proposed merging foo into bar.
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
 
-    def test_getReasonPerson(self):
-        """Ensure the correct reason is generated for individuals."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
-        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        self.assertEqual('You are subscribed to branch foo.',
-            mailer.getReason(subscriber))
-
-    def test_getReasonTeam(self):
-        """Ensure the correct reason is generated for teams."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
-        team_member = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com')
-        team = self.factory.makeTeam(team_member, displayname='Qux')
-        bmp.source_branch.subscribe(team,
-            BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
-        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        self.assertEqual('Your team Qux is subscribed to branch foo.',
-            mailer.getReason(team_member))
-        mailer._recipients._emailToPerson[
-            subscriber.preferredemail.email] = team
-        try:
-            mailer.getReason(subscriber)
-        except AssertionError, e:
-            self.assertEqual(
-                'Baz Quxx does not participate in team Qux.', str(e))
-        else:
-            self.fail('Did not detect bogus team recipient.')
-
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""
         merge_proposal, person = self.makeProposalWithSubscriber()
