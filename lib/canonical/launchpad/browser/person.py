@@ -2330,6 +2330,15 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return self.userIsActiveMember()
 
+    def userCanViewHiddenEmails(self):
+        """Return true if the user can view someone's hidden email addresses.
+
+        Only the Launchpad Admins and the Commercial Admins
+        can view other people's hidden email addresses.
+        """
+        return (check_permission('launchpad.Edit', self.context)
+                or check_permission('launchpad.Commercial', self.context))
+
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
             return obfuscateEmail(self.context.preferredemail.email)

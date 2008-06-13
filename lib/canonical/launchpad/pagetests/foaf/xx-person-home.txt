@@ -86,6 +86,17 @@ But good ole Foo Bar can:
     Email: test@canonical.com
     ...
 
+And so can the Commercial Admins team:
+
+    >>> commercial_browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')
+    >>> commercial_browser.open('http://launchpad.dev/~name12')
+    >>> print extract_text(find_tag_by_id(commercial_browser.contents,
+    ...                    'contact-details'))
+    Contact details
+    Email: test@canonical.com
+    ...
+
 In the case of teams, it works similarly. No email address is disclosed if
 you're not logged in:
 
