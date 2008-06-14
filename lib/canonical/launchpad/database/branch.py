@@ -212,6 +212,11 @@ class Branch(SQLBase):
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
+    # XXX: rename that column!!!
+    merge_queue = ForeignKey(
+        dbName='merge_robot', foreignKey='MultiBranchMergeQueue',
+        default=None)
+
     def getMergeQueue(self):
         """See `IBranch`."""
         return BranchMergeProposal.select("""
