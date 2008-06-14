@@ -133,9 +133,9 @@ class IArchive(IHasOwner):
         description=_("The number of pending builds in this archive."))
 
     succeeded_count = Int(
-        title=_("Number of succeeded builds in archive"), required=True,
+        title=_("Number of successful builds in archive"), required=True,
         default=0,
-        description=_("The number of succeeded builds in this archive."))
+        description=_("The number of successful builds in this archive."))
 
     building_count = Int(
         title=_("Number of active builds in archive"), required=True,
