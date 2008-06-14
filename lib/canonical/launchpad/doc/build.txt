@@ -9,7 +9,7 @@ launchpad build daemon.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...    BuildStatus, IDistributionSet, IBuildSet)
+    ...    BuildStatus, IArchiveSet, IBuildSet, IDistributionSet)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu['warty']
@@ -20,9 +20,13 @@ launchpad build daemon.
     >>> from canonical.database.sqlbase import cursor, sqlvalues, commit
     >>> archive_id = \
     ...     sqlvalues(removeSecurityProxy(hoary).distribution.main_archive)[0]
-    >>> q = "SELECT total_count, pending_count, succeeded_count, " \
-    ...     "building_count, failed_count FROM archive WHERE id = %s" \
-    ...     % archive_id
+
+    >>> def print_counts_for_archive(archive_id):
+    ...     archive = getUtility(IArchiveSet).get(archive_id)
+    ...     print ("total: %s, pending: %s, succeeded: %s, building: %s "
+    ...            "failed: %s" % (archive.total_count,
+    ...            archive.pending_count, archive.succeeded_count,
+    ...            archive.building_count, archive.failed_count))
 
     >>> initq = """
     ... CREATE OR REPLACE FUNCTION init_archive_stats() RETURNS void AS $$
@@ -89,23 +93,20 @@ launchpad build daemon.
 Before the archive build counters are initialized they will be all
 zero.
 
-    >>> cur = cursor()
-    >>> cur.execute(q)
-    >>> print cur.fetchall()
-    [(0, 0, 0, 0, 0)]
+    >>> print_counts_for_archive(archive_id)
+    total: 0, pending: 0, succeeded: 0, building: 0 failed: 0
 
 Now the archive counters are initialized.
 
     >>> cur = cursor()
     >>> cur.execute(initq)
+    >>> commit()
 
 Then show the archive build counters (in the following order: total,
 pending, succeeded, building, failed).
 
-    >>> cur = cursor()
-    >>> cur.execute(q)
-    >>> print cur.fetchall()
-    [(15, 1, 8, 1, 5)]
+    >>> print_counts_for_archive(archive_id)
+    total: 15, pending: 1, succeeded: 8, building: 1 failed: 5
 
 First up, can we get the builds out of the sample data?
 
@@ -263,10 +264,8 @@ The order is as follows: order: total, pending, succeeded, building,
 failed.
 
     >>> commit()
-    >>> cur = cursor()
-    >>> cur.execute(q)
-    >>> print cur.fetchall()
-    [(15, 1, 8, 1, 5)]
+    >>> print_counts_for_archive(archive_id)
+    total: 15, pending: 1, succeeded: 8, building: 1 failed: 5
 
 Retry Build record in question:
 
@@ -295,10 +294,8 @@ it won't interfere in the next tests.
 The archive build counters will reflect the retried build (counter
 order: total, pending, succeeded, building, failed).
 
-    >>> cur = cursor()
-    >>> cur.execute(q)
-    >>> print cur.fetchall()
-    [(15, 2, 8, 1, 4)]
+    >>> print_counts_for_archive(archive_id)
+    total: 15, pending: 2, succeeded: 8, building: 1 failed: 4
 
 Initialize all the required arguments to create a binary package for a
 given build record entry.
@@ -1001,10 +998,8 @@ These are the archive build counters before retrying the DEPWAIT build.
 The counter order is as follows: total, pending, succeeded, building,
 failed.
 
-    >>> cur = cursor()
-    >>> cur.execute(q)
-    >>> print cur.fetchall()
-    [(15, 2, 8, 1, 4)]
+    >>> print_counts_for_archive(archive_id)
+    total: 15, pending: 2, succeeded: 8, building: 1 failed: 4
 
 Then we can run the utility method for the target distroarchseries and
 expect depwait_build to be 'retried' and scored.
@@ -1020,10 +1015,8 @@ expect depwait_build to be 'retried' and scored.
 The archive build counters will reflect the retried build (counter
 order: total, pending, succeeded, building, failed).
 
-    >>> cur = cursor()
-    >>> cur.execute(q)
-    >>> print cur.fetchall()
-    [(15, 3, 8, 1, 3)]
+    >>> print_counts_for_archive(archive_id)
+    total: 15, pending: 3, succeeded: 8, building: 1 failed: 3
 
 The 'retryDepWaiting' task is performed periodically via cronjob by
 cronscript/buildd-retry-depwait.py. It can be run in parallel with
