@@ -1375,7 +1375,7 @@ AssertionError.
     ...
     AssertionError: 'REBUILD' purpose has no default name.
 
-Passing the 'name', in additional to the owner, purpose and
+Passing the 'name', in addition to the owner, purpose and
 distribution, does the trick.
 
     >>> rebuild_archive = getUtility(IArchiveSet).new(
