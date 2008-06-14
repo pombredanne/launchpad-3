@@ -9,7 +9,8 @@ __all__ = [
     'is_valid_mofile',
     ]
 
-from canonical.database.sqlbase import commit
+from canonical.database.sqlbase import commit, ZopelessTransactionManager
+import transaction
 
 from zope.component import getUtility
 
@@ -18,13 +19,12 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import FakeLogger
 
 
-def import_pofile_or_potemplate(file_contents, person, series=None,
+def import_pofile_or_potemplate(file_contents, person,
     pofile=None, potemplate=None, is_imported=True):
     """Import a `POFile` or `POTemplate` from the given string.
 
     :param file_contents: text of "file" to import.
     :param person: party requesting the import.
-    :param series: product series the import is for.
     :param pofile: if uploading a `POFile`, file to import to; None otherwise.
     :param potemplate: if uploading a `POTemplate`, file to import to; None
         otherwise.
@@ -33,11 +33,9 @@ def import_pofile_or_potemplate(file_contents, person, series=None,
     translation_import_queue = getUtility(ITranslationImportQueue)
     if pofile is not None:
         if pofile.potemplate.distroseries is None:
-            if series is None:
-                series = pofile.potemplate.productseries
             entry = translation_import_queue.addOrUpdateEntry(
                 pofile.path, file_contents, is_imported, person,
-                productseries=series, pofile=pofile)
+                productseries=pofile.potemplate.productseries, pofile=pofile)
         else:
             entry = translation_import_queue.addOrUpdateEntry(
                 pofile.path, file_contents, is_imported, person,
@@ -49,11 +47,9 @@ def import_pofile_or_potemplate(file_contents, person, series=None,
         # A POTemplate can only be 'imported', so setting the is_imported flag
         # makes no difference.
         if potemplate.distroseries is None:
-            if series is None:
-                series = potemplate.productseries
             entry = translation_import_queue.addOrUpdateEntry(
                 potemplate.path, file_contents, True, person,
-                productseries=series, potemplate=potemplate)
+                productseries=potemplate.productseries, potemplate=potemplate)
         else:
             entry = translation_import_queue.addOrUpdateEntry(
                 potemplate.path, file_contents, True, person,
@@ -62,7 +58,10 @@ def import_pofile_or_potemplate(file_contents, person, series=None,
                 potemplate=potemplate)
         target = potemplate
     # Allow Librarian to see the change.
-    commit()
+    if ZopelessTransactionManager._installed is None:
+        transaction.commit()
+    else:
+        commit()
 
     entry.status = RosettaImportStatus.APPROVED
     (subject, body) = target.importFromQueue(entry, FakeLogger())
