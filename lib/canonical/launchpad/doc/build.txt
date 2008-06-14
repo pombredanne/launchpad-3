@@ -1018,6 +1018,14 @@ order: total, pending, succeeded, building, failed).
     >>> print_counts_for_archive(archive_id)
     total: 15, pending: 3, succeeded: 8, building: 1 failed: 3
 
+Invalid build state transitions will result in an assertion error,
+e.g.:
+
+    >>> depwait_build.buildstate = BuildStatus.FULLYBUILT
+    Traceback (most recent call last):
+    ...
+    AssertionError: ... failure (Needs building -> Successfully built)
+
 The 'retryDepWaiting' task is performed periodically via cronjob by
 cronscript/buildd-retry-depwait.py. It can be run in parallel with
 other buildd tasks because the procedure is 'atomic' enough, i.e.,

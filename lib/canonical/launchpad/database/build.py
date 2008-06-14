@@ -735,7 +735,7 @@ class Build(SQLBase):
                          BuildStatus.MANUALDEPWAIT,
                          BuildStatus.CHROOTWAIT,
                          BuildStatus.FAILEDTOUPLOAD]
-        assert (self.buildstate in failed_states,
+        assert self.buildstate in failed_states, (
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, BuildStatus.NEEDSBUILD))
         self.archive.pending_count += 1
@@ -743,7 +743,7 @@ class Build(SQLBase):
 
     def handleUpdateToSucceeded(self):
         """Handle the transition of the build state to 'succeeded'."""
-        assert (self.buildstate == BuildStatus.BUILDING,
+        assert self.buildstate == BuildStatus.BUILDING, (
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, BuildStatus.FULLYBUILT))
         self.archive.succeeded_count += 1
@@ -751,7 +751,7 @@ class Build(SQLBase):
 
     def handleUpdateToSuperseded(self):
         """Handle the transition of the build state to 'superseded'."""
-        assert (self.buildstate == BuildStatus.NEEDSBUILD,
+        assert self.buildstate == BuildStatus.NEEDSBUILD, (
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, BuildStatus.SUPERSEDED))
         self.archive.pending_count -= 1
@@ -759,7 +759,7 @@ class Build(SQLBase):
 
     def handleUpdateToBuilding(self):
         """Handle the transition of the build state to 'building'."""
-        assert (self.buildstate == BuildStatus.NEEDSBUILD,
+        assert self.buildstate == BuildStatus.NEEDSBUILD, (
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, BuildStatus.BUILDING))
         self.archive.building_count += 1
@@ -767,7 +767,7 @@ class Build(SQLBase):
 
     def handleUpdateToFailed(self, value):
         """Handle the transition of the build state to 'failed'."""
-        assert (self.buildstate == BuildStatus.BUILDING,
+        assert self.buildstate == BuildStatus.BUILDING, (
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, value))
         self.archive.failed_count += 1
