@@ -102,8 +102,7 @@ Now the archive counters are initialized.
     >>> cur.execute(initq)
     >>> commit()
 
-Then show the archive build counters (in the following order: total,
-pending, succeeded, building, failed).
+Then show the archive build counters.
 
     >>> print_counts_for_archive(archive_id)
     total: 15, pending: 1, succeeded: 8, building: 1 failed: 5
@@ -260,8 +259,6 @@ retried.
     True
 
 These are the archive build counters before the build is retried.
-The order is as follows: order: total, pending, succeeded, building,
-failed.
 
     >>> commit()
     >>> print_counts_for_archive(archive_id)
@@ -291,8 +288,7 @@ it won't interfere in the next tests.
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
-The archive build counters will reflect the retried build (counter
-order: total, pending, succeeded, building, failed).
+The archive build counters will reflect the retried build.
 
     >>> print_counts_for_archive(archive_id)
     total: 15, pending: 2, succeeded: 8, building: 1 failed: 4
@@ -995,8 +991,6 @@ In order to allow depwait_build to be retried we will forge a
     >>> flush_database_updates()
 
 These are the archive build counters before retrying the DEPWAIT build.
-The counter order is as follows: total, pending, succeeded, building,
-failed.
 
     >>> print_counts_for_archive(archive_id)
     total: 15, pending: 2, succeeded: 8, building: 1 failed: 4
@@ -1012,9 +1006,21 @@ expect depwait_build to be 'retried' and scored.
     >>> depwait_build.buildqueue_record.lastscore
     4005
 
-The archive build counters will reflect the retried build (counter
-order: total, pending, succeeded, building, failed).
+The 'retryDepWaiting' task is performed periodically via cronjob by
+cronscript/buildd-retry-depwait.py. It can be run in parallel with
+other buildd tasks because the procedure is 'atomic' enough, i.e.,
+after the commit the retried jobs are ready to be dispatched.
 
+The archive build counters will reflect the retried build.
+
+    >>> print_counts_for_archive(archive_id)
+    total: 15, pending: 3, succeeded: 8, building: 1 failed: 3
+
+Please note that the repeated setting of the same build state value
+has no bearing on the archive counters.
+
+    >>> depwait_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> depwait_build.buildstate = BuildStatus.NEEDSBUILD
     >>> print_counts_for_archive(archive_id)
     total: 15, pending: 3, succeeded: 8, building: 1 failed: 3
 
@@ -1025,11 +1031,6 @@ e.g.:
     Traceback (most recent call last):
     ...
     AssertionError: ... failure (Needs building -> Successfully built)
-
-The 'retryDepWaiting' task is performed periodically via cronjob by
-cronscript/buildd-retry-depwait.py. It can be run in parallel with
-other buildd tasks because the procedure is 'atomic' enough, i.e.,
-after the commit the retried jobs are ready to be dispatched.
 
 
 == Build record security ==

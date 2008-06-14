@@ -233,8 +233,7 @@ distroseries (see bug 181328).
     >>> from canonical.launchpad.interfaces import (
     ...     BuildStatus, IArchiveSet)
 
-Show the number of builds for the corresponding archive in the
-following order: total, pending, succeeded, building, failed.
+Show the number of builds for the corresponding archive.
 
     >>> def print_counts_for_archive(archive_id):
     ...     archive = getUtility(IArchiveSet).get(archive_id)
