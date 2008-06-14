@@ -307,3 +307,33 @@ Person's supported IQuestionTargets:
     >>> sorted([target.name
     ...         for target in no_priv.getTeamAnswerQuestionTargets()])
     [u'evolution', u'ubuntu']
+
+
+== Deactivated pillars and *AnswerQuestionTargets() ==
+
+getDirectAnswerQuestionTargets() and getTeamAnswerQuestionTargets() use
+a _getQuestionTargetsFromAnswerContacts() to build a distinct list of
+valid IQuestionTargets. It ensures that no deactivated pillars are in
+the list.
+
+If the Firefox project is deactivated, it is removed from the list of
+supported projects.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+
+    >>> login('foo.bar@canonical.com')
+    >>> firefox.active = False
+    >>> syncUpdate(firefox)
+    >>> sorted([target.name
+    ...     for target in no_priv.getDirectAnswerQuestionTargets()])
+    []
+
+When the Firefox project is reactivated, the answer contact relationship
+is visible. It is important to preserve the continuity of the project in
+cases were we only want is deactivated for a short period.
+
+    >>> firefox.active = True
+    >>> syncUpdate(firefox)
+    >>> sorted([target.name
+    ...     for target in no_priv.getDirectAnswerQuestionTargets()])
+    [u'firefox']
