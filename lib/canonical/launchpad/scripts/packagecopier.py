@@ -18,7 +18,8 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.build import incomplete_building_status
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, incomplete_building_status)
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
@@ -27,7 +28,6 @@ from canonical.launchpad.interfaces.publishing import (
 from canonical.launchpad.scripts.ftpmasterbase import (
     build_package_location, SoyuzScript, SoyuzScriptError)
 from canonical.librarian.utils import copy_and_close
-
 
 
 class CannotCopy(Exception):
@@ -131,6 +131,7 @@ def check_archive_conflicts(source, archive, include_binaries):
         for pub_binary in candidate.getPublishedBinaries():
             published_binaries.add(pub_binary.binarypackagerelease)
 
+
     # We rely on previous check that ensure copies including binaries
     # can only be performed in packages with quiesced builds.
     if not include_binaries:
@@ -143,23 +144,35 @@ def check_archive_conflicts(source, archive, include_binaries):
                 raise CannotCopy(
                     "same version already building in the "
                     "destination archive")
+        return
 
-    # The copy includes binaries, but if no binaries are published
-    # in the archive, then the copy is allowed because there is no chance
-    # of conflict.
-    #
-    # Since DEB files are compressed with 'ar' (encoding the creation
-    # timestamp) and serially built by our infrastructure, it's correct
-    # to assume that the set of BinaryPackageReleases being copied can
-    # only be a superset of the set of BinaryPackageReleases published
-    # in the destination archive.
+    # The copy includes binaries.
+
     if len(published_binaries) > 0 :
+        # Since DEB files are compressed with 'ar' (encoding the creation
+        # timestamp) and serially built by our infrastructure, it's correct
+        # to assume that the set of BinaryPackageReleases being copied can
+        # only be a superset of the set of BinaryPackageReleases published
+        # in the destination archive.
         copied_binaries = set(
-            pub.binarypackagerelease
-            for pub in source.getBuiltBinaries())
+            pub.binarypackagerelease for pub in source.getBuiltBinaries())
         if not copied_binaries.issuperset(published_binaries):
             raise CannotCopy(
                 "binaries conflicting with the existing ones")
+    else:
+        # If no binaries are published in the archive, but there is
+        # at least one FULLYBUILT build record, it means that the binaries
+        # were built but will be only published in the next publishing cycle.
+        # The copy should be denied and the user should wait for the next
+        # publishing cycle to happen before copying the package.
+        # The copy is only allowed when the binaries are published, or if not
+        # published there must be no FULLYBUILT builds. This way there is no
+        # chance of a conflict.
+        for build in source.getBuilds():
+            if build.buildstate == BuildStatus.FULLYBUILT:
+                raise CannotCopy(
+                    "source has unpublished binaries, please wait for them "
+                    "to be published before copying")
 
 
 def check_copy(source, archive, series, pocket, include_binaries):
