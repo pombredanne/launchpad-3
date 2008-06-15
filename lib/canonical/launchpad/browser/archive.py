@@ -252,24 +252,35 @@ def check_archive_conflicts(source, archive, include_binaries):
                 raise CannotCopy(
                     "same version already building in the "
                     "destination archive")
+        return
 
-    # The copy includes binaries, but if no binaries are published
-    # in the archive, then the copy is allowed because there is no chance
-    # of conflict.
-    #
-    # Since DEB files are compressed with 'ar' (encoding the creation
-    # timestamp) and serially built by our infrastructure, it's correct
-    # to assume that the set of BinaryPackageReleases being copied can
-    # only be a superset of the set of BinaryPackageReleases published
-    # in the destination archive.
+    # The copy includes binaries.
+
     if len(published_binaries) > 0 :
+        # Since DEB files are compressed with 'ar' (encoding the creation
+        # timestamp) and serially built by our infrastructure, it's correct
+        # to assume that the set of BinaryPackageReleases being copied can
+        # only be a superset of the set of BinaryPackageReleases published
+        # in the destination archive.
         copied_binaries = set(
-            pub.binarypackagerelease
-            for pub in source.getBuiltBinaries())
+            pub.binarypackagerelease for pub in source.getBuiltBinaries())
         if not copied_binaries.issuperset(published_binaries):
             raise CannotCopy(
                 "binaries conflicting with the existing ones")
-
+    else:
+        # If no binaries are published in the archive, but there is
+        # at least one FULLYBUILT build record, it means that the binaries
+        # were built but will be only published in the next publishing cycle.
+        # The copy should be denied and the user should wait for the next
+        # publishing cycle to happen before copying the package.
+        # The copy is only allowed when the binaries are published, or if not
+        # published there must be no FULLYBUILT builds. This way there is no
+        # chance of a conflict.
+        for build in source.getBuilds():
+            if build.buildstate == BuildStatus.FULLYBUILT:
+                raise CannotCopy(
+                    "source has unpublished binaries, please wait for them "
+                    "to be published before copying")
 
 def check_copy(source, archive, series, pocket, include_binaries):
     """Check if the source can be copied to the given location.
@@ -1097,10 +1108,11 @@ class ArchiveActivateView(LaunchpadFormView):
     @action(_("Activate"), name="activate")
     def action_save(self, action, data):
         """Activate PPA and moves to its page."""
-        ppa = getUtility(IArchiveSet).ensure(
-            owner=self.context, purpose=ArchivePurpose.PPA,
-            description=data['description'], distribution=None)
-        self.next_url = canonical_url(ppa)
+        if self.context.archive is None:
+            getUtility(IArchiveSet).new(
+                owner=self.context, purpose=ArchivePurpose.PPA,
+                description=data['description'], distribution=None)
+        self.next_url = canonical_url(self.context.archive)
 
     @action(_("Cancel"), name="cancel", validator='validate_cancel')
     def action_cancel(self, action, data):
