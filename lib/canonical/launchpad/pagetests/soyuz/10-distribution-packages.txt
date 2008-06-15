@@ -77,7 +77,7 @@ The search page will also present commercial packages:
     >>> field.value = 'commercialpackage'
     >>> browser.getControl("Search").click()
     >>> extract_text(find_main_content(browser.contents))
-    u'...Source Package "commercialpackage"...'
+    u'...commercialpackage...source package...'
 
 Now try searching for text that we know to be in a change log entry, to
 prove that FTI works on change logs.  The text we're looking for is
@@ -101,9 +101,9 @@ text is not mentioned in anything else that is indexed.
     >>> texts = [extract_text(html) for html in results]
     >>> texts.sort()
     >>> for text in texts:
-    ...    print text
-    Source Package "libstdc++" in The Test Distribution
-    Source Package "pmount" in The Test Distribution
+    ...    print text.encode('ascii', 'backslashreplace')
+    \...libstdc++... source package in Test Distro
+    \...pmount... source package in Test Distro
 
 
 == Distribution package change summary ==
