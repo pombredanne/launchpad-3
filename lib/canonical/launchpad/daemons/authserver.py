@@ -59,7 +59,7 @@ class AuthserverService(service.Service):
         else:
             dbhost = 'host=' + config.database.dbhost
         dbpool = ConnectionPool(
-            'psycopg', 'dbname=%s %s user=%s' % (
+            'psycopg2', 'dbname=%s %s user=%s' % (
                 config.database.dbname, dbhost, config.authserver.dbuser),
             cp_reconnect=True)
         return dbpool

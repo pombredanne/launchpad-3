@@ -39,7 +39,7 @@ so that the application can proceed.
 
     >>> login('salgado@ubuntu.com')
     >>> getUtility(IOAuthConsumerSet).getByKey('joe-feed-reader')
-    <OAuthConsumer...
+    <...OAuthConsumer...
     >>> logout()
 
 If the consumer key is empty, we respond with a 401 status.

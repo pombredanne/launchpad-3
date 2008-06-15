@@ -24,6 +24,7 @@ import itertools
 import random
 import re
 
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -39,7 +40,7 @@ from canonical.config import config
 from canonical.uuid import generate_uuid
 
 from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, quote, quote_like, cursor)
+    block_implicit_flushes, SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -458,6 +459,10 @@ class ShippingRequestSet:
             recipientdisplayname=recipientdisplayname,
             organization=organization, phone=phone)
 
+        # The normalized_address field is maitained by a trigger, so
+        # the object needed to be refetched after creation.
+        Store.of(request).flush()
+        Store.of(request).invalidate()
         return request
 
     def getTotalsForRequests(self, requests):
@@ -552,6 +557,8 @@ class ShippingRequestSet:
             queries.append("ShippingRequest.status = %s" % sqlvalues(status))
 
         query = " AND ".join(queries)
+        if query == '':
+            query = None
         return ShippingRequest.select(
             query, orderBy=orderBy, prejoins=["recipient"])
 
@@ -584,6 +591,7 @@ class ShippingRequestSet:
             shippingrun.exportToCSVFile(filename)
             ztm.commit()
 
+    @block_implicit_flushes
     def _create_shipping_run(self, request_ids):
         """Create and return a ShippingRun containing all requests whose ids
         are in request_ids.
@@ -1426,9 +1434,14 @@ class ShipmentSet:
     def new(self, request, shippingservice, shippingrun, trackingcode=None,
             dateshipped=None):
         """See IShipmentSet"""
+        # Flushing the database at this point leads to problems with
+        # the database constraints.
+        store = Store.of(shippingrun)
+        store.block_implicit_flushes()
         token = self._generateToken()
         while self.getByToken(token):
             token = self._generateToken()
+        store.unblock_implicit_flushes()
 
         shipment = Shipment(
             shippingservice=shippingservice, shippingrun=shippingrun,
