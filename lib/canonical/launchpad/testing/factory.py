@@ -29,7 +29,6 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel,
     CreateBugParams,
     EmailAddressStatus,
-    IBranchMergeQueueSet,
     IBranchSet,
     IBugSet,
     ICodeImportJobWorkflow,
@@ -57,6 +56,8 @@ from canonical.launchpad.interfaces import (
     TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
