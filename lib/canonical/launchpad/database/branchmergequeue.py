@@ -75,9 +75,7 @@ class MultiBranchMergeQueue(SQLBase, BaseBranchMergeQueue):
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
-    # XXX: Tim Penhey 2008-06-14
-    # Need to rename the database column
-    branches = SQLMultipleJoin('Branch', joinColumn='merge_robot')
+    branches = SQLMultipleJoin('Branch', joinColumn='merge_queue')
 
 
 class BranchMergeQueueSet:
