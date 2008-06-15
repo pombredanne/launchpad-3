@@ -34,10 +34,14 @@ class BaseBranchMergeQueue:
     def items(self):
         """The qeueued merge proposals for the managed branches."""
         # XXX: stormify this
+        branch_ids = [branch.id for branch in self.branches]
+        # If there are no associated branches, there is no queue.
+        if len(branch_ids) == 0:
+            return None
         return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.target_branch in %s AND
             BranchMergeProposal.queue_status = %s
-            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
+            """ % sqlvalues(branch_ids, BranchMergeProposalStatus.QUEUED),
             orderBy="queue_position")
 
 
@@ -73,8 +77,7 @@ class MultiBranchMergeQueue(SQLBase, BaseBranchMergeQueue):
 
     # XXX: Tim Penhey 2008-06-14
     # Need to rename the database column
-    branches = SQLMultipleJoin(
-        'Branch', joinColumn='merge_robot')
+    branches = SQLMultipleJoin('Branch', joinColumn='merge_robot')
 
 
 class BranchMergeQueueSet:

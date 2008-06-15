@@ -521,6 +521,9 @@ class IBranch(IHasOwner):
             merge request.
         """
 
+    merge_queue = Attribute(
+        "The queue that contains the QUEUED proposals for this branch.")
+
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 

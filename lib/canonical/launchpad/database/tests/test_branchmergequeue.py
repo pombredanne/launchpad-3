@@ -9,16 +9,23 @@ from unittest import TestLoader
 
 from zope.security.proxy import isinstance
 
+from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.database.branchmergequeue import (
     BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
 from canonical.launchpad.interfaces.branchmergequeue import (
     IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus)
 from canonical.launchpad.webapp.testing import verifyObject
+
+from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestBranchMergeQueueInterfaces(TestCaseWithFactory):
     """Make sure that the interfaces are verifiable."""
+
+    layer = LaunchpadFunctionalLayer
 
     def test_branch_merge_queue_set(self):
         # A BranchMergeQueueSet implements IBranchMergeQueueSet
@@ -34,17 +41,24 @@ class TestBranchMergeQueueInterfaces(TestCaseWithFactory):
 
     def test_multi_branch_merge_queue(self):
         # A MultiBranchMergeQueue implements IMultiBranchMergeQueue
-        self.assertTrue(verifyObject(
-                IMultiBranchMergeQueue,
-                MultiBranchMergeQueue(
+        queue = MultiBranchMergeQueue(
                     registrant=self.factory.makePerson(),
                     owner=self.factory.makePerson(),
                     name=self.factory.getUniqueString(),
-                    summary=self.factory.getUniqueString())))
+                    summary=self.factory.getUniqueString())
+        branch = self.factory.makeBranch()
+        # Login the branch owner to allow launchpad.Edit on merge_queue.
+        login(branch.owner.preferredemail.email)
+        branch.merge_queue = queue
+        # If there is no associated branch, the MultipleJoin causes the
+        # verifyObject to fail.
+        self.assertTrue(verifyObject(IMultiBranchMergeQueue, queue))
 
 
 class TestBranchMergeQueueSet(TestCaseWithFactory):
     """Test the BranchMergeQueueSet."""
+
+    layer = LaunchpadFunctionalLayer
 
     def test_get_for_branch_with_simple_branch(self):
         # If the branch does not have a merge_queue set then a
@@ -58,7 +72,9 @@ class TestBranchMergeQueueSet(TestCaseWithFactory):
         # queue is returned.
         new_queue = self.factory.makeBranchMergeQueue()
         branch = self.factory.makeBranch()
-        branch.merge_queue = queue
+        # Login the branch owner to allow launchpad.Edit on merge_queue.
+        login(branch.owner.preferredemail.email)
+        branch.merge_queue = new_queue
         queue = BranchMergeQueueSet.getForBranch(branch)
         self.assertEqual(new_queue, queue)
 
@@ -85,8 +101,10 @@ class TestBranchMergeQueueSet(TestCaseWithFactory):
         self.assertEqual(queue, get_result)
 
 
-def TestSingleBranchMergeQueue(TestCaseWithFactory):
+class TestSingleBranchMergeQueue(TestCaseWithFactory):
     """Test the implementation of the interface methods."""
+
+    layer = LaunchpadFunctionalLayer
 
     def test_queue_branches(self):
         # A SingleBranchMergeQueue has one and only one branch, and that is
@@ -101,6 +119,9 @@ def TestSingleBranchMergeQueue(TestCaseWithFactory):
         # The items of the queue are those merge proposals that are targetted
         # at the branch of the queue, and are in a queued state.
         branch = self.factory.makeBranch()
+        # Login the branch owner to make the proposals.  ANONYMOUS is not
+        # good enough as the date_last_modified needs launchpad.AnyPerson.
+        login(branch.owner.preferredemail.email)
         queue = SingleBranchMergeQueue(branch)
         first_item = self.factory.makeBranchMergeProposal(
             target_branch=branch, set_state=BranchMergeProposalStatus.QUEUED)
@@ -115,12 +136,16 @@ def TestSingleBranchMergeQueue(TestCaseWithFactory):
         self.assertEqual([first_item, second_item], items)
 
 
-def TestMultiBranchMergeQueue(TestCaseWithFactory):
+class TestMultiBranchMergeQueue(TestCaseWithFactory):
     """Test the implementation of the interface methods."""
+
+    layer = LaunchpadFunctionalLayer
 
     def _make_branch_and_associate_with_queue(self, queue):
         # Small helper to make a branch and set the merge queue.
         branch = self.factory.makeBranch()
+        # Login the branch owner to allow launchpad.Edit on merge_queue.
+        login(branch.owner.preferredemail.email)
         branch.merge_queue = queue
         return branch
 
@@ -140,8 +165,12 @@ def TestMultiBranchMergeQueue(TestCaseWithFactory):
         queue = self.factory.makeBranchMergeQueue()
         branch1 = self._make_branch_and_associate_with_queue(queue)
         branch2 = self._make_branch_and_associate_with_queue(queue)
+        # Login the branch owner to make the proposals.  ANONYMOUS is not
+        # good enough as the date_last_modified needs launchpad.AnyPerson.
+        login(branch1.owner.preferredemail.email)
         first_item = self.factory.makeBranchMergeProposal(
             target_branch=branch1, set_state=BranchMergeProposalStatus.QUEUED)
+        login(branch2.owner.preferredemail.email)
         second_item = self.factory.makeBranchMergeProposal(
             target_branch=branch2, set_state=BranchMergeProposalStatus.QUEUED)
         non_queued_item = self.factory.makeBranchMergeProposal(

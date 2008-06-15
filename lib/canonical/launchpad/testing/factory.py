@@ -270,7 +270,7 @@ class LaunchpadObjectFactory:
     def makeBranchMergeQueue(self, name=None):
         """Create a new multi branch merge queue."""
         if name is None:
-            name = self.makeUniqueString('name')
+            name = self.getUniqueString('name')
         return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
             registrant=self.makePerson(),
             owner=self.makePerson(),
