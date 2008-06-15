@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     CodeReviewNotificationLevel,
     CreateBugParams,
     EmailAddressStatus,
+    IBranchMergeQueueSet,
     IBranchSet,
     IBugSet,
     ICodeImportJobWorkflow,
@@ -264,6 +265,16 @@ class LaunchpadObjectFactory:
         return getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+
+    def makeBranchMergeQueue(self, name=None):
+        """Create a new multi branch merge queue."""
+        if name is None:
+            name = self.makeUniqueString('name')
+        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
+            registrant=self.makePerson(),
+            owner=self.makePerson(),
+            name=name,
+            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):
