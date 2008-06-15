@@ -26,7 +26,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewcomment import CodeReviewComment
-from canonical.launchpad.database.codereviewvote import CodeReviewVote
+from canonical.launchpad.database.codereviewvote import (
+    CodeReviewVoteReference)
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -163,7 +164,7 @@ class BranchMergeProposal(SQLBase):
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
     votes = SQLMultipleJoin(
-        'CodeReviewVote', joinColumn='branch_merge_proposal')
+        'CodeReviewVoteReference', joinColumn='branch_merge_proposal')
 
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
@@ -365,11 +366,15 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         return proposal
 
-    def nominateReviewer(self, reviewer, registrant):
+    def nominateReviewer(self, reviewer, registrant, review_type=None,
+                         _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
-        return CodeReviewVote(branch_merge_proposal=self,
-                              registrant=registrant,
-                              reviewer=reviewer)
+        return CodeReviewVoteReference(
+            branch_merge_proposal=self,
+            registrant=registrant,
+            reviewer=reviewer,
+            review_type=review_type,
+            date_created=_date_created)
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
@@ -414,6 +419,20 @@ class BranchMergeProposal(SQLBase):
             branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=vote_tag)
         notify(SQLObjectCreatedEvent(code_review_message))
+        # Get the appropriate CodeReviewVoteReference for the reviewer.
+        # If there isn't one, then create one, otherwise set the comment
+        # reference.
+        if vote is not None:
+            vote_reference = CodeReviewVoteReference.selectOneBy(
+                branch_merge_proposal=self, reviewer=message.owner)
+            if vote_reference is None:
+                CodeReviewVoteReference(
+                    branch_merge_proposal=self,
+                    registrant=message.owner,
+                    reviewer=message.owner,
+                    comment=code_review_message)
+            else:
+                vote_reference.comment = code_review_message
         return code_review_message
 
 
