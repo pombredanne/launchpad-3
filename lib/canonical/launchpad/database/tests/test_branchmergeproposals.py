@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
     IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.testing import (
      LaunchpadObjectFactory, TestCaseWithFactory, time_counter)
 
@@ -490,6 +491,100 @@ class TestBranchMergeProposalGetter(TestCaseWithFactory):
         utility = getUtility(IBranchMergeProposalGetter)
         retrieved = utility.get(merge_proposal.id)
         self.assertEqual(merge_proposal, retrieved)
+
+
+class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
+    """Test that the appropriate vote references get created."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def test_no_initial_votes(self):
+        """A new merge proposal has no votes."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        self.assertEqual([], list(merge_proposal.votes))
+
+    def test_nominate_creates_reference(self):
+        """A new vote reference is created when a reviewer is nominated."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='General')
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(merge_proposal.source_branch.owner,
+                         vote_reference.registrant)
+        self.assertEqual('General', vote_reference.review_type)
+
+    def test_comment_with_vote_creates_reference(self):
+        """A comment with a vote creates a vote reference."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(reviewer, vote_reference.registrant)
+        self.assertTrue(vote_reference.review_type is None)
+        self.assertEqual(comment, vote_reference.comment)
+
+    def test_comment_without_a_vote_does_not_create_reference(self):
+        """A comment with a vote creates a vote reference."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content')
+        self.assertEqual([], list(merge_proposal.votes))
+
+    def test_second_vote_by_person_just_alters_reference(self):
+        """A second vote changes the comment reference only."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        comment1 = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.DISAPPROVE)
+        comment2 = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(reviewer, vote_reference.registrant)
+        self.assertTrue(vote_reference.review_type is None)
+        self.assertEqual(comment2, vote_reference.comment)
+
+    def test_vote_by_nominated_reuses_reference(self):
+        """A comment with a vote for a nominated reviewer alters reference."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login(merge_proposal.source_branch.owner.preferredemail.email)
+        reviewer = self.factory.makePerson()
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='General')
+        comment = merge_proposal.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(merge_proposal.source_branch.owner,
+                         vote_reference.registrant)
+        self.assertEqual('General', vote_reference.review_type)
+        self.assertEqual(comment, vote_reference.comment)
 
 
 def test_suite():

@@ -348,7 +348,7 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def nominateReviewer(reviewer, registrant):
+    def nominateReviewer(reviewer, registrant, review_type=None):
         """Create a vote for the specified person."""
 
     def createComment(owner, subject, content=None, vote=None, vote_tag=None,
