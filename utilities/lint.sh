@@ -111,7 +111,7 @@ if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo ""
     echo "$current_sql"
 fi
-if [ -n "%sql_diff" ]; then
+if [ -n "$sql_diff" ]; then
     echo "    $newsampledata_sql differs; it should be reconciled."
 else
     rm $newsampledata_sql
