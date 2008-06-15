@@ -259,5 +259,5 @@ The only entry that shows up now is the one Carlos just uploaded.
     ...     user_browser.contents, 'import-entries-list')
     >>> first_entry = import_list.findNext('tr')
     >>> print extract_text(first_entry).encode('ascii', 'backslashreplace')
-    foo.pot in ...evolution... source package in Ubuntu Hoary
+    foo.pot in evolution in Ubuntu Hoary
     Needs Review
