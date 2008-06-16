@@ -6,4 +6,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE HWVendorName DROP CONSTRAINT hwvendorname_name_key;
 CREATE UNIQUE INDEX hwvendorname__lc_vendor_name__idx ON HWVendorName(ulower(name));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 61, 0);
