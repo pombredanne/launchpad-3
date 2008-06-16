@@ -147,7 +147,7 @@ run_all_quickly_and_quietly: stop_quickly_and_quietly
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
-		 -C $(CONFFILE) > /home/pqm/${LPCONFIG}-quiet.log 2>&1
+		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
 	# Mirror the hosted branches in the development upload area to the
@@ -188,7 +188,7 @@ stop: build
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 stop_quickly_and_quietly:
-	LPCONFIG=${LPCONFIG} ${PYTHON} \
+	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	  utilities/killservice.py librarian buildsequencer launchpad mailman \
 	  > /dev/null 2>&1
 
