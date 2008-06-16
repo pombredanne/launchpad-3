@@ -1,0 +1,144 @@
+= Locations for People and Teams =
+
+The PersonLocation object stores information about the location and time
+zone of a person.  It also remembers who provided that information, and
+when. This is designed to make it possible to have people provide
+location / time zone info for other people in a wiki style.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILocationRecord, IObjectWithLocation, IPersonSet)
+    >>> personset = getUtility(IPersonSet)
+
+A Person implements the IObjectWithLocation interface.
+
+    >>> login('test@canonical.com')
+    >>> marilize = personset.getByName('marilize')
+    >>> verifyObject(IObjectWithLocation, marilize)
+    True
+
+A Person has a PersonLocation record, if there is any location
+information associated with them. That implements the ILocationRecord
+interface.
+
+    >>> marilize.location
+    <PersonLocation...
+    >>> verifyObject(ILocationRecord, marilize.location)
+    True
+
+In some cases, a person has a time zone, but no location.
+
+    >>> print marilize.time_zone
+    Africa/Maseru
+    >>> print marilize.latitude
+    None
+
+The location for a person is set with the "setLocation" method. This
+requires that the user providing the information is passed as a
+parameter.
+
+We'll use jdub as a prolific source of location information for
+community members.
+
+    >>> jdub = personset.getByName('jdub')
+    >>> login(jdub.preferredemail.email)
+
+First, jdub will provide information about cprov, who doesn't have any
+location data in the sampledata.
+
+    >>> cprov = personset.getByName('cprov')
+    >>> print cprov.latitude
+    None
+    >>> print cprov.time_zone
+    None
+    >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
+    >>> print cprov.time_zone
+    America/Sao_Paulo
+
+When a person's location is changed by somebody else, we notify the
+person through email.
+
+    >>> from canonical.launchpad.database import PersonNotification
+    >>> notification = PersonNotification.selectOneBy(person=cprov)
+    >>> print notification.subject
+    Jeff Waugh updated your location and time zone
+
+    # Delete the notification so that it doesn't interfere in other tests.
+    >>> notification.destroySelf()
+
+And once cprov provides data for himself, jdub won't be able to edit it
+any more.
+
+    >>> login(cprov.preferredemail.email)
+    >>> cprov.setLocation(-43.2, -61.93, 'America/Sao_Paulo', cprov)
+
+    >>> login(jdub.preferredemail.email)
+    >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+When a user changes his own location, no notification is sent, though.
+
+    >>> PersonNotification.selectBy(person=cprov).count()
+    0
+
+But cprov can obviously still edit his own information. We need to deal
+with some floating point precision issues here, hence the rounding.
+
+    >>> login(cprov.preferredemail.email)
+    >>> cprov.setLocation(-43.52, -61.93, 'America/Sao_Paulo', cprov)
+    >>> abs(cprov.latitude + 43.52) < 0.001
+    True
+
+And admins can, too.
+
+    >>> admin = personset.getByName('name16')
+    >>> login(admin.preferredemail.email)
+    >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', admin)
+    >>> abs(cprov.longitude + 62.1) < 0.001
+    True
+
+We cannot store a location for a team, though.
+
+    >>> guadamen = personset.getByName('guadamen')
+    >>> guadamen.setLocation(34.5, 23.1, 'Africa/Maseru', jdub)
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+
+We can get lists of the participants in a team that do, or do not, have
+locations. Specifically, we mean latitude/longitude data, not time zone
+data.
+
+When we get mapped participants, and unmapped participants, we only mean
+the individuals, not other teams. We'll show that guadamen has a
+sub-team, ubuntu-team, and that it still does not appear in either
+mapped_participants or unmapped_participants (although its members do).
+
+    >>> for member in guadamen.activemembers:
+    ...     if member.teamowner is not None:
+    ...         print member.name
+    ubuntu-team
+    >>> len(guadamen.mapped_participants)
+    1
+    >>> for mapped in guadamen.mapped_participants:
+    ...     if mapped.teamowner is not None:
+    ...         print mapped.name
+    >>> guadamen.unmapped_participants.count()
+    2
+    >>> for unmapped in guadamen.unmapped_participants:
+    ...     if unmapped.teamowner is not None:
+    ...         print unmapped.name
+
+When we iterate over the mapped_participants in a team, their locations
+have been pre-cached so that we don't hit the database everytime we
+access a person's .location property.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> for mapped in guadamen.mapped_participants:
+    ...     mapped = removeSecurityProxy(mapped)
+    ...     if not verifyObject(ILocationRecord, mapped._location):
+    ...         print 'No cached location on %s' % mapped.name
