@@ -474,3 +474,8 @@ Check redirects of Unicode URLs works
 
 >>> check_not_found("/ubuntu/foo%C3%A9")
 
+
+Icing resources.
+
+>>> from canonical.launchpad.versioninfo import revno
+>>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
