@@ -112,12 +112,14 @@ if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
     echo "$current_sql"
 fi
 if [ -n "$sql_diff" ]; then
-    echo "    $newsampledata_sql differs; it should be reconciled."
+    echo "    Current sampledata is out of date; run 'make newsampledata'."
 else
     rm $newsampledata_sql
 fi
 if [ -n "$karma_bombs" ]; then
     echo "    Karma time bombs were added to sampledata."
+    echo "        The Karma table has dates after 2002-01-01; either revise"
+    echo "        them or remove rows if they are unneeded."
 fi
 
 
