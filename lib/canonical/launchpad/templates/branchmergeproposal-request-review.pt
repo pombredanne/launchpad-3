@@ -42,8 +42,8 @@
       </p>
       <div style="clear: both"></div>
     </div>
-
   </div>
+  <tal:votes replace="structure context/@@+votes"/>
 
 </div>
 
