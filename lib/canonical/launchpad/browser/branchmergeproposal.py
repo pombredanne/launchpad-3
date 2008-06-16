@@ -143,10 +143,11 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Request review'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.NEEDS_REVIEW)
-        enabled = (enabled or self.context.queue_status ==
-            BranchMergeProposalStatus.NEEDS_REVIEW)
-        if (self.context.votes) > 0:
-            text = 'Request another review'
+        if (self.context.queue_status ==
+            BranchMergeProposalStatus.NEEDS_REVIEW):
+            enabled = True
+            if (self.context.votes) > 0:
+                text = 'Request another review'
         return Link('+request-review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -421,6 +422,11 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     @property
     def adapters(self):
         return {IReviewRequest: self.context}
+
+    @property
+    def is_needs_review(self):
+        return (self.context.queue_status ==
+            BranchMergeProposalStatus.NEEDS_REVIEW)
 
     @property
     def next_url(self):
