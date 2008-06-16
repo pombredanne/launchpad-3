@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
@@ -45,6 +46,10 @@ class BadStateTransition(Exception):
 
 class WrongBranchMergeProposal(Exception):
     """The comment requested is not associated with this merge proposal."""
+
+
+class BadBranchMergeProposalSearchContext(Exception):
+    """The context is not valid for a branch merge proposal search."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -348,7 +353,7 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def nominateReviewer(reviewer, registrant):
+    def nominateReviewer(reviewer, registrant, review_type=None):
         """Create a vote for the specified person."""
 
     def createComment(owner, subject, content=None, vote=None, vote_tag=None,
@@ -383,3 +388,20 @@ class IBranchMergeProposalGetter(Interface):
 
     def get(id):
         """Return the BranchMergeProposal with specified id."""
+
+    def getProposalsForContext(context, status=None, visible_by_user=None):
+        """Return BranchMergeProposals associated with the context.
+
+        :param context: Either a 'Person' or 'Product'.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        :param visible_by_user: If a person is not supplied, only merge
+            proposals based on public branches are returned.  If a person is
+            supplied, merge proposals based on both public branches, and the
+            private branches that the person is entitled to see are returned.
+            Private branches are only visible to the owner and subscribers of
+            the branch, and to LP admins.
+        :raises BadBranchMergeProposalSearchContext: If the context is not
+            understood.
+        """

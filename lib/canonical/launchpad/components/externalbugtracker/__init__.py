@@ -15,6 +15,7 @@ __all__ = [
     'DebBugsDatabaseNotFound',
     'ExternalBugTracker',
     'InvalidBugId',
+    'LookupTree',
     'Mantis',
     'MantisLoginHandler',
     'PrivateRemoteBug',
