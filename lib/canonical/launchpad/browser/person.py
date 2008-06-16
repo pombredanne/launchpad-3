@@ -40,6 +40,7 @@ __all__ = [
     'PersonOAuthTokensView',
     'PersonOverviewMenu',
     'PersonOwnedBranchesView',
+    'PersonPackagesView',
     'PersonRdfView',
     'PersonRdfContentsView',
     'PersonRegisteredBranchesView',
@@ -132,6 +133,10 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.questioncollection import IQuestionSet
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
 
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
@@ -161,7 +166,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -837,8 +842,9 @@ class PersonTranslationsMenu(ApplicationMenu):
         return Link('+imports', text)
 
     def relicensing(self):
-        text = 'Relicense translations'
-        return Link('+relicensing', text, enabled=False)
+        text = 'Translations licensing'
+        enabled = (self.context == self.user)
+        return Link('+licensing', text, enabled=enabled)
 
 
 class TeamSpecsMenu(PersonSpecsMenu):
@@ -1014,6 +1020,101 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+
+class IPersonEditMenu(Interface):
+    """A marker interface for the 'Edit Profile' navigation menu."""
+
+
+class IPersonRelatedSoftwareMenu(Interface):
+    """A marker interface for the 'Related Software' navigation menu."""
+
+
+class PersonOverviewNavigationMenu(NavigationMenu):
+    """The top-level menu of actions a Person may take."""
+
+    usedfor = IPerson
+    facet = 'overview'
+    title = 'Profile'
+    links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def profile(self):
+        target = '+index'
+        text = 'Profile'
+        return Link(target, text, menu=IPersonEditMenu)
+
+    def related_software(self):
+        target = '+projects'
+        text = 'Related Software'
+        return Link(target, text, menu=IPersonRelatedSoftwareMenu)
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        return Link(target, text)
+
+    def show_ppa(self):
+        target = '+archive'
+        text = 'Personal Package Archive'
+        return Link(target, text)
+
+
+class PersonEditNavigationMenu(NavigationMenu):
+    """A sub-menu for different aspects of editing a Person's profile."""
+
+    usedfor = IPersonEditMenu
+    facet = 'overview'
+    title = 'Personal'
+    links = ('personal', 'contact_details', 'email_settings',
+             'sshkeys', 'gpgkeys', 'passwords')
+
+    def personal(self):
+        target = '+edit'
+        text = 'Personal'
+        return Link(target, text)
+
+    def contact_details(self):
+        target = '+editcontactdetails'
+        text = 'Contact Details'
+        return Link(target, text)
+
+    def email_settings(self):
+        target = '+editemails'
+        text = 'E-mail Settings'
+        return Link(target, text)
+
+    def sshkeys(self):
+        target = '+editsshkeys'
+        text = 'SSH Keys'
+        return Link(target, text)
+
+    def gpgkeys(self):
+        target = '+editpgpkeys'
+        text = 'GPG Keys'
+        return Link(target, text)
+
+    def passwords(self):
+        target = '+changepassword'
+        text = 'Passwords'
+        return Link(target, text)
+
+
+class PersonRelatedSoftwareNavigationMenu(NavigationMenu):
+
+    usedfor = IPersonRelatedSoftwareMenu
+    facet = 'overview'
+    title = 'Related Software'
+    links = ('participation', 'assigned_packages')
+
+    def participation(self):
+        target = '+projects'
+        text = 'Participation'
+        return Link(target, text)
+
+    def assigned_packages(self):
+        target = '+packages'
+        text = 'Assigned Packages'
+        return Link(target, text)
 
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
@@ -1655,8 +1756,9 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def package_bug_counts(self):
         """Return a list of dicts used for rendering package bug counts."""
         L = []
-        for package_counts in self.context.getBugSubscriberOpenBugCounts(
-            self.user):
+        package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
+            self.user, self.context.getBugSubscriberPackages())
+        for package_counts in package_counts:
             package = package_counts['package']
             L.append({
                 'package_name': package.displayname,
@@ -2276,33 +2378,6 @@ class PersonView(LaunchpadView, FeedsMixin):
             return None
         return mailing_list.archive_url
 
-    def getLatestUploadedPPAPackages(self):
-        """Return the sourcepackagereleases uploaded to PPAs by this person.
-
-        Results are filtered according to the permission of the requesting
-        user to see private archives.
-        """
-        packages = self.context.getLatestUploadedPPAPackages()
-
-        # For each package we find out which archives it was published in.
-        # If the user has permission to see any of those archives then
-        # the user is permitted to see the package.
-        #
-        # Ideally this check should be done in
-        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
-        # query is virtually impossible!
-        results = []
-        for package in packages:
-            # Make a shallow copy to remove the Zope security.
-            archives = set(package.published_archives)
-            # Ensure the SPR.upload_archive is also considered.
-            archives.add(package.upload_archive)
-            for archive in archives:
-                if check_permission('launchpad.View', archive):
-                    results.append(package)
-                    break
-        return results
-
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
@@ -2346,6 +2421,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
 
 class PersonRelatedProjectsView(LaunchpadView):
+
+    implements(IPersonRelatedSoftwareMenu)
 
     # Safety net for the Registry Admins case which is the owner/driver of
     # lots of projects.
@@ -2572,6 +2649,8 @@ class PersonEditJabberIDsView(LaunchpadView):
 
 class PersonEditSSHKeysView(LaunchpadView):
 
+    implements(IPersonEditMenu)
+
     info_message = None
     error_message = None
 
@@ -2694,7 +2773,7 @@ class PersonTranslationView(LaunchpadView):
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
-    label = "Relicense your translations?"
+    label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreement
     field_names = ['allow_relicensing']
 
@@ -2705,6 +2784,11 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if default is None:
             default = True
         return { "allow_relicensing" : default }
+
+    @property
+    def relicensing_url(self):
+        """Return an URL for this view."""
+        return canonical_url(self.context, view_name='+licensing')
 
     @property
     def next_url(self):
@@ -2728,7 +2812,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if allow_relicensing:
             self.request.response.addInfoNotification(_(
                 "Your choice has been saved. "
-                "Thank you for deciding to relicense your translations."))
+                "Thank you for deciding to license your translations under "
+                "BSD license."))
         else:
             self.request.response.addInfoNotification(_(
                 "Your choice has been saved. "
@@ -2743,6 +2828,9 @@ class PersonGPGView(LaunchpadView):
     it. Also supports removing the token generated for validation (in
     the case you want to give up on importing the key).
     """
+
+    implements(IPersonEditMenu)
+
     key = None
     fingerprint = None
 
@@ -2919,6 +3007,8 @@ class PersonGPGView(LaunchpadView):
 
 class PersonChangePasswordView(LaunchpadFormView):
 
+    implements(IPersonEditMenu)
+
     label = "Change your password"
     schema = IPersonChangePassword
     field_names = ['currentpassword', 'password']
@@ -2962,6 +3052,8 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
+
+    implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
         'verbose_bugnotifications', 'timezone']
@@ -3195,6 +3287,8 @@ class PersonEditEmailsView(LaunchpadFormView):
     the system associated with their account, and remove associated
     emails.
     """
+
+    implements(IPersonEditMenu)
 
     schema = IEmailAddress
 
@@ -4014,6 +4108,84 @@ class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
         """See `BranchListingView`."""
         return BranchPersonSearchContext(
             self.context, BranchPersonSearchRestriction.OWNED)
+
+
+class SourcePackageReleaseWithStats:
+    """An ISourcePackageRelease, with extra stats added."""
+
+    implements(ISourcePackageRelease)
+    decorates(ISourcePackageRelease)
+
+    def __init__(self, sourcepackage_release, open_bugs, open_questions):
+        self.context = sourcepackage_release
+        self.open_bugs = open_bugs
+        self.open_questions = open_questions
+
+
+class PersonPackagesView(LaunchpadView):
+    """View for +packages."""
+
+    def getLatestUploadedPPAPackagesWithStats(self):
+        """Return the sourcepackagereleases uploaded to PPAs by this person.
+
+        Results are filtered according to the permission of the requesting
+        user to see private archives.
+        """
+        packages = self.context.getLatestUploadedPPAPackages()
+
+        # For each package we find out which archives it was published in.
+        # If the user has permission to see any of those archives then
+        # the user is permitted to see the package.
+        #
+        # Ideally this check should be done in
+        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
+        # query is virtually impossible!
+        results = []
+        for package in packages:
+            # Make a shallow copy to remove the Zope security.
+            archives = set(package.published_archives)
+            # Ensure the SPR.upload_archive is also considered.
+            archives.add(package.upload_archive)
+            for archive in archives:
+                if check_permission('launchpad.View', archive):
+                    results.append(package)
+                    break
+        return self._addStatsToPackages(results)
+
+    def getLatestMaintainedPackagesWithStats(self):
+        """Return the latest maintained packages, including stats."""
+        return self._addStatsToPackages(
+            self.context.getLatestMaintainedPackages())
+
+    def getLatestUploadedButNotMaintainedPackagesWithStats(self):
+        """Return the latest uploaded packages, including stats.
+
+        Don't include packages that are maintained by the user.
+        """
+        return self._addStatsToPackages(
+            self.context.getLatestUploadedButNotMaintainedPackages())
+
+    def _addStatsToPackages(self, package_releases):
+        """Add stats to the given package releases, and return them."""
+        distro_packages = [
+            package_release.distrosourcepackage
+            for package_release in package_releases]
+        package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
+            self.user, distro_packages)
+        open_bugs = {}
+        for bug_count in package_bug_counts:
+            distro_package = bug_count['package']
+            open_bugs[distro_package] = bug_count['open']
+
+        question_set = getUtility(IQuestionSet)
+        package_question_counts = question_set.getOpenQuestionCountByPackages(
+            distro_packages)
+
+        return [
+            SourcePackageReleaseWithStats(
+                package, open_bugs[package.distrosourcepackage],
+                package_question_counts[package.distrosourcepackage])
+            for package in package_releases]
 
 
 class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):

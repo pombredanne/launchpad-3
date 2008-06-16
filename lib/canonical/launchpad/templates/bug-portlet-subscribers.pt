@@ -51,5 +51,28 @@
       </ul>
 
     </div>
+
+    <div>
+
+      <br />
+      <b>Subscribe:</b><br />
+      <ul>
+        <li tal:define="link context/menu:context/subscription"
+            tal:condition="link/enabled"
+            tal:attributes="style python: 'list-style-image: url(/@@/' + link.icon + ')'">
+          <a tal:attributes="href link/url; title link/text">
+            Yourself
+          </a>
+        </li>
+        <li tal:define="link context/menu:context/addsubscriber"
+            tal:condition="link/enabled"
+            tal:attributes="style python: 'list-style-image: url(/@@/' + link.icon + ')'">
+          <a tal:attributes="href link/url; title link/text">
+            Someone else
+          </a>
+        </li>
+      </ul>
+
+    </div>
   </div>
 </div>

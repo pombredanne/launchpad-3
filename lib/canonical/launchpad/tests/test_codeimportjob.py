@@ -360,10 +360,17 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # Create a CodeImportResult that started a shorter time ago than the
         # effective update interval of the code import. This is the most
         # recent one and must supersede the older one.
+
+        # XXX 2008-06-09 jamesh:
+        # psycopg2 isn't correctly substituting intervals into the
+        # expression (it doesn't include the "INTERVAL" keyword).
+        # This causes problems for the "UTC_NOW - interval / 2"
+        # expression below.
         interval = code_import.effective_update_interval
+        from canonical.database.sqlbase import get_transaction_timestamp
         recent_result = CodeImportResult(
             code_import=code_import, machine=machine, status=FAILURE,
-            date_job_started=UTC_NOW - interval / 2)
+            date_job_started=get_transaction_timestamp() - interval / 2)
         # When we create the job, its date_due should be set to the date_due
         # of the job that was deleted when the CodeImport review status
         # changed from REVIEWED. That is the date_job_started of the most

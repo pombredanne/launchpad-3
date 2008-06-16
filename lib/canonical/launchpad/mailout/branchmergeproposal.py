@@ -133,6 +133,10 @@ class BMPMailer(BaseMailer):
         subscription = removeSecurityProxy(subscription)
         return subscription.getReason()
 
+    def _getReplyToAddress(self):
+        """Return the address to use for the reply-to header."""
+        return self.merge_proposal.address
+
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
         headers = BaseMailer._getHeaders(self, recipient)
