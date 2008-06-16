@@ -12,7 +12,7 @@ the same location. See the example:
 
 == IArchiveRebuildSet utility ==
 
-This utility implements methods for creating and lookup
+This utility implements methods for creating and looking up
 ArchiveRebuilds.
 
     >>> from canonical.launchpad.interfaces.archiverebuild import (
@@ -58,7 +58,8 @@ ID, i.e. newest first.
     hoary-gcc4.0-toolchain
     warty-gcc4.0-toolchain
 
-Archive.name collisions are detected in creation time and a error is raised.
+Archive.name collisions are detected during creation and an error is
+raised.
 
     >>> archiverebuild_set.new(
     ...     name='gcc4.0-toolchain', distroseries=hoary,

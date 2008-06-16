@@ -82,8 +82,8 @@ class ArchiveRebuildSet:
     def new(self, name, distroseries, registrant, reason):
         """See `IArchiveRebuildSet`."""
         # XXX cprov 20080612: implicitly prepending the distroseries
-        # name to the archive name is quite evil. However it allow
-        # us to publish rebuild archive for a given distribution
+        # name to the archive name is quite evil. However it allows
+        # us to publish rebuild archives for a given distribution
         # in a single disk location.
         archive_name = '%s-%s' % (distroseries.name, name)
         candidate = self.getByDistributionAndArchiveName(
