@@ -1105,6 +1105,9 @@ class BranchSet:
 
     @staticmethod
     def _getBranchVisibilitySubQuery(visible_by_user):
+        # Logged in people can see public branches (first part of the union),
+        # branches owned by teams they are in (second part),
+        # and all branches they are subscribed to (third part).
         return """
             SELECT Branch.id
             FROM Branch
@@ -1144,9 +1147,6 @@ class BranchSet:
         if visible_by_user is None:
             return '%sNOT Branch.private' % query
 
-        # Logged in people can see public branches (first part of the union),
-        # branches owned by teams they are in (second part),
-        # and all branches they are subscribed to (third part).
         clause = (
             '%sBranch.id IN (%s)'
             % (query, self._getBranchVisibilitySubQuery(visible_by_user)))

@@ -526,7 +526,6 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             target_branch=self.factory.makeBranch(product=product))
         if needs_review:
             bmp.requestReview()
-            syncUpdate(bmp)
         return bmp
 
     def _get_merge_proposals(self, context, status=None,
