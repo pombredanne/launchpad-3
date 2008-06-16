@@ -594,7 +594,8 @@ class BugWatchUpdater(object):
                     sys.exc_info())
                 continue
 
-            poster = self._getPersonForBugTracker(
+            bugtrackerperson_set = getUtility(IBugTrackerPersonSet)
+            poster = bugtrackerperson_set.ensurePersonForBugTracker(
                 bug_watch.bugtracker, displayname, email,
                 PersonCreationRationale.BUGIMPORT,
                 "when importing comments for %s." % bug_watch.title)
