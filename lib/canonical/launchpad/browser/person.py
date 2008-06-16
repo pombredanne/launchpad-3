@@ -1065,12 +1065,12 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    title = 'Personal'
+    title = 'Edit your profile'
     links = ('personal', 'contact_details', 'email_settings',
              'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
-        target = '+edit'
+        target = '+edit2.0'
         text = 'Personal'
         return Link(target, text)
 
@@ -3059,6 +3059,8 @@ class PersonEditView(BasePersonEditView):
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'timezone']
     custom_widget('timezone', SelectWidget, size=15)
+
+    implements(IPersonEditMenu)
 
     @property
     def cancel_url(self):
