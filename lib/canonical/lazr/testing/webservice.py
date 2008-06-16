@@ -17,7 +17,7 @@ from canonical.lazr.interfaces.rest import WebServiceLayer
 class FakeResponse(object):
     """Simple response wrapper object."""
     def __init__(self):
-        self.status = 200
+        self.status = 599
         self.headers = {}
 
     def setStatus(self, new_status):

@@ -939,6 +939,7 @@ The adapter's params property also contains the available parameters
     ...     def checkout(self, who, kind):
     ...         print "%s did a %s check out of '%s'." % (
     ...             who, kind, self.title)
+    ...         return None
 
     >>> write_method_adapter = write_method_adapter_factory(
     ...     BookOnSteroids(
