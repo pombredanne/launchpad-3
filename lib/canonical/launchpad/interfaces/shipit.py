@@ -247,6 +247,7 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
+    faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
     current_distroseries = ShipItDistroSeries.HARDY
     max_size_for_auto_approval = config.shipit.max_cds_for_auto_approval
 

@@ -46,7 +46,7 @@
           (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>
         </div>
       </div>
-      <h1 style="clear: left;">
+      <h1 style="clear: both;">
         <tal:summary replace="context/bug/title" />
         <a href="+edit">
           <img src="/@@/edit" alt="[edit]" title="Edit this summary" />
