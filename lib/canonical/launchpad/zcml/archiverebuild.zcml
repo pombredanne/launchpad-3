@@ -1,0 +1,29 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- ArchiveRebuild -->
+  <content class="canonical.launchpad.database.ArchiveRebuild">
+    <allow interface="canonical.launchpad.interfaces.IArchiveRebuild"/>
+    <require
+      permission="launchpad.Edit"
+      set_attributes="status reason"
+      />
+  </content>
+
+
+  <!-- ArchiveRebuildSet -->
+  <content class="canonical.launchpad.database.ArchiveRebuildSet">
+    <allow interface="canonical.launchpad.interfaces.IArchiveRebuildSet"/>
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.ArchiveRebuildSet"
+    provides="canonical.launchpad.interfaces.IArchiveRebuildSet">
+    <allow interface="canonical.launchpad.interfaces.IArchiveRebuildSet" />
+  </securedutility>
+
+</configure>

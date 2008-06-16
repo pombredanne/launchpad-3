@@ -1402,7 +1402,7 @@ purposes (PRIMARY and PARTNER). When no matching archive is found,
 None is returned.
 
     >>> candidate = getUtility(IArchiveSet).getByDistroPurpose(
-    ...     ubuntutest, ArchivePurpose.REBUILD, name="does-not-exists")
+    ...     ubuntutest, ArchivePurpose.REBUILD, name="does-not-exist")
     >>> print candidate
     None
 

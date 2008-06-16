@@ -9,10 +9,10 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IAnnouncement, IArchive, IArchivePermissionSet,
-    IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
-    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
-    IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportMachine,
+    IArchiveRebuild, IBazaarApplication, IBranch, IBranchMergeProposal,
+    IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
+    IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
+    ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportMachine,
     ICodeReviewComment, IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
     IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
@@ -1573,6 +1573,34 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
+
+
+class EditArchiveRebuild(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IArchiveRebuild
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can edit the archive rebuild.
+
+        Only people in one of the conditions bellow can edit an
+        ArchiveRebuild record:
+
+         * 'registrant' team member;
+         * The distribution admins;
+         * a Launchpad administrator.
+        """
+        if user.inTeam(self.obj.registrant):
+            return True
+
+        distribution = self.obj.distroseries.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins):
+            return True
+
+        return False
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
