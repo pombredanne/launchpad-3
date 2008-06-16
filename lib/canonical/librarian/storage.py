@@ -31,7 +31,7 @@ class DuplicateFileIDError(Exception):
 class WrongDatabaseError(Exception):
     """The client's database name doesn't match our database."""
     def __init__(self, clientDatabaseName, serverDatabaseName):
-        Exception.__init__(clientDatabaseName, serverDatabaseName)
+        Exception.__init__(self, clientDatabaseName, serverDatabaseName)
         self.clientDatabaseName = clientDatabaseName
         self.serverDatabaseName = serverDatabaseName
 
