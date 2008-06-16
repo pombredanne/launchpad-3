@@ -125,6 +125,7 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             votes.get(CodeReviewVote.APPROVE, 0),
             votes.get(CodeReviewVote.ABSTAIN, 0))
 
+    @property
     def proposals(self):
         """Return a list of BranchListingItems."""
         proposals = self._proposals_for_current_batch
