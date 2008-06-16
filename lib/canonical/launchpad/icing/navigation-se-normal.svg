@@ -15,9 +15,9 @@
    sodipodi:version="0.32"
    inkscape:version="0.46"
    version="1.0"
-   sodipodi:docname="navigation-sw-selected.svg"
+   sodipodi:docname="navigation-se-normal.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-05-translation/lib/canonical/launchpad/images/navigation-sw-selected.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-05-translation/lib/canonical/launchpad/icing/navigation-se-normal.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -25,11 +25,11 @@
     <linearGradient
        id="linearGradient3716">
       <stop
-         style="stop-color:#ffffff;stop-opacity:0;"
+         style="stop-color:#eeeeee;stop-opacity:1;"
          offset="0"
          id="stop3718" />
       <stop
-         style="stop-color:#ffffff;stop-opacity:1;"
+         style="stop-color:#cccccc;stop-opacity:1;"
          offset="1"
          id="stop3720" />
     </linearGradient>
@@ -84,14 +84,14 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="63.75"
-     inkscape:cx="-1.2"
+     inkscape:cx="-0.74403294"
      inkscape:cy="2.9829748"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="1024"
-     inkscape:window-height="693"
-     inkscape:window-x="0"
+     inkscape:window-width="688"
+     inkscape:window-height="690"
+     inkscape:window-x="81"
      inkscape:window-y="25">
     <inkscape:grid
        type="xygrid"
@@ -115,9 +115,16 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect3201"
+       width="4"
+       height="4"
+       x="0"
+       y="0" />
     <path
        sodipodi:type="arc"
-       style="fill:#888888;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
+       style="fill:#2064ef;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.50196078000000000"
        id="path3203"
        sodipodi:cx="4"
        sodipodi:cy="4"
@@ -126,6 +133,6 @@
        d="M 8,4 A 4,4 0 0 1 4.0000001,8 L 4,4 z"
        sodipodi:start="0"
        sodipodi:end="1.5707963"
-       transform="matrix(0,1,-1,0,8.0000001,-4)" />
+       transform="matrix(0,1,1,0,-4,-4)" />
   </g>
 </svg>

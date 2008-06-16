@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/defaultnomenu"
+  metal:use-macro="view/macro:page/default2.0"
   i18n:domain="malone"
 >
   <metal:block fill-slot="head_epilogue">
