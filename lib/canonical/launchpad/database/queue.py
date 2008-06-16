@@ -41,9 +41,10 @@ from canonical.launchpad.interfaces import (
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
-    PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
-    QueueInconsistentStateError, QueueStateWriteProtectedError,
-    QueueSourceAcceptError, SourcePackageFileType)
+    PackageUploadCustomFormat, pocketsuffix, NonBuildableSourceUploadError,
+    QueueBuildAcceptError, QueueInconsistentStateError,
+    QueueStateWriteProtectedError,QueueSourceAcceptError,
+    SourcePackageFileType)
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, simple_sendmail)
 from canonical.launchpad.scripts.processaccepted import (
@@ -60,6 +61,26 @@ def debug(logger, msg):
     """Shorthand debug notation for publish() methods."""
     if logger is not None:
         logger.debug(msg)
+
+
+class PassthroughStatusValue:
+    """A wrapper to allow setting PackageUpload.status."""
+
+    def __init__(self, value):
+        self.value = value
+
+
+def validate_status(self, attr, value):
+    # Is the status wrapped in the special passthrough class?
+    if isinstance(value, PassthroughStatusValue):
+        return value.value
+
+    if self._SO_creating:
+        return value
+    else:
+        raise QueueStateWriteProtectedError(
+            'Directly write on queue status is forbidden use the '
+            'provided methods to set it.')
 
 
 class PackageUploadQueue:
@@ -83,7 +104,8 @@ class PackageUpload(SQLBase):
 
     status = EnumCol(dbName='status', unique=False, notNull=True,
                      default=PackageUploadStatus.NEW,
-                     schema=PackageUploadStatus)
+                     schema=PackageUploadStatus,
+                     storm_validator=validate_status)
 
     distroseries = ForeignKey(dbName="distroseries",
                                foreignKey='DistroSeries')
@@ -116,38 +138,19 @@ class PackageUpload(SQLBase):
                                   joinColumn='packageupload')
 
 
-    def _set_status(self, value):
-        """Directly write on 'status' is forbidden.
-
-        Force user to use the provided machine-state methods.
-        Raises QueueStateWriteProtectedError.
-        """
-        # XXX: kiko 2006-01-25 bug=29663:
-        # This is a bit evil, but does the job. Andrew
-        # has suggested using immutable=True in the column definition.
-
-        # allow 'status' write only in creation process.
-        if self._SO_creating:
-            self._SO_set_status(value)
-            return
-        # been fascist
-        raise QueueStateWriteProtectedError(
-            'Directly write on queue status is forbidden use the '
-            'provided methods to set it.')
-
     def setNew(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.NEW:
             raise QueueInconsistentStateError(
                 'Queue item already new')
-        self._SO_set_status(PackageUploadStatus.NEW)
+        self.status = PassthroughStatusValue(PackageUploadStatus.NEW)
 
     def setUnapproved(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.UNAPPROVED:
             raise QueueInconsistentStateError(
                 'Queue item already unapproved')
-        self._SO_set_status(PackageUploadStatus.UNAPPROVED)
+        self.status = PassthroughStatusValue(PackageUploadStatus.UNAPPROVED)
 
     def setAccepted(self):
         """See `IPackageUpload`."""
@@ -182,21 +185,21 @@ class PackageUpload(SQLBase):
                 raise QueueInconsistentStateError(info)
 
         # if the previous checks applied and pass we do set the value
-        self._SO_set_status(PackageUploadStatus.ACCEPTED)
+        self.status = PassthroughStatusValue(PackageUploadStatus.ACCEPTED)
 
     def setDone(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.DONE:
             raise QueueInconsistentStateError(
                 'Queue item already done')
-        self._SO_set_status(PackageUploadStatus.DONE)
+        self.status = PassthroughStatusValue(PackageUploadStatus.DONE)
 
     def setRejected(self):
         """See `IPackageUpload`."""
         if self.status == PackageUploadStatus.REJECTED:
             raise QueueInconsistentStateError(
                 'Queue item already rejected')
-        self._SO_set_status(PackageUploadStatus.REJECTED)
+        self.status = PassthroughStatusValue(PackageUploadStatus.REJECTED)
 
     def _closeBugs(self, changesfile_path, logger=None):
         """Close bugs for a just-accepted source.
@@ -216,6 +219,17 @@ class PackageUpload(SQLBase):
             self, changesfile_object=changesfile_object)
         changesfile_object.close()
 
+    def _validateBuildsForSource(self, sourcepackagerelease, builds):
+        """Check if the sourcepackagerelease generates at least one build.
+
+        :raise NonBuildableSourceUploadError: when the uploaded source
+            doesn't result in any builds in its targeted distroseries.
+        """
+        if len(builds) == 0:
+            raise NonBuildableSourceUploadError(
+                "Cannot build any of the architectures requested: %s" %
+                sourcepackagerelease.architecturehintlist)
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
         debug(logger, "Setting it to ACCEPTED")
@@ -232,7 +246,9 @@ class PackageUpload(SQLBase):
         [pub_source] = self.realiseUpload()
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, self.distroseries)
-        pub_source.createMissingBuilds(pas_verify=pas_verify, logger=logger)
+        builds = pub_source.createMissingBuilds(
+            pas_verify=pas_verify, logger=logger)
+        self._validateBuildsForSource(pub_source.sourcepackagerelease, builds)
         self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
@@ -248,7 +264,9 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            pub_source.createMissingBuilds()
+            builds = pub_source.createMissingBuilds()
+            self._validateBuildsForSource(
+                pub_source.sourcepackagerelease, builds)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
@@ -1059,15 +1077,19 @@ class PackageUploadSource(SQLBase):
         """See `IPackageUploadSource`."""
         primary_archive = self.packageupload.distroseries.main_archive
         release_pocket = PackagePublishingPocket.RELEASE
+        current_distroseries = self.packageupload.distroseries
         ancestry_locations = [
-            (self.packageupload.archive, self.packageupload.pocket),
-            (primary_archive, release_pocket),
+            (self.packageupload.archive, current_distroseries,
+             self.packageupload.pocket),
+            (primary_archive, current_distroseries, release_pocket),
+            (primary_archive, None, release_pocket),
             ]
 
         ancestry = None
-        for archive, pocket in ancestry_locations:
+        for archive, distroseries, pocket in ancestry_locations:
             ancestries = archive.getPublishedSources(
-                name=self.sourcepackagerelease.name, pocket=pocket,
+                name=self.sourcepackagerelease.name,
+                distroseries=distroseries, pocket=pocket,
                 exact_match=True)
             if ancestries.count() == 0:
                 continue

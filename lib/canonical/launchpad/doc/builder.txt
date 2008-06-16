@@ -97,12 +97,10 @@ Check get() which returns a correspondent Builder instance to a given id:
 
 Or raises an SQLObjectNotFound exception:
 
-    >>> from sqlobject import SQLObjectNotFound
-    >>> try:
-    ...    builderset.get(100)
-    ... except SQLObjectNotFound, info:
-    ...    "%s" % info
-    'The object Builder by the ID 100 does not exist'
+    >>> builderset.get(100)
+    Traceback (most recent call last):
+    ...
+    SQLObjectNotFound: Object not found
 
 count() return the number of builder instance we have stored:
 

@@ -16,22 +16,10 @@
       </a>
     </div>
     <div tal:condition="not: context/official_codehosting">
-      <tal:code-imports define="config modules/canonical.config/config">
-        <tal:production-site
-            condition="not: config/codeimport/expose_code_import">
-          <a href="https://help.launchpad.net/VcsImports">
-            <img alt="Import your project"
-                 src="/+icing/but-lrg-importyourproject.gif"/>
-          </a>
-        </tal:production-site>
-        <tal:non-production-site
-            condition="config/codeimport/expose_code_import">
-          <a href="/+code-imports/+new" id="new-code-import">
-            <img alt="Import your project"
-                 src="/+icing/but-lrg-importyourproject.gif"/>
-          </a>
-        </tal:non-production-site>
-      </tal:code-imports>
+      <a href="/+code-imports/+new" id="new-code-import">
+        <img alt="Import your project"
+             src="/+icing/but-lrg-importyourproject.gif"/>
+      </a>
     </div>
   </div>
 

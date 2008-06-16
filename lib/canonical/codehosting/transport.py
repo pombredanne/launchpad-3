@@ -78,11 +78,21 @@ from canonical.authserver.interfaces import (
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
-from canonical.codehosting.bazaarfs import (
-    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR, is_lock_directory)
 from canonical.config import config
 from canonical.twistedsupport import gatherResults
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
+
+
+# The directories allowed directly beneath a branch directory. These are the
+# directories that Bazaar creates as part of regular operation.
+ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr')
+FORBIDDEN_DIRECTORY_ERROR = (
+    "Cannot create '%s'. Only Bazaar branches are allowed.")
+
+
+def is_lock_directory(absolute_path):
+    """Is 'absolute_path' a Bazaar branch lock directory?"""
+    return os.path.basename(absolute_path) == 'held'
 
 
 def get_path_segments(path, maximum_segments=-1):

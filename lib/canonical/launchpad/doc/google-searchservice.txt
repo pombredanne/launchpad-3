@@ -173,7 +173,6 @@ the time of the search.
 
     >>> for key in sorted(google_search._default_values):
     ...     print key, ':', repr(google_search._default_values[key])
-    as_sitesearch : 'launchpad.net'
     client : 'google-csbe'
     cx : None
     ie : 'utf8'
@@ -210,8 +209,7 @@ argument to the method. The argument is url encoded and used as the
 value for the 'q' (query) parameter.
 
     >>> google_search.create_search_url(terms='svg +bugs').replace('&', ' ')
-    'http://launchpad.dev:.../cse?as_sitesearch=launchpad.net
-    client=google-csbe
+    'http://launchpad.dev:.../cse?client=google-csbe
     cx=011948274177882366108%3Aixpjdn21yfg
     ie=utf8
     num=20
@@ -501,6 +499,16 @@ The vhost name is preserved when the URL is rewritten.
     ...     u'The Zope testrunner likes ASCII more than Unicode.')
     >>> page_match.url
     'http://bugs.launchpad.dev/unicode-titles/+bug/456'
+
+A URL's trailing slash is removed; Launchpad does not use trailing
+slashes.
+
+    >>> page_match = PageMatch(
+    ...     u'Ubuntu in Launchpad',
+    ...     'https://launchpad.net/ubuntu/',
+    ...     u'Ubuntu also includes more software than any other operating')
+    >>> page_match.url
+    'http://launchpad.dev/ubuntu'
 
 There is a list of URLs that are not rewritten configured in
 config.google.url_rewrite_exceptions. For example, help.launchpad.net

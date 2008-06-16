@@ -3,14 +3,11 @@
 Here we test the facility for coherently copying data inside the database that
 may be interlinked through foreign keys.
 
+    >>> import transaction
     >>> from canonical.database import postgresql
     >>> from canonical.database.sqlbase import cursor
     >>> from canonical.database.multitablecopy import MultiTableCopy
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> dbname = LaunchpadTestSetup().dbname
-    >>> from canonical.database.sqlbase import ZopelessTransactionManager
-    >>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
     >>> # Keep track of tables we'll want to clean up later
     >>> tables_to_clean_up = []
 
@@ -67,7 +64,7 @@ in any old order.  We must follow the list of tables we gave, in that order:
 Since we haven't extracted all tables yet, we're not allowed to move to the
 pouring stage yet:
 
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
     Traceback (most recent call last):
     ...
     AssertionError: Not safe to pour: last table 'textual' was not extracted
@@ -113,7 +110,7 @@ We have the data we're copying in holding tables now.
 Now we pour or data in the holding tables back into the source tables.  Each
 row from the holding tables gets a new id, so no errors about duplicates here.
 
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
 Since pour() may commit transactions, our cursor is now invalid.  We get a new
 one before we go on.
@@ -209,7 +206,7 @@ from numeric that referred to it into a holding table for numeric.
 
     >>> cur.execute("UPDATE %s SET t='lots'" % textual_holding_table)
     >>> cur.execute("UPDATE %s SET n=2*n" % numeric_holding_table)
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
     >>> cur = cursor()
     >>> cur.execute("""
@@ -308,17 +305,19 @@ which means that the attempt to insert it will violate a unique constraint.
     >>> cur.execute("UPDATE %s SET new_id=id WHERE n=101"
     ...             % numeric_holding_table)
 
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
     Traceback (most recent call last):
     ...
-    IntegrityError: ... duplicate ... violates unique constraint ...
+    IntegrityError: duplicate ... violates unique constraint ...
+    <BLANKLINE>
 
 Now we have a fun situation!  Some data has been copied back into our source
 tables, and we don't know how much.  And some data remains in our holding
 tables.
 
-    >>> ztm.abort()
-    >>> ztm.begin()
+    >>> transaction.abort()
+    >>> transaction.begin()
+    <transaction...
     >>> cur = cursor()
     >>> postgresql.have_table(cur, copier.getRawHoldingTableName('textual'))
     False
@@ -354,7 +353,7 @@ does the recovery.  We set up a new copier to simulate this chain of events.
     True
 
     >>> cur.execute("DELETE FROM %s WHERE n=101" % numeric_holding_table)
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
 This time we run to completion without problems.
 
@@ -534,7 +533,7 @@ holding tables do not have any referential constraints.
     ...     USING textual
     ...     WHERE holding.new_id = textual.id
     ...     """ % textual_holding_table)
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
 Only the non-inert extracted rows will be copied.
 
@@ -625,7 +624,7 @@ other callbacks on other tables.
 
 The callbacks are called only while pouring, once per batch.
 
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
     Pouring textual
     Pouring text from "temp_textual_holding_test" to textual
     ...
@@ -637,5 +636,4 @@ The callbacks are called only while pouring, once per batch.
 == Cleanup ==
 
     >>> #postgresql.drop_tables(cursor(), tables_to_clean_up)
-    >>> ztm.uninstall()
 

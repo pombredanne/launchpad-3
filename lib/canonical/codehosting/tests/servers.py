@@ -21,6 +21,7 @@ from zope.component import getUtility
 from bzrlib.transport import get_transport, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
+from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 from twisted.internet.protocol import connectionDone
 from twisted.python.util import sibpath
@@ -34,8 +35,7 @@ from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
-from canonical.codehosting.sshserver import (
-    BazaarFileTransferServer, LaunchpadAvatar)
+from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.transport import BlockingProxy, LaunchpadServer
 
 from canonical.codehosting.tests.helpers import FakeLaunchpad
@@ -418,18 +418,16 @@ class _TestSSHService(SSHService):
         realm.avatarFactory = self.makeAvatar
         return realm
 
-    def makeAvatar(self, avatarId, homeDirsRoot, userDict, launchpad):
-        self.avatar = _TestLaunchpadAvatar(self, avatarId, homeDirsRoot,
-                                           userDict, launchpad)
+    def makeAvatar(self, userDict, launchpad):
+        self.avatar = _TestLaunchpadAvatar(self, userDict, launchpad)
         return self.avatar
 
 
 class _TestLaunchpadAvatar(LaunchpadAvatar):
     """SSH avatar that uses the _TestBazaarFileTransferServer."""
 
-    def __init__(self, service, avatarId, homeDirsRoot, userDict, launchpad):
-        LaunchpadAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
-                                 launchpad)
+    def __init__(self, service, userDict, launchpad):
+        LaunchpadAvatar.__init__(self, userDict, launchpad)
         self.service = service
         self.subsystemLookup = {'sftp': self.makeFileTransferServer}
 
@@ -443,12 +441,13 @@ class _TestLaunchpadAvatar(LaunchpadAvatar):
         return _TestBazaarFileTransferServer(data, avatar)
 
 
-class _TestBazaarFileTransferServer(BazaarFileTransferServer):
+class _TestBazaarFileTransferServer(filetransfer.FileTransferServer):
     """BazaarFileTransferServer that sets a threading event when it loses its
     first connection.
     """
     def __init__(self, data=None, avatar=None):
-        BazaarFileTransferServer.__init__(self, data=data, avatar=avatar)
+        filetransfer.FileTransferServer.__init__(
+            self, data=data, avatar=avatar)
         self.avatar = avatar
 
     def getConnectionLostEvent(self):

@@ -41,7 +41,7 @@ class RevisionPropertyParsing(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.bug_linker = BugBranchLinker(self.makeDatabaseBranch())
+        self.bug_linker = BugBranchLinker(self.db_branch)
 
     def test_single(self):
         # Parsing a single line should give a dict with a single entry,
@@ -216,6 +216,7 @@ class TestBugLinking(BzrSyncTestCase):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
         self.bug2 = self.factory.makeBug()
+        self.new_db_branch = self.factory.makeBranch()
         self.layer.txn.commit()
 
     def getBugURL(self, bug):
@@ -262,10 +263,10 @@ class TestBugLinking(BzrSyncTestCase):
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
         self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         # Create a new DB branch to sync with.
-        new_db_branch = self.makeDatabaseBranch()
-        self.syncBazaarBranchToDatabase(self.bzr_branch, new_db_branch)
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.new_db_branch)
         self.assertEqual(
-            getUtility(IBugBranchSet).getBugBranch(self.bug1, new_db_branch),
+            getUtility(IBugBranchSet).getBugBranch(
+                self.bug1, self.new_db_branch),
             None,
             "Should not create a BugBranch.")
 

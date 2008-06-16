@@ -387,9 +387,9 @@
         name="fmt"
         />
     <adapter
-        for="canonical.launchpad.interfaces.ICodeReviewMessage"
+        for="canonical.launchpad.interfaces.ICodeReviewComment"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.CodeReviewMessageFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.CodeReviewCommentFormatterAPI"
         name="fmt"
         />
 
@@ -496,14 +496,6 @@
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
-    <!-- RDF page template macros -->
-    <browser:page
-        for="*"
-        name="rdf_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/rdf-macros.pt"
-        />
 <!--
     <content
         class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">

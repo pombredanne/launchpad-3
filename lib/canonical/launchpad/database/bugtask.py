@@ -18,10 +18,15 @@ __all__ = [
 
 
 import datetime
+from operator import attrgetter
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import SQLConstant
+
+from storm.expr import Alias, AutoTables, Join, LeftJoin, SQL
+from storm.sqlobject import SQLObjectResultSet
+from storm.zope.interfaces import IZStorm
 
 import pytz
 
@@ -31,7 +36,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
+from canonical.database.sqlbase import (
+    block_implicit_flushes, cursor, SQLBase, sqlvalues, quote, quote_like)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -41,16 +47,22 @@ from canonical.lazr.enum import DBItem
 
 from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
     BUG_SUPERVISOR_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
     BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
     ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, ILaunchpadCelebrities, INullBugTask, IProduct,
-    IProductSeries, IProductSeriesBugTask, IProject, IProjectMilestone,
-    ISourcePackage, IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
+    IDistribution, IDistributionSet, IDistributionSourcePackage,
+    IDistroBugTask, IDistroSeries, IDistroSeriesSet, IDistroSeriesBugTask,
+    ILaunchpadCelebrities, INullBugTask, IProduct, IProductSeries,
+    IProductSeriesBugTask, IProductSeriesSet, IProductSet, IProject,
+    IProjectMilestone, ISourcePackage, ISourcePackageNameSet,
+    IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.distribution import (
+    IDistributionSet)
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
@@ -304,6 +316,94 @@ def BugTaskToBugAdapter(bugtask):
     return bugtask.bug
 
 
+@block_implicit_flushes
+def validate_target_attribute(self, attr, value):
+    """Update the targetnamecache."""
+    # Don't update targetnamecache during _init().
+    if self._SO_creating:
+        return value
+    # Determine the new target attributes.
+    target_params = dict(
+        product=self.product,
+        productseries=self.productseries,
+        sourcepackagename=self.sourcepackagename,
+        distribution=self.distribution,
+        distroseries=self.distroseries)
+    utility_iface = {
+        'productID': IProductSet,
+        'productseriesID': IProductSeriesSet,
+        'sourcepackagenameID': ISourcePackageNameSet,
+        'distributionID': IDistributionSet,
+        'distroseriesID': IDistroSeriesSet
+        }[attr]
+    if value is None:
+        target_params[attr[:-2]] = None
+    else:
+        target_params[attr[:-2]] = getUtility(utility_iface).get(value)
+
+    # Use a NullBugTask to determine the new target.
+    nulltask = NullBugTask(self.bug, **target_params)
+    self.updateTargetNameCache(nulltask.target)
+
+    return value
+
+
+class PassthroughValue:
+    """A wrapper to allow setting values on conjoined bug tasks."""
+    def __init__(self, value):
+        self.value = value
+
+
+@block_implicit_flushes
+def validate_conjoined_attribute(self, attr, value):
+    # If the value has been wrapped in a _PassthroughValue instance,
+    # then we are being updated by our conjoined master: pass the
+    # value through without any checking.
+    if isinstance(value, PassthroughValue):
+        return value.value
+
+    # If this bugtask has no bug yet, then we are probably being
+    # instantiated.
+    if self.bug is None:
+        return value
+
+    if self._isConjoinedBugTask():
+        raise ConjoinedBugTaskEditError(
+            "This task cannot be edited directly, it should be"
+            " edited through its conjoined_master.")
+    # The conjoined slave is updated before the master one because,
+    # for distro tasks, conjoined_slave does a comparison on
+    # sourcepackagename, and the sourcepackagenames will not match
+    # if the conjoined master is altered before the conjoined slave!
+    conjoined_bugtask = self.conjoined_slave
+    if conjoined_bugtask:
+        setattr(conjoined_bugtask, attr, PassthroughValue(value))
+
+    return value
+
+
+def validate_status(self, attr, value):
+    if value not in self._NON_CONJOINED_STATUSES:
+        return validate_conjoined_attribute(self, attr, value)
+    else:
+        return value
+
+
+def validate_assignee(self, attr, value):
+    value = validate_conjoined_attribute(self, attr, value)
+    # Check if this assignee is public.
+    return validate_public_person(self, attr, value)
+
+
+@block_implicit_flushes
+def validate_sourcepackagename(self, attr, value):
+    is_passthrough = isinstance(value, PassthroughValue)
+    value = validate_conjoined_attribute(self, attr, value)
+    if not is_passthrough:
+        self._syncSourcePackages(value)
+    return validate_target_attribute(self, attr, value)
+
+
 class BugTask(SQLBase, BugTaskMixin):
     """See `IBugTask`."""
     implements(IBugTask)
@@ -311,7 +411,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _defaultOrder = ['distribution', 'product', 'productseries',
                      'distroseries', 'milestone', 'sourcepackagename']
     _CONJOINED_ATTRIBUTES = (
-        "status", "importance", "assignee", "milestone",
+        "status", "importance", "assigneeID", "milestoneID",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed", "date_incomplete", "date_left_new",
         "date_triaged", "date_fix_committed", "date_fix_released")
@@ -320,50 +420,67 @@ class BugTask(SQLBase, BugTaskMixin):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     productseries = ForeignKey(
         dbName='productseries', foreignKey='ProductSeries',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_sourcepackagename)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     distroseries = ForeignKey(
         dbName='distroseries', foreignKey='DistroSeries',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_target_attribute)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
-        notNull=False, default=None)
+        notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.NEW)
+        default=BugTaskStatus.NEW,
+        storm_validator=validate_status)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
         schema=BugTaskImportance,
-        default=BugTaskImportance.UNDECIDED)
+        default=BugTaskImportance.UNDECIDED,
+        storm_validator=validate_conjoined_attribute)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_assignee,
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    date_assigned = UtcDateTimeCol(notNull=False, default=None)
+    date_assigned = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    date_confirmed = UtcDateTimeCol(notNull=False, default=None)
-    date_inprogress = UtcDateTimeCol(notNull=False, default=None)
-    date_closed = UtcDateTimeCol(notNull=False, default=None)
-    date_incomplete = UtcDateTimeCol(notNull=False, default=None)
-    date_left_new = UtcDateTimeCol(notNull=False, default=None)
-    date_triaged = UtcDateTimeCol(notNull=False, default=None)
-    date_fix_committed = UtcDateTimeCol(notNull=False, default=None)
-    date_fix_released = UtcDateTimeCol(notNull=False, default=None)
+    date_confirmed = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_inprogress = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_closed = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_incomplete = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_left_new = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_triaged = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_fix_committed = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
+    date_fix_released = UtcDateTimeCol(notNull=False, default=None,
+        storm_validator=validate_conjoined_attribute)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     # The targetnamecache is a value that is only supposed to be set
     # when a bugtask is created/modified or by the
     # update-bugtask-targetnamecaches cronscript. For this reason it's
@@ -419,7 +536,7 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`."""
         return self.bug.isSubscribed(person)
 
-    def _syncSourcePackages(self, prev_sourcepackagename):
+    def _syncSourcePackages(self, new_spnid):
         """Synchronize changes to source packages with other distrotasks.
 
         If one distroseriestask's source package is changed, all the
@@ -427,6 +544,9 @@ class BugTask(SQLBase, BugTaskMixin):
         package has to be changed, as well as the corresponding
         distrotask.
         """
+        if self.bug is None:
+            # The validator is being called on an incomplete bug task.
+            return
         if self.distroseries is not None:
             distribution = self.distroseries.distribution
         else:
@@ -438,13 +558,16 @@ class BugTask(SQLBase, BugTaskMixin):
                 else:
                     related_distribution = bugtask.distribution
                 if (related_distribution == distribution and
-                    bugtask.sourcepackagename == prev_sourcepackagename):
-                    bugtask.sourcepackagename = self.sourcepackagename
+                    bugtask.sourcepackagenameID == self.sourcepackagenameID):
+                    bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
 
-    def getConjoinedMaster(self, bugtasks):
+    def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None
         if IDistroBugTask.providedBy(self):
+            if bugtasks_by_package is None:
+                bugtasks_by_package = self.getBugTasksByPackageName(bugtasks)
+            bugtasks = bugtasks_by_package[self.sourcepackagename]
             possible_masters = [
                 bugtask for bugtask in bugtasks
                 if (bugtask.distroseries is not None and
@@ -471,6 +594,14 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master.status in self._NON_CONJOINED_STATUSES):
             conjoined_master = None
         return conjoined_master
+
+    def getBugTasksByPackageName(self, bugtasks):
+        """See IBugTask."""
+        bugtasks_by_package = {}
+        for bugtask in bugtasks:
+            bugtasks_by_package.setdefault(bugtask.sourcepackagename, [])
+            bugtasks_by_package[bugtask.sourcepackagename].append(bugtask)
+        return bugtasks_by_package
 
     @property
     def conjoined_master(self):
@@ -506,93 +637,6 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_slave = None
         return conjoined_slave
 
-    # XXX: Bjorn Tillenius 2006-10-31:
-    # Conjoined bugtask synching methods. We override these methods
-    # individually, to avoid cycle problems if we were to override
-    # _SO_setValue instead. This indicates either a bug or design issue
-    # in SQLObject.
-    # Each attribute listed in _CONJOINED_ATTRIBUTES should have a
-    # _set_foo method below.
-    def _set_status(self, value):
-        """Set status, and update conjoined BugTask."""
-        if value not in self._NON_CONJOINED_STATUSES:
-            self._setValueAndUpdateConjoinedBugTask("status", value)
-        else:
-            self._SO_set_status(value)
-
-    def _set_assignee(self, value):
-        """Set assignee, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("assignee", value)
-
-    def _set_importance(self, value):
-        """Set importance, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("importance", value)
-
-    def _set_milestone(self, value):
-        """Set milestone, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("milestone", value)
-
-    def _set_sourcepackagename(self, value):
-        """Set sourcepackagename, and update conjoined BugTask."""
-        old_sourcepackagename = self.sourcepackagename
-        self._setValueAndUpdateConjoinedBugTask("sourcepackagename", value)
-        self._syncSourcePackages(old_sourcepackagename)
-
-    def _set_date_assigned(self, value):
-        """Set date_assigned, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_assigned", value)
-
-    def _set_date_confirmed(self, value):
-        """Set date_confirmed, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_confirmed", value)
-
-    def _set_date_inprogress(self, value):
-        """Set date_inprogress, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_inprogress", value)
-
-    def _set_date_closed(self, value):
-        """Set date_closed, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_closed", value)
-
-    def _set_date_incomplete(self, value):
-        """Set date_incomplete, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
-
-    def _set_date_left_new(self, value):
-        """Set date_left_new, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_left_new", value)
-
-    def _set_date_triaged(self, value):
-        """Set date_left_triaged, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_triaged", value)
-
-    def _set_date_fix_committed(self, value):
-        """Set date_left_fix_committed, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_fix_committed", value)
-
-    def _set_date_fix_released(self, value):
-        """Set date_left_fix_released, and update conjoined BugTask."""
-        self._setValueAndUpdateConjoinedBugTask("date_fix_released", value)
-
-    def _setValueAndUpdateConjoinedBugTask(self, colname, value):
-        """Set a value, and update conjoined BugTask."""
-        if self._isConjoinedBugTask():
-            raise ConjoinedBugTaskEditError(
-                "This task cannot be edited directly, it should be"
-                " edited through its conjoined_master.")
-        # The conjoined slave is updated before the master one because,
-        # for distro tasks, conjoined_slave does a comparison on
-        # sourcepackagename, and the sourcepackagenames will not match
-        # if the conjoined master is altered before the conjoined slave!
-        conjoined_bugtask = self.conjoined_slave
-        if conjoined_bugtask:
-            conjoined_attrsetter = getattr(
-                conjoined_bugtask, "_SO_set_%s" % colname)
-            conjoined_attrsetter(value)
-
-        attrsetter = getattr(self, "_SO_set_%s" % colname)
-        attrsetter(value)
-
     def _isConjoinedBugTask(self):
         """Return True when conjoined_master is not None, otherwise False."""
         return self.conjoined_master is not None
@@ -611,19 +655,23 @@ class BugTask(SQLBase, BugTaskMixin):
             # Bypass our checks that prevent setting attributes on
             # conjoined masters by calling the underlying sqlobject
             # setter methods directly.
-            attrsetter = getattr(self, "_SO_set_%s" % synched_attr)
-            attrsetter(slave_attr_value)
+            setattr(self, synched_attr, PassthroughValue(slave_attr_value))
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
-        if self.productID is not None:
+
+        # We check both the foreign key column and the reference so we
+        # can detect unflushed references.  The reference check will
+        # only be made if the FK is None, so no additional queries
+        # will be executed.
+        if self.productID is not None or self.product is not None:
             alsoProvides(self, IUpstreamBugTask)
-        elif self.productseriesID is not None:
+        elif self.productseriesID is not None or self.productseries is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self.distroseriesID is not None:
+        elif self.distroseriesID is not None or self.distroseries is not None:
             alsoProvides(self, IDistroSeriesBugTask)
-        elif self.distributionID is not None:
+        elif self.distributionID is not None or self.distribution is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
         else:
@@ -635,28 +683,6 @@ class BugTask(SQLBase, BugTaskMixin):
         # XXX sinzui 2007-10-4 bug=149009:
         # This property is not needed. Code should inline this implementation.
         return self.pillar.official_malone
-
-    def _SO_setValue(self, name, value, fromPython, toPython):
-        """Set a SQLObject value and update the targetnamecache."""
-        SQLBase._SO_setValue(self, name, value, fromPython, toPython)
-
-        # The bug target may have just changed, so update the
-        # targetnamecache.
-        if name != 'targetnamecache':
-            self.updateTargetNameCache()
-
-    def set(self, **kw):
-        """Update multiple attributes and update the targetnamecache."""
-        # We need to overwrite this method to make sure the targetnamecache
-        # column is updated when multiple attributes of a bugtask are
-        # modified. We can't rely on event subscribers for doing this because
-        # they can run in a unpredictable order.
-        SQLBase.set(self, **kw)
-        # We also can't simply update kw with the value we want for
-        # targetnamecache because we need to access bugtask attributes
-        # that may be available only after SQLBase.set() is called.
-        SQLBase.set(
-            self, **{'targetnamecache': self.target.bugtargetdisplayname})
 
     def setImportanceFromDebbugs(self, severity):
         """See `IBugTask`."""
@@ -819,9 +845,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         self.assignee = assignee
 
-    def updateTargetNameCache(self):
+    def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
-        targetname = self.target.bugtargetdisplayname
+        if newtarget is None:
+            newtarget = self.target
+        targetname = newtarget.bugtargetdisplayname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 
@@ -1562,48 +1590,31 @@ class BugTaskSet:
 
     def search(self, params, *args):
         """See `IBugTaskSet`."""
+        store = getUtility(IZStorm).get('main')
         query, clauseTables, orderby = self.buildQuery(params)
-        bugtasks = BugTask.select(
-            query, clauseTables=clauseTables, orderBy=orderby)
-        joins = self._getJoinsForSortingSearchResults()
+        bugtask_fti = SQL('BugTask.fti')
+        result = store.find((BugTask, bugtask_fti), query,
+                            AutoTables(SQL("1=1"), clauseTables))
         for arg in args:
             query, clauseTables, dummy = self.buildQuery(arg)
-            bugtasks = bugtasks.union(BugTask.select(
-                query, clauseTables=clauseTables), orderBy=orderby,
-                joins=joins)
-        bugtasks = bugtasks.prejoin(['sourcepackagename', 'product'])
-        bugtasks = bugtasks.prejoinClauseTables(['Bug'])
+            result = result.union(
+                store.find((BugTask, bugtask_fti), query,
+                           AutoTables(SQL("1=1"), clauseTables)))
+
+        # Build up the joins
+        from canonical.launchpad.database import (
+            Bug, Product, SourcePackageName)
+        joins = Alias(result._get_select(), "BugTask")
+        joins = Join(joins, Bug, BugTask.bug == Bug.id)
+        joins = LeftJoin(joins, Product, BugTask.product == Product.id)
+        joins = LeftJoin(joins, SourcePackageName,
+                         BugTask.sourcepackagename == SourcePackageName.id)
+
+        result = store.using(joins).find(
+            (BugTask, Bug, Product, SourcePackageName))
+        bugtasks = SQLObjectResultSet(BugTask, orderBy=orderby,
+                                      prepared_result_set=result)
         return bugtasks
-
-    # XXX: salgado 2007-03-19:
-    # This method exists only because sqlobject doesn't provide a better
-    # way for sorting the results of a set operation by external table values.
-    # It'll be removed, together with sqlobject, when we switch to storm.
-    def _getJoinsForSortingSearchResults(self):
-        """Return a list of join tuples suitable as the joins argument of
-        sqlobject's set operation methods.
-
-        These joins are necessary when we want to order the result of a set
-        operaion like union() using values that are not part of our result
-        set.
-        """
-        # Find out which tables we may need to join in order to cover all
-        # possible sorting options we may want.
-        tables = set()
-        for value in self._ORDERBY_COLUMN.values():
-            if '.' in value:
-                table, col = value.split('.')
-                tables.add(table)
-
-        # Build the tuples expected by sqlobject for each table we may need.
-        joins = []
-        for table in tables:
-            if table.lower() != 'bugtask':
-                foreignkey_col = table
-            else:
-                foreignkey_col = 'id'
-            joins.append((table, 'id', foreignkey_col))
-        return joins
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distroseries=None,
@@ -1659,6 +1670,8 @@ class BugTaskSet:
 
         if bugtask.conjoined_slave:
             bugtask._syncFromConjoinedSlave()
+
+        bugtask.updateTargetNameCache()
 
         return bugtask
 
@@ -1925,7 +1938,104 @@ class BugTaskSet:
 
         return orderby_arg
 
-
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
         return BugTask.select(orderBy='id')
+
+    def getBugCountsForPackages(self, user, packages):
+        """See `IBugTaskSet`."""
+        distributions = sorted(
+            set(package.distribution for package in packages),
+            key=attrgetter('name'))
+        counts = []
+        for distribution in distributions:
+            counts.extend(self._getBugCountsForDistribution(
+                user, distribution, packages))
+        return counts
+
+    def _getBugCountsForDistribution(self, user, distribution, packages):
+        """Get bug counts by package, belonging to the given distribution.
+
+        See `IBugTask.getBugCountsForPackages` for more information.
+        """
+        packages = [
+            package for package in packages
+            if package.distribution == distribution]
+        package_name_ids = [
+            package.sourcepackagename.id for package in packages]
+
+        open_bugs_cond = (
+            'BugTask.status %s' % search_value_to_where_condition(
+                any(*UNRESOLVED_BUGTASK_STATUSES)))
+
+        sum_template = "SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS %s"
+        sums = [
+            sum_template % (open_bugs_cond, 'open_bugs'),
+            sum_template % (
+                'BugTask.importance %s' % search_value_to_where_condition(
+                    BugTaskImportance.CRITICAL), 'open_critical_bugs'),
+            sum_template % (
+                'BugTask.assignee IS NULL', 'open_unassigned_bugs'),
+            sum_template % (
+                'BugTask.status %s' % search_value_to_where_condition(
+                    BugTaskStatus.INPROGRESS), 'open_inprogress_bugs'),
+            ]
+
+        conditions = [
+            'Bug.id = BugTask.bug',
+            open_bugs_cond,
+            'BugTask.sourcepackagename IN %s' % sqlvalues(package_name_ids),
+            'BugTask.distribution = %s' % sqlvalues(distribution),
+            'Bug.duplicateof is NULL',
+            ]
+        privacy_filter = get_bug_privacy_filter(user)
+        if privacy_filter:
+            conditions.append(privacy_filter)
+
+        query = """SELECT BugTask.distribution,
+                          BugTask.sourcepackagename,
+                          %(sums)s
+                   FROM BugTask, Bug
+                   WHERE %(conditions)s
+                   GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
+        cur = cursor()
+        cur.execute(query % dict(
+            sums=', '.join(sums), conditions=' AND '.join(conditions)))
+        distribution_set = getUtility(IDistributionSet)
+        sourcepackagename_set = getUtility(ISourcePackageNameSet)
+        packages_with_bugs = set()
+        counts = []
+        for (distro_id, spn_id, open_bugs,
+             open_critical_bugs, open_unassigned_bugs,
+             open_inprogress_bugs) in shortlist(cur.fetchall()):
+            distribution = distribution_set.get(distro_id)
+            sourcepackagename = sourcepackagename_set.get(spn_id)
+            source_package = distribution.getSourcePackage(sourcepackagename)
+            # XXX: Bjorn Tillenius 2006-12-15:
+            # Add a tuple instead of the distribution package
+            # directly, since DistributionSourcePackage doesn't define a
+            # __hash__ method.
+            packages_with_bugs.add((distribution, sourcepackagename))
+            package_counts = dict(
+                package=source_package,
+                open=open_bugs,
+                open_critical=open_critical_bugs,
+                open_unassigned=open_unassigned_bugs,
+                open_inprogress=open_inprogress_bugs,
+                )
+            counts.append(package_counts)
+
+        # Only packages with open bugs were included in the query. Let's
+        # add the rest of the packages as well.
+        all_packages = set(
+            (distro_package.distribution, distro_package.sourcepackagename)
+            for distro_package in packages)
+        for distribution, sourcepackagename in all_packages.difference(
+                packages_with_bugs):
+            package_counts = dict(
+                package=distribution.getSourcePackage(sourcepackagename),
+                open=0, open_critical=0, open_unassigned=0,
+                open_inprogress=0)
+            counts.append(package_counts)
+
+        return counts

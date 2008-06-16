@@ -274,9 +274,9 @@ class HWBus(DBEnumeratedType):
 
     SAS = DBItem(12, 'SAS')
 
-    PCCARD = DBItem(13, 'PC Card')
+    PCCARD = DBItem(13, 'PC Card (32 bit)')
 
-    PCMCIA = DBItem(14, 'PCMCIA')
+    PCMCIA = DBItem(14, 'PCMCIA (16 bit)')
 
 
 class IHWVendorName(Interface):
@@ -292,6 +292,14 @@ class IHWVendorNameSet(Interface):
         :return: A new IHWVendorName instance.
 
         An IntegrityError is raised, if the name already exists.
+        """
+
+    def getByName(name):
+        """Return the IHWVendorName record for the given name.
+
+        :return: An IHWVendorName instance where IHWVendorName.name==name
+            or None, if no such instance exists.
+        :param name: The vendor name.
         """
 
 
@@ -317,6 +325,16 @@ class IHWVendorIDSet(Interface):
         :param vendor_id: a string containing the bus ID. Numeric IDs
             are represented as a hexadecimal string, prepended by '0x'.
         :param name: The IHWVendorName instance with the vendor name.
+        """
+
+    def getByBusAndVendorID(bus, vendor_id):
+        """Return an IHWVendorID instance for the given bus and vendor_id.
+
+        :return: The found IHWVendorID instance or None, if no instance
+            for the given bus and vendor ID exists.
+        :param bus: An HWBus instance.
+        :param vendor_id: A string containing the vendor ID. Numeric IDs
+            must be represented as a hexadecimal string, prepended by '0x'.
         """
 
 
@@ -348,9 +366,36 @@ class IHWDeviceSet(Interface):
         :param bus: A bus name as enumerated in HWBus.
         :param vendor_id: The vendor ID for the bus.
         :param product_id: The product ID.
-        :param name: The human readable product name.
+        :param product_name: The human readable product name.
         :param variant: A string that allows to distinguish different devices
                         with identical product/vendor IDs.
+        """
+
+    def getByDeviceID(bus, vendor_id, product_id, variant=None):
+        """Return an IHWDevice record.
+
+        :return: An IHWDevice instance.
+        :param bus: The bus name of the device as enumerated in HWBus.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param variant: A string that allows to distinguish different devices
+                        with identical product/vendor IDs.
+        """
+
+    def getOrCreate(bus, vendor_id, product_id, product_name, variant=None):
+        """Return an IHWDevice record or create one.
+
+        :return: An IHWDevice instance.
+        :param bus: The bus name of the device as enumerated in HWBus.
+        :param vendor_id: The vendor ID of the device.
+        :param product_id: The product ID of the device.
+        :param product_name: The human readable product name.
+        :param variant: A string that allows to distinguish different devices
+                        with identical product/vendor IDs.
+
+        Return an existing IHWDevice record matching te given
+        parameters or create a new one, if no exitsing record
+        matches.
         """
 
 
@@ -414,6 +459,25 @@ class IHWDriverSet(Interface):
         :param license: The license of the driver.
         """
 
+    def getByPackageAndName(package_name, name):
+        """Return an IHWDriver instance for the given parameters.
+
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        """
+
+    def getOrCreate(package_name, name, license=None):
+        """Return an IHWDriver instance or create one.
+
+        :return: An IHWDriver instance or None, if no record exists for
+            the given parameters.
+        :param package_name: The name of the packages containing the driver.
+        :param name: The name of the driver.
+        :param license: The license of the driver.
+        """
+
 
 class IHWDeviceDriverLink(Interface):
     """Link a device with a driver."""
@@ -432,6 +496,26 @@ class IHWDeviceDriverLinkSet(Interface):
         :return: The new IHWDeviceDriver instance.
         :param device: The IHWDevice instance to be linked.
         :param driver: The IHWDriver instance to be linked.
+        """
+
+    def getByDeviceAndDriver(device, driver):
+        """Return an IHWDeviceDriver instance.
+
+        :return: The IHWDeviceDriver instance matching the given
+            parameters or None, if no existing instance matches.
+        :param device: An IHWDevice instance.
+        :param driver: An IHWDriver instance.
+        """
+    def getOrCreate(device, driver):
+        """Return an IHWDeviceDriverLink record or create one.
+
+        :return: An IHWDeviceDriverLink instance.
+        :param device: The IHWDevice instance to be linked.
+        :param driver: The IHWDriver instance to be linked.
+
+        Return an existing IHWDeviceDriverLink record matching te given
+        parameters or create a new one, if no exitsing record
+        matches.
         """
 
 class IHWSubmissionDevice(Interface):
