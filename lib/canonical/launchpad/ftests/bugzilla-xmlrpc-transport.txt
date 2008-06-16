@@ -89,7 +89,7 @@ dict so that they are treated as key: value pairs.
     >>> [bug_dict] = server.Bug.get_bugs({'ids': [1]})
     >>> for key in sorted(bug_dict.keys()):
     ...     print "%s: %s" % (key, bug_dict[key])
-    alias:
+    alias: 
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 20080610T16:19:53
@@ -102,7 +102,7 @@ dict so that they are treated as key: value pairs.
     resolution: FIXED
     severity: normal
     status: RESOLVED
-    summary: That bloody robot still exists
+    summary: That bloody robot still exists.
 
 If more than one ID is specified when get_bugs() is called, more than
 one bug will be returned (assuming they all exist and are accessible).
@@ -112,7 +112,7 @@ one bug will be returned (assuming they all exist and are accessible).
     ...     for key in sorted(bug_dict.keys()):
     ...         print "%s: %s" % (key, bug_dict[key])
     ...     print
-    alias:
+    alias: 
     assigned_to: test@canonical.com
     component: GPPSystems
     creation_time: 20080610T16:19:53
@@ -125,8 +125,8 @@ one bug will be returned (assuming they all exist and are accessible).
     resolution: FIXED
     severity: normal
     status: RESOLVED
-    summary: That bloody robot still exists
-
+    summary: That bloody robot still exists.
+    <BLANKLINE>
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
@@ -157,7 +157,7 @@ Bug aliases can also be used to request remote bugs.
     last_change_time: 20080611T09:24:29
     priority: P1
     product: HeartOfGold
-    resolution:
+    resolution: 
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.

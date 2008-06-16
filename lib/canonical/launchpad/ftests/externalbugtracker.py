@@ -353,14 +353,14 @@ class TestBugzillaXMLRPCTransport:
         2: {'alias': 'bug-two',
             'assigned_to': 'marvin@heartofgold.ship',
             'component': 'Crew',
-            'creation_time': '20080611T09:23:12',
+            'creation_time': datetime(2008, 6, 11, 9, 23, 12),
             'id': 2,
             'internals': {},
             'is_open': True,
-            'last_change_time': '20080611T09:24:29',
+            'last_change_time': datetime(2008, 6, 11, 9, 24, 29),
             'priority': 'P1',
             'product': 'HeartOfGold',
-            'resolution': None,
+            'resolution': '',
             'severity': 'high',
             'status': 'NEW',
             'summary': 'Collect unknown persons in docking bay 2.',
@@ -419,9 +419,12 @@ class TestBugzillaXMLRPCTransport:
         """Return a list of bug dicts for a given set of bug IDs."""
         bug_ids = arguments['ids']
         bugs_to_return = []
+        bugs = dict(self.bugs)
 
         for id in bug_ids:
-            # If the ID is an int, look up the bug directly.
+            # If the ID is an int, look up the bug directly. We copy the
+            # bug dict into a local variable so we can manipulate the
+            # data in it.
             try:
                 id = int(id)
                 # XXX 2008-06-13 gmb:
@@ -429,13 +432,30 @@ class TestBugzillaXMLRPCTransport:
                 #     moment we don't know for sure how the Bugzilla
                 #     interface is going to raise errors about bad bug
                 #     IDs.
-                bugs_to_return.append(self.bugs[int(id)])
+                bug_dict = dict(self.bugs[int(id)])
             except ValueError:
                 # XXX 2008-06-13 gmb:
                 #     We need to do error handling for bug aliases, too.
                 #     Same problem as above, though.
-                bugs_to_return.append(self.bugs[self.bug_aliases[id]])
+                bug_dict = dict(self.bugs[self.bug_aliases[id]])
 
+            # Update the DateTime fields of the bug dict so that they
+            # look like ones that would be sent over XML-RPC.
+            for time_field in ('creation_time', 'last_change_time'):
+                datetime_value = bug_dict[time_field]
+                timestamp = time.mktime(datetime_value.timetuple())
+                xmlrpc_datetime = xmlrpclib.DateTime(timestamp)
+                bug_dict[time_field] = xmlrpc_datetime
+
+            bugs_to_return.append(bug_dict)
+
+        # Oh, and we've got to handle that bloody silly case where we
+        # have a list of length 1. Why? Because xmlrpclib - I am not
+        # kidding here - will expand lists of length 1 and will return
+        # element 0 of the list instead of the actual list. Annoying?
+        # You bet.
+        if len(bugs_to_return) == 1:
+            bugs_to_return = [bugs_to_return]
         return bugs_to_return
 
 
