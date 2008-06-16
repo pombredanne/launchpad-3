@@ -22,8 +22,30 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
 from canonical.launchpad.interfaces.archiverebuild import (
-    ArchiveRebuildAlreadyExists, ArchiveRebuildStatus, IArchiveRebuild,
-    IArchiveRebuildSet)
+    ArchiveRebuildAlreadyExists, ArchiveRebuildInconsistentStateError,
+    ArchiveRebuildStatus, ArchiveRebuildStatusWriteProtectedError,
+    IArchiveRebuild, IArchiveRebuildSet)
+
+
+# XXX cprov 20080617: code copied from database/queue.py. Idealy it could be
+# shared, the only difference is the exception raised on write-portected
+# errors.
+
+class PassthroughStatusValue:
+    """A wrapper to allow setting ArchiveRebuild.status."""
+
+    def __init__(self, value):
+        self.value = value
+
+
+def validate_status(self, attr, value):
+    # Is the status wrapped in the special passthrough class?
+    if isinstance(value, PassthroughStatusValue):
+        return value.value
+
+    raise ArchiveRebuildStatusWriteProtectedError(
+        'Directly write on archive rebuild status is forbidden use the '
+        'provided methods to set it.')
 
 
 class ArchiveRebuild(SQLBase):
@@ -43,7 +65,9 @@ class ArchiveRebuild(SQLBase):
         dbName='registrant', foreignKey='Person', notNull=True)
 
     status = EnumCol(
-        dbName='status', notNull=True, schema=ArchiveRebuildStatus)
+        dbName='status', notNull=True, schema=ArchiveRebuildStatus,
+        default=ArchiveRebuildStatus.INPROGRESS,
+        storm_validator=validate_status)
 
     reason = StringCol(
         dbName='reason', notNull=True)
@@ -54,6 +78,36 @@ class ArchiveRebuild(SQLBase):
     def title(self):
         return '%s for %s' % (
             self.archive.name, self.distroseries.displayname)
+
+    def _setStatus(self, target_status):
+        """Protected status setter.
+
+        :param target_status: `ArchiveRebuildStatus` to be set.
+
+        :raise `ArchiveRebuildInsistentStatusError` if the given status
+            is already set.
+        """
+        if self.status == target_status:
+            raise ArchiveRebuildInconsistentStateError(
+                "Archive rebuild is already in %s status"
+                % target_status.name)
+        self.status = PassthroughStatusValue(target_status)
+
+    def setInProgress(self):
+        """See `IArchiveRebuild`."""
+        self._setStatus(ArchiveRebuildStatus.INPROGRESS)
+
+    def setCancelled(self):
+        """See `IArchiveRebuild`."""
+        self._setStatus(ArchiveRebuildStatus.CANCELLED)
+
+    def setComplete(self):
+        """See `IArchiveRebuild`."""
+        self._setStatus(ArchiveRebuildStatus.COMPLETE)
+
+    def setObsolete(self):
+        """See `IArchiveRebuild`."""
+        self._setStatus(ArchiveRebuildStatus.OBSOLETE)
 
 
 class ArchiveRebuildSet:
@@ -100,7 +154,7 @@ class ArchiveRebuildSet:
 
         return ArchiveRebuild(
             archive=archive, distroseries=distroseries, reason=reason,
-            registrant=registrant, status=ArchiveRebuildStatus.INPROGRESS)
+            registrant=registrant)
 
     def getByDistroSeries(self, distroseries):
         """See `IArchiveRebuildSet`."""

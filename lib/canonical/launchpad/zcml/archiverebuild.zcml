@@ -7,10 +7,18 @@
 
   <!-- ArchiveRebuild -->
   <content class="canonical.launchpad.database.ArchiveRebuild">
-    <allow interface="canonical.launchpad.interfaces.IArchiveRebuild"/>
+    <implements
+      interface="canonical.launchpad.interfaces.IArchiveRebuild"
+      />
+    <require
+      permission="zope.Public"
+      attributes="id archive date_created distroseries reason
+                  registrant title status"
+      />
     <require
       permission="launchpad.Edit"
-      set_attributes="status reason"
+      attributes="setInProgress setCancelled setComplete setObsolete"
+      set_attributes="reason"
       />
   </content>
 

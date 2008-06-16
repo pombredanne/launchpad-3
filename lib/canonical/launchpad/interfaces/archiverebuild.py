@@ -7,7 +7,9 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveRebuildAlreadyExists',
+    'ArchiveRebuildInconsistentStateError',
     'ArchiveRebuildStatus',
+    'ArchiveRebuildStatusWriteProtectedError',
     'IArchiveRebuild',
     'IArchiveRebuildSet',
     ]
@@ -25,6 +27,21 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 class ArchiveRebuildAlreadyExists(Exception):
     """Raised if a duplicated ArchiveRebuild creation was requested."""
+
+
+class ArchiveRebuildStatusWriteProtectedError(Exception):
+    """Raised if a callsite tried to update `IArchiveRebuild.status` directly.
+
+    All callsites should use one of the status handling methods:
+
+     * setCancelled()
+     * setComplete()
+     * setObsolete()
+    """
+
+
+class ArchiveRebuildInconsistentStateError(Exception):
+    """Raised if a `ArchiveRebuild` is set to inconsistent status."""
 
 
 class ArchiveRebuildStatus(DBEnumeratedType):
@@ -64,12 +81,12 @@ class IArchiveRebuild(Interface):
 
     archive = Object(
         schema=IArchive,
-        title=_(u"The IArchive which contains the source for rebuild."),
+        title=_("The IArchive which contains the source for rebuild."),
         required=False)
 
     distroseries = Object(
         schema=IDistroSeries,
-        title=_(u"The rebuild target IDistroSeries."),
+        title=_("The rebuild target IDistroSeries."),
         required=False)
 
     registrant = Choice(
@@ -80,7 +97,7 @@ class IArchiveRebuild(Interface):
 
     status = Choice(
         title=_('Status'),
-        required=True,
+        readonly=True,
         vocabulary='ArchiveRebuildStatus',
         description=_("The status of the archive rebuild."))
 
@@ -93,6 +110,18 @@ class IArchiveRebuild(Interface):
         title=_(u'Date Created'), required=True)
 
     title = Attribute("ArchiveRebuild title.")
+
+    def setInProgress():
+        """Reactivated rebuild."""
+
+    def setCancelled():
+        """Cancel rebuild. """
+
+    def setComplete():
+        """Mark rebuild as complete."""
+
+    def setObsolete():
+        """Mark rebuild as obsolete."""
 
 
 class IArchiveRebuildSet(Interface):

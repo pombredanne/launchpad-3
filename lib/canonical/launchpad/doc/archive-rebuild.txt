@@ -58,6 +58,11 @@ ID, i.e. newest first.
     hoary-gcc4.0-toolchain
     warty-gcc4.0-toolchain
 
+ArchiveRebuilds are created with INPROGRESS status.
+
+    >>> print rebuild_warty.status.name
+    INPROGRESS
+
 Archive.name collisions are detected during creation and an error is
 raised.
 
@@ -113,12 +118,11 @@ status/stages will be presented first.
     hoary-gcc4.0-toolchain  INPROGRESS
 
 Setting 'hoary-qt4' rebuild as OBSOLETE will move it to the end of the
-list, since it is an higher 'status'.
+list, since it is an higher 'status' (see further details about rebuild
+state-handling below).
 
-    >>> from canonical.launchpad.interfaces.archiverebuild import (
-    ...      ArchiveRebuildStatus)
     >>> login('celso.providelo@canonical.com')
-    >>> rebuild_hoary_qt.status = ArchiveRebuildStatus.OBSOLETE
+    >>> rebuild_hoary_qt.setObsolete()
     >>> login(ANONYMOUS)
 
     >>> for rebuild in archiverebuild_set.getByDistroSeries(hoary):
@@ -184,7 +188,54 @@ A 'title' attribute is also implemented for convenience.
 Once created, the ArchiveRebuild lifecycle will imply in changes on
 its 'status' and 'reason' fields.
 
-Those fields can only be edited by users in the following users:
+The 'status' field can't be changed directly. It's is protected by a
+state-machine that forces users to use special method that may trigger
+further actions required to keep the rebuild workflow sane. They are:
+
+ * setInProgress();
+ * setCancelled();
+ * setComplete();
+ * setObsolete();
+
+'status' attribute write is forbidden on IArchiveRebuild.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.archiverebuild import (
+    ...      ArchiveRebuildStatus)
+
+    >>> rebuild_hoary_qt.status = ArchiveRebuildStatus.INPROGRESS
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('status', <ArchiveRebuild at ...>)
+
+The same operation also results in an error if we remove the zope
+security proxy.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> naked_rebuild = removeSecurityProxy(rebuild_hoary_qt)
+    >>> naked_rebuild.status = ArchiveRebuildStatus.INPROGRESS
+    Traceback (most recent call last):
+    ...
+    ArchiveRebuildStatusWriteProtectedError: Directly write on archive
+    rebuild status is forbidden use the provided methods to set it.
+
+Changing the 'status' is only possible via the mentioned methods.
+
+    >>> rebuild_hoary_qt.setComplete()
+    >>> print rebuild_hoary_qt.status.name
+    COMPLETE
+
+An error is also raised if a callsite attempts to set a rebuild to the
+same status is already is.
+
+    >>> rebuild_hoary_qt.setComplete()
+    Traceback (most recent call last):
+    ...
+    ArchiveRebuildInconsistentStateError: Archive rebuild is already in
+    COMPLETE status
+
+'status' and 'reason' can only be changed by users in the following
+users:
 
  1. 'registrant';
  2. Distribution onwer;
@@ -192,10 +243,11 @@ Those fields can only be edited by users in the following users:
 
 An anonymous user cannot modify an ArchiveRebuild.
 
-    >>> rebuild_hoary_qt.status = ArchiveRebuildStatus.CANCELLED
+    >>> login(ANONYMOUS)
+    >>> rebuild_hoary_qt.setCancelled()
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'setCancelled', 'launchpad.Edit')
 
     >>> rebuild_hoary_qt.reason = 'Who does need QT4 ?'
     Traceback (most recent call last):
@@ -206,10 +258,10 @@ The same goes for No Privileged user.
 
     >>> login('no-priv@canonical.com')
 
-    >>> rebuild_hoary_qt.status = ArchiveRebuildStatus.CANCELLED
+    >>> rebuild_hoary_qt.setCancelled()
     Traceback (most recent call last):
     ...
-    Unauthorized: (..., 'status', 'launchpad.Edit')
+    Unauthorized: (..., 'setCancelled', 'launchpad.Edit')
 
     >>> rebuild_hoary_qt.reason = 'Who does need QT4 ?'
     Traceback (most recent call last):
@@ -219,7 +271,7 @@ The same goes for No Privileged user.
 Celso Providelo, as the rebuild registrant, can modify it.
 
     >>> login('celso.providelo@canonical.com')
-    >>> rebuild_hoary_qt.status = ArchiveRebuildStatus.CANCELLED
+    >>> rebuild_hoary_qt.setCancelled()
     >>> rebuild_hoary_qt.reason = 'Who does need QT4 ?'
 
 Jeff Waugh as member of the team owning ubuntu distribution can also
@@ -231,13 +283,13 @@ edit it.
     True
 
     >>> login('jeff.waugh@ubuntulinux.com')
-    >>> rebuild_hoary_qt.status = ArchiveRebuildStatus.OBSOLETE
+    >>> rebuild_hoary_qt.setComplete()
     >>> rebuild_hoary_qt.reason = 'I do not.'
 
 Finally, a Launchpad administrator can also edit it, because he can do
 pretty much everything he wants.
 
     >>> login('foo.bar@canonical.com')
-    >>> rebuild_hoary_qt.status = ArchiveRebuildStatus.INPROGRESS
+    >>> rebuild_hoary_qt.setObsolete()
     >>> rebuild_hoary_qt.reason = 'I do :)'
 
