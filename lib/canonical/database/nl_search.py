@@ -31,6 +31,8 @@ def nl_term_candidates(phrase):
     if not terms:
         # Only stop words
         return []
+    if isinstance(terms, str):
+        terms = terms.decode("UTF-8")
     return TS_QUERY_TERM_RE.findall(terms)
 
 
