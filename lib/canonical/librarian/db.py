@@ -7,9 +7,61 @@ __all__ = [
     'Library',
     ]
 
-from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
+import sys
 
 from sqlobject.sqlbuilder import AND
+import transaction
+
+from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
+from canonical.launchpad.webapp.adapter import DisconnectionError
+
+
+RETRY_ATTEMPTS = 3
+
+def retry_transaction(func):
+    def wrapper(*args, **kwargs):
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                return func(*args, **kwargs)
+            except DisconnectionError:
+                print "*** Disconnected"
+                if attempt >= RETRY_ATTEMPTS:
+                    raise # tried too many times
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    return wrapper
+
+def read_transaction(func):
+    def wrapper(*args, **kwargs):
+        print >>sys.stderr, "*** Begin Transaction", func.__name__
+        transaction.begin()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            print >>sys.stderr, "*** Abort Transaction"
+            transaction.abort()
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    return retry_transaction(wrapper)
+
+def write_transaction(func):
+    def wrapper(*args, **kwargs):
+        print >>sys.stderr, "*** Begin Transaction", func.__name__
+        transaction.begin()
+        try:
+            ret = func(*args, **kwargs)
+        except:
+            print >>sys.stderr, "*** Abort Transaction"
+            transaction.abort()
+            raise
+        print >>sys.stderr, "*** Commit Transaction"
+        transaction.commit()
+        return ret
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+    return retry_transaction(wrapper)
 
 
 class Library:

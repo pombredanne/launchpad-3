@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from datetime import datetime
 from pytz import utc
+import sys
 
 from twisted.internet import protocol
 from twisted.internet.threads import deferToThread
@@ -85,7 +86,8 @@ class FileUploadProtocol(basic.LineReceiver):
             log.err(failure)
         else:
             log.err()
-        self.sendError('Internal server error', '500')
+        self.sendError('Internal server error: %s: %s'
+                       % (sys.exc_type.__name__, sys.exc_value), '500')
 
     def translateErrors(self, failure):
         """Errback to translate storage errors to protocol errors."""
