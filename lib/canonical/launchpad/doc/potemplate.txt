@@ -584,7 +584,7 @@ The *-es.po file is indeed the Spanish translation...
 And GNU tar can cope with it.
 
     >>> from canonical.launchpad.helpers import simple_popen2
-    >>> contents = simple_popen2('tar ztf -', tarfile_string)
+    >>> contents = simple_popen2(['tar', 'ztf', '-'], tarfile_string)
     >>> for line in sorted(contents.splitlines()):
     ...     print line
     evolution-2.2/
@@ -593,7 +593,8 @@ And GNU tar can cope with it.
     evolution-2.2/evolution-2.2-xh.po
     po/
     po/evolution-2.2.pot
-    >>> pofile = simple_popen2('tar zxfO - evolution-2.2/evolution-2.2-es.po',
+    >>> pofile = simple_popen2(
+    ...     ['tar', 'zxfO', '-', 'evolution-2.2/evolution-2.2-es.po'],
     ...     tarfile_string)
     >>> pofile.split('\n')[0]
     '# traducci\xc3\xb3n de es.po al Spanish'

@@ -19,8 +19,11 @@ __all__ = [
     'BranchMergeProposalResubmitView',
     'BranchMergeProposalReviewView',
     'BranchMergeProposalView',
+    'BranchMergeProposalVoteView',
     'BranchMergeProposalWorkInProgressView',
     ]
+
+import operator
 
 from zope.component import getUtility
 from zope.event import notify as zope_notify
@@ -44,10 +47,16 @@ from canonical.launchpad.interfaces import (
     IMessageSet,
     IStructuralObjectPresentation,
     WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.codereviewcomment import (
+    CodeReviewVote)
+from canonical.launchpad.interfaces.codereviewvote import (
+    ICodeReviewVoteReference)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
 from canonical.launchpad.webapp.authorization import check_permission
+
+from canonical.lazr import decorates
 
 
 def notify(func):
@@ -282,6 +291,70 @@ class BranchMergeProposalView(LaunchpadView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+
+class DecoratedCodeReviewVoteReference:
+    """Provide a code review vote that knows if it is important or not."""
+
+    decorates(ICodeReviewVoteReference)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def reviewer_relationship(self):
+        """The relationship of the reviewer to the code review."""
+        vote = self.context
+        if vote.reviewer != vote.registrant:
+            return _("Requested reviewer")
+        target_branch = vote.branch_merge_proposal.target_branch
+        if vote.reviewer.inTeam(target_branch.code_reviewer):
+            return _("Target branch reviewer")
+        else:
+            return None
+
+    @property
+    def date_of_comment(self):
+        """The date of the comment, not the date_created of the vote."""
+        return self.context.comment.message.datecreated
+
+
+class BranchMergeProposalVoteView(LaunchpadView):
+    """The view used for the tables of votes and requested reviews."""
+
+    __used_for__ = IBranchMergeProposal
+
+    @cachedproperty
+    def reviews(self):
+        """Return the decorated votes for the proposal."""
+        return [DecoratedCodeReviewVoteReference(vote)
+                for vote in self.context.votes]
+
+    def _getOrderedReviews(self, actual_vote):
+        """Return votes with the specified vote ordered newest first."""
+        reviews = [review for review in self.reviews
+                   if (review.comment is not None and
+                       review.comment.vote == actual_vote)]
+        return sorted(reviews, key=operator.attrgetter('date_of_comment'),
+                      reverse=True)
+
+    @property
+    def current_reviews(self):
+        """The current votes ordered by vote then date."""
+        # We want the reviews in a specific order.
+        # Disapprovals first, then approvals, then abstentions.
+        return (self._getOrderedReviews(CodeReviewVote.DISAPPROVE) +
+                self._getOrderedReviews(CodeReviewVote.APPROVE) +
+                self._getOrderedReviews(CodeReviewVote.ABSTAIN))
+
+    @property
+    def requested_reviews(self):
+        """Reviews requested but not yet done."""
+        reviews = [review for review in self.reviews
+                   if review.comment is None]
+        # Now sort so the most recently created is first.
+        return sorted(reviews, key=operator.attrgetter('date_created'),
+                      reverse=True)
 
 
 class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
