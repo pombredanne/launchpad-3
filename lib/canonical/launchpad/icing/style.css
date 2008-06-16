@@ -308,9 +308,6 @@ strong em {
   font-style: normal;
   color: #353535;
 }
-strong span {
-  color: #656565;
-}
 .link_img {border: 0;}
 .debug {
   background: none;
@@ -749,6 +746,54 @@ it out of the page flow. */
 }
 
 span.help {font-weight: normal;}
+
+/* Navigation menus appear as a segmented pill overlaid on a groove: */
+.navigation.menu {
+  background: url(/+icing/navigation-menu-groove.png) repeat-x center left;
+  margin: 1em 0 2em;
+  text-align: center;
+}
+/* Segments have slight padding, and are normally mid-blue: */
+.navigation.menu * {background: #2064ef; padding: 0.25em 0;}
+/* But the selected element is slightly darker: */
+.navigation.menu strong * {background-color: #888;}
+/* The segments have a thin separator, and padding around their text: */
+.navigation.menu * * {border-right: 1px solid #fff; padding: 0.25em 0.5em;}
+/* For text browsers, there's a " / " separator, hidden from CSS browsers: */
+.navigation.menu small {display: none;}
+/* All text in the navigation menu is white, even the links: */
+.navigation.menu, .navigation.menu a {color: #fff;}
+/* The first segment has a rounded cap, matching its color: */
+.navigation.menu > :first-child {
+  background: url(/+icing/navigation-nw-w-normal.png) top left no-repeat;
+}
+.navigation.menu > strong:first-child {
+  background-image: url(/+icing/navigation-nw-w-selected.png);
+}
+.navigation.menu > :first-child::before {
+  content: '';
+  background: url(/+icing/navigation-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+}
+.navigation.menu > strong:first-child::before {
+  background-image: url(/+icing/navigation-sw-selected.png);
+}
+/* The last segment has a rounded cap, matching its color: */
+.navigation.menu > :last-child {
+  background: url(/+icing/navigation-ne-e-normal.png) top right no-repeat;
+}
+.navigation.menu > strong:last-child {
+  background-image: url(/+icing/navigation-ne-e-selected.png);
+}
+.navigation.menu > :last-child * {border-right: none;}
+.navigation.menu > :last-child::after {
+  content: '';
+  background: url(/+icing/navigation-se-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+}
+.navigation.menu > strong:last-child::after {
+  background-image: url(/+icing/navigation-se-selected.png);
+}
 
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin-left: -20px;}
