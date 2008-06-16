@@ -110,6 +110,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
     PasswordChangeWidget)
+from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
@@ -3055,10 +3056,11 @@ class PersonEditHomePageView(BasePersonEditView):
 class PersonEditView(BasePersonEditView):
     """The Launchpad 2.0 Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'homepage_content',
+    field_names = ['displayname', 'name', 'homepage_content', 'mugshot',
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'timezone']
     custom_widget('timezone', SelectWidget, size=15)
+    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
 
