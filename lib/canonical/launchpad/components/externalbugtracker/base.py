@@ -4,13 +4,13 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_bugwatcherrortype_for_error',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
     'BugWatchUpdateWarning',
     'ExternalBugTracker',
     'InvalidBugId',
+    'LookupTree',
     'PrivateRemoteBug',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteStatusError',
@@ -19,15 +19,18 @@ __all__ = [
     'UnsupportedBugTrackerVersion',
     ]
 
-import socket
+
 import urllib
 import urllib2
 
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BugWatchErrorType, IExternalBugTracker)
+from canonical.launchpad.components import treelookup
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus
+from canonical.launchpad.interfaces.bugwatch import BugWatchErrorType
+from canonical.launchpad.interfaces.externalbugtracker import (
+    IExternalBugTracker)
 
 
 # The user agent we send in our requests
@@ -35,7 +38,7 @@ LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 
 
 #
-# Exceptions caught in scripts/checkwatches.py
+# Errors.
 #
 
 
@@ -80,7 +83,7 @@ class BugTrackerConnectError(BugWatchUpdateError):
 
 
 #
-# Exceptions caught locally
+# Warnings.
 #
 
 
@@ -114,23 +117,9 @@ class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
 
-_exception_to_bugwatcherrortype = [
-   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
-   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
-   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
-   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
-   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
-   (socket.timeout, BugWatchErrorType.TIMEOUT)]
-
-def get_bugwatcherrortype_for_error(error):
-    """Return the correct `BugWatchErrorType` for a given error."""
-    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
-        if isinstance(error, exc_type):
-            return bugwatcherrortype
-    else:
-        return BugWatchErrorType.UNKNOWN
-
+#
+# Everything else.
+#
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
@@ -250,3 +239,90 @@ class ExternalBugTracker:
         page_contents = url.read()
         return page_contents
 
+
+class LookupBranch(treelookup.LookupBranch):
+    """A lookup branch customised for documenting external bug trackers."""
+
+    def _verify(self):
+        """Check the validity of the branch.
+
+        The branch result must be a member of `BugTaskStatus`, or
+        another `LookupTree`.
+
+        :raises TypeError: If the branch is invalid.
+        """
+        if (not isinstance(self.result, treelookup.LookupTree) and
+            self.result not in BugTaskStatus):
+            raise TypeError(
+                'Result is not a member of BugTaskStatus: %r' % (
+                    self.result,))
+        super(LookupBranch, self)._verify()
+
+    def _describe_result(self, result):
+        """See `treelookup.LookupBranch._describe_result`."""
+        # `result` should be a member of `BugTaskStatus`.
+        return result.title
+
+
+class LookupTree(treelookup.LookupTree):
+    """A lookup tree customised for documenting external bug trackers."""
+
+    # See `treelookup.LookupTree`.
+    _branch_factory = LookupBranch
+
+    def moinmoin_table(self, titles=None):
+        """Return lines of a MoinMoin table that documents self."""
+        max_depth = self.max_depth
+
+        def line(columns):
+            return '|| %s ||' % ' || '.join(columns)
+
+        if titles is not None:
+            if len(titles) != (max_depth + 1):
+                raise ValueError(
+                    "Table of %d columns needs %d titles, but %d given." % (
+                        (max_depth + 1), (max_depth + 1), len(titles)))
+            yield line("'''%s'''" % (title,) for title in titles)
+
+        def diff(last, now):
+            """Yields elements from `now` when different to those in `last`.
+
+            When the elements are the same, this yields the empty
+            string.
+
+            Once a difference has been found, all subsequent elements
+            in `now` are returned.
+
+            This results in a good looking and readable mapping table;
+            it gives a good balance between being explicit and
+            avoiding repetition.
+            """
+            all = False
+            for elem_last, elem_now in zip(last, now):
+                if all:
+                    yield elem_now
+                elif elem_last == elem_now:
+                    yield ''
+                else:
+                    # We found a difference. Force the return of all
+                    # subsequent elements in `now`.
+                    all = True
+                    yield elem_now
+
+        last_columns = None
+        for elems in self.flatten():
+            path, result = elems[:-1], elems[-1]
+            columns = []
+            for branch in path:
+                if branch.is_default:
+                    columns.append("* (''any'')")
+                else:
+                    columns.append(
+                        " '''or''' ".join(str(key) for key in branch.keys))
+            columns.extend(["- (''ignored'')"] * (max_depth - len(path)))
+            columns.append(result.title)
+            if last_columns is None:
+                yield line(columns)
+            else:
+                yield line(list(diff(last_columns, columns)))
+            last_columns = columns

@@ -49,14 +49,15 @@ class TestMergeProposalMailing(TestCase):
         self.assertEqual("""\
 Baz Qux has proposed merging foo into bar.
 
---
+--\x20
 %s
 %s
 """ % (canonical_url(bmp), mailer.getReason(subscriber)), body)
         self.assertEqual('Merge of foo into bar proposed', subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
-             'X-Launchpad-Message-Rationale': 'Subscriber'},
+             'X-Launchpad-Message-Rationale': 'Subscriber',
+             'Reply-To': bmp.address},
             headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
@@ -136,7 +137,7 @@ The proposal to merge foo into bar has been updated.
 Commit Message changed to:
 
 new commit message
---
+--\x20
 %s
 %s
 """ % (url, reason), body)

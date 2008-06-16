@@ -408,6 +408,6 @@ class IBranchMergeProposalGetter(Interface):
             private branches that the person is entitled to see are returned.
             Private branches are only visible to the owner and subscribers of
             the branch, and to LP admins.
-        :raises: BadBranchMergeProposalSearchContext if the context is not
+        :raises BadBranchMergeProposalSearchContext: If the context is not
             understood.
         """

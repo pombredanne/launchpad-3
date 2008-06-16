@@ -49,7 +49,6 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -586,7 +585,8 @@ class DistributionEditView(LaunchpadEditFormView):
     field_names = ['displayname', 'title', 'summary', 'description',
                    'bug_reporting_guidelines', 'official_malone',
                    'enable_bug_expiration', 'official_blueprints',
-                   'official_rosetta', 'official_answers']
+                   'official_rosetta', 'official_answers',
+                   'translation_focus', ]
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
