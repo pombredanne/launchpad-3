@@ -38,7 +38,7 @@ class IBinaryPackageFile(Interface):
 
 
 class IBinaryPackageFileSet(Interface):
-    """The set of all `BinaryPacakgeFile`s."""
+    """The set of all `BinaryPackageFile`s."""
 
     def getByPackageUploadIDs(self, package_upload_ids):
         """Return `BinaryPackageFile`s for the `PackageUpload` IDs."""

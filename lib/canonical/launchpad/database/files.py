@@ -40,7 +40,7 @@ class BinaryPackageFileSet:
 
     def getByPackageUploadIDs(self, package_upload_ids):
         """See `IBinaryPackageFileSet`."""
-        files = BinaryPackageFile.select("""
+        return BinaryPackageFile.select("""
             PackageUploadBuild.packageupload = PackageUpload.id AND
             PackageUpload.id IN %s AND
             Build.id = PackageUploadBuild.build AND
@@ -48,13 +48,9 @@ class BinaryPackageFileSet:
             BinaryPackageFile.binarypackagerelease = BinaryPackageRelease.id
             """ % sqlvalues(package_upload_ids),
             clauseTables=["PackageUpload", "PackageUploadBuild", "Build",
-                          "BinaryPackageRelease"])
-        return files.prejoin([
-            "binarypackagerelease",
-            "binarypackagerelease.build",
-            "libraryfile",
-            "libraryfile.content",
-            ])
+                          "BinaryPackageRelease"],
+            prejoins=["binarypackagerelease", "binarypackagerelease.build",
+                      "libraryfile", "libraryfile.content"])
 
 
 class SourcePackageReleaseFile(SQLBase):

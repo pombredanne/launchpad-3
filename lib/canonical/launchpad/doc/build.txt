@@ -262,7 +262,7 @@ Emulate a huge list of binaries for 'pmount':
     ...         architecturespecific)
 
 
-Check if the property still working:
+Check if the property is still working:
 
     >>> pmount_build.binarypackages.count()
     17

@@ -17,9 +17,7 @@ buildmaster/slave-scanner code, an build notification will be issued.
 See more information in build-notification.txt file.
 
   >>> from canonical.launchpad.interfaces import IBuildSet
-  >>> from canonical.launchpad.mail import stub
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-  >>> import transaction
   >>> buildset = getUtility(IBuildSet)
 
 Let's use a sampledata build record in FAILEDTOUPLOAD:
@@ -148,7 +146,7 @@ NascentUpload class instead of calling the script:
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  ...    datadir, getPolicy, mock_logger_quiet)
 
 
 The policy contains the right arguments to reprocess the build for the
