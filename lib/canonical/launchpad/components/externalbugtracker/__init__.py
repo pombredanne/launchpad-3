@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_bugwatcherrortype_for_error',
     'get_external_bugtracker',
     'BugNotFound',
     'BugTrackerConnectError',
@@ -16,6 +15,7 @@ __all__ = [
     'DebBugsDatabaseNotFound',
     'ExternalBugTracker',
     'InvalidBugId',
+    'LookupTree',
     'Mantis',
     'MantisLoginHandler',
     'PrivateRemoteBug',

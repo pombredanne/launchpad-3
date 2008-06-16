@@ -72,6 +72,14 @@
         />
   </browser:pages>
 
+  <browser:page
+      name="+votes"
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalVoteView"
+      facet="branches"
+      permission="launchpad.View"
+      template="../templates/branchmergeproposal-votes.pt" />
+
   <browser:pages
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       class="canonical.launchpad.browser.BranchMergeProposalEditView"
