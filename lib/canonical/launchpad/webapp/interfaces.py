@@ -747,6 +747,12 @@ class IBatchNavigator(Interface):
 
     batch = Attribute("The IBatch for which navigation links are provided.")
 
+    heading = Attribute(
+        "The heading describing the kind of objects in the batch.")
+
+    def setHeadings(singular, plural):
+        """Set the heading for singular and plural results."""
+
     def prevBatchURL():
         """Return a URL to the previous chunk of results."""
 
