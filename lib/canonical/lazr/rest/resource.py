@@ -29,7 +29,7 @@ from types import NoneType
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
-    adapts, getAdapters, getMultiAdapter, getUtility)
+    adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 from zope.interface.interfaces import IInterface
@@ -94,6 +94,9 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
                 return tuple(obj)
             if isinstance(underlying_object, dict):
                 return dict(obj)
+        if queryAdapter(obj, IEntry):
+            obj = EntryResource(obj, get_current_browser_request())
+
         return IJSONPublishable(obj).toDataForJSON()
 
 
@@ -280,6 +283,8 @@ class BatchingResourceMixin:
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
+        if navigator.batch.start < 0:
+            batch['start'] = None
         next_url = navigator.nextBatchURL()
         if next_url != "":
             batch['next_collection_link'] = next_url
@@ -746,11 +751,22 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
                 self.request.response.setHeader(
                     'Content-Type', self.WADL_TYPE)
                 return result
-            result = self.batch(entries, self.request)
-            result['resource_type_link'] = self.type_url
+
+            result = self.batch(entries)
 
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
+
+    def batch(self, entries=None):
+        """Return a JSON representation of a batch of entries.
+
+        :param entries: (Optional) A precomputed list of entries to batch.
+        """
+        if entries is None:
+            entries = self.collection.find()
+        result = super(CollectionResource, self).batch(entries, self.request)
+        result['resource_type_link'] = self.type_url
+        return result
 
     @property
     def type_url(self):
