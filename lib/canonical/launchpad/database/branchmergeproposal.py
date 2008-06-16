@@ -370,12 +370,16 @@ class BranchMergeProposal(SQLBase):
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
-        return CodeReviewVoteReference(
+        vote_reference = CodeReviewVoteReference.selectOneBy(
+            branch_merge_proposal=self, reviewer=reviewer)
+        if vote_reference is None:
+            vote_reference = CodeReviewVoteReference(
             branch_merge_proposal=self,
             registrant=registrant,
             reviewer=reviewer,
-            review_type=review_type,
             date_created=_date_created)
+        vote_reference.review_type = review_type
+        return vote_reference
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
