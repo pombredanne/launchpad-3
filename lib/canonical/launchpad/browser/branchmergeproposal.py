@@ -143,6 +143,10 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Request review'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.NEEDS_REVIEW)
+        enabled = (enabled or self.context.queue_status ==
+            BranchMergeProposalStatus.NEEDS_REVIEW)
+        if (self.context.votes) > 0:
+            text = 'Request another review'
         return Link('+request-review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
