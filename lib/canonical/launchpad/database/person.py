@@ -685,14 +685,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
 
     def _getQuestionTargetsFromAnswerContacts(self, answer_contacts):
-        """Return a list of valid IQuestionTargets.
+        """Return a list of active IQuestionTargets.
 
         :param answer_contacts: an iterable of `AnswerContact`s.
-        :return: a distinct list of active `IQuestionTarget`s.
-        :raise: AssertionError if the IQuestionTarget is not a `Product`,
+        :return: a list of active `IQuestionTarget`s.
+        :raise AssertionError: if the IQuestionTarget is not a `Product`,
             `Distribution`, or `SourcePackage`.
         """
-        targets = []
+        targets = set()
         for answer_contact in answer_contacts:
             if answer_contact.product is not None:
                 target = answer_contact.product
@@ -710,14 +710,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             else:
                 raise AssertionError('Unknown IQuestionTarget.')
 
-            if not pillar.active:
+            if pillar.active:
                 # Deactivated pillars are not valid IQuestionTargets.
-                continue
+                targets.add(target)
 
-            if not target in targets:
-                targets.append(target)
-
-        return targets
+        return list(targets)
 
     @property
     def branches(self):

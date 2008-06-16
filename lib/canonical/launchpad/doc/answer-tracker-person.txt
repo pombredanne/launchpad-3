@@ -278,8 +278,8 @@ answer contact through his team membership.
     >>> ubuntu.addAnswerContact(landscape_team)
     True
 
-    >>> sorted([target.name
-    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    >>> sorted(target.name
+    ...        for target in no_priv.getTeamAnswerQuestionTargets())
     [u'ubuntu']
 
 Indirect team membership is also taken in consideration. For example,
@@ -304,8 +304,8 @@ Person's supported IQuestionTargets:
     >>> translator_team.addLanguage(english)
     >>> evolution_package.addAnswerContact(translator_team)
     True
-    >>> sorted([target.name
-    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    >>> sorted(target.name
+    ...        for target in no_priv.getTeamAnswerQuestionTargets())
     [u'evolution', u'ubuntu']
 
 
@@ -324,8 +324,8 @@ supported projects.
     >>> login('foo.bar@canonical.com')
     >>> firefox.active = False
     >>> syncUpdate(firefox)
-    >>> sorted([target.name
-    ...     for target in no_priv.getDirectAnswerQuestionTargets()])
+    >>> sorted(target.name
+    ...        for target in no_priv.getDirectAnswerQuestionTargets())
     []
 
 When the Firefox project is reactivated, the answer contact relationship
@@ -334,6 +334,6 @@ cases were we only want is deactivated for a short period.
 
     >>> firefox.active = True
     >>> syncUpdate(firefox)
-    >>> sorted([target.name
-    ...     for target in no_priv.getDirectAnswerQuestionTargets()])
+    >>> sorted(target.name
+    ...        for target in no_priv.getDirectAnswerQuestionTargets())
     [u'firefox']
