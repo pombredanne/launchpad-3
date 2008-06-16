@@ -157,8 +157,8 @@ class PackageDiff(SQLBase):
             for direction, package in packages.iteritems():
                 # Create distinct directory locations for
                 # 'from' and 'to' files.
-                relative_path = os.path.join(tmp_dir, direction)
-                os.makedirs(relative_path)
+                absolute_path = os.path.join(tmp_dir, direction)
+                os.makedirs(absolute_path)
 
                 # Download the files associated with each package in
                 # their corresponding relative location.
@@ -166,7 +166,7 @@ class PackageDiff(SQLBase):
                     the_name = file.libraryfile.filename
                     relative_location = os.path.join(direction, the_name)
                     downloaded[direction].append(relative_location)
-                    destination_path = os.path.join(relative_path, the_name)
+                    destination_path = os.path.join(absolute_path, the_name)
                     download_file(destination_path, file.libraryfile)
 
             # All downloads are done. Construct the name of the resulting
