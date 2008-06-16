@@ -152,8 +152,6 @@ If we rename the BugTracker and then create another with the same name,
 calling ensurePersonForBugTracker() for 'noemail' on that BugTracker
 should produce a new Person rather than re-using the existing one.
 
-    >>> from canonical.launchpad.interfaces.bug import CreateBugParams
-    >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
