@@ -62,6 +62,45 @@ ISOLATION_LEVEL_DEFAULT = ISOLATION_LEVEL_READ_COMMITTED
 postgres_compile.remove_reserved_words(['language', 'section'])
 
 
+class StupidCache:
+    """A Storm cache that never evicts objects except on clear().
+
+    This class is basically equivalent to Storm's standard Cache class
+    with a very large size but without the overhead of maintaining the
+    LRU list.
+
+    This provides caching behaviour equivalent to what we were using
+    under SQLObject.
+    """
+
+    def __init__(self, size):
+        self._cache = {}
+
+    def clear(self):
+        self._cache.clear()
+
+    def add(self, obj_info):
+        if obj_info not in self._cache:
+            self._cache[obj_info] = obj_info.get_obj()
+
+    def remove(self, obj_info):
+        if obj_info in self._cache:
+            del self._cache[obj_info]
+            return True
+        return False
+
+    def set_size(self, size):
+        pass
+
+    def get_cached(self):
+        return self._cache.keys()
+
+
+# Monkey patch the cache into storm.store to override the standard
+# cache implementation for all stores.
+storm.store.Cache = StupidCache
+
+
 class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
     """A SQLObject style for launchpad.
 
@@ -125,17 +164,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # This matches the repr() output for the sqlos.SQLOS class.
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
-
-    def reset(self):
-        raise AssertionError("SQLBase.reset() not handled.")
-        if not self._SO_createValues:
-            return
-        self._SO_writeLock.acquire()
-        try:
-            self.dirty = False
-            self._SO_createValues = {}
-        finally:
-            self._SO_writeLock.release()
 
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "

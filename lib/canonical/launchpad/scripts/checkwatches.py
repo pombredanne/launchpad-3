@@ -18,9 +18,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    get_bugwatcherrortype_for_error, BugNotFound, BugWatchUpdateError,
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
     BugWatchUpdateWarning, InvalidBugId, PrivateRemoteBug,
-    UnknownRemoteStatusError)
+    UnknownBugTrackerTypeError, UnknownRemoteStatusError, UnparseableBugData,
+    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugMessageSet,
@@ -38,6 +39,27 @@ class TooMuchTimeSkew(BugWatchUpdateError):
     """Time difference between ourselves and the remote server is too much."""
 
 
+_exception_to_bugwatcherrortype = [
+   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
+   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
+   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (InvalidBugId, BugWatchErrorType.INVALID_BUG_ID),
+   (BugNotFound, BugWatchErrorType.BUG_NOT_FOUND),
+   (PrivateRemoteBug, BugWatchErrorType.PRIVATE_REMOTE_BUG),
+   (socket.timeout, BugWatchErrorType.TIMEOUT)]
+
+def get_bugwatcherrortype_for_error(error):
+    """Return the correct `BugWatchErrorType` for a given error."""
+    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
+        if isinstance(error, exc_type):
+            return bugwatcherrortype
+    else:
+        return BugWatchErrorType.UNKNOWN
+
+
 #
 # OOPS reporting.
 #
@@ -53,6 +75,9 @@ def report_oops(message=None, properties=None, info=None):
     """Record an oops for the current exception.
 
     This must only be called while handling an exception.
+
+    Searches for 'URL', 'url', or 'baseurl' properties, in order of
+    preference, to use as the linked URL of the OOPS report.
 
     :param message: custom explanatory error message. Do not use
         str(exception) to fill in this parameter, it should only be
@@ -77,8 +102,17 @@ def report_oops(message=None, properties=None, info=None):
     if message is not None:
         properties.append(('error-explanation', message))
 
+    # Find a candidate for the request URL.
+    def find_url():
+        for name in 'URL', 'url', 'baseurl':
+            for key, value in properties:
+                if key == name:
+                    return value
+        return None
+    url = find_url()
+
     # Create the dummy request object.
-    request = ScriptRequest(properties)
+    request = ScriptRequest(properties, url)
     error_utility = CheckWatchesErrorUtility()
     error_utility.raising(info, request)
 
@@ -188,7 +222,7 @@ class BugWatchUpdater(object):
                         str(error), properties=properties, info=info)
                 elif isinstance(error, socket.timeout):
                     self.error(
-                        "Connection timed out when updating %s" % 
+                        "Connection timed out when updating %s" %
                         bug_tracker_url,
                         properties=properties, info=info)
                 else:
@@ -402,6 +436,23 @@ class BugWatchUpdater(object):
                 "Comment importing supported, but server time can't be"
                 " trusted. No comments will be imported.")
 
+        error_type_messages = {
+            BugWatchErrorType.INVALID_BUG_ID:
+                ("Invalid bug %(bug_id)r on %(base_url)s "
+                 "(local bugs: %(local_ids)s)."),
+            BugWatchErrorType.BUG_NOT_FOUND:
+                ("Didn't find bug %(bug_id)r on %(base_url)s "
+                 "(local bugs: %(local_ids)s)."),
+            BugWatchErrorType.PRIVATE_REMOTE_BUG:
+                ("Remote bug %(bug_id)r on %(base_url)s is private "
+                 "(local bugs: %(local_ids)s)."),
+            }
+        error_type_message_default = (
+            "remote bug: %(bug_id)r; "
+            "base url: %(base_url)s; "
+            "local bugs: %(local_ids)s"
+            )
+
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:
@@ -409,6 +460,9 @@ class BugWatchUpdater(object):
             if bug_id in non_modified_bugs:
                 # No need to try to update it, if it wasn't modified.
                 continue
+
+            # Save the remote bug URL in case we need to log an error.
+            remote_bug_url = bug_watches[0].url
 
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
@@ -432,35 +486,21 @@ class BugWatchUpdater(object):
                     new_malone_importance = (
                         remotesystem.convertRemoteImportance(
                             new_remote_importance))
-                except InvalidBugId:
-                    error = BugWatchErrorType.INVALID_BUG_ID
+                except (InvalidBugId, BugNotFound, PrivateRemoteBug), ex:
+                    error = get_bugwatcherrortype_for_error(ex)
+                    message = error_type_messages.get(
+                        error, error_type_message_default)
                     self.warning(
-                        "Invalid bug %r on %s (local bugs: %s)." %
-                             (bug_id, remotesystem.baseurl, local_ids),
+                        message % {
+                            'bug_id': bug_id,
+                            'base_url': remotesystem.baseurl,
+                            'local_ids': local_ids,
+                            },
                         properties=[
+                            ('URL', remote_bug_url),
                             ('bug_id', bug_id),
-                            ('local_ids', local_ids)] +
-                            self._getOOPSProperties(remotesystem),
-                        info=sys.exc_info())
-                except BugNotFound:
-                    error = BugWatchErrorType.BUG_NOT_FOUND
-                    self.warning(
-                        "Didn't find bug %r on %s (local bugs: %s)." %
-                             (bug_id, remotesystem.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)] +
-                            self._getOOPSProperties(remotesystem),
-                        info=sys.exc_info())
-                except PrivateRemoteBug:
-                    error = BugWatchErrorType.PRIVATE_REMOTE_BUG
-                    self.warning(
-                        "Remote bug %r on %s is private (local bugs: %s)." %
-                            (bug_id, remotesystem.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)] +
-                            self._getOOPSProperties(remotesystem),
+                            ('local_ids', local_ids),
+                            ] + self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
@@ -506,6 +546,7 @@ class BugWatchUpdater(object):
                     "Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
                     properties=[
+                        ('URL', remote_bug_url),
                         ('bug_id', bug_id),
                         ('local_ids', local_ids)] +
                         self._getOOPSProperties(remotesystem))
@@ -517,7 +558,7 @@ class BugWatchUpdater(object):
         :param external_bugtracker: An ISupportsBugImport, which talks
             to the external bug tracker.
         :param bugtracker: An IBugTracker, to which the created bug
-            watch will be linked. 
+            watch will be linked.
         :param bug_target: An IBugTarget, to which the created bug will
             be linked.
         :param remote_bug: The remote bug id as a string.
