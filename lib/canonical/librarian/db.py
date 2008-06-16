@@ -5,63 +5,73 @@
 __metaclass__ = type
 __all__ = [
     'Library',
+    'read_transaction',
+    'write_transaction',
     ]
 
-import sys
-
+from psycopg2.extensions import TransactionRollbackError
 from sqlobject.sqlbuilder import AND
+from storm.exceptions import DisconnectionError, IntegrityError
 import transaction
+from twisted.python.util import mergeFunctionMetadata
 
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
-from canonical.launchpad.webapp.adapter import DisconnectionError
 
 
 RETRY_ATTEMPTS = 3
 
+
 def retry_transaction(func):
+    """Decorator used to retry database transaction failures.
+
+    The function being decorated should not have side effects outside
+    of the transaction.
+    """
     def wrapper(*args, **kwargs):
         attempt = 0
         while True:
             attempt += 1
             try:
                 return func(*args, **kwargs)
-            except DisconnectionError:
-                print "*** Disconnected"
+            except (DisconnectionError, IntegrityError,
+                    TransactionRollbackError), exc:
                 if attempt >= RETRY_ATTEMPTS:
                     raise # tried too many times
-    wrapper.__name__ = func.__name__
-    wrapper.__doc__ = func.__doc__
-    return wrapper
+    return mergeFunctionMetadata(func, wrapper)
+
 
 def read_transaction(func):
+    """Decorator used to run the function inside a read only transaction.
+
+    The transaction will be aborted on successful completion of the
+    function.  The transaction will be retried if appropriate.
+    """
     def wrapper(*args, **kwargs):
-        print >>sys.stderr, "*** Begin Transaction", func.__name__
         transaction.begin()
         try:
             return func(*args, **kwargs)
         finally:
-            print >>sys.stderr, "*** Abort Transaction"
             transaction.abort()
-    wrapper.__name__ = func.__name__
-    wrapper.__doc__ = func.__doc__
-    return retry_transaction(wrapper)
+    return retry_transaction(mergeFunctionMetadata(func, wrapper))
+
 
 def write_transaction(func):
+    """Decorator used to run the function inside a write transaction.
+
+    The transaction will be committed on successful completion of the
+    function, and aborted on failure.  The transaction will be retried
+    if appropriate.
+    """
     def wrapper(*args, **kwargs):
-        print >>sys.stderr, "*** Begin Transaction", func.__name__
         transaction.begin()
         try:
             ret = func(*args, **kwargs)
         except:
-            print >>sys.stderr, "*** Abort Transaction"
             transaction.abort()
             raise
-        print >>sys.stderr, "*** Commit Transaction"
         transaction.commit()
         return ret
-    wrapper.__name__ = func.__name__
-    wrapper.__doc__ = func.__doc__
-    return retry_transaction(wrapper)
+    return retry_transaction(mergeFunctionMetadata(func, wrapper))
 
 
 class Library:
