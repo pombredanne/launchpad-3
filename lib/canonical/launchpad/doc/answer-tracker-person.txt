@@ -13,6 +13,7 @@ participation type.
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
+
 === search_text ===
 
 The search_text parameter will limit the questions to those matching
@@ -23,6 +24,7 @@ the query using the regular full text algorithm.
     Firefox loses focus and gets stuck              Open
     mailto: problem in webpage                      Solved
     Newly installed plug-in doesn't seem to be used Answered
+
 
 === sort ===
 
@@ -51,6 +53,7 @@ QuestionSort.NEWEST_FIRST.
      6 Newly installed plug-in doesn't seem to be used      Answered
      4 Firefox loses focus and gets stuck                   Open
 
+
 === status ===
 
 The last searches showed that by default, not all statuses are searched
@@ -69,6 +72,7 @@ The status parameter can also take a list of statuses.
     ...     print question.title, question.status.title
     mailto: problem in webpage                  Solved
     Firefox is slow and consumes too much RAM   Invalid
+
 
 === participation ===
 
@@ -138,6 +142,7 @@ will be selected:
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
 
+
 === language ===
 
 By default, questions in all languages are included in the results.
@@ -163,6 +168,7 @@ But carlos has one.
     [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)',
      u'es']
 
+
 === needs_attention ===
 
 The method accept a parameter called needs_attention which only selects
@@ -176,6 +182,7 @@ answer and that are back in the OPEN state.
     ...         question.title)
     Open              Sample Person Continue playing after shutdown
     Needs information Foo Bar       Slow system
+
 
 === Combination ===
 
@@ -238,6 +245,7 @@ And questions on which the user commented:
 
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
+
 
 == getDirectAnswerQuestionTargets() ==
 
