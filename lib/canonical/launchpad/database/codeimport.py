@@ -180,6 +180,13 @@ class CodeImport(SQLBase):
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
         self._removeJob()
 
+    def markFailing(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.FAILING:
+            raise AssertionError('Review status is already failing.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.FAILING)
+        self._removeJob()
+
     def _setStatusAndEmail(self, data, user, status):
         """Update the review_status and email interested parties."""
         data['review_status'] = status
