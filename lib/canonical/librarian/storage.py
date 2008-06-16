@@ -4,13 +4,14 @@
 __metaclass__ = type
 
 import os
-import os.path
 import md5
 import sha
 import errno
 import tempfile
 
-from canonical.database.sqlbase import cursor
+from storm.zope.interfaces import IZStorm
+from zope.component import getUtility
+
 from canonical.librarian.db import write_transaction
 
 __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
@@ -30,9 +31,9 @@ class DuplicateFileIDError(Exception):
 class WrongDatabaseError(Exception):
     """The client's database name doesn't match our database."""
     def __init__(self, clientDatabaseName, serverDatabaseName):
+        Exception.__init__(clientDatabaseName, serverDatabaseName)
         self.clientDatabaseName = clientDatabaseName
         self.serverDatabaseName = serverDatabaseName
-        self.args = (clientDatabaseName, serverDatabaseName)
 
 
 class LibrarianStorage:
@@ -96,7 +97,8 @@ class LibraryFileUpload(object):
 
     @write_transaction
     def store(self):
-        self.debugLog.append('storing %r, size %r' % (self.filename, self.size))
+        self.debugLog.append('storing %r, size %r'
+                             % (self.filename, self.size))
         self.tmpfile.close()
 
         # Verify the digest matches what the client sent us
@@ -109,12 +111,12 @@ class LibraryFileUpload(object):
             raise DigestMismatchError, (self.srcDigest, dstDigest)
 
         try:
-            # If the client told us the name database of the database its using,
-            # check that it matches
+            # If the client told us the name database of the database
+            # its using, check that it matches
             if self.databaseName is not None:
-                cur = cursor()
-                cur.execute("SELECT current_database();")
-                databaseName = cur.fetchone()[0]
+                store = getUtility(IZStorm).get("main")
+                result = store.execute("SELECT current_database()")
+                databaseName = result.get_one()[0]
                 if self.databaseName != databaseName:
                     raise WrongDatabaseError(self.databaseName, databaseName)
 
