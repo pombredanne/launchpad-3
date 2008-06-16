@@ -37,26 +37,6 @@
 
   <facet facet="branches">
 
-    <browser:url
-        for="canonical.launchpad.interfaces.ICodeImport"
-        path_expression="string:+code-import"
-        attribute_to_parent="branch"
-        rootsite="code" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ICodeImport"
-        name="+index"
-        layer="canonical.launchpad.layers.CodeLayer"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ICodeImport"
-        class="canonical.launchpad.browser.CodeImportView"
-        name="+index"
-        template="../templates/codeimport.pt"
-        permission="zope.Public"
-        />
-
     <browser:page
         for="canonical.launchpad.interfaces.ICodeImport"
         name="+macros"
@@ -92,7 +72,7 @@
         class="canonical.launchpad.browser.CodeImportSetView"
         name="+index"
         template="../templates/codeimport-list.pt"
-        permission="launchpad.View"
+        permission="zope.Public"
         />
 
     <browser:page

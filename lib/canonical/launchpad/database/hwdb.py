@@ -45,7 +45,7 @@ from canonical.launchpad.interfaces import (
     IHWSystemFingerprintSet, IHWVendorID, IHWVendorIDSet, IHWVendorName,
     IHWVendorNameSet, ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.interfaces.product import License
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 # The vendor name assigned to new, unknown vendor IDs. See
@@ -68,10 +68,9 @@ class HWSubmission(SQLBase):
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person',
-                       validator=public_person_validator)
+                       storm_validator=validate_public_person)
     distroarchseries = ForeignKey(dbName='distroarchseries',
-                                  foreignKey='DistroArchSeries',
-                                  notNull=True)
+                                  foreignKey='DistroArchSeries')
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
                                 notNull=False, default=DEFAULT)

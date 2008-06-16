@@ -534,15 +534,15 @@ allowed to be connected with a few different database objects. This is
 enforced in the model, but there are also checks in the form handling to
 provide clearer error messages.
 
-The PublicPersonChoice for interface classes and the public_person_validator
-for SQLObject classes only allow public teams to be assigned to the
+The PublicPersonChoice for interface classes and the validate_public_person
+for database classes only allow public teams to be assigned to the
 specified field.
 
-The SQLObject validators will raise an InvalidField exception if an
-invalid team is passed to the constructor or is used to set one of
-the attributes.
+The validators will raise a PrivatePersonLinkageError exception if an
+invalid team is passed to the constructor or is used to set one of the
+attributes.
 
-myteam is a private-membership team, so public_person_validator
+myteam is a private-membership team, so validate_public_person
 will reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
@@ -557,14 +557,14 @@ BugSubscription.subscribed_by attributes.
     >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
-    InvalidField: Cannot link person
+    PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
     ...                                    subscribed_by=guadamen)
     >>> bug_subscription.person = myteam
     Traceback (most recent call last):
     ...
-    InvalidField: Cannot link person
+    PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
 == Latest Team Memberships ==
@@ -861,6 +861,27 @@ maintainer got omitted from the results:
     ...            sprelease.upload_archive.owner.name,
     ...            sprelease.upload_distroseries.fullseriesname)
     (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
+
+
+== Packages a Person is subscribed to ==
+
+IPerson.getBugSubscriberPackages returns this list of packages, sorted
+alphabetically by package name.
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> pmount = ubuntu.getSourcePackage('pmount')
+    >>> pmount.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+    >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> mozilla_firefox.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+
+    >>> [package.name for package in no_priv.getBugSubscriberPackages()]
+    [u'mozilla-firefox', u'pmount']
 
 
 == Pillars owned or driven by a person or team ==
@@ -1162,7 +1183,6 @@ Reset firefox so we don't mess up later tests.
 We can ascertain whether a person has uploader rights to a distribution
 or not.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov.isUploader(ubuntu)

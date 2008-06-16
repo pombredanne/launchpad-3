@@ -421,12 +421,13 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll('li')
+    entries = navigation_links.findAll(['strong','a'])
     for entry in entries:
-        if entry.a:
-            print '%s: %s' % (entry.a.string, entry.a['href'])
-        elif entry.strong:
-            print entry.strong.string
+        try:
+            print '%s: %s' % (entry.span.string, entry['href'])
+        except KeyError:
+            print entry.span.string
+
 
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
@@ -553,11 +554,11 @@ def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
+        'launchpad-library', 'salgado-change-anything', port=9000)
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'qQ7dw1fXCR5hhJRN7ztj', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate', port=9000)
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', '3SdVlTlVKcgXSJHbsSSk', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
