@@ -508,6 +508,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
     def _make_merge_proposal(self, owner_name, product_name, branch_name,
                              needs_review=False, registrant=None):
+        # A helper method to make the tests readable.
         owner = getUtility(IPersonSet).getByName(owner_name)
         if owner is None:
             owner = self.factory.makePerson(name=owner_name)
@@ -529,7 +530,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
 
     def _get_merge_proposals(self, context, status=None,
                              visible_by_user=None):
-        """Helper method to return tuples of source branch details."""
+        # Helper method to return tuples of source branch details.
         results = BranchMergeProposalGetter.getProposalsForContext(
             context, status, visible_by_user)
         return sorted([bmp.source_branch.unique_name for bmp in results])
@@ -552,7 +553,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
             needs_review.queue_status)
 
     def test_all_for_product_restrictions(self):
-        """Queries on product should limit results to that product."""
+        # Queries on product should limit results to that product.
         self._make_merge_proposal('albert', 'november', 'work')
         self._make_merge_proposal('bob', 'november', 'work')
         # And make a proposal for another product to make sure that it doesn't
@@ -565,7 +566,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
                 getUtility(IProductSet).getByName('november')))
 
     def test_wip_for_product_restrictions(self):
-        """Check queries on product limited on status."""
+        # Check queries on product limited on status.
         in_progress = self._make_merge_proposal('albert', 'november', 'work')
         needs_review = self._make_merge_proposal(
             'bob', 'november', 'work', needs_review=True)
@@ -576,7 +577,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
                 status=[BranchMergeProposalStatus.WORK_IN_PROGRESS]))
 
     def test_all_for_person_restrictions(self):
-        """Queries on person should limit results to that person."""
+        # Queries on person should limit results to that person.
         self._make_merge_proposal('albert', 'november', 'work')
         self._make_merge_proposal('albert', 'mike', 'work')
         # And make a proposal for another product to make sure that it doesn't

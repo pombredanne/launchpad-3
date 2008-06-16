@@ -1103,6 +1103,33 @@ class BranchSet:
             results = results.limit(branch_count)
         return results
 
+    @staticmethod
+    def _getBranchVisibilitySubQuery(visible_by_user):
+        return """
+            SELECT Branch.id
+            FROM Branch
+            WHERE
+                NOT Branch.private
+
+            UNION
+
+            SELECT Branch.id
+            FROM Branch, TeamParticipation
+            WHERE
+                Branch.owner = TeamParticipation.team
+            AND TeamParticipation.person = %d
+
+            UNION
+
+            SELECT Branch.id
+            FROM Branch, BranchSubscription, TeamParticipation
+            WHERE
+                Branch.private
+            AND Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = TeamParticipation.team
+            AND TeamParticipation.person = %d
+            """ % (visible_by_user.id, visible_by_user.id)
+
     def _generateBranchClause(self, query, visible_by_user):
         # If the visible_by_user is a member of the Launchpad admins team,
         # then don't filter the results at all.
@@ -1120,32 +1147,9 @@ class BranchSet:
         # Logged in people can see public branches (first part of the union),
         # branches owned by teams they are in (second part),
         # and all branches they are subscribed to (third part).
-        clause = ('''
-            %sBranch.id IN (
-                SELECT Branch.id
-                FROM Branch
-                WHERE
-                    NOT Branch.private
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, TeamParticipation
-                WHERE
-                    Branch.owner = TeamParticipation.team
-                AND TeamParticipation.person = %d
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, BranchSubscription, TeamParticipation
-                WHERE
-                    Branch.private
-                AND Branch.id = BranchSubscription.branch
-                AND BranchSubscription.person = TeamParticipation.team
-                AND TeamParticipation.person = %d)
-            '''
-            % (query, visible_by_user.id, visible_by_user.id))
+        clause = (
+            '%sBranch.id IN (%s)'
+            % (query, self._getBranchVisibilitySubQuery(visible_by_user)))
 
         return clause
 

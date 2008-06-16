@@ -453,30 +453,10 @@ class BranchMergeProposalGetter:
                 WHERE NOT Branch.private
                 ''')
         else:
-            private_subquery = ('''
-                SELECT Branch.id
-                FROM Branch
-                WHERE
-                    NOT Branch.private
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, TeamParticipation
-                WHERE
-                    Branch.owner = TeamParticipation.team
-                AND TeamParticipation.person = %d
-
-                UNION
-
-                SELECT Branch.id
-                FROM Branch, BranchSubscription, TeamParticipation
-                WHERE
-                    Branch.private
-                AND Branch.id = BranchSubscription.branch
-                AND BranchSubscription.person = TeamParticipation.team
-                AND TeamParticipation.person = %d
-                ''' % (visible_by_user.id, visible_by_user.id))
+            # To avoid circular imports.
+            from canonical.launchpad.database.branch import BranchSet
+            private_subquery = BranchSet._getBranchVisibilitySubQuery(
+                visible_by_user)
 
         return ('%sBranchMergeProposal.source_branch in (%s) '
                 ' AND BranchMergeProposal.target_branch in (%s)'
