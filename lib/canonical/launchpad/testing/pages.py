@@ -529,6 +529,12 @@ def print_navigation(contents):
     print "Main heading: %s" % main_heading
 
 
+def print_tag_with_id(contents, id):
+    """A simple helper to print the extracted text of the tag."""
+    tag = find_tag_by_id(contents, id)
+    print extract_text(tag)
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -594,6 +600,7 @@ def setUpGlobs(test):
     test.globs['print_batch_header'] = print_batch_header
     test.globs['print_ppa_packages'] = print_ppa_packages
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
+    test.globs['print_tag_with_id'] = print_tag_with_id
 
 
 class PageStoryTestCase(unittest.TestCase):

@@ -22,9 +22,11 @@
     <div tal:replace="structure view/proposals/@@+listing" />
   </tal:has-proposals>
 
-  <tal:no-proposals condition="not: view/proposal_count">
-    <p tal:content="view/no_proposal_message">No reviews</p>
-  </tal:no-proposals>
+  <p id="no-proposals"
+     tal:condition="not: view/proposal_count"
+     tal:content="view/no_proposal_message">
+    No reviews
+  </p>
 
 </div>
 

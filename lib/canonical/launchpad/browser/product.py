@@ -409,7 +409,26 @@ class ProductBugsMenu(ApplicationMenu):
         return Link('+securitycontact', text, icon='edit')
 
 
-class ProductBranchesMenu(ApplicationMenu):
+class ProductReviewCountMixin:
+    """A mixin used by the menu and the code index view."""
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
+
+class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     usedfor = IProduct
     facet = 'branches'
@@ -427,10 +446,18 @@ class ProductBranchesMenu(ApplicationMenu):
         return Link('+branches', text, summary, icon='add')
 
     def active_reviews(self):
-        return Link('+activereviews', 'active reviews')
+        if self.active_review_count == 1:
+            text = 'active review'
+        else:
+            text = 'active reviews'
+        return Link('+activereviews', text)
 
     def approved_merges(self):
-        return Link('+approvedmerges', 'approved merges')
+        if self.approved_merge_count == 1:
+            text = 'approved merge'
+        else:
+            text = 'approved merges'
+        return Link('+approvedmerges', text)
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -1337,7 +1364,7 @@ class ProductBranchListingView(BranchListingView):
 
 
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin):
+                           ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
 
     @property
@@ -1404,21 +1431,6 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
         """The number of teams who own branches."""
         return len([person for person in self._branch_owners
                     if person.isTeam()])
-
-    @cachedproperty
-    def active_review_count(self):
-        """Return the number of active reviews for the user."""
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
-        return query.count()
-
-    @cachedproperty
-    def approved_merge_count(self):
-        """Return the number of active reviews for the user."""
-        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
-            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
-            self.user)
-        return query.count()
 
     def _getSeriesBranches(self):
         """Get the series branches for the product, dev focus first."""

@@ -27,7 +27,7 @@
         replace="structure link/render"
         />)
   </p>
-  <p>
+  <p id="merge-counts">
     <strong class="count" tal:content="view/active_review_count">5</strong>
     <tal:link
         define="link context/menu:branches/active_reviews"
