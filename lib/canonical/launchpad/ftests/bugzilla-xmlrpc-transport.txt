@@ -43,3 +43,34 @@ more useful.
     local_time: 20080515T16:19:53
     tz_name: US/Central
     utc_time: 20080515T22:19:53
+
+
+== Bug.comments() ==
+
+The Launchpad Bugzilla plugin defines a Bug.comments() method which
+allows a remote system to get the comments for a given bug or set of
+bugs. It takes a list of bug IDs and returns all the comments for those
+bugs.
+
+    >>> return_dict = server.Bug.comments({'bug_ids': [1, 2]})
+    >>> bugs_dict = return_dict['bugs']
+    >>> for key in sorted(bugs_dict).keys():
+    ...     print "Bug %s:" % key
+    ...     bug_dict = bugs_dict[key]
+    ...     for comment_key in sorted(bug_dict.values()):
+    ...         print "    %s: %s" % (comment_key, bug_dict[comment_key])
+    ...     print
+    Bug 1:
+        author:
+        id:
+        number:
+        text:
+        time
+    <BLANKLINE>
+    Bug 2:
+        author:
+        id:
+        number:
+        text:
+        time
+
