@@ -129,8 +129,6 @@ class BMPMailer(BaseMailer):
         """Return a string explaining why the recipient is a recipient."""
         subscription = self._recipients.getReason(
             recipient.preferredemail.email)[0]
-        from zope.security.proxy import removeSecurityProxy
-        subscription = removeSecurityProxy(subscription)
         return subscription.getReason()
 
     def _getReplyToAddress(self):
@@ -142,8 +140,6 @@ class BMPMailer(BaseMailer):
         headers = BaseMailer._getHeaders(self, recipient)
         subscription, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
-        from zope.security.proxy import removeSecurityProxy
-        subscription = removeSecurityProxy(subscription)
         headers['X-Launchpad-Branch'] = subscription.branch.unique_name
         return headers
 
