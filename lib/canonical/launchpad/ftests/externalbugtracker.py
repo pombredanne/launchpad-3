@@ -333,6 +333,7 @@ class TestBugzillaXMLRPCTransport:
     seconds_since_epoch = None
     timezone = 'UTC'
     utc_offset = 0
+    print_method_calls = False
 
     bugs = {
         1: {'alias': '',
@@ -394,6 +395,9 @@ class TestBugzillaXMLRPCTransport:
 
         assert method_name in self.methods[method_prefix], (
             "No method '%s' in namespace '%s'." % (method_name, method_prefix))
+
+        if self.print_method_calls:
+            print "CALLED %s.%s(%s)" % (method_prefix, method_name, args[0])
 
         method = getattr(self, method_name)
         return method(*args)
