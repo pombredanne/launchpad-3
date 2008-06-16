@@ -246,7 +246,7 @@ OK, now, this time, we will add some decorator information to the winner but
 not the loser.
 
     >>> winner, loser = endless_supply_of_players.next()
-    >>> winner.timezone = 'America/Santiago'
+    >>> winner.time_zone = 'America/Santiago'
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
     >>> personset._merge_person_decoration(winner, loser, skip,
@@ -262,7 +262,7 @@ This time, we will have a decorator for the person that is being merged INTO
 another person, but nothing on the target person.
 
     >>> winner, loser = endless_supply_of_players.next()
-    >>> loser.timezone = 'America/Santiago'
+    >>> loser.time_zone = 'America/Santiago'
     >>> print decorator_refs(store, winner, loser)
     loser, loser,
     >>> personset._merge_person_decoration(winner, loser, skip,
@@ -280,8 +280,8 @@ remain as noise but non-unique columns will have been updated to point to
 the winner, and the to_person will be unaffected.
 
     >>> winner, loser = endless_supply_of_players.next()
-    >>> winner.timezone = 'America/Santiago'
-    >>> loser.timezone = 'America/New_York'
+    >>> winner.time_zone = 'America/Santiago'
+    >>> loser.time_zone = 'America/New_York'
     >>> print decorator_refs(store, winner, loser)
     winner, winner,
     loser, loser,

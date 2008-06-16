@@ -30,7 +30,6 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.references import Reference
 from storm.store import Store
 
 from canonical.config import config
@@ -339,7 +338,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if location is None:
             return None
         return location.time_zone
-    timezone = property(get_time_zone, set_time_zone)
+    time_zone = property(get_time_zone, set_time_zone)
 
 
     def get_translations_relicensing_agreement(self):
