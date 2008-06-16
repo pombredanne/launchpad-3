@@ -500,6 +500,16 @@ The vhost name is preserved when the URL is rewritten.
     >>> page_match.url
     'http://bugs.launchpad.dev/unicode-titles/+bug/456'
 
+A URL's trailing slash is removed; Launchpad does not use trailing
+slashes.
+
+    >>> page_match = PageMatch(
+    ...     u'Ubuntu in Launchpad',
+    ...     'https://launchpad.net/ubuntu/',
+    ...     u'Ubuntu also includes more software than any other operating')
+    >>> page_match.url
+    'http://launchpad.dev/ubuntu'
+
 There is a list of URLs that are not rewritten configured in
 config.google.url_rewrite_exceptions. For example, help.launchpad.net
 is only run in one environment, so links to that site will be preserved.
