@@ -453,14 +453,11 @@ class TestBugzillaXMLRPCTransport:
 
             bugs_to_return.append(bug_dict)
 
-        # Oh, and we've got to handle that bloody silly case where we
-        # have a list of length 1. Why? Because xmlrpclib - I am not
-        # kidding here - will expand lists of length 1 and will return
-        # element 0 of the list instead of the actual list. Annoying?
-        # You bet.
-        if len(bugs_to_return) == 1:
-            bugs_to_return = [bugs_to_return]
-        return bugs_to_return
+        # "Why are you returning a list here?" I hear you cry. Well,
+        # dear reader, it's becaus xmlrpclib:1387 tries to expand
+        # sequences of length 1. When you return a dict, that line
+        # explodes in your face. Annoying? Insane? You bet.
+        return [{'bugs': bugs_to_return}]
 
 
 class TestMantis(Mantis):
