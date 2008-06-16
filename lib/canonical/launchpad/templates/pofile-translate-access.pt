@@ -24,7 +24,7 @@
             <a>Ubuntu translators</a>
           </tal:team>
           <tal:noteam condition="...">
-            <a>Ubuntu translators</a>
+            Translation group <a>Ubuntu translators</a>
           </tal:noteam>
         </li>
       </tal:loop>
@@ -39,24 +39,18 @@
       You have full access to this translation.
     </tal:permission>
     <tal:permission condition="...">
-      Your suggestions will be held for review by members of
-      <a>Just a testing team</a>.
-    </tal:permission>
-    <tal:permission condition="...">
-      Your suggestions will be held for review by members of
-      <a>Just a testing team</a> or <a>Another translation team</a>.
+      Your suggestions will be held for review by the managers of this
+      translation.
     </tal:permission>
     <tal:permission condition="...">
       There is nobody to manage this translation.  If you are interested in
-      working on this, please contact <a>translation group</a>.
+      working on this, please contact the translation group.
     </tal:permission>
     <tal:permission condition="...">
-      This template can be translated only by members of
-      <a>Just a testing team</a>.
+      This template can be translated only by its managers.
     </tal:permission>
-    <tal:permission condition="...">
-      This template can be translated only by members of
-      <a>Just a testing team</a> or <a>Another translation team</a>.
+    <tal:permission>
+      This translation is not open for changes.
     </tal:permission>
     <tal:permission condition="...">
       You are not logged in.  Please log in to work on translations.
