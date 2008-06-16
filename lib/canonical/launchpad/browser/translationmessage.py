@@ -692,8 +692,7 @@ class BaseTranslationView(LaunchpadView):
     @cachedproperty
     def form_is_writeable(self):
         """Whether the form should accept write operations."""
-        return (self.user is not None and
-                self.pofile.canAddSuggestions(self.user))
+        return self.pofile.canAddSuggestions(self.user)
 
     def _extractFormPostedTranslations(self, potmsgset):
         """Look for translations for this `POTMsgSet` in the form submitted.

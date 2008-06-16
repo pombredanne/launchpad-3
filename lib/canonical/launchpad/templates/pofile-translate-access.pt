@@ -3,7 +3,6 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag=""
-  condition="nothing"
 >
   <tal:XXX condition="nothing">
     # XXX mpt 20080612:
@@ -13,47 +12,67 @@
     # is finished. In the meantime, the full-blown details portlet is shown
     # instead.
   </tal:XXX>
-  <p class="discreet">
-    <tal:groups condition="view/translation_groups">
+  <tal:translationgroups condition="view/has_translationgroup">
+    <p class="discreet">
       This translation is managed by:
-      <ul>
-      <tal:loop repeat="translationgroup view/translationgroups">
+    </p>
+    <ul>
+      <tal:loop repeat="manager view/managers">
         <li>
-          <tal:team condition="...">
-            <a>Just a testing team</a> in translation group
-            <a>Ubuntu translators</a>
+          <tal:team condition="manager/team">
+            <a tal:attributes="href manager/team/fmt:url"
+               tal:content="manager/team/browsername">
+              Just a testing team</a>
+	      in translation group
+            <a tal:attributes="href manager/group/fmt:url"
+               tal:content="manager/group/name">
+	      Ubuntu translators</a>
           </tal:team>
-          <tal:noteam condition="...">
-            Translation group <a>Ubuntu translators</a>
+          <tal:noteam condition="not: manager/team">
+            Translation group
+            <a tal:attributes="href manager/group/fmt:url"
+               tal:content="manager/group/name">
+	      Ubuntu translators</a>
           </tal:noteam>
         </li>
       </tal:loop>
-      </ul>
-    </tal:groups>
-    <tal:nogroups condition="not view/translation_groups">
+    </ul>
+  </tal:translationgroups>
+  <tal:nogroups condition="not: view/has_translationgroup">
+    <p class="discreet">
       No translation group has been assigned.
-    </tal:nogroups>
-  </p>
+    </p>
+  </tal:nogroups>
+
   <p class="discreet">
-    <tal:permission condition="...">
+    <tal:permission condition="view/user_can_edit">
       You have full access to this translation.
     </tal:permission>
-    <tal:permission condition="...">
-      Your suggestions will be held for review by the managers of this
-      translation.
-    </tal:permission>
-    <tal:permission condition="...">
-      There is nobody to manage this translation.  If you are interested in
-      working on this, please contact the translation group.
-    </tal:permission>
-    <tal:permission condition="...">
-      This template can be translated only by its managers.
-    </tal:permission>
-    <tal:permission>
-      This translation is not open for changes.
-    </tal:permission>
-    <tal:permission condition="...">
-      You are not logged in.  Please log in to work on translations.
-    </tal:permission>
+    <tal:noedit condition="not: view/user_can_edit">
+      <tal:permission condition="view/user_can_suggest">
+        Your suggestions will be held for review by the managers of this
+        translation.
+      </tal:permission>
+      <tal:nosuggestions condition="not: view/user_can_suggest">
+        <tal:permission condition="not: request/lp:person">
+          You are not logged in.  Please log in to work on translations.
+        </tal:permission>
+        <tal:loggedin condition="request/lp:person">
+          <tal:permission condition="not: view/has_translationgroup">
+            This translation is not open for changes.
+          </tal:permission>
+          <tal:translationgroups condition="view/has_translationgroup">
+            <tal:permission condition="view/is_managed">
+              This template can be translated only by its managers.
+            </tal:permission>
+            <tal:permission condition="not: view/is_managed">
+              There is nobody to manage translation into this particular
+              language.  If you are interested in working on it, please
+              contact the translation group.
+            </tal:permission>
+          </tal:translationgroups>
+        </tal:loggedin>
+      </tal:nosuggestions>
+    </tal:noedit>
   </p>
 </tal:root>

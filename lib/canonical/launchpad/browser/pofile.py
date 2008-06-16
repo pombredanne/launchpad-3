@@ -140,6 +140,62 @@ class POFileView(LaunchpadView):
     def contributors(self):
         return list(self.context.contributors)
 
+    @property
+    def user_can_edit(self):
+        """Does the user have full edit rights for this translation?"""
+        return self.context.canEditTranslations(self.user)
+
+    @property
+    def user_can_suggest(self):
+        """Is the user allowed to make suggestions here?"""
+        return self.context.canAddSuggestions(self.user)
+
+    @property
+    def has_translationgroup(self):
+        """Is there a translation group for this translation?"""
+        for group in self.context.potemplate.translationgroups:
+            return True
+        return False
+
+    @property
+    def is_managed(self):
+        """Is a translation group member assigned to this translation?"""
+        for group in self.context.potemplate.translationgroups:
+            if group.query_translator(self.context.language):
+                return True
+        return False
+
+    @property
+    def managers(self):
+        """List translation groups and translation teams for this translation.
+
+        Returns a list of descriptions of who may manage this
+        translation.  Each entry contains a "group" (the
+        `TranslationGroup`) and a "team" (the translation team, or
+        possibly a single person).  The team is None for groups that
+        haven't assigned a translation team for this translation's
+        language.
+
+        Duplicates are eliminated; every translation group will occur
+        at most once.
+        """
+        language = self.context.language
+        managers = []
+        groups = set()
+        for group in self.context.potemplate.translationgroups:
+            if group not in groups:
+                translator = group.query_translator(language)
+                if translator is None:
+                    team = None
+                else:
+                    team = translator.translator
+                managers.append({
+                    'group': group,
+                    'team': team,
+                })
+            groups.add(group)
+        return managers
+
 
 class TranslationMessageContainer:
     def __init__(self, translation):
@@ -300,15 +356,15 @@ class POFileUploadView(POFileView):
 
 
 class POFileTranslateView(BaseTranslationView):
-    """The View class for a POFile or a DummyPOFile.
+    """The View class for a `POFile` or a `DummyPOFile`.
 
-    This view is based on BaseTranslationView and implements the API
+    This view is based on `BaseTranslationView` and implements the API
     defined by that class.
 
-    Note that DummyPOFiles are presented if there is no POFile in the
-    database but the user wants to translate it. See how POTemplate
-    traversal is done for details about how we decide between a POFile
-    or a DummyPOFile.
+    `DummyPOFile`s are presented where there is no `POFile` in the
+    database but the user may want to translate.  See how `POTemplate`
+    traversal is done for details about how we decide between a `POFile`
+    or a `DummyPOFile`.
     """
 
     DEFAULT_SHOW = 'all'
