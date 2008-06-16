@@ -8,13 +8,10 @@ __all__ = [
     'DistroArchSeriesBinaryPackageReleaseView',
     ]
 
-from zope.component import getUtility
-
 from canonical.launchpad.interfaces import (
     IDistroArchSeriesBinaryPackageRelease, IStructuralHeaderPresentation)
 
-from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation)
+from canonical.launchpad.webapp import ApplicationMenu, Navigation
 
 
 def distroarchseriesbinarypackagerelease_to_structuralheading(dasbpr):

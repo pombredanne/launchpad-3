@@ -11,8 +11,7 @@ __all__ = [
 from canonical.launchpad.interfaces import (
     IDistroArchSeriesBinaryPackage, IStructuralHeaderPresentation)
 
-from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, GetitemNavigation, Link)
+from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
 
 
 def distroarchseriesbinarypackage_to_structuralheading(dasbp):
