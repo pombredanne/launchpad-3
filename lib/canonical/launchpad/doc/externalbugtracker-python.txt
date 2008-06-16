@@ -24,67 +24,100 @@ status and resolution, to make the test more readable.
     ...     Roundup)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     convert_python_status)
-    >>> python = Roundup('http://bugs.python.org')
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'None')).title
-    'New'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'accepted')).title
-    'Confirmed'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'duplicate')).title
-    'Confirmed'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'fixed')).title
-    'Fix Committed'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'invalid')).title
-    'Invalid'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'later')).title
-    'Confirmed'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'out-of-date')).title
-    'Invalid'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'postponed')).title
-    'Confirmed'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'rejected')).title
-    "Won't Fix"
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'remind')).title
-    'Confirmed'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'wontfix')).title
-    "Won't Fix"
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('open', 'worksforme')).title
-    'Invalid'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('closed', 'None')).title
-    "Won't Fix"
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('closed', 'accepted')).title
-    'Fix Committed'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('closed', 'fixed')).title
-    'Fix Released'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('closed', 'postponed')).title
-    "Won't Fix"
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('pending', 'None')).title
-    'Incomplete'
-    >>> python.convertRemoteStatus(
-    ...     convert_python_status('pending', 'postponed')).title
-    "Won't Fix"
+    >>> python_bugs = Roundup('http://bugs.python.org')
 
-If the status isn't something that our Python ExternalBugTracker can
+    >>> python_bugs_example_statuses = [
+    ...     ('open', 'None'),
+    ...     ('open', 'accepted'),
+    ...     ('open', 'duplicate'),
+    ...     ('open', 'fixed'),
+    ...     ('open', 'invalid'),
+    ...     ('open', 'later'),
+    ...     ('open', 'out-of-date'),
+    ...     ('open', 'postponed'),
+    ...     ('open', 'rejected'),
+    ...     ('open', 'remind'),
+    ...     ('open', 'wontfix'),
+    ...     ('open', 'worksforme'),
+    ...     ('closed', 'None'),
+    ...     ('closed', 'accepted'),
+    ...     ('closed', 'fixed'),
+    ...     ('closed', 'postponed'),
+    ...     ('pending', 'None'),
+    ...     ('pending', 'postponed'),
+    ...     ]
+
+    >>> for status, resolution in python_bugs_example_statuses:
+    ...     status_string = convert_python_status(status, resolution)
+    ...     status_converted = python_bugs.convertRemoteStatus(status_string)
+    ...     print '(%s, %s) --> %s --> %s' % (
+    ...         status, resolution, status_string, status_converted)
+    (open, None) --> 1:None --> New
+    (open, accepted) --> 1:1 --> Confirmed
+    (open, duplicate) --> 1:2 --> Confirmed
+    (open, fixed) --> 1:3 --> Fix Committed
+    (open, invalid) --> 1:4 --> Invalid
+    (open, later) --> 1:5 --> Confirmed
+    (open, out-of-date) --> 1:6 --> Invalid
+    (open, postponed) --> 1:7 --> Confirmed
+    (open, rejected) --> 1:8 --> Won't Fix
+    (open, remind) --> 1:9 --> Confirmed
+    (open, wontfix) --> 1:10 --> Won't Fix
+    (open, worksforme) --> 1:11 --> Invalid
+    (closed, None) --> 2:None --> Won't Fix
+    (closed, accepted) --> 2:1 --> Fix Committed
+    (closed, fixed) --> 2:3 --> Fix Released
+    (closed, postponed) --> 2:7 --> Won't Fix
+    (pending, None) --> 3:None --> Incomplete
+    (pending, postponed) --> 3:7 --> Won't Fix
+
+If the status isn't something that our Python_Bugs ExternalBugTracker can
 understand an UnknownRemoteStatusError will be raised.
 
-    >>> python.convertRemoteStatus('7:13').title
+    >>> python_bugs.convertRemoteStatus('7:13').title
     Traceback (most recent call last):
       ...
     UnknownRemoteStatusError: 7:13
 
+Internally, to parse the numeric-style - "1:2" - status strings,
+parse_python_status is used.
+
+    >>> from canonical.launchpad.components.externalbugtracker.roundup \
+    ...     import parse_python_status
+
+    >>> for status, resolution in python_bugs_example_statuses:
+    ...     status_string = convert_python_status(status, resolution)
+    ...     status_parsed = parse_python_status(status_string)
+    ...     print '(%s, %s) --> %s --> %r' % (
+    ...         status, resolution, status_string, status_parsed)
+    (open, None) --> 1:None --> (1, None)
+    (open, accepted) --> 1:1 --> (1, 1)
+    (open, duplicate) --> 1:2 --> (1, 2)
+    (open, fixed) --> 1:3 --> (1, 3)
+    (open, invalid) --> 1:4 --> (1, 4)
+    ...
+
+The format of a Python Bugs status is <number>:<number-or-"None">, and
+parse_python_status will complain if it sees a status string not of
+that format.
+
+    >>> parse_python_status('1:10')
+    (1, 10)
+
+    >>> parse_python_status('2:None')
+    (2, None)
+
+    >>> parse_python_status('1:2:3')
+    Traceback (most recent call last):
+    ...
+    AssertionError: The remote status must be a string of the form <status>:<resolution>.
+
+    >>> parse_python_status('Donkey:10')
+    Traceback (most recent call last):
+    ...
+    AssertionError: The remote status must be an integer.
+
+    >>> parse_python_status('1:Kong')
+    Traceback (most recent call last):
+    ...
+    AssertionError: The resolution must be an integer or 'None'.

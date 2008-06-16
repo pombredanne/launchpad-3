@@ -340,12 +340,12 @@ You can request a review of a merge proposal.
 This causes a notification to be sent.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Klingon support in GNOME Terminal into GNOME
-    Terminal= Mainline has been updated.
+    Terminal Mainline has been updated.
     <BLANKLINE>
-        Status: Work in progress =3D> Needs review
-    --
+        Status: Work in progress => Needs review
+    -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
     You are subscribed to branch GNOME Terminal Mainline.
     <BLANKLINE>
@@ -408,12 +408,12 @@ An email notification is also created.
     >>> print notification['Subject']
     Proposed merge of Klingon support in GNOME Terminal into GNOME Terminal
     Mainline updated
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Klingon support in GNOME Terminal into GNOME
-    Terminal= Mainline has been updated.
+    Terminal Mainline has been updated.
     <BLANKLINE>
-         Status: Needs review =3D> Merged
-    --
+         Status: Needs review => Merged
+    -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
     You are subscribed to branch GNOME Terminal Mainline.
     <BLANKLINE>
@@ -601,16 +601,16 @@ recorded as the reviewer of the proposal.
 An email notification is also generated.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Mozilla Firefox 0.9 into Mozilla Firefox Mainline
-    has= been updated.
+    has been updated.
     <BLANKLINE>
-        Status: Work in progress =3D> Queued
-        Queue Position: (not set) =3D> 1
+        Status: Work in progress => Queued
+        Queue Position: (not set) => 1
     <BLANKLINE>
     Commit Message changed to:
     This is the commit message
-    --
+    -- 
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
@@ -658,12 +658,12 @@ Have Sample Person approve the branch.
     Approving a proposal causes a notification.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Mozilla Firefox 0.9.2 into Mozilla Firefox
-    Mainline h= as been updated.
+    Mainline has been updated.
     <BLANKLINE>
-        Status: Work in progress =3D> Code approved
-    --
+        Status: Work in progress => Code approved
+    -- 
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2/+merge/7
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
@@ -750,12 +750,12 @@ front of the queue.
 A notification is sent.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Mozilla Firefox 0.9.2 into Mozilla Firefox
-    Mainline h= as been updated.
+    Mainline has been updated.
     <BLANKLINE>
-        Queue Position: 2 =3D> 0
-    --
+        Queue Position: 2 => 0
+    -- 
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2/+merge/7
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
@@ -771,13 +771,13 @@ Clicking on the "Dequeue" button removes it from the queue.
 A notification is sent.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Mozilla Firefox 0.9.2 into Mozilla Firefox
-    Mainline h= as been updated.
+    Mainline has been updated.
     <BLANKLINE>
-        Status: Queued =3D> Code approved
-        Queue Position: 0 =3D> (not set)
-    --
+        Status: Queued => Code approved
+        Queue Position: 0 => (not set)
+    -- 
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2/+merge/7
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
@@ -795,16 +795,16 @@ The user is taken to a form where they can update the whiteboard.
     ...     'Removed from the queue as I forgot a test.')
     >>> sample_browser.getControl('Dequeue').click()
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Mozilla Firefox 0.9 into Mozilla Firefox
-    Mainline has= been updated.
+    Mainline has been updated.
     <BLANKLINE>
-        Status: Queued =3D> Code approved
-        Queue Position: 1 =3D> (not set)
+        Status: Queued => Code approved
+        Queue Position: 1 => (not set)
     Whiteboard changed to:
     <BLANKLINE>
     Removed from the queue as I forgot a test.
-    --
+    -- 
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
@@ -832,12 +832,12 @@ It can then be reset as Work in progress.
 An email notification is generated.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Mozilla Firefox 0.9 into Mozilla Firefox
-    Mainline has= been updated.
+    Mainline has been updated.
     <BLANKLINE>
-        Status: Code approved =3D> Work in progress
-    --
+        Status: Code approved => Work in progress
+    -- 
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
@@ -850,12 +850,12 @@ The branch can be rejected.
     Rejecting a proposal causes a notification.
 
     >>> [notification] = pop_notifications()
-    >>> print notification.get_payload()
+    >>> print notification.get_payload(decode=True)
     The proposal to merge Mozilla Firefox 0.9 into Mozilla Firefox
-    Mainline has= been updated.
+    Mainline has been updated.
     <BLANKLINE>
-        Status: Work in progress =3D> Rejected
-    --
+        Status: Work in progress => Rejected
+    -- 
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/4
     You are subscribed to branch Mozilla Firefox Mainline.
     <BLANKLINE>
