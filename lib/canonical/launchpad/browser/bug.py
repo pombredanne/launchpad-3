@@ -82,6 +82,13 @@ class BugNavigation(Navigation):
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
 
+    @stepthrough('+subscription')
+    def traverse_subscriptionss(self, person_name):
+        """Retrieve a BugSubscription by person name."""
+        for subscription in self.context.subscriptions:
+            if subscription.person.name == person_name:
+                return subscription
+
 
 class BugFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an `IBug`.
