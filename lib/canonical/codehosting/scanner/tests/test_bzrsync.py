@@ -24,8 +24,9 @@ from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel, IBranchSet, IPersonSet, IRevisionSet)
+    BranchFormat, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    ControlFormat, IBranchSet, IPersonSet, IRevisionSet, RepositoryFormat)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError, get_diff, get_revision_message)
@@ -74,11 +75,11 @@ class BzrSyncTestCase(TestCaseWithTransport):
         syncer = self.makeBzrSync(db_branch)
         syncer.syncBranchAndClose(bzr_branch)
 
-    def makeBzrBranchAndTree(self, db_branch):
+    def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
         path = relpath(os.getcwd(),
                        local_path_from_url(db_branch.warehouse_url))
-        return self.make_branch_and_tree(path)
+        return self.make_branch_and_tree(path, format=format)
 
     def makeDatabaseBranch(self):
         """Make an arbitrary branch in the database."""
@@ -972,6 +973,80 @@ class TestRevisionProperty(BzrSyncTestCase):
         # Check that properties are stored in the database.
         db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
         self.assertEquals(properties, db_revision.getProperties())
+
+
+class TestScanFormatPack(BzrSyncTestCase):
+    """Test scanning of pack-format repositories."""
+
+    def testRecognizePack(self):
+        """Ensure scanner records correct formats for pack branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_6)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.BZR_KNITPACK_1)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.BZR_METADIR_1)
+
+
+class TestScanFormatKnit(BzrSyncTestCase):
+    """Test scanning of knit-format repositories."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'knit')
+
+    def testRecognizeKnit(self):
+        """Ensure scanner records correct formats for knit branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_5)
+
+
+class TestScanFormatWeave(BzrSyncTestCase):
+    """Test scanning of weave-format branches.
+
+    Weave is an "all-in-one" format, where branch, repo and tree formats are
+    implied by the control directory format."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(self, db_branch, 'weave')
+
+    def testRecognizeWeave(self):
+        """Ensure scanner records correct weave formats."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_4)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.BZR_REPOSITORY_6)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.BZR_DIR_6)
+
+
+class TestScanUnrecognizedFormat(BzrSyncTestCase):
+    """Test scanning unrecognized formats"""
+
+    def testUnrecognize(self):
+        """Scanner should record UNRECOGNIZED for all format values."""
+        class MockFormat:
+            def get_format_string(self):
+                return 'Unrecognizable'
+
+        class MockWithFormat:
+            def __init__(self):
+                self._format = MockFormat()
+
+        class MockBranch(MockWithFormat):
+            bzrdir = MockWithFormat()
+            repository = MockWithFormat()
+
+        branch = MockBranch()
+        self.makeBzrSync(self.db_branch).setFormats(branch)
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.UNRECOGNIZED)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.UNRECOGNIZED)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.UNRECOGNIZED)
 
 
 def test_suite():

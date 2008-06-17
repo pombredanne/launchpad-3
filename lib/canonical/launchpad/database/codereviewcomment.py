@@ -1,7 +1,11 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
+"""The database implementation class for CodeReviewComment."""
+
 __metaclass__ = type
-__all__ = ['CodeReviewComment']
+__all__ = [
+    'CodeReviewComment',
+    ]
 
 from zope.interface import implements
 
