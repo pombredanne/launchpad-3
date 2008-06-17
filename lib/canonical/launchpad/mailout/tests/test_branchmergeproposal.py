@@ -141,6 +141,7 @@ new commit message
         self.assertEqual([], emails)
 
     def test_forReviewRequest(self):
+        """Test creating a mailer for a review request."""
         merge_proposal, subscriber_ = self.makeProposalWithSubscriber()
         candidate = self.factory.makePerson(
             displayname='Candidate', email='candidate@example.com')
@@ -158,7 +159,8 @@ new commit message
             set([candidate]), set(mailer._recipients.getRecipientPersons()))
 
 
-class TestRecipientRationale(TestCaseWithFactory):
+class TestRecipientReason(TestCaseWithFactory):
+    """Test the RecipientReason class."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -167,6 +169,7 @@ class TestRecipientRationale(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def makeProposalWithSubscription(self, subscriber=None):
+        """Test fixture."""
         if subscriber is None:
             subscriber = self.factory.makePerson()
         source_branch = self.factory.makeBranch(title='foo')
@@ -177,11 +180,22 @@ class TestRecipientRationale(TestCaseWithFactory):
             CodeReviewNotificationLevel.FULL)
         return merge_proposal, subscription
 
-    def test_fromBranchSubscription(self):
+    def test_forBranchSubscriber(self):
+        """Test values when created from a branch subscription."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
         reason = RecipientReason.forBranchSubscriber(
             subscription, subscriber, '')
+        self.assertEqual(subscriber, reason.subscriber)
+        self.assertEqual(subscriber, reason.recipient)
+        self.assertEqual(merge_proposal.source_branch, reason.branch)
+
+    def test_forReviewer(self):
+        """Test values when created from a branch subscription."""
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        subscriber = subscription.person
+        vote_reference = merge_proposal.nominateReviewer()
+        reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
         self.assertEqual(merge_proposal.source_branch, reason.branch)
