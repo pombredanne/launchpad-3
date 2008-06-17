@@ -20,7 +20,6 @@ Launchpad.
     ...     'Hide my email addresses from other Launchpad users').selected
     False
 
-
 He noticed that his information is out of date and will update it.
 (If he leaves leading or trailing whitespace in the displayname it'll
 be stripped)
