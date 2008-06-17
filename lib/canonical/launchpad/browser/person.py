@@ -2247,7 +2247,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def team_has_mailing_list(self):
         """Is the team mailing list available for subscription?"""
         mailing_list = self.context.mailing_list
-        return mailing_list is not None and mailing_list.isUsable()
+        return mailing_list is not None and mailing_list.is_usable
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -3419,7 +3419,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    for email in self.validated_addresses]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
-            if mailing_list is not None and mailing_list.isUsable():
+            if mailing_list is not None and mailing_list.is_usable:
                 name = 'subscription.%s' % team.name
                 value = self._mailing_list_subscription_type(mailing_list)
                 field = Choice(__name__=name,

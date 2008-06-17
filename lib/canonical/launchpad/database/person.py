@@ -2134,7 +2134,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
-        if mailinglist is None or not mailinglist.isUsable():
+        if mailinglist is None or not mailinglist.is_usable:
             return False
 
         if mailinglist.getSubscription(self):

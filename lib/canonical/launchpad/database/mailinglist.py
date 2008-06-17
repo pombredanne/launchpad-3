@@ -298,7 +298,8 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         return not queryAdapter(self.team, IObjectPrivacy).is_private
 
-    def isUsable(self):
+    @property
+    def is_usable(self):
         """See `IMailingList`."""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
@@ -316,7 +317,7 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.isUsable():
+        elif self.is_usable:
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.
@@ -335,7 +336,7 @@ class MailingList(SQLBase):
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
-        if not self.isUsable():
+        if not self.is_usable:
             raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
         if person.isTeam():
