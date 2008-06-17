@@ -49,19 +49,19 @@ def update_archive_counters(obj, attr, value):
         # A new build instance was created.
         if value == BuildStatus.NEEDSBUILD:
             # A pending build was created.
-            obj.handleInitializationToPending()
+            obj.createdAsPending()
         elif value == BuildStatus.FULLYBUILT:
             # A successfully completed build was created.
-            obj.handleInitializationToSucceeded()
+            obj.createdAsSucceeded()
         elif value == BuildStatus.SUPERSEDED:
             # A superseded build was created, no-op.
-            obj.handleInitializationToSuperseded()
+            obj.createdAsDiscontinued()
         elif value == BuildStatus.BUILDING:
             # A currently building build was created.
-            obj.handleInitializationToBuilding()
+            obj.createdAsStarted()
         else:
             # A failed build was created.
-            obj.handleInitializationToFailed()
+            obj.createdAsFailed()
     else:
         # The build state of a build instance was updated.
         # Check whether the build state value actually changed.
@@ -72,19 +72,19 @@ def update_archive_counters(obj, attr, value):
             # The build state value did change.
             if value == BuildStatus.NEEDSBUILD:
                 # A build is being retried.
-                obj.handleUpdateToPending()
+                obj.buildRetried()
             elif value == BuildStatus.FULLYBUILT:
                 # A build succeeded.
-                obj.handleUpdateToSucceeded()
+                obj.buildSucceeded()
             elif value == BuildStatus.SUPERSEDED:
                 # A build was superseded.
-                obj.handleUpdateToSuperseded()
+                obj.buildDiscontinued()
             elif value == BuildStatus.BUILDING:
                 # A build started.
-                obj.handleUpdateToBuilding()
+                obj.buildStarted()
             else:
                 # A build failed.
-                obj.handleUpdateToFailed(value)
+                obj.buildFailed(value)
 
     return value
 
@@ -703,45 +703,46 @@ class Build(SQLBase):
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
 
-    def handleInitializationToPending(self):
+    def hasFailed(self):
+        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
+                                   BuildStatus.MANUALDEPWAIT,
+                                   BuildStatus.CHROOTWAIT,
+                                   BuildStatus.FAILEDTOUPLOAD]
+
+    def createdAsPending(self):
         """Handle the creation of a build in a 'pending' state."""
         self.archive.total_count += 1
         self.archive.pending_count += 1
 
-    def handleInitializationToSucceeded(self):
+    def createdAsSucceeded(self):
         """Handle the creation of a build in a 'succeeded' state."""
         self.archive.total_count += 1
         self.archive.succeeded_count += 1
 
-    def handleInitializationToSuperseded(self):
+    def createdAsDiscontinued(self):
         """Handle the creation of a build in a 'superseded' state."""
         pass
 
-    def handleInitializationToBuilding(self):
+    def createdAsStarted(self):
         """Handle the creation of a build in a 'building' state."""
         self.archive.total_count += 1
         self.archive.building_count += 1
 
-    def handleInitializationToFailed(self):
+    def createdAsFailed(self):
         """Handle the creation of a build in a 'failed' state."""
         self.archive.total_count += 1
         self.archive.failed_count += 1
 
-    def handleUpdateToPending(self):
+    def buildRetried(self):
         """Handle the transition of the build state to 'pending'."""
-        # If the build state is *changed* to pending the previous value
-        # must be one of the below (since this is build retry).
-        failed_states = [BuildStatus.FAILEDTOBUILD,
-                         BuildStatus.MANUALDEPWAIT,
-                         BuildStatus.CHROOTWAIT,
-                         BuildStatus.FAILEDTOUPLOAD]
-        assert self.buildstate in failed_states, (
-                "Build state transition failure (%s -> %s)" % (
-                self.buildstate, BuildStatus.NEEDSBUILD))
+        # Only failed builds may be retried.
+        assert self.hasFailed(), (
+            "Build state transition failure (%s -> %s)" % (
+            self.buildstate, BuildStatus.NEEDSBUILD))
         self.archive.pending_count += 1
         self.archive.failed_count -= 1
 
-    def handleUpdateToSucceeded(self):
+    def buildSucceeded(self):
         """Handle the transition of the build state to 'succeeded'."""
         assert self.buildstate == BuildStatus.BUILDING, (
                 "Build state transition failure (%s -> %s)" % (
@@ -749,7 +750,7 @@ class Build(SQLBase):
         self.archive.succeeded_count += 1
         self.archive.building_count -= 1
 
-    def handleUpdateToSuperseded(self):
+    def buildDiscontinued(self):
         """Handle the transition of the build state to 'superseded'."""
         assert self.buildstate == BuildStatus.NEEDSBUILD, (
                 "Build state transition failure (%s -> %s)" % (
@@ -757,7 +758,7 @@ class Build(SQLBase):
         self.archive.pending_count -= 1
         self.archive.total_count -= 1
 
-    def handleUpdateToBuilding(self):
+    def buildStarted(self):
         """Handle the transition of the build state to 'building'."""
         assert self.buildstate == BuildStatus.NEEDSBUILD, (
                 "Build state transition failure (%s -> %s)" % (
@@ -765,7 +766,7 @@ class Build(SQLBase):
         self.archive.building_count += 1
         self.archive.pending_count -= 1
 
-    def handleUpdateToFailed(self, value):
+    def buildFailed(self, value):
         """Handle the transition of the build state to 'failed'."""
         assert self.buildstate == BuildStatus.BUILDING, (
                 "Build state transition failure (%s -> %s)" % (

@@ -125,7 +125,9 @@ class IArchive(IHasOwner):
     total_count = Int(
         title=_("Total number of builds in archive"), required=True,
         default=0,
-        description=_("The total number of builds in this archive."))
+        description=_("The total number of builds in this archive. "
+                      "This counter does not include discontinued "
+                      "(superseded, cancelled, obsoleted) builds"))
 
     pending_count = Int(
         title=_("Number of pending builds in archive"), required=True,
