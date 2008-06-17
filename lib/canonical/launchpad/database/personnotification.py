@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
 """Person notifications."""
 

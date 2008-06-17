@@ -6,10 +6,6 @@ receive the notification as well as the email message's body and
 subject.  A cronscript is then responsible for picking up these
 notifications and sending them.
 
-Currently it doesn't give us any benefits as we'd achieve the same by
-simply sending the notification when processing the request, but Mark
-wants this in, so here I am writing the docs for it.
-
     >>> from canonical.launchpad.interfaces.personnotification import (
     ...     IPersonNotification, IPersonNotificationSet)
     >>> from canonical.launchpad.interfaces.person import IPersonSet
@@ -41,11 +37,11 @@ We can also retrieve notifications that are older than a certain date.
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> today = datetime.now(pytz.timezone('UTC'))
-    >>> [n.subject for n in notification_set.getNotificationsOlderThan(today)]
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> [n.subject for n in notification_set.getNotificationsOlderThan(now)]
     [u'subject']
 
-    >>> yesterday = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
+    >>> yesterday = now - timedelta(days=1)
     >>> [n.subject
     ...  for n in notification_set.getNotificationsOlderThan(yesterday)]
     []
