@@ -17,7 +17,7 @@ launchpad build daemon.
     >>> breezy = ubuntu['breezy-autotest']
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.database.sqlbase import cursor, sqlvalues, commit
+    >>> from canonical.database.sqlbase import sqlvalues, commit
     >>> archive_id = \
     ...     sqlvalues(removeSecurityProxy(hoary).distribution.main_archive)[0]
 
@@ -28,81 +28,7 @@ launchpad build daemon.
     ...            archive.pending_count, archive.succeeded_count,
     ...            archive.building_count, archive.failed_count))
 
-    >>> initq = """
-    ... CREATE OR REPLACE FUNCTION init_archive_stats() RETURNS void AS $$
-    ...   DECLARE
-    ...     -- Build states of interest.
-    ...     BS_NEEDSBUILD Integer;
-    ...     BS_FULLYBUILT Integer;
-    ...     BS_SUPERSEDED Integer;
-    ...     BS_BUILDING Integer;
-    ...     archive_id Integer;
-    ...     -- Temporary counters.
-    ...     tmp_total_count Integer;
-    ...     tmp_pending_count Integer;
-    ...     tmp_succeeded_count Integer;
-    ...     tmp_failed_count Integer;
-    ...     tmp_building_count Integer;
-    ...   BEGIN
-    ...     BS_NEEDSBUILD := 0;
-    ...     BS_FULLYBUILT := 1;
-    ...     BS_SUPERSEDED := 5;
-    ...     BS_BUILDING := 6;
-    ...
-    ...     FOR archive_id IN SELECT id FROM archive LOOP
-    ...       -- How many builds in total for the given archive (ignore
-    ...       -- superseded builds)?
-    ...       SELECT COUNT(id) INTO tmp_total_count FROM build
-    ...       WHERE
-    ...         build.archive = archive_id AND
-    ...         build.buildstate != BS_SUPERSEDED;
-    ...       -- How many pending builds for the given archive?
-    ...       SELECT COUNT(id) INTO tmp_pending_count FROM build
-    ...       WHERE
-    ...         build.archive = archive_id AND
-    ...         build.buildstate = BS_NEEDSBUILD;
-    ...       -- How many successful builds for the given archive?
-    ...       SELECT COUNT(id) INTO tmp_succeeded_count FROM build
-    ...       WHERE
-    ...         build.archive = archive_id AND
-    ...         build.buildstate = BS_FULLYBUILT;
-    ...       -- How many currently building builds for the given archive?
-    ...       SELECT COUNT(id) INTO tmp_building_count FROM build
-    ...       WHERE
-    ...         build.archive = archive_id AND
-    ...         build.buildstate = BS_BUILDING;
-    ...       tmp_failed_count := tmp_total_count - tmp_pending_count -
-    ...         tmp_succeeded_count - tmp_building_count;
-    ...
-    ...       -- Now set the various counters for the given archive.
-    ...       UPDATE archive
-    ...       SET
-    ...         total_count = tmp_total_count,
-    ...         pending_count = tmp_pending_count,
-    ...         succeeded_count = tmp_succeeded_count,
-    ...         building_count = tmp_building_count,
-    ...         failed_count = tmp_failed_count
-    ...       WHERE id = archive_id;
-    ...     END LOOP;
-    ...
-    ...   END;
-    ... $$ LANGUAGE plpgsql;
-    ...
-    ... SELECT init_archive_stats();"""
-
-Before the archive build counters are initialized they will be all
-zero.
-
-    >>> print_counts_for_archive(archive_id)
-    total: 0, pending: 0, succeeded: 0, building: 0 failed: 0
-
-Now the archive counters are initialized.
-
-    >>> cur = cursor()
-    >>> cur.execute(initq)
-    >>> commit()
-
-Then show the archive build counters.
+Show the archive build counters before anything changes.
 
     >>> print_counts_for_archive(archive_id)
     total: 15, pending: 1, succeeded: 8, building: 1 failed: 5
@@ -1030,7 +956,7 @@ e.g.:
     >>> depwait_build.buildstate = BuildStatus.FULLYBUILT
     Traceback (most recent call last):
     ...
-    AssertionError: ... failure (Needs building -> Successfully built)
+    BuildstateTransitionError: ... (Needs building -> Successfully built)
 
 
 == Build record security ==
@@ -1156,7 +1082,7 @@ e.g.:
     >>> medium_build.buildstate = BuildStatus.NEEDSBUILD
     Traceback (most recent call last):
     ...
-    AssertionError: ... failure (Successfully built -> Needs building)
+    BuildstateTransitionError: ... (Successfully built -> Needs building)
 
 Create most recent build instance. Please note: this one is in state
 NEEDSBUILD.

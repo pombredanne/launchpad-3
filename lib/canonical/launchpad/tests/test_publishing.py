@@ -213,6 +213,9 @@ class SoyuzTestPublisher:
             binpackageformat=BinaryPackageFormat.DEB,
             priority=PackagePublishingPriority.STANDARD)
 
+        # Going from pending to succeeded is an invalid build state
+        # transition. Take an intermediate step.
+        build.buildstate = BuildStatus.BUILDING
         build.buildstate = BuildStatus.FULLYBUILT
         # Create the corresponding DEB file.
         if architecturespecific:

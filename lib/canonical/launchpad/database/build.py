@@ -34,9 +34,9 @@ from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildSet, IBuilderSet,
-    NotFoundError, ILaunchpadCelebrities, PackagePublishingPocket,
-    PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, BuildstateTransitionError, IBuild,
+    IBuildSet, IBuilderSet, NotFoundError, ILaunchpadCelebrities,
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -70,21 +70,28 @@ def update_archive_counters(obj, attr, value):
             pass
         else:
             # The build state value did change.
-            if value == BuildStatus.NEEDSBUILD:
-                # A build is being retried.
-                obj.buildRetried()
-            elif value == BuildStatus.FULLYBUILT:
-                # A build succeeded.
-                obj.buildSucceeded()
-            elif value == BuildStatus.SUPERSEDED:
-                # A build was superseded.
-                obj.buildDiscontinued()
-            elif value == BuildStatus.BUILDING:
-                # A build started.
-                obj.buildStarted()
+            if isinstance(value, tuple):
+                # This is a forced build state change. The actual
+                # value is contained within a 1-tuple.
+                [value] = value
             else:
-                # A build failed.
-                obj.buildFailed(value)
+                # This is a normal build state change, invoke the
+                # corresponding state transition method.
+                if value == BuildStatus.NEEDSBUILD:
+                    # A build is being retried.
+                    obj.buildRetried()
+                elif value == BuildStatus.FULLYBUILT:
+                    # A build succeeded.
+                    obj.buildSucceeded()
+                elif value == BuildStatus.SUPERSEDED:
+                    # A build was superseded.
+                    obj.buildDiscontinued()
+                elif value == BuildStatus.BUILDING:
+                    # A build started.
+                    obj.buildStarted()
+                else:
+                    # A build failed.
+                    obj.buildFailed(value)
 
     return value
 
@@ -729,7 +736,8 @@ class Build(SQLBase):
     def buildRetried(self):
         """Handle the transition of the build state to 'pending'."""
         # Only failed builds may be retried.
-        assert self.hasFailed(), (
+        if not self.hasFailed():
+            raise BuildstateTransitionError(
             "Build state transition failure (%s -> %s)" % (
             self.buildstate, BuildStatus.NEEDSBUILD))
         self.archive.pending_count += 1
@@ -737,7 +745,8 @@ class Build(SQLBase):
 
     def buildSucceeded(self):
         """Handle the transition of the build state to 'succeeded'."""
-        assert self.buildstate == BuildStatus.BUILDING, (
+        if self.buildstate != BuildStatus.BUILDING:
+            raise BuildstateTransitionError(
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, BuildStatus.FULLYBUILT))
         self.archive.succeeded_count += 1
@@ -745,7 +754,8 @@ class Build(SQLBase):
 
     def buildDiscontinued(self):
         """Handle the transition of the build state to 'superseded'."""
-        assert self.buildstate == BuildStatus.NEEDSBUILD, (
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise BuildstateTransitionError(
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, BuildStatus.SUPERSEDED))
         self.archive.pending_count -= 1
@@ -753,7 +763,8 @@ class Build(SQLBase):
 
     def buildStarted(self):
         """Handle the transition of the build state to 'building'."""
-        assert self.buildstate == BuildStatus.NEEDSBUILD, (
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise BuildstateTransitionError(
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, BuildStatus.BUILDING))
         self.archive.building_count += 1
@@ -761,11 +772,18 @@ class Build(SQLBase):
 
     def buildFailed(self, value):
         """Handle the transition of the build state to 'failed'."""
-        assert self.buildstate == BuildStatus.BUILDING, (
+        if self.buildstate != BuildStatus.BUILDING:
+            raise BuildstateTransitionError(
                 "Build state transition failure (%s -> %s)" % (
                 self.buildstate, value))
         self.archive.failed_count += 1
         self.archive.building_count -= 1
+
+    def forceState(self, value):
+        """Set the build state to the value passed no matter what."""
+        # Packing the actual build state value in a 1-tuple will indicate
+        # that this is a forced state change to the validator function.
+        self.buildstate = (value,)
 
 
 class BuildSet:

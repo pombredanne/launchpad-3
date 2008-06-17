@@ -243,7 +243,7 @@ Show the number of builds for the corresponding archive.
     ...            archive.building_count, archive.failed_count))
 
     >>> print_counts_for_archive(pub_failed.archive.id)
-    total: 5, pending: 5, succeeded: 0, building: 0 failed: 0
+    total: 20, pending: 6, succeeded: 8, building: 1 failed: 5
 
 After the failed build is created the total and the failed number of
 builds will go up by one respectively.
@@ -253,7 +253,7 @@ builds will go up by one respectively.
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
     >>> commit()
     >>> print_counts_for_archive(failed_build.archive.id)
-    total: 6, pending: 5, succeeded: 0, building: 0 failed: 1
+    total: 21, pending: 6, succeeded: 8, building: 1 failed: 6
 
 In contrast with the previous case, if we publish the same source in
 warty and hoary, and attach a successfully built build record in the
@@ -276,7 +276,7 @@ After the creation of the FULLYBUILT build the total and succeeded
 build counters will be incremented by one respectively.
 
     >>> print_counts_for_archive(ok_build.archive.id)
-    total: 7, pending: 5, succeeded: 1, building: 0 failed: 1
+    total: 22, pending: 6, succeeded: 9, building: 1 failed: 6
 
 If a source is published in Celso's PPA, a build will be created
 for it respecting only 'architecturehintlist' and PPA-supported
