@@ -141,7 +141,7 @@ It's also reachable in a more natural way, starting from distribution page:
 
 Then we get to the DistroSeries page:
 
-    >>> browser.getLink('See all versions...').click()
+    >>> browser.getLink('All series').click()
     >>> browser.getLink('Breezy Badger Autotest').click()
 
 Then the DistroArchSeries page:
