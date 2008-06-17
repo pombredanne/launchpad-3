@@ -425,6 +425,11 @@ class TestBugzillaXMLRPCTransport:
         bugs_to_return = []
         bugs = dict(self.bugs)
 
+        # We enforce permissiveness, since we'll always call this method
+        # with permissive=True in the Real World.
+        permissive = arguments.get('permissive', False)
+        assert permissive, "get_bugs() must be called with permissive=True"
+
         for id in bug_ids:
             # If the ID is an int, look up the bug directly. We copy the
             # bug dict into a local variable so we can manipulate the
