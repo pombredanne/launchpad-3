@@ -6,9 +6,9 @@
   i18n_domain="launchpad">
 
   <!-- ArchiveRebuild -->
-  <content class="canonical.launchpad.database.ArchiveRebuild">
+  <content class="canonical.launchpad.database.archiverebuild.ArchiveRebuild">
     <implements
-      interface="canonical.launchpad.interfaces.IArchiveRebuild"
+      interface="canonical.launchpad.interfaces.archiverebuild.IArchiveRebuild"
       />
     <require
       permission="zope.Public"
@@ -23,14 +23,14 @@
   </content>
 
   <!-- ArchiveRebuildSet -->
-  <content class="canonical.launchpad.database.ArchiveRebuildSet">
-    <allow interface="canonical.launchpad.interfaces.IArchiveRebuildSet"/>
+  <content class="canonical.launchpad.database.archiverebuild.ArchiveRebuildSet">
+    <allow interface="canonical.launchpad.interfaces.archiverebuild.IArchiveRebuildSet"/>
   </content>
 
   <securedutility
-    class="canonical.launchpad.database.ArchiveRebuildSet"
-    provides="canonical.launchpad.interfaces.IArchiveRebuildSet">
-    <allow interface="canonical.launchpad.interfaces.IArchiveRebuildSet" />
+    class="canonical.launchpad.database.archiverebuild.ArchiveRebuildSet"
+    provides="canonical.launchpad.interfaces.archiverebuild.IArchiveRebuildSet">
+    <allow interface="canonical.launchpad.interfaces.archiverebuild.IArchiveRebuildSet" />
   </securedutility>
 
 </configure>

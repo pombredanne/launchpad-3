@@ -138,4 +138,3 @@ from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
 from canonical.launchpad.database.codereviewcomment import *
 from canonical.launchpad.database.archivepermission import *
-from canonical.launchpad.database.archiverebuild import *
