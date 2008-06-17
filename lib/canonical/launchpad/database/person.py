@@ -194,17 +194,18 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     name = StringCol(dbName='name', alternateID=True, notNull=True,
                      storm_validator=_validate_name)
 
-    displayname = StringCol(dbName='displayname', notNull=True)
-
-    def _set_displayname(self, value):
-        """Update any related Account.displayname
+    def _sync_displayname(self, attr, value):
+        """Update any related Account.displayname.
 
         We can't do this in a DB trigger as soon the Account table will
         in a seperate database to the Person table.
         """
         if self.account is not None and self.account.displayname != value:
             self.account.displayname = value
-        self._SO_set_displayname(value)
+        return value
+
+    displayname = StringCol(dbName='displayname', notNull=True,
+                            storm_validator=_sync_displayname)
 
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
