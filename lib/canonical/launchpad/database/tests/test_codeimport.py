@@ -392,7 +392,8 @@ class TestReviewStatusFromImportStatus(unittest.TestCase):
             ImportStatus.TESTING, CodeImportReviewStatus.NEW)
 
     def testTestfailed(self):
-        self.assertImportStatusDoesNotTranslate(ImportStatus.TESTFAILED)
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.TESTFAILED, CodeImportReviewStatus.FAILING)
 
     def testAutotested(self):
         self.assertImportStatusTranslatesTo(
@@ -464,7 +465,7 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
         self.assertNoneIsReturned(ImportStatus.TESTING)
 
     def testTestfailed(self):
-        self.assertAssertionErrorRaised(ImportStatus.TESTFAILED)
+        self.assertNoneIsReturned(ImportStatus.TESTFAILED)
 
     def testAutotested(self):
         self.assertNoneIsReturned(ImportStatus.AUTOTESTED)

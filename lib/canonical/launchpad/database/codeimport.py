@@ -265,6 +265,8 @@ class CodeImportSet:
             review_status = CodeImportReviewStatus.REVIEWED
         elif import_status == ImportStatus.STOPPED:
             review_status = CodeImportReviewStatus.SUSPENDED
+        elif import_status == ImportStatus.TESTFAILED:
+            review_status = CodeImportReviewStatus.FAILING
         else:
             raise AssertionError(
                 "This import status should not produce a code import: %s"
