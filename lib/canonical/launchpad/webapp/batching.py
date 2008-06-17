@@ -51,6 +51,8 @@ class BatchNavigator:
     default_singular_heading = 'result'
     default_plural_heading = 'results'
 
+    transient_parameters = None
+
     def __init__(self, results, request, start=0, size=None, callback=None,
                  transient_parameters=None):
         """Constructs a BatchNavigator instance.
