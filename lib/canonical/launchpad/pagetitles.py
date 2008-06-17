@@ -899,7 +899,7 @@ person_codesofconduct = ContextDisplayName(
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
 
-person_edit_obsolete = ContextDisplayName(smartquote("%s's details"))
+person_edit_obsolete = person_edit
 
 person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
