@@ -57,7 +57,7 @@
 
     <h2>Code for this series</h2>
 
-    <div tal:replace="structure context/@@+importstatus" />
+    <div tal:replace="structure context/@@+code-summary" />
 
 </div>
 

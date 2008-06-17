@@ -150,8 +150,8 @@
             template="../templates/productseries-ubuntupkg.pt"
             />
         <browser:page
-            name="+importstatus"
-            template="../templates/productseries-importstatus.pt"
+            name="+code-summary"
+            template="../templates/productseries-codesummary.pt"
             />
     </browser:pages>
 
