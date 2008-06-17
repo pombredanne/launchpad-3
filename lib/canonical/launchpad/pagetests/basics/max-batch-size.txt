@@ -15,8 +15,7 @@ large and what is the current maximum.
 
     >>> response.code
     400
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> print extract_text(BeautifulSoup(response.read()).body)
+    >>> print extract_text(find_main_content(response.read()))
     Your location...
     Invalid Batch Size
     Your requested batch size exceeded the maximum batch size allowed which 

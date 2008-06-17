@@ -22,7 +22,7 @@ Logged in as a regular user, the +export page is accessible.
   Download translation for “Spanish (es) translation of evolution-2.2 in
   Ubuntu Hoary package "evolution"”
 
-  >>> print user_browser.contents
+  >>> print find_main_content(user_browser.contents)
   <...
   ...Download Spanish translation...
   If the file is not available immediately, Launchpad will e-mail

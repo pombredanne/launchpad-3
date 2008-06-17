@@ -254,6 +254,10 @@ def find_main_content(content):
         # One-column pages don't use a <div id="maincontent">, so we
         # use the next best thing: <div id="container">.
         main_content = find_tag_by_id(content, 'container')
+    if main_content is None:
+        # Simple pages have neither of these, so as a last resort, we get
+        # the page <body>.
+        main_content = BeautifulSoup(content).body
     return main_content
 
 

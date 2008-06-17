@@ -78,7 +78,12 @@ body {
   /* Minimal width to display the application tabs and rounded corners. */
   min-width: 529px;
 }
+/*
+  The page has no margin/padding because of the navigation bar and tab border,
+  but the main content has 20px left and right margin:
+*/
 div.freeform {margin: 2em 20px;}
+/* (In other page types this margin is on an inner container element.) */
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -106,6 +111,7 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
 .offline {text-align: center; margin: 2em 20px;}
+/* XXX 20080617 mpt: That 20px will no longer be necessary in 2.0. */
 .unavailable {color: #999; background: none;}
 
 /* --- Error, warning, and info messages --- */
@@ -726,6 +732,7 @@ span.help {font-weight: normal;}
 
 /* The last element on every page is a standard footer. */
 #globalfooter {clear: both; margin: 0.5em 20px;}
+/* XXX 20080617 mpt: That 20px will no longer be necessary in 2.0. */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
   border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
@@ -819,7 +826,7 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   background: none;
   color: black;
   float: left;
-  margin: 10px 20px 0;
+  margin: 10px 20px 0; /* XXX 20080617 mpt: 20px unnecessary post-2.0 */
   width: 70%;
 }
 /* Structural headings contain an icon, maybe an intro, and a main heading.
