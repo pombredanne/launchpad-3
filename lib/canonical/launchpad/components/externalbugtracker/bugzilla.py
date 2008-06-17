@@ -322,10 +322,6 @@ class BugzillaLPPlugin(Bugzilla):
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
-        # XXX: 2008-06-11 gmb:
-        #      We need to add error handling here but we don't yet know
-        #      what kind of errors the API will raise.
-
         self.bugs = {}
         server = xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)

@@ -437,16 +437,8 @@ class TestBugzillaXMLRPCTransport:
             # data in it.
             try:
                 id = int(id)
-                # XXX 2008-06-13 gmb:
-                #     We need to do some error handling here but at the
-                #     moment we don't know for sure how the Bugzilla
-                #     interface is going to raise errors about bad bug
-                #     IDs.
                 bug_dict = dict(self.bugs[int(id)])
             except ValueError:
-                # XXX 2008-06-13 gmb:
-                #     We need to do error handling for bug aliases, too.
-                #     Same problem as above, though.
                 bug_dict = dict(self.bugs[self.bug_aliases[id]])
 
             # Update the DateTime fields of the bug dict so that they

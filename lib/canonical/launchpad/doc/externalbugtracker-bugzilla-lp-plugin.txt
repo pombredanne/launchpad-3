@@ -88,8 +88,6 @@ The bug data is stored as a list of dicts:
     <BLANKLINE>
     <BLANKLINE>
 
-XXX: 2008-06-11 gmb: Add error handling tests here.
-
 
 == Getting remote statuses ==
 
