@@ -44,6 +44,7 @@ BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
     BugTrackerType.TRAC:        'ticket/%s',
     BugTrackerType.SAVANE:      'bugs/?%s',
+    BugTrackerType.PHPPROJECT: 'bug.php?id=%s',
     }
 
 
@@ -247,6 +248,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.SAVANE: self.parseSavaneURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeLikeURL,
             BugTrackerType.TRAC: self.parseTracURL,
+            BugTrackerType.PHPPROJECT: self.parsePHPProjectURL,
         }
 
     def get(self, watch_id):
@@ -498,6 +500,17 @@ class BugWatchSet(BugSetBase):
             return None
 
         return '%s:%s' % (scheme, path), ''
+
+    def parsePHPProjectURL(self, scheme, host, path, query):
+        """Extract a PHP project bug tracker base URL and bug ID."""
+        # The URLs have the form bug.php?id=<bug-id>.
+        if path != '/bug.php' or len(query) != 1:
+            return None
+        remote_bug = query.get('id')
+        if remote_bug is None:
+            return None
+        base_url = urlunsplit((scheme, host, '/', '', ''))
+        return base_url, remote_bug
 
     def extractBugTrackerAndBug(self, url):
         """See `IBugWatchSet`."""
