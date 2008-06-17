@@ -153,9 +153,6 @@
             name="+importstatus"
             template="../templates/productseries-importstatus.pt"
             />
-        <browser:page
-            name="+portlet-source"
-            template="../templates/productseries-portlet-source.pt" />
     </browser:pages>
 
     <browser:page
