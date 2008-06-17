@@ -515,8 +515,6 @@ def print_navigation(contents):
     print "Location: %s" % " > ".join(
         extract_text(tag).encode('us-ascii', 'replace') for tag in breadcrumbs
         if tag.get('id') != 'homebreadcrumb')
-    print "Structural title: %s" % extract_text(
-        doc.find(id='structuralobject')).encode('us-ascii', 'replace')
     print 'Tabs:'
     for tab in doc.find(id='applicationchooser').findAll('li'):
         if tab.a:
