@@ -16,8 +16,7 @@ from sqlobject import ForeignKey, StringCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase, sqlvalues)
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces.archive import (
     ArchivePurpose, IArchiveSet)
@@ -76,6 +75,7 @@ class ArchiveRebuild(SQLBase):
 
     @property
     def title(self):
+        """See `IArchiveRebuild`."""
         return '%s for %s' % (
             self.archive.name, self.distroseries.displayname)
 
@@ -135,18 +135,17 @@ class ArchiveRebuildSet:
 
     def new(self, name, distroseries, registrant, reason):
         """See `IArchiveRebuildSet`."""
-        # XXX cprov 20080612: implicitly prepending the distroseries
-        # name to the archive name is quite evil. However it allows
-        # us to publish rebuild archives for a given distribution
-        # in a single disk location.
+        # Implicitly prepending the distroseries name to the archive
+        # name is quite evil. However it allows us to publish rebuild
+        # archives for a given distribution in a single disk location.
         archive_name = '%s-%s' % (distroseries.name, name)
         candidate = self.getByDistributionAndArchiveName(
             distroseries.distribution, archive_name)
         if candidate is not None:
             raise ArchiveRebuildAlreadyExists(
-                "There is already an archive rebuild named '%s' in "
-                "%s context. Choose another name."
-                % (archive_name, distroseries.distribution.name))
+                "An archive rebuild named '%s' for '%s' in '%s' "
+                "already exists." % (name, distroseries.name,
+                                     distroseries.distribution.name))
 
         archive = getUtility(IArchiveSet).new(
             name=archive_name, distribution=distroseries.distribution,

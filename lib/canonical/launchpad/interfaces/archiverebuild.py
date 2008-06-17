@@ -14,8 +14,8 @@ __all__ = [
     'IArchiveRebuildSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Object
+from zope.interface import Interface
+from zope.schema import Choice, Datetime, Int, Object, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Description
@@ -62,7 +62,7 @@ class ArchiveRebuildStatus(DBEnumeratedType):
     CANCELLED = DBItem(3, """
         Cancelled
 
-        This archive rebuild attempt has being cancelled.
+        This archive rebuild attempt has been cancelled.
         """)
 
     OBSOLETE = DBItem(4, """
@@ -75,30 +75,31 @@ class ArchiveRebuildStatus(DBEnumeratedType):
 class IArchiveRebuild(Interface):
     """Archive rebuild record.
 
-    See `doc/archive-rebuild.txt` for details about the attributes.
+    An `ArchiveRebuild` record represent a relationship between a
+    `IArchive` and a specific `IDistroSeries`from which source got copied
+    to be rebuilt.
+
+    A rebuild is a usual procedure in a distribution quality assurance to
+    certify all released binaries could be rebuilt from the corresponding
+    source using the current toolchain.
     """
-    id = Attribute("The ArchiveRebuild unique number.")
+
+    id = Int(title=_('ID'), required=True, readonly=True)
 
     archive = Object(
-        schema=IArchive,
-        title=_("The IArchive which contains the source for rebuild."),
-        required=False)
+        schema=IArchive, readonly=True, required=True,
+        title=_("The IArchive which contains the source for rebuild."))
 
     distroseries = Object(
-        schema=IDistroSeries,
-        title=_("The rebuild target IDistroSeries."),
-        required=False)
+        schema=IDistroSeries, readonly=True, required=True,
+        title=_("The rebuild target IDistroSeries."))
 
     registrant = Choice(
-        title=_('User'),
-        required=True,
-        vocabulary='ValidPerson',
+        title=_('User'), required=True, vocabulary='ValidPerson',
         description=_("The person registering the archive rebuild."))
 
     status = Choice(
-        title=_('Status'),
-        readonly=True,
-        vocabulary='ArchiveRebuildStatus',
+        title=_('Status'), readonly=True, vocabulary='ArchiveRebuildStatus',
         description=_("The status of the archive rebuild."))
 
     reason = Description(
@@ -107,9 +108,10 @@ class IArchiveRebuild(Interface):
                       "ArchiveRebuild was created."))
 
     date_created = Datetime(
-        title=_(u'Date Created'), required=True)
+        title=_(u'Date Created'), readonly=True)
 
-    title = Attribute("ArchiveRebuild title.")
+    title = TextLine(
+        title=_("ArchiveRebuild title."), readonly=True)
 
     def setInProgress():
         """Reactivated rebuild."""
@@ -130,18 +132,17 @@ class IArchiveRebuildSet(Interface):
     def __iter__():
         """Iterate over all `IArchiveRebuild` records.
 
-        Resuld is ordered by descending database ID
+        The results are ordered by descending database ID
         """
 
     def get(rebuild_id):
-        """Retrieve a `IArchiveRebuild` for the given id."""
+        """Retrieve an `IArchiveRebuild` for the given id."""
 
     def getByDistributionAndArchiveName(distribution, archive_name):
-        """Return a `IArchiveRebuild` matching the given parameters.
+        """Return an `IArchiveRebuild` matching the given parameters.
 
         :param distribution: `IDistribution` target;
         :param archive_name: text exactly matching `IArchive.name`;
-
         :return: a matching `IArchiveRebuild` or None if it could not be
             found.
         """
@@ -155,8 +156,8 @@ class IArchiveRebuildSet(Interface):
         :param name: text to be used as the `IArchive` name;
         :param distroseries: `IDistroSeries` to which the rebuild will be
              attached;
-        :param registrant: `IPerson` which will be records as the rebuild
-             registrant and as owner of the `IArchive`;
+        :param registrant: `IPerson` which is recorded as the rebuild
+             registrant and as the owner of the `IArchive`;
         :param reason: text to be used as the rebuild 'reason' field.
 
         :return: the just created `IArchiveRebuild` record.

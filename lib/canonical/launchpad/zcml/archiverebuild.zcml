@@ -22,7 +22,6 @@
       />
   </content>
 
-
   <!-- ArchiveRebuildSet -->
   <content class="canonical.launchpad.database.ArchiveRebuildSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveRebuildSet"/>

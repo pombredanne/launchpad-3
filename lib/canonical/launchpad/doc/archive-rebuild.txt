@@ -10,6 +10,7 @@ the same location. See the example:
  3. rebuilds.ubuntu.com/hoary-gcc-toolchain
  4. rebuilds.ubuntu.com/hoary-glibc
 
+
 == IArchiveRebuildSet utility ==
 
 This utility implements methods for creating and looking up
@@ -19,14 +20,14 @@ ArchiveRebuilds.
     ...     IArchiveRebuildSet)
     >>> archiverebuild_set = getUtility(IArchiveRebuildSet)
 
-We can iterate over existent `ArchiveRebuild` using the
+We can iterate over existent `ArchiveRebuild`s using the
 IArchvieRebuildSet utility, even when we have none in sampledata.
 
     >>> [rebuild.id for rebuild in archiverebuild_set]
     []
 
 We will create some rebuilds also using the utility. For doing that we
-need a target IDistroSeries and a IPerson to be the registrant.
+need a target IDistroSeries and an IPerson to be the registrant.
 
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
@@ -44,10 +45,14 @@ need a target IDistroSeries and a IPerson to be the registrant.
     >>> rebuild_warty = archiverebuild_set.new(
     ...     name='gcc4.0-toolchain', distroseries=warty,
     ...     registrant=cprov, reason="Because I can.")
+    >>> print rebuild_warty.id, rebuild_warty.archive.name
+    1 warty-gcc4.0-toolchain
 
     >>> rebuild_hoary = archiverebuild_set.new(
     ...     name='gcc4.0-toolchain', distroseries=hoary,
     ...     registrant=cprov, reason="Because I want.")
+    >>> print rebuild_hoary.id, rebuild_hoary.archive.name
+    2 hoary-gcc4.0-toolchain
 
 Once created the ArchiveRebuild records can be seen during the
 IArchiveRebuildSet iteration, which is ordered by descending database
@@ -71,30 +76,27 @@ raised.
     ...     registrant=cprov, reason="Because I want.")
     Traceback (most recent call last):
     ...
-    ArchiveRebuildAlreadyExists: There is already an archive rebuild
-    named 'hoary-gcc4.0-toolchain' in ubuntu context. Choose another name.
+    ArchiveRebuildAlreadyExists: An archive rebuild named
+    'gcc4.0-toolchain' for 'hoary' in 'ubuntu' already exists.
 
-A ArchiveRebuild can be retrieved by database ID.
+An ArchiveRebuild can be retrieved by database ID.
 
     >>> candidate = archiverebuild_set.get(rebuild_hoary.id)
-    >>> rebuild_hoary.id == candidate.id
-    True
+    >>> print candidate.id, candidate.archive.name
+    2 hoary-gcc4.0-toolchain
 
 and also by targeted distribution and archive name.
 
     >>> candidate = archiverebuild_set.getByDistributionAndArchiveName(
     ...     ubuntu, 'hoary-gcc4.0-toolchain')
-    >>> rebuild_hoary.id == candidate.id
-    True
+    >>> print candidate.id, candidate.archive.name
+    2 hoary-gcc4.0-toolchain
 
 When a corresponding rebuild cannot be found, None is returned.
 
     >>> print archiverebuild_set.getByDistributionAndArchiveName(
     ...     ubuntu, 'boing')
     None
-
-`ArchiveRebuild`s are directly attached to `DistroSeries` and that's
-how they are going to be presented.
 
 Before verifying the results of getByDistroSeries() we will create
 other rebuilds for hoary.
@@ -118,7 +120,7 @@ status/stages will be presented first.
     hoary-gcc4.0-toolchain  INPROGRESS
 
 Setting 'hoary-qt4' rebuild as OBSOLETE will move it to the end of the
-list, since it is an higher 'status' (see further details about rebuild
+list, since it is a higher 'status' (see further details about rebuild
 state-handling below).
 
     >>> login('celso.providelo@canonical.com')
@@ -134,7 +136,7 @@ state-handling below).
 
 == IArchiveRebuild ==
 
-`IArchiveRebuild` objects represents a join between a `IArchive` with
+`IArchiveRebuild` objects represents a join between an `IArchive` with
 REBUILD purpose and an `IDistroSeries`. It also aggregates extra
 information to this relationship as 'registrant', 'status' and 'reason'.
 
@@ -164,12 +166,13 @@ It correctly attaches a REBUILD archive to a hoary distroseries.
     >>> print rebuild_hoary_qt.distroseries.displayname
     Hoary
 
-The rebuild 'registrant'.
+The rebuild 'registrant', the IPerson who created the rebuild.
 
     >>> print rebuild_hoary_qt.registrant.displayname
     Celso Providelo
 
-Additional information about the rebuild status and further comments.
+Lifecyle information, the rebuild 'status' and a 'reason' text field
+with further comments.
 
     >>> print rebuild_hoary_qt.status.name
     OBSOLETE
@@ -185,8 +188,32 @@ A 'title' attribute is also implemented for convenience.
 
 == Editing ArchiveRebuild ==
 
-Once created, the ArchiveRebuild lifecycle will imply in changes on
-its 'status' and 'reason' fields.
+Once created, only 'status' and 'reason' can be changed in an
+ArchiveRebuild record.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> rebuild_hoary_qt.distroseries = warty
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('distroseries', <ArchiveRebuild at ...>)
+
+    >>> rebuild_hoary_qt.archive = rebuild_warty.archive
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('archive', <ArchiveRebuild at ...>)
+
+    >>> rebuild_hoary_qt.date_created = rebuild_warty.date_created
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('date_created', <ArchiveRebuild at ...>)
+
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> jdub = getUtility(IPersonSet).getByName('jdub')
+    >>> rebuild_hoary_qt.registrant = jdub
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('registrant', <ArchiveRebuild at ...>)
 
 The 'status' field can't be changed directly. It's is protected by a
 state-machine that forces users to use special method that may trigger
@@ -199,7 +226,6 @@ further actions required to keep the rebuild workflow sane. They are:
 
 'status' attribute write is forbidden on IArchiveRebuild.
 
-    >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces.archiverebuild import (
     ...      ArchiveRebuildStatus)
 
@@ -234,11 +260,11 @@ same status is already is.
     ArchiveRebuildInconsistentStateError: Archive rebuild is already in
     COMPLETE status
 
-'status' and 'reason' can only be changed by users in the following
+These fields can only be changed by users in the following
 users:
 
  1. 'registrant';
- 2. Distribution onwer;
+ 2. Distribution owner;
  3. Launchpad administrator.
 
 An anonymous user cannot modify an ArchiveRebuild.
@@ -274,11 +300,9 @@ Celso Providelo, as the rebuild registrant, can modify it.
     >>> rebuild_hoary_qt.setCancelled()
     >>> rebuild_hoary_qt.reason = 'Who does need QT4 ?'
 
-Jeff Waugh as member of the team owning ubuntu distribution can also
+Jeff Waugh as member of the team owning the ubuntu distribution can also
 edit it.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> jdub = getUtility(IPersonSet).getByName('jdub')
     >>> jdub.inTeam(ubuntu.owner)
     True
 

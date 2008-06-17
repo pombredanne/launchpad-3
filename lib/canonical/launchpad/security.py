@@ -7,28 +7,87 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    ArchivePurpose, IAnnouncement, IArchive, IArchivePermissionSet,
-    IArchiveRebuild, IBazaarApplication, IBranch, IBranchMergeProposal,
-    IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
-    IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
-    ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportMachine,
-    ICodeReviewComment, IDistribution, IDistributionMirror, IDistroSeries,
-    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
-    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
-    ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
-    IPOFile, IPOTemplate, IPOTemplateSubset, IPackageUpload,
-    IPackageUploadQueue, IPackaging, IPerson, IPillar, IPoll, IPollOption,
-    IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISourcePackage, ISourcePackageRelease, ISpecification,
-    ISpecificationBranch, ISpecificationSubscription, ISprint,
-    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
-    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility)
+from canonical.launchpad.interfaces.announcement import IAnnouncement
+from canonical.launchpad.interfaces.archive import (
+    ArchivePurpose, IArchive)
+from canonical.launchpad.interfaces.archivepermission import (
+    IArchivePermissionSet)
+from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
+from canonical.launchpad.interfaces.branch import IBranch
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposal)
+from canonical.launchpad.interfaces.branchsubscription import (
+    IBranchSubscription)
+from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.bugbranch import IBugBranch
+from canonical.launchpad.interfaces.bugnomination import IBugNomination
+from canonical.launchpad.interfaces.bugtracker import IBugTracker
+from canonical.launchpad.interfaces.build import IBuild
+from canonical.launchpad.interfaces.builder import IBuilder, IBuilderSet
+from canonical.launchpad.interfaces.codeimport import ICodeImport
+from canonical.launchpad.interfaces.codeimportjob import (
+    ICodeImportJobSet, ICodeImportJobWorkflow)
+from canonical.launchpad.interfaces.codeimportmachine import (
+    ICodeImportMachine)
+from canonical.launchpad.interfaces.codereviewcomment import (
+    ICodeReviewComment)
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionmirror import (
+    IDistributionMirror)
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.distroserieslanguage import (
+    IDistroSeriesLanguage)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.entitlement import IEntitlement
+from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.hwdb import IHWSubmission
+from canonical.launchpad.interfaces.language import ILanguage, ILanguageSet
+from canonical.launchpad.interfaces.languagepack import ILanguagePack
+from canonical.launchpad.interfaces.launchpad import (
+    IBazaarApplication, IHasBug, IHasDrivers, IHasOwner, IShipItApplication,
+    ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.mailinglist import IMailingListSet
+from canonical.launchpad.interfaces.milestone import IMilestone
+from canonical.launchpad.interfaces.oauth import IOAuthAccessToken
+from canonical.launchpad.interfaces.pofile import IPOFile
+from canonical.launchpad.interfaces.potemplate import (
+    IPOTemplate, IPOTemplateSubset)
+from canonical.launchpad.interfaces.queue import (
+    IPackageUpload, IPackageUploadQueue)
+from canonical.launchpad.interfaces.packaging import IPackaging
+from canonical.launchpad.interfaces.person import (
+    IPerson, ITeam, PersonVisibility)
+from canonical.launchpad.interfaces.pillar import IPillar
+from canonical.launchpad.interfaces.poll import (
+    IPoll, IPollOption, IPollSubset)
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productrelease import (
+    IProductRelease, IProductReleaseFile)
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.question import IQuestion
+from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.shipit import (
+    IRequestedCDs, IShippingRequest, IShippingRequestSet, IShippingRun,
+    IStandardShipItRequest, IStandardShipItRequestSet)
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+    ISourcePackageRelease)
+from canonical.launchpad.interfaces.specification import ISpecification
+from canonical.launchpad.interfaces.specificationbranch import (
+    ISpecificationBranch)
+from canonical.launchpad.interfaces.specificationsubscription import (
+    ISpecificationSubscription)
+from canonical.launchpad.interfaces.sprint import ISprint
+from canonical.launchpad.interfaces.sprintspecification import (
+    ISprintSpecification)
+from canonical.launchpad.interfaces.teammembership import ITeamMembership
+from canonical.launchpad.interfaces.translationgroup import (
+    ITranslationGroup, ITranslationGroupSet)
+from canonical.launchpad.interfaces.translationimportqueue import (
+    ITranslationImportQueue, ITranslationImportQueueEntry)
+from canonical.launchpad.interfaces.translator import ITranslator
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1582,7 +1641,7 @@ class EditArchiveRebuild(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can edit the archive rebuild.
 
-        Only people in one of the conditions bellow can edit an
+        Only people in one of the conditions below can edit an
         ArchiveRebuild record:
 
          * 'registrant' team member;
@@ -1597,10 +1656,7 @@ class EditArchiveRebuild(AuthorizationBase):
             return True
 
         admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admins):
-            return True
-
-        return False
+        return user.inTeam(admins)
 
 
 class ViewSourcePackageRelease(AuthorizationBase):
