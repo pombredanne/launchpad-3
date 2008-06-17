@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus,
     IBranchSet,
     IBugSet,
+    IBugWatchSet,
     ICodeImportJobWorkflow,
     ICodeImportMachineSet,
     ICodeImportEventSet,
@@ -361,7 +362,7 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, product=None):
+    def makeBug(self, product=None, owner=None, bug_watch_url=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -369,15 +370,22 @@ class LaunchpadObjectFactory:
 
         :param product: If the product is not set, one is created
             and this is used as the primary bug target.
+        :param owner: The reporter of the bug. If not set, one is created.
+        :param bug_watch_url: If specified, create a bug watch pointing
+            to this URL.
         """
         if product is None:
             product = self.makeProduct()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=product)
-        return getUtility(IBugSet).createBug(create_bug_params)
+        bug = getUtility(IBugSet).createBug(create_bug_params)
+        if bug_watch_url is not None:
+            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        return bug
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
