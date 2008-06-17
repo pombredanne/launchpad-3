@@ -2,9 +2,16 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['EmailAddress', 'EmailAddressSet']
+__all__ = [
+    'EmailAddress',
+    'EmailAddressSet',
+    'HasOwnerMixin',
+    'UndeletableEmailAddress',
+    ]
 
+import operator
 import sha
+
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
@@ -19,7 +26,16 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.email import valid_email
 
 
-class EmailAddress(SQLBase):
+class HasOwnerMixin:
+    """A mixing providing an 'owner' property which returns self.person.
+
+    This is to be used on content classes who want to provide IHasOwner but
+    have the owner stored in an attribute named 'person' rather than 'owner'.
+    """
+    owner = property(operator.attrgetter('person'))
+
+
+class EmailAddress(SQLBase, HasOwnerMixin):
     implements(IEmailAddress)
 
     _table = 'EmailAddress'
@@ -34,7 +50,16 @@ class EmailAddress(SQLBase):
             default=None)
 
     def destroySelf(self):
-        """Destroy this email address and any associated subscriptions."""
+        """See `IEmailAddress`."""
+        if self.status == EmailAddressStatus.PREFERRED:
+            raise UndeletableEmailAddress(
+                "This is a person's preferred email, so it can't be deleted.")
+        mailing_list = self.person.mailing_list
+        if mailing_list is not None and mailing_list.address == self.email:
+            raise UndeletableEmailAddress(
+                "This is the email address of a team's mailing list, so it "
+                "can't be deleted.")
+
         for subscription in MailingListSubscription.selectBy(
             email_address=self):
             subscription.destroySelf()
@@ -42,9 +67,8 @@ class EmailAddress(SQLBase):
 
     @property
     def rdf_sha1(self):
-        """See `IPerson`."""
-        return sha.new(
-            'mailto:' + self.email).hexdigest().upper()
+        """See `IEmailAddress`."""
+        return sha.new('mailto:' + self.email).hexdigest().upper()
 
 
 class EmailAddressSet:
@@ -84,3 +108,6 @@ class EmailAddressSet:
                 email=email, status=status, person=person, account=account)
 
 
+
+class UndeletableEmailAddress(Exception):
+    """User attempted to delete an email address which can't be deleted."""

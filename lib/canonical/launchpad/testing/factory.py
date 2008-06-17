@@ -167,7 +167,7 @@ class LaunchpadObjectFactory:
             removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
         elif email_address_status is not None:
             email.status = email_address_status
-            email.syncUpdate()
+            syncUpdate(email)
         else:
             # Leave the email as NEW.
             pass

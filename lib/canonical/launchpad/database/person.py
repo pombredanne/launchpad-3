@@ -112,7 +112,8 @@ from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress, HasOwnerMixin)
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pillar import PillarName
@@ -3359,7 +3360,7 @@ class SSHKeySet:
             """ % sqlvalues([person.id for person in people]))
 
 
-class WikiName(SQLBase):
+class WikiName(SQLBase, HasOwnerMixin):
     implements(IWikiName)
 
     _table = 'WikiName'
@@ -3409,7 +3410,7 @@ class WikiNameSet:
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname) is not None
 
 
-class JabberID(SQLBase):
+class JabberID(SQLBase, HasOwnerMixin):
     implements(IJabberID)
 
     _table = 'JabberID'
@@ -3435,7 +3436,7 @@ class JabberIDSet:
         return JabberID.selectBy(person=person)
 
 
-class IrcID(SQLBase):
+class IrcID(SQLBase, HasOwnerMixin):
     """See `IIrcID`"""
     implements(IIrcID)
 
