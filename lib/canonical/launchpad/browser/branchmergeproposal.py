@@ -394,6 +394,7 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
 
 
 class IReviewRequest(Interface):
+    """Schema for requesting a review."""
 
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
@@ -416,15 +417,17 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
 
     @property
     def initial_values(self):
-        # Default to reviewing the tip of the source branch.
+        """Force the non-BMP values to None."""
         return {'review_candidate': None, 'review_type': None}
 
     @property
     def adapters(self):
+        """Force IReviewRequest handling for BranchMergeProposal."""
         return {IReviewRequest: self.context}
 
     @property
     def is_needs_review(self):
+        """Return True if queue status is NEEDS_REVIEW."""
         return (self.context.queue_status ==
             BranchMergeProposalStatus.NEEDS_REVIEW)
 
@@ -435,7 +438,7 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     @action('Request review', name='review')
     @notify
     def review_action(self, action, data):
-        """Set the status to 'Needs review'."""
+        """Set 'Needs review' status, nominate reviewers, send emails."""
         self.context.requestReview()
         candidate = data.pop('review_candidate', None)
         review_type = data.pop('review_type', None)

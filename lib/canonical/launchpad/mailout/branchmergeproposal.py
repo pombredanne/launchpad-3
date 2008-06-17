@@ -32,6 +32,7 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
 
 
 class RecipientReason:
+    """Reason for sending mail to a recipient."""
 
     def __init__(self, subscriber, recipient, branch, mail_header):
         self.subscriber = subscriber
@@ -41,11 +42,13 @@ class RecipientReason:
 
     @classmethod
     def forBranchSubscriber(klass, subscription, recipient, rationale):
+        """Construct RecipientReason for a branch subscriber."""
         return klass(
             subscription.person, recipient, subscription.branch, rationale)
 
     @classmethod
     def forReviewer(klass, vote_reference, recipient):
+        """Construct RecipientReason for a reviewer."""
         branch = vote_reference.branch_merge_proposal.source_branch
         return klass(vote_reference.reviewer, recipient, branch, 'reviewer')
 
@@ -59,8 +62,6 @@ class RecipientReason:
             entity = 'Your team %s is' % self.subscriber.displayname
         branch_name = self.branch.displayname
         return '%s subscribed to branch %s.' % (entity, branch_name)
-
-
 
 
 class BMPMailer(BaseMailer):
