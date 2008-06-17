@@ -85,39 +85,3 @@ He will also change his timezone:
     ['Africa/Dakar']
 
 
-== Clean up ==
-
-    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~foobar')
-
-    # XXX mars 2008-06-11
-    # Use direct navigation for the LP 2.0 transition. See bug #239192.
-    >>> browser.open('http://launchpad.dev/~foobar/+edit2.0')
-
-    # Change the details back
-    >>> browser.getControl('Name', index=1).value = 'name16'
-    >>> browser.getControl('Display Name').value = 'Foo Bar'
-    >>> browser.getControl(
-    ...     'Hide my email addresses from other Launchpad users').click()
-    >>> browser.getControl("Include bug descriptions when sending me "
-    ...     "bug notifications").click()
-    >>> browser.getControl('Timezone').value = ['Africa/Johannesburg']
-    >>> browser.getControl('Save').click()
-
-    >>> browser.url
-    'http://launchpad.dev/~name16'
-
-    # Verify that the data is restored.
-
-    # XXX mars 2008-06-11
-    # Use direct navigation for the LP 2.0 transition. See bug #239192.
-    >>> browser.open('http://launchpad.dev/~name16/+edit2.0')
-    >>> browser.getControl('Display Name').value
-    'Foo Bar'
-    >>> browser.getControl('Name', index=1).value
-    'name16'
-    >>> browser.getControl('Timezone').value
-    ['Africa/Johannesburg']
-    >>> browser.getControl(
-    ...     'Hide my email addresses from other Launchpad users').selected
-    False
