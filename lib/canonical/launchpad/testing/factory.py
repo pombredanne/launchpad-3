@@ -152,7 +152,8 @@ class LaunchpadObjectFactory:
         if password is None:
             password = self.getUniqueString('password')
         # By default, make the email address preferred.
-        if email_address_status is None:
+        if (email_address_status is None 
+                or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
@@ -162,15 +163,14 @@ class LaunchpadObjectFactory:
 
         # To make the person someone valid in Launchpad, validate the
         # email.
-        if email_address_status == EmailAddressStatus.VALIDATED:
+        if email_address_status == EmailAddressStatus.PREFERRED:
             person.validateAndEnsurePreferredEmail(email)
             removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
-        elif email_address_status is not None:
-            email.status = email_address_status
-            syncUpdate(email)
-        else:
-            # Leave the email as NEW.
-            pass
+        # Make the account ACTIVE if we have a preferred email address now.
+        if person.preferredemail.status == EmailAddressStatus.PREFERRED:
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        removeSecurityProxy(email).status = email_address_status
+        syncUpdate(email)
         return person
 
     def makeTeam(self, owner, displayname=None, email=None, name=None):
