@@ -331,7 +331,11 @@ class BugzillaLPPlugin(Bugzilla):
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
         # First, grab the bugs from the remote server.
-        response_dict = server.Bug.get_bugs({'ids': bug_ids})
+        request_args = {
+            'ids': bug_ids,
+            'permissive': True,
+            }
+        response_dict = server.Bug.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
         # Now copy them into the local bugs dict.
