@@ -25,13 +25,12 @@ __all__ = [
     'generate_entry_interface',
     'generate_operation_adapter',
     'operation_parameters',
+    'operation_returns',
     'rename_parameters_as',
     'webservice_error',
     ]
 
-import simplejson
 import sys
-import types
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
@@ -39,7 +38,7 @@ from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface, IMethod
-from zope.schema import getFields
+from zope.schema import getFields, Object
 from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 
@@ -277,9 +276,11 @@ def annotate_exported_methods(interface):
         if 'as' not in annotations:
             annotations['as'] = method.__name__
 
-        # It's possible that call_with or operation_parameters weren't used.
+        # It's possible that call_with, operation_parameters, and/or
+        # operation_returns weren't used.
         annotations.setdefault('call_with', {})
         annotations.setdefault('params', {})
+        annotations.setdefault('return_type', None)
 
         # Make sure that all parameters exists and that we miss none.
         info = method.getSignatureInfo()
@@ -408,6 +409,20 @@ class operation_parameters(_method_annotator):
             params[name] = param
 
 
+class operation_returns(_method_annotator):
+    """Specify the return value of the exported operation.
+
+    The decorator takes a single `IField` object.
+    """
+
+    def __init__(self, return_type):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.return_type = return_type
+
+    def annotate_method(self, method, annotations):
+        annotations['return_type'] = self.return_type
+
+
 class _export_operation(_method_annotator):
     """Basic implementation for the webservice operation method decorators."""
 
@@ -454,6 +469,7 @@ class export_factory_operation(_export_operation):
             method, annotations)
         annotations['creates'] = self.interface
         annotations['params'] = self.params
+        annotations['return_type'] = Object(schema=self.interface)
 
 
 class export_read_operation(_export_operation):
@@ -612,18 +628,7 @@ class BaseResourceOperationAdapter(ResourceOperation):
         """See `ResourceOperation`."""
         params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
-
-        # The webservice passes string results straight to the client.
-        # Otherwise, it will try to convert iterable to collection, and other
-        # objects to entries. We want to marshall simple values using json.
-        basic_types = (basestring, bool, int, float, types.NoneType)
-        if isinstance(result, basic_types):
-            response = self.request.response
-            response.setHeader('Content-Type', 'application/json')
-            return simplejson.dumps(result)
-        else:
-            # Use the default webservice encoding.
-            return result
+        return self.processResult(result)
 
 
 class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
@@ -665,8 +670,16 @@ def generate_operation_adapter(method):
     else:
         raise AssertionError('Unknown method export type: %s' % tag['type'])
 
+    return_type = tag['return_type']
+    if return_type is None:
+        return_type = None
+    elif not IField.providedBy(tag['return_type']):
+        raise AssertionError('Return value type %s does not provide IField'
+                             % return_type)
+
     name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
     class_dict = {'params' : tuple(tag['params'].values()),
+             'return_type' : return_type,
              '_export_info': tag,
              '_method_name': method.__name__}
     factory = type(name, bases, class_dict)

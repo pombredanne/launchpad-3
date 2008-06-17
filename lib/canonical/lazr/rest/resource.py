@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BatchingResourceMixin',
     'Collection',
     'CollectionResource',
     'Entry',
@@ -12,6 +13,7 @@ __all__ = [
     'HTTPResource',
     'JSONItem',
     'ReadOnlyResource',
+    'ResourceJSONEncoder',
     'RESTUtilityBase',
     'ScopedCollection',
     'ServiceRootResource',
@@ -22,12 +24,11 @@ import copy
 from datetime import datetime
 import os
 import simplejson
-from types import NoneType
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
-    adapts, getAdapters, getMultiAdapter, getUtility)
+    adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 from zope.interface.interfaces import IInterface
@@ -92,6 +93,9 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
                 return tuple(obj)
             if isinstance(underlying_object, dict):
                 return dict(obj)
+        if queryAdapter(obj, IEntry):
+            obj = EntryResource(obj, get_current_browser_request())
+
         return IJSONPublishable(obj).toDataForJSON()
 
 
@@ -278,6 +282,8 @@ class BatchingResourceMixin:
         batch = { 'entries' : resources,
                   'total_size' : navigator.batch.listlength,
                   'start' : navigator.batch.start }
+        if navigator.batch.start < 0:
+            batch['start'] = None
         next_url = navigator.nextBatchURL()
         if next_url != "":
             batch['next_collection_link'] = next_url
@@ -287,7 +293,7 @@ class BatchingResourceMixin:
         return batch
 
 
-class CustomOperationResourceMixin(BatchingResourceMixin):
+class CustomOperationResourceMixin:
 
     """A mixin for resources that implement a collection-entry pattern."""
 
@@ -303,7 +309,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         operation = getMultiAdapter((self.context, self.request),
                                     IResourceGETOperation,
                                     name=operation_name)
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def handleCustomPOST(self, operation_name):
         """Execute a custom write-type operation triggered through POST.
@@ -321,7 +327,7 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
         except ComponentLookupError:
             self.request.response.setStatus(400)
             return "No such operation: " + operation_name
-        return self._processCustomOperationResult(operation())
+        return operation()
 
     def do_POST(self):
         """Invoke a custom operation.
@@ -338,24 +344,6 @@ class CustomOperationResourceMixin(BatchingResourceMixin):
             return "No operation name given."
         del self.request.form['ws.op']
         return self.handleCustomPOST(operation_name)
-
-    def _processCustomOperationResult(self, result):
-        """Process the result of a custom operation."""
-        if isinstance(result, (basestring, NoneType)):
-            # The operation took care of everything and just needs
-            # this string served to the client.
-            return result
-
-        # The operation returned a collection or entry. It will be
-        # serialized to JSON.
-        try:
-            iterator = iter(result)
-        except TypeError:
-            # Result is a single entry
-            return EntryResource(result, self.request)
-
-        # Serve a single batch from the collection.
-        return self.batch(result, self.request)
 
 
 class ReadOnlyResource(HTTPResource):
@@ -729,7 +717,8 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return ''
 
 
-class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
+class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
+                         CustomOperationResourceMixin):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
@@ -761,11 +750,22 @@ class CollectionResource(ReadOnlyResource, CustomOperationResourceMixin):
                 self.request.response.setHeader(
                     'Content-Type', self.WADL_TYPE)
                 return result
-            result = self.batch(entries, self.request)
-            result['resource_type_link'] = self.type_url
+
+            result = self.batch(entries)
 
         self.request.response.setHeader('Content-type', self.JSON_TYPE)
         return simplejson.dumps(result, cls=ResourceJSONEncoder)
+
+    def batch(self, entries=None):
+        """Return a JSON representation of a batch of entries.
+
+        :param entries: (Optional) A precomputed list of entries to batch.
+        """
+        if entries is None:
+            entries = self.collection.find()
+        result = super(CollectionResource, self).batch(entries, self.request)
+        result['resource_type_link'] = self.type_url
+        return result
 
     @property
     def type_url(self):

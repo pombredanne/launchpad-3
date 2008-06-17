@@ -149,6 +149,8 @@ The collection of bug tasks is not exposed as a resource:
 
 == Bug subscriptions ==
 
+We can get the the collection of subscriptions to a bug.
+
   >>> bug_one_subscriptions_url = urlsplit(
   ...     bug_one['subscriptions_collection_link'])[2]
   >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
@@ -159,6 +161,8 @@ The collection of bug tasks is not exposed as a resource:
     u'self_link': u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea',
     u'subscribed_by_link': u'http://api.launchpad.dev/beta/~janitor'}...]
 
+Each subscription can be accessed individually.
+
   >>> subscription = webservice.get(subscriptions['entries'][0]['self_link']).jsonBody()
   >>> pprint(subscription)
   {u'bug_link': u'http://api.launchpad.dev/beta/bugs/1',
@@ -167,11 +171,18 @@ The collection of bug tasks is not exposed as a resource:
     u'self_link': u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea',
     u'subscribed_by_link': u'http://api.launchpad.dev/beta/~janitor'}
 
+We can also create new subscriptions.
+
     >>> from urllib import quote
 
-    >>> print webservice.named_post(
+    >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
     ...     person=quote('http://api.launchpad.dev/beta/~cprov')).jsonBody()
+    >>> pprint(new_subscription)
+    {...u'self_link':
+        u'http://api.launchpad.dev/beta/bugs/1/+subscription/cprov'...}
+
+But we can only ubsubscribe ourselves.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
