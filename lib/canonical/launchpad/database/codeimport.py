@@ -284,7 +284,8 @@ class CodeImportSet:
             last_successful = series.datelastsynced
         elif series.importstatus in (ImportStatus.TESTING,
                                      ImportStatus.AUTOTESTED,
-                                     ImportStatus.PROCESSING):
+                                     ImportStatus.PROCESSING,
+                                     ImportStatus.TESTFAILED):
             last_successful = None
         else:
             raise AssertionError(
