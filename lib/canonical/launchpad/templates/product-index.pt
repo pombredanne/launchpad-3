@@ -33,7 +33,11 @@
     (<a href="+review-license">edit reviewer whiteboard</a>)
   </p>
 
-  <span tal:replace="structure context/image:mugshot" />
+  <div
+    style="width: 200px; height: 200px; float: right;"
+    tal:content="structure context/image:mugshot"
+  />
+
   <h1 tal:content="context/title">Name of project</h1>
 
   <div class="description" tal:content="context/summary">

@@ -13,7 +13,6 @@ __all__ = [
     'DistributionView',
     'DistributionPPASearchView',
     'DistributionAllPackagesView',
-    'DistributionBrandingView',
     'DistributionEditView',
     'DistributionSetView',
     'DistributionAddView',
@@ -46,7 +45,6 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, IDistribution, ILaunchBag, ILaunchpadCelebrities,
     IPublishedPackageSet, MirrorContent, MirrorSpeed, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
@@ -57,7 +55,7 @@ from canonical.launchpad.components.request_country import (
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu,
+    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
     StandardLaunchpadFacets, stepthrough, stepto)
@@ -66,6 +64,7 @@ from canonical.launchpad.browser.seriesrelease import (
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets.image import ImageChangeWidget
 
 
 class DistributionNavigation(
@@ -319,7 +318,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['bugsupervisor', 'securitycontact', 'cve']
+    links = ['bugsupervisor', 'securitycontact', 'cve', 'filebug']
 
     def cve(self):
         text = 'CVE reports'
@@ -334,6 +333,10 @@ class DistributionBugsMenu(ApplicationMenu):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='bug')
 
 
 class DistributionBountiesMenu(ApplicationMenu):
@@ -385,7 +388,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'translations'
-    links = ['edit', 'imports', 'language_pack_admin']
+    links = ['edit', 'imports', 'language_pack_admin', 'help_translate']
 
     def imports(self):
         text = 'See import queue'
@@ -394,6 +397,11 @@ class DistributionTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
+
+    def help_translate(self):
+        text = 'Help translate'
+        link = canonical_url(self.context, rootsite='translations')
+        return Link(link, text, icon='translation')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def language_pack_admin(self):
@@ -463,6 +471,31 @@ class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
 
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
+
+    def usesLaunchpadFor(self):
+        """Return a string of LP apps (comma-separated) this distro uses."""
+        if (not self.context.full_functionality or
+            not self.context.official_anything):
+            return "%s does not use Launchpad." % self.context.title
+        else:
+            # There will be at least one app used if we get here.
+            uses = []
+            if self.context.official_answers:
+                uses.append("<strong>Answers</strong>")
+            if self.context.official_malone:
+                uses.append("<strong>Bug Tracking</strong>")
+            if self.context.official_blueprints:
+                uses.append("<strong>Blueprints</strong>")
+            if self.context.official_rosetta:
+                uses.append("<strong>Translations</strong>")
+
+            if len(uses) > 1:
+                apps = ", ".join(uses[:-1])
+                apps += " and " + uses[-1]
+            else:
+                apps = uses[0]
+
+            return "%s uses Launchpad for %s." % (self.context.title, apps)
 
 
 class DistributionPPASearchView(LaunchpadView):
@@ -537,12 +570,6 @@ class DistributionAllPackagesView(LaunchpadView):
         self.batchnav = BatchNavigator(results, self.request)
 
 
-class DistributionBrandingView(BrandingChangeView):
-
-    schema = IDistribution
-    field_names = ['icon', 'logo', 'mugshot']
-
-
 class DistributionSetView:
 
     def __init__(self, context, request):
@@ -583,10 +610,14 @@ class DistributionEditView(LaunchpadEditFormView):
     schema = IDistribution
     label = "Change distribution details"
     field_names = ['displayname', 'title', 'summary', 'description',
-                   'bug_reporting_guidelines', 'official_malone',
-                   'enable_bug_expiration', 'official_blueprints',
-                   'official_rosetta', 'official_answers',
-                   'translation_focus', ]
+                   'bug_reporting_guidelines', 'icon', 'logo', 'mugshot',
+                   'official_malone', 'enable_bug_expiration',
+                   'official_blueprints', 'official_rosetta',
+                   'official_answers', 'translation_focus', ]
+
+    custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     def isAdmin(self):
         return self.user.inTeam(getUtility(ILaunchpadCelebrities).admin)
