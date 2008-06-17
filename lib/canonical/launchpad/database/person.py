@@ -2456,7 +2456,7 @@ class PersonSet:
         # Short circuit for returning all users in order
         if not text:
             return Person.select(
-                    ' AND'.join(base_query), clauseTables=clause_tables)
+                    ' AND '.join(base_query), clauseTables=clause_tables)
 
         # We use a UNION here because this makes things *a lot* faster
         # than if we did a single SELECT with the two following clauses
