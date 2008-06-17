@@ -214,9 +214,8 @@ class SoyuzTestPublisher:
             priority=PackagePublishingPriority.STANDARD)
 
         # Going from pending to succeeded is an invalid build state
-        # transition. Take an intermediate step.
-        build.buildstate = BuildStatus.BUILDING
-        build.buildstate = BuildStatus.FULLYBUILT
+        # transition. That's why we are forcing it here.
+        build.forceState(BuildStatus.FULLYBUILT)
         # Create the corresponding DEB file.
         if architecturespecific:
             filearchtag = distroarchseries.architecturetag
