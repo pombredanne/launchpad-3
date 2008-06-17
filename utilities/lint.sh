@@ -98,6 +98,31 @@ group_lines_by_file() {
 }
 
 
+sample_dir="database/sampledata"
+current_sql="${sample_dir}/current.sql"
+newsampledata_sql="${sample_dir}/newsampledata.sql"
+make newsampledata > /dev/null
+sql_diff=`diff -q ${sample_dir}/current.sql ${sample_dir}/newsampledata.sql`
+karma_bombs=`sed '/INTO karma /!d; /2000-/d; /2001-/d' $current_sql`
+if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
+    echo ""
+    echo ""
+    echo "== Schema =="
+    echo ""
+    echo "$current_sql"
+fi
+if [ -n "$sql_diff" ]; then
+    echo "    Current sampledata is out of date; run 'make newsampledata'."
+else
+    rm $newsampledata_sql
+fi
+if [ -n "$karma_bombs" ]; then
+    echo "    Karma time bombs were added to sampledata."
+    echo "        The Karma table has dates after 2002-01-01; either revise"
+    echo "        them or remove rows if they are unneeded."
+fi
+
+
 conflicts=""
 for file in $files; do
     # NB. Odd syntax on following line to stop lint.sh detecting conflict
