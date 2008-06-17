@@ -479,3 +479,4 @@ Icing resources.
 
 >>> from canonical.launchpad.versioninfo import revno
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
+>>> check("/+icing-contrib/rev%s/json2.js" % revno)
