@@ -6,8 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/default2.0"
-  i18n:domain="launchpad"
+  metal:use-macro="view/macro:page/onecolumn"
 >
 
   <body>
@@ -35,7 +34,7 @@
             <span tal:content="format/title">translation format</span>
           </label>
         </div>
-        <div class="formControls">
+        <div class="actions">
           <input type="submit" value="Confirm Download" />
         </div>
       </form>
