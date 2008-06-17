@@ -234,15 +234,6 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductSeries"
-        name="+source"
-        class="canonical.launchpad.browser.ProductSeriesSourceView"
-        template="../templates/productseries-source.pt"
-        facet="overview"
-        permission="launchpad.AnyPerson"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSeries"
         name="+linkbranch"
         class="canonical.launchpad.browser.ProductSeriesLinkBranchView"
         template="../templates/productseries-linkbranch.pt"
