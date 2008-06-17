@@ -156,12 +156,14 @@ class LaunchpadObjectFactory:
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
-        # Set the status on the email.
-        email.status = email_address_status
-        email.syncUpdate()
+        # Set the status on the email.  Need to remove the security proxy
+        # first, as status is readonly.
+        from zope.security.proxy import removeSecurityProxy
+        removeSecurityProxy(email).status = email_address_status
+        syncUpdate(email)
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None):
         """Create and return a new, arbitrary Team.
 
         The subscription policy of this new team will be OPEN.
@@ -171,7 +173,8 @@ class LaunchpadObjectFactory:
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
         """
-        name = self.getUniqueString('team-name')
+        if name is None:
+            name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
