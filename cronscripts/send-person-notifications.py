@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0403
 
 """Send person notifications.
@@ -23,6 +23,15 @@ from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
 class SendPersonNotifications(LaunchpadCronScript):
+    """Send pending notifications to people.
+
+    Pending notifications are stored in the PersonNotification table and have
+    a date_emailed == None.
+
+    This script will also delete the notifications that have been retained for
+    more than config.person_notification.retained_days days.
+    """
+
     def main(self):
         notifications_sent = False
         notification_set = getUtility(IPersonNotificationSet)
@@ -32,7 +41,7 @@ class SendPersonNotifications(LaunchpadCronScript):
         for notification in pending_notifications:
             person = notification.person
             self.logger.info(
-                "Sending notice to %s: %s."
+                "Sending notification to %s <%s>."
                 % (person.name, person.preferredemail.email))
             notification.send()
             notifications_sent = True
@@ -54,9 +63,9 @@ class SendPersonNotifications(LaunchpadCronScript):
                 "Notification retention limit is %s." % retained_days)
             self.logger.info(
                 "Deleting %d old notification(s)." % to_delete.count())
-        for notification in to_delete:
-            notification.destroySelf()
-        self.txn.commit()
+            for notification in to_delete:
+                notification.destroySelf()
+            self.txn.commit()
 
 
 if __name__ == '__main__':
