@@ -97,7 +97,7 @@ def construct_email_notifications(bug_notifications):
             config.malone.comment_syncing_team)
         # Only members of the comment syncing team should get comment
         # notifications related to bug watches.
-        if bug_message.bugwatch is not None:
+        if bug_message is not None and bug_message.bugwatch is not None:
             recipients = dict(
                 (address, recipient)
                 for address, recipient in recipients.items()
