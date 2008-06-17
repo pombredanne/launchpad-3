@@ -17,6 +17,8 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.launchpad.components.packagelocation import (
+    build_package_location)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.build import (
     BuildStatus, incomplete_building_status)
@@ -26,7 +28,7 @@ from canonical.launchpad.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingStatus, active_publishing_status)
 from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, SoyuzScript, SoyuzScriptError)
+    SoyuzScript, SoyuzScriptError)
 from canonical.librarian.utils import copy_and_close
 
 
@@ -168,11 +170,12 @@ def check_archive_conflicts(source, archive, include_binaries):
         # The copy is only allowed when the binaries are published, or if not
         # published there must be no FULLYBUILT builds. This way there is no
         # chance of a conflict.
-        for build in source.getBuilds():
-            if build.buildstate == BuildStatus.FULLYBUILT:
-                raise CannotCopy(
-                    "source has unpublished binaries, please wait for them "
-                    "to be published before copying")
+        for candidate in destination_archive_conflicts:
+            for build in candidate.getBuilds():
+                if build.buildstate == BuildStatus.FULLYBUILT:
+                    raise CannotCopy(
+                        "source has unpublished binaries, please wait for "
+                        "them to be published before copying")
 
 
 def check_copy(source, archive, series, pocket, include_binaries):
@@ -505,8 +508,12 @@ class UnembargoSecurityPackage(PackageCopier):
                 "or BinaryPackagePublishingHistory")
 
         for package_file in files:
-            # Open the old library file.
             libfile = package_file.libraryfile
+            # Check if the files are already in the right librarian
+            # instance.
+            if libfile.restricted == to_restricted:
+                continue
+            # Move the file to the appropriate librarian instance.
             new_lfa = self.reUploadFile(libfile, to_restricted)
             package_file.libraryfile = new_lfa
 

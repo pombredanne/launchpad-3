@@ -8,24 +8,25 @@ import sys
 import unittest
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.components.packagelocation import (
+    PackageLocationError)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.interfaces.publishing import (
-    ISourcePackagePublishingHistory, PackagePublishingStatus)
+    ISourcePackagePublishingHistory, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.launchpad.scripts import QuietFakeLogger
-from canonical.launchpad.scripts.ftpmasterbase import (
-    PackageLocationError, SoyuzScriptError)
+from canonical.launchpad.scripts.ftpmasterbase import SoyuzScriptError
 from canonical.launchpad.scripts.packagecopier import (
     PackageCopier, UnembargoSecurityPackage)
-from canonical.librarian.ftests.harness import (
-    cleanupLibrarianFiles, fillLibrarianFile)
+from canonical.launchpad.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import DatabaseLayer, LaunchpadZopelessLayer
 
 
@@ -225,6 +226,26 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 5)
 
+    def testCannotCopyTwice(self):
+        """When invoked twice, copy package doesn't re-copy publications.
+
+        As reported in bug #237353, duplicated are generally cruft and may
+        cause problems when they include architecture-independent binaries.
+
+        That's why PackageCopier refuses to copy publications with versions
+        older or equal the ones already present in the destination.
+        """
+        copy_helper = self.getCopier(
+            from_suite='warty', to_suite='warty-updates')
+        copied = copy_helper.mainTask()
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 5)
+
+        copy_helper = self.getCopier(
+            from_suite='warty', to_suite='warty-updates')
+        copied = copy_helper.mainTask()
+        self.assertEqual(len(copied), 0)
+
     def testCopyAcrossPartner(self):
         """Check the copy operation across PARTNER archive.
 
@@ -250,39 +271,93 @@ class TestCopyPackage(unittest.TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 2)
 
-    def testCopyFromPPA(self):
-        """Check the copy operation from PPA to PRIMARY Archive.
+    def getTestPublisher(self, distroseries):
+        """Return a initialised `SoyuzTestPublisher` object.
 
-        Source and optinally binaries can get copied from PPA to the PRIMARY
-        archive.
+        Setup a i386 chroot for the given distroseries, so it can build
+        and publish binaries.
+        """
+        fake_chroot = getUtility(ILibraryFileAliasSet)[1]
+        distroseries['i386'].addOrUpdateChroot(fake_chroot)
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.person = getUtility(IPersonSet).getByName("name16")
+        return test_publisher
+
+    def testCopySourceFromPPA(self):
+        """Check the copy source operation from PPA to PRIMARY Archive.
+
+        A source package can get copied from PPA to the PRIMARY archive,
+        which will immediatelly result in a build record in the destination
+        context.
 
         That's the preliminary workflow for 'syncing' sources from PPA to
         the ubuntu PRIMARY archive.
         """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.0', distroseries=hoary,
+            status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary,
+            status=PackagePublishingStatus.PUBLISHED)
+
         copy_helper = self.getCopier(
-            sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary', include_binaries=True)
+            sourcename='foo', from_ppa='cprov', include_binaries=False,
+            from_suite='hoary', to_suite='hoary')
         copied = copy_helper.mainTask()
 
-        self.assertEqual(
-            str(copy_helper.location),
-            'cprov: warty-RELEASE')
-        self.assertEqual(
-            str(copy_helper.destination),
-            'Primary Archive for Ubuntu Linux: hoary-RELEASE')
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 1)
+
+        [copy] = copied
+        self.assertEqual(copy.displayname, 'foo 1.0 in hoary')
+        self.assertEqual(copy.getPublishedBinaries().count(), 0)
+        self.assertEqual(copy.getBuilds().count(), 1)
+
+    def testCopySourceAndBinariesFromPPA(self):
+        """Check the copy operation from PPA to PRIMARY Archive.
+
+        Source and binaries can get copied from PPA to the PRIMARY archive.
+
+        This action is typically used to copy invariant/harmless packages
+        build in PPA context, as language-packs.
+        """
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        test_publisher = self.getTestPublisher(hoary)
+
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        ppa_source = test_publisher.getPubSource(
+            sourcename='boing', version='1.0',
+            archive=cprov.archive, distroseries=hoary,
+            status=PackagePublishingStatus.PENDING)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=hoary,
+            status=PackagePublishingStatus.PENDING)
+
+        copy_helper = self.getCopier(
+            sourcename='boing', from_ppa='cprov', include_binaries=True,
+            from_suite='hoary', to_suite='hoary')
+        copied = copy_helper.mainTask()
 
         target_archive = copy_helper.destination.archive
-        self.checkCopies(copied, target_archive, 2)
-        self.assertEqual(
-            sorted([pub.displayname for pub in copied]),
-            ['iceweasel 1.0 in hoary', 'mozilla-firefox 1.0 in hoary i386'])
+        self.checkCopies(copied, target_archive, 3)
+
+        [copied_source] = ubuntu.main_archive.getPublishedSources(
+            name='boing')
+        self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
+        self.assertEqual(copied_source.getPublishedBinaries().count(), 2)
+        self.assertEqual(copied_source.getBuilds().count(), 0)
 
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
 
         This operation is useful to propagate deependencies accross
-        colaborative PPAs without requiring new uploads. Ideally, it
-        should be possible to perform such operation via the Launchpad UI.
+        colaborative PPAs without requiring new uploads.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
@@ -458,92 +533,56 @@ class TestCopyPackage(unittest.TestCase):
     def testUnembargoing(self):
         """Test UnembargoSecurityPackage, which wraps PackagerCopier."""
         # Set up a private PPA.
-        cprov_ppa = getUtility(IPersonSet).getByName("cprov").archive
-        cprov_ppa.buildd_secret = "secret"
-        cprov_ppa.private = True
+        cprov = getUtility(IPersonSet).getByName("cprov")
+        cprov.archive.buildd_secret = "secret"
+        cprov.archive.private = True
 
-        # Fudge one of the packages in the cprov's PPA so
-        # that its files are in the restricted librarian.
-        sourcepackagename = "iceweasel"
-        binarypackagename = "mozilla-firefox"
-        sources = cprov_ppa.getPublishedSources(name=sourcepackagename)
-        binaries = cprov_ppa.getAllPublishedBinaries(name=binarypackagename)
-        [source] = sources
+        # Setup a SoyuzTestPublisher object, so we can create publication
+        # to be unembargoed.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        warty = ubuntu.getSeries('warty')
+        test_publisher = self.getTestPublisher(warty)
 
-        # Now we fudge the published component in the main archive so
-        # we can check later to see if the ancestry override is working.
-        universe = getUtility(IComponentSet)['universe']
-        warty = getUtility(IDistributionSet)['ubuntu']['warty']
-        warty_i386 = warty['i386']
-        [iceweasel] = warty.main_archive.getPublishedSources(
-            name=sourcepackagename,
-            status=PackagePublishingStatus.PUBLISHED,
+        # Create a source and binary pair to be unembargoed from the PPA.
+        ppa_source = test_publisher.getPubSource(
+            archive=cprov.archive, version='1.1',
             distroseries=warty,
-            exact_match=True)
-        removeSecurityProxy(iceweasel).secure_record.component = universe
+            status=PackagePublishingStatus.PUBLISHED)
+        ppa_binaries = test_publisher.getPubBinaries(
+            pub_source=ppa_source, distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
 
-        # For the binary we'll unpublish it entirely and fudge the component
-        # on the binarypackagerelease.  This will make the ancestry check
-        # fall back to the binarypackagerelease to get the component.
-        firefox_pubs = warty.main_archive.getAllPublishedBinaries(
-            name=binarypackagename,
-            status=PackagePublishingStatus.PUBLISHED,
-            distroarchseries=warty_i386,
-            exact_match=True)
-        for firefox in firefox_pubs:
-            firefox = removeSecurityProxy(firefox)
-            firefox.supersede()
-            firefox.binarypackagerelease.component = universe
+        # Also create a PackageUpload item with a fake changesfile.
+        ppa_queue_item = warty.createQueueEntry(
+            pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
+            changesfilename='foo_source.changes', changesfilecontent='x')
+        ppa_queue_item.addSource(ppa_source.sourcepackagerelease)
+        ppa_queue_item.setDone()
+
+        # Create ancestry environment in the primary archive, so we can
+        # test unembargoed overrides.
+        ancestry_source = test_publisher.getPubSource(
+            version='1.0', distroseries=warty,
+            status=PackagePublishingStatus.PUBLISHED)
+        ancestry_binaries = test_publisher.getPubBinaries(
+            pub_source=ancestry_source, distroseries=warty,
+            status=PackagePublishingStatus.SUPERSEDED)
+
+        # Override the published ancestry source to 'universe'
+        universe = getUtility(IComponentSet)['universe']
+        ancestry_source.secure_record.component = universe
+
+        # Override the copied binarypackagerelease to 'universe'.
+        for binary in ppa_binaries:
+            binary.binarypackagerelease.component = universe
+
         self.layer.txn.commit()
-
-        # Make the files look like they're in the restricted librarian
-        # and add some fake content. fillLibrarianFile() helpfully doesn't
-        # reset the filesize so we have to do it here.
-        #
-        # We also need to pretend to be the librariangc user to update
-        # libraryfilecontent.  Unfortunately the convoluted user switching
-        # is required because librariangc has no permissions to select
-        # on the other tables needed for the loop.
-        def make_files_restricted(file_ids):
-            self.layer.txn.commit()
-            self.layer.switchDbUser('librariangc')
-
-            FAKE_CONTENT = "I am fake!"
-            for lfa_id in file_ids:
-                lfa = getUtility(ILibraryFileAliasSet)[lfa_id]
-                naked_lfa = removeSecurityProxy(lfa)
-                naked_lfa.restricted = True
-                fillLibrarianFile(lfa.content.id, content=FAKE_CONTENT)
-                naked_content = removeSecurityProxy(lfa.content)
-                naked_content.filesize = len(FAKE_CONTENT)
-
-            self.layer.txn.commit()
-            self.layer.switchDbUser('launchpad')
-
-        sourcefile_ids = []
-        for publishings in (sources, binaries):
-            for published in publishings:
-                for published_file in published.files:
-                    sourcefile_ids.append(
-                        published_file.libraryfilealias.id)
-
-        make_files_restricted(sourcefile_ids)
-
-        # Also make the changes files restricted.
-        changesfile_ids = []
-        for published in sources:
-            queue = published.sourcepackagerelease.getQueueRecord(
-                distroseries=published.distroseries)
-            if queue is not None:
-                changesfile_ids.append(queue.changesfile.id)
-
-        make_files_restricted(changesfile_ids)
 
         # Now we can invoke the unembargo script and check its results.
         test_args = [
             "--ppa", "cprov",
-            "-s", "%s" % source.distroseries.name,
-            "%s" % sourcepackagename
+            "-s", "%s" % ppa_source.distroseries.name,
+            "foo"
             ]
 
         script = UnembargoSecurityPackage(
@@ -554,7 +593,7 @@ class TestCopyPackage(unittest.TestCase):
         copied = script.mainTask()
 
         # Check the results.
-        self.checkCopies(copied, script.destination.archive, 2)
+        self.checkCopies(copied, script.destination.archive, 3)
 
         # Check that the librarian files are all unrestricted now.
         # We must commit the txn for SQL object to see the change.
@@ -569,7 +608,9 @@ class TestCopyPackage(unittest.TestCase):
             # syncUpdate and flushing seems to want to make it update :(
             # So, I am checking the secure record in this test.
             self.assertEqual(
-                published.secure_record.component.name, universe.name)
+                published.secure_record.component.name, universe.name,
+                "%s is in %s" % (published.displayname,
+                                 published.component.name))
             for published_file in published.files:
                 self.assertFalse(published_file.libraryfilealias.restricted)
             # Also check the sources' changesfiles.
@@ -577,8 +618,6 @@ class TestCopyPackage(unittest.TestCase):
                 queue = published.sourcepackagerelease.getQueueRecord(
                     distroseries=published.distroseries)
                 self.assertFalse(queue.changesfile.restricted)
-
-        cleanupLibrarianFiles()
 
 
 def test_suite():
