@@ -119,18 +119,13 @@ class BMPMailer(BaseMailer):
 
     @classmethod
     def forReviewRequest(klass, reason, merge_proposal, from_user):
+        """Return a mailer for a request to review a BranchMergeProposal."""
         from_address = klass._format_user_address(from_user)
         recipients = {reason.subscriber: reason}
         return klass(
             'Request to review proposed merge of %(source_branch)s into '
             '%(target_branch)s', 'review-requested.txt', recipients,
             merge_proposal, from_address)
-
-    def getReason(self, recipient):
-        """Return a string explaining why the recipient is a recipient."""
-        subscription = self._recipients.getReason(
-            recipient.preferredemail.email)[0]
-        return subscription.getReason()
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
@@ -139,9 +134,9 @@ class BMPMailer(BaseMailer):
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""
         headers = BaseMailer._getHeaders(self, recipient)
-        subscription, rationale = self._recipients.getReason(
+        reason, rationale = self._recipients.getReason(
             recipient.preferredemail.email)
-        headers['X-Launchpad-Branch'] = subscription.branch.unique_name
+        headers['X-Launchpad-Branch'] = reason.branch.unique_name
         return headers
 
     def _getTemplateParams(self, recipient):
