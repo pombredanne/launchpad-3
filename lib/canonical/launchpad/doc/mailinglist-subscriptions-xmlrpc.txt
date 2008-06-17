@@ -209,6 +209,10 @@ list and the rest is taken care of.
 Every public team should have this address as an enabled recipient.  There is
 no real name for this member.
 
+    >>> list_one.is_public
+    True
+    >>> list_two.is_public
+    True
     >>> info = mailinglist_api.getMembershipInformation(
     ...     ('team-one', 'team-two'))
     >>> print_info(info, full=True)
@@ -281,6 +285,8 @@ is created for it.
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     new_list_for_team)
     >>> list_three = new_list_for_team(team_three)
+    >>> list_three.is_public
+    False
     >>> anne.join(team_three)
     >>> list_three.subscribe(anne)
     >>> flush_database_updates()
