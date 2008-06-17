@@ -67,8 +67,6 @@
           <input type="hidden" name="batch" value=""
                  tal:attributes="value view/size" />
 
-          <label for="show_selector">Show:</label>
-
           <tal:comment tal:replace="nothing">
             The 'selected' attribute value in next select means basically
             the following:
@@ -82,54 +80,60 @@
             'translated'.
           </tal:comment>
 
-          <select id="show_selector" name="show"
-                  title="Choose which items to show">
-            <option value="all"
-              tal:attributes="selected
-              request/htmlform:show/selected/all"
-              >
-              all
-            </option>
-            <option value="untranslated"
-              tal:attributes="selected
-              request/htmlform:show/selected/untranslated"
-              >
-              untranslated
-            </option>
-            <option value="need_review"
-              tal:attributes="selected
-              request/htmlform:show/selected/need_review"
-              >
-              need review
-            </option>
-            <option value="translated"
-              tal:attributes="selected
-              request/htmlform:show/selected/translated"
-              >
-              translated
-            </option>
-            <option value="new_suggestions"
-              tal:attributes="selected
-              request/htmlform:show/selected/new_suggestions"
-              >
-              with new suggestions
-            </option>
-            <option value="changed_in_launchpad"
-              tal:attributes="selected
-              request/htmlform:show/selected/changed_in_launchpad"
-              >
-              changed in Launchpad
-            </option>
-          </select>
-          <tal:comment replace="nothing">
-            Suggestions from this alternative language will be displayed as
-            well as suggestions from the translation language. In the case
-            where two languages are very similar it will often be useful to
-            show the second language as a source of suggestions when
-            translating into the first.
-          </tal:comment>
-          <label>Make suggestions from:</label>
-          <tal:language-widget content="structure view/alternative_language_widget" />
+          <p>
+            <label>
+              Translating
+              <select id="show_selector" name="show"
+                      title="Choose which items to show">
+                <option value="all"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/all"
+                  >
+                  all items
+                </option>
+                <option value="untranslated"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/untranslated"
+                  >
+                  untranslated items
+                </option>
+                <option value="need_review"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/need_review"
+                  >
+                  items that need review
+                </option>
+                <option value="translated"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/translated"
+                  >
+                  translated items
+                </option>
+                <option value="new_suggestions"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/new_suggestions"
+                  >
+                  items with new suggestions
+                </option>
+                <option value="changed_in_launchpad"
+                  tal:attributes="selected
+                  request/htmlform:show/selected/changed_in_launchpad"
+                  >
+                  items changed in Launchpad
+                </option>
+              </select>
+            </label>
+            <label> using
+              <tal:comment replace="nothing">
+                Suggestions from this alternative language will be displayed
+                as well as suggestions from the translation language. In the
+                case where two languages are very similar it will often be
+                useful to show the second language as a source of suggestions
+                when translating into the first.
+              </tal:comment>
+              <tal:language-widget content="structure view/alternative_language_widget" />
+            as a guide</label>
+          </p>
           <input type="hidden" name="old_show" value=""
             tal:attributes="value view/show" />
           <input type="submit" value="Change" />
