@@ -973,7 +973,8 @@ class ProductReviewLicenseView(ProductAdminView):
         if referrer is None:
             referrer = self.request.getHeader('referer')
 
-        if referrer and referrer.startswith(self.request.getApplicationURL()):
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
             return referrer
         else:
             return canonical_url(self.context)
@@ -1195,15 +1196,19 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('subscription_modified_after', DateWidget)
     custom_widget('subscription_modified_before', DateWidget)
 
-    def setUpWidgets(self):
-        super(ProductSetReviewLicensesView, self).setUpWidgets()
-        self.full_row_widgets = []
-        self.side_by_side_widgets = []
-        for left, right in self.side_by_side_field_names:
-            self.side_by_side_widgets.append(
-                [self.widgets.get(left), self.widgets.get(right)])
-        for field_name in self.full_row_field_names:
-            self.full_row_widgets.append(self.widgets[field_name])
+    @property
+    def left_side_widgets(self):
+        return (self.widgets.get(left)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def right_side_widgets(self):
+        return (self.widgets.get(right)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def full_row_widgets(self):
+        return (self.widgets[name] for name in self.full_row_field_names)
 
     def forReviewBatched(self):
         # Calling _validate populates the data dictionary as a side-effect
@@ -1217,13 +1222,6 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
             search_params[name] = self.schema[name].default
         # Override the defaults with the form values if available.
         search_params.update(data)
-        if search_params['license_info_is_empty'] == 'Empty':
-            search_params['license_info_is_empty'] = True
-        elif search_params['license_info_is_empty'] == 'Not Empty':
-            search_params['license_info_is_empty'] = False
-        else:
-            # license_info_is_empty is None.
-            pass
         return BatchNavigator(self.context.forReview(**search_params),
                               self.request, size=10)
 

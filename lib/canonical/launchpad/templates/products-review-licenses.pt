@@ -31,8 +31,8 @@
         <th>License approved</th>
         <th>Registered by</th>
         <th>Licenses</th>
-        <th>License info</th>
-        <th>Reviewer whiteboard</th>
+        <th style="width: 40%">License info</th>
+        <th style="width: 40%">Reviewer whiteboard</th>
       </thead>
       <tbody>
         <div tal:repeat="product batch/currentBatch"
@@ -61,26 +61,20 @@
             <table>
               <tr><td>
               <table class="form">
-              <tal:block define="widgets view/side_by_side_widgets"
-                        repeat="widget_pair widgets">
-                  <tal:block tal:define="widget python: widget_pair[0]">
-                    <metal:block
-                      tal:condition="widget"
-                      use-macro="context/@@launchpad_form/widget_row"/>
-                  </tal:block>
-              </tal:block>
+                <tal:block repeat="widget view/left_side_widgets">
+                  <metal:block
+                    tal:condition="widget"
+                    use-macro="context/@@launchpad_form/widget_row"/>
+                </tal:block>
               </table>
             </td>
             <td>
               <table class="form">
-              <tal:block define="widgets view/side_by_side_widgets"
-                        repeat="widget_pair widgets">
-                  <tal:block tal:define="widget python: widget_pair[1]">
-                    <metal:block
-                      tal:condition="widget"
-                      use-macro="context/@@launchpad_form/widget_row"/>
-                  </tal:block>
-              </tal:block>
+                <tal:block repeat="widget view/right_side_widgets">
+                  <metal:block
+                    tal:condition="widget"
+                    use-macro="context/@@launchpad_form/widget_row"/>
+                </tal:block>
               </table>
             </td></tr>
             </table>

@@ -16,6 +16,7 @@ import sets
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, Set, Text, TextLine
+from zope.schema.vocabulary import SimpleVocabulary
 
 
 from canonical.launchpad import _
@@ -356,8 +357,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     license_approved = Bool(
         title=_("License approved"),
-        description=_("""Whether a license is manually approved for free
-                         hosting after automatic approval fails."""))
+        description=_("Whether a license is manually approved for free "
+                      "hosting after automatic approval fails."))
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):
@@ -515,13 +516,16 @@ class IProductSet(Interface):
         """
 
 
+emptiness_vocabulary = SimpleVocabulary.fromItems(
+        [('Empty', True), ('Not Empty', False)])
+
 class IProductReviewSearch(Interface):
     """A search form for products being reviewed."""
 
     search_text = TextLine(
       title=_('Search text'),
-      description=_("""Search text in the product's name, displayname, title,
-          summary, and description."""),
+      description=_("Search text in the product's name, displayname, title, "
+                    "summary, and description."),
       required=False)
 
     active = Choice(
@@ -536,13 +540,13 @@ class IProductReviewSearch(Interface):
         title=_('Description of additional licenses'),
         description=_('Either this field or any one of the selected licenses'
                       ' must match.'),
-        values=['Empty', 'Not Empty'], required=False, default='Not Empty')
+        vocabulary=emptiness_vocabulary, required=False, default=False)
 
-    # Zope requires sets.Set() instead of the builtin set().
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
+        # Zope requires sets.Set() instead of the builtin set().
         default=sets.Set(
             [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
 

@@ -5,20 +5,20 @@
   omit-tag="">
 
   <tr>
-    <td style="white-space: nowrap">
-      <img src="/@@/product" />
-      <a tal:attributes="href context/fmt:url"
-        tal:content="context/title">Project Title Here</a>
-    </td>
-    <td>
+    <td style="white-space: nowrap"
+        tal:content="structure context/fmt:link" />
+    <!-- XXX: Edwin Grubbs 2008-06-17 bug=240759
+         The @@/yes and @@/no img tags could be handled by a tales formatter.
+    -->
+    <td style="text-align: center">
       <img src="/@@/yes" tal:condition="context/active"/>
       <img src="/@@/no" tal:condition="not: context/active"/>
     </td>
-    <td>
+    <td style="text-align: center">
       <img src="/@@/yes" tal:condition="context/license_reviewed"/>
       <img src="/@@/no" tal:condition="not: context/license_reviewed"/>
     </td>
-    <td>
+    <td style="text-align: center">
       <img src="/@@/yes" tal:condition="context/license_approved"/>
       <img src="/@@/no" tal:condition="not: context/license_approved"/>
     </td>
@@ -36,8 +36,7 @@
       (<a tal:attributes="href string:${context/fmt:url}/+review-license"
         >Review</a>)
     </td>
-    <td style="width: 99%"
-        tal:content="structure context/license_info/fmt:text-to-html">
+    <td tal:content="structure context/license_info/fmt:text-to-html">
         License info goes here
     </td>
     <td tal:content="structure context/reviewer_whiteboard" />

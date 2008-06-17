@@ -302,3 +302,13 @@ happens when a voucher is redeemed.
     ...     subscription_modified_after=date_last_modified
     ...                                 +timedelta(seconds=1)):
     ...     print product.name
+
+All the products are returned when no parameters are passed in.
+
+    >>> from canonical.launchpad.database import Product
+    >>> product_set.forReview().count() == Product.select().count()
+    True
+    >>> product_set.forReview(license_info_is_empty='foo').count()
+    Traceback (most recent call last):
+    ...
+    AssertionError...
