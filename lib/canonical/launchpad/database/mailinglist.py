@@ -19,7 +19,7 @@ from itertools import repeat
 from string import Template
 
 from sqlobject import ForeignKey, StringCol
-from zope.component import getUtility
+from zope.component import getUtility, queryAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 
@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 
 
 class MessageApproval(SQLBase):
@@ -121,7 +122,6 @@ class MailingList(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        storm_validator=validate_public_person,
         notNull=True)
 
     registrant = ForeignKey(
@@ -293,8 +293,13 @@ class MailingList(SQLBase):
             "Only mailing lists in the REGISTERED state can be canceled.")
         self.destroySelf()
 
+    @property
+    def is_public(self):
+        """See `IMailingList`."""
+        return not queryAdapter(self.team, IObjectPrivacy).is_private
+
     def isUsable(self):
-        """See `IMailingList`"""
+        """See `IMailingList`."""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
                                MailingListStatus.UPDATING,

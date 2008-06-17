@@ -22,7 +22,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -253,6 +253,10 @@ class IMailingList(Interface):
             'activated.  Such a list, even if now inactive, may still have '
             'an archive.  If the list has never been activated, this will '
             'be None.'),
+        readonly=True)
+
+    is_public = Bool(
+        title=_('This mailing list, and its team, are public'),
         readonly=True)
 
     def isUsable():

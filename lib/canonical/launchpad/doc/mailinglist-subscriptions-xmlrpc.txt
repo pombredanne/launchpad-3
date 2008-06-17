@@ -206,31 +206,49 @@ list and the rest is taken care of.
     >>> config.mailman.archive_address
     'archive@mail-archive.dev'
 
-Every team should have this address as an enabled recipient.  There is no real
-name for this member.
+Every public team should have this address as an enabled recipient.  There is
+no real name for this member.
 
-    # Don't use print_info() since that explicitly suppresses the archive
-    # address in order to make the above tests more succinct.
     >>> info = mailinglist_api.getMembershipInformation(
     ...     ('team-one', 'team-two'))
-    >>> for team in sorted(info):
-    ...     subscribees = info[team]
-    ...     for address, realname, flags, status in subscribees:
-    ...         if address == config.mailman.archive_address:
-    ...             # Print the repr so we'll see the empty string better.
-    ...             print team, address, repr(realname), flags, status
-    ...             break
-    ...     else:
-    ...         raise AssertionError('No archive address in subscribees')
-    team-one archive@mail-archive.dev '' 0 0
-    team-two archive@mail-archive.dev '' 0 0
+    >>> print_info(info, full=True)
+    team-one
+        anne.person@example.com   Anne Person     0 0
+        aperson@example.org       Anne Person     0 2
+        archive@mail-archive.dev  (n/a)           0 0
+        bart.person@example.com   Bart Person     0 0
+        bperson@example.org       Bart Person     0 2
+        cperson@example.org       Cris Person     0 2
+        cris.person@example.com   Cris Person     0 0
+        dirk.person@example.com   Dirk Person     0 0
+        dperson@example.org       Dirk Person     0 2
+        elle.person@example.com   Elle Person     0 0
+        eperson@example.org       Elle Person     0 2
+        hank.person@example.com   Hank Person     0 0
+        hperson@example.org       Hank Person     0 2
+    team-two
+        anne.person@example.com   Anne Person     0 0
+        aperson@example.org       Anne Person     0 2
+        archive@mail-archive.dev  (n/a)           0 0
+        cperson@example.org       Cris Person     0 2
+        cris.person@example.com   Cris Person     0 0
+        dirk.person@example.com   Dirk Person     0 0
+        dperson@example.org       Dirk Person     0 2
+        elle.person@example.com   Elle Person     0 0
+        eperson@example.org       Elle Person     0 2
+        fperson@example.org       Fred Person     0 2
+        fred.person@example.com   Fred Person     0 0
+        gperson@example.org       Gwen Person     0 2
+        gwen.person@example.com   Gwen Person     0 0
+        hank.person@example.com   Hank Person     0 0
+        hperson@example.org       Hank Person     0 2
 
 However, in order to prevent this address from being used to forge spam onto
 the lists, the archive address is hard-coded to not be registered in
 Launchpad.
 
     >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
-    False    
+    False
 
 This is true even if by dumb luck the address actually gets registered in
 Launchpad.
@@ -241,7 +259,67 @@ Launchpad.
     ...     EmailAddressStatus.VALIDATED)
     >>> flush_database_updates()
     >>> mailinglist_api.isRegisteredInLaunchpad(config.mailman.archive_address)
-    False    
+    False
+
+The Mail Archive is only used for public team mailing lists.  If the team
+itself is private, so is its archive, and then messages are not sent to the
+archiver email address.  The team must be made private before a mailing list
+is created for it.
+
+    >>> from canonical.launchpad.interfaces.person import PersonVisibility
+    >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
+    >>> from zope.component import queryAdapter
+    >>> team_three = new_team('team-three')
+    >>> queryAdapter(team_three, IObjectPrivacy).is_private
+    False
+    >>> team_three.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(team_three)
+    >>> queryAdapter(team_three, IObjectPrivacy).is_private
+    True
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     new_list_for_team)
+    >>> list_three = new_list_for_team(team_three)
+    >>> anne.join(team_three)
+    >>> list_three.subscribe(anne)
+    >>> flush_database_updates()
+    >>> info = mailinglist_api.getMembershipInformation(
+    ...     ('team-one', 'team-two', 'team-three'))
+    >>> print_info(info, full=True)
+    team-one
+        anne.person@example.com   Anne Person     0 0
+        aperson@example.org       Anne Person     0 2
+        archive@mail-archive.dev  (n/a)           0 0
+        bart.person@example.com   Bart Person     0 0
+        bperson@example.org       Bart Person     0 2
+        cperson@example.org       Cris Person     0 2
+        cris.person@example.com   Cris Person     0 0
+        dirk.person@example.com   Dirk Person     0 0
+        dperson@example.org       Dirk Person     0 2
+        elle.person@example.com   Elle Person     0 0
+        eperson@example.org       Elle Person     0 2
+        hank.person@example.com   Hank Person     0 0
+        hperson@example.org       Hank Person     0 2
+    team-three
+        anne.person@example.com   Anne Person     0 0
+        aperson@example.org       Anne Person     0 2
+    team-two
+        anne.person@example.com   Anne Person     0 0
+        aperson@example.org       Anne Person     0 2
+        archive@mail-archive.dev  (n/a)           0 0
+        cperson@example.org       Cris Person     0 2
+        cris.person@example.com   Cris Person     0 0
+        dirk.person@example.com   Dirk Person     0 0
+        dperson@example.org       Dirk Person     0 2
+        elle.person@example.com   Elle Person     0 0
+        eperson@example.org       Elle Person     0 2
+        fperson@example.org       Fred Person     0 2
+        fred.person@example.com   Fred Person     0 0
+        gperson@example.org       Gwen Person     0 2
+        gwen.person@example.com   Gwen Person     0 0
+        hank.person@example.com   Hank Person     0 0
+        hperson@example.org       Hank Person     0 2
 
 
 == Error cases ==
