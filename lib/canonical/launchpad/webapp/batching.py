@@ -23,7 +23,7 @@ class UpperBatchNavigationView(LaunchpadView):
         return u""
 
 
-class LowerBatchNavigationView(LaunchpadView):
+class LowerBatchNavigationView(UpperBatchNavigationView):
     """Only render bottom navigation links if there are multiple batches."""
 
     def render(self):
@@ -45,6 +45,11 @@ class BatchNavigator:
     # users.  They may want to do this for really large result sets;
     # for example, batches with over a hundred thousand items.
     show_last_link = True
+
+    # The default heading describing the kind of objects in the batch.
+    # Sub-classes can override this to be more specific.
+    default_singular_heading = 'result'
+    default_plural_heading = 'results'
 
     def __init__(self, results, request, start=0, size=None, callback=None):
         """Constructs a BatchNavigator instance.
@@ -101,6 +106,20 @@ class BatchNavigator:
         self.request = request
         if callback is not None:
             callback(self, self.batch)
+        self.setHeadings(
+            self.default_singular_heading, self.default_plural_heading)
+
+    @property
+    def heading(self):
+        """See `IBatchNavigator`"""
+        if self.batch.total() == 1:
+            return self._singular_heading
+        return self._plural_heading
+
+    def setHeadings(self, singular, plural):
+        """See `IBatchNavigator`"""
+        self._singular_heading = singular
+        self._plural_heading = plural
 
     def cleanQueryString(self, query_string):
         """Removes start and batch params from a query string."""
