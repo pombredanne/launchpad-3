@@ -154,22 +154,25 @@ We can get the the collection of subscriptions to a bug.
   >>> bug_one_subscriptions_url = urlsplit(
   ...     bug_one['subscriptions_collection_link'])[2]
   >>> subscriptions = webservice.get(bug_one_subscriptions_url).jsonBody()
-  >>> pprint(subscriptions['entries'])
-  [{u'bug_link': u'http://api.launchpad.dev/beta/bugs/1',
-    u'person_link': u'http://api.launchpad.dev/beta/~stevea',
-    u'resource_type_link': u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter',
-    u'self_link': u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea',
-    u'subscribed_by_link': u'http://api.launchpad.dev/beta/~janitor'}...]
+  >>> pprint(sorted(entry.items() for entry in subscriptions['entries']))
+  [[(u'self_link',
+     u'http://api.launchpad.dev/beta/bugs/1/+subscription/name12'),
+    (u'person_link', u'http://api.launchpad.dev/beta/~name12'),
+    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+    (u'resource_type_link',
+     u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+    (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]...]
+
 
 Each subscription can be accessed individually.
 
   >>> subscription = webservice.get(subscriptions['entries'][0]['self_link']).jsonBody()
-  >>> pprint(subscription)
-  {u'bug_link': u'http://api.launchpad.dev/beta/bugs/1',
-    u'person_link': u'http://api.launchpad.dev/beta/~stevea',
-    u'resource_type_link': u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter',
-    u'self_link': u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea',
-    u'subscribed_by_link': u'http://api.launchpad.dev/beta/~janitor'}
+  >>> pprint(sorted(subscription.items()))
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'person_link', u'http://api.launchpad.dev/beta/~stevea'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugSubscriptionEntryAdapter'),
+   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+subscription/stevea'),
+   (u'subscribed_by_link', u'http://api.launchpad.dev/beta/~janitor')]
 
 We can also create new subscriptions.
 
