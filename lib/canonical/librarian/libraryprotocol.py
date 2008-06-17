@@ -86,8 +86,7 @@ class FileUploadProtocol(basic.LineReceiver):
             log.err(failure)
         else:
             log.err()
-        self.sendError('Internal server error: %s: %s'
-                       % (sys.exc_type.__name__, sys.exc_value), '500')
+        self.sendError('Internal server error', '500')
 
     def translateErrors(self, failure):
         """Errback to translate storage errors to protocol errors."""
