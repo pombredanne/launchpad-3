@@ -222,7 +222,7 @@ class IOpenRPSummarySet(Interface):
             more persons.
         """
 
-    def recordOpenIDRPSummary(person, identifier, trust_root, date_used=None)
+    def recordOpenIDRPSummary(person, identifier, trust_root, date_used=None):
         """Create or update an IOpenRPSummary.
 
         :param person: An `IPerson`.
