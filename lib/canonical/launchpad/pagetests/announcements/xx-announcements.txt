@@ -165,10 +165,10 @@ date in the future when the announcement will be made:
     >>> 'Jokosher announcement' in latest_news(priv_browser.contents)
     True
 
-And again for Kubuntu, an IDistribution, but this time we won't specify
+And again for Ubuntu, an IDistribution, but this time we won't specify
 a date for the announcement at all:
 
-    >>> priv_browser.open('http://launchpad.dev/kubuntu')
+    >>> priv_browser.open('http://launchpad.dev/ubuntu')
     >>> has_latest_news(priv_browser.contents)
     False
     >>> priv_browser.getLink('Make announcement').click()
