@@ -3056,7 +3056,7 @@ class PersonEditView(BasePersonEditView):
     """The Launchpad 2.0 Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
-        'verbose_bugnotifications', 'timezone']
+                   'verbose_bugnotifications', 'timezone']
     custom_widget('timezone', SelectWidget, size=15)
 
 
@@ -3066,7 +3066,7 @@ class PersonEditViewObsolete(BasePersonEditView):
     implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
-        'verbose_bugnotifications', 'timezone']
+                   'verbose_bugnotifications', 'timezone']
     custom_widget('timezone', SelectWidget, size=15)
 
 
