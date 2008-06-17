@@ -13,14 +13,15 @@ __all__ = [
 
 
 import re
-from xmlrpclib import Fault, Transport, loads
+from xmlrpclib import Fault, loads
 from zope.interface import implements
 
 from canonical.launchpad.utilities import SalesforceVoucherProxy
 from canonical.launchpad.interfaces import ISalesforceVoucherProxy
+from canonical.lazr.timeout import TransportWithTimeout, with_timeout
 
 
-TERM_RE = re.compile("^LPCS(\d{2})-.*")
+TERM_RE = re.compile("^LPCBS(\d{2})-.*")
 
 class Voucher:
     """Test data for a single voucher."""
@@ -60,7 +61,7 @@ class TestSalesforceVoucherProxy(SalesforceVoucherProxy):
         self.xmlrpc_transport = SalesforceXMLRPCTestTransport()
 
 
-class SalesforceXMLRPCTestTransport(Transport):
+class SalesforceXMLRPCTestTransport(TransportWithTimeout):
     """An XML-RPC test transport for the Salesforce proxy.
 
     This transport contains a small amount of sample data and intercepts
@@ -70,19 +71,19 @@ class SalesforceXMLRPCTestTransport(Transport):
     """
 
     voucher_index = 0
-    voucher_prefix = 'LPCS%02d-f78df324-0cc2-11dd-0000-%012d'
+    voucher_prefix = 'LPCBS%02d-f78df324-0cc2-11dd-0000-%012d'
 
     def __init__(self):
         self.vouchers = [
-            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000001',
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000001',
                     'sabdfl_oid'),
-            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000002',
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000002',
                     'sabdfl_oid'),
-            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000003',
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000003',
                     'sabdfl_oid'),
-            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000004',
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000004',
                     'cprov_oid'),
-            Voucher('LPCS12-f78df324-0cc2-11dd-8b6b-000000000005',
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000005',
                     'cprov_oid'),
             ]
 
@@ -108,6 +109,8 @@ class SalesforceXMLRPCTestTransport(Transport):
         Included here for completeness though it is never called by
         Launchpad.
         """
+        import time
+        time.sleep(0.5)
         return "Server is running normally"
 
     def getUnredeemedVouchers(self, lp_openid):
@@ -189,9 +192,11 @@ class SalesforceXMLRPCTestTransport(Transport):
 
     def grantVoucher(self, admin_openid, approver_openid, recipient_openid,
                      recipient_name, recipient_preferred_email, term_months):
+        """Grant a new voucher to the user."""
         voucher = self._createVoucher(recipient_openid, term_months)
         return voucher.voucher_id
 
+    @with_timeout(cleanup='cleanup')
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 
@@ -202,3 +207,7 @@ class SalesforceXMLRPCTestTransport(Transport):
         args, method_name = loads(request)
         method = getattr(self, method_name)
         return method(*args)
+
+    def cleanup(self):
+        """Override the cleanup method to do nothing."""
+        pass

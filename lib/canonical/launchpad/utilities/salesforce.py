@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 
-from xmlrpclib import Fault, ServerProxy, SafeTransport
+from xmlrpclib import Fault, ServerProxy
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -21,7 +21,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucher, ISalesforceVoucherProxy)
-
+from canonical.lazr.timeout import SafeTransportWithTimeout
 
 class SalesforceVoucherProxyException(Exception):
     """Exception raised on failed call to the SalesforceVoucherProxy."""
@@ -51,9 +51,9 @@ def fault_mapper(func):
                          AlreadyRedeemed=SVPAlreadyRedeemedException,
                          NotAllowed=SVPNotAllowedException)
 
-    def decorator(voucher, *args, **kwargs):
+    def decorator(*args, **kwargs):
         try:
-            results = func(voucher, *args, **kwargs)
+            results = func(*args, **kwargs)
         except Fault, fault:
             exception = errorcode_map.get(fault.faultCode,
                                           SalesforceVoucherProxyException)
@@ -101,7 +101,7 @@ class SalesforceVoucherProxy:
     implements(ISalesforceVoucherProxy)
 
     def __init__(self):
-        self.xmlrpc_transport = SafeTransport()
+        self.xmlrpc_transport = SafeTransportWithTimeout()
 
     @cachedproperty
     def url(self):
@@ -132,6 +132,8 @@ class SalesforceVoucherProxy:
     @fault_mapper
     def getServerStatus(self):
         """See `ISalesforceVoucherProxy`."""
+        import time
+        time.sleep(0.5)
         status = self.server.getServerStatus()
         return status
 
