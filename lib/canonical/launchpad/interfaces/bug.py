@@ -36,9 +36,8 @@ from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
 from canonical.lazr.rest.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry, export_operation_as,
-    export_write_operation, exported, operation_parameters,
-    rename_parameters_as, webservice_error)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_write_operation, exported, operation_parameters)
 from canonical.lazr.fields import CollectionField, Reference
 
 
