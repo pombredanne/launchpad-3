@@ -24,7 +24,6 @@ import copy
 from datetime import datetime
 import os
 import simplejson
-from types import NoneType
 
 from zope.app import zapi
 from zope.app.pagetemplate.engine import TrustedAppPT

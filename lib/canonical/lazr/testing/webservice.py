@@ -27,9 +27,11 @@ class FakeResponse(object):
         self.headers[name] = value
 
     def getHeader(self, name):
+        """Return the value of the named header."""
         return self.headers.get(name)
 
     def getStatus(self):
+        """Return the response status code."""
         return self.status
 
 class FakeRequest(object):

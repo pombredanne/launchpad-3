@@ -11,11 +11,10 @@ from zope.schema.interfaces import RequiredMissing, ValidationError
 from zope.security.proxy import isinstance
 
 from canonical.lazr.interfaces import (
-    ICollection, IEntry, IFieldMarshaller, IResourceGETOperation,
+    ICollection, IFieldMarshaller, IResourceGETOperation,
     IResourcePOSTOperation)
 from canonical.lazr.rest.resource import (
-    BatchingResourceMixin, CollectionResource, EntryResource,
-    ResourceJSONEncoder)
+    BatchingResourceMixin, CollectionResource, ResourceJSONEncoder)
 
 __metaclass__ = type
 __all__ = [

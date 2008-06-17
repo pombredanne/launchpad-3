@@ -30,9 +30,7 @@ __all__ = [
     'webservice_error',
     ]
 
-import simplejson
 import sys
-import types
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
