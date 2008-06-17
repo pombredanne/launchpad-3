@@ -258,7 +258,7 @@ invalidated.
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
-    Subject: Code import product-name6/name11 status: Invalid
+    Subject: Code import product-name6/name11 status: Failing
     <BLANKLINE>
     The import has been marked as failing.
     ...

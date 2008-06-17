@@ -265,7 +265,7 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
         self.code_import.markFailing({}, self.import_operator)
         self.assertTrue(self.code_import.import_job is None)
         self.assertEqual(
-            CodeImportReviewStatus.INVALID,
+            CodeImportReviewStatus.FAILING,
             self.code_import.review_status)
 
     def test_markFailing_pending_job(self):
@@ -277,7 +277,7 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
         self.code_import.markFailing({}, self.import_operator)
         self.assertTrue(self.code_import.import_job is None)
         self.assertEqual(
-            CodeImportReviewStatus.INVALID,
+            CodeImportReviewStatus.FAILING,
             self.code_import.review_status)
 
     def test_markFailing_running_job(self):
@@ -293,7 +293,7 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
         self.code_import.markFailing({}, self.import_operator)
         self.assertTrue(self.code_import.import_job is not None)
         self.assertEqual(
-            CodeImportReviewStatus.INVALID,
+            CodeImportReviewStatus.FAILING,
             self.code_import.review_status)
 
 
