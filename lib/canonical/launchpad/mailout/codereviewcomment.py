@@ -62,8 +62,10 @@ class CodeReviewCommentMailer(BMPMailer):
             footer_separator = '\n'
         else:
             footer_separator = '\n-- \n'
+        reason, rationale = self._recipients.getReason(
+            recipient.preferredemail.email)
         return ''.join((
-            prefix, main, footer_separator, self.getReason(recipient)))
+            prefix, main, footer_separator, reason.getReason()))
 
 
     def _getHeaders(self, recipient):

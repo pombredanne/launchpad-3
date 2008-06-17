@@ -9,7 +9,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branchmergeproposal import (
@@ -47,6 +47,8 @@ class TestMergeProposalMailing(TestCase):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        reason = mailer._recipients.getReason(
+            subscriber.preferredemail.email)[0]
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
 Baz Qux has proposed merging foo into bar.
@@ -54,7 +56,7 @@ Baz Qux has proposed merging foo into bar.
 --\x20
 %s
 %s
-""" % (canonical_url(bmp), mailer.getReason(subscriber)), body)
+""" % (canonical_url(bmp), reason.getReason()), body)
         self.assertEqual('Merge of foo into bar proposed', subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
@@ -101,7 +103,8 @@ Baz Qux has proposed merging foo into bar.
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Proposed merge of foo into bar updated', subject)
         url = canonical_url(mailer.merge_proposal)
-        reason = mailer.getReason(subscriber)
+        reason = mailer._recipients.getReason(
+            subscriber.preferredemail.email)[0].getReason()
         self.assertEqual("""\
 The proposal to merge foo into bar has been updated.
 
@@ -194,7 +197,10 @@ class TestRecipientReason(TestCaseWithFactory):
         """Test values when created from a branch subscription."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
-        vote_reference = merge_proposal.nominateReviewer()
+        logout()
+        login('foo.bar@canonical.com')
+        vote_reference = merge_proposal.nominateReviewer(
+            subscriber, subscriber)
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
