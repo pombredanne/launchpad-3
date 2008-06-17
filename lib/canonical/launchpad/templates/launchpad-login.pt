@@ -35,7 +35,7 @@
       See also launchpad-restictedlogin.pt, which also uses
       these numbers in comments.
     </tal:comment>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main" class="freeform">
 
       <!-- 1. already logged in and shouldn't be here: -->
       <tal:block condition="request/lp:person">
