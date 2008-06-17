@@ -148,7 +148,7 @@ and trust_root. No other summary may contain the identical information.
 
 Each summary contains a date_created, date_last_used, and the
 total_logins that that it has been used. The date_created property
-never changes. 
+never changes.
 
     >>> print norwegian_blue_store.date_created
     '2008-02-01 13:01:01.000001'
