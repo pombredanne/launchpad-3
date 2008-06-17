@@ -34,6 +34,9 @@ class IPersonNotification(Interface):
     def destroySelf():
         """Delete this notification."""
 
+    def send():
+        """Send the notification by email."""
+
 
 class IPersonNotificationSet(Interface):
     """The set of person notifications."""

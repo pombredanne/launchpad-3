@@ -8,15 +8,21 @@ __all__ = [
     'PersonNotificationSet',
     ]
 
+from datetime import datetime
+import pytz
+
 from sqlobject import ForeignKey, StringCol
 
 from zope.interface import implements
+
+from canonical.config import config
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.personnotification import (
     IPersonNotification, IPersonNotificationSet)
+from canonical.launchpad.mail.sendmail import format_address, simple_sendmail
 
 
 class PersonNotification(SQLBase):
@@ -28,6 +34,16 @@ class PersonNotification(SQLBase):
     date_emailed = UtcDateTimeCol(notNull=False)
     body = StringCol(notNull=True)
     subject = StringCol(notNull=True)
+
+    def send(self):
+        """See `IPersonNotification`."""
+        assert self.person.preferredemail is not None, (
+            "Can't send a notification to a person without an email.")
+        from_addr = config.canonical.bounce_address
+        to_addr = format_address(
+            self.person.displayname, self.person.preferredemail.email)
+        simple_sendmail(from_addr, to_addr, self.subject, self.body)
+        self.date_emailed = datetime.now(pytz.timezone('UTC'))
 
 
 class PersonNotificationSet:
