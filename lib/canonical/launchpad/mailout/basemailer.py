@@ -54,8 +54,12 @@ class BaseMailer:
         :return: (headers, subject, body) of the email.
         """
         headers = self._getHeaders(recipient)
-        subject = self._subject_template % self._getTemplateParams(recipient)
+        subject = self._getSubject(recipient)
         return (headers, subject, self._getBody(recipient))
+
+    def _getSubject(self, recipient):
+        """The subject template expanded with the template params."""
+        return self._subject_template % self._getTemplateParams(recipient)
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""

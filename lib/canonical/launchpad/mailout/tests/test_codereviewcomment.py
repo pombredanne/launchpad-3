@@ -28,15 +28,15 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
     def makeCommentAndSubscriber(self, notification_level=None,
                                  body=None, as_reply=False, vote=None,
-                                 vote_tag=None):
+                                 vote_tag=None, subject=None):
         """Return a comment and a subscriber."""
         sender = self.factory.makePerson(
             displayname='Sender', email='sender@example.com')
         comment = self.factory.makeCodeReviewComment(
-            sender, body=body, vote=vote, vote_tag=vote_tag)
+            sender, body=body, vote=vote, vote_tag=vote_tag, subject=subject)
         if as_reply:
             comment = self.factory.makeCodeReviewComment(
-                sender, body=body, parent=comment)
+                sender, body=body, parent=comment, subject=subject)
         subscriber = self.factory.makePerson(
             displayname='Subscriber', email='subscriber@example.com')
         if notification_level is None:
@@ -95,6 +95,15 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(set([bmp.source_branch.owner,
                               bmp.target_branch.owner]),
                          mailer._recipients.getRecipientPersons())
+
+    def test_subjectWithStringExpansions(self):
+        # The mailer should not attempt to expand templates in the subject.
+        comment, subscriber = self.makeCommentAndSubscriber(
+            subject='A %(carefully)s constructed subject')
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        self.assertEqual(
+            'A %(carefully)s constructed subject',
+            mailer._getSubject(recipient=None))
 
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""

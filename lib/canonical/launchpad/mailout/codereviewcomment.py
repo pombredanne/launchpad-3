@@ -40,6 +40,10 @@ class CodeReviewCommentMailer(BMPMailer):
             CodeReviewNotificationLevel.FULL)
         return klass(code_review_comment, recipients)
 
+    def _getSubject(self, recipient):
+        """Don't do any string template insertions on subjects."""
+        return self.code_review_comment.message.subject
+
     def _getBody(self, recipient):
         """Return the complete body to use for this email.
 
@@ -64,7 +68,6 @@ class CodeReviewCommentMailer(BMPMailer):
             footer_separator = '\n-- \n'
         return ''.join((
             prefix, main, footer_separator, self.getReason(recipient)))
-
 
     def _getHeaders(self, recipient):
         """Return the mail headers to use."""

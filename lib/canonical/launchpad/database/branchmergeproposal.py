@@ -404,6 +404,19 @@ class BranchMergeProposal(SQLBase):
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
+        if not subject:
+            # Get the subject from the parent if there is one, or use a nice
+            # default.
+            if parent is None:
+                subject = (
+                    'Re: Merge of %(source)s into %(target)s proposed'
+                    % {'source': self.source_branch.displayname,
+                       'target': self.target_branch.displayname})
+            else:
+                subject = parent.message.subject
+                if not subject.startswith('Re: '):
+                    subject = 'Re: ' + subject
+
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
