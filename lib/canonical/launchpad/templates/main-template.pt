@@ -146,18 +146,6 @@
           </tr>
         </tbody>
       </table>
-      <div
-        id="structuralobject" xml:lang="en" lang="en" dir="ltr"
-        tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
-        tal:condition="view/macro:pagehas/structuralheaderobject"
-      >
-        <tal:header
-          condition="structuralheaderobject"
-          replace="structure structuralheaderobject/@@+structural-header"
-        />
-        <tal:no condition="not:structuralheaderobject"
-        >No structural object</tal:no>
-      </div>
       <form
         tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch" xml:lang="en" lang="en" dir="ltr"
