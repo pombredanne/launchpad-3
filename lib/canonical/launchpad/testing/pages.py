@@ -16,7 +16,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urlparse import urljoin, urlsplit
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
@@ -437,7 +437,7 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll(['strong','a'])
+    entries = navigation_links.findAll(['strong', 'a'])
     for entry in entries:
         try:
             print '%s: %s' % (entry.span.string, entry['href'])
