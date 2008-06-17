@@ -394,7 +394,8 @@ class TestBugzillaXMLRPCTransport:
             % self.methods.keys())
 
         assert method_name in self.methods[method_prefix], (
-            "No method '%s' in namespace '%s'." % (method_name, method_prefix))
+            "No method '%s' in namespace '%s'." %
+            (method_name, method_prefix))
 
         if self.print_method_calls:
             print "CALLED %s.%s(%s)" % (method_prefix, method_name, args[0])
