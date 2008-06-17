@@ -556,6 +556,12 @@ subscriptions that use that address are automatically deleted as well.
     ...              for email in list_six.getSubscribedAddresses())
     [u'kperson@example.org']
 
+    # kara_alternative has been set as kara's preferred email during this
+    # test, but we can't delete a person's preferred email, so we first need
+    # to change her preferred email.
+    >>> kara.setPreferredEmail(kara.validatedemails[0])
+    >>> kara.preferredemail == kara_alternative
+    False
     >>> kara_alternative.destroySelf()
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
