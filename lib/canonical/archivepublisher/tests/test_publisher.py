@@ -369,11 +369,11 @@ class TestPublisher(TestNativePublishingBase):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
         spiv = person_set.getByName('spiv')
-        spiv_archive = archive_set.ensure(
-            spiv, ubuntu, ArchivePurpose.PPA)
+        spiv_archive = archive_set.new(
+            owner=spiv, distribution=ubuntu, purpose=ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.ensure(
-            name16, ubuntu, ArchivePurpose.PPA)
+        name16_archive = archive_set.new(
+            owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
