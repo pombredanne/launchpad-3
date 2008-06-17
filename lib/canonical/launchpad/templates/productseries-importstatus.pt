@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:block condition="not: context/rcstype">
 <tal:block condition="not: view/user_branch_visible">
   <div id="branch-details">
 
@@ -63,7 +62,6 @@
     </tal:user-cannot-edit>
   </div>
 
-</tal:block>
 </tal:block>
 
 <tal:block tal:condition="view/user_branch_visible">
