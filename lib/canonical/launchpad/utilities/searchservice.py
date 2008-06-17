@@ -21,6 +21,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces.searchservice import (
     ISearchResult, ISearchResults, ISearchService, GoogleWrongGSPVersion)
 from canonical.launchpad.webapp import urlparse
+from canonical.launchpad.webapp.uri import URI
 
 
 class PageMatch:
@@ -69,6 +70,11 @@ class PageMatch:
         self.summary = summary
         self.url = self._rewrite_url(url)
 
+    def _strip_trailing_slash(self, url):
+        """Return the url without a trailing slash."""
+        uri = URI(url).ensureNoSlash()
+        return str(uri)
+
     def _rewrite_url(self, url):
         """Rewrite the url to the local environment.
 
@@ -82,7 +88,7 @@ class PageMatch:
         """
         if self.url_rewrite_hostname == 'launchpad.net':
             # Do not rewrite the url is the hostname is the public hostname.
-            return url
+            return self._strip_trailing_slash(url)
         parts = urlparse(url)
         for netloc in self.url_rewrite_exceptions:
             # The network location is parts[1] in the tuple.
@@ -93,7 +99,8 @@ class PageMatch:
             'launchpad.net', self.url_rewrite_hostname)
         local_parts = tuple(
             [local_scheme] + [local_hostname] + list(parts[2:]))
-        return urlunparse(local_parts)
+        url = urlunparse(local_parts)
+        return self._strip_trailing_slash(url)
 
 
 class PageMatches:
