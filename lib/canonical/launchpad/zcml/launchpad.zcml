@@ -256,6 +256,20 @@
       template="../templates/launchpad-search.pt"
       permission="zope.Public" />
 
+  <browser:page
+      for="*"
+      name="+search-form"
+      class="canonical.launchpad.browser.root.LaunchpadSearchFormView"
+      template="../templates/launchpad-search-form.pt"
+      permission="zope.Public" />
+
+  <browser:page
+      for="*"
+      name="+primary-search-form"
+      class="canonical.launchpad.browser.root.LaunchpadPrimarySearchFormView"
+      template="../templates/launchpad-search-form.pt"
+      permission="zope.Public" />
+
   <!-- Declare robots.txt file for the root -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadRoot"
