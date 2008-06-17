@@ -221,16 +221,9 @@ class Build(SQLBase):
             # re-tried.
             return False
 
-        failed_buildstates = [
-            BuildStatus.FAILEDTOBUILD,
-            BuildStatus.MANUALDEPWAIT,
-            BuildStatus.CHROOTWAIT,
-            BuildStatus.FAILEDTOUPLOAD,
-            ]
-
         # If the build is currently in any of the failed states,
         # it may be retried.
-        return self.buildstate in failed_buildstates
+        return self.hasFailed()
 
     @property
     def can_be_rescored(self):

@@ -1150,6 +1150,14 @@ Create most recent SourcePackageRelease instance.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     sourcename='ebdtest')
 
+Invalid build state transitions will result in an assertion error,
+e.g.:
+
+    >>> medium_build.buildstate = BuildStatus.NEEDSBUILD
+    Traceback (most recent call last):
+    ...
+    AssertionError: ... failure (Successfully built -> Needs building)
+
 Create most recent build instance. Please note: this one is in state
 NEEDSBUILD.
 
