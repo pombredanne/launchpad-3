@@ -269,7 +269,7 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
             self.code_import.review_status)
 
     def test_markFailing_pending_job(self):
-        """Marking an approved import with a pending job as failing, removes job."""
+        """Marking an import with a pending job as failing, removes job."""
         self.code_import.approve({}, self.import_operator)
         self.assertEqual(
             CodeImportJobState.PENDING,
@@ -281,7 +281,7 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
             self.code_import.review_status)
 
     def test_markFailing_running_job(self):
-        """Marking an approved import with a running job as failing leaves job."""
+        """Marking an import with a running job as failing leaves job."""
         self.code_import.approve({}, self.import_operator)
         self.assertEqual(
             CodeImportJobState.PENDING,
