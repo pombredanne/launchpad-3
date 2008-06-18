@@ -111,7 +111,8 @@ from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.emailaddress import (
+    EmailAddress, HasOwnerMixin)
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pillar import PillarName
@@ -685,30 +686,36 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
 
     def _getQuestionTargetsFromAnswerContacts(self, answer_contacts):
-        """Return a list of valid IQuestionTargets.
+        """Return a list of active IQuestionTargets.
 
-        Provided AnswerContact query results, a distinct list of Products,
-        Distributions, and SourcePackages is returned.
+        :param answer_contacts: an iterable of `AnswerContact`s.
+        :return: a list of active `IQuestionTarget`s.
+        :raise AssertionError: if the IQuestionTarget is not a `Product`,
+            `Distribution`, or `SourcePackage`.
         """
-        targets = []
+        targets = set()
         for answer_contact in answer_contacts:
             if answer_contact.product is not None:
                 target = answer_contact.product
+                pillar = target
             elif answer_contact.sourcepackagename is not None:
                 assert answer_contact.distribution is not None, (
                     "Missing distribution.")
                 distribution = answer_contact.distribution
                 target = distribution.getSourcePackage(
                     answer_contact.sourcepackagename)
+                pillar = distribution
             elif answer_contact.distribution is not None:
                 target = answer_contact.distribution
+                pillar = target
             else:
                 raise AssertionError('Unknown IQuestionTarget.')
 
-            if not target in targets:
-                targets.append(target)
+            if pillar.active:
+                # Deactivated pillars are not valid IQuestionTargets.
+                targets.add(target)
 
-        return targets
+        return list(targets)
 
     @property
     def branches(self):
@@ -3223,7 +3230,7 @@ class SSHKeySet:
             """ % sqlvalues([person.id for person in people]))
 
 
-class WikiName(SQLBase):
+class WikiName(SQLBase, HasOwnerMixin):
     implements(IWikiName)
 
     _table = 'WikiName'
@@ -3273,7 +3280,7 @@ class WikiNameSet:
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname) is not None
 
 
-class JabberID(SQLBase):
+class JabberID(SQLBase, HasOwnerMixin):
     implements(IJabberID)
 
     _table = 'JabberID'
@@ -3299,7 +3306,7 @@ class JabberIDSet:
         return JabberID.selectBy(person=person)
 
 
-class IrcID(SQLBase):
+class IrcID(SQLBase, HasOwnerMixin):
     """See `IIrcID`"""
     implements(IIrcID)
 
