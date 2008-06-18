@@ -83,6 +83,7 @@
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
+    <include file="location.zcml" />
     <include file="logintoken.zcml" />
     <include file="mailinglist.zcml" />
     <include file="marketing.zcml" />

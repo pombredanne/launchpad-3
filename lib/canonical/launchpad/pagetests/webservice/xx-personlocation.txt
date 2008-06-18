@@ -42,9 +42,18 @@ provided by the user themselves.
     >>> print webservice.get("/beta/~jdub").jsonBody()['time_zone']
     None
     >>> print webservice.named_get(
-    ...     '/beta/~jdub', 'setLocation2', {},
+    ...     '/beta/~jdub', 'setLocation', {},
     ...     latitude='-34.6', longitude='157.0', time_zone='Australia/Sydney')
     HTTP/1.1 200 Ok
     ...
     >>> print webservice.get("/beta/~jdub").jsonBody()['time_zone']
     u'Australia/Sydney'
+
+XXX: The above test fails with a 404, but still we can see that
+IPerson.setLocation should be available.
+(This will be removed after we find out what's causing the above test to fail)
+
+    >>> from canonical.launchpad.interfaces.person import IPerson
+    >>> t = IPerson['setLocation'].getTaggedValue('lazr.webservice.exported')
+    >>> t['as'], t['type'], t['params'].keys()
+    ('setLocation', 'write_operation', ['latitude', 'time_zone', 'longitude'])
