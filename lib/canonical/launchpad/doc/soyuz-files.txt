@@ -74,3 +74,32 @@ instalable debian-format file:
 
  >>> debfile.libraryfile.http_url
  'http://localhost:58000/37/pmount_1.9-1_all.deb'
+
+
+== Utilities ==
+
+There is a utility class IBinaryPackageFileSet that will return
+BinaryPackageFile records.
+
+    >>> from canonical.launchpad.interfaces.files import (
+    ...     IBinaryPackageFileSet)
+    >>> file_set = getUtility(IBinaryPackageFileSet)
+
+It only contains one method, getByPackageUploadIDs(), that will return
+all the BinaryPackageFiles that are associated with the supplied
+PackageUpload IDs.
+
+    >>> ids = (2,)
+    >>> binary_package_files = file_set.getByPackageUploadIDs(ids)
+    >>> for binary_package_file in binary_package_files:
+    ...     print binary_package_file.libraryfile.filename
+    pmount_1.0-1_all.deb
+
+Additional IDs may also be passed and if they don't have any
+BinaryPackageFiles they are ignored and don't affect the results.
+
+    >>> ids = (1,2,3,4,5)
+    >>> binary_package_files = file_set.getByPackageUploadIDs(ids)
+    >>> for binary_package_file in binary_package_files:
+    ...     print binary_package_file.libraryfile.filename
+    pmount_1.0-1_all.deb

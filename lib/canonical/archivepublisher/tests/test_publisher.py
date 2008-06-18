@@ -252,8 +252,8 @@ class TestPublisher(TestNativePublishingBase):
 
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
-            owner=ubuntu_team,
-            purpose=ArchivePurpose.EMBARGOED)
+            owner=ubuntu_team, purpose=ArchivePurpose.PPA)
+
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
@@ -270,11 +270,10 @@ class TestPublisher(TestNativePublishingBase):
 
     def testPublishingWorksForOtherArchives(self):
         """Publisher also works as expected for another archives."""
-
         ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
-            purpose=ArchivePurpose.EMBARGOED)
+            purpose=ArchivePurpose.PPA)
 
         test_pool_dir = tempfile.mkdtemp()
         test_temp_dir = tempfile.mkdtemp()
@@ -370,11 +369,11 @@ class TestPublisher(TestNativePublishingBase):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
         spiv = person_set.getByName('spiv')
-        spiv_archive = archive_set.ensure(
-            spiv, ubuntu, ArchivePurpose.PPA)
+        spiv_archive = archive_set.new(
+            owner=spiv, distribution=ubuntu, purpose=ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.ensure(
-            name16, ubuntu, ArchivePurpose.PPA)
+        name16_archive = archive_set.new(
+            owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',

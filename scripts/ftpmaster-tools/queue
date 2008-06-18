@@ -102,9 +102,9 @@ def main():
 
     print ("Initialising connection to queue %s" % options.queue_name)
 
+    execute_zcml_for_scripts()
     ztm = initZopeless(dbuser=config.uploadqueue.dbuser,
                        isolation=ISOLATION_LEVEL_READ_COMMITTED)
-    execute_zcml_for_scripts()
 
     for single_args in args_list:
         try:

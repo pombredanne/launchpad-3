@@ -5,9 +5,11 @@
   i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.JabberID">
-        <allow interface="canonical.launchpad.interfaces.IJabberID"/>
-        <require permission="zope.Public"
-            set_attributes="jabberid" />
+        <allow interface="canonical.launchpad.interfaces.IHasOwner" />
+        <allow attributes="id person jabberid" />
+        <require permission="launchpad.Edit"
+                 set_schema="canonical.launchpad.interfaces.IJabberID"
+                 attributes="destroySelf" />
     </content>
 
     <content class="canonical.launchpad.database.JabberIDSet">

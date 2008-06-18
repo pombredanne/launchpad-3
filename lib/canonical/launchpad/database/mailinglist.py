@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces import (
     IMailingListSubscription, IMessageApproval, IMessageApprovalSet,
     IMessageSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.mailman.config import configure_hostname
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -52,7 +52,7 @@ class MessageApproval(SQLBase):
 
     posted_by = ForeignKey(
         dbName='posted_by', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         notNull=True)
 
     posted_message = ForeignKey(
@@ -71,7 +71,7 @@ class MessageApproval(SQLBase):
 
     disposed_by = ForeignKey(
         dbName='disposed_by', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         default=None)
 
     disposal_date = UtcDateTimeCol(default=None)
@@ -121,18 +121,18 @@ class MailingList(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         notNull=True)
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     date_registered = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
 
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
@@ -242,7 +242,12 @@ class MailingList(SQLBase):
                 # when the list status goes back to ACTIVE the email
                 # will go from PREFERRED to VALIDATED and the list
                 # will stop being the contact method.
-                email.status = EmailAddressStatus.VALIDATED
+                # We also need to remove the email's security proxy because
+                # this method will be called via the internal XMLRPC rather
+                # than as a response to a user action.
+                from zope.security.proxy import removeSecurityProxy
+                removeSecurityProxy(email).status = (
+                    EmailAddressStatus.VALIDATED)
             assert email.person == self.team, (
                 "Email already associated with another team.")
 
@@ -272,6 +277,8 @@ class MailingList(SQLBase):
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
         email = getUtility(IEmailAddressSet).getByEmail(self.address)
+        if email == self.team.preferredemail:
+            self.team.setContactAddress(None)
         email.status = EmailAddressStatus.NEW
 
     def reactivate(self):
@@ -528,7 +535,7 @@ class MailingListSubscription(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         notNull=True)
 
     mailing_list = ForeignKey(

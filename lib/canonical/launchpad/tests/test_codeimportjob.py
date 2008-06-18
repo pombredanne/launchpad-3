@@ -27,7 +27,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
-    CodeImportReviewStatus, EmailAddressStatus, ICodeImportEventSet,
+    CodeImportReviewStatus, ICodeImportEventSet,
     ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportResult,
     ICodeImportResultSet, ICodeImportSet, ILibraryFileAliasSet, IPersonSet)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, sync
@@ -360,10 +360,17 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # Create a CodeImportResult that started a shorter time ago than the
         # effective update interval of the code import. This is the most
         # recent one and must supersede the older one.
+
+        # XXX 2008-06-09 jamesh:
+        # psycopg2 isn't correctly substituting intervals into the
+        # expression (it doesn't include the "INTERVAL" keyword).
+        # This causes problems for the "UTC_NOW - interval / 2"
+        # expression below.
         interval = code_import.effective_update_interval
+        from canonical.database.sqlbase import get_transaction_timestamp
         recent_result = CodeImportResult(
             code_import=code_import, machine=machine, status=FAILURE,
-            date_job_started=UTC_NOW - interval / 2)
+            date_job_started=get_transaction_timestamp() - interval / 2)
         # When we create the job, its date_due should be set to the date_due
         # of the job that was deleted when the CodeImport review status
         # changed from REVIEWED. That is the date_job_started of the most
@@ -902,8 +909,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
     def deleteJob(self, code_import_id):
         """Cause the code import job associated to the import to be deleted.
         """
-        user = self.factory.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        user = self.factory.makePerson()
         getUtility(ICodeImportSet).get(code_import_id).suspend(
             {}, user)
         flush_database_updates()

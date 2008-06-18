@@ -28,7 +28,6 @@ __all__ = [
     'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
-    'ISelectResultsSlicable',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
@@ -41,8 +40,6 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -782,18 +779,6 @@ class IProductSeriesBugTask(IBugTask):
         vocabulary='ProductSeries')
 
 
-# XXX: Brad Bollenbach 2005-02-03 bugs=121:
-# This interface should be removed when spiv pushes a fix upstream for
-# the bug that makes this hackery necessary.
-class ISelectResultsSlicable(ISelectResults):
-    """ISelectResults (from SQLOS) should be specifying __getslice__.
-
-    This interface defines the missing __getslice__ method.
-    """
-    def __getslice__(i, j):
-        """Called to implement evaluation of self[i:j]."""
-
-
 class BugTaskSearchParams:
     """Encapsulates search parameters for BugTask.search()
 
@@ -1044,6 +1029,21 @@ class IBugTaskSet(Interface):
         update-bugtask-targetnamecaches.
         """
 
+    def getBugCountsForPackages(user, packages):
+        """Return open bug counts for the list of packages.
+
+        :param user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the count.
+        :param packages: A list of `IDistributionSourcePackage`
+            instances.
+
+        :return: A list of dictionaries, where each dict contains:
+            'package': The package the bugs are open on.
+            'open': The number of open bugs.
+            'open_critical': The number of open critical bugs.
+            'open_unassigned': The number of open unassigned bugs.
+            'open_inprogress': The number of open bugs that are In Progress.
+        """
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""

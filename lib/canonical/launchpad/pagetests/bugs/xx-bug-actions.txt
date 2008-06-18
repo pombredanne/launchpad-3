@@ -1,12 +1,12 @@
-The bug index page includes an actions portlet, which provides various
-links to add things to the bug.
+The bug index page includes action links, which provide various links
+to add things to the bug, inlined within the main content area.
 
   >>> user_browser.open(
   ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
   >>> print user_browser.contents
   <...
+  ...Activity log...
   ...Mark as duplicate...
-  ...View activity log...
 
   Tests the marking of a bug that is a duplicate of a duplicate.
 

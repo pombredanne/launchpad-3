@@ -40,7 +40,7 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     layer="canonical.launchpad.layers.AnswersLayer"
-    name="+tickets"
+    name="+questions"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
