@@ -1,4 +1,4 @@
-= Web Service API Declarations =
+        = Web Service API Declarations =
 
 You can easily create a web service by tagging your content interfaces
 with some decorators. From this tagging the web service API will be
@@ -291,14 +291,19 @@ exported.
 
 The specification of the web service's acceptable method parameters
 should be described using the @operation_parameters decorator, which
-takes normal IField instances. The @operation_returns decorator
-should be used to descibe the type of the method's return value--this
-also takes an IField instance.
+takes normal IField instances. When an operation returns an object
+that's exposed as a resource, you should describe its return value
+with the @operation_returns_collection_of and @operation_returns_entry
+decorators. Both decorators take an interface that has been exposed as
+an entry. @operation_returns_entry is used when the operation returns
+a single entry; @operation_returns_collection_of is used when the
+operation returns a collection of entries.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     export_operation_as, export_factory_operation,
     ...     export_read_operation, operation_parameters,
-    ...     operation_returns, rename_parameters_as)
+    ...     operation_returns_entry, operation_returns_collection_of,
+    ...     rename_parameters_as)
     >>> from canonical.lazr.interface import copy_field
     >>> from canonical.lazr.fields import Reference
     >>> class IBookSetOnSteroids(IBookSet):
@@ -308,11 +313,17 @@ also takes an IField instance.
     ...     @collection_default_content()
     ...     @operation_parameters(
     ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
-    ...     @operation_returns(
-    ...         CollectionField(value_type=Reference(schema=IBook)))
+    ...     @operation_returns_collection_of(IBook)
     ...     @export_read_operation()
     ...     def searchBooks(text):
     ...         """Return list of books containing 'text'."""
+    ...
+    ...     @operation_parameters(
+    ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
+    ...     @operation_returns_entry(IBook)
+    ...     @export_read_operation()
+    ...     def bestMatch(text):
+    ...         """Return the best match for books containing 'text'."""
     ...
     ...     @export_operation_as('create_book')
     ...     @rename_parameters_as(base_price='price')
@@ -370,6 +381,15 @@ returns a collection.
     call_with: {}
     params: {'text': <...TextLine...>}
     return_type: <canonical.lazr.fields.CollectionField object...>
+    type: 'read_operation'
+
+The 'bestMatch' method returns an entry.
+
+    >>> print_export_tag(IBookSetOnSteroids['bestMatch'])
+    as: 'bestMatch'
+    call_with: {}
+    params: {'text': <...TextLine...>}
+    return_type: <zope.schema._field.Object object...>
     type: 'read_operation'
 
 The 'checkout' method doesn't return anything.

@@ -49,6 +49,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.decorates import Passthrough
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
@@ -410,9 +411,9 @@ class operation_parameters(_method_annotator):
 
 
 class operation_returns(_method_annotator):
-    """Specify the return value of the exported operation.
+    """Specify the return type of the exported operation.
 
-    The decorator takes a single `IField` object.
+    The decorator takes a single argument: an IField.
     """
 
     def __init__(self, return_type):
@@ -421,6 +422,31 @@ class operation_returns(_method_annotator):
 
     def annotate_method(self, method, annotations):
         annotations['return_type'] = self.return_type
+
+
+class operation_returns_entry(operation_returns):
+    """Specify that the exported operation returns an entry.
+
+    The decorator takes a single argument: an interface that's been
+    exported as an entry.
+    """
+
+    def __init__(self, schema):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.return_type = Object(schema=schema)
+
+
+class operation_returns_collection_of(operation_returns):
+    """Specify that the exported operation returns a collection.
+
+    The decorator takes a single argument: an interface that's been
+    exported as an entry.
+    """
+
+    def __init__(self, schema):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        self.return_type = CollectionField(
+            value_type=Reference(schema=schema))
 
 
 class _export_operation(_method_annotator):

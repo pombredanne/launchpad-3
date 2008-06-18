@@ -48,8 +48,8 @@ from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
-   operation_parameters, operation_returns, rename_parameters_as,
-   REQUEST_USER, webservice_error)
+   operation_parameters, operation_returns,
+   rename_parameters_as, REQUEST_USER, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
@@ -863,7 +863,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
-    @operation_returns(None) # Will be set to a collection of IPerson below.
+    @operation_returns(None)
+    # Return value will be set to a collection of IPerson below.
     @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
