@@ -53,7 +53,7 @@ Baz Qux has proposed merging foo into bar.
 %s
 %s
 """ % (canonical_url(bmp), mailer.getReason(subscriber)), body)
-        self.assertEqual('Merge of foo into bar proposed', subject)
+        self.assertEqual('Proposed merge of foo into bar', subject)
         self.assertEqual(
             {'X-Launchpad-Branch': bmp.source_branch.unique_name,
              'X-Launchpad-Message-Rationale': 'Subscriber',

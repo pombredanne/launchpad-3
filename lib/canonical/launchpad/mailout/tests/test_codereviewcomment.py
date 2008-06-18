@@ -15,6 +15,7 @@ from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.codereviewcomment import (
     CodeReviewCommentMailer)
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp import canonical_url
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -118,12 +119,13 @@ class TestCodeReviewComment(TestCaseWithFactory):
         headers, subject, body = mailer.generateEmail(subscriber)
         message = mailer.code_review_comment.message
         self.assertEqual(subject, message.subject)
-        self.assertEqual(body.splitlines()[:-2],
+        self.assertEqual(body.splitlines()[:-3],
                          message.text_contents.splitlines())
         source_branch = mailer.merge_proposal.source_branch
         branch_name = source_branch.displayname
-        self.assertEqual(body.splitlines()[-2:],
-            ['-- ', 'You are subscribed to branch %s.' % branch_name])
+        self.assertEqual(body.splitlines()[-3:],
+                         ['-- ', canonical_url(mailer.merge_proposal),
+                          'You are subscribed to branch %s.' % branch_name])
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
@@ -144,6 +146,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         body = mailer._getBody(subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',
+             canonical_url(mailer.merge_proposal),
              'You are subscribed to branch %s.' % branch_name])
 
     def test_generateEmailWithVote(self):
@@ -152,7 +155,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE)
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Vote: Approve', body.splitlines()[0])
-        self.assertEqual(body.splitlines()[1:-2],
+        self.assertEqual(body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
@@ -161,7 +164,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Vote: Approve DBTAG', body.splitlines()[0])
-        self.assertEqual(body.splitlines()[1:-2],
+        self.assertEqual(body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
 

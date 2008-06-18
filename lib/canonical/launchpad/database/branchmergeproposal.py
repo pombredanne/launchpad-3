@@ -148,6 +148,13 @@ class BranchMergeProposal(SQLBase):
             """ % self.id)
 
     @property
+    def title(self):
+        """See `IBranchMergeProposal`."""
+        return "Proposed merge of %(source)s into %(target)s" % {
+            'source': self.source_branch.displayname,
+            'target': self.target_branch.displayname}
+
+    @property
     def all_comments(self):
         """See `IBranchMergeProposal`."""
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
@@ -408,14 +415,11 @@ class BranchMergeProposal(SQLBase):
             # Get the subject from the parent if there is one, or use a nice
             # default.
             if parent is None:
-                subject = (
-                    'Re: Merge of %(source)s into %(target)s proposed'
-                    % {'source': self.source_branch.displayname,
-                       'target': self.target_branch.displayname})
+                subject = self.title
             else:
                 subject = parent.message.subject
-                if not subject.startswith('Re: '):
-                    subject = 'Re: ' + subject
+            if not subject.startswith('Re: '):
+                subject = 'Re: ' + subject
 
         msgid = make_msgid('codereview')
         message = Message(

@@ -1057,12 +1057,11 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
 
 class BranchMergeProposalFormatterAPI(CustomizableFormatter):
 
-    _link_summary_template = _('Proposed merge of %(source)s into %(target)s')
+    _link_summary_template = _('%(title)s')
 
     def _link_summary_values(self):
         return {
-            'source': self._context.source_branch.title,
-            'target': self._context.target_branch.title,
+            'title': self._context.title,
             }
 
 

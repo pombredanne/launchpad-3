@@ -40,8 +40,8 @@ class BMPMailer(BaseMailer):
                             from_address, delta)
         self.merge_proposal = merge_proposal
 
-    @classmethod
-    def forCreation(klass, merge_proposal, from_user):
+    @staticmethod
+    def forCreation(merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -54,8 +54,8 @@ class BMPMailer(BaseMailer):
             'The sender must have an email address.')
         from_address = format_address(
             from_user.displayname, from_user.preferredemail.email)
-        return klass(
-            'Merge of %(source_branch)s into %(target_branch)s proposed',
+        return BMPMailer(
+            '%(proposal_title)s',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address)
 
@@ -77,8 +77,7 @@ class BMPMailer(BaseMailer):
                 old_merge_proposal, merge_proposal)
         if delta is None:
             return None
-        return BMPMailer('Proposed merge of %(source_branch)s into'
-                         ' %(target_branch)s updated',
+        return BMPMailer('%(proposal_title)s updated',
                          'branch-merge-proposal-updated.txt', recipients,
                          merge_proposal, from_address, delta)
 
@@ -115,6 +114,7 @@ class BMPMailer(BaseMailer):
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.displayname,
             'target_branch': self.merge_proposal.target_branch.displayname,
+            'proposal_title': self.merge_proposal.title,
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',
             })

@@ -41,7 +41,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(self.submitter, comment.message.owner)
         self.assertEqual(comment, self.bmp.root_comment)
         self.assertEqual(
-            'Re: Merge of source-branch into target-branch proposed',
+            'Re: Proposed merge of source-branch into target-branch',
             comment.message.subject)
         self.assertEqual('Message content', comment.message.chunks[0].content)
 

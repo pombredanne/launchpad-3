@@ -190,6 +190,11 @@ class IBranchMergeProposal(Interface):
         description=_("The date that the source branch was merged into the "
                       "target branch"))
 
+    title = Attribute(
+        "A nice human readable name to describe the merge proposal. "
+        "This is generated from the source and target branch, and used "
+        "as the tal fmt:link text and for email subjects.")
+
     merge_reporter = Attribute(
         "The user that marked the branch as merged.")
 
