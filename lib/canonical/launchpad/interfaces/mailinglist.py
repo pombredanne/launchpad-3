@@ -256,16 +256,16 @@ class IMailingList(Interface):
         readonly=True)
 
     is_public = Bool(
-        title=_('This mailing list, and its team, are public'),
+        title=_('Is this mailing list, and its team, public?'),
         readonly=True)
 
-    def isUsable():
-        """Is this mailing list in a state to accept messages?
-
-        This doesn't neccessarily mean that the list is in perfect
-        shape: its status might be `MailingListStatus.MOD_FAILED`. But
-        it should be able to handle messages.
-        """
+    is_usable = Bool(
+        title=_('Is this mailing list in a state to accept messages?'),
+        description=_(
+            "This doesn't necessarily mean that the list is in perfect "
+            'shape; its status might be `MailingListStatus.MOD_FAILED`. But '
+            'it should be able to handle messages.'),
+        readonly=True)
 
     def review(reviewer, status):
         """Review the mailing list's registration.
