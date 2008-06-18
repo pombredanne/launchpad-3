@@ -84,7 +84,7 @@
                  xmlns="http://www.w3.org/1999/xhtml/">
               Field title: field description
             </wadl:doc>
-            <link tal:condition="field/wadl:represented_as_link"
+            <link tal:condition="field/wadl:is_represented_as_link"
                   tal:attributes="resource_type field/wadl:type_link" />
             <option tal:repeat="option field/wadl:options"
                     tal:attributes="value option/title" />
@@ -165,7 +165,7 @@
                  xmlns="http://www.w3.org/1999/xhtml/">
               Field title: field description
             </wadl:doc>
-            <link tal:condition="field/wadl:represented_as_link"
+            <link tal:condition="field/wadl:is_represented_as_link"
                   tal:attributes="resource_type field/wadl:type_link" />
             <option tal:repeat="option field/wadl:options"
                     tal:attributes="value option/title" />
@@ -201,7 +201,7 @@
              xmlns="http://www.w3.org/1999/xhtml/">
           Field title: field description
         </wadl:doc>
-        <link tal:condition="field/wadl:represented_as_link"
+        <link tal:condition="field/wadl:is_represented_as_link"
               tal:attributes="resource_type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />
@@ -219,7 +219,7 @@
              xmlns="http://www.w3.org/1999/xhtml/">
           Field title: field description
         </wadl:doc>
-        <link tal:condition="field/wadl:represented_as_link"
+        <link tal:condition="field/wadl:is_represented_as_link"
               tal:attributes="resource_type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />

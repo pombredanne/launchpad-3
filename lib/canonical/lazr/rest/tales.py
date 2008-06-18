@@ -341,7 +341,7 @@ class WadlFieldAPI(WadlAPI):
         return IObjectLink.providedBy(self.field)
 
     @property
-    def represented_as_link(self):
+    def is_represented_as_link(self):
         """Is this field represented as a link to another resource?"""
         return (IObject.providedBy(self.field) or
                 ICollectionField.providedBy(self.field) or

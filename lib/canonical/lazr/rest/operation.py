@@ -143,7 +143,7 @@ class ResourcePOSTOperation(ResourceOperation):
 
 
 class IObjectLink(IField):
-    u"""Field containing a link to an object."""
+    """Field containing a link to an object."""
 
     schema = Attribute("schema",
         u"The Interface of the Object on the other end of the link.")

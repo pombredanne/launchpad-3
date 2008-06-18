@@ -359,7 +359,7 @@ newly-created object.
     params: {'author': <...TextLine...>,
         'base_price': <...Float...>,
         'title': <...TextLine...>}
-    return_type: <zope.schema._field.Object object...>
+    return_type: <canonical.lazr.rest.operation.ObjectLink object...>
     type: 'factory'
 
 We did specify the return type for the 'searchBooks' method: it
@@ -409,7 +409,7 @@ schema.
     params: {'author': <...TextLine...>,
         'collection': <...TextLine...>,
         'title': <...TextLine...>}
-    return_type: <zope.schema._field.Object object...>
+    return_type: <canonical.lazr.rest.operation.ObjectLink object...>
     type: 'factory'
 
 Parameters default and required attributes are set automatically based
