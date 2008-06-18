@@ -291,9 +291,11 @@ exported.
 
 The specification of the web service's acceptable method parameters
 should be described using the @operation_parameters decorator, which
-takes normal IField instances. When an operation returns an object
-that's exposed as a resource, you should describe its return value
-with the @operation_returns_collection_of and @operation_returns_entry
+takes normal IField instances.
+
+When an operation returns an object that's exposed as a resource, you
+should describe its return value with the
+@operation_returns_collection_of and @operation_returns_entry
 decorators. Both decorators take an interface that has been exposed as
 an entry. @operation_returns_entry is used when the operation returns
 a single entry; @operation_returns_collection_of is used when the
@@ -602,6 +604,29 @@ results in an error.
     Traceback (most recent call last):
       ...
     TypeError: "a_method" isn't exported on the webservice.
+
+The decorators @operation_returns_entry and
+@operation_returns_collection_of will only accept an IInterface as
+argument.
+
+    >>> class ReturnOtherThanInterface(Interface):
+    ...     export_as_webservice_entry()
+    ...     @operation_returns_entry("not-an-interface")
+    ...     @export_read_operation()
+    ...     def a_method(**kwargs): pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Entry type not-an-interface does not provide IInterface.
+
+    >>> class ReturnOtherThanInterface(Interface):
+    ...     export_as_webservice_entry()
+    ...     @operation_returns_collection_of("not-an-interface")
+    ...     @export_read_operation()
+    ...     def a_method(**kwargs): pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Collection value type not-an-interface does not
+    provide IInterface.
 
 
 === Exporting exceptions ===
@@ -959,7 +984,6 @@ The adapter's params property also contains the available parameters
     ...     def checkout(self, who, kind):
     ...         print "%s did a %s check out of '%s'." % (
     ...             who, kind, self.title)
-    ...         return None
 
     >>> write_method_adapter = write_method_adapter_factory(
     ...     BookOnSteroids(

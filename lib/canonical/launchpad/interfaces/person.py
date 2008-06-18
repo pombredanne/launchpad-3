@@ -48,7 +48,7 @@ from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
-   operation_parameters, operation_returns,
+   operation_parameters, operation_returns_collection_of,
    rename_parameters_as, REQUEST_USER, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
@@ -863,8 +863,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
-    @operation_returns(None)
-    # Return value will be set to a collection of IPerson below.
+    @operation_returns_collection_of(Interface) # Really IPerson
     @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
@@ -1948,12 +1947,8 @@ for method, name in params_to_fix:
         'lazr.webservice.exported')['params'][name].schema = IPerson
 
 # Fix schema of operation return values.
-return_values_to_fix = [
-    (IPersonPublic['findPathToTeam'],
-     CollectionField(value_type=Object(schema=IPerson)),)]
-for method, value in return_values_to_fix:
-    method.queryTaggedValue(
-        'lazr.webservice.exported')['return_type'] = value
+IPersonPublic['findPathToTeam'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.
