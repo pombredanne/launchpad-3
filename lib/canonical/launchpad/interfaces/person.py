@@ -1268,6 +1268,15 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        latitude=copy_field(IHasLocation['latitude']),
+        longitude=copy_field(IHasLocation['longitude']),
+        time_zone=copy_field(IHasLocation['time_zone']))
+    @export_write_operation()
+    def setLocation2(latitude, longitude, time_zone, user):
+        """Specify the location and time zone of a person."""
+
     @call_with(requester=REQUEST_USER)
     @operation_parameters(team=copy_field(ITeamMembership['team']))
     @export_write_operation()

@@ -43,9 +43,9 @@ class ISetLocation(Interface):
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        latitude=copy_field(IHasLocation['latitude'], required=False),
-        longitude=copy_field(IHasLocation['longitude'], required=False),
-        time_zone=copy_field(IHasLocation['time_zone'], required=False))
+        latitude=copy_field(IHasLocation['latitude']),
+        longitude=copy_field(IHasLocation['longitude']),
+        time_zone=copy_field(IHasLocation['time_zone']))
     @export_write_operation()
     def setLocation(latitude, longitude, time_zone, user):
         """Specify the location and time zone of a person."""
