@@ -48,7 +48,10 @@ class RecipientReason:
 
     @classmethod
     def forReviewer(klass, vote_reference, recipient):
-        """Construct RecipientReason for a reviewer."""
+        """Construct RecipientReason for a reviewer.
+
+        The reviewer will be the sole recipient.
+        """
         branch = vote_reference.branch_merge_proposal.source_branch
         return klass(vote_reference.reviewer, recipient, branch, 'reviewer')
 

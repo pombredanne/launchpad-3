@@ -168,7 +168,7 @@ class TestRecipientReason(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        # need to set target_branch.date_last_modified
+        # Need to set target_branch.date_last_modified.
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
 
     def makeProposalWithSubscription(self, subscriber=None):
@@ -197,8 +197,7 @@ class TestRecipientReason(TestCaseWithFactory):
         """Test values when created from a branch subscription."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
-        logout()
-        login('foo.bar@canonical.com')
+        login(merge_proposal.registrant.preferredemail.email)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
         reason = RecipientReason.forReviewer(vote_reference, subscriber)

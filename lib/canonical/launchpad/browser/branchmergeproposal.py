@@ -146,7 +146,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         if (self.context.queue_status ==
             BranchMergeProposalStatus.NEEDS_REVIEW):
             enabled = True
-            if (self.context.votes) > 0:
+            if (self.context.votes.count()) > 0:
                 text = 'Request another review'
         return Link('+request-review', text, icon='edit', enabled=enabled)
 
