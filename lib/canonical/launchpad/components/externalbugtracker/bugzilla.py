@@ -16,6 +16,8 @@ import xmlrpclib
 from datetime import datetime
 from xml.dom import minidom
 
+from zope.interface import implements
+
 from canonical import encoding
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
@@ -23,6 +25,8 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.interfaces.externalbugtracker import (
+    ISupportsCommentImport)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -283,6 +287,8 @@ class Bugzilla(ExternalBugTracker):
 class BugzillaLPPlugin(Bugzilla):
     """An `ExternalBugTracker` to handle BugZillas using the LP Plugin."""
 
+    implements(ISupportsCommentImport)
+
     def __init__(self, baseurl, xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
@@ -336,8 +342,8 @@ class BugzillaLPPlugin(Bugzilla):
         server_utc_time = datetime.utcfromtimestamp(server_timestamp)
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
-    def getRemoteStatus(self, bug_id):
-        """See `IExternalBugTracker`."""
+    def _getActualBugId(self, bug_id):
+        """Return the actual bug id for an alias or id."""
         # See if bug_id is actually an alias.
         actual_bug_id = self.bug_aliases.get(bug_id)
 
@@ -345,11 +351,15 @@ class BugzillaLPPlugin(Bugzilla):
         # looking the bug up by ID.
         if actual_bug_id is None:
             try:
-                actual_bug_id = int(bug_id)
+                return int(bug_id)
             except ValueError:
                 # If bug_id can't be int()'d then it's likely an alias
                 # that doesn't exist, so raise BugNotFound.
                 raise BugNotFound(bug_id)
+
+    def getRemoteStatus(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
 
         try:
             status = self.bugs[actual_bug_id]['status']
@@ -362,6 +372,30 @@ class BugzillaLPPlugin(Bugzilla):
 
         except KeyError:
             raise BugNotFound(bug_id)
+
+    def getCommentIds(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Check that the bug exists, first.
+        if actual_bug_id not in self.bugs:
+            raise BugNotFound(bug_watch.remotebug)
+
+        server = xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+        # Get only the remote comment IDs and store them in the
+        # 'comments' field of the bug.
+        request_params = {
+            'bug_ids': [actual_bug_id],
+            'include': ['id'],
+            }
+        bug_comments_dict = server.Bug.comments(request_params)
+
+        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
+        comment_ids = [comment['id'] for comment in bug_comments]
+
+        self.bugs[actual_bug_id]['comments'] = comment_ids
 
 
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):

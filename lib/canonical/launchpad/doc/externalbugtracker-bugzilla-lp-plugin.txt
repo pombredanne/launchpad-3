@@ -146,3 +146,75 @@ If a bug can't be found a BugNotFound error will be raised.
     Traceback (most recent call last):
       ...
     BugNotFound: no-such-bug
+
+
+== Retrieving remote comments ==
+
+BugzillaLPPlugin implments the ISupportsCommentImport interface, which
+means that we can use it to import comments from the remote Bugzilla
+instance.
+
+    >>> from canonical.launchpad.interfaces import ISupportsCommentImport
+    >>> ISupportsCommentImport.providedBy(bugzilla)
+    True
+
+To test the comment importing methods we need to add an example bug,
+bugtracker and a couple of bugwatches.
+
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+
+    >>> from canonical.launchpad.testing.factory import (
+    ...     LaunchpadObjectFactory)
+    >>> factory = LaunchpadObjectFactory()
+
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> from canonical.launchpad.interfaces.bug import CreateBugParams
+    >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.interfaces.product import IProductSet
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+
+    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> bug = firefox.createBug(
+    ...     CreateBugParams(sample_person, "Yet another test bug",
+    ...         "Yet another test description.",
+    ...         subscribe_reporter=False))
+
+    >>> bug_watch = bug.addWatch(bug_tracker, '1', sample_person)
+    >>> bug_watch_two = bug.addWatch(bug_tracker, '2', sample_person)
+    >>> bug_watch_broken = bug.addWatch(bug_tracker, '42', sample_person)
+    >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+
+=== getCommentIds() ===
+
+ISupportsCommentImport.getCommentIds() is the method used to get all the
+comment IDs for a given bug on a remote bugtracker.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = False
+    >>> bugzilla.getCommentIds(bug_watch)
+
+The comment IDs will be stored in the bugs dict as a list under the key
+'comments'.
+
+    >>> print sorted(bugzilla.bugs[1]['comments'])
+    [1, 3]
+
+getCommentIds() can only be called if initializeRemoteBugDB() has been
+called and the bug exists locally.
+
+    >>> bugzilla.getCommentIds(bug_watch_broken)
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 42
