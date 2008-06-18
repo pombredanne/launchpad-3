@@ -56,6 +56,10 @@
       interface="canonical.launchpad.interfaces.person.IPersonViewRestricted"
       />
     <require
+      permission="launchpad.EditLocation"
+      interface="canonical.launchpad.interfaces.location.ISetLocation"
+      />
+    <require
       permission="launchpad.Edit"
       interface="canonical.launchpad.interfaces.person.IPersonEditRestricted"
       />
