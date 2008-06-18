@@ -28,7 +28,7 @@ class IBugTrackerPerson(IHasBug):
     """A link between a person and a bugtracker."""
 
     bugtracker = Object(
-        schema=IBugTracker, title=u"The bug.", required=True)
+        schema=IBugTracker, title=_('The bug.'), required=True)
     person = Object(
         schema=IPerson, title=_('Person'), required=True)
     name = Text(
@@ -42,7 +42,7 @@ class IBugTrackerPersonSet(Interface):
     """A set of IBugTrackerPersons."""
 
     def getByNameAndBugTracker(name, bugtracker):
-        """Return the `IPerson` with a given name on a given bugtracker.
+        """Return the `IBugTrackerPerson` for a given name on a bugtracker.
 
         :param name: The name of the person on the bugtracker in
             `bugtracker`.
