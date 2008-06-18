@@ -366,7 +366,8 @@ The second notifies the requested reviewer.
     <BLANKLINE>
     -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are subscribed to branch Klingon support in GNOME Terminal.
+    You are requested to review the proposed merge of Klingon support in
+    GNOME Terminal into GNOME Terminal Mainline.
     <BLANKLINE>
 
 The status of the merge proposal is updated to "Needs review".
@@ -391,7 +392,8 @@ This sends a notification only to the requested reviewer.
     <BLANKLINE>
     -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are subscribed to branch Klingon support in GNOME Terminal.
+    You are requested to review the proposed merge of Klingon support in
+    GNOME Terminal into GNOME Terminal Mainline.
     <BLANKLINE>
 
 You can even re-request the same person to review, so that a new email is
@@ -408,7 +410,8 @@ sent.
     <BLANKLINE>
     -- 
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-    You are subscribed to branch Klingon support in GNOME Terminal.
+    You are requested to review the proposed merge of Klingon support in
+    GNOME Terminal into GNOME Terminal Mainline.
     <BLANKLINE>
 
 Only the last request is listed, showing the last review type.

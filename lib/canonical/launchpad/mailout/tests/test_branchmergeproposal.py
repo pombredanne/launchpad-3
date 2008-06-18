@@ -176,8 +176,10 @@ class TestRecipientReason(TestCaseWithFactory):
         if subscriber is None:
             subscriber = self.factory.makePerson()
         source_branch = self.factory.makeBranch(title='foo')
-        merge_proposal = source_branch.addLandingTarget(subscriber,
-            self.factory.makeBranch(product=source_branch.product))
+        target_branch = self.factory.makeBranch(product=source_branch.product,
+                title='bar')
+        merge_proposal = source_branch.addLandingTarget(
+            subscriber, target_branch)
         subscription = merge_proposal.source_branch.subscribe(
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
@@ -188,28 +190,40 @@ class TestRecipientReason(TestCaseWithFactory):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscriber, '')
+            subscription, subscriber, merge_proposal, '')
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
         self.assertEqual(merge_proposal.source_branch, reason.branch)
 
-    def test_forReviewer(self):
-        """Test values when created from a branch subscription."""
+    def makeReviewerAndSubscriber(self):
         merge_proposal, subscription = self.makeProposalWithSubscription()
         subscriber = subscription.person
         login(merge_proposal.registrant.preferredemail.email)
         vote_reference = merge_proposal.nominateReviewer(
             subscriber, subscriber)
+        return vote_reference, subscriber
+
+    def test_forReviewer(self):
+        """Test values when created from a branch subscription."""
+        vote_reference, subscriber = self.makeReviewerAndSubscriber()
         reason = RecipientReason.forReviewer(vote_reference, subscriber)
         self.assertEqual(subscriber, reason.subscriber)
         self.assertEqual(subscriber, reason.recipient)
-        self.assertEqual(merge_proposal.source_branch, reason.branch)
+        self.assertEqual(
+            vote_reference.branch_merge_proposal.source_branch, reason.branch)
+
+    def test_getReasonReviewer(self):
+        vote_reference, subscriber = self.makeReviewerAndSubscriber()
+        reason = RecipientReason.forReviewer(vote_reference, subscriber)
+        self.assertEqual(
+            'You are requested to review the proposed merge of foo into bar.',
+            reason.getReason())
 
     def test_getReasonPerson(self):
         """Ensure the correct reason is generated for individuals."""
         merge_proposal, subscription = self.makeProposalWithSubscription()
         reason = RecipientReason.forBranchSubscriber(
-            subscription, subscription.person, '')
+            subscription, subscription.person, merge_proposal, '')
         self.assertEqual('You are subscribed to branch foo.',
             reason.getReason())
 
@@ -219,8 +233,8 @@ class TestRecipientReason(TestCaseWithFactory):
             displayname='Foo Bar', email='foo@bar.com')
         team = self.factory.makeTeam(team_member, displayname='Qux')
         bmp, subscription = self.makeProposalWithSubscription(team)
-        reason = RecipientReason.forBranchSubscriber(subscription,
-        team_member, '')
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, team_member, bmp, '')
         self.assertEqual('Your team Qux is subscribed to branch foo.',
             reason.getReason())
 

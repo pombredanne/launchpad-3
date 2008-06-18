@@ -34,17 +34,23 @@ def send_merge_proposal_modified_notifications(merge_proposal, event):
 class RecipientReason:
     """Reason for sending mail to a recipient."""
 
-    def __init__(self, subscriber, recipient, branch, mail_header):
+    def __init__(self, subscriber, recipient, branch, merge_proposal,
+                 mail_header, reason_template):
         self.subscriber = subscriber
         self.recipient = recipient
         self.branch = branch
         self.mail_header = mail_header
+        self.reason_template = reason_template
+        self.merge_proposal = merge_proposal
 
     @classmethod
-    def forBranchSubscriber(klass, subscription, recipient, rationale):
+    def forBranchSubscriber(
+        klass, subscription, recipient, merge_proposal, rationale):
         """Construct RecipientReason for a branch subscriber."""
         return klass(
-            subscription.person, recipient, subscription.branch, rationale)
+            subscription.person, recipient, subscription.branch,
+            merge_proposal, rationale,
+            '%(entity_is)s subscribed to branch %(branch_name)s.')
 
     @classmethod
     def forReviewer(klass, vote_reference, recipient):
@@ -52,19 +58,29 @@ class RecipientReason:
 
         The reviewer will be the sole recipient.
         """
-        branch = vote_reference.branch_merge_proposal.source_branch
-        return klass(vote_reference.reviewer, recipient, branch, 'reviewer')
+        merge_proposal = vote_reference.branch_merge_proposal
+        branch = merge_proposal.source_branch
+        return klass(vote_reference.reviewer, recipient, branch,
+                     merge_proposal, 'reviewer',
+                     '%(entity_is)s requested to review %(merge_proposal)s.')
 
     def getReason(self):
         """Return a string explaining why the recipient is a recipient."""
-        entity = 'You are'
+        source = self.merge_proposal.source_branch.displayname
+        target = self.merge_proposal.target_branch.displayname
+        template_values = {
+            'branch_name': self.branch.displayname,
+            'entity_is': 'You are',
+            'merge_proposal': (
+                'the proposed merge of %s into %s' % (source, target))
+            }
         if self.recipient != self.subscriber:
             assert self.recipient.hasParticipationEntryFor(self.subscriber), (
                 '%s does not participate in team %s.' %
                 (self.recipient.displayname, self.subscriber.displayname))
-            entity = 'Your team %s is' % self.subscriber.displayname
-        branch_name = self.branch.displayname
-        return '%s subscribed to branch %s.' % (entity, branch_name)
+            template_values['entity_is'] = (
+                'Your team %s is' % self.subscriber.displayname)
+        return (self.reason_template % template_values)
 
 
 class BMPMailer(BaseMailer):

@@ -179,7 +179,7 @@ class BranchMergeProposal(SQLBase):
                 if (subscription.review_level < min_level):
                     continue
                 recipients[recipient] = RecipientReason.forBranchSubscriber(
-                    subscription, recipient, rationale)
+                    subscription, recipient, self, rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
