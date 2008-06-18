@@ -1,0 +1,119 @@
+== Edit person location information ==
+
+The location information is editable by anybody (like a wiki), until the
+person provides location data for themselves. At that point it is only
+editable by people who have launchpad.Edit on the person, which is that
+person and admins.
+
+  >>> import transaction
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> from canonical.launchpad.interfaces import IPersonSet
+
+First, we make sure that jordi does not have any location information
+setup for them in the sample data.
+
+  >>> login('test@canonical.com')
+  >>> personset = getUtility(IPersonSet)
+  >>> jordi = personset.getByEmail('jordi@ubuntu.com')
+  >>> jordi.latitude is None
+  True
+  >>> jordi.time_zone is None
+  True
+  >>> logout()
+
+Now, we show that you can see the location edit widgets if you are
+anybody logged in.
+
+  >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+  >>> nopriv_browser.open('http://launchpad.dev/~jordi/+editlocation')
+  >>> find_tag_by_id(nopriv_browser.contents, "field.location.latitude")
+  <input class="hiddenType" id="field.location.latitude" name="field.location.latitude" type="hidden" value="" />
+
+Not only can we see the widgets, but anybody logged in can actually provide
+new location information.
+
+  >>> nopriv_browser.getControl(name='field.location.latitude').value = '13.0'
+  >>> nopriv_browser.getControl(name='field.location.longitude').value = '17.0'
+  >>> nopriv_browser.getControl(name='field.location.time_zone').value = ['Europe/Madrid']
+  >>> nopriv_browser.getControl('Update').click()
+  >>> login('jordi@ubuntu.com')
+  >>> personset = getUtility(IPersonSet)
+  >>> jordi = personset.getByEmail('jordi@ubuntu.com')
+  >>> jordi.latitude
+  13.0
+  >>> jordi.longitude
+  17.0
+  >>> jordi.time_zone
+  u'Europe/Madrid'
+  >>> logout()
+
+If Jordi provides his own location information, then the data is locked, and
+random people can no longer edit it.
+
+  >>> jordi_browser = setupBrowser(auth="Basic jordi@ubuntu.com:test")
+  >>> jordi_browser.open('http://launchpad.dev/~jordi/+editlocation')
+  >>> jordi_browser.getControl(name='field.location.latitude').value = '39.48'
+  >>> jordi_browser.getControl(name='field.location.longitude').value = '-0.40'
+  >>> jordi_browser.getControl(name='field.location.time_zone').value = ['Europe/Madrid']
+  >>> jordi_browser.getControl('Update').click()
+  >>> logout()
+  >>> nopriv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
+  >>> nopriv_browser.open('http://launchpad.dev/~jordi/+editlocation')
+  >>> nopriv_browser.getControl(name='field.location.latitude').value = '39.48'
+  Traceback (most recent call last):
+  ...
+  LookupError: name 'field.location.latitude'
+  >>> logout()
+
+Of course, Jordi can continue to edit it:
+
+  >>> jordi_browser = setupBrowser(auth="Basic jordi@ubuntu.com:test")
+  >>> jordi_browser.open('http://launchpad.dev/~jordi/+editlocation')
+  >>> jordi_browser.getControl(name='field.location.latitude').value
+  '39.48'
+  >>> logout()
+
+And so can a Launchpad admin:
+
+  >>> admin_browser.open('http://launchpad.dev/~jordi/+editlocation')
+  >>> admin_browser.getControl(name='field.location.latitude').value
+  '39.48'
+  >>> logout()
+
+
+Now, while we are at it, let's make sure we cannot edit the location of a
+team, even if we are an administrator.
+
+  >>> admin_browser.open('http://launchpad.dev/~guadamen/+editlocation')
+  >>> admin_browser.getControl(name='field.location.latitude')
+  Traceback (most recent call last):
+  ...
+  LookupError: name 'field.location.latitude'
+
+
+We have a nice way to add locations for all the members of a team. We look
+at a page which shows all the members of the team on a map, together with
+links to edit the location of folks who have not yet been mapped. When we
+click on those links, we pass the name of the team, so when the location is
+added, we come back to the team map, and from there we can click on the next
+person.
+
+  >>> admin_browser.open('http://launchpad.dev/~guadamen/+map')
+  >>> admin_browser.getLink('Edgar Bursic').click()
+  >>> admin_browser.url
+  'http://launchpad.dev/~edgar/+editlocation?for_team=guadamen'
+  >>> admin_browser.getControl(name='field.location.latitude').value = '37.3'
+  >>> admin_browser.getControl(name='field.location.longitude').value = '2.45'
+  >>> admin_browser.getControl(name='field.location.time_zone').value = ['Europe/Madrid']
+  >>> admin_browser.getControl('Update').click()
+  >>> admin_browser.url
+  'http://launchpad.dev/~guadamen/+map'
+
+Once we have done this round trip, the person is no longer editable!
+
+  >>> admin_browser.getLink('Edgar Bursic')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+

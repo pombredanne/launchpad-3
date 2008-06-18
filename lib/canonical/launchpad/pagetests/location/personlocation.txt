@@ -1,0 +1,107 @@
+
+= Person Locations =
+
+People can have a location and time zone in Launchpad. This test primarily
+makes sure that pages display given the relevant sample data.
+
+  >>> from canonical.launchpad.ftests import login
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> personset = getUtility(IPersonSet)
+
+In some cases, a person has a time zone, but no location. We test that their
+home page renders without problems.
+
+  >>> login('test@canonical.com')
+  >>> marilize = personset.getByName('marilize')
+  >>> print marilize.time_zone
+  Africa/Maseru
+  >>> print marilize.latitude
+  None
+  >>> logout()
+  >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+  >>> nopriv_browser.open('http://launchpad.dev/~marilize')
+
+They should see a link to the +editlocation page which includes an image.
+
+  >>> editlink = nopriv_browser.getLink(url='+editlocation')
+  >>> editlink.text
+  '[IMG]'
+  >>> logout()
+
+If a person has a location, they should have a little map portlet in their
+home page. We can't test all the google javascript, but we can make sure
+there's a map, and the scripts are loaded.
+
+  >>> login('test@canonical.com')
+  >>> kamion = personset.getByName('kamion')
+  >>> print kamion.time_zone
+  Europe/London
+  >>> print kamion.latitude
+  52.2
+  >>> logout()
+  >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+  >>> nopriv_browser.open('http://launchpad.dev/~kamion')
+  >>> body = find_main_content(nopriv_browser.contents)
+  >>> 'Europe/London' in str(body)
+  True
+  >>> mapdiv = find_tag_by_id(str(body), 'portlet-map')
+  >>> 'GBrowserIsCompatible' in str(mapdiv)
+  True
+  >>> 'src="http://maps.google.com/maps' in str(nopriv_browser.contents)
+  True
+
+
+If a team has members that have locations, then you should see a portlet
+with their locations displayed.
+
+  >>> nopriv_browser.open('http://launchpad.dev/~guadamen')
+  >>> body = find_main_content(nopriv_browser.contents)
+  >>> mapdiv = find_tag_by_id(str(body), 'team_map_div')
+  >>> 'GBrowserIsCompatible' in str(body)
+  True
+  >>> 'src="http://maps.google.com/maps' in str(nopriv_browser.contents)
+  True
+
+You should also be able to see a map of the team, with links to the people
+who need to have location data added to complete the team.
+
+  >>> maplink = nopriv_browser.getLink('Show large map and time zones')
+  >>> maplink.click()
+  >>> nopriv_browser.url
+  'http://launchpad.dev/~guadamen/+map'
+  >>> link = nopriv_browser.getLink('Edgar Bursic')
+  >>> link.url
+  'http://launchpad.dev/~edgar/+editlocation?for_team=guadamen'
+
+
+The map depends on a stream of XML-formatted data, giving the locations of
+all members of the team. We show that this stream works for teams with, and
+without, mapped members.
+
+  >>> anon_browser.open('http://launchpad.dev/~guadamen/+mapdata')
+  >>> print anon_browser.contents
+  <?xml version="1.0"?><!--*- mode: nxml -*-->
+  <participants>
+    <!--
+      This team location data is (c) Canonical Ltd and contributors, and
+      the format may be changed at any time.
+    -->
+    <participant displayname="Colin Watson" name="kamion"
+                 logo_html="&lt;img alt=&quot;&quot; width=&quot;64&quot; height=&quot;64&quot; src=&quot;/@@/person-logo&quot; /&gt;"
+                 url="/~kamion" lat="52.2" lng="0.3"/>
+  </participants>
+  <BLANKLINE>
+
+  >>> anon_browser.open('http://launchpad.dev/~name21/+mapdata')
+  >>> print anon_browser.contents
+  <?xml version="1.0"?><!--*- mode: nxml -*-->
+  <participants>
+    <!--
+      This team location data is (c) Canonical Ltd and contributors, and
+      the format may be changed at any time.
+    -->
+  </participants>
+  <BLANKLINE>
+
+
