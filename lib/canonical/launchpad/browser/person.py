@@ -980,9 +980,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def editlocation(self):
         target = '+editlocation'
         enabled = False
-        if (self.context.location is None or
-            self.context.location.last_modified_by != self.context or
-            check_permission('launchpad.Edit', self.context)):
+        if check_permission('launchpad.EditLocation', self.context):
             enabled = True
         text = 'Set location and time zone'
         return Link(target, text, enabled=enabled, icon='edit')
@@ -3131,82 +3129,7 @@ class PersonEditView(BasePersonEditView):
     implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
-        'verbose_bugnotifications']
-
-
-class PersonLocationForm(Interface):
-
-    location = LocationField(
-        title=_('Use the map to indicate default location'),
-        required=True)
-
-
-class PersonEditLocationView(LaunchpadFormView):
-
-    schema = PersonLocationForm
-    field_names = []
-    custom_widget('location', LocationWidget)
-
-    def __init__(self, context, request):
-        # If the user has specified their own location and timezone then
-        # only they can update it. Otherwise, anybody can say where the
-        # person is, to enable folks to garden this data like a wiki
-        self.context = context
-        if self.editable:
-            if 'location' not in self.field_names:
-                self.field_names.append('location')
-        LaunchpadFormView.__init__(self, context, request)
-        self.post_update_url = canonical_url(self.context)
-        self.for_team_name = self.request.form.get('for_team')
-        if self.for_team_name is not None:
-            for_team = getUtility(IPersonSet).getByName(self.for_team_name)
-            if for_team is not None:
-                self.post_update_url = canonical_url(for_team) + '/+map'
-
-    @cachedproperty
-    def editable(self):
-        """Determine if the user can edit this Person's location.
-
-        We treat the location information for people in Launchpad like a
-        wiki, in that anybody can provide location information for someone
-        else. Once someone specifies their own location, however, it is
-        locked and only they or ad:w
-        ministrators can edit it.
-        """
-        if check_permission('launchpad.Edit', self.context):
-            # if you have permission to edit the person you can always
-            # update the location
-            return True
-        elif self.context.location is None or \
-             self.context.location.last_modified_by != self.context:
-            # There is no location information for this person, or it has
-            # been provided by someone other than that person
-            return True
-        return False
-
-    def validate_action_update(self, action, data):
-        if not self.editable:
-            self.addError(
-                "You may not modify the location for %s." %
-                self.context.browsername)
-            return self.errors
-        return None
-
-    @action(_("Update"), name="update", validator=validate_action_update)
-    def action_update(self, action, data):
-        """Set the coordinates and time zone for the person."""
-        new_location = data.get('location', None)
-        assert new_location is not None, 'No location received.'
-        latitude = new_location.latitude
-        longitude = new_location.longitude
-        time_zone = new_location.time_zone
-        self.context.set_location(
-            latitude, longitude, time_zone, self.user)
-        self.next_url = self.post_update_url
-
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        self.next_url = self.post_update_url
+                   'verbose_bugnotifications']
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -4386,3 +4309,45 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
+
+
+class PersonLocationForm(Interface):
+
+    location = LocationField(
+        title=_('Use the map to indicate default location'),
+        required=True)
+
+
+class PersonEditLocationView(LaunchpadFormView):
+    """Edit a person's location."""
+
+    schema = PersonLocationForm
+    field_names = []
+    custom_widget('location', LocationWidget)
+
+    def initialize(self):
+        self._next_url = canonical_url(self.context)
+        for_team = self.request.form.get('for_team')
+        if for_team is not None:
+            for_team = getUtility(IPersonSet).getByName(for_team)
+            if for_team is not None:
+                self._next_url = canonical_url(for_team) + '/+map'
+
+    @property
+    def next_url(self):
+        return self._next_url
+
+    @action(_("Update"), name="update")
+    def action_update(self, action, data):
+        """Set the coordinates and time zone for the person."""
+        new_location = data.get('location', None)
+        assert new_location is not None, 'No location received.'
+        latitude = new_location.latitude
+        longitude = new_location.longitude
+        time_zone = new_location.time_zone
+        self.context.setLocation(latitude, longitude, time_zone, self.user)
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        # Just redirect to next_url.
+        pass
