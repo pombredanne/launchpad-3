@@ -308,6 +308,9 @@ All the products are returned when no parameters are passed in.
     >>> from canonical.launchpad.database import Product
     >>> product_set.forReview().count() == Product.select().count()
     True
+
+The license_info_is_empty parameter only accepts True, False, or None.
+
     >>> product_set.forReview(license_info_is_empty='foo').count()
     Traceback (most recent call last):
     ...
