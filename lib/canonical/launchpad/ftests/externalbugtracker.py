@@ -394,7 +394,8 @@ class TestBugzillaXMLRPCTransport:
             % self.methods.keys())
 
         assert method_name in self.methods[method_prefix], (
-            "No method '%s' in namespace '%s'." % (method_name, method_prefix))
+            "No method '%s' in namespace '%s'." %
+            (method_name, method_prefix))
 
         if self.print_method_calls:
             print "CALLED %s.%s(%s)" % (method_prefix, method_name, args[0])
@@ -425,22 +426,19 @@ class TestBugzillaXMLRPCTransport:
         bugs_to_return = []
         bugs = dict(self.bugs)
 
+        # We enforce permissiveness, since we'll always call this method
+        # with permissive=True in the Real World.
+        permissive = arguments.get('permissive', False)
+        assert permissive, "get_bugs() must be called with permissive=True"
+
         for id in bug_ids:
             # If the ID is an int, look up the bug directly. We copy the
             # bug dict into a local variable so we can manipulate the
             # data in it.
             try:
                 id = int(id)
-                # XXX 2008-06-13 gmb:
-                #     We need to do some error handling here but at the
-                #     moment we don't know for sure how the Bugzilla
-                #     interface is going to raise errors about bad bug
-                #     IDs.
                 bug_dict = dict(self.bugs[int(id)])
             except ValueError:
-                # XXX 2008-06-13 gmb:
-                #     We need to do error handling for bug aliases, too.
-                #     Same problem as above, though.
                 bug_dict = dict(self.bugs[self.bug_aliases[id]])
 
             # Update the DateTime fields of the bug dict so that they

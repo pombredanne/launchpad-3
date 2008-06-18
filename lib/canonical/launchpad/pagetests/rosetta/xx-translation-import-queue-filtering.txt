@@ -258,7 +258,6 @@ The only entry that shows up now is the one Carlos just uploaded.
     >>> import_list = find_tag_by_id(
     ...     user_browser.contents, 'import-entries-list')
     >>> first_entry = import_list.findNext('tr')
-    >>> print extract_text(first_entry)
-    foo.pot in
-    evolution in Ubuntu Hoary
+    >>> print extract_text(first_entry).encode('ascii', 'backslashreplace')
+    foo.pot in evolution in Ubuntu Hoary
     Needs Review

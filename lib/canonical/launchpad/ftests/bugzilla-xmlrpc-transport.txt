@@ -86,7 +86,7 @@ IDs to retrieve and returns a list of dicts containing those bugs' data.
 As is standard with the Bugzilla XMLRPC API, arguments are enclosed in a
 dict so that they are treated as key: value pairs.
 
-    >>> return_value = server.Bug.get_bugs({'ids': [1]})
+    >>> return_value = server.Bug.get_bugs({'ids': [1], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict.keys()):
     ...     print "%s: %s" % (key, bug_dict[key])
@@ -108,7 +108,7 @@ dict so that they are treated as key: value pairs.
 If more than one ID is specified when get_bugs() is called, more than
 one bug will be returned (assuming they all exist and are accessible).
 
-    >>> return_value = server.Bug.get_bugs({'ids': [1, 2]})
+    >>> return_value = server.Bug.get_bugs({'ids': [1, 2], 'permissive': True})
     >>> bug_dicts = return_value['bugs']
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict.keys()):
@@ -146,7 +146,8 @@ one bug will be returned (assuming they all exist and are accessible).
 
 Bug aliases can also be used to request remote bugs.
 
-    >>> return_value = server.Bug.get_bugs({'ids': ['bug-two']})
+    >>> return_value = server.Bug.get_bugs(
+    ...     {'ids': ['bug-two'], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict.keys()):
     ...     print "%s: %s" % (key, bug_dict[key])

@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from datetime import datetime
 from pytz import utc
+import sys
 
 from twisted.internet import protocol
 from twisted.internet.threads import deferToThread
