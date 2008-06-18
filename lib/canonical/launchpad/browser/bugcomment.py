@@ -80,6 +80,9 @@ class BugComment:
         if config.malone.comment_syncing_team:
             comment_syncing_team = getUtility(IPersonSet).getByName(
                 config.malone.comment_syncing_team)
+            assert comment_syncing_team is not None, (
+                "comment_syncing_team was set to %s, which doesn't exist." % (
+                    config.malone.comment_syncing_team))
         else:
             comment_syncing_team = None
 
