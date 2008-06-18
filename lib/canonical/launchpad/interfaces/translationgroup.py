@@ -91,12 +91,12 @@ class IHasTranslationGroup(Interface):
             "translations for their languages, and others can make "
             "suggestions; translations for which the translation group "
             "assigns no reviewer or translation team are completely open.  "
-            "If 'Restricted', translation group members can edit translations "
-            "and any user can make suggestions for those translations, but "
-            "translations to languages that aren't represented in the group "
-            "are closed and accept no suggestions.  "
-            "Finally, if 'Closed', only translation group members can enter "
-            "any translations at all."),
+            "If 'Restricted', translation group members can edit "
+            "translations and any user can make suggestions for those "
+            "translations, but translations to languages that aren't "
+            "covered by the translation group are closed and accept no "
+            "suggestions.  Finally, if 'Closed', only translation group "
+            "members can enter any translations at all."),
         required=True,
         vocabulary=TranslationPermission)
 
