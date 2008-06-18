@@ -162,8 +162,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
-            # Clear the license_reviewed flag if the license changes.
+            # Clear the license_reviewed and license_approved flags
+            # if the license changes.
             self.license_reviewed = False
+            self.license_approved= False
         return value
 
     license_info = StringCol(dbName='license_info', default=None,
@@ -308,12 +310,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         old_licenses = set(self.licenses)
         if licenses == old_licenses:
             return
-        # Clear the license_reviewed flag if the license changes.
+        # Clear the license_reviewed and license_approved flags
+        # if the license changes.
         # ProductSet.createProduct() passes in reset_license_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
         # license_reviewed & licenses at the same time.
         if reset_license_reviewed:
             self.license_reviewed = False
+            self.license_approved = False
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute

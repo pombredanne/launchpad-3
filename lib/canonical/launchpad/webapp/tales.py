@@ -980,7 +980,12 @@ class PillarFormatterAPI(CustomizableFormatter):
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
-        return {'displayname': self._context.displayname}
+        displayname = self._context.displayname
+        qualifies_for_free_hosting = getattr(
+            self._context, 'qualifies_for_free_hosting', None)
+        if qualifies_for_free_hosting == False:
+            displayname = '[PROPRIETARY] %s' % displayname
+        return {'displayname': displayname}
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
