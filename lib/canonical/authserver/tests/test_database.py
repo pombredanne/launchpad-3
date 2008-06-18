@@ -36,7 +36,8 @@ from canonical.authserver.database import (
     DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
     PERMISSION_DENIED_FAULT_CODE)
 
-from canonical.testing.layers import LaunchpadScriptLayer
+from canonical.testing.layers import (
+    LaunchpadScriptLayer, LaunchpadZopelessLayer)
 
 
 UTC = pytz.timezone('UTC')
@@ -952,7 +953,7 @@ class BranchDetailsStorageTest(DatabaseTest):
 class BranchPullQueueTest(BranchTestCase):
     """Tests for the pull queue methods of `IBranchDetailsStorage`."""
 
-    layer = LaunchpadScriptLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         LaunchpadScriptLayer.switchDbConfig('authserver')
@@ -983,10 +984,12 @@ class BranchPullQueueTest(BranchTestCase):
 
     def makeBranchAndRequestMirror(self, branch_type):
         """Make a branch of the given type and call requestMirror on it."""
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
         transaction.begin()
         branch = self.makeBranch(branch_type)
         branch.requestMirror()
         transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('authserver')
         return branch
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):
