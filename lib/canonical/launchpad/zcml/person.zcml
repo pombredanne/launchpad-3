@@ -605,6 +605,29 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapView"
+    name="+map"
+    template="../templates/team-map.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.TeamMapData"
+    template="../templates/team-map-data.pt"
+    name="+mapdata"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    name="+editlocation"
+    template="../templates/team-editlocation.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
     name="+listing-simple"
     template="../templates/team-listing-simple.pt"
     />
@@ -614,6 +637,14 @@
     permission="zope.Public"
     name="+mugshots"
     template="../templates/team-mugshots.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    class="canonical.launchpad.browser.TeamMapView"
+    permission="zope.Public"
+    name="+portlet-map"
+    template="../templates/team-portlet-map.pt"
     />
 
   <browser:page

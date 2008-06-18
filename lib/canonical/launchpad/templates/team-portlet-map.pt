@@ -1,0 +1,16 @@
+<tal:can_view condition="context/required:launchpad.View">
+  <tal:map condition="view/mapped_participant_count">
+    <p class="error message" tal:condition="not: request/needs_gmap2">
+      This browser view needs to set request.needs_gmap2
+      <tal:oops_on_purpose condition="request/foooooobar" />
+    </p>
+    <div id="team_map_div" style="height: 200px; border: 1px;"></div>
+    <tal:mapscript replace="structure view/map_portlet_html" />
+    <p tal:define="link context/menu:overview/map"
+       tal:condition="link/enabled"
+       tal:content="structure link/render" />
+  </tal:map>
+
+  <a tal:condition="not: view/mapped_participant_count"
+     href="+map"><img src="/+icing/portlet-map-unknown.png" /></a>
+</tal:can_view>

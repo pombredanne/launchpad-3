@@ -11,11 +11,15 @@ __all__ = [
     'TeamEditView',
     'TeamMailingListConfigurationView',
     'TeamMailingListModerationView',
+    'TeamMapView',
+    'TeamMapData',
     'TeamMemberAddView',
     'TeamPrivacyAdapter',
     ]
 
 from urllib import quote
+from datetime import datetime
+import pytz
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -33,14 +37,16 @@ from canonical.widgets import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
-    LaunchpadFormView)
+    LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
+    IObjectWithLocation,
     IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingList,
     IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
@@ -794,3 +800,247 @@ class TeamMemberAddView(LaunchpadFormView):
             msg = "%s has been added as a member of this team." % (
                   newmember.unique_displayname)
         self.request.response.addInfoNotification(msg)
+
+
+class TeamMapView(LaunchpadView):
+    """Show all people with known locations on a map, and provide links to
+    edit the locations of people in the team without known locations.
+    """
+
+    def initialize(self):
+        self.request.needs_gmap2 = True
+
+    @cachedproperty
+    def mapped_participants(self):
+        """Cached participants with locations, decorated with logo_html."""
+        return self.context.mapped_participants
+
+    @cachedproperty
+    def mapped_participant_count(self):
+        """Number of participants with a recorded location."""
+        return len(self.mapped_participants)
+
+    @cachedproperty
+    def unmapped_participants(self):
+        """Cached set of participants with no recorded locations."""
+        return sorted(list(self.context.unmapped_participants),
+                      key=lambda p: p.browsername)
+
+    @cachedproperty
+    def unmapped_participant_count(self):
+        """Number of participants with no recorded location."""
+        return len(self.unmapped_participants)
+
+    @cachedproperty
+    def times(self):
+        """The current times in time zones with members."""
+        zones = []
+        for participant in self.mapped_participants:
+            if participant.time_zone not in zones:
+                zones.append(participant.time_zone)
+        times = []
+        for zone in zones:
+            times.append(datetime.now(pytz.timezone(zone)))
+        timeformat = '%H:%M'
+        return [time.strftime(timeformat)
+                for time in sorted(times, key=lambda t: str(t))]
+
+    @cachedproperty
+    def bounds(self):
+        """Determine the bounds and center of the map."""
+        # We look at the set of latitudes and longitudes for the people who
+        # have coordinates. We start out with a maximum minimum, and vice
+        # versa, so each coordinate we examine should expand the area.
+
+        max_lat = -90.0
+        min_lat = 90.0
+        max_lng = -180.0
+        min_lng = 180.0
+        for participant in self.mapped_participants:
+            if IObjectWithLocation(participant).latitude < min_lat:
+                min_lat = IObjectWithLocation(participant).latitude
+            if IObjectWithLocation(participant).latitude > max_lat:
+                max_lat = IObjectWithLocation(participant).latitude
+            if IObjectWithLocation(participant).longitude < min_lng:
+                min_lng = IObjectWithLocation(participant).longitude
+            if IObjectWithLocation(participant).longitude > max_lng:
+                max_lng = IObjectWithLocation(participant).longitude
+        center_lat = (max_lat + min_lat) / 2.0
+        center_lng = (max_lng + min_lng) / 2.0
+        return (min_lat, min_lng, max_lat, max_lng, center_lat, center_lng)
+
+    def map_html(self):
+        """Generate the HTML which shows the map."""
+
+        (min_lat, min_lng, max_lat, max_lng, center_lat,
+         center_lng) = self.bounds
+
+        map_html = """
+        <script type="text/javascript">
+
+        //<![CDATA[
+
+        if (GBrowserIsCompatible()) {
+          var myWidth = 0, myHeight = 0;
+          if( typeof( window.innerWidth ) == 'number' ) {
+            //Non-IE
+            myWidth = window.innerWidth;
+            myHeight = window.innerHeight;
+            }
+          else if( document.documentElement && (
+            document.documentElement.clientWidth ||
+            document.documentElement.clientHeight ) ) {
+            //IE 6+ in 'standards compliant mode'
+            myWidth = document.documentElement.clientWidth;
+            myHeight = document.documentElement.clientHeight;
+          } else if( document.body && (
+                document.body.clientWidth ||
+                document.body.clientHeight ) ) {
+            //IE 4 compatible
+            myWidth = document.body.clientWidth;
+            myHeight = document.body.clientHeight;
+          }
+          var mapdiv = document.getElementById("team_map_div");
+          var mapheight = (parseInt(mapdiv.offsetWidth) / 16 * 9);
+          mapheight = Math.min(mapheight, myHeight - 180);
+          mapheight = Math.max(mapheight, 400);
+          mapdiv.style.height = mapheight + 'px';
+
+          var team_map = new GMap2(mapdiv);
+          center = new GLatLng(%(center_lat)s, %(center_lng)s);
+          team_map.setCenter(center, 0);
+          team_map.setMapType(G_HYBRID_MAP);
+          sw = GLatLng(%(min_lat)s, %(min_lng)s);
+          ne = GLatLng(%(max_lat)s, %(max_lng)s);
+          required_bounds = new GLatLngBounds(sw, ne);
+          zoom_level = team_map.getBoundsZoomLevel(required_bounds);
+          zoom_level = Math.min(
+              G_HYBRID_MAP.getMaximumResolution(), zoom_level);
+          team_map.setZoom(zoom_level);
+          team_map.addControl(new GLargeMapControl());
+          team_map.addControl(new GMapTypeControl());
+          team_map.addControl(new GOverviewMapControl());
+          team_map.addControl(new GScaleControl());
+          team_map.enableScrollWheelZoom();
+          GDownloadUrl("+mapdata", function(data) {
+            var xml = GXml.parse(data);
+            var markers = xml.documentElement.getElementsByTagName("participant");
+
+            for (var i = 0; i < markers.length; i++) {
+              var point = new GLatLng(
+                parseFloat(markers[i].getAttribute("lat")),
+                parseFloat(markers[i].getAttribute("lng")));
+              var marker = new GMarker(point);
+              var myHTML = '<div align="center">'
+              myHTML += '<strong>' + markers[i].getAttribute("displayname")
+              myHTML += '</strong><br />'
+              myHTML += markers[i].getAttribute("logo_html")+'<br />'
+              myHTML += '<a href="' + markers[i].getAttribute("url") + '">'
+              myHTML += markers[i].getAttribute("name")+'</a></div>'
+              marker.bindInfoWindowHtml(myHTML);
+              team_map.addOverlay(marker);
+              }
+            });
+
+          }
+
+        //]]>
+        </script>
+        """ % {
+            'center_lat': center_lat,
+            'center_lng': center_lng,
+            'min_lat': min_lat,
+            'min_lng': min_lng,
+            'max_lat': max_lat,
+            'max_lng': max_lng,
+            }
+        return map_html
+
+    def map_portlet_html(self):
+        """Generate the HTML which shows the map portlet."""
+
+        (min_lat, min_lng, max_lat, max_lng, center_lat,
+         center_lng) = self.bounds
+
+        map_html = """
+        <script type="text/javascript">
+
+        //<![CDATA[
+
+        if (GBrowserIsCompatible()) {
+          var myWidth = 0, myHeight = 0;
+          if( typeof( window.innerWidth ) == 'number' ) {
+            //Non-IE
+            myWidth = window.innerWidth;
+            myHeight = window.innerHeight;
+            }
+          else if( document.documentElement && (
+            document.documentElement.clientWidth ||
+            document.documentElement.clientHeight ) ) {
+            //IE 6+ in 'standards compliant mode'
+            myWidth = document.documentElement.clientWidth;
+            myHeight = document.documentElement.clientHeight;
+          } else if( document.body && (
+                document.body.clientWidth ||
+                document.body.clientHeight ) ) {
+            //IE 4 compatible
+            myWidth = document.body.clientWidth;
+            myHeight = document.body.clientHeight;
+          }
+          var mapdiv = document.getElementById("team_map_div");
+
+          var team_map = new GMap2(mapdiv);
+          center = new GLatLng(%(center_lat)s, %(center_lng)s);
+          team_map.setCenter(center, 1);
+          team_map.setMapType(G_NORMAL_MAP);
+          team_map.enableScrollWheelZoom();
+          GDownloadUrl("+mapdata", function(data) {
+            var xml = GXml.parse(data);
+            var markers = xml.documentElement.getElementsByTagName("participant");
+            var required_bounds = new GLatLngBounds();
+
+            for (var i = 0; i < markers.length; i++) {
+              var point = new GLatLng(
+                parseFloat(markers[i].getAttribute("lat")),
+                parseFloat(markers[i].getAttribute("lng")));
+              required_bounds.extend(point);
+              var marker = new GMarker(point);
+              var myHTML = '<div align="center">'
+              myHTML += '<strong>' + markers[i].getAttribute("displayname")
+              myHTML += '</strong><br />'
+              myHTML += markers[i].getAttribute("logo_html")+'<br />'
+              myHTML += '<a href="' + markers[i].getAttribute("url") + '">'
+              myHTML += markers[i].getAttribute("name")+'</a></div>'
+              marker.bindInfoWindowHtml(myHTML);
+              team_map.addOverlay(marker);
+              }
+            zoom_level = team_map.getBoundsZoomLevel(required_bounds);
+            zoom_level = Math.min(4, zoom_level - 1);
+            team_map.setZoom(zoom_level);
+            });
+
+          }
+
+        //]]>
+        </script>
+        """ % {
+            'center_lat': center_lat,
+            'center_lng': center_lng,
+            'min_lat': min_lat,
+            'min_lng': min_lng,
+            'max_lat': max_lat,
+            'max_lng': max_lng,
+            }
+        return map_html
+
+
+class TeamMapData(TeamMapView):
+    """Return an XML dump of the locations of all team members."""
+
+    def render(self):
+        self.request.response.setHeader('content-type',
+                                        'application/xml;charset=utf-8')
+        body = LaunchpadView.render(self)
+        return body.encode('utf-8')
+
+

@@ -1139,7 +1139,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
-             'editlanguages', 'polls',
+             'editlanguages', 'map', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
              'reassign', 'common_packages', 'related_projects',
              'activate_ppa', 'show_ppa']
@@ -1181,6 +1181,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+addmember'
         text = 'Add member'
         return Link(target, text, icon='add')
+
+    def map(self):
+        target = '+map'
+        text = 'Show large map and time zones'
+        return Link(target, text)
 
     def add_my_teams(self):
         target = '+add-my-teams'
