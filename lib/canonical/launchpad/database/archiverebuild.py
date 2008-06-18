@@ -52,8 +52,6 @@ class ArchiveRebuild(SQLBase):
 
     implements(IArchiveRebuild)
 
-    _defaultOrder = ['id']
-
     archive = ForeignKey(
         dbName='archive', foreignKey='Archive', notNull=True)
 
@@ -83,8 +81,7 @@ class ArchiveRebuild(SQLBase):
         """Protected status setter.
 
         :param target_status: `ArchiveRebuildStatus` to be set.
-
-        :raise `ArchiveRebuildInsistentStatusError` if the given status
+        :raise `ArchiveRebuildInsistentStatusError`: if the given status
             is already set.
         """
         if self.status == target_status:

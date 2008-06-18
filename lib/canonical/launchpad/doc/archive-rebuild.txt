@@ -215,7 +215,7 @@ ArchiveRebuild record.
     ...
     ForbiddenAttribute: ('registrant', <ArchiveRebuild at ...>)
 
-The 'status' field can't be changed directly. It's is protected by a
+The 'status' field can't be changed directly. It is protected by a
 state-machine that forces users to use special method that may trigger
 further actions required to keep the rebuild workflow sane. They are:
 
@@ -260,8 +260,7 @@ same status is already is.
     ArchiveRebuildInconsistentStateError: Archive rebuild is already in
     COMPLETE status
 
-These fields can only be changed by users in the following
-users:
+These fields can only be changed by users in the following teams:
 
  1. 'registrant';
  2. Distribution owner;

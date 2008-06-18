@@ -60,6 +60,24 @@ Inquire what Distribution Series this archive has published sources to:
     >>> [s.name for s in cprov_archive.series_with_sources]
     [u'breezy-autotest', u'warty']
 
+'name' and 'purpose' are read-only attributes, they can't and
+shouldn't be modified once a IArchive is created. Changing those values
+would affect the way archives are published on disk.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> cprov_archive.name = 'no-it-will-not-change'
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('name', <Archive at ...>)
+
+    >>> cprov_archive.purpose = ArchivePurpose.REBUILD
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ('purpose', <Archive at ...>)
+
+    >>> login(ANONYMOUS)
+
 
 == Published Source and Binary Lookup ==
 
@@ -970,7 +988,6 @@ An Archive can be retrieved via IPerson.archive property:
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 
-    >>> from canonical.launchpad.interfaces import ArchivePurpose
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PARTNER)
     >>> print partner_archive.name
