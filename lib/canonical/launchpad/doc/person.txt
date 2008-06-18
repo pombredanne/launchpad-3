@@ -936,9 +936,6 @@ To obtain all projects owned by a person or team, we can use the
 getOwnedProjects() method of IPerson.  This method returns
 projects ordered by displayname.
 
-    >>> from canonical.launchpad.interfaces import (IDistribution, IProject,
-    ...     IProduct)
-
     >>> for project in sabdfl.getOwnedProjects():
     ...     print project.displayname
     Derby

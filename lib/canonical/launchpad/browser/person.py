@@ -88,9 +88,10 @@ import copy
 from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
 import pytz
+import subprocess
 import urllib
 
-from zope.app.form.browser import SelectWidget, TextAreaWidget, TextWidget
+from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface

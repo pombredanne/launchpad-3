@@ -30,7 +30,6 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.references import Reference
 from storm.store import Store
 
 from canonical.config import config
