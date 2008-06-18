@@ -106,7 +106,12 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
-             'review', 'merge', 'enqueue', 'dequeue', 'resubmit']
+             'add_comment', 'review', 'merge', 'enqueue', 'dequeue',
+             'resubmit']
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def add_comment(self):
+        return Link('+comment', 'Add comment', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -435,6 +440,10 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     @action('Request review', name='review')
     @notify
     def review_action(self, action, data):
@@ -450,10 +459,6 @@ class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
                 reason, self.context, self.user)
             mailer.sendAll()
         form.applyChanges(self, self.form_fields, data, self.adapters)
-
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""

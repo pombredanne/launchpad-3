@@ -212,6 +212,7 @@ target branches or the registrant of the merge proposal.
     Delete proposal to merge: .../+merge/.../+delete
     Work in progress (disabled)
     Request review: .../+merge/.../+request-review
+    Add comment: .../+merge/.../+comment
     Review proposal: .../+merge/.../+review
     Mark as merged: .../+merge/.../+merged
     Queue for merging: .../+merge/.../+enqueue
@@ -227,6 +228,7 @@ proposal to merge get no actions.
     Delete proposal to merge (disabled)
     Work in progress (disabled)
     Request review (disabled)
+    Add comment (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
     Queue for merging (disabled)
@@ -239,6 +241,7 @@ proposal to merge get no actions.
     Delete proposal to merge (disabled)
     Work in progress (disabled)
     Request review (disabled)
+    Add comment (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
     Queue for merging (disabled)
