@@ -84,9 +84,9 @@ from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
     AccountStatus, INACTIVE_ACCOUNT_STATUSES, InvalidName, IPerson,
-    IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
-    PersonCreationRationale, PersonVisibility, PersonalStanding,
-    TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+    IPersonSet, ITeam, IHasPersonNavigationMenu, JoinNotAllowed,
+    NameAlreadyTaken, PersonCreationRationale, PersonVisibility,
+    PersonalStanding, TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
@@ -161,7 +161,8 @@ def validate_person_visibility(person, attr, value):
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
-    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+    implements(IPerson, IHasIcon, IHasLogo, IHasMugshot,
+               IHasPersonNavigationMenu)
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")

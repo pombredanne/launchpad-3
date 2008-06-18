@@ -134,6 +134,7 @@ from canonical.launchpad.interfaces import (
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -1035,7 +1036,7 @@ class IPersonRelatedSoftwareMenu(Interface):
 class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
-    usedfor = IPerson
+    usedfor = IHasPersonNavigationMenu
     facet = 'overview'
     title = 'Profile'
     links = ('profile', 'related_software', 'karma', 'show_ppa')

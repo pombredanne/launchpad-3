@@ -24,6 +24,7 @@ __all__ = [
     'ITeamContactAddressForm',
     'ITeamCreation',
     'ITeamReassignment',
+    'IHasPersonNavigationMenu',
     'JoinNotAllowed',
     'NameAlreadyTaken',
     'PersonCreationRationale',
@@ -1405,6 +1406,14 @@ class INewPersonForm(IPerson):
 
     password = PasswordField(
         title=_('Create password'), required=True, readonly=False)
+
+
+class IHasPersonNavigationMenu(Interface):
+    """A marker interface for objects that use the Person navigation menus.
+
+    To have the Person navigation menu show up on a context object's pages
+    that object need only to provide this interface.
+    """
 
 
 class ITeamPublic(Interface):
