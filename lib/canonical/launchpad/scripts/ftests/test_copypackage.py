@@ -229,7 +229,7 @@ class TestCopyPackage(unittest.TestCase):
     def testCannotCopyTwice(self):
         """When invoked twice, copy package doesn't re-copy publications.
 
-        As reported in bug #237353, duplicated are generally cruft and may
+        As reported in bug #237353, duplicates are generally cruft and may
         cause problems when they include architecture-independent binaries.
 
         That's why PackageCopier refuses to copy publications with versions
@@ -287,7 +287,7 @@ class TestCopyPackage(unittest.TestCase):
         """Check the copy source operation from PPA to PRIMARY Archive.
 
         A source package can get copied from PPA to the PRIMARY archive,
-        which will immediatelly result in a build record in the destination
+        which will immediately result in a build record in the destination
         context.
 
         That's the preliminary workflow for 'syncing' sources from PPA to
@@ -324,11 +324,16 @@ class TestCopyPackage(unittest.TestCase):
         Source and binaries can get copied from PPA to the PRIMARY archive.
 
         This action is typically used to copy invariant/harmless packages
-        build in PPA context, as language-packs.
+        built in PPA context, as language-packs.
         """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
         test_publisher = self.getTestPublisher(hoary)
+
+        # There are no sources named 'boing' in ubuntu primary archive.
+        existing_sources = ubuntu.main_archive.getPublishedSources(
+            name='boing')
+        self.assertEqual(existing_sources.count(), 0)
 
         cprov = getUtility(IPersonSet).getByName("cprov")
         ppa_source = test_publisher.getPubSource(
@@ -356,8 +361,8 @@ class TestCopyPackage(unittest.TestCase):
     def testCopyAcrossPPAs(self):
         """Check the copy operation across PPAs.
 
-        This operation is useful to propagate deependencies accross
-        colaborative PPAs without requiring new uploads.
+        This operation is useful to propagate dependencies across
+        collaborative PPAs without requiring new uploads.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
@@ -378,7 +383,7 @@ class TestCopyPackage(unittest.TestCase):
                                 func, *args):
         """Check if the given exception is raised with given content.
 
-        If the expection isn't raised or the exception_content doesn't
+        If the exception isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
         exception_name = str(exception).split('.')[-1]
