@@ -2052,7 +2052,8 @@ class PersonVouchersView(LaunchpadFormView):
             self.context.getCommercialSubscriptionVouchers())
         terms = []
         for voucher in unredeemed:
-            text = "%s (%d months)" % (voucher.voucher_id, voucher.term_months)
+            text = "%s (%d months)" % (
+                voucher.voucher_id, voucher.term_months)
             terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
         voucher_vocabulary = SimpleVocabulary(terms)
         field = FormFields(
