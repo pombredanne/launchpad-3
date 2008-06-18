@@ -43,11 +43,8 @@
 
 <div metal:fill-slot="main">
 
-  <tal:icon replace="structure context/image:mugshot" />
-  <h1 tal:condition="not:context/isTeam"
-  >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
-  <h1 tal:condition="context/isTeam" tal:content="context/browsername" />
-
+  <tal:valid-person-or-team condition="context/is_valid_person_or_team">
+  <div class="left">
   <div
     class="description"
     tal:condition="context/homepage_content"
@@ -79,9 +76,12 @@
     </tal:not-restricted>
   </ul>
 
-  <tal:valid-person-or-team condition="context/is_valid_person_or_team">
-    <div class="left" tal:define="contributions view/contributions">
-      <tal:is-team condition="not:context/isTeam">
+    <tal:is-person define="contributions view/contributions"
+                   condition="not:context/isTeam">
+
+      <div class="section"
+           tal:content="structure context/@@+portlet-contact-details" />
+
       <div tal:condition="contributions" class="section">
       <div class="portlet">
         <h2>Most active in</h2>
@@ -89,12 +89,13 @@
           <tbody>
             <tal:contributions repeat="contribution contributions">
             <tr tal:define="project contribution/project;
-                            project_categories contribution/categories">
+                            project_categories contribution/categories"
+                tal:attributes="class view/striped_class/next">
               <th>
                 <img tal:replace="structure project/image:icon"
                      src="/@@/product" />
                 <a tal:attributes="href project/fmt:url"
-                   tal:content="project/title/fmt:shorten/28">Project</a>
+                   tal:content="project/title/fmt:shorten/40">Project</a>
               </th>
               <td tal:repeat="category view/contributed_categories">
                 <tal:icon condition="python: category in project_categories"
@@ -104,10 +105,15 @@
             </tal:contributions>
           </tbody>
         </table>
+        <p tal:define="link context/menu:overview/related_projects"
+           tal:condition="link/enabled">
+           <a tal:attributes="href link/target">&raquo;
+             <span tal:replace="link/text" /></a>
+        </p>
       </div>
       </div>
-      </tal:is-team>
-      <div tal:condition="not:context/isTeam" class="section">
+    </tal:is-person>
+    <div tal:condition="not:context/isTeam" class="section">
       <div class="portlet"
            tal:define="memberships context/@@+restricted-membership/getLatestApprovedMembershipsForPerson">
         <h2>Latest memberships</h2>
@@ -127,10 +133,10 @@
           active member of any Launchpad teams.
         </p>
       </div>
-      </div>
+    </div>
 
-      <tal:recent-members condition="context/isTeam">
-        <div class="section">
+    <tal:recent-members condition="context/isTeam">
+      <div class="section">
       <div class="portlet" id="your-involvement">
         <h2>Your involvement</h2>
 
@@ -141,7 +147,7 @@
         <tal:block condition="request/lp:person">
           <tal:block condition="view/userIsOwner">
             <p tal:condition="view/userIsActiveMember">
-	      You are the owner of this team.
+              You are the owner of this team.
             </p>
             <p tal:condition="not: view/userIsActiveMember">
               You are the owner of this team,
@@ -150,16 +156,16 @@
           </tal:block>
           <tal:block condition="not: view/userIsOwner">
             <p tal:condition="view/userIsActiveMember">
-	      <tal:block tal:condition="view/userCanRequestToLeave">
-		<form class="actions"
-		      name="leave"
-		      id="form.team.leave"
-		      action="+leave"
-		      method="post">
-		  You are a member of this team.
-		  <input type="submit" name="leave" value="Leave the Team" />
-		</form>
-	      </tal:block>
+              <tal:block tal:condition="view/userCanRequestToLeave">
+                <form class="actions"
+                      name="leave"
+                      id="form.team.leave"
+                      action="+leave"
+                      method="post">
+                  You are a member of this team.
+                  <input type="submit" name="leave" value="Leave the Team" />
+                </form>
+              </tal:block>
             </p>
             <p tal:condition="not: view/userIsActiveMember">
               <tal:foo tal:condition="not: view/userIsParticipant">
@@ -182,27 +188,54 @@
               </tal:foo>
             </p>
           </tal:block>
-	  <tal:block condition="view/userIsParticipant">
-	    <p tal:condition="view/team_has_mailing_list">
-	      <tal:block tal:condition="view/user_is_subscribed_to_list">
-		<form class="actions"
-		      name="unsubscribe"
-		      id="form.list.unsubscribe"
-		      action=""
-		      method="post">
-		  You are subscribed to the team mailing list.
-		  <input type="submit" name="unsubscribe" value="Unsubscribe" />
-		</form>
-	      </tal:block>
-	      <tal:block tal:condition="view/user_can_subscribe_to_list">
-		You are not subscribed to the team mailing list.
-		(<a href="/people/+me/+editemails">Subscribe</a>)
-	      </tal:block>
-	    </p>
-	  </tal:block>
-        </tal:block>
+      <tal:block condition="view/userIsParticipant">
+        <p tal:condition="view/team_has_mailing_list">
+          <tal:block tal:condition="view/user_is_subscribed_to_list">
+            <form class="actions"
+              name="unsubscribe"
+              id="form.list.unsubscribe"
+              action=""
+              method="post">
+                You are subscribed to the team mailing list.
+                <input type="submit" name="unsubscribe" value="Unsubscribe" />
+            </form>
+          </tal:block>
+          <tal:block tal:condition="view/user_can_subscribe_to_list">
+            You are not subscribed to the team mailing list.
+            (<a href="/people/+me/+editemails">Subscribe</a>)
+          </tal:block>
+        </p>
+      </tal:block>
+    </tal:block>
       </div>
       </div>
+
+      <tal:isteam condition="context/isTeam">
+        <div class="section">
+          <div class="portlet" id="subteam-of">
+            <h2>Subteam of</h2>
+
+            <p tal:condition="not:context/super_teams">
+              &#8220;<span tal:replace="context/browsername"/>&#8221;
+              itself is not a member of any other team.
+            </p>
+
+            <tal:block condition="context/super_teams">
+              <p>
+                &#8220;<span tal:replace="context/browsername"/>&#8221;
+                is a member of these teams:
+              </p>
+              <ul>
+                <li tal:repeat="team context/super_teams">
+                  <a tal:attributes="href team/fmt:url"
+                     tal:content="team/browsername">name</a>
+                </li>
+              </ul>
+            </tal:block>
+          </div>
+        </div>
+      </tal:isteam>
+
       <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
            class="section">
       <div class="portlet" id="recently-approved"
@@ -234,18 +267,16 @@
       </div>
       </div>
       </tal:recent-members>
-      <div class="section"
-           tal:content="structure context/@@+portlet-related-projects" />
 
     </div>
 
     <div class="right">
 
       <div class="section"
-           tal:content="structure context/@@+portlet-details" />
+           tal:content="structure context/@@+portlet-map" />
 
       <div class="section"
-           tal:content="structure context/@@+portlet-contact-details" />
+           tal:content="structure context/@@+portlet-details" />
 
       <tal:not-team condition="not:context/isTeam">
       <div id="working-on"
@@ -288,32 +319,6 @@
       </div>
       </div>
       </tal:not-team>
-
-      <tal:isteam condition="context/isTeam">
-        <div class="section">
-          <div class="portlet" id="subteam-of">
-            <h2>Subteam of</h2>
-
-            <p tal:condition="not:context/super_teams">
-              &#8220;<span tal:replace="context/browsername"/>&#8221;
-              itself is not a member of any other team.
-            </p>
-
-            <tal:block condition="context/super_teams">
-              <p>
-                &#8220;<span tal:replace="context/browsername"/>&#8221;
-                is a member of these teams:
-              </p>
-              <ul>
-                <li tal:repeat="team context/super_teams">
-                  <a tal:attributes="href team/fmt:url"
-                     tal:content="team/browsername">name</a>
-                </li>
-              </ul>
-            </tal:block>
-          </div>
-        </div>
-      </tal:isteam>
 
     </div>
   </tal:valid-person-or-team>
@@ -364,7 +369,7 @@
       </tal:not-logged-in>
     </tal:noaccount>
 
-    <tal:deactivated-account 
+    <tal:deactivated-account
         condition="context/account_status/enumvalue:DEACTIVATED">
       <p>
         <span tal:replace="context/browsername" /> does not use

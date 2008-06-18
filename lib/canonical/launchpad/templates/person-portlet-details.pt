@@ -5,19 +5,20 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-details">
-
-  <h2>Summary</h2>
+  <tal:icon replace="structure context/image:mugshot" />
 
   <div class="portletBody portletContent">
 
     <tal:valid_person condition="context/is_valid_person">
 
+      <tal:tz condition="view/time_zone">
+        <b>Time zone:</b>
+        <tal:timezone replace="view/time_zone">UTC</tal:timezone>
+        <br />
+      </tal:tz>
+
       <b>Karma:</b>
       <span id="karma-total" tal:content="context/karma">342</span><br />
-
-      <b>Timezone:</b>
-      <tal:timezone replace="context/timezone">UTC</tal:timezone>
-      <i tal:condition="not: context/timezone">None given</i><br />
 
       <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
         Yes<br /></tal:ubuntero>

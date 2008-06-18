@@ -98,8 +98,8 @@
     name="+index" />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
-    name="+specs"
     layer="canonical.launchpad.layers.BlueprintLayer"
+    name="+specs"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"
@@ -179,6 +179,14 @@
     />
 
   <browser:page
+    name="+editlocation"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditLocationView"
+    permission="launchpad.AnyPerson"
+    template="../templates/person-editlocation.pt"
+    />
+
+  <browser:page
     name="+branding"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBrandingView"
@@ -230,6 +238,10 @@
     <browser:page
       name="+portlet-contact-details"
       template="../templates/person-portlet-contact-details.pt"
+      />
+    <browser:page
+      name="+portlet-map"
+      template="../templates/person-portlet-map.pt"
       />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->

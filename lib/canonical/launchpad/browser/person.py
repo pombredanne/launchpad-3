@@ -31,6 +31,7 @@ __all__ = [
     'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
+    'PersonEditLocationView',
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexView',
@@ -90,7 +91,7 @@ import pytz
 import subprocess
 import urllib
 
-from zope.app.form.browser import SelectWidget, TextAreaWidget
+from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
@@ -107,8 +108,8 @@ from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
-    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
-    PasswordChangeWidget)
+    LaunchpadRadioWidget, LocationWidget,
+    LaunchpadRadioWidgetWithDescription, PasswordChangeWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
@@ -157,6 +158,7 @@ from canonical.launchpad.browser.mailinglists import (
     enabled_with_active_mailing_list)
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
+from canonical.launchpad.fields import LocationField
 from canonical.launchpad.helpers import convertToHtmlCode, obfuscateEmail
 from canonical.launchpad.validators.email import valid_email
 
@@ -922,6 +924,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys',
+             'editlocation',
              'memberships', 'mentoringoffers',
              'codesofconduct', 'karma', 'common_packages', 'administer',
              'related_projects', 'activate_ppa', 'show_ppa']
@@ -973,6 +976,16 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+changepassword'
         text = 'Change your password'
         return Link(target, text, icon='edit')
+
+    def editlocation(self):
+        target = '+editlocation'
+        enabled = False
+        if (self.context.location is None or
+            self.context.location.last_modified_by != self.context or
+            check_permission('launchpad.Edit', self.context)):
+            enabled = True
+        text = 'Set location and time zone'
+        return Link(target, text, enabled=enabled, icon='edit')
 
     def karma(self):
         target = '+karma'
@@ -2251,6 +2264,10 @@ class PersonView(LaunchpadView, FeedsMixin):
         mailing_list = self.context.mailing_list
         return mailing_list is not None and mailing_list.isUsable()
 
+    @property
+    def time_zone(self):
+        return self.context.time_zone
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -2332,6 +2349,61 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return self.userIsActiveMember()
 
+    def map_portlet_html(self):
+        """Generate the HTML which shows the map portlet."""
+
+        if self.context.latitude is None:
+            return 'No location specified.'
+
+        center_lat = self.context.latitude
+        center_lng = self.context.longitude
+        map_html = """
+        <script type="text/javascript">
+
+        //<![CDATA[
+
+        if (GBrowserIsCompatible()) {
+          var myWidth = 0, myHeight = 0;
+          if( typeof( window.innerWidth ) == 'number' ) {
+            //Non-IE
+            myWidth = window.innerWidth;
+            myHeight = window.innerHeight;
+            }
+          else if( document.documentElement && (
+            document.documentElement.clientWidth ||
+            document.documentElement.clientHeight ) ) {
+            //IE 6+ in 'standards compliant mode'
+            myWidth = document.documentElement.clientWidth;
+            myHeight = document.documentElement.clientHeight;
+          } else if( document.body && (
+                document.body.clientWidth ||
+                document.body.clientHeight ) ) {
+            //IE 4 compatible
+            myWidth = document.body.clientWidth;
+            myHeight = document.body.clientHeight;
+          }
+          var mapdiv = document.getElementById("person_map_div");
+
+          var map = new GMap2(mapdiv);
+          center = new GLatLng(%(center_lat)s, %(center_lng)s);
+          map.setCenter(center, 1);
+          map.setMapType(G_NORMAL_MAP);
+          map.addControl(new GSmallZoomControl());
+          map.enableScrollWheelZoom();
+          var marker = new GMarker(center);
+          map.addOverlay(marker);
+
+          }
+
+        //]]>
+        </script>
+        """ % {
+            'center_lat': center_lat,
+            'center_lng': center_lng,
+            }
+        return map_html
+
+
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
             return obfuscateEmail(self.context.preferredemail.email)
@@ -2388,6 +2460,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
+        self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
 
@@ -3058,8 +3131,82 @@ class PersonEditView(BasePersonEditView):
     implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
-        'verbose_bugnotifications', 'timezone']
-    custom_widget('timezone', SelectWidget, size=15)
+        'verbose_bugnotifications']
+
+
+class PersonLocationForm(Interface):
+
+    location = LocationField(
+        title=_('Use the map to indicate default location'),
+        required=True)
+
+
+class PersonEditLocationView(LaunchpadFormView):
+
+    schema = PersonLocationForm
+    field_names = []
+    custom_widget('location', LocationWidget)
+
+    def __init__(self, context, request):
+        # If the user has specified their own location and timezone then
+        # only they can update it. Otherwise, anybody can say where the
+        # person is, to enable folks to garden this data like a wiki
+        self.context = context
+        if self.editable:
+            if 'location' not in self.field_names:
+                self.field_names.append('location')
+        LaunchpadFormView.__init__(self, context, request)
+        self.post_update_url = canonical_url(self.context)
+        self.for_team_name = self.request.form.get('for_team')
+        if self.for_team_name is not None:
+            for_team = getUtility(IPersonSet).getByName(self.for_team_name)
+            if for_team is not None:
+                self.post_update_url = canonical_url(for_team) + '/+map'
+
+    @cachedproperty
+    def editable(self):
+        """Determine if the user can edit this Person's location.
+
+        We treat the location information for people in Launchpad like a
+        wiki, in that anybody can provide location information for someone
+        else. Once someone specifies their own location, however, it is
+        locked and only they or ad:w
+        ministrators can edit it.
+        """
+        if check_permission('launchpad.Edit', self.context):
+            # if you have permission to edit the person you can always
+            # update the location
+            return True
+        elif self.context.location is None or \
+             self.context.location.last_modified_by != self.context:
+            # There is no location information for this person, or it has
+            # been provided by someone other than that person
+            return True
+        return False
+
+    def validate_action_update(self, action, data):
+        if not self.editable:
+            self.addError(
+                "You may not modify the location for %s." %
+                self.context.browsername)
+            return self.errors
+        return None
+
+    @action(_("Update"), name="update", validator=validate_action_update)
+    def action_update(self, action, data):
+        """Set the coordinates and time zone for the person."""
+        new_location = data.get('location', None)
+        assert new_location is not None, 'No location received.'
+        latitude = new_location.latitude
+        longitude = new_location.longitude
+        time_zone = new_location.time_zone
+        self.context.set_location(
+            latitude, longitude, time_zone, self.user)
+        self.next_url = self.post_update_url
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self.next_url = self.post_update_url
 
 
 class PersonBrandingView(BrandingChangeView):

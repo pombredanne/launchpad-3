@@ -1,0 +1,44 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/onecolumn"
+  i18n:domain="launchpad">
+
+<body>
+
+  <metal:portlets fill-slot="portlets">
+  </metal:portlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>Location and time zone</h1>
+
+    <tal:not_editable condition="not: view/editable">
+      <p>
+        You can only edit the location and time zone for a Launchpad user
+        if they have not set this information themselves.
+        <tal:person replace="context/browsername" /> has edited this
+        information personally, so it is now locked and you cannot modify
+        it further. If you believe the information is incorrect, you can
+        ask a Launchpad administrator to correct it.
+      </p>
+    </tal:not_editable>
+
+    <tal:editable condition="view/editable">
+      <div metal:use-macro="context/@@launchpad_form/form">
+        <div metal:fill-slot="extra_info">
+           <input type="hidden" name="for_team" value=""
+                   tal:attributes="value view/for_team_name" />
+        </div>
+      </div>
+    </tal:editable>
+
+  </div>
+
+</body>
+</html>
