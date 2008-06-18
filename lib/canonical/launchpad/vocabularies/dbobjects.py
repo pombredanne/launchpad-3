@@ -1354,7 +1354,11 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     _table = Product
     _orderBy = 'displayname'
-    displayname = 'Select one of the commercial projects you administer'
+
+    @property
+    def displayname(self):
+        return 'Select one of the commercial projects administered by %s' % (
+            self.context.displayname)
 
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""

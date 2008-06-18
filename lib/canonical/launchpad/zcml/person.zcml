@@ -292,7 +292,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     name="+vouchers"
-    permission="zope.Public"
+    permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonVouchersView"
     template="../templates/person-vouchers.pt"
     />

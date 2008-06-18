@@ -15,31 +15,33 @@
     </metal:heading>
     <div metal:fill-slot="main"
          tal:define="commercial_projects view/owned_commercial_projects">
-      <div tal:condition="not: commercial_projects">
-        You do not administer any commercial projects therefore you cannot manage
-        commerical subscriptions.
-      </div>
-      <div tal:condition="commercial_projects"
-           metal:use-macro="context/@@launchpad_form/form">
-        <metal:widgets fill-slot="widgets">
-          <table class="form">
-            <tal:widget define="widget nocall:view/widgets/project">
-              <metal:block use-macro="context/@@launchpad_form/widget_row" />
-            </tal:widget>
-            <tal:widget define="widget nocall:view/widgets/voucher">
-              <metal:block use-macro="context/@@launchpad_form/widget_row" />
-            </tal:widget>
-            <tr>
-              <td></td>
-              <td>
-                <input tal:replace="structure view/redeem_action/render" />
-                <input tal:replace="structure view/cancel_action/render" />
-              </td>
-            </tr>
-          </table>
-        </metal:widgets>
-        <metal:widgets fill-slot="buttons" />
-      </div>
+      <tal:not_commercial condition="not: commercial_projects">
+        <tal:name replace="string:${context/displayname} " />
+        does not own any commercial projects. Only project owners can redeem
+        vouchers for a project.
+      </tal:not_commercial>
+      <tal:commercial condition="commercial_projects">
+        <div metal:use-macro="context/@@launchpad_form/form">
+          <metal:widgets fill-slot="widgets">
+            <table class="form">
+              <tal:widget define="widget nocall:view/widgets/project">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tal:widget define="widget nocall:view/widgets/voucher">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tr>
+                <td></td>
+                <td>
+                  <input tal:replace="structure view/redeem_action/render" />
+                  <input tal:replace="structure view/cancel_action/render" />
+                </td>
+              </tr>
+            </table>
+          </metal:widgets>
+          <metal:widgets fill-slot="buttons" />
+        </div>
+      </tal:commercial>
     </div>
   </body>
 </html>
