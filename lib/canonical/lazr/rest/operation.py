@@ -9,7 +9,8 @@ from zope.component import getMultiAdapter, queryAdapter
 from zope.interface import Attribute, implements
 from zope.interface.interfaces import IInterface
 from zope.schema import Field
-from zope.schema.interfaces import IField, RequiredMissing, ValidationError
+from zope.schema.interfaces import (
+    IField, RequiredMissing, ValidationError, WrongType)
 from zope.security.proxy import isinstance
 
 from canonical.lazr.interfaces import (
