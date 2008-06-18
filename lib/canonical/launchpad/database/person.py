@@ -54,7 +54,8 @@ from canonical.launchpad.database.translationrelicensingagreement import (
     TranslationRelicensingAgreement)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
-from canonical.launchpad.helpers import contactEmailAddresses, shortlist
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, get_email_template, shortlist)
 
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
@@ -87,6 +88,8 @@ from canonical.launchpad.interfaces.person import (
     IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility, PersonalStanding,
     TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.personnotification import (
+    IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
@@ -318,29 +321,62 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             AND (date_expires IS NULL OR date_expires > %s)
             """ % sqlvalues(self, UTC_NOW))
 
-    @cachedproperty
-    def _location(self):
+    @cachedproperty('_location')
+    def location(self):
+        """See `IObjectWithLocation`."""
         return PersonLocation.selectOneBy(person=self)
 
-    def set_time_zone(self, timezone):
-        location = self._location
-        if location is None:
-            location = PersonLocation(
-                person=self,
-                latitude=None,
-                longitude=None,
-                time_zone=timezone,
-                last_modified_by=self)
-        location.time_zone = timezone
-        self._location = location
-
-    def get_time_zone(self):
-        location = self._location
-        if location is None:
+    @property
+    def time_zone(self):
+        """See `IHasLocation`."""
+        if self.location is None:
             return None
-        return location.time_zone
-    time_zone = property(get_time_zone, set_time_zone)
+        return self.location.time_zone
 
+    @property
+    def latitude(self):
+        """See `IHasLocation`."""
+        if self.location is None:
+            return None
+        return self.location.latitude
+
+    @property
+    def longitude(self):
+        """See `IHasLocation`."""
+        if self.location is None:
+            return None
+        return self.location.longitude
+
+    def setLocation(self, latitude, longitude, time_zone, user):
+        """See `ISetLocation`."""
+        assert not self.is_team, 'Cannot edit team location.'
+        assert latitude is not None and longitude is not None, (
+            "Cannot set a latitude without longitude (and vice-versa).")
+
+        if self.location is not None:
+            self.location.time_zone = time_zone
+            self.location.latitude = latitude
+            self.location.longitude = longitude
+            self.location.last_modified_by = user
+            self.location.date_last_modified = UTC_NOW
+        else:
+            self._location = PersonLocation(
+                person=self, time_zone=time_zone, latitude=latitude,
+                longitude=longitude, last_modified_by=user)
+
+        # Make a note that we need to tell this person that their
+        # information was updated by the user. We can only do this if we
+        # have a validated email address for this person.
+        if user != self and self.preferredemail is not None:
+            mail_text = get_email_template('person-location-modified.txt')
+            mail_text = mail_text % {
+                'actor': user.name,
+                'actor_browsername': user.browsername,
+                'person': self.name}
+            subject = '%s updated your location and time zone' % (
+                user.browsername)
+            getUtility(IPersonNotificationSet).addNotification(
+                self, subject, mail_text)
 
     def get_translations_relicensing_agreement(self):
         """Return whether translator agrees to relicense their translations.
@@ -1512,6 +1548,45 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                                       TeamMembershipStatus.ADMIN]),
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
+
+    @property
+    def mapped_participants(self):
+        """See `IPersonViewRestricted`."""
+        locations = PersonLocation.select("""
+            PersonLocation.person = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            -- We only need to check for a latitude here because there's a DB
+            -- constraint which ensures they are both set or unset.
+            PersonLocation.latitude IS NOT NULL AND
+            Person.id = PersonLocation.person AND
+            Person.teamowner IS NULL
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation', 'Person'],
+            prejoins=['person',])
+        # Pre-cache this location against its person.  Since we'll always
+        # iterate over all persons returned by this property (to build the map
+        # of team members), it becomes more important to cache their locations
+        # than to return a lazy SelectResults (or similar) object that only
+        # fetches the rows when they're needed.
+        for location in locations:
+            location.person._location = location
+        return [location.person for location in locations]
+
+    @property
+    def unmapped_participants(self):
+        """See `IPersonViewRestricted`."""
+        return Person.select("""
+            Person.id = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            TeamParticipation.person NOT IN (
+                SELECT PersonLocation.person
+                FROM PersonLocation INNER JOIN TeamParticipation ON
+                     PersonLocation.person = TeamParticipation.person
+                WHERE TeamParticipation.team = %s AND
+                      PersonLocation.latitude IS NOT NULL) AND
+            Person.teamowner IS NULL
+            """ % sqlvalues(self.id, self.id),
+            clauseTables=['TeamParticipation'])
 
     @property
     def open_membership_invitations(self):
