@@ -411,3 +411,12 @@ class IBranchMergeProposalGetter(Interface):
         :raises BadBranchMergeProposalSearchContext: If the context is not
             understood.
         """
+
+    def getVoteSummariesForProposals(proposals):
+        """Return the vote summaries for the proposals.
+
+        A vote summary is a dict has a 'comment_count' and may also have
+        values for each of the CodeReviewVote enumerated values.
+
+        :return: A dict keyed on the proposals.
+        """

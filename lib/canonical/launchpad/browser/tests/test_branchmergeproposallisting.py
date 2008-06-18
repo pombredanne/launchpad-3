@@ -40,9 +40,9 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         view = BranchMergeProposalListingView(
             view_context, LaunchpadTestRequest())
         batch_navigator = view.proposals
-        listing_items = batch_navigator.proposals
-        self.assertEqual(1, len(listing_items))
-        return listing_items[0].vote_summary
+        # There will only be one item in the list of proposals.
+        [listing_item] = batch_navigator.proposals
+        return listing_item.vote_summary
 
     def test_no_votes_or_comments(self):
         # If there are no votes or comments, then we show that.

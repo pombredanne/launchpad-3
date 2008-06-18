@@ -1563,8 +1563,9 @@ class ProductBranchesView(ProductBranchListingView):
             'sort_by': BranchListingSort.LIFECYCLE,
             }
 
+
 class ProductActiveReviewsView(BranchMergeProposalListingView):
-    """Branch merge proposals for the person that are needing review."""
+    """Branch merge proposals for the product that are needing review."""
 
     extra_columns = ['date_review_requested', 'vote_summary']
     _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
@@ -1580,7 +1581,7 @@ class ProductActiveReviewsView(BranchMergeProposalListingView):
 
 
 class ProductApprovedMergesView(BranchMergeProposalListingView):
-    """Branch merge proposals that have been approved for the person."""
+    """Branch merge proposals for the product that have been approved."""
 
     extra_columns = ['date_reviewed']
     _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]

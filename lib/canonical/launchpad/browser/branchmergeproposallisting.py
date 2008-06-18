@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
 """Base class view for branch merge proposal listings."""
 
@@ -9,13 +9,11 @@ __all__ = [
     ]
 
 
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal, IBranchMergeProposalGetter,
     IBranchMergeProposalListingBatchNavigator)
@@ -42,6 +40,10 @@ class BranchMergeProposalListingItem:
     @property
     def vote_summary(self):
         """A short summary of the votes."""
+        # If there are no comments, there can be no votes.
+        if self.comment_count == 0:
+            return "no votes (no comments)"
+
         votes = []
         if self.disapprove_count:
             votes.append("Disapprove: %s" % self.disapprove_count)
@@ -52,12 +54,7 @@ class BranchMergeProposalListingItem:
         if len(votes) == 0:
             votes.append("no votes")
 
-        if self.comment_count:
-            comments = "(Comments: %s)" % self.comment_count
-        else:
-            comments = "(no comments)"
-
-        return "%s %s" % (', '.join(votes), comments)
+        return "%s (Comments: %s)" % (', '.join(votes), self.comment_count)
 
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
@@ -70,60 +67,27 @@ class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
             columns_to_show=view.extra_columns,
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
-        self.column_count = 4 + len(view.extra_columns)
 
     @cachedproperty
     def _proposals_for_current_batch(self):
         return list(self.currentBatch())
 
     @cachedproperty
-    def _proposal_comments(self):
-        """A dict of proposal id to number of comments."""
-        result = {}
-        proposals = self._proposals_for_current_batch
-        if len(proposals) != 0:
-            store = Store.of(proposals[0])
-            query = """
-                SELECT bmp.id, count(crm.*)
-                FROM BranchMergeProposal bmp, CodeReviewMessage crm
-                WHERE bmp.id IN %s
-                  AND bmp.id = crm.branch_merge_proposal
-                GROUP BY bmp.id
-                """ % quote([p.id for p in proposals])
-            for proposal_id, count in store.execute(query):
-                result[proposal_id] = count
-        return result
-
-    @cachedproperty
-    def _proposal_votes(self):
-        """A dict of proposal id to votes."""
-        result = {}
-        proposals = self._proposals_for_current_batch
-        if len(proposals) != 0:
-            store = Store.of(proposals[0])
-            query = """
-                SELECT bmp.id, crm.vote, count(crv.*)
-                FROM BranchMergeProposal bmp, CodeReviewVote crv,
-                     CodeReviewMessage crm
-                WHERE bmp.id IN %s
-                  AND bmp.id = crv.branch_merge_proposal
-                  AND crv.vote_message = crm.id
-                GROUP BY bmp.id, crm.vote
-                """ % quote([p.id for p in proposals])
-            for proposal_id, vote_value, count in store.execute(query):
-                vote = CodeReviewVote.items[vote_value]
-                result.setdefault(proposal_id, {})[vote] = count
-        return result
+    def _vote_summaries(self):
+        """A dict of proposals to counts of votes and comments."""
+        utility = getUtility(IBranchMergeProposalGetter)
+        return utility.getVoteSummariesForProposals(
+            self._proposals_for_current_batch)
 
     def _createItem(self, proposal):
         """Create the listing item for the proposal."""
-        votes = self._proposal_votes.get(proposal.id, {})
+        summary = self._vote_summaries[proposal]
         return BranchMergeProposalListingItem(
             proposal,
-            self._proposal_comments.get(proposal.id, 0),
-            votes.get(CodeReviewVote.DISAPPROVE, 0),
-            votes.get(CodeReviewVote.APPROVE, 0),
-            votes.get(CodeReviewVote.ABSTAIN, 0))
+            summary['comment_count'],
+            summary.get(CodeReviewVote.DISAPPROVE, 0),
+            summary.get(CodeReviewVote.APPROVE, 0),
+            summary.get(CodeReviewVote.ABSTAIN, 0))
 
     @property
     def proposals(self):
@@ -155,15 +119,11 @@ class BranchMergeProposalListingView(LaunchpadView):
         return BranchMergeProposalListingBatchNavigator(self)
 
     def getVisibleProposalsForUser(self):
-        """Called from the batch navigator."""
-        return self._getProposals()
-
-    def _getProposals(self):
-        """Overridded by the derived classes."""
+        """Branch merge proposals that are visible by the logged in user."""
         return getUtility(IBranchMergeProposalGetter).getProposalsForContext(
             self.context, self._queue_status, self.user)
 
     @cachedproperty
     def proposal_count(self):
         """Return the number of proposals that will be returned."""
-        return self._getProposals().count()
+        return self.getVisibleProposalsForUser().count()
