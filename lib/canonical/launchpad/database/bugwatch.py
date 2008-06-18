@@ -44,7 +44,7 @@ BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
     BugTrackerType.TRAC:        'ticket/%s',
     BugTrackerType.SAVANE:      'bugs/?%s',
-    BugTrackerType.PHPPROJECT: 'bug.php?id=%s',
+    BugTrackerType.PHPPROJECT:  'bug.php?id=%s',
     }
 
 
