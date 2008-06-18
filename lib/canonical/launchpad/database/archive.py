@@ -14,7 +14,7 @@ from sqlobject import  (
     BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, alsoProvides
 
 
 from canonical.archivepublisher.config import Config as PubConfig
@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces import (
     ArchiveDependencyError, ArchivePermissionType, ArchivePurpose, IArchive,
     IArchivePermissionSet, IArchiveSet, IHasOwner, IHasBuildRecords,
     IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.person import validate_public_person
 
@@ -156,6 +157,13 @@ class Archive(SQLBase):
                 self.purpose)
         return urlappend(config.archivepublisher.base_url,
             self.distribution.name + postfix)
+
+    def _init(self, *args, **kwargs):
+        """Called when the object is created or fetched from the database."""
+        SQLBase._init(self, *args, **kwargs)
+
+        if self.is_ppa:
+            alsoProvides(self, IHasPersonNavigationMenu)
 
     def getPubConfig(self):
         """See `IArchive`."""

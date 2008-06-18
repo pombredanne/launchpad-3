@@ -80,6 +80,7 @@ __all__ = [
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
+    'archive_to_person',
     ]
 
 import cgi
@@ -133,6 +134,7 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -1040,6 +1042,10 @@ class PersonOverviewNavigationMenu(NavigationMenu):
     facet = 'overview'
     title = 'Profile'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def __init__(self, context):
+        super(PersonOverviewNavigationMenu, self).__init__(context)
+        self.context = IPerson(context)
 
     def profile(self):
         target = '+index'
@@ -4243,3 +4249,8 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
+
+
+def archive_to_person(archive):
+    """Adapts an `IArchive` to an `IPerson`."""
+    return archive.owner
