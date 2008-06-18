@@ -102,6 +102,16 @@
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
+    <tal:needs_json tal:condition="request/needs_json">
+      <script type="text/javascript"
+        tal:attributes="src string:${icingroot}/json2.js"></script>
+      <script type="text/javascript"
+        tal:attributes="src string:${icingroot}/JSONScriptRequest.js"></script>
+    </tal:needs_json>
+    <script tal:condition="request/needs_gmap2"
+            type="text/javascript"
+            tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
+            ></script>
     <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>

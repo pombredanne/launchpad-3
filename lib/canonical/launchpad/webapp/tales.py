@@ -561,18 +561,20 @@ class ObjectImageDisplayAPI:
         logo = '<img alt="" width="64" height="64" src="%s" />'
         return logo % url
 
-    def mugshot(self):
-        """Return the appropriate <img> tag for this object's mugshot."""
+    def mugshot_url(self):
         context = self._context
         assert IHasMugshot.providedBy(context), 'No Mugshot for this item'
         if context.mugshot is not None:
             url = context.mugshot.getURL()
         else:
             url = self.default_mugshot_resource(context)
-        mugshot = """<div style="width: 200; height: 200; float: right">
+        return url
+
+    def mugshot(self):
+        """Return the appropriate <img> tag for this object's mugshot."""
+        return """<div style="width: 200; height: 200; float: right">
             <img alt="" width="192" height="192" src="%s" />
-            </div>"""
-        return mugshot % url
+            </div>""" % self.mugshot_url()
 
     def badges(self):
         raise NotImplementedError(
