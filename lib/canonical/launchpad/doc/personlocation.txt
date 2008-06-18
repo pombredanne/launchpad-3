@@ -109,6 +109,20 @@ We cannot store a location for a team, though.
     ...
     AssertionError:...
 
+Nor can we set only the latitude of a person.
+
+    >>> cprov.setLocation(-43.0, None, 'America/Sao_Paulo', admin)
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+
+Similarly, we can't set only the longitude.
+
+    >>> cprov.setLocation(None, -43.0, 'America/Sao_Paulo', admin)
+    Traceback (most recent call last):
+    ...
+    AssertionError:...
+
 We can get lists of the participants in a team that do, or do not, have
 locations. Specifically, we mean latitude/longitude data, not time zone
 data.

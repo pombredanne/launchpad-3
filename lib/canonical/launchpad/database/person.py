@@ -349,6 +349,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
+        assert latitude is not None and longitude is not None, (
+            "Cannot set a latitude without longitude (and vice-versa).")
 
         if self.location is not None:
             self.location.time_zone = time_zone
@@ -1546,6 +1548,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         locations = PersonLocation.select("""
             PersonLocation.person = TeamParticipation.person AND
             TeamParticipation.team = %s AND
+            -- We only need to check for a latitude here because there's a DB
+            -- constraint which ensures they are both set or unset.
             PersonLocation.latitude IS NOT NULL AND
             Person.id = PersonLocation.person AND
             Person.teamowner IS NULL

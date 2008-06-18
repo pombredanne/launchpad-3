@@ -3,9 +3,9 @@
 Launchpad. This lets us present dates and times in your local time, and
 helps to coordinate team events that will span multiple time zones.
 
-Your information can be updated (wiki-style) by any other user until
-you provide definitive data yourself, at which point the information is
-locked so that only you can edit it.
+Your information can be updated by any other user until you provide
+definitive data yourself, at which point the information is locked
+so that only you can edit it.
 
 Your details (now with map!): https://launchpad.net/~%(person)s
 %(actor_browsername)s's details: https://launchpad.net/~%(actor)s
@@ -16,4 +16,4 @@ You can edit the location and time zone information for yourself at:
 
 Regards,
 
-The Launchpad SWAT Team
+The Launchpad team
