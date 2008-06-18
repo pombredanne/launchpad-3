@@ -60,10 +60,3 @@ Others do not have any series so the portlet is not shown.
     >>> print find_tag_by_id(anon_browser.contents, 'sandm')
     None
 
-
-= Bug subscriptions =
-
-    >>> user_browser.open('http://launchpad.dev/ubuntu')
-    >>> user_browser.getLink('Subscribe to bug mail').click()
-    >>> print user_browser.url
-    http://launchpad.dev/ubuntu/+subscribe

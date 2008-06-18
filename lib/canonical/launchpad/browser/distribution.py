@@ -34,16 +34,13 @@ __all__ = [
 import datetime
 import operator
 
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IArchiveSet, IDistributionMirrorSet,
-    IDistributionSet, IDistribution, ILaunchBag, ILaunchpadCelebrities,
-    IPublishedPackageSet, MirrorContent, MirrorSpeed, NotFoundError)
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -54,6 +51,12 @@ from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
+from canonical.launchpad.interfaces import (
+    DistroSeriesStatus, IArchiveSet, IDistributionMirrorSet,
+    ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet, MirrorContent,
+    MirrorSpeed, NotFoundError)
+from canonical.launchpad.interfaces.distribution import (
+    IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
@@ -62,6 +65,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
+from canonical.launchpad.webapp import NavigationMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets.image import ImageChangeWidget
@@ -188,6 +192,109 @@ class DistributionSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
+class DistributionMirrorsNavigationMenu(NavigationMenu):
+
+    usedfor = IDistributionMirrorMenuMarker
+    facet = 'overview'
+    links = ('cdimage_mirrors',
+             'archive_mirrors',
+             'newmirror',
+             'disabled_mirrors',
+             'pending_review_mirrors',
+             'unofficial_mirrors',
+             )
+
+    @property
+    def distribution(self):
+        """Helper method to return the distribution object.
+
+        self.context is the view, so return *its* context.
+        """
+        return self.context.context
+
+    def cdimage_mirrors(self):
+        text = 'CD Mirrors'
+        enabled = self.distribution.full_functionality
+        return Link('+cdmirrors', text, enabled=enabled, icon='info')
+
+    def archive_mirrors(self):
+        text = 'Archive Mirrors'
+        enabled = self.distribution.full_functionality
+        return Link('+archivemirrors', text, enabled=enabled, icon='info')
+
+    def newmirror(self):
+        text = 'Register a New Mirror'
+        enabled = self.distribution.full_functionality
+        return Link('+newmirror', text, enabled=enabled, icon='add')
+
+    def _userCanSeeNonPublicMirrorListings(self):
+        """Does the user have rights to see non-public mirrors listings?"""
+        user = getUtility(ILaunchBag).user
+        return (self.distribution.full_functionality
+                and user is not None
+                and user.inTeam(self.distribution.mirror_admin))
+
+    def disabled_mirrors(self):
+        text = 'Disabled Mirrors'
+        enabled = self._userCanSeeNonPublicMirrorListings()
+        return Link('+disabledmirrors', text, enabled=enabled, icon='info')
+
+    def pending_review_mirrors(self):
+        text = 'Pending-Review Mirrors'
+        enabled = self._userCanSeeNonPublicMirrorListings()
+        return Link(
+            '+pendingreviewmirrors', text, enabled=enabled, icon='info')
+
+    def unofficial_mirrors(self):
+        text = 'Unofficial Mirrors'
+        enabled = self._userCanSeeNonPublicMirrorListings()
+        return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
+
+
+class DistributionNavigationMenu(NavigationMenu):
+
+    usedfor = IDistribution
+    facet = 'overview'
+    links = ('details',
+             'announcements',
+             'mentoring',
+             'mirrors',
+             'builds',
+             'ppas',
+             )
+
+    def details(self):
+        target = '+index'
+        text = 'Details'
+        return Link(target, text)
+
+    def announcements(self):
+        target = '+announcements'
+        text = 'Announcements'
+        return Link(target, text)
+
+    def mentoring(self):
+        target = '+mentoring'
+        text = "Mentoring"
+        return Link(target, text)
+
+    def mirrors(self):
+        target = '+cdmirrors'
+        text = 'Mirrors'
+        menu = IDistributionMirrorMenuMarker
+        return Link(target, text, menu=menu)
+
+    def builds(self):
+        target = '+builds'
+        text = "Builds"
+        return Link(target, text)
+
+    def ppas(self):
+        target = '+ppas'
+        text = 'PPAs'
+        return Link(target, text)
+
+
 class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
@@ -197,7 +304,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'ppas', 'subscribe']
+             'ppas',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -309,16 +416,18 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['bugsupervisor', 'securitycontact', 'cve', 'filebug']
+    links = (
+        'bugsupervisor',
+        'securitycontact',
+        'cve',
+        'filebug',
+        'subscribe',
+        )
 
     def cve(self):
         text = 'CVE reports'
@@ -337,6 +446,10 @@ class DistributionBugsMenu(ApplicationMenu):
     def filebug(self):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text)
 
 
 class DistributionBountiesMenu(ApplicationMenu):
@@ -662,6 +775,7 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
     If there are no mirrors located in the country of the request, we fallback
     to the main Ubuntu repositories.
     """
+    implements(IDistributionMirrorMenuMarker)
 
     def render(self):
         request = self.request
@@ -692,6 +806,7 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
 
 class DistributionMirrorsView(LaunchpadView):
 
+    implements(IDistributionMirrorMenuMarker)
     show_freshness = True
 
     @cachedproperty

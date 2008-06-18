@@ -69,7 +69,8 @@
       DistributionFacets DistributionOverviewMenu DistributionBugsMenu
       DistributionBountiesMenu DistributionSpecificationsMenu
       DistributionTranslationsMenu DistributionSetFacets
-      DistributionSetContextMenu
+      DistributionSetContextMenu DistributionNavigationMenu
+      DistributionMirrorsNavigationMenu
       "
     />
 

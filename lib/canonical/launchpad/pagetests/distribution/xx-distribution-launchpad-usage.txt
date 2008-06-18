@@ -78,7 +78,7 @@ distribution Overview page.
     >>> admin_browser.getControl(name='field.official_blueprints').value = (
     ... False)
     >>> admin_browser.getControl(name='field.official_answers').value = False
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
@@ -104,7 +104,7 @@ bug expiration.
     >>> admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value = True
     >>> admin_browser.getControl(name='field.official_malone').value = True
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
 
     >>> content = find_main_content(admin_browser.contents)
 
@@ -124,7 +124,7 @@ operation before the page complete loading.
     True
 
     >>> admin_browser.getControl(name='field.official_malone').value = False
-    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change', index=3).click()
 
     >>> content = find_main_content(admin_browser.contents)
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'uses'))

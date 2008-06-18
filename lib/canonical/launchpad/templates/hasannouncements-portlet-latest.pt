@@ -5,7 +5,6 @@
   omit-tag="">
 <tal:news define="announcements view/latest_announcements">
 <div
-  tal:condition="announcements"
   class="portlet"
   id="portlet-latest-announcements">
   <h2>Latest news</h2>

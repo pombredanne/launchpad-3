@@ -162,6 +162,10 @@
             <li style="font-weight: bold;">
               <a href="+bugs">List all open bugs</a>
             </li>
+            <li>
+              <tal:subscribe define="link context/menu:bugs/subscribe"
+                             replace="structure link/render" />
+            </li>
           </ul>
           <ul class="rollover buttons">
             <li>
