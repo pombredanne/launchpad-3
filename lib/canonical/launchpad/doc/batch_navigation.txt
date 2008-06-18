@@ -46,6 +46,14 @@ The BatchNavigator implements IBatchNavigator.
     >>> verifyObject(IBatchNavigator, reindeer_batch_navigator)
     True
 
+The BatchNavigator implements IBatchNavigator.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.interfaces import IBatchNavigator
+
+    >>> verifyObject(IBatchNavigator, reindeer_batch_navigator)
+    True
+
 You can ask the navigator for the chunk of results currently being shown
 (e.g. to iterate over them for rendering in ZPT):
 
@@ -276,6 +284,43 @@ InvalidBatchSizeError is raised.
     InvalidBatchSizeError: Maximum for "batch" parameter is 5.
 
     >>> ignored = config.pop('max-batch-size')
+
+
+== URL parameters ==
+
+Normally, any parameters passed in the current page's URL are
+reproduced in the batch navigator's links.  A "transient" parameter is
+one that was only relevant for the current page request and shouldn't be
+passed on to subsequent ones.
+
+In this next batch navigator, two parameters occur in the page's URL:
+"noisy" and "quiet."
+
+    >>> request_parameters = {
+    ...     'quiet': 'ssht',
+    ...     'noisy': 'HELLO',
+    ...     }
+
+    >>> request_with_parameters = build_request(request_parameters)
+
+One parameter, "quiet," is transient.  There is another transient
+parameter called "absent," but it's not passed in our ongoing page
+request.
+
+    >>> navigator_with_parameters = BatchNavigator(
+    ...     reindeer, request_with_parameters, size=3,
+    ...     transient_parameters=['quiet', 'absent'])
+
+Of these three parameters, only "noisy" recurs in the links produced by
+the batch navigator.
+
+    >>> navigator_with_parameters.nextBatchURL()
+    'http://www.example.com/foo?noisy=HELLO&start=3'
+    >>> navigator_with_parameters.lastBatchURL()
+    'http://www.example.com/foo?noisy=HELLO&start=6'
+
+The transient parameter is omitted, and the one that was never passed in
+in the first place does not magically appear.
 
 
 == Batch views ==
