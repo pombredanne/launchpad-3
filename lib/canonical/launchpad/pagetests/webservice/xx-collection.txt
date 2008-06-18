@@ -164,7 +164,7 @@ The elements of a collection can be looked up by unique identifier:
   super_teams_collection_link: http://.../~admins/super_teams
   team_description: Launchpad Administrators
   team_owner_link: http://.../~sabdfl
-  timezone: None
+  time_zone: None
   visibility: Public
   wiki_names_collection_link: http://.../~admins/wiki_names
 

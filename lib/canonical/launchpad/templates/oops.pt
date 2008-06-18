@@ -11,7 +11,7 @@
     <div id="locationbar"></div>
 
         <!--id="mainarea"-->
-          <div id="maincontent">
+          <div id="maincontent" class="freeform">
           <h1 class="exception">Oops!</h1>
           <p>
             Sorry, something just went wrong in Launchpad.
