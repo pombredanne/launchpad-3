@@ -1058,7 +1058,10 @@ class PersonOverviewNavigationMenu(NavigationMenu):
     def show_ppa(self):
         target = '+archive'
         text = 'Personal Package Archive'
-        return Link(target, text)
+        summary = 'Browse Personal Package Archive packages.'
+        archive = self.context.archive
+        enable_link = check_permission('launchpad.View', archive)
+        return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
 class PersonEditNavigationMenu(NavigationMenu):
