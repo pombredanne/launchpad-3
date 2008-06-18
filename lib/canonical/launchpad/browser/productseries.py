@@ -195,13 +195,20 @@ class ProductSeriesBugsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'bugs'
-    links = ['new', 'nominations']
+    links = (
+        'new',
+        'nominations',
+        'subscribe',
+        )
 
     def new(self):
         return Link('+filebug', 'Report a bug', icon='add')
 
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
+
+    def subscribe(self):
+        return Link('+subscribe', 'Subscribe to bug mail')
 
 
 class ProductSeriesSpecificationsMenu(ApplicationMenu):

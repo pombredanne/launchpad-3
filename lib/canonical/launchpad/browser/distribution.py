@@ -213,17 +213,17 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return self.context.context
 
     def cdimage_mirrors(self):
-        text = 'CD mirrors'
+        text = 'CD Mirrors'
         enabled = self.distribution.full_functionality
         return Link('+cdmirrors', text, enabled=enabled, icon='info')
 
     def archive_mirrors(self):
-        text = 'Archive mirrors'
+        text = 'Archive Mirrors'
         enabled = self.distribution.full_functionality
         return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
     def newmirror(self):
-        text = 'Register a new mirror'
+        text = 'Register a New Mirror'
         enabled = self.distribution.full_functionality
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
@@ -235,18 +235,18 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
                 and user.inTeam(self.distribution.mirror_admin))
 
     def disabled_mirrors(self):
-        text = 'Disabled mirrors'
+        text = 'Disabled Mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+disabledmirrors', text, enabled=enabled, icon='info')
 
     def pending_review_mirrors(self):
-        text = 'Pending-review mirrors'
+        text = 'Pending-Review Mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link(
             '+pendingreviewmirrors', text, enabled=enabled, icon='info')
 
     def unofficial_mirrors(self):
-        text = 'Unofficial mirrors'
+        text = 'Unofficial Mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
@@ -281,8 +281,8 @@ class DistributionNavigationMenu(NavigationMenu):
     def mirrors(self):
         target = '+cdmirrors'
         text = 'Mirrors'
-        menu = DistributionMirrorsNavigationMenu(self.context)
-        return Link(target, text, menu)
+        menu = IDistributionMirrorMenuMarker
+        return Link(target, text, menu=menu)
 
     def builds(self):
         target = '+builds'
@@ -304,7 +304,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'ppas', 'subscribe']
+             'ppas',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -416,16 +416,18 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['bugsupervisor', 'securitycontact', 'cve', 'filebug']
+    links = (
+        'bugsupervisor',
+        'securitycontact',
+        'cve',
+        'filebug',
+        'subscribe',
+        )
 
     def cve(self):
         text = 'CVE reports'
@@ -444,6 +446,10 @@ class DistributionBugsMenu(ApplicationMenu):
     def filebug(self):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text)
 
 
 class DistributionBountiesMenu(ApplicationMenu):

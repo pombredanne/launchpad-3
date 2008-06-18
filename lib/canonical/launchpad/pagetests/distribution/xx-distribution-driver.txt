@@ -27,8 +27,7 @@ where a message informs him of the driver change.
 
 Sample Person is listed as the driver of the distribution.
 
-  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     'Sample Person' in tag.find(
-  ...         text='Driver:').findNext('a').renderContents()
-  True
+  >>> print extract_text(find_tag_by_id(browser.contents, 'table-details'))
+  Driver: Sample Person
+  ...
 
