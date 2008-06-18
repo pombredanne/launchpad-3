@@ -803,8 +803,10 @@ class TeamMemberAddView(LaunchpadFormView):
 
 
 class TeamMapView(LaunchpadView):
-    """Show all people with known locations on a map, and provide links to
-    edit the locations of people in the team without known locations.
+    """Show all people with known locations on a map. 
+    
+    Also provides links to edit the locations of people in the team without
+    known locations.
     """
 
     def initialize(self):
@@ -812,17 +814,16 @@ class TeamMapView(LaunchpadView):
 
     @cachedproperty
     def mapped_participants(self):
-        """Cached participants with locations, decorated with logo_html."""
+        """Participants with locations."""
         return self.context.mapped_participants
 
     @cachedproperty
     def mapped_participant_count(self):
-        """Number of participants with a recorded location."""
         return len(self.mapped_participants)
 
     @cachedproperty
     def unmapped_participants(self):
-        """Cached set of participants with no recorded locations."""
+        """Participants (ordered by name) with no recorded locations."""
         return sorted(list(self.context.unmapped_participants),
                       key=lambda p: p.browsername)
 
@@ -834,24 +835,22 @@ class TeamMapView(LaunchpadView):
     @cachedproperty
     def times(self):
         """The current times in time zones with members."""
-        zones = []
-        for participant in self.mapped_participants:
-            if participant.time_zone not in zones:
-                zones.append(participant.time_zone)
-        times = []
-        for zone in zones:
-            times.append(datetime.now(pytz.timezone(zone)))
+        zones = set(participant.time_zone
+                    for participant in self.mapped_participants)
+        times = [datetime.now(pytz.timezone(zone))
+                 for zone in zones]
         timeformat = '%H:%M'
         return [time.strftime(timeformat)
-                for time in sorted(times, key=lambda t: str(t))]
+                for time in sorted(times, key=lambda time: str(time))]
 
     @cachedproperty
     def bounds(self):
-        """Determine the bounds and center of the map."""
-        # We look at the set of latitudes and longitudes for the people who
-        # have coordinates. We start out with a maximum minimum, and vice
-        # versa, so each coordinate we examine should expand the area.
+        """Bounds and center of the map.
 
+        We look at the set of latitudes and longitudes for the people who
+        have coordinates, start out with a maximum minimum, and vice
+        versa, so each coordinate we examine should expand the area.
+        """
         max_lat = -90.0
         min_lat = 90.0
         max_lng = -180.0
@@ -869,9 +868,11 @@ class TeamMapView(LaunchpadView):
         center_lng = (max_lng + min_lng) / 2.0
         return (min_lat, min_lng, max_lat, max_lng, center_lat, center_lng)
 
+    # XXX: There's some considerable code to be shared between this method and
+    # map_portlet_html.
+    @property
     def map_html(self):
-        """Generate the HTML which shows the map."""
-
+        """The HTML which shows the map."""
         (min_lat, min_lng, max_lat, max_lng, center_lat,
          center_lng) = self.bounds
 
@@ -881,6 +882,7 @@ class TeamMapView(LaunchpadView):
         //<![CDATA[
 
         if (GBrowserIsCompatible()) {
+          // XXX: This whole if/elif block is identical in the two methods.
           var myWidth = 0, myHeight = 0;
           if( typeof( window.innerWidth ) == 'number' ) {
             //Non-IE
@@ -926,6 +928,7 @@ class TeamMapView(LaunchpadView):
             var xml = GXml.parse(data);
             var markers = xml.documentElement.getElementsByTagName("participant");
 
+            // XXX: This whole for block is identical in the two methods.
             for (var i = 0; i < markers.length; i++) {
               var point = new GLatLng(
                 parseFloat(markers[i].getAttribute("lat")),
@@ -956,9 +959,9 @@ class TeamMapView(LaunchpadView):
             }
         return map_html
 
+    @property
     def map_portlet_html(self):
-        """Generate the HTML which shows the map portlet."""
-
+        """The HTML which shows the map portlet."""
         (min_lat, min_lng, max_lat, max_lng, center_lat,
          center_lng) = self.bounds
 
@@ -1035,12 +1038,10 @@ class TeamMapView(LaunchpadView):
 
 
 class TeamMapData(TeamMapView):
-    """Return an XML dump of the locations of all team members."""
+    """An XML dump of the locations of all team members."""
 
     def render(self):
-        self.request.response.setHeader('content-type',
-                                        'application/xml;charset=utf-8')
+        self.request.response.setHeader(
+            'content-type', 'application/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
-
-
