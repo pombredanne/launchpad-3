@@ -155,9 +155,11 @@ def validate_person_visibility(person, attr, value):
     * Prevent teams with inconsistent connections from being made private
     * Prevent private teams with mailing lists from going public
     """
+    mailing_list = getUtility(IMailingListSet).get(person.name)
+
     if (value == PersonVisibility.PUBLIC and
         person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
-        getUtility(IMailingListSet).get(person.name) is not None):
+        mailing_list is not None):
         raise ValueError('This team cannot be made public since it has '
                          'a mailing list')
 
