@@ -40,8 +40,8 @@ class BMPMailer(BaseMailer):
                             from_address, delta)
         self.merge_proposal = merge_proposal
 
-    @staticmethod
-    def forCreation(merge_proposal, from_user):
+    @classmethod
+    def forCreation(klass, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -54,13 +54,13 @@ class BMPMailer(BaseMailer):
             'The sender must have an email address.')
         from_address = format_address(
             from_user.displayname, from_user.preferredemail.email)
-        return BMPMailer(
+        return klass(
             '%(proposal_title)s',
             'branch-merge-proposal-created.txt', recipients, merge_proposal,
             from_address)
 
-    @staticmethod
-    def forModification(old_merge_proposal, merge_proposal, from_user):
+    @classmethod
+    def forModification(klass, old_merge_proposal, merge_proposal, from_user):
         """Return a mailer for BranchMergeProposal creation.
 
         :param merge_proposal: The BranchMergeProposal that was created.
@@ -77,9 +77,10 @@ class BMPMailer(BaseMailer):
                 old_merge_proposal, merge_proposal)
         if delta is None:
             return None
-        return BMPMailer('%(proposal_title)s updated',
-                         'branch-merge-proposal-updated.txt', recipients,
-                         merge_proposal, from_address, delta)
+        return klass(
+            '%(proposal_title)s updated',
+            'branch-merge-proposal-updated.txt', recipients,
+            merge_proposal, from_address, delta)
 
     def getReason(self, recipient):
         """Return a string explaining why the recipient is a recipient."""
