@@ -1850,7 +1850,7 @@ COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this en
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
--- OpenIdRealmConfig
+-- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.displayname IS 'The human readable name for this RP';
@@ -1859,6 +1859,14 @@ COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 
+--OpenIDRPSummary
+COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
+COMMENT ON COLUMN OpenIDRPSummary.account IS 'The account who used the RP.';
+COMMENT ON COLUMN OpenIDRPSummary.openid_identifier IS 'The OpenID identifier used to login.';
+COMMENT ON COLUMN OpenIDRPSummary.trust_root IS 'The trust root for the RP';
+COMMENT ON COLUMN OpenIDRPSummary.date_created IS 'The creation date of this summary; the first time the person used the RP.';
+COMMENT ON COLUMN OpenIDRPSummary.date_last_used IS 'The date the RP was last used.';
+COMMENT ON COLUMN OpenIDRPSummary.total_logins IS 'The total number of times the RP was used by the person.';
 
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
