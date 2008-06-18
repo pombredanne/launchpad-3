@@ -167,7 +167,8 @@ class LaunchpadObjectFactory:
             person.validateAndEnsurePreferredEmail(email)
             removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
         # Make the account ACTIVE if we have a preferred email address now.
-        if person.preferredemail.status == EmailAddressStatus.PREFERRED:
+        if (person.preferredemail is not None and
+            person.preferredemail.status == EmailAddressStatus.PREFERRED):
             removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
         removeSecurityProxy(email).status = email_address_status
         syncUpdate(email)
