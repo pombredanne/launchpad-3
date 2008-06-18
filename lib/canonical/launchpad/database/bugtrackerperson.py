@@ -45,7 +45,7 @@ class BugTrackerPersonSet:
         """Return a Person that is linked to a given bug tracker."""
         # If we have an email address to work with we can use
         # ensurePerson() to get the Person we need.
-        if email:
+        if email is not None:
             return getUtility(IPersonSet).ensurePerson(
                 email, display_name, rationale, creation_comment)
 
@@ -58,16 +58,16 @@ class BugTrackerPersonSet:
             return bugtracker_person.person
 
         # Generate a valid Launchpad name for the Person.
-        canonical_name = (
+        base_canonical_name = (
             "%s-%s" % (sanitize_name(display_name), bugtracker.name))
-        index = 1
+        canonical_name = base_canonical_name
 
         person_set = getUtility(IPersonSet)
-        while person_set.getByName(
-            "%s-%d" % (canonical_name, index)) is not None:
+        index = 0
+        while person_set.getByName(canonical_name) is not None:
             index += 1
+            canonical_name = "%s-%s" % (base_canonical_name, index)
 
-        canonical_name = "%s-%d" % (canonical_name, index)
         person = person_set.createPersonWithoutEmail(
             canonical_name, rationale, creation_comment,
             displayname=display_name)

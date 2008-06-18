@@ -18,6 +18,18 @@ linkPersonToBugTracker() method of IBugTrackerPersonSet.
 
     >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
+We'll rename the bugtracker to make the tests more readable.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> bugtracker.name = 'bugzilla-checkwatches'
+    >>> commit()
+
+    >>> from canonical.config import config
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
     >>> bugtracker_person = getUtility(
     ...     IBugTrackerPersonSet).linkPersonToBugTracker(
     ...         'some-name-i-made-up', bugtracker, sample_person)
@@ -29,7 +41,7 @@ linkPersonToBugTracker() method of IBugTrackerPersonSet.
     name12
 
     >>> print bugtracker_person.bugtracker.name
-    bugzilla-checkwatches-1
+    bugzilla-checkwatches
 
 A name can only be registered with a bugtracker once. Trying to link a
 new person to a bugtracker using an existing name will cause an error.
@@ -41,7 +53,7 @@ new person to a bugtracker using an existing name will cause an error.
     Traceback (most recent call last):
       ...
     BugTrackerNameAlreadyTaken: Name 'some-name-i-made-up' is already in
-    use for bugtracker 'bugzilla-checkwatches-1'.
+    use for bugtracker 'bugzilla-checkwatches'.
 
 The BugTrackerPerson record for a given name on a given bugtracker can
 be retreived by calling IBugTrackerPersonSet.getByNameAndBugTracker().
@@ -102,8 +114,11 @@ same person.
     ...     rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing ensurePersonForBugTracker().')
 
-    >>> other_person == new_person
-    True
+    >>> print other_person.name
+    new-person
+
+    >>> print new_person.name
+    new-person
 
 ensurePersonForBugTracker() can also handle remote users whose email
 addresses aren't provided.
@@ -114,11 +129,11 @@ addresses aren't provided.
     ...     creation_comment='whilst testing ensurePersonForBugTracker().')
 
     >>> print noemail_person.name
-    no-email-person-bugzilla-checkwatches-1-1
+    no-email-person-bugzilla-checkwatches
 
 A BugTrackerPerson record will have been created to map
 'no-email-person' on our example bugtracker to
-'no-email-person-bugzilla-checkwatches-1-1' in Launchpad.
+'no-email-person-bugzilla-checkwatches-1' in Launchpad.
 
     >>> bugtracker_person = bugtrackerperson_set.getByNameAndBugTracker(
     ...     'no-email-person', bugtracker)
@@ -137,52 +152,55 @@ We'll create a person, 'noemail,' on our example bugtracker.
     ...     creation_comment='whilst testing.')
 
     >>> print new_person.name
-    noemail-bugzilla-checkwatches-1-1
+    noemail-bugzilla-checkwatches
 
     >>> bugtracker_person = bugtrackerperson_set.getByNameAndBugTracker(
     ...     'noemail', bugtracker)
 
     >>> print bugtracker_person.bugtracker.name
-    bugzilla-checkwatches-1
+    bugzilla-checkwatches
 
-    >>> from canonical.database.sqlbase import commit
+    >>> print bugtracker_person.person.name
+    noemail-bugzilla-checkwatches
+
     >>> commit()
 
 If we rename the BugTracker and then create another with the same name,
 calling ensurePersonForBugTracker() for 'noemail' on that BugTracker
 should produce a new Person rather than re-using the existing one.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> other_bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
+
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
     >>> bugtracker.name = 'bugzilla-checkwatches-renamed'
     >>> commit()
 
-    >>> other_bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
-    >>> print other_bug_tracker.name
-    bugzilla-checkwatches-1
-
+    >>> other_bug_tracker.name = 'bugzilla-checkwatches'
     >>> commit()
 
-    >>> from canonical.config import config
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
 A new Person has been created for 'noemail' on other_bug_tracker, even
 though that bug tracker's name is the same as one from which we've
 imported previously.
 
-    >>> new_person = bugtrackerperson_set.ensurePersonForBugTracker(
-    ...     other_bug_tracker, 'noemail', None,
-    ...     PersonCreationRationale.BUGIMPORT, 'while testing, again')
+    >>> from canonical.launchpad.interfaces.bugtracker import IBugTrackerSet
+    >>> bugtracker = getUtility(IBugTrackerSet).get(bugtracker.id)
+    >>> other_bugtracker = getUtility(IBugTrackerSet).get(
+    ...     other_bug_tracker.id)
 
     >>> original_bugtracker_person = (
     ...     bugtrackerperson_set.getByNameAndBugTracker(
     ...         'noemail', bugtracker))
 
-    >>> original_bugtracker_person.person == new_person
-    False
+    >>> new_person = bugtrackerperson_set.ensurePersonForBugTracker(
+    ...     other_bug_tracker, 'noemail', None,
+    ...     PersonCreationRationale.BUGIMPORT, 'while testing, again')
+
+    >>> print original_bugtracker_person.person.name
+    noemail-bugzilla-checkwatches
 
     >>> print new_person.name
-    noemail-bugzilla-checkwatches-1-2
-
+    noemail-bugzilla-checkwatches-1
 
