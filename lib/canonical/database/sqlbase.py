@@ -270,7 +270,9 @@ class ZopelessTransactionManager(object):
         store = getUtility(IZStorm).get("main")
         # Use of the raw connection will not be coherent with Storm's
         # cache.
-        return store._connection._raw_connection
+        connection = store._connection
+        connection._ensure_connected()
+        return connection._raw_connection
 
     @staticmethod
     def begin():

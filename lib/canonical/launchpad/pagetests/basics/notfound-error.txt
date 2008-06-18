@@ -16,7 +16,7 @@ the contents of any error page. So we use http() instead.)
 
 It also contains instructions specific to broken links.
 
-    >>> main_content = find_tag_by_id(page_with_referer, 'nonhelp')
+    >>> main_content = find_main_content(page_with_referer)
     >>> for paragraph in main_content('p'):
     ...     print extract_text(paragraph)
     There&#8217;s no page with this address in Launchpad.
@@ -40,7 +40,7 @@ disabled until bug 98437 is fixed.
     # >>> print page_with_no_referer
     # HTTP/1.1 404 Not Found
     # ...
-    # >>> main_content = find_tag_by_id(page_with_no_referer, 'nonhelp')
+    # >>> main_content = find_main_content(page_with_no_referer)
     # >>> for paragraph in main_content('p'):
     # ...     print extract_text(paragraph)
     # There&#8217;s no page with this address in Launchpad.

@@ -381,7 +381,7 @@ PPA build pages also have some text telling the viewer that they can retry
 the build if that action is possible:
 
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Build details for i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
     You can retry this build if you think
     the failure was transient. Be aware that the previous
     build log and timestamps will be purged.

@@ -90,7 +90,6 @@ the same message in gettext, and we have to use msgctxt on one of them).
 This file can now be correctly imported:
 
     >>> entry = import_pofile_or_potemplate(potemplate_contents, carlos,
-    ...                                     firefox_trunk,
     ...                                     potemplate=potemplate)
     >>> print entry.status.name
     IMPORTED
@@ -159,7 +158,6 @@ context differences fails.
 Importing this file fails because of conflicting messages.
 
     >>> entry = import_pofile_or_potemplate(potemplate_contents, carlos,
-    ...                                     firefox_trunk,
     ...                                     potemplate=potemplate)
     INFO We got an error import...
     ...duplicate msgid...
@@ -205,7 +203,7 @@ We can also import POFile with context messages.
 Importing this file succeeds.
 
     >>> entry = import_pofile_or_potemplate(pofile_contents, carlos,
-    ...                                     firefox_trunk, pofile=pofile)
+    ...                                     pofile=pofile)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches() # replace date SQL constant with real date
@@ -360,7 +358,6 @@ not same.
 This file can now be correctly imported:
 
     >>> entry = import_pofile_or_potemplate(potemplate_contents, carlos,
-    ...                                     firefox_trunk,
     ...                                     potemplate=potemplate)
     >>> print entry.status.name
     IMPORTED
