@@ -67,11 +67,14 @@ class CodeReviewCommentMailer(BMPMailer):
             footer_separator = '\n'
         else:
             footer_separator = '\n-- \n'
+
         # Include both the canonical_url for the proposal and the reason
         # in the footer to the email.
+        reason, rationale = self._recipients.getReason(
+            recipient.preferredemail.email)
         footer = "%(proposal_url)s\n%(reason)s" % {
             'proposal_url': canonical_url(self.merge_proposal),
-            'reason': self.getReason(recipient)}
+            'reason': reason.getReason()}
         return ''.join((
             prefix, main, footer_separator, footer))
 

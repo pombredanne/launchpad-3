@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.mailout.branchmergeproposal import RecipientReason
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -184,7 +185,8 @@ class BranchMergeProposal(SQLBase):
                     recipient)
                 if (subscription.review_level < min_level):
                     continue
-                recipients[recipient] = (subscription, rationale)
+                recipients[recipient] = RecipientReason.forBranchSubscriber(
+                    subscription, recipient, self, rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -374,12 +376,16 @@ class BranchMergeProposal(SQLBase):
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
-        return CodeReviewVoteReference(
+        vote_reference = CodeReviewVoteReference.selectOneBy(
+            branch_merge_proposal=self, reviewer=reviewer)
+        if vote_reference is None:
+            vote_reference = CodeReviewVoteReference(
             branch_merge_proposal=self,
             registrant=registrant,
             reviewer=reviewer,
-            review_type=review_type,
             date_created=_date_created)
+        vote_reference.review_type = review_type
+        return vote_reference
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""

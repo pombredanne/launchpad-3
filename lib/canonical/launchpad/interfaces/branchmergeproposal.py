@@ -359,7 +359,11 @@ class IBranchMergeProposal(Interface):
         """
 
     def nominateReviewer(reviewer, registrant, review_type=None):
-        """Create a vote for the specified person."""
+        """Set the specified person as a reviewer.
+
+        If they are not already a reviewer, a vote is created.  Otherwise,
+        the details are updated.
+        """
 
     def createComment(owner, subject, content=None, vote=None, vote_tag=None,
                       parent=None, _date_created=None):

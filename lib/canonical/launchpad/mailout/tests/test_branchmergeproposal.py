@@ -7,15 +7,17 @@ from unittest import TestLoader, TestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
+from canonical.launchpad.database import CodeReviewVoteReference
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
 from canonical.launchpad.mailout.branchmergeproposal import (
-    BMPMailer, send_merge_proposal_modified_notifications)
+    BMPMailer, send_merge_proposal_modified_notifications, RecipientReason)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import (
+    LaunchpadObjectFactory, TestCaseWithFactory)
 
 
 class TestMergeProposalMailing(TestCase):
@@ -45,6 +47,8 @@ class TestMergeProposalMailing(TestCase):
         """Ensure that the contents of the mail are as expected"""
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        reason = mailer._recipients.getReason(
+            subscriber.preferredemail.email)[0]
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
 Baz Qux has proposed merging foo into bar.
@@ -61,35 +65,6 @@ Baz Qux has proposed merging foo into bar.
             headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', mailer.from_address)
         mailer.sendAll()
-
-    def test_getReasonPerson(self):
-        """Ensure the correct reason is generated for individuals."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
-        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        self.assertEqual('You are subscribed to branch foo.',
-            mailer.getReason(subscriber))
-
-    def test_getReasonTeam(self):
-        """Ensure the correct reason is generated for teams."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
-        team_member = self.factory.makePerson(
-            displayname='Foo Bar', email='foo@bar.com')
-        team = self.factory.makeTeam(team_member, displayname='Qux')
-        bmp.source_branch.subscribe(team,
-            BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
-        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
-        self.assertEqual('Your team Qux is subscribed to branch foo.',
-            mailer.getReason(team_member))
-        mailer._recipients._emailToPerson[
-            subscriber.preferredemail.email] = team
-        try:
-            mailer.getReason(subscriber)
-        except AssertionError, e:
-            self.assertEqual(
-                'Baz Quxx does not participate in team Qux.', str(e))
-        else:
-            self.fail('Did not detect bogus team recipient.')
 
     def test_forModificationNoModification(self):
         """Ensure None is returned if no change has been made."""
@@ -128,7 +103,8 @@ Baz Qux has proposed merging foo into bar.
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Proposed merge of foo into bar updated', subject)
         url = canonical_url(mailer.merge_proposal)
-        reason = mailer.getReason(subscriber)
+        reason = mailer._recipients.getReason(
+            subscriber.preferredemail.email)[0].getReason()
         self.assertEqual("""\
 The proposal to merge foo into bar has been updated.
 
@@ -166,6 +142,101 @@ new commit message
         send_merge_proposal_modified_notifications(merge_proposal, event)
         emails = pop_notifications()
         self.assertEqual([], emails)
+
+    def test_forReviewRequest(self):
+        """Test creating a mailer for a review request."""
+        merge_proposal, subscriber_ = self.makeProposalWithSubscriber()
+        candidate = self.factory.makePerson(
+            displayname='Candidate', email='candidate@example.com')
+        requester = self.factory.makePerson(
+            displayname='Requester', email='requester@example.com')
+        request = CodeReviewVoteReference(
+            branch_merge_proposal=merge_proposal, reviewer=candidate,
+            registrant=requester)
+        request = RecipientReason.forReviewer(request, candidate)
+        mailer = BMPMailer.forReviewRequest(
+            request, merge_proposal, requester)
+        self.assertEqual(
+            'Requester <requester@example.com>', mailer.from_address)
+        self.assertEqual(
+            set([candidate]), set(mailer._recipients.getRecipientPersons()))
+
+
+class TestRecipientReason(TestCaseWithFactory):
+    """Test the RecipientReason class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Need to set target_branch.date_last_modified.
+        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+
+    def makeProposalWithSubscription(self, subscriber=None):
+        """Test fixture."""
+        if subscriber is None:
+            subscriber = self.factory.makePerson()
+        source_branch = self.factory.makeBranch(title='foo')
+        target_branch = self.factory.makeBranch(product=source_branch.product,
+                title='bar')
+        merge_proposal = source_branch.addLandingTarget(
+            subscriber, target_branch)
+        subscription = merge_proposal.source_branch.subscribe(
+            subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        return merge_proposal, subscription
+
+    def test_forBranchSubscriber(self):
+        """Test values when created from a branch subscription."""
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        subscriber = subscription.person
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscriber, merge_proposal, '')
+        self.assertEqual(subscriber, reason.subscriber)
+        self.assertEqual(subscriber, reason.recipient)
+        self.assertEqual(merge_proposal.source_branch, reason.branch)
+
+    def makeReviewerAndSubscriber(self):
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        subscriber = subscription.person
+        login(merge_proposal.registrant.preferredemail.email)
+        vote_reference = merge_proposal.nominateReviewer(
+            subscriber, subscriber)
+        return vote_reference, subscriber
+
+    def test_forReviewer(self):
+        """Test values when created from a branch subscription."""
+        vote_reference, subscriber = self.makeReviewerAndSubscriber()
+        reason = RecipientReason.forReviewer(vote_reference, subscriber)
+        self.assertEqual(subscriber, reason.subscriber)
+        self.assertEqual(subscriber, reason.recipient)
+        self.assertEqual(
+            vote_reference.branch_merge_proposal.source_branch, reason.branch)
+
+    def test_getReasonReviewer(self):
+        vote_reference, subscriber = self.makeReviewerAndSubscriber()
+        reason = RecipientReason.forReviewer(vote_reference, subscriber)
+        self.assertEqual(
+            'You are requested to review the proposed merge of foo into bar.',
+            reason.getReason())
+
+    def test_getReasonPerson(self):
+        """Ensure the correct reason is generated for individuals."""
+        merge_proposal, subscription = self.makeProposalWithSubscription()
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, subscription.person, merge_proposal, '')
+        self.assertEqual('You are subscribed to branch foo.',
+            reason.getReason())
+
+    def test_getReasonTeam(self):
+        """Ensure the correct reason is generated for teams."""
+        team_member = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com')
+        team = self.factory.makeTeam(team_member, displayname='Qux')
+        bmp, subscription = self.makeProposalWithSubscription(team)
+        reason = RecipientReason.forBranchSubscriber(
+            subscription, team_member, bmp, '')
+        self.assertEqual('Your team Qux is subscribed to branch foo.',
+            reason.getReason())
 
 
 def test_suite():
