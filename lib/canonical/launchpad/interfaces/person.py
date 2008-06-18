@@ -511,9 +511,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    timezone = exported(
-        Choice(title=_('Timezone'), required=True, readonly=False,
-               description=_('The timezone of where you live.'),
+    time_zone = exported(
+        Choice(title=_('Time zone'), required=True, readonly=False,
+               description=_('The time zone of where you live.'),
                vocabulary='TimezoneName'))
 
     openid_identifier = TextLine(
