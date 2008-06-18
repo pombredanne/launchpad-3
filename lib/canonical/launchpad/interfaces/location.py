@@ -30,12 +30,15 @@ class IHasLocation(Interface):
     """An interface supported by objects with a defined location."""
 
     latitude = exported(
-        Float(required=False, title=_("The latitude of this object.")))
+        Float(title=_("The latitude of this object."),
+              required=False, readonly=True))
     longitude = exported(
-        Float(required=False, title=_("The longitude of this object.")))
+        Float(title=_("The longitude of this object."),
+              required=False, readonly=True))
     time_zone = exported(
-        Choice(required=False, title=_('The time zone of this object.'),
-        vocabulary='TimezoneName'))
+        Choice(title=_('The time zone of this object.'),
+               required=False, readonly=True,
+               vocabulary='TimezoneName'))
 
 
 class ISetLocation(Interface):
@@ -43,9 +46,9 @@ class ISetLocation(Interface):
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        latitude=copy_field(IHasLocation['latitude']),
-        longitude=copy_field(IHasLocation['longitude']),
-        time_zone=copy_field(IHasLocation['time_zone']))
+        latitude=copy_field(IHasLocation['latitude'], required=True),
+        longitude=copy_field(IHasLocation['longitude'], required=True),
+        time_zone=copy_field(IHasLocation['time_zone'], required=True))
     @export_write_operation()
     def setLocation(latitude, longitude, time_zone, user):
         """Specify the location and time zone of a person."""
