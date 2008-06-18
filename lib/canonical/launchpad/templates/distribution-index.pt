@@ -28,10 +28,13 @@
         tal:content="structure context/description/fmt:text-to-html"
       />
       <tal:reportbug define="link context/menu:bugs/filebug"
+                     condition="context/official_malone"
                      replace="structure link/render" />
       <tal:helptranslate define="link context/menu:translations/help_translate"
+                         condition="context/official_rosetta"
                          replace="structure link/render" />
       <tal:askquestion define="link context/menu:answers/new"
+                       condition="context/official_answers"
                        replace="structure link/render" />
       <tal:mentoring condition="context/mentoring_offers/count"
                      define="link context/menu:overview/mentorship"
