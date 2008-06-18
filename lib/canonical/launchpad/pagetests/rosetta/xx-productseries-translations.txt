@@ -10,8 +10,7 @@ Firefox 0.9.
 
   >>> print anon_browser.contents
   <...
-  ...Mozilla Firefox Series: trunk...
-  ...Translation templates...
+  ...Translation templates for...Mozilla Firefox Series: trunk...
 
 
 Check to be sure that listing available resources to translate for a product
@@ -22,7 +21,7 @@ series is working.
   http://translations.launchpad.dev/evolution/trunk
 
   >>> print anon_browser.title
-  Translation templates for Evolution Series: trunk
+  Translation templates for trunk
 
   >>> print anon_browser.contents
   <...
