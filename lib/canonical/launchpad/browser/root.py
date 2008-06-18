@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -451,6 +451,9 @@ class GoogleBatchNavigator(BatchNavigator):
                 self.start = start
 
         self.default_size = 20
+
+        self.transient_parameters = [self.start_variable_name]
+
         self.batch = WindowedListBatch(
             results, start=self.start, size=self.default_size)
         self.setHeadings(
