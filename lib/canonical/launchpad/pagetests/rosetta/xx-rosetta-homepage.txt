@@ -48,11 +48,10 @@ in the right column.
 There is also an "About" page that talks about how Launchpad
 Translations works.
 
-    >>> browser.getLink('Launchpad Translations').click()
+    >>> browser.getLink('Learn more').click()
     >>> print browser.title
-    About Launchpad Translations
+    About Translations
 
     >>> print extract_text(find_main_content(browser.contents))
-    About Launchpad Translations ...
-    How do I get my software translated in Launchpad?
-    ... gettext ...
+    Your...
+    ... GetText ...

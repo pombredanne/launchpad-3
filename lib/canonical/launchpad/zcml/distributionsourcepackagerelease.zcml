@@ -9,24 +9,25 @@
     <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageRelease" />
   </content>
 
+  <adapter
+      for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      factory="canonical.launchpad.browser.distributionsourcepackagerelease_to_structuralheading"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
     name="+index" />
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
-    path_expression="string:+source/${name}/${version}"
-    attribute_to_parent="distribution"
+    path_expression="version"
+    attribute_to_parent="sourcepackage"
     />
 
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistributionSourcePackageReleaseNavigation"
-    />
-
-  <browser:menus
-    module="canonical.launchpad.browser.distributionsourcepackagerelease"
-    classes="DistributionSourcePackageReleaseFacets"
     />
 
   <browser:pages

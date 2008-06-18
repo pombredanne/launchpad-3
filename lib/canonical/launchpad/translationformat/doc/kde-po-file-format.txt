@@ -62,7 +62,6 @@ sets the format to regular PO if it's not a KDE style file.
 Importing this file works, but the format is set to Gettext PO.
 
     >>> entry = import_pofile_or_potemplate(non_kde_template, carlos,
-    ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
@@ -117,7 +116,6 @@ And strangely, importing this file actually works, and format is changed
 to KDE PO format.
 
     >>> entry = import_pofile_or_potemplate(plural_forms_template, carlos,
-    ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
@@ -198,7 +196,7 @@ doesn't match: this is because this is now specially handled with KDE PO format
 support.
 
     >>> entry = import_pofile_or_potemplate(firefox_serbian_pofile_contents,
-    ...                                     carlos, firefox_trunk,
+    ...                                     carlos,
     ...                                     pofile=firefox_serbian_pofile)
     >>> print entry.status.name
     IMPORTED
@@ -425,7 +423,6 @@ We can have a template with a message with context.
 Importing this template works and the format is recognized as a KDE PO format.
 
     >>> entry = import_pofile_or_potemplate(kde_context_template, carlos,
-    ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
@@ -465,7 +462,6 @@ We can also import a translated file with message contexts:
     ... msgstr "Second translation"
     ... ''' % ISO_FORMATTED_DATE
     >>> entry = import_pofile_or_potemplate(kde_context_translation, carlos,
-    ...                                     firefox_trunk,
     ...                                     pofile=firefox_serbian_pofile)
     >>> print entry.status.name
     IMPORTED
