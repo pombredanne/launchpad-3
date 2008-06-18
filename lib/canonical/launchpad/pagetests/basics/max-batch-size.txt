@@ -15,7 +15,8 @@ large and what is the current maximum.
 
     >>> response.code
     400
-    >>> print extract_text(find_tag_by_id(response.read(), 'nonhelp'))
+    >>> print extract_text(find_main_content(response.read()))
+    Your location...
     Invalid Batch Size
     Your requested batch size exceeded the maximum batch size allowed which 
     is ...
