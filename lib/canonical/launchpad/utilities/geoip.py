@@ -1,3 +1,14 @@
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
+__all__ = [
+    'GeoIP',
+    'GeoIPRequest',
+    'RequestLocalLanguages',
+    'RequestPreferredLanguages',
+    ]
+
+import os
+import sys
 
 import GeoIP as libGeoIP
 
@@ -6,10 +17,12 @@ from zope.component import getUtility
 
 from zope.i18n.interfaces import IUserPreferredLanguages
 
-from canonical.launchpad.interfaces import IGeoIP, ICountrySet, \
-    ILanguageSet, IRequestLocalLanguages, IRequestPreferredLanguages
-
-__all__ = ['GeoIP', 'RequestLocalLanguages', 'RequestPreferredLanguages']
+from canonical.launchpad.components.request_country import (
+    ipaddress_from_request)
+from canonical.launchpad.interfaces.country import ICountrySet
+from canonical.launchpad.interfaces.geoip import (
+    IGeoIP, IGeoIPRecord, IRequestLocalLanguages, IRequestPreferredLanguages)
+from canonical.launchpad.interfaces.language import ILanguageSet
 
 
 class GeoIP:
@@ -17,23 +30,79 @@ class GeoIP:
     implements(IGeoIP)
 
     def __init__(self):
-        self._gi = libGeoIP.new(libGeoIP.GEOIP_MEMORY_CACHE)
+        test_db = "/usr/share/GeoIP/GeoLiteCity.dat"
+        production_db = "/usr/share/GeoIP/GeoCity.dat"
+        if os.path.exists(production_db):
+            db = production_db
+        else:
+            if not os.path.exists(test_db):
+                print 'Error: %s not found.' % test_db
+                print '       Try running rocketfuel-setup to install it.'
+                sys.exit(1)
+            db = test_db
+        self._gi = libGeoIP.open(db, libGeoIP.GEOIP_MEMORY_CACHE)
+
+    def getRecordByAddress(self, ip_address):
+        """See `IGeoIP`."""
+        return self._gi.record_by_addr(ip_address)
 
     def country_by_addr(self, ip_address):
-        countrycode = self._gi.country_code_by_addr(ip_address)
-        if countrycode is None:
-            if ip_address == '127.0.0.1':
-                countrycode = 'ZA'
-            else:
-                return None
-        countryset = getUtility(ICountrySet)
+        if ip_address.startswith('127.'):
+            # Use a South African IP address for localhost.
+            ip_address = '196.36.161.227'
+        geoip_record = self.getRecordByAddress(ip_address)
+        if geoip_record is None:
+            return None
+        countrycode = geoip_record['country_code']
 
+        countryset = getUtility(ICountrySet)
         try:
             country = countryset[countrycode]
         except KeyError:
             return None
         else:
             return country
+
+
+class GeoIPRequest:
+
+    implements(IGeoIPRecord)
+
+    def __init__(self, request):
+        self.request = request
+        ip_address = ipaddress_from_request(self.request)
+        if ip_address is None:
+            # This happens during page testing, when the REMOTE_ADDR is not
+            # set by Zope.
+            ip_address = '127.0.0.1'
+        # XXX: May not need this.
+#         if ip_address.startswith('127.'):
+#             # Use a South African IP address for localhost.
+#             ip_address = '196.36.161.227'
+        self.ip_address = ip_address
+        self.geoip_record = getUtility(IGeoIP).getRecordByAddress(
+            self.ip_address)
+
+    @property
+    def latitude(self):
+        """See `IGeoIPRecord`."""
+        if self.geoip_record is None:
+            return None
+        return self.geoip_record['latitude']
+
+    @property
+    def longitude(self):
+        """See `IGeoIPRecord`."""
+        if self.geoip_record is None:
+            return None
+        return self.geoip_record['longitude']
+
+    @property
+    def time_zone(self):
+        """See `IGeoIPRecord`."""
+        if self.geoip_record is None:
+            return None
+        return self.geoip_record['time_zone']
 
 
 class RequestLocalLanguages(object):
@@ -45,9 +114,7 @@ class RequestLocalLanguages(object):
 
     def getLocalLanguages(self):
         """See the IRequestLocationLanguages interface"""
-        ip_addr = self.request.get('HTTP_X_FORWARDED_FOR', None)
-        if ip_addr is None:
-            ip_addr = self.request.get('REMOTE_ADDR', None)
+        ip_addr = ipaddress_from_request(self.request)
         if ip_addr is None:
             # this happens during page testing, when the REMOTE_ADDR is not
             # set by Zope
@@ -57,7 +124,8 @@ class RequestLocalLanguages(object):
         if country in [None, 'A0', 'A1', 'A2']:
             return []
 
-        languages = [language for language in country.languages if language.visible]
+        languages = [
+            language for language in country.languages if language.visible]
         return sorted(languages, key=lambda x: x.englishname)
 
 
