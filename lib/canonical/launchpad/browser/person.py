@@ -2379,13 +2379,14 @@ class PersonView(LaunchpadView, FeedsMixin):
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
-        if mailing_list.is_public:
+        elif mailing_list.is_public:
             return mailing_list.archive_url
-        if self.user is None:
+        elif self.user is None:
             return None
-        if self.user.inTeam(self.context):
+        elif self.user.inTeam(self.context):
             return mailing_list.archive_url
-        return None
+        else:
+            return None
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):

@@ -267,8 +267,7 @@ Launchpad.
 
 The Mail Archive is only used for public team mailing lists.  If the team
 itself is private, so is its archive, and then messages are not sent to the
-archiver email address.  The team must be made private before a mailing list
-is created for it.
+archiver email address.
 
     >>> from canonical.launchpad.interfaces.person import PersonVisibility
     >>> from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
@@ -276,11 +275,20 @@ is created for it.
     >>> team_three = new_team('team-three')
     >>> queryAdapter(team_three, IObjectPrivacy).is_private
     False
+
+Teams with mailing lists cannot change visibility, so the team must be made
+private before its mailing list is created.
+
     >>> team_three.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(team_three)
     >>> queryAdapter(team_three, IObjectPrivacy).is_private
     True
+
+When Anne subscribes to the team-three mailing list, her validated addresses
+are the only recipients in the list's membership information.  Because the
+team is private, the special archive@mail-archive.dev address is not
+included.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     new_list_for_team)
