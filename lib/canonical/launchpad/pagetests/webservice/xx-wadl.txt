@@ -226,7 +226,6 @@ resources. It's a big document.
     True
     >>> wadl_schema.error_log
     ''
-
     >>> tree = etree.fromstring(wadl)
 
 Like all WADL documents, the WADL representation of the service root
@@ -519,7 +518,7 @@ custom operations.
      ('GET', 'PersonSetCollectionAdapter-getByEmail'),
      ('POST', 'PersonSetCollectionAdapter-newTeam')]
 
-    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams, 
+    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams,
     ...  getByEmail, newTeam) = sorted(methods, key=lambda i: i.attrib['id'])
 
 The standard GET operation is a way of getting either a page of the
@@ -544,7 +543,7 @@ The <method> tag for a named operation will contain one or more
 <parameter> tags describing the parameters the operation accepts. The
 'newTeam' custom operation takes a number of parameters.
 
-    >>> [new_team_request] = newTeam
+    >>> [new_team_request, new_team_response] = newTeam
     >>> [param.attrib['name'] for param in new_team_request]
     ['ws.op', 'display_name', 'name', 'default_membership_period',
      'team_description', 'default_renewal_period', 'subscription_policy']
@@ -556,16 +555,36 @@ fixed value: the name of the operation.
     >>> ws_op.attrib['fixed']
     'newTeam'
 
+The 'newTeam' custom operation also defines a return value. When you
+invoke that operation you get back a link to a new team in the
+Location header.
+
+    >>> [new_team_response_param] = new_team_response
+    >>> new_team_response_param.attrib['style']
+    'header'
+    >>> new_team_response_param.attrib['name']
+    'Location'
+
+    >>> [new_team_response_param_link] = new_team_response_param
+    >>> new_team_response_param_link.attrib['resource_type']
+    'http://api.launchpad.dev/beta/#TeamEntryAdapter'
+
 The 'find' custom operation accepts one parameter in addition to
 'ws.op'.
 
-    >>> [find_request] = find
+    >>> [find_request, find_response] = find
     >>> [param.attrib['name'] for param in find_request]
     ['ws.op', 'text']
 
     >>> ws_op = find_request[0]
     >>> ws_op.attrib['fixed']
     'find'
+
+The 'find' custom operation returns a collection of people.
+
+    >>> [find_response_representation] = find_response
+    >>> find_response_representation.attrib['href']
+    'http://api.launchpad.dev/beta/#PersonEntryAdapter-page'
 
 
 == An entry resource type ==

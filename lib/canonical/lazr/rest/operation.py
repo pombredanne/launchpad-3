@@ -6,8 +6,10 @@ import simplejson
 import types
 
 from zope.component import getMultiAdapter, queryAdapter
-from zope.interface import implements
-from zope.schema.interfaces import RequiredMissing, ValidationError
+from zope.interface import Attribute, implements
+from zope.interface.interfaces import IInterface
+from zope.schema import Field
+from zope.schema.interfaces import IField, RequiredMissing, ValidationError
 from zope.security.proxy import isinstance
 
 from canonical.lazr.interfaces import (
@@ -18,6 +20,8 @@ from canonical.lazr.rest.resource import (
 
 __metaclass__ = type
 __all__ = [
+    'IObjectLink',
+    'ObjectLink',
     'ResourceOperation',
     'ResourceGETOperation',
     'ResourcePOSTOperation'
@@ -136,3 +140,20 @@ class ResourcePOSTOperation(ResourceOperation):
     """See `IResourcePOSTOperation`."""
     implements(IResourcePOSTOperation)
 
+
+class IObjectLink(IField):
+    u"""Field containing a link to an object."""
+
+    schema = Attribute("schema",
+        u"The Interface of the Object on the other end of the link.")
+
+class ObjectLink(Field):
+    """A reference to an object."""
+    implements(IObjectLink)
+
+    def __init__(self, schema, **kw):
+        if not IInterface.providedBy(schema):
+            raise WrongType
+
+        self.schema = schema
+        super(ObjectLink, self).__init__(**kw)

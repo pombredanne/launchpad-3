@@ -38,7 +38,7 @@ from zope.interface import classImplements
 from zope.interface.advice import addClassAdvisor
 from zope.interface.interface import TAGGED_DATA, InterfaceClass
 from zope.interface.interfaces import IInterface, IMethod
-from zope.schema import getFields, Object
+from zope.schema import getFields
 from zope.schema.interfaces import IField, IText
 from zope.security.checker import CheckerPublic
 
@@ -53,7 +53,7 @@ from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
 from canonical.lazr.rest.resource import Collection, Entry
-from canonical.lazr.rest.operation import ResourceOperation
+from canonical.lazr.rest.operation import ResourceOperation, ObjectLink
 from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -469,7 +469,7 @@ class export_factory_operation(_export_operation):
             method, annotations)
         annotations['creates'] = self.interface
         annotations['params'] = self.params
-        annotations['return_type'] = Object(schema=self.interface)
+        annotations['return_type'] = ObjectLink(schema=self.interface)
 
 
 class export_read_operation(_export_operation):

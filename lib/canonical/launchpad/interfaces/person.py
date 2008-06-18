@@ -1666,6 +1666,7 @@ class IPersonSet(Interface):
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
+    @operation_returns(CollectionField(value_type=Reference(schema=IPerson)))
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
