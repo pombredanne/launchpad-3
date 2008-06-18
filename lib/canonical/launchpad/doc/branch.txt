@@ -1189,7 +1189,7 @@ Branches with revisions are deletable.
 A user without launchpad.Edit cannot delete a branch.
 
     >>> login('no-priv@canonical.com')
-    >>> message = factory.makeCodeReviewMessage()
+    >>> message = factory.makeCodeReviewComment()
     >>> branch = message.branch_merge_proposal.target_branch
     >>> branch.destroySelf(break_references=True)
     Traceback (most recent call last):
@@ -1205,7 +1205,7 @@ is listed as not "allowed":
     ...   (branch, LaunchpadTestRequest()), name="+delete")
     >>> for req in branch_delete_view.display_deletion_requirements:
     ...     print req[0], 'allowed:', req[3]
-    <...CodeReviewMessage...> allowed: False
+    <...CodeReviewComment...> allowed: False
 
 The "allowed: False" status is mirrored in the display.
 
@@ -1249,5 +1249,5 @@ The current references to the branch table are shown here.
     productseries.user_branch
     specificationbranch.branch
 
-(Unfortunately, references can form a graph-- note that codereviewmessages
+(Unfortunately, references can form a graph-- note that codereviewcomments
  aren't shown.)
