@@ -170,9 +170,11 @@ from canonical.launchpad.webapp.menu import structured, NavigationMenu
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    custom_widget, enabled_with_permission, smartquote, stepthrough, stepto)
+    custom_widget, enabled_with_permission, stepthrough, stepto)
 
 from canonical.launchpad import _
+
+from canonical.lazr.utils import smartquote
 
 
 class RestrictedMembershipsPersonView(LaunchpadView):
@@ -1607,7 +1609,7 @@ class PersonRdfContentsView:
         for key in gpgkeyset.getGPGKeysForPeople(members):
             members_by_id[key.ownerID].addGPGKey(key)
         for email in emailset.getPreferredEmailForPeople(members):
-            members_by_id[email.personID].setPreferredEmail(email)
+            members_by_id[email.person.id].setPreferredEmail(email)
         return members
 
     def __call__(self):
@@ -3056,8 +3058,8 @@ class PersonEditView(BasePersonEditView):
     implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
-        'verbose_bugnotifications', 'timezone']
-    custom_widget('timezone', SelectWidget, size=15)
+        'verbose_bugnotifications', 'time_zone']
+    custom_widget('time_zone', SelectWidget, size=15)
 
 
 class PersonBrandingView(BrandingChangeView):
