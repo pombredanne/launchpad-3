@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+ # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Security policies for using content objects.
 
 """
@@ -13,7 +13,8 @@ from canonical.launchpad.interfaces import (
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportMachine,
-    ICodeReviewComment, IDistribution, IDistributionMirror, IDistroSeries,
+    ICodeReviewComment, ICodeReviewCommentDeletion,
+    IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
     IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
     ILaunchpadCelebrities, IMailingListSet, IMilestone, IOAuthAccessToken,
@@ -1428,6 +1429,29 @@ class CodeReviewCommentView(AuthorizationBase):
         proposal.
         """
         bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
+
+
+class CodeReviewCommentDelete(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewCommentDeletion
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Are not-logged-in people able to view the code review message?
+
+        They can see a code review message if they can see the branch merge
+        proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
         return bmp_checker.checkUnauthenticated()
 
 

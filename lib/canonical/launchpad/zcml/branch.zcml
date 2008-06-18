@@ -8,10 +8,29 @@
   <content class="canonical.launchpad.database.Branch">
     <require
         permission="launchpad.View"
-        interface="canonical.launchpad.interfaces.IBranch"
-        />
+        attributes="id branch_type name title summary url whiteboard
+                    mirror_status_message private registrant owner author
+                    reviewer code_reviewer product product_name unique_name
+                    displayname sort_key lifecycle_status last_mirrored
+                    last_mirrored_id last_mirror_attempt mirror_failures
+                    pull_disabled next_mirror_time last_scanned
+                    last_scanned_id revision_count warehouse_url bug_branches
+                    related_bugs related_bug_tasks spec_links revision_history
+                    subscriptions subscribers date_created date_last_modified
+                    latest_revisions landing_targets landing_candidates
+                    dependent_branches addLandingTarget getMergeQueue
+                    revisions_since code_is_browseable code_import
+                    bzr_identity canBeDeleted deletionRequirements
+                    associatedProductSeries subscribe getSubscription
+                    hasSubscription unsubscribe getSubscriptionsByLevel
+                    getBranchRevision getBranchRevisionByRevisionId
+                    createBranchRevision getTipRevision updateScannedDetails
+                    getNotificationRecipients getScannerData getPullURL
+                    requestMirror startMirroring mirrorComplete mirrorFailed"
+                    />
     <require
         permission="launchpad.Edit"
+        attributes="destroySelf"
         set_attributes="name title summary url mirror_status_message
                         private owner author product lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
