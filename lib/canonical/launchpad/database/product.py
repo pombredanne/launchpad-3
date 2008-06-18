@@ -165,7 +165,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             # Clear the license_reviewed and license_approved flags
             # if the license changes.
             self.license_reviewed = False
-            self.license_approved= False
+            self.license_approved = False
         return value
 
     license_info = StringCol(dbName='license_info', default=None,
