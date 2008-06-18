@@ -18,10 +18,6 @@
   }
 </style>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+pagelet-subscribers" />
-</metal:portlets>
-
 <div metal:fill-slot="main">
 
   <tal:summary replace="structure context/@@+pagelet-summary" />
