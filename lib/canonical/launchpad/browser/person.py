@@ -90,7 +90,7 @@ import pytz
 import subprocess
 import urllib
 
-from zope.app.form.browser import SelectWidget, TextAreaWidget
+from zope.app.form.browser import SelectWidget, TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
@@ -2777,7 +2777,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
     label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreement
-    field_names = ['allow_relicensing']
+    field_names = ['allow_relicensing', 'back_to']
+    custom_widget('back_to', TextWidget, visible=False)
 
     @property
     def initial_values(self):
@@ -2785,19 +2786,18 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         default = self.context.translations_relicensing_agreement
         if default is None:
             default = True
-        return { "allow_relicensing" : default }
+        return { "allow_relicensing" : default,
+                 "back_to" : self.request.get('back_to') }
 
     @property
     def relicensing_url(self):
         """Return an URL for this view."""
         return canonical_url(self.context, view_name='+licensing')
 
-    @property
-    def next_url(self):
+    def getSafeRedirectURL(self, url):
         """Successful form submission should send to this URL."""
-        referrer = self.request.getHeader('referer')
-        if referrer and referrer.startswith(self.request.getApplicationURL()):
-            return referrer
+        if url and url.startswith(self.request.getApplicationURL()):
+            return url
         else:
             return canonical_url(self.context)
 
@@ -2821,6 +2821,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
                 "Your choice has been saved. "
                 "Your translations will be removed once we completely "
                 "switch to BSD license for translations."))
+
+        self.next_url = self.getSafeRedirectURL(data['back_to'])
 
 
 class PersonGPGView(LaunchpadView):

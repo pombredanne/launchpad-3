@@ -1,7 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, Object
+from zope.schema import Bool, Datetime, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
@@ -33,3 +33,7 @@ class ITranslationRelicensingAgreement(Interface):
     date_decided = Datetime(
         title=_("The date person made her decision"),
         readonly=True, required=True)
+
+    back_to = Text(
+        title=_("URL to go back to after question is shown"),
+        readonly=False, required=False)
