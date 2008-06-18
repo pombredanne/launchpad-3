@@ -2410,7 +2410,6 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/applicationborder
         view/macro:pagehas/applicationbuttons
-        view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
         view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
@@ -2472,7 +2471,6 @@ class PageMacroDispatcher:
             applicationtabs=False,
             applicationborder=False,
             applicationbuttons=False,
-            globalsearch=False,
             heading=False,
             pageheading=True,
             portlets=False,
@@ -2490,21 +2488,18 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
-                globalsearch=True,
                 portlets=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
-                globalsearch=True,
                 portlets=True),
         'default2.0':
             LayoutElements(
                 actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
-                globalsearch=True,
                 portlets=True,
                 navigationtabs=True),
         'onecolumn':
@@ -2513,7 +2508,6 @@ class PageMacroDispatcher:
                 actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
-                globalsearch=True,
                 navigationtabs=True,
                 portlets=False),
         'applicationhome':
@@ -2521,13 +2515,11 @@ class PageMacroDispatcher:
                 applicationborder=True,
                 applicationbuttons=True,
                 pageheading=False,
-                globalsearch=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
-                globalsearch=False,
                 heading=True,
                 pageheading=False,
                 portlets=True),
@@ -2536,7 +2528,6 @@ class PageMacroDispatcher:
                 actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
-                globalsearch=False,
                 heading=False,
                 pageheading=False,
                 portlets=False),
