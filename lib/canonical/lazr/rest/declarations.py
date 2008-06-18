@@ -26,7 +26,7 @@ __all__ = [
     'generate_operation_adapter',
     'operation_parameters',
     'operation_returns_entry',
-    'operation_returns_collection',
+    'operation_returns_collection_of',
     'rename_parameters_as',
     'webservice_error',
     ]
@@ -653,7 +653,7 @@ class BaseResourceOperationAdapter(ResourceOperation):
         """See `ResourceOperation`."""
         params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
-        return self.processResult(result)
+        return self.encodeResult(result)
 
 
 class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
