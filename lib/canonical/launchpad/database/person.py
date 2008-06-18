@@ -30,7 +30,6 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
-from storm.references import Reference
 from storm.store import Store
 
 from canonical.config import config
@@ -340,7 +339,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if location is None:
             return None
         return location.time_zone
-    timezone = property(get_time_zone, set_time_zone)
+    time_zone = property(get_time_zone, set_time_zone)
 
 
     def get_translations_relicensing_agreement(self):
@@ -687,30 +686,36 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
 
     def _getQuestionTargetsFromAnswerContacts(self, answer_contacts):
-        """Return a list of valid IQuestionTargets.
+        """Return a list of active IQuestionTargets.
 
-        Provided AnswerContact query results, a distinct list of Products,
-        Distributions, and SourcePackages is returned.
+        :param answer_contacts: an iterable of `AnswerContact`s.
+        :return: a list of active `IQuestionTarget`s.
+        :raise AssertionError: if the IQuestionTarget is not a `Product`,
+            `Distribution`, or `SourcePackage`.
         """
-        targets = []
+        targets = set()
         for answer_contact in answer_contacts:
             if answer_contact.product is not None:
                 target = answer_contact.product
+                pillar = target
             elif answer_contact.sourcepackagename is not None:
                 assert answer_contact.distribution is not None, (
                     "Missing distribution.")
                 distribution = answer_contact.distribution
                 target = distribution.getSourcePackage(
                     answer_contact.sourcepackagename)
+                pillar = distribution
             elif answer_contact.distribution is not None:
                 target = answer_contact.distribution
+                pillar = target
             else:
                 raise AssertionError('Unknown IQuestionTarget.')
 
-            if not target in targets:
-                targets.append(target)
+            if pillar.active:
+                # Deactivated pillars are not valid IQuestionTargets.
+                targets.add(target)
 
-        return targets
+        return list(targets)
 
     @property
     def branches(self):

@@ -46,7 +46,7 @@ The user can navigate to an individual build details:
     >>> anon_browser.getControl('Update').click()
     >>> anon_browser.getLink('i386 build of iceweasel').click()
     >>> anon_browser.title
-    'Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
+    'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
 
     >>> print_navigation(anon_browser.contents)
     Location: Celso Providelo
@@ -59,7 +59,7 @@ The user can navigate to an individual build details:
     * Translations (http://translations.launchpad.dev/~cprov)
     * Answers (http://answers.launchpad.dev/~cprov)
     Main heading:
-    Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
 
 From that page the user could return either to the build records listing
 or the PPA overview.
