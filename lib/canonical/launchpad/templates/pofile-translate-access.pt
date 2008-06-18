@@ -20,10 +20,8 @@
       <tal:loop repeat="manager view/managers">
         <li>
           <tal:team condition="manager/team">
-            <a tal:attributes="href manager/team/fmt:url"
-               tal:content="manager/team/browsername">
-              Just a testing team</a>
-	      in translation group
+            <div tal:replace="structure manager/team/fmt:link" />,
+	      which is part of
             <a tal:attributes="href manager/group/fmt:url"
                tal:content="manager/group/name">
 	      Ubuntu translators</a>
