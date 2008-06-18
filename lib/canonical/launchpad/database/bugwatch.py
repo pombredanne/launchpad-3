@@ -260,7 +260,7 @@ class BugWatchSet(BugSetBase):
         return BugWatch.select()
 
     def fromText(self, text, bug, owner):
-        """See IBugTrackerSet.fromText."""
+        """See `IBugWatchSet`."""
         newwatches = []
         # Let's find all the URLs and see if they are bug references.
         matches = list(find_uris_in_text(text))

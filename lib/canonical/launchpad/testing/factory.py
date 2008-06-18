@@ -384,6 +384,7 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
+            # fromText() creates a bug watch associated with the bug.
             getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         return bug
 
