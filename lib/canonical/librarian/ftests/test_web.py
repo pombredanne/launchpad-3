@@ -266,7 +266,7 @@ class DeletedContentTestCase(unittest.TestCase):
                 'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain'
                 )
         alias_id = alias.id
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
 
         client = LibrarianClient()
 
@@ -288,7 +288,7 @@ class DeletedContentTestCase(unittest.TestCase):
             UPDATE LibraryFileContent SET deleted=TRUE WHERE id=%s
             """, (alias.content.id,)
             )
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
 
         # Things become not found
         alias = getUtility(ILibraryFileAliasSet)[alias_id]
@@ -303,8 +303,4 @@ class DeletedContentTestCase(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(LibrarianWebTestCase))
-    suite.addTest(unittest.makeSuite(LibrarianZopelessWebTestCase))
-    suite.addTest(unittest.makeSuite(DeletedContentTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

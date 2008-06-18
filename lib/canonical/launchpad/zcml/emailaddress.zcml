@@ -5,10 +5,12 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.EmailAddress">
-        <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
+        <allow interface="canonical.launchpad.interfaces.IHasOwner" />
+        <allow attributes="id person email status rdf_sha1" />
         <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IEmailAddress" />
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IEmailAddress"
+            attributes="destroySelf syncUpdate" />
     </content>
 
     <securedutility

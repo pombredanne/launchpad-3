@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces import (
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
-# when accessed anonymously, Sourceforge returns dates in this timezone:
+# when accessed anonymously, Sourceforge returns dates in this time zone:
 SOURCEFORGE_TZ = pytz.timezone('US/Pacific')
 UTC = pytz.timezone('UTC')
 
@@ -302,6 +302,7 @@ class TrackerImporter:
 
         # pick a series to attach the milestone.  Pick 'trunk' or
         # 'main' if they exist.  Otherwise pick the first.
+        # pylint: disable-msg=W0631
         for series in self.product.serieses:
             if series.name in ['trunk', 'main']:
                 break
