@@ -613,7 +613,7 @@ class DistributionEditView(LaunchpadEditFormView):
                    'bug_reporting_guidelines', 'icon', 'logo', 'mugshot',
                    'official_malone', 'enable_bug_expiration',
                    'official_blueprints', 'official_rosetta',
-                   'official_answers']
+                   'official_answers', 'translation_focus', ]
 
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)

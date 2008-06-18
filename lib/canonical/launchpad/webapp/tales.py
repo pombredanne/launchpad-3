@@ -1415,7 +1415,8 @@ class DateTimeFormatterAPI:
 
     def time(self):
         if self._datetime.tzinfo:
-            value = self._datetime.astimezone(getUtility(ILaunchBag).timezone)
+            value = self._datetime.astimezone(
+                getUtility(ILaunchBag).time_zone)
             return value.strftime('%T %Z')
         else:
             return self._datetime.strftime('%T')
@@ -1423,7 +1424,8 @@ class DateTimeFormatterAPI:
     def date(self):
         value = self._datetime
         if value.tzinfo:
-            value = value.astimezone(getUtility(ILaunchBag).timezone)
+            value = value.astimezone(
+                getUtility(ILaunchBag).time_zone)
         return value.strftime('%Y-%m-%d')
 
     def _now(self):
@@ -2466,19 +2468,6 @@ class PageMacroDispatcher:
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')
 
-    def show_actions_menu(self):
-        """Should the actions menu be rendered?
-
-        It should be rendered unless the layout turns it off, or if we are
-        running in development mode and the layout has navigation tabs.
-        """
-        has_actionsmenu = self.haspage('actionsmenu')
-        if has_actionsmenu and config.devmode:
-            # In devmode, actually hides the actions menu if
-            # the navigation tabs are used.
-            return not self.haspage('navigationtabs')
-        return has_actionsmenu
-
     class LayoutElements:
 
         def __init__(self,
@@ -2517,26 +2506,21 @@ class PageMacroDispatcher:
                 structuralheaderobject=True),
         'default2.0':
             LayoutElements(
+                actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True,
                 navigationtabs=True),
-        'defaultnomenu':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True,
-                actionsmenu=False),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(
+                actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
+                navigationtabs=True,
                 portlets=False,
                 structuralheaderobject=True),
         'applicationhome':

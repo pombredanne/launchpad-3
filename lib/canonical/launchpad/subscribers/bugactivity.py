@@ -165,16 +165,18 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
                 newvalue=newvalue)
 
 @block_implicit_flushes
-def record_package_infestation_added(package_infestation, object_created_event):
+def record_package_infestation_added(package_infestation,
+                                     object_created_event):
     package_release_name = "%s %s" % (
         package_infestation.sourcepackagerelease.sourcepackagename.name,
         package_infestation.sourcepackagerelease.version)
+    message = "added infestation of package release " + package_release_name
     getUtility(IBugActivitySet).new(
         bug=package_infestation.bug,
         datechanged=UTC_NOW,
         person=package_infestation.creatorID,
         whatchanged="bug",
-        message="added infestation of package release " + package_release_name)
+        message=message)
 
 @block_implicit_flushes
 def record_package_infestation_edited(package_infestation_edited,
@@ -196,16 +198,18 @@ def record_package_infestation_edited(package_infestation_edited,
                 newvalue=newvalue)
 
 @block_implicit_flushes
-def record_product_infestation_added(product_infestation, object_created_event):
+def record_product_infestation_added(product_infestation,
+                                     object_created_event):
     product_release_name = "%s %s" % (
         product_infestation.productrelease.product.name,
         product_infestation.productrelease.version)
+    message = "added infestation of product release " + product_release_name
     getUtility(IBugActivitySet).new(
         bug=product_infestation.bug,
         datechanged=UTC_NOW,
         person=product_infestation.creatorID,
         whatchanged="bug",
-        message="added infestation of product release " + product_release_name)
+        message=message)
 
 @block_implicit_flushes
 def record_product_infestation_edited(product_infestation_edited,
@@ -225,6 +229,16 @@ def record_product_infestation_edited(product_infestation_edited,
                 whatchanged="%s: %s" % (product_release_name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue)
+
+@block_implicit_flushes
+def record_bugsubscription_added(bugsubscription_added, object_created_event):
+    getUtility(IBugActivitySet).new(
+        bug=bugsubscription_added.bug,
+        datechanged=UTC_NOW,
+        person=object_created_event.user,
+        whatchanged='bug',
+        message='added subscriber %s' % (
+            bugsubscription_added.person.browsername))
 
 @block_implicit_flushes
 def record_bugsubscription_edited(bugsubscription_edited,
