@@ -1,0 +1,12 @@
+= Google API's and Keys =
+
+== Maps ==
+
+We use Google maps. The following API keys are in use:
+
+ sabdfl: launchpad.dev: ABQIAAAAd8GIgO6pcskVE20WMo0tMRTWrrsyo_91eNrAe8_Mod2l0UnqlRSKiPprMSOGPJIjYKODQzeFQPz5Dg
+ sabdfl: launchpad.net: ABQIAAAAd8GIgO6pcskVE20WMo0tMRRkABWjM-HFSmcaZJwi4T_L_gqd8hQZWt328aH2TFAi3x2jCPoCqCaLIQ
+
+The maps keys are specified in the config system under the [google] section.
+Different keys are specified for launchpad.dev and the edge/lpnet servers.
+
