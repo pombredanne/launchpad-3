@@ -643,7 +643,7 @@ ignore all other English variants.
 
 When the user is not logged in, or didn't define his preferred
 languages, the set will be initialized from the request. That's the
-languages configured in the browswer, plus other inferred from the
+languages configured in the browser, plus other inferred from the
 GeoIP database.
 
     >>> request = LaunchpadTestRequest(
