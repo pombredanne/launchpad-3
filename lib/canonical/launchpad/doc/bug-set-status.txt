@@ -256,6 +256,6 @@ targeted to the non-current series of course.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'Warty mozilla-firefox'
+    u'Ubuntu Warty mozilla-firefox'
     >>> ubuntu_firefox_task.status.name
     'INCOMPLETE'
