@@ -10,11 +10,9 @@
   i18n:domain="launchpad"
 >
   <body>
-  <metal:heading fill-slot="pageheading">
-    <h1 tal:condition="not: view/label">Change account details</h1>
-  </metal:heading>
 
   <div metal:fill-slot="main">
+    <h1 tal:condition="not: view/label">Change account details</h1>
 
     <div metal:use-macro="context/@@launchpad_form/form">
 
