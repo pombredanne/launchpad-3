@@ -323,6 +323,8 @@ class BugzillaLPPlugin(Bugzilla):
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}
+        self.bug_aliases = {}
+
         server = xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
@@ -336,13 +338,14 @@ class BugzillaLPPlugin(Bugzilla):
 
         # Now copy them into the local bugs dict.
         for remote_bug in remote_bugs:
-            # If the bug has an alias and that alias has been requested
-            # in bug_ids, list the bug under that alias. Otherwise use
-            # the bug's ID.
+            self.bugs[remote_bug['id']] = remote_bug
+
+            # The bug_aliases dict is a mapping between aliases and bug
+            # IDs. We use the aliases dict to look up the correct ID for
+            # a bug. This allows us to reference a bug by either ID or
+            # alias.
             if remote_bug['alias'] and remote_bug['alias'] in bug_ids:
-                self.bugs[remote_bug['alias']] = remote_bug
-            else:
-                self.bugs[remote_bug['id']] = remote_bug
+                self.bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
@@ -362,17 +365,22 @@ class BugzillaLPPlugin(Bugzilla):
 
     def getRemoteStatus(self, bug_id):
         """See `IExternalBugTracker`."""
-        # If possible, convert bug_id to an integer.
-        try:
-            bug_id = int(bug_id)
-        except ValueError:
-            # But don't worry too much if that doesn't work; we might
-            # have an alias rather than an ID.
-            pass
+        # See if bug_id is actually an alias.
+        actual_bug_id = self.bug_aliases.get(bug_id)
+
+        # bug_id isn't an alias, so try turning it into an int and
+        # looking the bug up by ID.
+        if actual_bug_id is None:
+            try:
+                actual_bug_id = int(bug_id)
+            except ValueError:
+                # If bug_id can't be int()'d then it's likely an alias
+                # that doesn't exist, so raise BugNotFound.
+                raise BugNotFound(bug_id)
 
         try:
-            status = self.bugs[bug_id]['status']
-            resolution = self.bugs[bug_id]['resolution']
+            status = self.bugs[actual_bug_id]['status']
+            resolution = self.bugs[actual_bug_id]['resolution']
 
             if resolution != '' and resolution is not None:
                 return "%s %s" % (status, resolution)
