@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Testing infrastructure for page tests."""
 # Stop lint warning about not initializing TestCase parent on
 # PageStoryTestCase, see the comment bellow.
@@ -11,12 +11,12 @@ import re
 import simplejson
 import unittest
 import urllib
-from urlparse import urljoin
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from urlparse import urljoin, urlsplit
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
@@ -190,6 +190,22 @@ class WebServiceResponseWrapper(ProxyBase):
             # string, instead of one that just says the string wasn't
             # JSON.
             raise ValueError(self.getBody())
+
+
+def extract_url_parameter(url, parameter):
+    """Extract parameter and its value from a URL.
+
+    Use this if your test needs to inspect a parameter value embedded in
+    a URL, but doesn't really care what the rest of the URL looks like
+    or how the parameters are ordered.
+    """
+    scheme, host, path, query, fragment = urlsplit(url)
+    args = query.split('&')
+    for arg in args:
+        key, value = arg.split('=')
+        if key == parameter:
+            return arg
+    return None
 
 
 class DuplicateIdError(Exception):
@@ -421,12 +437,13 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll('li')
+    entries = navigation_links.findAll(['strong','a'])
     for entry in entries:
-        if entry.a:
-            print '%s: %s' % (entry.a.string, entry.a['href'])
-        elif entry.strong:
-            print entry.strong.string
+        try:
+            print '%s: %s' % (entry.span.string, entry['href'])
+        except KeyError:
+            print entry.span.string
+
 
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
