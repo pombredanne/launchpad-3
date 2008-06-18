@@ -339,7 +339,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         if location is None:
             return None
         return location.time_zone
-    timezone = property(get_time_zone, set_time_zone)
+    time_zone = property(get_time_zone, set_time_zone)
 
 
     def get_translations_relicensing_agreement(self):

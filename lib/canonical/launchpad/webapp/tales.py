@@ -1415,7 +1415,8 @@ class DateTimeFormatterAPI:
 
     def time(self):
         if self._datetime.tzinfo:
-            value = self._datetime.astimezone(getUtility(ILaunchBag).timezone)
+            value = self._datetime.astimezone(
+                getUtility(ILaunchBag).time_zone)
             return value.strftime('%T %Z')
         else:
             return self._datetime.strftime('%T')
@@ -1423,7 +1424,8 @@ class DateTimeFormatterAPI:
     def date(self):
         value = self._datetime
         if value.tzinfo:
-            value = value.astimezone(getUtility(ILaunchBag).timezone)
+            value = value.astimezone(
+                getUtility(ILaunchBag).time_zone)
         return value.strftime('%Y-%m-%d')
 
     def _now(self):
