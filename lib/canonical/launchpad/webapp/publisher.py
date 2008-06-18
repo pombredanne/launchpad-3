@@ -34,6 +34,7 @@ from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
 from zope.publisher.interfaces import NotFound
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.layers import (
     setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
     WebServiceLayer)
@@ -183,6 +184,7 @@ class LaunchpadView(UserAttributeCache):
                        many templates not set via zcml, or you want to do
                        rendering from Python.
     - isBetaUser   <-- whether the logged-in user is a beta tester
+    - striped_class<-- a tr class for an alternating row background
     """
 
     def __init__(self, context, request):
@@ -228,6 +230,14 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
+
+    @cachedproperty
+    def striped_class(self):
+        def bg_stripe_generator():
+            while True:
+                yield 'white'
+                yield 'shaded'
+        return bg_stripe_generator()
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
