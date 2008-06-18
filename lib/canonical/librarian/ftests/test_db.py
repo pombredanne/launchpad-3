@@ -43,6 +43,4 @@ class DBTestCase(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(DBTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

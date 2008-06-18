@@ -467,8 +467,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
-        return dict(owner=self.user, status=set(QuestionStatus.items),
-                    language=self.user_support_languages)
+        return dict(owner=self.user, status=set(QuestionStatus.items))
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):

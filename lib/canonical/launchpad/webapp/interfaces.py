@@ -312,12 +312,11 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
-# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
-# truly generic thing. The problem lies in the fact that half of this (user,
-# login, timezone, developer) is actually useful inside webapp/, and the other
-# half is very Launchpad-specific. I suggest we split the interface and
-# implementation into two parts, having a different name for the webapp/
-# bits.
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
+# generic thing. The problem lies in the fact that half of this (user, login,
+# time zone, developer) is actually useful inside webapp/, and the other half
+# is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
@@ -335,7 +334,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
-    timezone = Attribute("The user's time zone")
+    time_zone = Attribute("The user's time zone")
 
     developer = Bool(
         title=u'True if a member of the launchpad developers celebrity'
@@ -746,6 +745,12 @@ class IBatchNavigator(Interface):
     """A batch navigator for a specified set of results."""
 
     batch = Attribute("The IBatch for which navigation links are provided.")
+
+    heading = Attribute(
+        "The heading describing the kind of objects in the batch.")
+
+    def setHeadings(singular, plural):
+        """Set the heading for singular and plural results."""
 
     def prevBatchURL():
         """Return a URL to the previous chunk of results."""
