@@ -140,6 +140,8 @@
     <resource name="security" file="../images/warning.png" />
     <resource name="security-large" file="../images/warning-large.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
+    <resource name="spin" file="../images/spinner.gif" />
+    <resource name="nospin" file="../images/nospin.gif" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="meeting" file="../images/meeting.png" />
     <resource name="meeting-logo" file="../images/meeting-logo.png" />

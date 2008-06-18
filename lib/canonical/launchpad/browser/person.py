@@ -891,9 +891,9 @@ class CommonMenuLinks:
 
     def related_projects(self):
         target = '+projects'
-        text = 'List related projects'
-        summary = 'Projects %s is involved with' % self.context.browsername
-        return Link(target, text, summary, icon='packages')
+        text = 'Show all projects in which %s is involved' % (
+                    self.context.browsername)
+        return Link(target, text)
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
