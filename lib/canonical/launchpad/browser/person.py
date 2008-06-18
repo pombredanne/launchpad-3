@@ -1040,7 +1040,6 @@ class PersonOverviewNavigationMenu(NavigationMenu):
 
     usedfor = IHasPersonNavigationMenu
     facet = 'overview'
-    title = 'Profile'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
 
     def __init__(self, context):
