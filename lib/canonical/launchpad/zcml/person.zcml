@@ -56,6 +56,10 @@
       interface="canonical.launchpad.interfaces.person.IPersonViewRestricted"
       />
     <require
+      permission="launchpad.EditLocation"
+      interface="canonical.launchpad.interfaces.location.ISetLocation"
+      />
+    <require
       permission="launchpad.Edit"
       interface="canonical.launchpad.interfaces.person.IPersonEditRestricted"
       />
@@ -182,7 +186,7 @@
     name="+editlocation"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonEditLocationView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.EditLocation"
     template="../templates/person-editlocation.pt"
     />
 
