@@ -115,7 +115,7 @@ registration date is set, and its status is set to REGISTERED.
     >>> # We have to compare dates this way because of minor clock skew
     >>> # between the Python process and the database (which is where
     >>> # date_registered comes from).  Also, Python's date objects don't
-    >>> # support timezones.
+    >>> # support time zones.
     >>> list_one.date_registered.date() == registration_date.date()
     True
     >>> list_one.status.name
@@ -360,6 +360,7 @@ This method will return None for missing teams or non-team people.
 
 A list which is active may be deactivated.
 
+    >>> login(list_three.team.teamowner.preferredemail.email)
     >>> list_three.deactivate()
     >>> flush_database_updates()
     >>> list_three.status.name

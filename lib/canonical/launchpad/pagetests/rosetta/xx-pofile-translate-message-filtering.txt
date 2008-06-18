@@ -7,14 +7,15 @@ For this test, we know that the valid msgsets that this form uses are
 the ones with the ids between 130 and 151. By default, view shows the
 messages in the batches of 10 items.
 
+    >>> import re
+    >>> from canonical.launchpad.testing.pages import extract_url_parameter
+
     # This describes the HTML tag ids we'll be looking for below.
     >>> match_translation_id = 'msgset_([0-9]+)_es_translation_0$'
 
     # This function will be used to check the content of the browser.
     >>> def print_shown_messages(browser, soup=None):
     ...     """Print the id/value of all shown translations on the page."""
-    ...     import re
-    ...
     ...     # Map msgset_ids to HTML tags
     ...     translations = {}
     ...
@@ -32,6 +33,7 @@ messages in the batches of 10 items.
     ...         translation = translations[msgset_id]
     ...         print "%d: '%s'" % (
     ...             msgset_id, translation.renderContents().strip())
+
 
 == Filters ==
 
@@ -57,10 +59,16 @@ No Privileges Person chooses to see the untranslated messages in the
 evolution-2.2 sourcepackage. He sets the 'Show' list to 'Untranslated'
 to filter the messages. He sees 13 messages are not translated.
 
-    >>> user_browser.getControl('Show').value = ['untranslated']
-    >>> user_browser.getControl('Filter').click()
-    >>> user_browser.url
-    'http://.../evolution-2.2/es/+translate?batch=10&show=untranslated'
+    >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
+    >>> user_browser.getControl('Change').click()
+    >>> re.match('[^?]*', user_browser.url).group()
+    'http://.../evolution-2.2/es/+translate'
+
+    >>> print extract_url_parameter(user_browser.url, 'batch')
+    batch=10
+
+    >>> print extract_url_parameter(user_browser.url, 'show')
+    show=untranslated
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -100,7 +108,7 @@ translations into Australian English.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/en_AU/+translate')
     >>> user_browser.getControl('Show').value = ['untranslated']
-    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.getControl('Change').click()
     >>> user_browser.title
     'Translating evolution-2.2 in ... "evolution" into English (Australia)'
 
@@ -146,7 +154,7 @@ navigation.
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/en_AU/+translate')
     >>> user_browser.getControl('Show').value = ['untranslated']
-    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.getControl('Change').click()
     >>> user_browser.title
     'Translating evolution-2.2 in Evolution trunk into English (Australia)'
 
@@ -186,11 +194,13 @@ the batch.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
-    >>> user_browser.getControl('Show:').displayValue = [
+    >>> user_browser.getControl(name='show', index=1).displayValue = [
     ...     'with new suggestions']
-    >>> user_browser.getControl('Filter').click()
-    >>> user_browser.url
-    'http://.../evolution-2.2/es/+translate?batch=10&show=new_suggestions'
+    >>> user_browser.getControl('Change').click()
+    >>> print extract_url_parameter(user_browser.url, 'batch')
+    batch=10
+    >>> print extract_url_parameter(user_browser.url, 'show')
+    show=new_suggestions
 
     >>> print_shown_messages(user_browser)
     134: '<samp> </samp>caratas'
@@ -203,7 +213,7 @@ reviewed by filtering on 'need review'. There are two messages in the
 batch.
 
     >>> user_browser.getControl('Show:').displayValue = ['need review']
-    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.getControl('Change').click()
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -227,7 +237,7 @@ actions.
     1 ... 10  of 63 results
 
     >>> user_browser.getControl('Show:').displayValue = ['need review']
-    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.getControl('Change').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
     1 ... 10  of 28 results
@@ -255,9 +265,11 @@ There is only one message in the batch.
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
     >>> user_browser.getControl('Show:').displayValue = [
     ...     'changed in Launchpad']
-    >>> user_browser.getControl('Filter').click()
-    >>> user_browser.url
-    'http://...evolution-2.2/es/+translate?batch=10&show=changed_in_launchpad'
+    >>> user_browser.getControl('Change').click()
+    >>> print extract_url_parameter(user_browser.url, 'batch')
+    batch=10
+    >>> print extract_url_parameter(user_browser.url, 'show')
+    show=changed_in_launchpad
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -271,8 +283,10 @@ is only one page of messages. If No Privileges Person submits the form,
 the browser is redirected to the first batch.
 
     >>> user_browser.getControl('Save & Continue').click()
-    >>> user_browser.url
-    'http://...evolution-2.2/es/+translate?batch=10&show=changed_in_launchpad'
+    >>> print extract_url_parameter(user_browser.url, 'batch')
+    batch=10
+    >>> print extract_url_parameter(user_browser.url, 'show')
+    show=changed_in_launchpad
 
     >>> print_shown_messages(user_browser)
     134: '<samp> </samp>caratas'
@@ -293,8 +307,8 @@ message; he is seeing the first batch.
     >>> print_batch_header(contents)
     21 ... 22  of 22 results
 
-    >>> user_browser.getControl('Show').value = ['untranslated']
-    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
+    >>> user_browser.getControl('Change').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
     1 ... 10  of 13 results
@@ -366,9 +380,9 @@ Person submits Chinese translations using Spanish suggestions.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/zh_CN/+translate')
     >>> user_browser.getControl('Show').value = ['untranslated']
-    >>> user_browser.getControl('Filter').click()
+    >>> user_browser.getControl('Change').click()
     >>> user_browser.getControl('Spanish (es)').selected = True
-    >>> user_browser.getControl(name='select_alternate_language').click()
+    >>> user_browser.getControl('Change').click()
 
     >>> user_browser.getControl(
     ...     name='msgset_130_zh_CN_translation_0_radiobutton').value = [
