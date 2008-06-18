@@ -262,9 +262,9 @@ Emulate a huge list of binaries for 'pmount':
     ...         architecturespecific)
 
 
-Check if the property still working:
+Check if the property is still working:
 
-    >>> len(pmount_build.binarypackages)
+    >>> pmount_build.binarypackages.count()
     17
 
 Ensure the list is ordered by 'name'
