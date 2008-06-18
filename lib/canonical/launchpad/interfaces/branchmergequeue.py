@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0213
 
 """Branch merge queues contain queued branch merge proposals."""
 
@@ -19,7 +20,7 @@ from canonical.launchpad.validators.name import name_validator
 
 
 class IBranchMergeQueue(Interface):
-    """Access the queued branch merge proposals for one or more branches."""
+    """The queued branch merge proposals for one or more branches."""
 
     branches = Attribute("The branches that this queue is for.")
 
@@ -27,7 +28,7 @@ class IBranchMergeQueue(Interface):
 
 
 class IMultiBranchMergeQueue(IBranchMergeQueue):
-    """The interface for the database entity for grouping branches."""
+    """A queue that has proposals from a number of branches."""
 
     name = TextLine(
         title=_('Name'), required=True, constraint=name_validator,
@@ -42,7 +43,7 @@ class IMultiBranchMergeQueue(IBranchMergeQueue):
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("Either yourself or a team you are a member of. "
-                      "This controls who can modify the branch."))
+                      "This controls who can modify the queue."))
 
     owner = PublicPersonChoice(
         title=_('Owner'), required=True,

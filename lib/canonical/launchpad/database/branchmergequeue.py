@@ -33,7 +33,6 @@ class BaseBranchMergeQueue:
     @property
     def items(self):
         """The qeueued merge proposals for the managed branches."""
-        # XXX: stormify this
         branch_ids = [branch.id for branch in self.branches]
         # If there are no associated branches, there is no queue.
         if len(branch_ids) == 0:
@@ -51,7 +50,10 @@ class SingleBranchMergeQueue(BaseBranchMergeQueue):
     implements(IBranchMergeQueue)
 
     def __init__(self, branch):
-        """Constructed with either a branch or a multi branch queue."""
+        """Constructed with the single branch.
+
+        All the items in the queue belong to this single branch.
+        """
         self.branches = [branch]
 
 
@@ -60,7 +62,7 @@ class MultiBranchMergeQueue(SQLBase, BaseBranchMergeQueue):
 
     implements(IMultiBranchMergeQueue)
 
-    # XXX: Tim Penhey 2008-06-14
+    # XXX: Tim Penhey 2008-06-14, bug 240881
     # Need to rename the database table
     _table = 'BranchMergeRobot'
 

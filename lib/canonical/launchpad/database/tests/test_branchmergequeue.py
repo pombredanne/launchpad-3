@@ -29,15 +29,15 @@ class TestBranchMergeQueueInterfaces(TestCaseWithFactory):
 
     def test_branch_merge_queue_set(self):
         # A BranchMergeQueueSet implements IBranchMergeQueueSet
-        self.assertTrue(verifyObject(
-                IBranchMergeQueueSet, BranchMergeQueueSet()))
+        self.assertTrue(
+            verifyObject(IBranchMergeQueueSet, BranchMergeQueueSet()))
 
     def test_single_branch_merge_queue(self):
-        # A BranchMergeQueue implements IBranchMergeQueue
-        self.assertTrue(verifyObject(
+        # A SingleBranchMergeQueue implements IBranchMergeQueue
+        self.assertTrue(
+            verifyObject(
                 IBranchMergeQueue,
-                SingleBranchMergeQueue(
-                    self.factory.makeBranch())))
+                SingleBranchMergeQueue(self.factory.makeBranch())))
 
     def test_multi_branch_merge_queue(self):
         # A MultiBranchMergeQueue implements IMultiBranchMergeQueue
@@ -46,12 +46,6 @@ class TestBranchMergeQueueInterfaces(TestCaseWithFactory):
                     owner=self.factory.makePerson(),
                     name=self.factory.getUniqueString(),
                     summary=self.factory.getUniqueString())
-        branch = self.factory.makeBranch()
-        # Login the branch owner to allow launchpad.Edit on merge_queue.
-        login(branch.owner.preferredemail.email)
-        branch.merge_queue = queue
-        # If there is no associated branch, the MultipleJoin causes the
-        # verifyObject to fail.
         self.assertTrue(verifyObject(IMultiBranchMergeQueue, queue))
 
 
@@ -72,7 +66,7 @@ class TestBranchMergeQueueSet(TestCaseWithFactory):
         # queue is returned.
         new_queue = self.factory.makeBranchMergeQueue()
         branch = self.factory.makeBranch()
-        # Login the branch owner to allow launchpad.Edit on merge_queue.
+        # Login the branch owner to allow launchpad.Edit on the branch.
         login(branch.owner.preferredemail.email)
         branch.merge_queue = new_queue
         queue = BranchMergeQueueSet.getForBranch(branch)
@@ -111,9 +105,7 @@ class TestSingleBranchMergeQueue(TestCaseWithFactory):
         # the branch that it is constructed with.
         branch = self.factory.makeBranch()
         queue = SingleBranchMergeQueue(branch)
-        branches = queue.branches
-        self.assertEqual(1, len(branches))
-        self.assertEqual(branch, branches[0])
+        self.assertEqual([branch], queue.branches)
 
     def test_queue_items(self):
         # The items of the queue are those merge proposals that are targetted
@@ -132,7 +124,6 @@ class TestSingleBranchMergeQueue(TestCaseWithFactory):
         different_queue_item = self.factory.makeBranchMergeProposal()
 
         items = list(queue.items)
-        self.assertEqual(2, len(items))
         self.assertEqual([first_item, second_item], items)
 
 
@@ -178,7 +169,6 @@ class TestMultiBranchMergeQueue(TestCaseWithFactory):
         different_queue_item = self.factory.makeBranchMergeProposal()
 
         items = list(queue.items)
-        self.assertEqual(2, len(items))
         self.assertEqual([first_item, second_item], items)
 
 
