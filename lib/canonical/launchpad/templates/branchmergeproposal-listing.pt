@@ -42,7 +42,7 @@
                 tal:content="proposal/date_review_requested/fmt:datetime">
             2005-02-12 13:45 EST
           </span>
-          <tal:date replace="proposal/date_review_requested/fmt:displaydate"/>
+          <tal:date replace="proposal/date_review_requested/fmt:approximatedate"/>
         </td>
         <td tal:condition="context/show_column/date_reviewed|nothing">
           <span class="sortkey"
@@ -50,7 +50,7 @@
                 tal:content="proposal/date_reviewed/fmt:datetime">
             2005-02-12 13:45 EST
           </span>
-          <tal:date replace="proposal/date_reviewed/fmt:displaydate"/>
+          <tal:date replace="proposal/date_reviewed/fmt:approximatedate"/>
         </td>
         <td tal:condition="context/show_column/vote_summary|nothing"
             tal:content="proposal/vote_summary">
