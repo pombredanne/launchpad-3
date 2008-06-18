@@ -2,9 +2,26 @@ We are going to test the system by which rosetta provides alternative
 translation suggestions. This will need to be updated when we change the
 presentation of these items.
 
-This test is going to work with evolution source package for Ubuntu Hoary.
-As part of this history, we have Hoary distro release with CLOSED permissions
-and with the Polyglot translation team in charge of its translations.
+This test is going to work with evolution source package for Ubuntu
+Hoary.  As part of this history, we have Hoary distro release with
+RESTRICTED permissions and with the Polyglot translation team in charge
+of its translations.
+
+Polyglot has someone assigned for Spanish translations, and though No
+Privileges is not that person, this does make it possible to enter
+suggestions in Spanish.
+
+  >>> from canonical.launchpad.database.distribution import Distribution
+  >>> from canonical.launchpad.database.person import Person
+  >>> from canonical.launchpad.database.language import Language
+  >>> from canonical.launchpad.database.translator import Translator
+  >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
+  >>> spanish = Language.selectOneBy(code='es')
+  >>> carlos = Person.selectOneBy(name='carlos')
+  >>> ubuntu_spanish_reviewer = Translator(
+  ...     translationgroup=ubuntu.translationgroup, language=spanish,
+  ...     translator=carlos)
+  >>> ubuntu_spanish_reviewer.syncUpdate()
 
 Let's add a new suggestion as a person without privileges.
 

@@ -18,14 +18,43 @@ is not a designated translator.
   ...     print tag.renderContents()
   Updated on ...
 
-Let's see if No Privileges Person can see the translated strings in Southern
-Sotho. We expect them to be told they can only make contributions:
+The translation group does not assign anyone to tend to the Southern
+Sotho translation, so for that language, No Privileges can't even make
+suggestions.
+
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+  ...     '+pots/evolution-2.2/st/+translate')
+  >>> main_content = find_main_content(browser.contents).renderContents()
+  >>> 'New translation:' in main_content
+  False
+  >>> 'New suggestion:' in main_content
+  False
+  >>> 'Your translations will be held for review' in main_content
+  False
+
+The Polyglot translation group now assigns a Southern Sotho translation
+team, of which No Privileges however is not a member.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/polyglot/+appoint')
+  >>> admin_browser.getControl('Language').value=['st']
+  >>> admin_browser.getControl('Translator').value='name21'
+  >>> admin_browser.getControl('Add').click()
+
+No Privileges Person can now enter text, but the page does warn that it
+will only accept suggestions.
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/st/+translate')
-  >>> 'Your translations will be held for review' in browser.contents
+  >>> main_content = find_main_content(browser.contents).renderContents()
+  >>> 'New translation:' in main_content
+  False
+  >>> 'New suggestion:' in main_content
+  True
+  >>> 'Your translations will be held for review' in main_content
   True
 
 However, in Welsh, No Privileges Person DOES have the ability to edit

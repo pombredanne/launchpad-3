@@ -64,8 +64,8 @@ just "polyglot" (no upper-case letters).
   >>> print admin_browser.url
   http://translations.launchpad.dev/+groups/polyglot
 
-After creating a translation group, the user automatically ends up a that
-group's page.
+After creating a translation group, the user automatically ends up on
+that group's page.
 
   >>> admin_browser.url
   'http://translations.launchpad.dev/+groups/polyglot'

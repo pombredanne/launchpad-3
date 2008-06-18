@@ -137,10 +137,23 @@ displayed.
     None
 
 Projects can restrict translation to privileged users. The messages that
-No Privileges Person adds to upstream Evolution are taken as
+No Privileges Person adds to upstream Evolution are then taken as
 suggestions, not translations. His changes do not change the total
 number of untranslated messages; they do not affect the batch
 navigation.
+
+    >>> from canonical.launchpad.database.language import Language
+    >>> from canonical.launchpad.database.person import Person
+    >>> from canonical.launchpad.database.product import Product
+    >>> from canonical.launchpad.database.translator import Translator
+    >>> evolution = Product.selectOneBy(name='evolution')
+    >>> evolution_translation_group = evolution.translationgroup
+    >>> ozzie_english = Language.selectOneBy(code='en_AU')
+    >>> foobar = Person.selectOneBy(name='name16')
+    >>> ozzie_translation_reviewer = Translator(
+    ...     translationgroup=evolution_translation_group,
+    ...     language=ozzie_english, translator=foobar)
+    >>> ozzie_translation_reviewer.syncUpdate()
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'
