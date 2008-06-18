@@ -25,11 +25,11 @@
           />
     </metal:portlets>
 
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <div style="clear: both">
         <div style="float: right; width: 65%; text-align: right">
           <tal:activitylog
-              define="link context/menu:context/activitylog"
+              define="link context_menu/activitylog"
               condition="link/enabled"
               replace="structure link/render" />
           &mdash;
@@ -133,26 +133,26 @@
         <tr>
           <td style="text-align: left; width: 33%;">
             <tal:markduplicate
-                define="link context/menu:context/markduplicate"
+                define="link context_menu/markduplicate"
                 condition="link/enabled"
                 replace="structure link/render" />
           </td>
 
           <td style="text-align: center; width: 34%;">
             <tal:visibility
-                define="link context/menu:context/visibility"
+                define="link context_menu/visibility"
                 condition="link/enabled"
                 replace="structure link/render" />
           </td>
 
           <td style="text-align: right; width: 33%;">
             <tal:createquestion
-                define="link context/menu:context/createquestion"
+                define="link context_menu/createquestion"
                 condition="link/enabled"
                 replace="structure link/render" />
 
             <tal:removequestion
-                define="link context/menu:context/removequestion"
+                define="link context_menu/removequestion"
                 condition="link/enabled"
                 replace="structure link/render" />
           </td>
@@ -190,7 +190,7 @@
 
           <div style="width: 45%: text-align: right; float: right;">
             <tal:editdescription
-                define="link context/menu:context/editdescription"
+                define="link context_menu/editdescription"
                 condition="link/enabled"
                 replace="structure link/render" />
           </div>
@@ -242,7 +242,7 @@
 
       <p>
         <tal:addbranch
-            define="link context/menu:context/addbranch"
+            define="link context_menu/addbranch"
             condition="link/enabled"
             replace="structure link/render" />
       </p>
@@ -261,11 +261,11 @@
 
       <p>
         <tal:linktocve
-            define="link context/menu:context/linktocve"
+            define="link context_menu/linktocve"
             condition="link/enabled"
             replace="structure link/render" />
         <tal:unlinkcve
-            define="link context/menu:context/unlinkcve"
+            define="link context_menu/unlinkcve"
             condition="link/enabled"
             replace="structure link/render" />
       </p>
@@ -287,7 +287,7 @@
           </div>
         </tal:block>
       </tal:mentors>
-      <div tal:define="link context/menu:context/offermentoring"
+      <div tal:define="link context_menu/offermentoring"
            tal:condition="link/enabled"
            class="action">
         <img class="inlineLinkIcon" src="/@@/add" alt=""/><a tal:attributes="href link/url">Offer to mentor someone fixing this bug</a>

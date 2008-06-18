@@ -2,18 +2,22 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile']
+__all__ = [
+    'BinaryPackageFile',
+    'BinaryPackageFileSet',
+    'SourcePackageReleaseFile',
+    ]
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BinaryPackageFileType, IBinaryPackageFile, ISourcePackageReleaseFile,
-    SourcePackageFileType)
+    BinaryPackageFileType, IBinaryPackageFile, IBinaryPackageFileSet,
+    ISourcePackageReleaseFile, SourcePackageFileType)
 
 
 class BinaryPackageFile(SQLBase):
@@ -30,6 +34,25 @@ class BinaryPackageFile(SQLBase):
                        schema=BinaryPackageFileType)
 
 
+class BinaryPackageFileSet:
+    """See `IBinaryPackageFileSet`."""
+    implements(IBinaryPackageFileSet)
+
+    def getByPackageUploadIDs(self, package_upload_ids):
+        """See `IBinaryPackageFileSet`."""
+        return BinaryPackageFile.select("""
+            PackageUploadBuild.packageupload = PackageUpload.id AND
+            PackageUpload.id IN %s AND
+            Build.id = PackageUploadBuild.build AND
+            BinaryPackageRelease.build = Build.id AND
+            BinaryPackageFile.binarypackagerelease = BinaryPackageRelease.id
+            """ % sqlvalues(package_upload_ids),
+            clauseTables=["PackageUpload", "PackageUploadBuild", "Build",
+                          "BinaryPackageRelease"],
+            prejoins=["binarypackagerelease", "binarypackagerelease.build",
+                      "libraryfile", "libraryfile.content"])
+
+
 class SourcePackageReleaseFile(SQLBase):
     """See ISourcePackageFile"""
 
@@ -40,4 +63,3 @@ class SourcePackageReleaseFile(SQLBase):
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
                              dbName='libraryfile')
     filetype = EnumCol(schema=SourcePackageFileType)
-

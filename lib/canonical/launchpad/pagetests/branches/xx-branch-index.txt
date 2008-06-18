@@ -8,7 +8,7 @@ Imports used later in the document:
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranchSet, IPersonSet)
+    ...     BranchType, BranchFormat, RepositoryFormat, IBranchSet, IPersonSet)
 
 
 == Recent Revisions ==
@@ -168,7 +168,8 @@ for the branch's canonical location.
     Project: GNOME Terminal
     Upload URL: Only Sample Person can upload to this branch.
       If you are Sample Person please log in for upload directions.
-
+    Branch format: Not recorded
+    Repository format: Not recorded
 
 For mirrored branches, the table has a link to the branch's project, the
 location of the original branch, the mirror on Launchpad, information about
@@ -195,7 +196,8 @@ been mirrored:
     Location: http://example.com/mirrored
     Last mirrored: 2007-10-01
     Next mirror: Disabled
-
+    Branch format: Not recorded
+    Repository format: Not recorded
 
 Branches that have never been mirrored don't have a 'Last mirrored' field.
 
@@ -206,6 +208,8 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
+    Branch format: Not recorded
+    Repository format: Not recorded
 
 If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
@@ -228,6 +232,8 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     Location: http://example.com/disabled
     Last mirrored: Not mirrored yet
     Next mirror: Disabled
+    Branch format: Not recorded
+    Repository format: Not recorded
 
 
 == Structural object presentation ==
@@ -327,3 +333,35 @@ Public branches use the lp spec bzr lookup name.
     Project: GNOME Terminal
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
+
+
+== Branch formats ==
+
+    >>> login('no-priv@canonical.com')
+    >>> branch = factory.makeBranch(
+    ...     branch_format=BranchFormat.BZR_BRANCH_5,
+    ...     repository_format=RepositoryFormat.BZR_KNITPACK_1)
+    >>> url = canonical_url(branch)
+    >>> unscanned_branch = factory.makeBranch()
+    >>> unscanned_url = canonical_url(unscanned_branch)
+    >>> logout()
+    >>> browser.open(url)
+
+The data that we specified is shown on the web page.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-format'))
+    Branch format: Branch format 5
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'repository-format'))
+    Repository format: Packs containing knits without subtree support
+
+For branches that haven't been scanned, suitable messages are printed.
+
+    >>> browser.open(unscanned_url)
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-format'))
+    Branch format: Not recorded
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'repository-format'))
+    Repository format: Not recorded
