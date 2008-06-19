@@ -4,43 +4,31 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag=""
 >
-  <tal:XXX condition="nothing">
-    # XXX mpt 20080612:
-    # This template will describe, in one or two sentences at the end of the
-    # translation page, who can translate this file (see
-    # TranslationPageTwoZero). It is hidden using condition="nothing" until it
-    # is finished. In the meantime, the full-blown details portlet is shown
-    # instead.
-  </tal:XXX>
-  <tal:translationgroups condition="view/has_translationgroup">
-    <p class="discreet">
-      This translation is managed by:
-    </p>
-    <ul>
+  <p class="discreet">
+    <tal:translationgroups condition="view/has_translationgroup">
+      This translation is managed by
       <tal:loop repeat="manager view/managers">
-        <li>
-          <tal:team condition="manager/team">
-            <div tal:replace="structure manager/team/fmt:link" />,
-	      which is part of
-            <a tal:attributes="href manager/group/fmt:url"
-               tal:content="manager/group/name">
-	      Ubuntu translators</a>
-          </tal:team>
-          <tal:noteam condition="not: manager/team">
-            Translation group
-            <a tal:attributes="href manager/group/fmt:url"
-               tal:content="manager/group/name">
-	      Ubuntu translators</a>
-          </tal:noteam>
-        </li>
+        <tal:and condition="manager/index">and</tal:and>
+        <tal:team condition="manager/team">
+          <a tal:replace="structure manager/team/fmt:link" />,
+          which is part of
+          <a tal:attributes="href manager/group/fmt:url"
+             tal:content="manager/group/name">
+            Ubuntu translators
+          </a>
+        </tal:team>
+        <tal:noteam condition="not: manager/team">
+          translation group
+          <a tal:attributes="href manager/group/fmt:url"
+             tal:content="manager/group/name">
+	    Ubuntu translators</a>
+        </tal:noteam>
       </tal:loop>
-    </ul>
-  </tal:translationgroups>
-  <tal:nogroups condition="not: view/has_translationgroup">
-    <p class="discreet">
+    </tal:translationgroups>
+    <tal:nogroups condition="not: view/has_translationgroup">
       No translation group has been assigned.
-    </p>
-  </tal:nogroups>
+    </tal:nogroups>
+  </p>
 
   <p class="discreet">
     <tal:permission condition="view/user_can_edit">

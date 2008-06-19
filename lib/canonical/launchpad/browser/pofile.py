@@ -176,6 +176,9 @@ class POFileView(LaunchpadView):
         haven't assigned a translation team for this translation's
         language.
 
+        Each entry also has a zero-based "index" to show which position
+        in the list it's in.  This is for convenience in templating.
+
         Duplicates are eliminated; every translation group will occur
         at most once.
         """
@@ -192,6 +195,7 @@ class POFileView(LaunchpadView):
                 managers.append({
                     'group': group,
                     'team': team,
+                    'index': len(managers),
                 })
             groups.add(group)
         return managers
