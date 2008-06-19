@@ -22,19 +22,21 @@ OpenIDRPSummary objects.
 The getByIdentifier() method returns a list of all the summaries for an
 identifier.
 
+    >>> login('foo.bar@canonical.com')
+
     >>> def print_openid_rp_summaries(summaries):
     ...     for summary in summaries:
-    ...         print summary.person.name
-    ...         print '  identifier:', summary.identifier
+    ...         print summary.account.displayname
+    ...         print '  identifier:', summary.openid_identifier
     ...         print '  trust_root:', summary.trust_root
 
     >>> nopriv_oid_summaries = rp_summary_set.getByIdentifier(
     ...     'http://openid.launchpad.dev/+id/no-priv_oid')
     >>> print_openid_rp_summaries(nopriv_oid_summaries)
-    no-priv
+    No Privileges Person
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: https://shop.canonical.com
-    no-priv
+    No Privileges Person
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: http://moodle.org
 
@@ -47,28 +49,40 @@ The getByIdentifier() method raises an AssertionError if two or more
 persons share an identifier. The database does not have a constraint to
 guard against this.
 
-    >>> from canonical.database.sqlbase import cursor
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.account import IAccountSet
 
-    # Create an integrity error in the data.
-    >>> cur = cursor()
-    >>> cur.execute("""
-    ...     INSERT INTO OpenIDRPSummary (person, identifier, trust_root)
-    ...     VALUES(12, 'http://openid.launchpad.dev/+id/no-priv_oid',
-    ...            'an-irrelevant-trust-root')
-    ...     """)
+    >>> class FakeSummary:
+    ...     """A summary for assertion testing."""
+    ...     def __init__(self, account, openid_identifier, trust_root):
+    ...         self.account=account
+    ...         self.openid_identifier=openid_identifier
+    ...         self.trust_root=trust_root
 
-    >>> rp_summary_set.getByIdentifier(
-    ...     'http://openid.launchpad.dev/+id/no-priv_oid')
+    >>> no_priv = nopriv_oid_summaries[0].account
+    >>> sample_person = getUtility(IAccountSet).getByEmail(
+    ...     'test@canonical.com')
+
+    >>> bad_data = [
+    ...     FakeSummary(
+    ...         no_priv, 'http://openid.launchpad.dev/+id/no-priv_oid',
+    ...         'a_trust_root'),
+    ...     FakeSummary(
+    ...         no_priv, 'http://openid.launchpad.dev/+id/no-priv_oid',
+    ...         'another_trust_root'),
+    ...     FakeSummary(
+    ...         sample_person, 'http://openid.launchpad.dev/+id/no-priv_oid',
+    ...         'another_trust_root'),
+    ...     ]
+
+    # getByIdentifier() calls _assert_0_or_1_accounts().
+    >>> bare_rp_summary_set = removeSecurityProxy(rp_summary_set)
+    >>> bare_rp_summary_set._assert_0_or_1_accounts(
+    ...     'http://openid.launchpad.dev/+id/no-priv_oid', bad_data)
     Traceback (most recent call last):
      ...
-    AssertionError: More than 1 person has the OpenID identifier of
+    AssertionError: More than 1 accounts has the OpenID identifier of
                     http://openid.launchpad.dev/+id/no-priv_oid: ...
-
-    # Remove the bad data; OpenIDRPSummary should be sane.
-    >>> cur.execute("""
-    ...     DELETE FROM OpenIDRPSummary
-    ...     WHERE trust_root = 'an-irrelevant-trust-root'
-    ...     """)
 
 
 == IOpenIDRPSummary ==
@@ -85,9 +99,9 @@ The OpenIDRPSummary object implements the IOpenIDRPSummary interface.
 Each OpenIDRPSummary is a unique combination of Person, identifier,
 and trust_root. No other summary may contain the identical information.
 
-    >>> nopriv_oid_store.person.name
-    u'no-priv'
-    >>> nopriv_oid_store.identifier
+    >>> nopriv_oid_store.account.displayname
+    u'No Privileges Person'
+    >>> nopriv_oid_store.openid_identifier
     u'http://openid.launchpad.dev/+id/no-priv_oid'
     >>> nopriv_oid_store.trust_root
     u'https://shop.canonical.com'
@@ -136,11 +150,10 @@ A new OpenIDRPSummary is created when the person, identifier, and trust
 root have never been used before. The date_created and date_last_used
 will be the same, and the total_logins is 1.
 
-    >>> no_priv = nopriv_oid_store.person
     >>> summary = rp_summary_set.record(
     ...     no_priv, 'http://open-blog.org', date_used=yesterday)
     >>> print_openid_rp_summaries([summary])
-    no-priv
+    No Privileges Person
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: http://open-blog.org
 
@@ -177,8 +190,6 @@ never used before.
 If the person uses a different identifier with a trust root that was
 used before, a new OpenIDRPSummary is created.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-
     # Simulate a privileged event that has changed openid_identifier.
     >>> bare_no_priv = removeSecurityProxy(no_priv)
     >>> bare_no_priv.openid_identifier = 'knightsOfNi'
@@ -190,36 +201,35 @@ used before, a new OpenIDRPSummary is created.
     >>> ubuntu_live_summary_2.total_logins
     1
     >>> print_openid_rp_summaries([ubuntu_live_summary_2])
-    no-priv
+    No Privileges Person
       identifier: http://openid.launchpad.dev/+id/knightsOfNi
       trust_root: http://ubuntu-live.org
 
 When a different person first uses the 'http://ubuntu-live.org' trust
 root, a new OpenIDRPSummary is created.
 
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-
-    >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> ubuntu_live_summary_3 = rp_summary_set.record(
     ...     sample_person, 'http://ubuntu-live.org')
     >>> print_openid_rp_summaries([ubuntu_live_summary_3])
-    name12
+    Sample Person
       identifier: http://openid.launchpad.dev/+id/name12_oid
       trust_root: http://ubuntu-live.org
 
 A OpenIDRPSummary object cannot be created or updated id the person
 is not valid, even if the person's account has been deactivated.
 
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+
     >>> former_summaries = rp_summary_set.getByIdentifier(
     ...     'http://openid.launchpad.dev/+id/former-user_oid')
     >>> print_openid_rp_summaries(former_summaries)
-    former-user-deactivatedaccount
+    Former User
       identifier: http://openid.launchpad.dev/+id/former-user_oid
       trust_root: https://shop.canonical.com
 
-    >>> former_user = former_summaries[0].person
-    >>> former_user.is_valid_person
-    False
+    >>> former_user = former_summaries[0].account
+    >>> former_user.status
+    <DBItem AccountStatus.SUSPENDED, ...>
 
     >>> rp_summary_set.record(
     ...     former_user,
@@ -227,5 +237,5 @@ is not valid, even if the person's account has been deactivated.
     ...     'https://shop.canonical.com')
     Traceback (most recent call last):
      ...
-    AssertionError: former-user-deactivatedaccount is not a valid person.
+    AssertionError: Former User is not ACTIVE account.
 

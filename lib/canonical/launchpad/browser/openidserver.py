@@ -89,7 +89,7 @@ class OpenIdMixin:
 
     @property
     def user_identity_url(self):
-        return self.identity_url_prefix + self.user.openid_identifier
+        return self.user.account.user_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
@@ -206,8 +206,8 @@ class OpenIdMixin:
         values['nickname'] = self.user.name
         values['fullname'] = self.user.displayname
         values['email'] = self.user.preferredemail.email
-        if self.user.timezone is not None:
-            values['timezone'] = self.user.timezone
+        if self.user.time_zone is not None:
+            values['timezone'] = self.user.time_zone
         shipment = self.user.lastShippedRequest()
         if shipment is not None:
             values['x_address1'] = shipment.addressline1

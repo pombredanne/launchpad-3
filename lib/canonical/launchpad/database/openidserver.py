@@ -26,6 +26,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIdStoreFactory, IOpenIdAuthorization,
     IOpenIdAuthorizationSet, IOpenIDRPConfig, IOpenIDRPConfigSet,
@@ -184,8 +185,8 @@ class OpenIDRPSummary(SQLBase):
     implements(IOpenIDRPSummary)
     _table = 'OpenIDRPSummary'
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    identifier = StringCol(notNull=True)
+    account = ForeignKey(dbName='account', foreignKey='Account', notNull=True)
+    openid_identifier = StringCol(notNull=True)
     trust_root = StringCol(notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_last_used = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -213,45 +214,45 @@ class OpenIDRPSummarySet:
         :raise AssertionError: If the identifier is used by more than
             one person.
         """
-        summaries = OpenIDRPSummary.selectBy(identifier=identifier)
+        summaries = OpenIDRPSummary.selectBy(openid_identifier=identifier)
         summaries = list(summaries)
-        person_names = set()
-        for summary in summaries:
-            person_names.add(summary.person.name)
-        if len(person_names) > 1:
-            raise AssertionError(
-                'More than 1 person has the OpenID identifier of %s: %s' %
-                (identifier, ', '.join(list(person_names))))
+        self._assert_0_or_1_accounts(identifier, summaries)
         return summaries
 
-    def record(self, person, trust_root, date_used=None):
+    def _assert_0_or_1_accounts(self, identifier, summaries):
+        """Assert 0 or 1 accounts in the summaries have the identifier."""
+        person_names = set()
+        for summary in summaries:
+            person_names.add(summary.account.displayname)
+        if len(person_names) > 1:
+            raise AssertionError(
+                'More than 1 accounts has the OpenID identifier of %s: %s' %
+                (identifier, ', '.join(list(person_names))))
+
+    def record(self, account, trust_root, date_used=None):
         """See `IOpenRPIDSummarySet`.
 
         :param date_used: an optional datetime the login happened. The current
             datetime is used if date_used is None.
         :raise AssertionError: If the person is not valid.
         """
-        if not person.is_valid_person:
-            raise AssertionError('%s is not a valid person.' % person.name)
-        identifier = self.openid_identifier_url(person)
+        if account.status != AccountStatus.ACTIVE:
+            raise AssertionError(
+                '%s is not ACTIVE account.' % account.displayname)
+        identifier = account.openid_identity_url
         if date_used is None:
             date_used = datetime.now(pytz.UTC)
         summary = OpenIDRPSummary.selectOneBy(
-            person=person, identifier=identifier, trust_root=trust_root)
+            account=account, openid_identifier=identifier,
+            trust_root=trust_root)
         if summary is not None:
             # Update the existing summary.
             summary.increment(date_used=date_used)
         else:
             # create a new summary.
             summary = OpenIDRPSummary(
-                person=person, identifier=identifier, trust_root=trust_root,
-                date_created=date_used, date_last_used=date_used,
-                total_logins=1)
+                account=account, openid_identifier=identifier,
+                trust_root=trust_root, date_created=date_used,
+                date_last_used=date_used, total_logins=1)
         return summary
 
-    # XXX sinzui 2008-06-18: Move this to Account.
-    def openid_identifier_url(self, user):
-        """return the user's OpenID identifier URL."""
-        from canonical.launchpad.webapp.vhosts import allvhosts
-        identity_url_prefix = (allvhosts.configs['openid'].rooturl + '+id/')
-        return identity_url_prefix + user.openid_identifier

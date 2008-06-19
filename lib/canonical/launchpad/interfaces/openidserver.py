@@ -25,8 +25,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BaseImageUpload, PasswordField, UniqueField)
-from canonical.launchpad.interfaces.person import (
-    IPerson, PersonCreationRationale)
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.person import PersonCreationRationale
 from canonical.lazr.fields import Reference
 
 
@@ -161,11 +161,10 @@ class IOpenIDRPConfigSet(Interface):
 class IOpenIDRPSummary(Interface):
     """A summary of the interaction between a `Person` and an OpenID RP."""
     id = Int(title=u'ID', required=True)
-    person = Attribute('The IPerson this is for')
-    person = Reference(
-        title=u'The IPerson who logged in.', schema=IPerson,
+    account = Reference(
+        title=u'The IAccount used to login.', schema=IAccount,
         required=True, readonly=True)
-    identifier = TextLine(
+    openid_identifier = TextLine(
         title=u'OpenID identifier', required=True, readonly=True)
     trust_root = TextLine(
         title=u'OpenID trust root', required=True, readonly=True)
@@ -193,10 +192,10 @@ class IOpenIDRPSummarySet(Interface):
             identifier has never been used.
         """
 
-    def record(person, trust_root):
+    def record(account, trust_root):
         """Create or update an IOpenRPSummary.
 
-        :param person: An `IPerson`.
+        :param account: An `IAccount`.
         :param trust_root: A string used as an OpenID trust root.
         :return: An `IOpenRPSummary`.
         """
