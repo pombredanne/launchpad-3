@@ -52,7 +52,7 @@ new person to a bugtracker using an existing name will cause an error.
     use for bugtracker 'bugzilla-checkwatches'.
 
 The BugTrackerPerson record for a given name on a given bugtracker can
-be retrieved by calling IBugTrackerPersonSet.getByNameAndBugTracker().
+be retrieved by calling BugTracker.getLinkedPersonByName().
 
     >>> bugtracker_person = bugtracker.getLinkedPersonByName(
     ...     'some-name-i-made-up')
@@ -64,13 +64,13 @@ be retrieved by calling IBugTrackerPersonSet.getByNameAndBugTracker().
     name12
 
 
-== ensureBugTrackerPerson() ==
+== ensurePersonForSelf() ==
 
-IBugTracker has a method, ensureBugTrackerPerson(), which is
+IBugTracker has a method, ensurePersonForSelf(), which is
 responsible for returning the correct BugTrackerPerson for a given
 remote username on on a given bugtracker.
 
-Passing a new remote user's details to ensureBugTrackerPerson() will
+Passing a new remote user's details to ensurePersonForSelf() will
 return a new Person record.
 
     >>> from canonical.launchpad.interfaces.person import (
@@ -79,10 +79,10 @@ return a new Person record.
     >>> print getUtility(IPersonSet).getByEmail('new.person@example.com')
     None
 
-    >>> new_person = bugtracker.ensureBugTrackerPerson(
+    >>> new_person = bugtracker.ensurePersonForSelf(
     ...     display_name='New Person', email='new.person@example.com',
     ...     rationale=PersonCreationRationale.BUGIMPORT,
-    ...     creation_comment='whilst testing ensureBugTrackerPerson().')
+    ...     creation_comment='whilst testing ensurePersonForSelf().')
 
     >>> print new_person.displayname
     New Person
@@ -92,20 +92,18 @@ bugtracker since we have an email address for 'New Person'. That means
 that we can always retrieve them reliably when we encounter them in a
 remote bugtracker.
 
-    >>> bugtracker_person = bugtracker.getLinkedPersonByName(
-    ...     'New Person', bugtracker)
-
+    >>> bugtracker_person = bugtracker.getLinkedPersonByName('New Person')
     >>> print bugtracker_person
     None
 
-Calling ensureBugTrackerPerson() with the same details will return the
+Calling ensurePersonForSelf() with the same details will return the
 same person.
 
-    >>> other_person = bugtrackerperson_set.ensureBugTrackerPerson(
-    ...     bugtracker=bugtracker, display_name='New Person',
+    >>> other_person = bugtracker.ensurePersonForSelf(
+    ...     display_name='New Person',
     ...     email='new.person@example.com',
     ...     rationale=PersonCreationRationale.BUGIMPORT,
-    ...     creation_comment='whilst testing ensureBugTrackerPerson().')
+    ...     creation_comment='whilst testing ensurePersonForSelf().')
 
     >>> print other_person.name
     new-person
@@ -113,13 +111,13 @@ same person.
     >>> print new_person.name
     new-person
 
-ensureBugTrackerPerson() can also handle remote users whose email
+ensurePersonForSelf() can also handle remote users whose email
 addresses aren't provided.
 
-    >>> noemail_person = bugtrackerperson_set.ensureBugTrackerPerson(
-    ...     bugtracker=bugtracker, display_name='no-email-person',
+    >>> noemail_person = bugtracker.ensurePersonForSelf(
+    ...     display_name='no-email-person',
     ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
-    ...     creation_comment='whilst testing ensureBugTrackerPerson().')
+    ...     creation_comment='whilst testing ensurePersonForSelf().')
 
     >>> print noemail_person.name
     no-email-person-bugzilla-checkwatches
@@ -128,27 +126,26 @@ A BugTrackerPerson record will have been created to map
 'no-email-person' on our example bugtracker to
 'no-email-person-bugzilla-checkwatches-1' in Launchpad.
 
-    >>> bugtracker_person = bugtrackerperson_set.getByNameAndBugTracker(
-    ...     'no-email-person', bugtracker)
+    >>> bugtracker_person = bugtracker.getLinkedPersonByName(
+    ...     'no-email-person')
 
     >>> bugtracker_person.person == noemail_person
     True
 
-ensureBugTrackerPerson() handles situations in which bugtrackers have
+ensurePersonForSelf() handles situations in which bugtrackers have
 been renamed, too, and avoids name collisions when doing so.
 
 We'll create a person, 'noemail,' on our example bugtracker.
 
-    >>> new_person = bugtrackerperson_set.ensureBugTrackerPerson(
-    ...     bugtracker=bugtracker, display_name='noemail',
+    >>> new_person = bugtracker.ensurePersonForSelf(
+    ...     display_name='noemail',
     ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing.')
 
     >>> print new_person.name
     noemail-bugzilla-checkwatches
 
-    >>> bugtracker_person = bugtrackerperson_set.getByNameAndBugTracker(
-    ...     'noemail', bugtracker)
+    >>> bugtracker_person = bugtracker.getLinkedPersonByName('noemail')
 
     >>> print bugtracker_person.bugtracker.name
     bugzilla-checkwatches
@@ -159,7 +156,7 @@ We'll create a person, 'noemail,' on our example bugtracker.
     >>> commit()
 
 If we rename the BugTracker and then create another with the same name,
-calling ensureBugTrackerPerson() for 'noemail' on that BugTracker
+calling ensurePersonForSelf() for 'noemail' on that BugTracker
 should produce a new Person rather than re-using the existing one.
 
     >>> other_bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
@@ -183,13 +180,12 @@ imported previously.
     >>> other_bugtracker = getUtility(IBugTrackerSet).get(
     ...     other_bug_tracker.id)
 
-    >>> original_bugtracker_person = (
-    ...     bugtrackerperson_set.getByNameAndBugTracker(
-    ...         'noemail', bugtracker))
+    >>> original_bugtracker_person = bugtracker.getLinkedPersonByName(
+    ...     'noemail')
 
-    >>> new_person = bugtrackerperson_set.ensureBugTrackerPerson(
-    ...     other_bug_tracker, 'noemail', None,
-    ...     PersonCreationRationale.BUGIMPORT, 'while testing, again')
+    >>> new_person = other_bugtracker.ensurePersonForSelf(
+    ...     'noemail', None, PersonCreationRationale.BUGIMPORT,
+    ...     'while testing, again')
 
     >>> print original_bugtracker_person.person.name
     noemail-bugzilla-checkwatches

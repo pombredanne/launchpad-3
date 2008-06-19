@@ -27,8 +27,6 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, IBugWatchSet, IDistribution, ILaunchpadCelebrities,
     IPersonSet, ISupportsCommentImport, ISupportsCommentPushing,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.interfaces.bugtrackerperson import (
-    IBugTrackerPersonSet)
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -594,10 +592,8 @@ class BugWatchUpdater(object):
                     sys.exc_info())
                 continue
 
-            bugtrackerperson_set = getUtility(IBugTrackerPersonSet)
-            poster = bugtrackerperson_set.ensurePersonForBugTracker(
-                bug_watch.bugtracker, displayname, email,
-                PersonCreationRationale.BUGIMPORT,
+            poster = bug_watch.bugtracker.ensurePersonForSelf(
+                displayname, email, PersonCreationRationale.BUGIMPORT,
                 "when importing comments for %s." % bug_watch.title)
 
             comment_message = external_bugtracker.getMessageForComment(
