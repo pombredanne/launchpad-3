@@ -407,7 +407,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
-        assert latitude is not None and longitude is not None, (
+        assert ((latitude is None and longitude is None) or 
+                (latitude is not None and longitude is not None)), (
             "Cannot set a latitude without longitude (and vice-versa).")
 
         if self.location is not None:
