@@ -120,12 +120,12 @@ directory for the request.
 
     >>> response = http('GET / HTTP/1.0')
 
-The profile is named on the time of the request start and the thread
-that processed it.
+The profile is named on the time of the request start, the pageid, and
+the thread that processed it.
 
     >>> profiles = os.listdir(profile_dir)
     >>> print "\n".join(profiles)
-    20...-MainThread.prof
+    20...-RootObject:index.html-MainThread.prof
 
 These profile can be loaded using the pstats2 module.
 
@@ -138,8 +138,9 @@ Making another request will create another profile.
 
     >>> profiles = os.listdir(profile_dir)
     >>> print "\n".join(profiles)
-    20...-MainThread.prof
-    20...-MainThread.prof
+    20...-RootObject:index.html-MainThread.prof
+    20...-RootObject:index.html-MainThread.prof
+
 
 == Clean up ==
 

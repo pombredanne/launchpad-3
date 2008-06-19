@@ -451,6 +451,9 @@ class LaunchpadBrowserPublication(
     def endRequest(self, request, object):
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
+
+        self.endProfilingHook(request)
+
         da.clear_request_started()
 
         if config.debug.references:
@@ -477,7 +480,6 @@ class LaunchpadBrowserPublication(
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
 
-        self.endProfilingHook()
 
     def startProfilingHook(self):
         """If profiling is turned on, start a profiler for this request."""
@@ -486,7 +488,7 @@ class LaunchpadBrowserPublication(
         self.thread_locals.profiler = Profile()
         self.thread_locals.profiler.enable()
 
-    def endProfilingHook(self):
+    def endProfilingHook(self, request):
         """If profiling is turned on, save profile data for the request."""
         if not config.profiling.profile_requests:
             return
@@ -494,10 +496,11 @@ class LaunchpadBrowserPublication(
         profiler.disable()
 
         # Create a timestamp including milliseconds.
-        now = datetime.now()
+        now = datetime.fromtimestamp(da.get_request_start_time())
         timestamp = now.strftime('%Y-%m-%d_%H:%M:%S')
-        filename = '%s.%d-%s.prof' % (
+        filename = '%s.%d-%s-%s.prof' % (
             timestamp, int(now.microsecond/1000.0),
+            request._orig_env.get('launchpad.pageid', 'Unknown'),
             threading.currentThread().getName())
 
         profiler.dump_stats(
