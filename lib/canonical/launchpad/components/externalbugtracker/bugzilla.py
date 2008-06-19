@@ -14,8 +14,10 @@ import xml.parsers.expat
 import xmlrpclib
 
 from datetime import datetime
+from email.Utils import parseaddr
 from xml.dom import minidom
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical import encoding
@@ -27,6 +29,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.interfaces.externalbugtracker import (
     ISupportsCommentImport)
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -399,12 +402,8 @@ class BugzillaLPPlugin(Bugzilla):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(bug_watch.remotebug)
 
-        # Complain if the bug doesn't exist.
-        if actual_bug_id not in self.bugs:
-            raise BugNotFound(bug_watch.remotebug)
-
         server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+                self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
         # Fetch the comments we want.
         request_params = {
@@ -412,9 +411,47 @@ class BugzillaLPPlugin(Bugzilla):
             'ids': comment_ids,
             }
         bug_comments_dict = server.Bug.comments(request_params)
-        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
+        comment_list = bug_comments_dict['bugs'][actual_bug_id]
+
+        # Transfer the comment list into a dict.
+        bug_comments = {}
+        for comment in comment_list:
+            bug_comments[comment['id']] = comment
 
         self.bugs[actual_bug_id]['comments'] = bug_comments
+
+    def getPosterForComment(self, bug_watch, comment_id):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+        display_name, email = parseaddr(comment['author'])
+
+        # If the name is empty then we return None so that
+        # IPersonSet.ensurePerson() can actually do something with it.
+        if not display_name:
+            display_name = None
+
+        return (display_name, email)
+
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+
+        # Turn the time in the comment, which is an XML-RPC datetime
+        # into something more useful to us.
+        comment_timestamp = time.mktime(
+            time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
+        comment_datetime = datetime.fromtimestamp(comment_timestamp)
+        comment_datetime = comment_datetime.replace(
+            tzinfo=pytz.timezone('UTC'))
+
+        message = getUtility(IMessageSet).fromText(
+            owner=poster, subject='', content=comment['text'],
+            datecreated=comment_datetime)
+
+        return message
 
 
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):

@@ -216,7 +216,7 @@ comments for all of those bugs.
         text: Bring the passengers to the bridge please Marvin.
         time: 20080616T13:08:08
     <BLANKLINE>
-        author: ford.prefect
+        author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
         number: 2
         text: I appear to have become a perfectly safe penguin.
@@ -265,5 +265,5 @@ returned for each comment.
         author: trillian
         id: 2
     <BLANKLINE>
-        author: ford.prefect
+        author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4

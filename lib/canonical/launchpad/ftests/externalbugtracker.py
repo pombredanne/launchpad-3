@@ -397,7 +397,7 @@ class TestBugzillaXMLRPCTransport:
                 'text': "Bring the passengers to the bridge please Marvin.",
                 'time': datetime(2008, 6, 16, 13, 8, 8),
                 },
-             2:{'author': 'ford.prefect',
+             2:{'author': 'Ford Prefect <ford.prefect@h2g2.com>',
                 'id': 4,
                 'number': 2,
                 'text': "I appear to have become a perfectly safe penguin.",

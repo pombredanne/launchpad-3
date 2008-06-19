@@ -224,13 +224,14 @@ and a list of the comment IDs to retrieve for that bug watch.
 
     >>> bugzilla.fetchComments(bug_watch, [1, 3])
 
-The comments will be stored in the bugs dict as a list of dicts under
-the key 'comments'.
+The comments will be stored in the bugs dict as a dict of comment id =>
+comment dict mappings under the key 'comments'.
 
     >>> import operator
     >>> comments = bugzilla.bugs[1]['comments']
-    >>> for comment in sorted(comments, key=operator.itemgetter('number')):
-    ...     print "Comment %s:" % comment['id']
+    >>> for comment_id in sorted(comments.keys()):
+    ...     print "Comment %s:" % comment_id
+    ...     comment = comments[comment_id]
     ...     for key in sorted(comment.keys()):
     ...         print "    %s: %s" % (key, comment[key])
     Comment 1:
@@ -246,10 +247,47 @@ the key 'comments'.
         text: Life? Don't talk to me about life.
         time: 20080616T13:22:29
 
-An error will be raised if initializeRemoteBugDB() hasn't been called or
-the bug doesn't exist locally.
 
-    >>> bugzilla.fetchComments(bug_watch_broken, [6, 9])
-    Traceback (most recent call last):
-      ...
-    BugNotFound: 42
+=== getPosterForComment() ===
+
+ISupportsCommentImport.getPosterForComment() returns a tuple of
+(displayname, email) for the author of a remote comment.
+
+    >>> bugzilla.fetchComments(bug_watch_two, [2, 4])
+    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, 4)
+    >>> print displayname, email
+    Ford Prefect ford.prefect@h2g2.com
+
+If the author's name as stored in the comment isn't a valid email
+address then the method will return displayname = None and will return
+the whole of the author's name in the email field.
+
+    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, 2)
+    >>> print displayname, email
+    None trillian
+
+
+=== getMessageForComment() ===
+
+ISupportsCommentImport.getMessageForComment() returns a Launchpad
+IMessage instance for a given comment. It takes a bug watch, a comment
+ID and a Person object generated from the return value of
+getPosterForComment(), above. For the sake of this test we'll use
+Sample Person as our poster.
+
+    >>> message = bugzilla.getMessageForComment(
+    ...     bug_watch_two, 2, sample_person)
+    >>> print message.text_contents
+    Bring the passengers to the bridge please Marvin.
+
+    >>> print message.owner.displayname
+    Sample Person
+
+The datecreated attribute of the Message will be the same as the 'time'
+field on the imported comment.
+
+    >>> print bugzilla.bugs[2]['comments'][2]['time']
+    20080616T13:08:08
+
+    >>> print message.datecreated
+    2008-06-16 13:08:08+00:00
