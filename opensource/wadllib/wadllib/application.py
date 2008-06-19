@@ -49,7 +49,11 @@ def wadl_xpath(tag_name):
     return './' + wadl_tag(tag_name)
 
 
-class NoBoundRepresentationError(Exception):
+class WADLError(Exception):
+    pass
+
+
+class NoBoundRepresentationError(WADLError):
     """An unbound resource was used where wadllib expected a bound resource.
 
     To obtain the value of a resource's parameter, you first must bind
@@ -59,7 +63,7 @@ class NoBoundRepresentationError(Exception):
     """
 
 
-class UnsupportedMediaTypeError(Exception):
+class UnsupportedMediaTypeError(WADLError):
     """A media type was given that's not supported in this context.
 
     A resource can only be bound to media types it has representations
@@ -243,7 +247,8 @@ class Resource(WADLResolvableDefinition):
         if self.representation is None:
             raise NoBoundRepresentationError(
                 "Resource is not bound to any representation.")
-        representation_tag = self.representation_definition.resolve_definition().tag
+        definition = self.representation_definition.resolve_definition()
+        representation_tag = definition.tag
         for param_tag in representation_tag.findall(wadl_xpath('param')):
             if param_tag.attrib.get('name') == param_name:
                 return Parameter(self, param_tag)
@@ -300,7 +305,7 @@ class Method(WADLBase):
         """
         return self.tag.attrib.get('name')
 
-    def request_url(self,  param_values={}, **kw_param_values):
+    def request_url(self,  param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""
         return self.request.url(param_values, **kw_param_values)
 
@@ -330,13 +335,15 @@ class RequestDefinition(WADLBase):
                 for param_tag in param_tags
                 if param_tag.attrib.get('style') == 'query']
 
-    def url(self, param_values={}, **kw_param_values):
+    def url(self, param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""
-        full_param_values = dict(param_values)
+        if param_values is None:
+            full_param_values = {}
+        else:
+            full_param_values = dict(param_values)
         full_param_values.update(kw_param_values)
         validated_values = {}
         for param in self.query_params:
-            param.name
             name = param.name
             if param.fixed_value is not None:
                 if (full_param_values.has_key(name)
@@ -570,14 +577,6 @@ class Application(WADLBase):
         if resource_type is None:
             raise KeyError('No such XML ID: "%s"' % resource_type_url)
         return resource_type
-
-        # XXX leonardr 2008-05-28:
-        # Eventually we need to implement this for non-relative URLs,
-        # so that a script using this client can navigate from a WADL
-        # representation of a non-root resource to its definition at
-        # the server root.
-        raise NotImplementedError("Can't look up definition in another "
-                                  "url (%s)" % resource_type_url)
 
     def lookup_xml_id(self, url):
         """A helper method for locating a part of a WADL document.
