@@ -830,6 +830,7 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # that this new email does not have the PREFERRED status.
         removeSecurityProxy(email).status = EmailAddressStatus.NEW
         removeSecurityProxy(email).person = requester.id
+        email.account = requester.account
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make
