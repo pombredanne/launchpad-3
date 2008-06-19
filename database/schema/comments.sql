@@ -2014,3 +2014,12 @@ COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a given ti
 COMMENT ON COLUMN OAuthNonce.access_token IS 'The access token.';
 COMMENT ON COLUMN OAuthNonce.nonce IS 'The nonce itself.';
 COMMENT ON COLUMN OAuthNonce.request_timestamp IS 'The date and time (as a timestamp) in which the request was made.';
+
+COMMENT ON TABLE WebServiceBan IS 'A list of specifications of clients which should be denied access on the web service.';
+COMMENT ON COLUMN WebServiceBan.person IS 'If set, all access by this person should be denied access.';
+COMMENT ON COLUMN WebServiceBan.consumer IS 'If set, all access by this consumer should be denied.';
+COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this token should be denied.';
+COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
+COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
+COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
+

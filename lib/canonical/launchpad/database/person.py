@@ -3032,8 +3032,6 @@ class PersonSet:
         skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
-        # XXX: StuartBishop 2005-03-31:
-        # Add sampledata and test to confirm this case.
         cur.execute('''
             UPDATE POSubscription
             SET person=%(to_id)d
@@ -3112,6 +3110,35 @@ class PersonSet:
         # to the old PPA to the new one, performing a careful_publishing on it
         # and removing the old one from disk.
         skip.append(('archive', 'owner'))
+
+        # Update only the CodeReviewVote that will not conflict
+        cur.execute('''
+            UPDATE CodeReviewVote
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM CodeReviewVote AS a, CodeReviewVote AS b
+                WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
+                AND a.branch_merge_proposal = b.branch_merge_proposal
+                )
+            ''' % vars())
+        # And leave conflicts as noise
+        skip.append(('codereviewvote', 'reviewer'))
+
+        # Update only the WebServiceBan that will not conflict
+        cur.execute('''
+            UPDATE WebServiceBan
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
+                )
+            ''' % vars())
+        # And delete the rest 
+        cur.execute('''
+            DELETE FROM WebServiceBan WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('webserviceban', 'person'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
