@@ -163,24 +163,18 @@ bugtracker and a couple of bugwatches.
 
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-
-    >>> from canonical.launchpad.testing.factory import (
-    ...     LaunchpadObjectFactory)
-    >>> factory = LaunchpadObjectFactory()
-
-    >>> from canonical.testing import LaunchpadZopelessLayer
-
     >>> from canonical.launchpad.interfaces.bug import CreateBugParams
     >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
     >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
+    >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -227,7 +221,6 @@ and a list of the comment IDs to retrieve for that bug watch.
 The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
 
-    >>> import operator
     >>> comments = bugzilla.bugs[1]['comments']
     >>> for comment_id in sorted(comments.keys()):
     ...     print "Comment %s:" % comment_id
