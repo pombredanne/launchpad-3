@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import os
-import sys
 
 import GeoIP as libGeoIP
 
@@ -17,6 +16,7 @@ from zope.component import getUtility
 
 from zope.i18n.interfaces import IUserPreferredLanguages
 
+from canonical.config import config
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request)
 from canonical.launchpad.interfaces.country import ICountrySet
@@ -30,17 +30,11 @@ class GeoIP:
     implements(IGeoIP)
 
     def __init__(self):
-        test_db = "/usr/share/GeoIP/GeoLiteCity.dat"
-        production_db = "/usr/share/GeoIP/GeoCity.dat"
-        if os.path.exists(production_db):
-            db = production_db
-        else:
-            if not os.path.exists(test_db):
-                print 'Error: %s not found.' % test_db
-                print '       Try running rocketfuel-setup to install it.'
-                sys.exit(1)
-            db = test_db
-        self._gi = libGeoIP.open(db, libGeoIP.GEOIP_MEMORY_CACHE)
+        geoip_db = config.launchpad.geoip_db
+        if not os.path.exists(geoip_db):
+            # XXX: What should we do here!?
+            pass
+        self._gi = libGeoIP.open(geoip_db, libGeoIP.GEOIP_MEMORY_CACHE)
 
     def getRecordByAddress(self, ip_address):
         """See `IGeoIP`."""
