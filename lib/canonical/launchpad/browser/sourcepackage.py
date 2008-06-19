@@ -37,13 +37,15 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
+from canonical.lazr.utils import smartquote
+
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
 
     def breadcrumb(self):
-        return self.context.name
+        return smartquote('"%s" package') % (self.context.name)
 
     @stepto('+pots')
     def pots(self):
@@ -143,7 +145,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.ExpensiveRequest')
     def translationdownload(self):
         text = 'Download translations'
-        enabled = (len(self.context.getCurrentTranslationTemplates()) > 0)
+        enabled = bool(self.context.getCurrentTranslationTemplates())
         return Link('+export', text, icon='download', enabled=enabled)
 
     def help(self):

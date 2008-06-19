@@ -13,8 +13,11 @@ from zope.component import getUtility
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, PackagePublishingStatus, IComponentSet)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.component import IComponentSet
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.publishing import (
+    PackagePublishingStatus, PackagePublishingPocket)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 
 
@@ -213,6 +216,18 @@ class TestDominator(TestNativePublishingBase):
             pub_source=pub_source_archindep,
             status=PackagePublishingStatus.PUBLISHED)
         [hppa_pub, i386_pub] = pub_binaries_archindep
+
+        # We will also copy the binary publications to a PPA archive
+        # to check if the lookup is indeed restricted to the dominated
+        # archive. See bug #237845 for further information.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        for pub_binary in pub_binaries_archindep:
+            pub_binary.copyTo(
+                self.breezy_autotest,
+                PackagePublishingPocket.RELEASE,
+                cprov.archive)
+        cprov_foo_binaries = cprov.archive.getAllPublishedBinaries(name='foo')
+        self.assertEqual(cprov_foo_binaries.count(), 2)
 
         # Manually supersede the hppa binary.
         secure_hppa_pub = self.getSecureBinary(hppa_pub)

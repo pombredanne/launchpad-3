@@ -18,6 +18,7 @@ import pytz
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
+from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.lp import initZopeless
@@ -228,7 +229,8 @@ class LaunchpadScript:
     #
 
     def lock_and_run(self, blocking=False, skip_delete=False,
-                     use_web_security=False, implicit_begin=True):
+                     use_web_security=False, implicit_begin=True,
+                     isolation=ISOLATION_LEVEL_DEFAULT):
         """Call lock_or_die(), and then run() the script.
 
         Will die with sys.exit(1) if the locking call fails.
@@ -236,7 +238,7 @@ class LaunchpadScript:
         self.lock_or_die(blocking=blocking)
         try:
             self.run(use_web_security=use_web_security,
-                     implicit_begin=implicit_begin)
+                     implicit_begin=implicit_begin, isolation=isolation)
         finally:
             self.unlock(skip_delete=skip_delete)
 
@@ -247,10 +249,10 @@ class LaunchpadCronScript(LaunchpadScript):
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
         self.txn.begin()
-        from canonical.launchpad.ftests import ANONYMOUS, login
-        login(ANONYMOUS)
+        self.login(ANONYMOUS)
         getUtility(IScriptActivitySet).recordSuccess(
             name=self.name,
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+

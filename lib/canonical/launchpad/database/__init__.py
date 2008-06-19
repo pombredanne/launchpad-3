@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
+from canonical.launchpad.database.account import *
 from canonical.launchpad.database.codeimport import *
 from canonical.launchpad.database.codeimportevent import *
 from canonical.launchpad.database.codeimportjob import *
@@ -136,5 +137,5 @@ from canonical.launchpad.database.mailinglist import *
 from canonical.launchpad.database.hwdb import *
 from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.packagediff import *
-from canonical.launchpad.database.codereviewmessage import *
+from canonical.launchpad.database.codereviewcomment import *
 from canonical.launchpad.database.archivepermission import *

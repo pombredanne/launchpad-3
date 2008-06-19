@@ -8,14 +8,10 @@ __all__ = [
     'OpenIdAuthorization', 'OpenIdAuthorizationSet', 'OpenIDRPConfig',
     'OpenIDRPConfigSet']
 
-from random import random
-from time import time
-
-from zope.interface import implements, classProvides
-
-from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
-
 from openid.store.sqlstore import PostgreSQLStore
+import psycopg2
+from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
+from zope.interface import implements, classProvides
 
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -79,7 +75,7 @@ class OpenIDRPConfig(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     logo = ForeignKey(
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
-    _allowed_sreg = StringCol(dbName='allowed_sreg', forceDBName=True)
+    _allowed_sreg = StringCol(dbName='allowed_sreg')
     creation_rationale = EnumCol(
         dbName='creation_rationale', notNull=True,
         schema=PersonCreationRationale,
@@ -141,6 +137,7 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
     """
     classProvides(ILaunchpadOpenIdStoreFactory)
 
+    exceptions = psycopg2
     settings_table = None
     associations_table = 'OpenIDAssociations'
     nonces_table = None

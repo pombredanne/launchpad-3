@@ -11,9 +11,6 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool
-
-from canonical.launchpad import _
 
 
 class IBuildQueue(Interface):
@@ -60,10 +57,6 @@ class IBuildQueue(Interface):
     buildduration = Attribute(
         "Duration of the job, calculated on-the-fly based on buildstart.")
     is_virtualized = Attribute("See IBuild.is_virtualized.")
-    is_last_version = Bool(
-        title=_("Whether or not the job source is the last version published "
-                "in the archive."),
-        required=False)
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""

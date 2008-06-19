@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Browser code for Translation files."""
 
 __metaclass__ = type
@@ -104,7 +104,7 @@ class POFileMenuMixin:
 
     def description(self):
         text = 'Description'
-        return Link('', text)
+        return Link('+index', text)
 
     def translate(self):
         text = 'Translate'
@@ -316,6 +316,10 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+        if (self.user is not None and
+            self.user.translations_relicensing_agreement is None):
+            return self.request.response.redirect(
+                canonical_url(self.user, view_name='+licensing'))
 
         # The handling of errors is slightly tricky here. Because this
         # form displays multiple POMsgSetViews, we need to track the
@@ -339,7 +343,8 @@ class POFileTranslateView(BaseTranslationView):
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
         return BatchNavigator(self._getSelectedPOTMsgSets(),
-                              self.request, size=self.DEFAULT_SIZE)
+                              self.request, size=self.DEFAULT_SIZE,
+                              transient_parameters=["old_show"])
 
     def _initializeTranslationMessageViews(self):
         """See BaseTranslationView._initializeTranslationMessageViews."""
@@ -472,6 +477,13 @@ class POFileTranslateView(BaseTranslationView):
             self.shown_count = self.context.updatesCount()
         else:
             raise AssertionError("Bug in _initializeShowOption")
+
+        # Changing the "show" option resets batching.
+        old_show_option = self.request.form.get('old_show')
+        show_option_changed = (
+            old_show_option is not None and old_show_option != self.show)
+        if show_option_changed and 'start' in self.request:
+            del self.request.form['start']
 
     def _getSelectedPOTMsgSets(self):
         """Return a list of the POTMsgSets that will be rendered."""

@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
+    <include file="account.zcml" />
     <include file="announcement.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
@@ -47,7 +48,7 @@
     <include file="codeimportmachine.zcml" />
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
-    <include file="codereviewmessage.zcml" />
+    <include file="codereviewcomment.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="cve.zcml" />
@@ -93,6 +94,7 @@
     <include file="oauth.zcml" />
     <include file="openid.zcml" />
     <include file="packagebugsupervisor.zcml" />
+    <include file="packagecloner.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
@@ -112,6 +114,7 @@
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="revision.zcml" />
+    <include file="salesforce.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
     <include file="shipit.zcml" />

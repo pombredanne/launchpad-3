@@ -9,12 +9,14 @@ when given certain user-configurable URLs.
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.pidfile import make_pidfile
-import subprocess
-import os
-import time
-import socket
+from canonical.pidfile import make_pidfile, get_pid, pidfile_path
+import errno
 import logging
+import os
+import signal
+import socket
+import subprocess
+import time
 
 
 # Set up basic logging.
@@ -120,11 +122,51 @@ def wait_for_service(timeout=10.0):
             try:
                 sock.connect((host, port))
             except socket.error, err:
-                elapsed = (time.time() - start)
-                if elapsed > timeout:
-                    raise RuntimeError("Socket poll time exceeded.")
+                if err.args[0] == errno.ECONNREFUSED:
+                    elapsed = (time.time() - start)
+                    if elapsed > timeout:
+                        raise RuntimeError("Socket poll time exceeded.")
+                else:
+                    raise
             else:
                 break
+            time.sleep(0.1)
+    finally:
+        sock.close()  # Clean up.
+
+
+def wait_for_service_shutdown(seconds_to_wait=10.0):
+    """Poll the service until it shuts down.
+
+    Raises a RuntimeError if the service doesn't shut down within the allotted
+    time, under normal operation.  It may also raise various socket errors if
+    there are issues connecting to the service (host lookup, etc.)
+
+    :param seconds_to_wait: The number of seconds to wait for the socket to
+        open up.
+    """
+    host, port = get_service_endpoint()
+
+    start = time.time()  # Record when we started polling.
+    try:
+        while True:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5.0) # Block for at most X seconds.
+            try:
+                sock.connect((host, port))
+                sock.close()
+            except socket.error, err:
+                if err.args[0] == errno.ECONNREFUSED:
+                    # Success!  The socket is closed.
+                    return
+                else:
+                    raise
+            else:
+                elapsed = (time.time() - start)
+                if elapsed > seconds_to_wait:
+                    raise RuntimeError(
+                        "The service did not shut down in the allotted time.")
+            time.sleep(0.1)
     finally:
         sock.close()  # Clean up.
 
@@ -149,6 +191,48 @@ def start_as_process():
         head, _ = os.path.splitext(script)
         script = head + '.py'
     return subprocess.Popen(script)
+
+
+def kill_running_process():
+    """Find and kill any running web service processes."""
+    # pylint: disable-msg=W0602
+    global service_name
+    try:
+        pid = get_pid(service_name)
+    except IOError:
+        # We could not find an existing pidfile.
+        return
+    except ValueError:
+        # The file contained a mangled and invalid PID number, so we should
+        # clean the file up.
+        safe_unlink(pidfile_path(service_name))
+    else:
+        if pid is not None:
+            try:
+                os.kill(pid, signal.SIGTERM)
+                # We need to use a busy-wait to find out when the socket
+                # becomes available.  Failing to do so causes a race condition
+                # between freeing the socket in the killed process, and
+                # opening it in the current one.
+                wait_for_service_shutdown()
+            except os.error, err:
+                if err.errno == errno.ESRCH:
+                    # Whoops, we got a 'No such process' error. The PID file
+                    # is probably stale, so we'll remove it to prevent trash
+                    # from lying around in the test environment.
+                    # See bug #237086.
+                    safe_unlink(pidfile_path(service_name))
+                else:
+                    raise
+
+
+def safe_unlink(filepath):
+    """Unlink a file, but don't raise an error if the file is missing."""
+    try:
+        os.unlink(filepath)
+    except os.error, err:
+        if err.errno != errno.ENOENT:
+            raise
 
 
 def main():

@@ -1116,6 +1116,16 @@ class CodeImportFormatterAPI(CustomizableFormatter):
                 'branch': branch_title,
                }
 
+    def url(self, view_name=None):
+        """See `ObjectFormatterAPI`."""
+        # The url of a code import is the associated branch.
+        # This is still here primarily for supporting branch deletion,
+        # which does a fmt:link of the other entities that will be deleted.
+        url = canonical_url(
+            self._context.branch, path_only_if_possible=True,
+            view_name=view_name)
+        return url
+
 
 class CodeImportMachineFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
@@ -1172,8 +1182,8 @@ class SpecificationFormatterAPI(CustomizableFormatter):
         return {'title': self._context.title}
 
 
-class CodeReviewMessageFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for CodeReviewMessage objects"""
+class CodeReviewCommentFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for CodeReviewComment objects"""
 
     _link_summary_template = _('Comment by %(author)s')
     _link_permission = 'zope.Public'
@@ -1406,7 +1416,8 @@ class DateTimeFormatterAPI:
 
     def time(self):
         if self._datetime.tzinfo:
-            value = self._datetime.astimezone(getUtility(ILaunchBag).timezone)
+            value = self._datetime.astimezone(
+                getUtility(ILaunchBag).time_zone)
             return value.strftime('%T %Z')
         else:
             return self._datetime.strftime('%T')
@@ -1414,7 +1425,8 @@ class DateTimeFormatterAPI:
     def date(self):
         value = self._datetime
         if value.tzinfo:
-            value = value.astimezone(getUtility(ILaunchBag).timezone)
+            value = value.astimezone(
+                getUtility(ILaunchBag).time_zone)
         return value.strftime('%Y-%m-%d')
 
     def _now(self):
@@ -2457,19 +2469,6 @@ class PageMacroDispatcher:
     def pagetype(self):
         return getattr(self.context, '__pagetype__', 'unset')
 
-    def show_actions_menu(self):
-        """Should the actions menu be rendered?
-
-        It should be rendered unless the layout turns it off, or if we are
-        running in development mode and the layout has navigation tabs.
-        """
-        has_actionsmenu = self.haspage('actionsmenu')
-        if has_actionsmenu and config.devmode:
-            # In devmode, actually hides the actions menu if
-            # the navigation tabs are used.
-            return not self.haspage('navigationtabs')
-        return has_actionsmenu
-
     class LayoutElements:
 
         def __init__(self,
@@ -2508,26 +2507,21 @@ class PageMacroDispatcher:
                 structuralheaderobject=True),
         'default2.0':
             LayoutElements(
+                actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True,
                 navigationtabs=True),
-        'defaultnomenu':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                structuralheaderobject=True,
-                actionsmenu=False),
         'onecolumn':
             # XXX 20080130 mpt: Should eventually become the new 'default'.
             LayoutElements(
+                actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
                 globalsearch=True,
+                navigationtabs=True,
                 portlets=False,
                 structuralheaderobject=True),
         'applicationhome':

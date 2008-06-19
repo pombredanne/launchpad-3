@@ -23,6 +23,7 @@ from zope.interface import implements, providedBy
 from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
+from storm.store import Store
 
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
@@ -55,7 +56,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
@@ -154,7 +155,7 @@ class Bug(SQLBase):
                             default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -163,7 +164,7 @@ class Bug(SQLBase):
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
         dbName='who_made_private', foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins
@@ -323,13 +324,20 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+        # Ensure that the subscription has been flushed.
+        Store.of(sub).flush()
         return sub
 
     def unsubscribe(self, person):
         """See `IBug`."""
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                BugSubscription.delete(sub.id)
+                store = Store.of(sub)
+                store.remove(sub)
+                # Make sure that the subscription removal has been
+                # flushed so that code running with implicit flushes
+                # disabled see the change.
+                store.flush()
                 return
 
     def unsubscribeFromDupes(self, person):
@@ -368,7 +376,7 @@ class Bug(SQLBase):
         """See `IBug`.
 
         The recipients argument is private and not exposed in the
-        inerface. If a BugNotificationRecipients instance is supplied,
+        interface. If a BugNotificationRecipients instance is supplied,
         the relevant subscribers and rationales will be registered on
         it.
         """
@@ -603,18 +611,22 @@ class Bug(SQLBase):
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
+            # XXX 2008-05-27 jamesh:
+            # Ensure that BugMessages get flushed in same order as
+            # they are created.
+            Store.of(result).flush()
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See `IBug`."""
         # We shouldn't add duplicate bug watches.
         bug_watch = self.getBugWatch(bugtracker, remotebug)
-        if bug_watch is not None:
-            return bug_watch
-        else:
-            return BugWatch(
+        if bug_watch is None:
+            bug_watch = BugWatch(
                 bug=self, bugtracker=bugtracker,
                 remotebug=remotebug, owner=owner)
+            Store.of(bug_watch).flush()
+        return bug_watch
 
     def addAttachment(self, owner, file_, comment, filename,
                       is_patch=False, content_type=None, description=None):
@@ -779,11 +791,15 @@ class Bug(SQLBase):
 
     def canMentor(self, user):
         """See `ICanBeMentored`."""
-        return not (not user or
-                    self.is_complete or
-                    self.duplicateof is not None or
-                    self.isMentor(user) or
-                    not user.teams_participated_in)
+        if user is None:
+            return False
+        if self.duplicateof is not None or self.is_complete:
+            return False
+        if bool(self.isMentor(user)):
+            return False
+        if not user.teams_participated_in:
+            return False
+        return True
 
     def isMentor(self, user):
         """See `ICanBeMentored`."""
@@ -965,7 +981,7 @@ class Bug(SQLBase):
         # is a user editable text string. We should improve the
         # matching so that for example '#42' matches '42' and so on.
         return BugWatch.selectFirstBy(
-            bug=self, bugtracker=bugtracker, remotebug=remote_bug,
+            bug=self, bugtracker=bugtracker, remotebug=str(remote_bug),
             orderBy='id')
 
     def setStatus(self, target, status, user):
@@ -1062,6 +1078,7 @@ class Bug(SQLBase):
             tag.destroySelf()
         for added_tag in added_tags:
             BugTag(bug=self, tag=added_tag)
+        Store.of(self).flush()
 
     tags = property(_getTags, _setTags)
 

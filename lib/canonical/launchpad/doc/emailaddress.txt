@@ -1,10 +1,12 @@
-= Email Address =
+= Email Addresses =
 
 In Launchpad we use email addresses to uniquely identify a person. This is why
 email addresses must be unique.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet, IPersonSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddress, IEmailAddressSet)
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
     >>> emailset = getUtility(IEmailAddressSet)
@@ -33,3 +35,56 @@ Registering a new email address works -- and preserves case -- though:
     >>> emailaddress = emailset.new('oink@Canonical.com', foobar)
     >>> emailaddress.email
     u'oink@Canonical.com'
+
+Email addresses provide both IEmailAddress and IHasOwner.
+
+    >>> from canonical.launchpad.interfaces.launchpad import IHasOwner
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IEmailAddress, emailaddress)
+    True
+    >>> verifyObject(IHasOwner, emailaddress)
+    True
+
+Generating SHA1 hashes for RDF output is easy:
+
+    >>> emailaddress.rdf_sha1
+    '3738A7C5FB02B103FEF1F3CDAA9B086B6C382F6E'
+
+There's a convenience method on IEmailAddressSet to pull preferred email
+addresses for a set of people:
+
+    >>> guadamen = personset.getByName('guadamen')
+    >>> [emailaddress.email for emailaddress in
+    ...  emailset.getPreferredEmailForPeople(guadamen.allmembers)]
+    [u'colin.watson@ubuntulinux.com',
+     u'foo.bar@canonical.com',
+     u'support@ubuntu.com']
+
+
+== Deleting email addresses ==
+
+Email addresses may be deleted if they're not a person's preferred one
+or the address of a team's mailing list.
+
+    >>> login(foobar.preferredemail.email)
+    >>> emailaddress = emailset.getByEmail('oink@canonical.com')
+    >>> emailaddress.destroySelf()
+    >>> print emailset.getByEmail('oink@canonical.com')
+    None
+
+Otherwise, UndeletableEmailAddress is raised.
+
+    >>> foobar.preferredemail.destroySelf()
+    Traceback (most recent call last):
+    ...
+    UndeletableEmailAddress: This is a person's preferred email...
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...     new_list_for_team)
+    >>> mailing_list = new_list_for_team(guadamen)
+    >>> email = emailset.getByEmail(guadamen.mailing_list.address)
+    >>> email.destroySelf()
+    Traceback (most recent call last):
+    ...
+    UndeletableEmailAddress: This is the email address of a team's mailing
+    list...

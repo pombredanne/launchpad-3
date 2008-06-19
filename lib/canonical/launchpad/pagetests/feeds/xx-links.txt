@@ -117,7 +117,7 @@ it must have quotes and html escaped.
     ...     user, 'bad-displayname',
     ...     'Bad displayname"><script>alert("h4x0r")</script>',
     ...     'title foo', 'summary foo', licenses=[License.GNU_GPL_V2])
-    <Product ...>
+    <...Product ...>
     >>> flush_database_updates()
     >>> logout()
     >>> browser.open('http://launchpad.dev/bad-displayname')

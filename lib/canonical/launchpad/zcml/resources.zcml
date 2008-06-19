@@ -15,19 +15,21 @@
     <!-- General Images -->
     <resource name="add" file="../images/add.png" />
     <resource name="add-badge" file="../images/add-badge.png" />
-    <resource name="add-large" file="../images/add-large.png" />
     <resource name="architecture" file="../images/architecture.png" />
     <!-- arrowBlank is used in sorttable.js -->
     <resource name="arrowBlank" file="../images/arrowBlank.gif" />
     <resource name="arrowBottom" file="../images/arrowBottom.png" />
-    <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.png" />
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
     <resource name="arrowLeft" file="../images/arrowLeft.png" />
+    <resource name="batch-previous-inactive" file="../images/arrowLeft-inactive.png" />
     <resource name="arrowRight" file="../images/arrowRight.png" />
+    <resource name="batch-next-inactive" file="../images/arrowRight-inactive.png" />
     <resource name="arrowStart" file="../images/arrowStart.png" />
+    <resource name="batch-start-inactive" file="../images/arrowStart-inactive.png" />
     <resource name="arrowEnd" file="../images/arrowEnd.png" />
+    <resource name="batch-end-inactive" file="../images/arrowEnd-inactive.png" />
     <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
@@ -63,6 +65,8 @@
     <resource name="bug-remote-comment-synchronizing"
               file="../images/bug-remote-comment-synchronizing.png" />
     <resource name="bullet" file="../images/bullet.png" />
+    <resource name="cancel" file="../images/cancel.png" />
+    <resource name="confirm" file="../images/confirm.png" />
     <resource name="copy" file="../images/copy.png" />
     <resource name="crowd" file="../images/crowd.png" />
     <resource name="crowd-large" file="../images/crowd-large.png" />

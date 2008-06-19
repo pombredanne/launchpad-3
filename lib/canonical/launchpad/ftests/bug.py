@@ -17,9 +17,15 @@ from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, IDistributionSet, IBugTaskSet, IPersonSet, IProductSet,
-    ISourcePackageNameSet, IBugSet, IBugWatchSet, CreateBugParams)
+from canonical.launchpad.interfaces.bug import CreateBugParams, IBugSet
+from canonical.launchpad.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+from canonical.launchpad.interfaces.bugwatch import IBugWatchSet
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.sourcepackagename import (
+    ISourcePackageNameSet)
 
 
 DIRECT_SUBS_PORTLET_INDEX = 0
@@ -172,7 +178,8 @@ def update_task_status(task_id, person, status):
 
 def create_old_bug(
     title, days_old, target, status=BugTaskStatus.INCOMPLETE,
-    with_message=True, external_bugtracker=None):
+    with_message=True, external_bugtracker=None, assignee=None,
+    milestone=None, duplicateof=None):
     """Create an aged bug.
 
     :title: A string. The bug title for testing.
@@ -187,6 +194,7 @@ def create_old_bug(
     params = CreateBugParams(
         owner=no_priv, title=title, comment='Something is broken.')
     bug = target.createBug(params)
+    bug.duplicateof = duplicateof
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     if with_message is True:
         bug.newMessage(
@@ -195,16 +203,23 @@ def create_old_bug(
     bugtask = bug.bugtasks[0]
     bugtask.transitionToStatus(
         status, sample_person)
+    if assignee is not None:
+        bugtask.transitionToAssignee(assignee)
+    bugtask.milestone = milestone
     if external_bugtracker is not None:
         getUtility(IBugWatchSet).createBugWatch(bug=bug, owner=sample_person, 
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
+    sync_bugtasks([bugtask])
     return bugtask
 
 
 def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
+    bugtaskset = getUtility(IBugTaskSet)
+    expirable_bugtasks = list(bugtaskset.findExpirableBugTasks(
+        0, getUtility(ILaunchpadCelebrities).janitor))
     print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in sorted(set(bugtasks), key=attrgetter('id')):
         if len(bugtask.bug.bugtasks) == 1:
@@ -213,7 +228,7 @@ def summarize_bugtasks(bugtasks):
             title = bugtask.target.name
         print '%s  %s  %s  %s  %s  %s  %s  %s' % (
             title,
-            bugtask.pillar.enable_bug_expiration,
+            bugtask in expirable_bugtasks,
             (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
             bugtask.status.title,
             bugtask.assignee is not None,

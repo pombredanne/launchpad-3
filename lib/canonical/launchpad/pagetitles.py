@@ -41,7 +41,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
-from canonical.launchpad.webapp import smartquote
+from canonical.lazr.utils import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -370,7 +370,7 @@ build_buildlog = ContextTitle('Build log for %s')
 
 build_changes = ContextTitle('Changes in %s')
 
-build_index = ContextTitle('Build details for %s')
+build_index = ContextTitle('%s')
 
 build_retry = ContextTitle('Retry %s')
 
@@ -441,9 +441,9 @@ codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Ubuntu Codes of Conduct'
 
-codereviewmessage_index = 'Code review comment'
+codereviewcomment_index = 'Code review comment'
 
-codereviewmessage_reply = 'Reply to code review comment'
+codereviewcomment_reply = 'Reply to code review comment'
 
 cveset_all = 'All CVE entries registered in Launchpad'
 
@@ -832,7 +832,7 @@ object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 object_reassignment = ContextTitle('Reassign %s')
 
-object_translations = ContextTitle('Translation templates for %s')
+object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
@@ -956,7 +956,7 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
-person_translations_relicensing = "Relicense your translations"
+person_translations_relicensing = "Translations licensing"
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
@@ -1257,7 +1257,7 @@ sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
 
-sourcepackage_export = ContextTitle('Download translations for "%s"')
+sourcepackage_export = ContextTitle('Download translations for %s')
 
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""

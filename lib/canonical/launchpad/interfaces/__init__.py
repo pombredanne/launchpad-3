@@ -8,13 +8,16 @@ __metaclass__ = type
 # file, one file for each interface type: person, project, bug, etc.
 
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
 from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.messagetarget import *
+from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pillar import *
 
+from canonical.launchpad.interfaces.account import *
 from canonical.launchpad.interfaces.archive import *
 from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.archivepermission import *
@@ -56,7 +59,7 @@ from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
-from canonical.launchpad.interfaces.codereviewmessage import *
+from canonical.launchpad.interfaces.codereviewcomment import *
 from canonical.launchpad.interfaces.codereviewvote import *
 from canonical.launchpad.interfaces.commercialsubscription import *
 from canonical.launchpad.interfaces.component import *
@@ -114,7 +117,6 @@ from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
-from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
