@@ -1,4 +1,4 @@
-        = Web Service API Declarations =
+= Web Service API Declarations =
 
 You can easily create a web service by tagging your content interfaces
 with some decorators. From this tagging the web service API will be
@@ -372,7 +372,7 @@ newly-created object.
     params: {'author': <...TextLine...>,
         'base_price': <...Float...>,
         'title': <...TextLine...>}
-    return_type: <zope.schema._field.Object object...>
+    return_type: <...Object...>
     type: 'factory'
 
 We did specify the return type for the 'searchBooks' method: it
@@ -391,7 +391,7 @@ The 'bestMatch' method returns an entry.
     as: 'bestMatch'
     call_with: {}
     params: {'text': <...TextLine...>}
-    return_type: <zope.schema._field.Object object...>
+    return_type: <canonical.lazr.fields.Reference object...>
     type: 'read_operation'
 
 The 'checkout' method doesn't return anything.
@@ -616,7 +616,7 @@ argument.
     ...     def a_method(**kwargs): pass
     Traceback (most recent call last):
     ...
-    AssertionError: Entry type not-an-interface does not provide IInterface.
+    TypeError: Entry type not-an-interface does not provide IInterface.
 
     >>> class ReturnOtherThanInterface(Interface):
     ...     export_as_webservice_entry()
@@ -625,7 +625,7 @@ argument.
     ...     def a_method(**kwargs): pass
     Traceback (most recent call last):
     ...
-    AssertionError: Collection value type not-an-interface does not
+    TypeError: Collection value type not-an-interface does not
     provide IInterface.
 
 

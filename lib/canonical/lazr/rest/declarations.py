@@ -421,9 +421,9 @@ class operation_returns_entry(_method_annotator):
     def __init__(self, schema):
         _check_called_from_interface_def('%s()' % self.__class__.__name__)
         if not IInterface.providedBy(schema):
-            raise AssertionError('Entry type %s does not provide IInterface.'
-                                 % schema)
-        self.return_type = Object(schema=schema)
+            raise TypeError('Entry type %s does not provide IInterface.'
+                            % schema)
+        self.return_type = Reference(schema=schema)
 
     def annotate_method(self, method, annotations):
         annotations['return_type'] = self.return_type
@@ -439,8 +439,8 @@ class operation_returns_collection_of(_method_annotator):
     def __init__(self, schema):
         _check_called_from_interface_def('%s()' % self.__class__.__name__)
         if not IInterface.providedBy(schema):
-            raise AssertionError('Collection value type %s does not provide '
-                                 'IInterface.' % schema)
+            raise TypeError('Collection value type %s does not provide '
+                            'IInterface.' % schema)
         self.return_type = CollectionField(
             value_type=Reference(schema=schema))
 
