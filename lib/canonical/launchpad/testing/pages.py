@@ -6,6 +6,7 @@
 
 __metaclass__ = type
 
+import atexit
 import os
 import re
 import simplejson
@@ -16,12 +17,15 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from cProfile import Profile
 from urlparse import urljoin, urlsplit
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
 from zope.proxy import ProxyBase
-from zope.testbrowser.testing import Browser
+from zope.testbrowser.browser import Browser
+from zope.testbrowser.testing import (
+    PublisherConnection, PublisherMechanizeBrowser, PublisherHTTPHandler)
 from zope.testing import doctest
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
@@ -34,7 +38,36 @@ from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
 
-class UnstickyCookieHTTPCaller(HTTPCaller):
+def init_profiler():
+    """Initialize the pagetests profiler, if configured."""
+    global profiler
+    if os.environ.get('PROFILE_PAGETESTS_REQUESTS'):
+        profiler = Profile()
+    else:
+        profiler = None
+init_profiler()
+
+
+def write_profiler_stats():
+    """Save the profiler data, if configured."""
+    if profiler is not None:
+        profiler.dump_stats(os.environ.get('PROFILE_PAGETESTS_REQUESTS'))
+atexit.register(write_profiler_stats)
+
+
+class ProfiledHTTPCaller(HTTPCaller):
+    """HTTPCaller subclass that can profile requests."""
+
+    def __call__(self, *args, **kwargs):
+        """Make a request to the publisher, profiling the call."""
+        orig_call = super(ProfiledHTTPCaller, self).__call__
+        if profiler is None:
+            return orig_call(*args, **kwargs)
+        else:
+            return profiler.runcall(orig_call, *args, **kwargs)
+
+
+class UnstickyCookieHTTPCaller(ProfiledHTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
 
     HTTPCaller propogates cookies between subsequent requests.
@@ -48,13 +81,14 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        HTTPCaller.__init__(self, *args, **kw)
+        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+
     def __call__(self, *args, **kw):
         if self._debug:
             import pdb
             pdb.set_trace()
         try:
-            return HTTPCaller.__call__(self, *args, **kw)
+            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
         finally:
             self.resetCookies()
 
@@ -549,6 +583,30 @@ def print_navigation(contents):
     print "Main heading: %s" % main_heading
 
 
+class ProfiledPublisherConnection(PublisherConnection):
+    """A publisher connection that handles profiling."""
+    def __init__(self, host):
+        super(ProfiledPublisherConnection, self).__init__(host)
+        self.caller = ProfiledHTTPCaller()
+        self.host = host
+
+
+class ProfiledPublisherHTTPHandler(PublisherHTTPHandler):
+    """HTTP handler that uses the Zope Publisher and supports profiling."""
+
+    def http_open(self, req):
+        """Open an HTTP connection having a ``urllib2`` request."""
+        # Here we connect to the publisher.
+        return self.do_open(ProfiledPublisherConnection, req)
+
+
+class ProfiledPublisherMechanizeBrowser(PublisherMechanizeBrowser):
+    """``mechanize`` browser using the publisher and supporting profiling."""
+
+    handler_classes = PublisherMechanizeBrowser.handler_classes.copy()
+    handler_classes.update({'http': ProfiledPublisherHTTPHandler})
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -556,9 +614,9 @@ def setupBrowser(auth=None):
         string of the form 'Basic email:password' for an authenticated user.
     :return: A `Browser` object.
     """
+    browser = Browser(mech_browser=ProfiledPublisherMechanizeBrowser())
     # Set up our Browser objects with handleErrors set to False, since
     # that gives a tracebacks instead of unhelpful error messages.
-    browser = Browser()
     browser.handleErrors = False
     if auth is not None:
         browser.addHeader("Authorization", auth)
