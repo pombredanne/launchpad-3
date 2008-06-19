@@ -15,7 +15,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.bugtrackerperson import (
-    IBugTrackerPerson, IBugTrackerPersonSet, BugTrackerNameAlreadyTaken)
+    IBugTrackerPerson, IBugTrackerPersonSet, BugTrackerPersonAlreadyExists)
 
 
 class BugTrackerPerson(SQLBase):
@@ -45,7 +45,7 @@ class BugTrackerPersonSet:
         # Check that this name isn't already in use for the given
         # bugtracker.
         if self.getByNameAndBugTracker(name, bugtracker) is not None:
-            raise BugTrackerNameAlreadyTaken(
+            raise BugTrackerPersonAlreadyExists(
                 "Name '%s' is already in use for bugtracker '%s'." %
                 (name, bugtracker.name))
 

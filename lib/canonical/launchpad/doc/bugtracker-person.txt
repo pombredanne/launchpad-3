@@ -40,11 +40,11 @@ new person to a bugtracker using an existing name will cause an error.
     ...         'some-name-i-made-up', bugtracker, foo_bar)
     Traceback (most recent call last):
       ...
-    BugTrackerNameAlreadyTaken: Name 'some-name-i-made-up' is already in
+    BugTrackerPersonAlreadyExists: Name 'some-name-i-made-up' is already in
     use for bugtracker 'bugzilla-checkwatches-1'.
 
 The BugTrackerPerson record for a given name on a given bugtracker can
-be retreived by calling IBugTrackerPersonSet.getByNameAndBugTracker().
+be retrieved by calling IBugTrackerPersonSet.getByNameAndBugTracker().
 
     >>> bugtracker_person_for_bugtracker = getUtility(
     ...     IBugTrackerPersonSet).getByNameAndBugTracker(

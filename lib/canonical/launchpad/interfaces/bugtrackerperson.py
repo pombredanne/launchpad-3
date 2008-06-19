@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBugTrackerPerson',
     'IBugTrackerPersonSet',
-    'BugTrackerNameAlreadyTaken',
+    'BugTrackerPersonAlreadyExists',
     ]
 
 from zope.interface import Interface
@@ -19,9 +19,8 @@ from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.person import IPerson
 
 
-class BugTrackerNameAlreadyTaken(Exception):
-    """Raised when an `IBugTrackerPerson` already exists with a given name.
-    """
+class BugTrackerPersonAlreadyExists(Exception):
+    """An `IBugTrackerPerson` with the given name already exists."""
 
 
 class IBugTrackerPerson(IHasBug):
@@ -57,7 +56,7 @@ class IBugTrackerPersonSet(Interface):
         :param name: The name used for person on bugtracker.
         :param bugtracker: The `IBugTracker` to which person should be linked.
         :param person: The `IPerson` to link to bugtracker.
-        :raise BugTrackerNameAlreadyTaken: If `name` has already been
+        :raise BugTrackerPersonAlreadyExists: If `name` has already been
             used to link a person to `bugtracker`.
         :return: An `IBugTrackerPerson`.
         """
