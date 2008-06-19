@@ -20,7 +20,7 @@ init_profiler() function.
     >>> import tempfile
 
     >>> old_pagetests_profiler = pagetests_framework.profiler
-    >>> old_profile_pagetests = os.environ.get(
+    >>> old_profile_environ = os.environ.get(
     ...     'PROFILE_PAGETESTS_REQUESTS', '')
 
     >>> pagetests_profile_dir = tempfile.mkdtemp(prefix='pagetests_profile')
@@ -39,7 +39,7 @@ ProfiledHTTPCaller will be profiled.
 
     >>> from canonical.launchpad.testing.pages import ProfiledHTTPCaller
 
-    # We need to close, the default interaction.
+    # We need to close the default interaction.
     >>> logout()
 
     >>> http = ProfiledHTTPCaller()
@@ -82,7 +82,7 @@ And no stats file is written at the program exit.
 
 == Profiling request in the app server ==
 
-It is possible to get a profile of each request served by the app
+It is also possible to get a profile of each request served by the app
 server.
 
 This is controlled by the [profiling] config section. Profiling is
@@ -145,7 +145,7 @@ Making another request will create another profile.
 
     >>> import shutil
 
-    >>> os.environ['PROFILE_PAGETESTS_REQUESTS'] = old_profile_pagetests
+    >>> os.environ['PROFILE_PAGETESTS_REQUESTS'] = old_profile_environ
     >>> pagetests_framework.profiler = old_pagetests_profiler
 
     >>> shutil.rmtree(pagetests_profile_dir)
