@@ -11,10 +11,11 @@ import _pythonpath
 from optparse import OptionParser
 import sys
 
-from canonical.database.sqlbase import connect
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.scripts import db_options, logger_options, logger
 from canonical.launchpad.interfaces import (
     PersonCreationRationale, QuestionStatus)
+from canonical.launchpad.interfaces.account import AccountStatus
 
 def close_account(con, log, username):
     """Close a person's account.
@@ -48,13 +49,25 @@ def close_account(con, log, username):
     # succeed.
     new_name = 'removed%d' % person_id
 
+    # Remove the Account. We don't set the status to deactivated,
+    # as this script is used to satisfy people who insist on us removing
+    # all their personal details from our systems. This includes any
+    # identification tokens like email addresses or openid identifiers.
+    # So the Account record would be unusable, and contain no useful
+    # information.
+    table_notification('Account')
+    cur.execute("""
+        DELETE FROM Account USING Person
+        WHERE Person.account = Account.id AND Person.id = %s
+        """ % sqlvalues(person_id))
+
     # Clean out personal details from the Person table
     table_notification('Person')
     unknown_rationale = PersonCreationRationale.UNKNOWN.value
     cur.execute("""
         UPDATE Person
-        SET displayname='Removed by request', password=NULL,
-            name=%(new_name)s, language=NULL, 
+        SET displayname='Removed by request',
+            name=%(new_name)s, language=NULL, account=NULL,
             addressline1=NULL, addressline2=NULL, organization=NULL,
             city=NULL, province=NULL, country=NULL, postcode=NULL,
             phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,

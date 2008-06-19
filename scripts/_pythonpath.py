@@ -7,3 +7,6 @@ import sys, os, os.path
 sys.path.insert(0, os.path.join(
     os.path.dirname(__file__), os.pardir, 'lib'
     ))
+
+# Enable Storm's C extensions
+os.environ['STORM_CEXTENSIONS'] = '1'

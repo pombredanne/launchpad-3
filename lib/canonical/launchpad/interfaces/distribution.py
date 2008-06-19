@@ -166,7 +166,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_(
             "The DistroSeries that should get the translation effort focus."),
         required=False,
-        vocabulary='FilteredDistroSeriesVocabulary')
+        vocabulary='FilteredDistroSeries')
 
     language_pack_admin = Choice(
         title=_("Language Pack Administrator"),

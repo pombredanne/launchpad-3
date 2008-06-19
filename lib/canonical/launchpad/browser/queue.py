@@ -13,13 +13,18 @@ import operator
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IArchivePermissionSet, IComponentSet, IHasQueueItems, IPackageUploadSet,
-    ISectionSet, NotFoundError, PackagePublishingPriority,
-    QueueInconsistentStateError, UnexpectedFormData, PackageUploadStatus)
+    IArchivePermissionSet, IComponentSet, IHasQueueItems,
+    IPackageUpload, IPackageUploadSet, ISectionSet, NotFoundError,
+    PackagePublishingPriority, QueueInconsistentStateError,
+    UnexpectedFormData, PackageUploadStatus)
+from canonical.launchpad.interfaces.files import (
+    IBinaryPackageFileSet)
 from canonical.launchpad.scripts.queue import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+
+from canonical.lazr import decorates
 
 QUEUE_SIZE = 30
 
@@ -81,6 +86,33 @@ class QueueItemsView(LaunchpadView):
             status=self.state, name=self.name_filter)
         self.batchnav = BatchNavigator(queue_items, self.request,
                                        size=QUEUE_SIZE)
+
+    def decoratedQueueBatch(self):
+        """Return the current batch, converted to decorated objects.
+
+        Each batch item, a PackageUpload, is converted to a
+        CompletePackageUpload.  This avoids many additional SQL queries
+        in the +queue template.
+        """
+        uploads = list(self.batchnav.currentBatch())
+
+        if not uploads:
+            return None
+
+        # Build a dictionary keyed by upload ID where the values are
+        # lists of binary files.
+        upload_ids = [upload.id for upload in uploads]
+        binary_file_set = getUtility(IBinaryPackageFileSet)
+        binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        build_upload_files = {}
+        for binary_file in binary_files:
+            id = binary_file.binarypackagerelease.build.package_upload.id
+            if id not in build_upload_files:
+                build_upload_files[id] = []
+            build_upload_files[id].append(binary_file)
+
+        return [CompletePackageUpload(item, build_upload_files)
+                for item in uploads]
 
     def availableActions(self):
         """Return the available actions according to the selected queue state.
@@ -258,3 +290,53 @@ class QueueItemsView(LaunchpadView):
     def priorities(self):
         """An iterable of priorities from PackagePublishingPriority."""
         return (priority for priority in PackagePublishingPriority)
+
+
+class CompletePackageUpload:
+    """A decorated `PackageUpload` including sources, builds and packages.
+    
+    Some properties of PackageUpload are cached here to reduce the number
+    of queries that the +queue template has to make.
+    """
+    # These need to be predeclared to avoid decorates taking them over.
+    # Would be nice if there was a way of allowing writes to just work
+    # (i.e. no proxying of __set__).
+    id = None
+    pocket = None
+    datecreated = None
+    sources = None
+    builds = None
+    customfiles = None
+    contains_source = None
+    contains_build = None
+    sourcepackagerelease = None
+
+    decorates(IPackageUpload)
+
+    def __init__(self, packageupload, build_upload_files):
+        self.id = packageupload.id
+        self.pocket = packageupload.pocket
+        self.datecreated = packageupload.datecreated
+        self.context = packageupload
+        self.sources = list(packageupload.sources)
+        self.contains_source = len(self.sources) > 0
+        self.builds = list(packageupload.builds)
+        self.contains_build = len(self.builds) > 0
+        self.customfiles = list(packageupload.customfiles)
+
+        # Create a dictionary of binary files keyed by
+        # binarypackagerelease.
+        self.binary_packages = {}
+        self.binary_files = build_upload_files.get(self.id, None)
+        if self.binary_files is not None:
+            for binary in self.binary_files:
+                package = binary.binarypackagerelease
+                if package not in self.binary_packages:
+                    self.binary_packages[package] = []
+                self.binary_packages[package].append(binary)
+
+        # Pre-fetch the sourcepackagerelease if it exists.
+        if self.contains_source:
+            self.sourcepackagerelease = self.sources[0].sourcepackagerelease
+        else:
+            self.sourcepackagerelease = None
