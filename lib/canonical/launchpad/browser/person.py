@@ -134,7 +134,6 @@ from canonical.launchpad.interfaces import (
     SpecificationFilter, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
-from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -1043,8 +1042,8 @@ class PersonOverviewNavigationMenu(NavigationMenu):
     links = ('profile', 'related_software', 'karma', 'show_ppa')
 
     def __init__(self, context):
+        context = IPerson(context)
         super(PersonOverviewNavigationMenu, self).__init__(context)
-        self.context = IPerson(context)
 
     def profile(self):
         target = '+index'
@@ -1062,11 +1061,24 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def show_ppa(self):
-        target = '+archive'
+        # The person's archive link changes depending on who's viewing it.
+        archive = self.context.archive
+        has_archive = archive is not None
+        user_can_edit_archive = check_permission('launchpad.Edit',
+                                                 self.context)
+
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
-        archive = self.context.archive
-        enable_link = check_permission('launchpad.View', archive)
+        if has_archive:
+            target = '+archive'
+            enable_link = check_permission('launchpad.View', archive)
+        elif user_can_edit_archive:
+            target = '+activate-ppa'
+            enable_link = True
+        else:
+            target = '+archive'
+            enable_link = False
+
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
