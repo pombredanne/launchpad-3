@@ -36,7 +36,8 @@ from canonical.authserver.database import (
     DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
     PERMISSION_DENIED_FAULT_CODE)
 
-from canonical.testing.layers import LaunchpadScriptLayer
+from canonical.testing.layers import (
+    LaunchpadScriptLayer, LaunchpadZopelessLayer)
 
 
 UTC = pytz.timezone('UTC')
@@ -248,11 +249,13 @@ class UserDetailsStorageTest(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
-            UPDATE Person SET password = '%s'
-            WHERE id = (SELECT person FROM EmailAddress WHERE email =
-                        'justdave@bugzilla.org')'''
-            % (ssha,))
+        self.cursor.execute("""
+            INSERT INTO AccountPassword (account, password)
+            VALUES (
+                (SELECT account FROM EmailAddress
+                WHERE email='justdave@bugzilla.org'), %s
+                )
+            """ % sqlvalues(ssha))
         userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
@@ -271,12 +274,8 @@ class UserDetailsStorageTest(DatabaseTest):
         cur = cursor()
         cur.execute(
             "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  '%s', "
-            "  2)"  # 2 == Validated
-            % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
-        )
+            "VALUES (1, %s, 2)"  # 2 == Validated
+            % sqlvalues(u'm\xe3rk@hbd.com'))
         transaction.commit()
         userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
         goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
@@ -768,11 +767,13 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorageV2(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
-            UPDATE Person SET password = '%s'
-            WHERE id = (SELECT person FROM EmailAddress
-                        WHERE email = 'justdave@bugzilla.org')'''
-            % (ssha,))
+        self.cursor.execute("""
+            INSERT INTO AccountPassword (account, password)
+            VALUES (
+                (SELECT account FROM EmailAddress
+                WHERE email = 'justdave@bugzilla.org'), %s
+                )
+            """, (ssha,))
         userDict = storage._authUserInteraction(
             'justdave@bugzilla.org', 'supersecret!')
         self.assertEqual({}, userDict)
@@ -952,7 +953,7 @@ class BranchDetailsStorageTest(DatabaseTest):
 class BranchPullQueueTest(BranchTestCase):
     """Tests for the pull queue methods of `IBranchDetailsStorage`."""
 
-    layer = LaunchpadScriptLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         LaunchpadScriptLayer.switchDbConfig('authserver')
@@ -983,10 +984,12 @@ class BranchPullQueueTest(BranchTestCase):
 
     def makeBranchAndRequestMirror(self, branch_type):
         """Make a branch of the given type and call requestMirror on it."""
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
         transaction.begin()
         branch = self.makeBranch(branch_type)
         branch.requestMirror()
         transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('authserver')
         return branch
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):

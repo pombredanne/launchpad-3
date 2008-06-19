@@ -376,7 +376,7 @@ class Bug(SQLBase):
         """See `IBug`.
 
         The recipients argument is private and not exposed in the
-        inerface. If a BugNotificationRecipients instance is supplied,
+        interface. If a BugNotificationRecipients instance is supplied,
         the relevant subscribers and rationales will be registered on
         it.
         """

@@ -189,7 +189,7 @@ Other users who visit the page do not see the URL.
 
 == Summary Pagelets ==
 
-A person's homepage also lists timezone, Karma and status information:
+A person's homepage also lists time zone, Karma and status information:
 
     >>> browser.open('http://launchpad.dev/~sabdfl')
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))

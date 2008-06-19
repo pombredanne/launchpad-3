@@ -8,11 +8,6 @@ __all__ = [
     'OpenIdAuthorization', 'OpenIdAuthorizationSet', 'OpenIDRPConfig',
     'OpenIDRPConfigSet']
 
-from random import random
-from time import time
-
-
-
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
 from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
