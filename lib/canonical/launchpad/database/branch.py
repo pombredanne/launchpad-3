@@ -389,6 +389,10 @@ class Branch(SQLBase):
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
+            for vote in merge_proposal.votes:
+                deletion_operations.append(DeletionCallable(vote,
+                    _('This a vote or review request about a merge proposal'
+                      ' whose source is this branch'), vote.destroySelf))
             for comment in merge_proposal.all_comments:
                 deletion_operations.append(
                     DeletionCallable(comment,
@@ -402,6 +406,10 @@ class Branch(SQLBase):
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
+            for vote in merge_proposal.votes:
+                deletion_operations.append(DeletionCallable(vote,
+                    _('This a vote or review request about a merge proposal'
+                      ' whose target is this branch'), vote.destroySelf))
             for comment in merge_proposal.all_comments:
                 deletion_operations.append(
                     DeletionCallable(comment,
