@@ -553,7 +553,8 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup(
-                reset_sequences_sql=DatabaseLayer._reset_sequences_sql).setUp()
+                reset_sequences_sql=DatabaseLayer._reset_sequences_sql
+                ).setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
