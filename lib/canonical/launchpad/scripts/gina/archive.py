@@ -1,14 +1,17 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-
-__metaclass__ = type
-
 """Archive pool classes.
 
 This module has the classes resposable for locate and extract the package
 information from an archive pool.
 """
 
-__all__ = ['ArchiveFilesystemInfo', 'ArchiveComponentItems', 'PackagesMap']
+__metaclass__ = type
+
+__all__ = [
+    'ArchiveFilesystemInfo',
+    'ArchiveComponentItems',
+    'PackagesMap',
+    ]
 
 import apt_pkg
 import tempfile
@@ -33,22 +36,26 @@ class ArchiveFilesystemInfo:
     from a Package Archive and holds them as internal attributes
     to be used for other classes.
     """
+    sources_tagfile = None
+    srcfile = None
+    binaries_tagfile = None
+    binfile = None
+    di_tagfile = None
+    difile = None
 
-    def __init__(self, root, distroseries, component, arch):
+    def __init__(self, root, distroseries, component, arch=None,
+                 source_only=False):
 
         # Holds the distribution informations
         self.distroseries = distroseries
         self.component = component
         self.arch = arch
+        self.source_only = source_only
 
         dist_dir = os.path.join(root, "dists", distroseries, component)
         if not os.path.exists(dist_dir):
             raise MangledArchiveError("No archive directory for %s/%s" %
                                       (distroseries, component))
-
-        dist_bin_dir = os.path.join(dist_dir, "binary-%s" % arch)
-        if not os.path.exists(dist_bin_dir):
-            raise NoBinaryArchive
 
         # Search and get the files with full path
         sources_zipped = os.path.join(root, "dists", distroseries,
@@ -57,6 +64,24 @@ class ArchiveFilesystemInfo:
             raise MangledArchiveError("Archive mising Sources.gz at %s"
                                       % sources_zipped)
 
+        # Extract Sources index.
+        srcfd, sources_tagfile = tempfile.mkstemp()
+        call("gzip -dc %s > %s" % (sources_zipped, sources_tagfile))
+        srcfile = os.fdopen(srcfd)
+
+        # Holds the opened files and its names.
+        self.sources_tagfile = sources_tagfile
+        self.srcfile = srcfile
+
+        # Detect source-only mode and skip binary index parsing.
+        if source_only:
+            return
+
+        # Extract Binaries indexes.
+        dist_bin_dir = os.path.join(dist_dir, "binary-%s" % arch)
+        if not os.path.exists(dist_bin_dir):
+            raise NoBinaryArchive
+
         binaries_zipped = os.path.join(dist_bin_dir, "Packages.gz")
         if not os.path.exists(binaries_zipped):
             raise MangledArchiveError("Archive mising Packages.gz at %s"
@@ -64,12 +89,7 @@ class ArchiveFilesystemInfo:
         di_zipped = os.path.join(root, "dists", distroseries, component,
                                  "debian-installer", "binary-%s" % arch,
                                  "Packages.gz")
-
-        # Extract the files
-        srcfd, sources_tagfile = tempfile.mkstemp()
-        call("gzip -dc %s > %s" % (sources_zipped, sources_tagfile))
-        srcfile = os.fdopen(srcfd)
-
+        # Extract Binary indexes.
         binfd, binaries_tagfile = tempfile.mkstemp()
         call("gzip -dc %s > %s" % (binaries_zipped, binaries_tagfile))
         binfile = os.fdopen(binfd)
@@ -80,17 +100,24 @@ class ArchiveFilesystemInfo:
         difile = os.fdopen(difd)
 
         # Holds the opened files and its names.
-        self.sources_tagfile = sources_tagfile
-        self.srcfile = srcfile
         self.binaries_tagfile = binaries_tagfile
         self.binfile = binfile
         self.di_tagfile = di_tagfile
         self.difile = difile
 
     def cleanup(self):
-        os.unlink(self.sources_tagfile)
-        os.unlink(self.binaries_tagfile)
-        os.unlink(self.di_tagfile)
+        # XXX cprov 20080619: This is a dirty hack probably caused by
+        # bad testing design, which relies in binaries indexes being
+        # processed before sources.
+        def safe_remove(filepath):
+            if os.path.exists(filepath):
+                os.unlink(filepath)
+
+        safe_remove(self.sources_tagfile)
+        if self.source_only:
+            return
+        safe_remove(self.binaries_tagfile)
+        safe_remove(self.di_tagfile)
 
 
 class ArchiveComponentItems:
@@ -99,26 +126,37 @@ class ArchiveComponentItems:
     This class holds ArchiveFilesystemInfo instances
     for each architecture/component pair that will be imported
     """
-    def __init__(self, archive_root, distroseries, components, archs):
+    _archive_archs = []
 
-        # Runs through architectures.
-        archive_archs = []
-        for arch in archs:
-            # Runs through components.
+    def __init__(self, archive_root, distroseries, components, archs,
+                 source_only=False):
+        # Dectect source-only mode and store only ArchiveFilesystemInfo
+        # object for the given components.
+        if source_only:
             for component in components:
-                try:
-                    # Create the ArchiveFilesystemInfo instance.
-                    archive_info = ArchiveFilesystemInfo(archive_root,
-                                       distroseries, component, arch)
-                except NoBinaryArchive:
-                    log.warn("The archive for %s/%s doesn't contain "
-                             "a directory for %s, skipping" %
-                             (distroseries, component, arch))
-                else:
-                    # Hold it in a list.
-                    archive_archs.append(archive_info)
+                self._buildArchiveFilesystemInfo(
+                    archive_root, distroseries, component,
+                    source_only=source_only)
+            return
 
-        self._archive_archs = archive_archs
+        # Runs through components and architectures.
+        for component in components:
+            for arch in archs:
+                self._buildArchiveFilesystemInfo(
+                    archive_root, distroseries, component, arch)
+
+    def _buildArchiveFilesystemInfo(self, archive_root, distroseries,
+                                    component, arch=None, source_only=False):
+        """Create and store the ArchiveFilesystemInfo objects."""
+        try:
+            archive_info = ArchiveFilesystemInfo(
+                archive_root, distroseries, component, arch, source_only)
+        except NoBinaryArchive:
+            log.warn("The archive for %s/%s doesn't contain "
+                     "a directory for %s, skipping" %
+                     (distroseries, component, arch))
+            return
+        self._archive_archs.append(archive_info)
 
     def __iter__(self):
         # Iterate over the ArchiveFilesystemInfo instances.
@@ -156,6 +194,29 @@ class PackagesMap:
         # Iterate over ArchComponentItems instance to cover
         # all components in all architectures.
         for info_set in arch_component_items:
+
+            # Run over the source stanzas and store info in src_map. We
+            # make just one source map (instead of one per architecture)
+            # because most of then are the same for all architectures,
+            # but we go over it to also cover source packages that only
+            # compile for one architecture.
+            sources = apt_pkg.ParseTagFile(info_set.srcfile)
+            while sources.Step():
+                try:
+                    src_tmp = dict(sources.Section)
+                    src_tmp['Component'] = info_set.component
+                    src_name = src_tmp['Package']
+                except KeyError:
+                    log.exception("Invalid Sources stanza in %s" %
+                                  info_set.sources_tagfile)
+                    continue
+                self.src_map[src_name] = src_tmp
+
+            # Check if it's in source-only mode, if so, skip binary index
+            # mapping.
+            if info_set.source_only:
+                continue
+
             # Create a tmp map for binaries for one arch/component pair
             if not self.bin_map.has_key(info_set.arch):
                 self.bin_map[info_set.arch] = {}
@@ -187,21 +248,4 @@ class PackagesMap:
                                   info_set.difile)
                     continue
                 tmpbin_map[dibin_name] = dibin_tmp
-
-            # Run over the source stanzas and store info in src_map. We
-            # make just one source map (instead of one per architecture)
-            # because most of then are the same for all architectures,
-            # but we go over it to also cover source packages that only
-            # compile for one architecture.
-            sources = apt_pkg.ParseTagFile(info_set.srcfile)
-            while sources.Step():
-                try:
-                    src_tmp = dict(sources.Section)
-                    src_tmp['Component'] = info_set.component
-                    src_name = src_tmp['Package']
-                except KeyError:
-                    log.exception("Invalid Sources stanza in %s" %
-                                  info_set.sources_tagfile)
-                    continue
-                self.src_map[src_name] = src_tmp
 
