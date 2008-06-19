@@ -187,19 +187,24 @@ The collection of bug watches is not exposed as a resource:
 
 We can modify the remote bug.
 
-  >>> bug_watch['remote_bug']
-  u'2000'
+  >>> from simplejson import dumps
 
   >>> patch = {u'remote_bug': u'1234'}
-
-  >>> from simplejson import dumps
-  >>> patch_json = dumps(patch)
-  >>> patch_json
-  '{"remote_bug": "1234"}'
-
   >>> response = webservice.patch(
-  ...     bug_watch_path, 'application/json', patch_json)
+  ...     bug_watch_path, 'application/json', dumps(patch))
 
   >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
   >>> bug_watch['remote_bug']
   u'1234'
+
+But we can't change other things, like the URL.
+
+  >>> patch = {u'url': u'http://www.example.com/'}
+  >>> response = webservice.patch(
+  ...     bug_watch_path, 'application/json', dumps(patch))
+  >>> print response.getOutput()
+  HTTP/1.1 400 Bad Request
+  Content-Length: 47
+  Content-Type: text/plain
+  <BLANKLINE>
+  url: You tried to modify a read-only attribute.
