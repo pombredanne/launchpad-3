@@ -17,8 +17,8 @@
   <div style="margin-bottom: 1em">
     This project was registered by <a tal:attributes="href
     context/owner/fmt:url" tal:content="context/owner/unique_displayname" />
-    <a 
-      tal:condition="context/owner/preferredemail" 
+    <a
+      tal:condition="context/owner/preferredemail"
       tal:attributes="href string:mailto:${context/owner/preferredemail/email}"
       tal:content="string: &lt;${context/owner/preferredemail/email}&gt;" /> on
     <span tal:replace="context/datecreated/fmt:datetime" />
@@ -26,25 +26,31 @@
 
 
   <div metal:use-macro="context/@@launchpad_form/form">
-    <div metal:fill-slot="extra_info"
-         id="portlet-license" class="portlet">
+    <div metal:fill-slot="extra_info">
       <input type="hidden" name="next_url"
         tal:attributes="value view/next_url" />
-      <table class="summary" style="width: 100%;">
-        <tr>
-          <td>
-            <h2>Licenses:</h2>
-            <ul tal:repeat="license context/licenses">
-              <li tal:content="license/title">GPL</li>
-            </ul>
-            <tal:none condition="not:context/licenses">None specified
-            </tal:none>
-          </td>
-          <td>
-            <h2>Description of additional licenses:</h2>
-            <div tal:content="structure context/license_info/fmt:text-to-html" />
-          </td>
-        </tr>
+      <table class="listing" id="license-listing">
+        <thead>
+          <tr>
+            <th>Licenses</th>
+            <th>Description of additional licenses</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="white-space: nowrap">
+              <tal:licenses repeat="license context/licenses">
+                <tal:license tal:replace="license/title">
+                  GPL
+                </tal:license>
+                <br/>
+              </tal:licenses>
+              <tal:none condition="not:context/licenses">None specified
+              </tal:none>
+            </td>
+            <td tal:content="structure context/license_info/fmt:text-to-html"/>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
