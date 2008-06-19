@@ -1,12 +1,13 @@
   This test demonstrates the product re-assignment workflow.
   When a product is re-assigned to another person, objects related to that
-  product (product series, product releases and translations in the import 
-  queue) owned by the same registrant are also re-assigned to the new registrant.
+  product (product series, product releases and translations in the import
+  queue) owned by the same registrant are also re-assigned to the new
+  registrant.
 
   First check the ownership of the mozilla firefox product and its
   related dependecies.
 
-  >>> from zope.component import getUtility 
+  >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, logout
   >>> from canonical.launchpad.interfaces import (
   ...     IProductSet, ITranslationImportQueue)

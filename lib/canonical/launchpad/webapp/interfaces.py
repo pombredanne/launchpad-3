@@ -312,12 +312,11 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
-# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
-# truly generic thing. The problem lies in the fact that half of this (user,
-# login, timezone, developer) is actually useful inside webapp/, and the other
-# half is very Launchpad-specific. I suggest we split the interface and
-# implementation into two parts, having a different name for the webapp/
-# bits.
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
+# generic thing. The problem lies in the fact that half of this (user, login,
+# time zone, developer) is actually useful inside webapp/, and the other half
+# is very Launchpad-specific. I suggest we split the interface and
+# implementation into two parts, having a different name for the webapp/ bits.
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
@@ -335,7 +334,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
-    timezone = Attribute("The user's time zone")
+    time_zone = Attribute("The user's time zone")
 
     developer = Bool(
         title=u'True if a member of the launchpad developers celebrity'
@@ -508,8 +507,11 @@ class IPlacelessAuthUtility(IAuthenticationService):
     login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        The principal's password is set to None if want_password is False.
+        """
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -518,8 +520,15 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    # want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense.
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        If want_password is False, the principal's password is set to None.
+        """
 
     def getPrincipals(name):
         """Not implemented.
