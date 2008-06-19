@@ -3058,7 +3058,7 @@ class PersonEditHomePageView(BasePersonEditView):
 class PersonEditView(BasePersonEditView):
     """The Launchpad 2.0 Person 'Edit' page."""
 
-    field_names = ['displayname', 'name', 'mugshot','homepage_content',
+    field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'time_zone']
     custom_widget('time_zone', SelectWidget, size=15)
