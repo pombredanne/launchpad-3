@@ -124,6 +124,15 @@ the alias and the bug's actual ID.
     ...     print "%s: %s" % (alias, bug_id)
     bug-two: 2
 
+The method _getActualBugId() returns the correct bug ID for a passed bug
+ID or alias.
+
+    >>> bugzilla._getActualBugId('bug-two')
+    2
+
+    >>> bugzilla._getActualBugId(2)
+    2
+
 
 == Getting remote statuses ==
 
@@ -171,7 +180,7 @@ bugtracker and a couple of bugwatches.
     ...     new_bugtracker)
     >>> from canonical.testing import LaunchpadZopelessLayer
 
-    >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
+    >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 

@@ -397,7 +397,7 @@ class TestBugzillaXMLRPCTransport:
                 'text': "Bring the passengers to the bridge please Marvin.",
                 'time': datetime(2008, 6, 16, 13, 8, 8),
                 },
-             2:{'author': 'Ford Prefect <ford.prefect@h2g2.com>',
+             2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
                 'id': 4,
                 'number': 2,
                 'text': "I appear to have become a perfectly safe penguin.",
@@ -501,33 +501,22 @@ class TestBugzillaXMLRPCTransport:
         fields_to_return = arguments.get('include')
         comments_by_bug_id = {}
 
-        for bug_id in bug_ids:
-            comments_for_bug = self.bug_comments[bug_id]
-            bug_comments = [
-                dict(comment) for comment in comments_for_bug.values()]
-
-            # If a comment's ID isn't in comment_ids, discard it.
-            for comment in bug_comments:
-                if (comment_ids is not None and
-                    comment['id'] not in comment_ids):
-                    bug_comments.remove(comment)
-
+        def copy_comment(comment):
+            # Copy wanted fields.
+            comment = dict(
+                (key, value) for (key, value) in comment.iteritems()
+                if fields_to_return is None or key in fields_to_return)
             # Replace the time field with an XML-RPC DateTime.
-            for comment in bug_comments:
-                datetime_value = comment['time']
-                timestamp = time.mktime(datetime_value.timetuple())
-                xmlrpc_datetime = xmlrpclib.DateTime(timestamp)
+            if 'time' in comment:
+                comment['time'] = xmlrpclib.DateTime(
+                    comment['time'].timetuple())
+            return comment
 
-                comment['time'] = xmlrpc_datetime
-
-            # Discard unwanted fields.
-            if fields_to_return is not None:
-                for comment in bug_comments:
-                    for field in comment.keys():
-                        if field not in fields_to_return:
-                            del comment[field]
-
-            comments_by_bug_id[bug_id] = bug_comments
+        for bug_id in bug_ids:
+            comments_for_bug = self.bug_comments[bug_id].values()
+            comments_by_bug_id[bug_id] = [
+                copy_comment(comment) for comment in comments_for_bug
+                if comment_ids is None or comment['id'] in comment_ids]
 
         # More xmlrpclib:1387 odd-knobbery avoidance.
         return [{'bugs': comments_by_bug_id}]

@@ -301,21 +301,20 @@ class BugzillaLPPlugin(Bugzilla):
             self.xmlrpc_transport = xmlrpc_transport
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+        self.server = xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}
         self.bug_aliases = {}
 
-        server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
         # First, grab the bugs from the remote server.
         request_args = {
             'ids': bug_ids,
             'permissive': True,
             }
-        response_dict = server.Bug.get_bugs(request_args)
+        response_dict = self.server.Bug.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
         # Now copy them into the local bugs dict.
@@ -331,10 +330,7 @@ class BugzillaLPPlugin(Bugzilla):
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
-        time_dict = server.Launchpad.time()
+        time_dict = self.server.Launchpad.time()
 
         # Return the UTC time sent by the server so that we don't have
         # to care about timezones.
@@ -352,7 +348,9 @@ class BugzillaLPPlugin(Bugzilla):
 
         # bug_id isn't an alias, so try turning it into an int and
         # looking the bug up by ID.
-        if actual_bug_id is None:
+        if actual_bug_id is not None:
+            return actual_bug_id
+        else:
             try:
                 return int(bug_id)
             except ValueError:
@@ -384,16 +382,13 @@ class BugzillaLPPlugin(Bugzilla):
         if actual_bug_id not in self.bugs:
             raise BugNotFound(bug_watch.remotebug)
 
-        server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
         request_params = {
             'bug_ids': [actual_bug_id],
             'include': ['id'],
             }
-        bug_comments_dict = server.Bug.comments(request_params)
+        bug_comments_dict = self.server.Bug.comments(request_params)
 
         bug_comments = bug_comments_dict['bugs'][actual_bug_id]
         return [comment['id'] for comment in bug_comments]
@@ -402,21 +397,17 @@ class BugzillaLPPlugin(Bugzilla):
         """See `ISupportsCommentImport`."""
         actual_bug_id = self._getActualBugId(bug_watch.remotebug)
 
-        server = xmlrpclib.ServerProxy(
-                self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
         # Fetch the comments we want.
         request_params = {
             'bug_ids': [actual_bug_id],
             'ids': comment_ids,
             }
-        bug_comments_dict = server.Bug.comments(request_params)
+        bug_comments_dict = self.server.Bug.comments(request_params)
         comment_list = bug_comments_dict['bugs'][actual_bug_id]
 
         # Transfer the comment list into a dict.
-        bug_comments = {}
-        for comment in comment_list:
-            bug_comments[comment['id']] = comment
+        bug_comments = dict(
+            (comment['id'], comment) for comment in comment_list)
 
         self.bugs[actual_bug_id]['comments'] = bug_comments
 

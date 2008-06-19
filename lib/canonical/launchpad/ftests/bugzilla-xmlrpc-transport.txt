@@ -88,7 +88,7 @@ dict so that they are treated as key: value pairs.
 
     >>> return_value = server.Bug.get_bugs({'ids': [1], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
-    >>> for key in sorted(bug_dict.keys()):
+    >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
     alias: 
     assigned_to: test@canonical.com
@@ -111,7 +111,7 @@ one bug will be returned (assuming they all exist and are accessible).
     >>> return_value = server.Bug.get_bugs({'ids': [1, 2], 'permissive': True})
     >>> bug_dicts = return_value['bugs']
     >>> for bug_dict in bug_dicts:
-    ...     for key in sorted(bug_dict.keys()):
+    ...     for key in sorted(bug_dict):
     ...         print "%s: %s" % (key, bug_dict[key])
     ...     print
     alias: 
@@ -149,7 +149,7 @@ Bug aliases can also be used to request remote bugs.
     >>> return_value = server.Bug.get_bugs(
     ...     {'ids': ['bug-two'], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
-    >>> for key in sorted(bug_dict.keys()):
+    >>> for key in sorted(bug_dict):
     ...     print "%s: %s" % (key, bug_dict[key])
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
@@ -175,14 +175,14 @@ bugs. We'll define a helper method for printing out comments.
 
     >>> import operator
     >>> def print_bug_comments(bugs_dict, sort_key='number'):
-    ...     for key in sorted(bugs_dict.keys()):
+    ...     for key in sorted(bugs_dict):
     ...         print "Bug %s:" % key
     ...         bug_comments = sorted(
     ...             bugs_dict[key],
     ...             key=operator.itemgetter(sort_key))
     ...
     ...         for comment in bug_comments:
-    ...             for comment_key in sorted(comment.keys()):
+    ...             for comment_key in sorted(comment):
     ...                 print "    %s: %s" % (
     ...                     comment_key, comment[comment_key])
     ...             print
