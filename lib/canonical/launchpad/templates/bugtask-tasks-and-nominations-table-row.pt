@@ -42,15 +42,15 @@
       />
       <tal:sourcepackage condition="context/sourcepackagename|nothing">
         <tal:comment condition="nothing">
-          The odd indentation here is because the title= attribute is
-          whitespace-sensitive.
+          tal:attributes= contains odd indentation because title= is
+          whitespace-sensitive. The single leading spaces are important!
         </tal:comment>
         <a
           tal:condition="not:context/target/currentrelease|nothing"
           tal:attributes="
             href context/target/fmt:url;
             title string:No current release for this source package in
-${context/target/distribution/displayname}"
+ ${context/target/distribution/displayname}"
           tal:content="context/bugtargetdisplayname"
           title="No current release "
         />
@@ -60,9 +60,9 @@ ${context/target/distribution/displayname}"
           tal:attributes="
             href context/target/fmt:url;
             title string:Latest release: ${cr/version}, uploaded to
-${cr/component/name} on ${cr/dateuploaded} by ${cr/creator/displayname}
-(${cr/creator/name}), maintained by ${cr/maintainer/displayname}
-(${cr/maintainer/name})"
+ ${cr/component/name} on ${cr/dateuploaded} by ${cr/creator/displayname}
+ (${cr/creator/name}), maintained by ${cr/maintainer/displayname}
+ (${cr/maintainer/name})"
           tal:content="context/bugtargetdisplayname"
         />
       </tal:sourcepackage>
