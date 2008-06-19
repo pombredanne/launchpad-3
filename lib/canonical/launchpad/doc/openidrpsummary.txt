@@ -218,8 +218,6 @@ root, a new OpenIDRPSummary is created.
 A OpenIDRPSummary object cannot be created or updated id the person
 is not valid, even if the person's account has been deactivated.
 
-    >>> from canonical.launchpad.interfaces.account import AccountStatus
-
     >>> former_summaries = rp_summary_set.getByIdentifier(
     ...     'http://openid.launchpad.dev/+id/former-user_oid')
     >>> print_openid_rp_summaries(former_summaries)

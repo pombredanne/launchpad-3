@@ -4,7 +4,7 @@ An Account is used by someone to Authenticate with the Launchpad login
 service.
 
 >>> from canonical.launchpad.interfaces import (
-...     IAccount, IAccountSet, AccountStatus, AccountCreationRationale)
+...     IAccount, IAccountSet, AccountStatus)
 
 Accounts are generally looked up by email address
 
