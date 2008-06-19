@@ -4332,16 +4332,16 @@ class PersonEditLocationView(LaunchpadFormView):
     """Edit a person's location."""
 
     schema = PersonLocationForm
-    field_names = []
     custom_widget('location', LocationWidget)
 
     def initialize(self):
         self._next_url = canonical_url(self.context)
-        for_team = self.request.form.get('for_team')
-        if for_team is not None:
-            for_team = getUtility(IPersonSet).getByName(for_team)
+        self.for_team_name = self.request.form.get('for_team')
+        if self.for_team_name is not None:
+            for_team = getUtility(IPersonSet).getByName(self.for_team_name)
             if for_team is not None:
                 self._next_url = canonical_url(for_team) + '/+map'
+        super(PersonEditLocationView, self).initialize()
 
     @property
     def next_url(self):
