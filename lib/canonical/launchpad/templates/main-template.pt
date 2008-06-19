@@ -387,6 +387,14 @@
         </ul>
       </div><!--id="globalfooter"-->
 
+    <div id="help-pane" class="invisible">
+      <div id="help-body">
+        <iframe id="help-pane-content" class="invisible">Loading...</iframe>
+      </div>
+      <div id="help-footer">
+        <a href="#" id="help-close-btn">Close</a>
+      </div>
+    </div>
     <div id="menupreload" style="visibility:hidden"
       xml:lang="en" lang="en" dir="ltr">
       <ul class="menu" lpm:mid="root">
