@@ -189,6 +189,77 @@ class POFileMixIn(RosettaStats):
         return self.getCurrentTranslationMessageFromPOTMsgSet(
             potmsgset, ignore_obsolete=ignore_obsolete)
 
+    def areMsgIDsNotEnglish(self):
+        """Whether POFile msgid's are not English messages at the same time.
+
+        Happens commonly with "identifier-like" msgids, like in
+        Firefox or OpenOffice.org.
+        """
+        translation_importer = getUtility(ITranslationImporter)
+        format_importer = translation_importer.getTranslationFormatImporter(
+            self.potemplate.source_file_format)
+        return format_importer.uses_source_string_msgids
+
+    def _getTranslationSearchQuery(self, pofile, plural_form, text):
+        """Query for finding `text` in `plural_form` translations of `pofile`.
+        """
+        translation_match = """
+        -- Find translations containing `text`.
+        -- Like in findPOTMsgSetsContaining(), to avoid seqscans on
+        -- POTranslation table, we do ILIKE comparison on them in
+        -- a subselect which is first filtered by the POFile.
+        (POTMsgSet.id IN (
+          SELECT POTMsgSet.id FROM POTMsgSet
+            JOIN TranslationMessage
+              ON TranslationMessage.potmsgset=POTMsgSet.id
+            WHERE
+              TranslationMessage.pofile=%(pofile)s AND
+              TranslationMessage.msgstr%(plural_form)d IN (
+                SELECT POTranslation.id FROM POTranslation WHERE
+                  POTranslation.id IN (
+                    SELECT DISTINCT(msgstr%(plural_form)d)
+                      FROM TranslationMessage
+                      WHERE TranslationMessage.pofile=%(pofile)s
+                  ) AND
+                  POTranslation.translation
+                    ILIKE '%%' || %(text)s || '%%')
+                  ))""" % dict(pofile=quote(pofile),
+                               plural_form=plural_form,
+                               text=quote_like(text))
+        return translation_match
+
+
+    def _getTemplateSearchQuery(self, text):
+        """Query for finding `text` in msgids of this POFile.
+        """
+        english_match = """
+        -- Step 1a: get POTMsgSets where msgid_singular contains `text`
+        -- To avoid seqscans on POMsgID table (what LIKE usually
+        -- does), we do ILIKE comparison on them in a subselect first
+        -- filtered by this POTemplate.
+           ((POTMsgSet.msgid_singular IS NOT NULL AND
+             POTMsgSet.msgid_singular IN (
+               SELECT POMsgID.id FROM POMsgID
+                 WHERE id IN (
+                   SELECT DISTINCT(msgid_singular)
+                     FROM POTMsgSet
+                     WHERE POTMsgSet.potemplate=%s
+                 ) AND
+                 msgid ILIKE '%%' || %s || '%%')) OR
+        -- Step 1b: like above, just on msgid_plural.
+            (POTMsgSet.msgid_plural IS NOT NULL AND
+             POTMsgSet.msgid_plural IN (
+               SELECT POMsgID.id FROM POMsgID
+                 WHERE id IN (
+                   SELECT DISTINCT(msgid_plural)
+                     FROM POTMsgSet
+                     WHERE POTMsgSet.potemplate=%s
+                 ) AND
+                 msgid ILIKE '%%' || %s || '%%'))
+           )""" % (quote(self.potemplate), quote_like(text),
+                   quote(self.potemplate), quote_like(text))
+        return english_match
+
     def findPOTMsgSetsContaining(self, text):
         """See `IPOFile`."""
         clauses = [
@@ -201,60 +272,21 @@ class POFileMixIn(RosettaStats):
             assert len(text) > 1, (
                 "You can not search for strings shorter than 2 characters.")
 
-            english_match = """
-            -- Step 1: find POTMsgSets with msgid_singular containing `text`.
-            -- To avoid seqscans on POMsgID table (what LIKE usually does),
-            -- we do ILIKE comparison on them in a subselect first filtered
-            -- by this POTemplate.
-               ((POTMsgSet.msgid_singular IS NOT NULL AND
-                 POTMsgSet.msgid_singular IN (
-                   SELECT POMsgID.id FROM POMsgID
-                     WHERE id IN (
-                       SELECT DISTINCT(msgid_singular)
-                         FROM POTMsgSet
-                         WHERE POTMsgSet.potemplate=%s
-                     ) AND
-                     msgid ILIKE '%%' || %s || '%%')) OR
-            -- Step 1b: like above, just on msgid_plural.
-                (POTMsgSet.msgid_plural IS NOT NULL AND
-                 POTMsgSet.msgid_plural IN (
-                   SELECT POMsgID.id FROM POMsgID
-                     WHERE id IN (
-                       SELECT DISTINCT(msgid_plural)
-                         FROM POTMsgSet
-                         WHERE POTMsgSet.potemplate=%s
-                     ) AND
-                     msgid ILIKE '%%' || %s || '%%'))
-               )""" % (quote(self.potemplate), quote_like(text),
-                       quote(self.potemplate), quote_like(text))
+            if self.areMsgIDsNotEnglish():
+                # If msgids are not in English, use English PO file
+                # to fetch original strings instead.
+                en_pofile = self.potemplate.getPOFileByLang('en')
+                english_match = self._getTranslationSearchQuery(
+                    en_pofile, 0, text)
+            else:
+                english_match = self._getTemplateSearchQuery(text)
 
             # Do not look for translations in a DummyPOFile.
             if self.id is not None:
                 search_clauses = [english_match]
                 for plural_form in range(self.plural_forms):
-                    translation_match = """
-                    -- Step 2: find translations containing `text`.
-                    -- Like above, to avoid seqscans on POTranslation table,
-                    -- we do ILIKE comparison on them in a subselect which is
-                    -- first filtered by the POFile.
-                    (POTMsgSet.id IN (
-                      SELECT POTMsgSet.id FROM POTMsgSet
-                        JOIN TranslationMessage
-                          ON TranslationMessage.potmsgset=POTMsgSet.id
-                        WHERE
-                          TranslationMessage.pofile=%(pofile)s AND
-                          TranslationMessage.msgstr%(plural_form)d IN (
-                            SELECT POTranslation.id FROM POTranslation WHERE
-                              POTranslation.id IN (
-                                SELECT DISTINCT(msgstr%(plural_form)d)
-                                  FROM TranslationMessage
-                                  WHERE TranslationMessage.pofile=%(pofile)s
-                              ) AND
-                              POTranslation.translation
-                                ILIKE '%%' || %(text)s || '%%')
-                              ))""" % dict(pofile=quote(self),
-                                           plural_form=plural_form,
-                                           text=quote_like(text))
+                    translation_match = self._getTranslationSearchQuery(
+                        self, plural_form, text)
                     search_clauses.append(translation_match)
 
                 clauses.append("(" + " OR ".join(search_clauses) + ")")

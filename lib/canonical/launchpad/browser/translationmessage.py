@@ -401,8 +401,6 @@ class BaseTranslationView(LaunchpadView):
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
-            # XXX: kiko 2006-10-18:
-            # This should refer people to +addticket, right?
             self.request.response.addErrorNotification(
                 structured("""
             <p>
@@ -415,8 +413,8 @@ class BaseTranslationView(LaunchpadView):
             application to see whether anyone has submitted it yet.  If not,
             please file the information there as a question.  The preferred
             format for such questions is described in the
-            <a href="https://help.launchpad.net/RosettaFAQ">Frequently Asked
-            Questions list</a>.
+            <a href="https://help.launchpad.net/FAQ/Translations">Frequently
+            Asked Questions list</a>.
             </p>
             <p>
             This only needs to be done once per language. Thanks for helping
