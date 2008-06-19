@@ -9,17 +9,15 @@ pagetests.  When the PROFILE_PAGETESTS_REQUESTS environment variable is
 set, it will save profiling information in the file specified in that
 variable.
 
-The pagetests profiler is created at module initialization time by the
-init_profiler() function.
+The pagetests profiler is created by the layer during its setUp.
 
-    >>> import canonical.launchpad.testing.pages as pagetests_framework
+    >>> from canonical.testing.layers import PageTestLayer
 
-(Save the existing one.)
+(Save the existing configuration.)
 
     >>> import os
     >>> import tempfile
 
-    >>> old_pagetests_profiler = pagetests_framework.profiler
     >>> old_profile_environ = os.environ.get(
     ...     'PROFILE_PAGETESTS_REQUESTS', '')
 
@@ -28,39 +26,37 @@ init_profiler() function.
     ...     pagetests_profile_dir, 'pagetests.prof')
     >>> os.environ['PROFILE_PAGETESTS_REQUESTS'] = pagetests_profile
 
-    >>> pagetests_framework.init_profiler()
-    >>> pagetests_framework.profiler
+    >>> PageTestLayer.setUp()
+    >>> PageTestLayer.profiler
     <...Profile...>
-    >>> len(pagetests_framework.profiler.getstats())
+    >>> len(PageTestLayer.profiler.getstats())
     0
 
-Once there is a profiler configured, any call made using the
-ProfiledHTTPCaller will be profiled.
+The layer also replaces the standard HTTPCaller.__call__ by a wrapper
+that takes care of profiling (among other things).
 
-    >>> from canonical.launchpad.testing.pages import ProfiledHTTPCaller
+    >>> from zope.app.testing.functional import HTTPCaller
 
     # We need to close the default interaction.
     >>> logout()
 
-    >>> http = ProfiledHTTPCaller()
+    >>> http = HTTPCaller()
     >>> response = http('GET / HTTP/1.0')
-    >>> profile_count = len(pagetests_framework.profiler.getstats())
+    >>> profile_count = len(PageTestLayer.profiler.getstats())
     >>> profile_count > 0
     True
 
-Requests made with a testbrowser configured through setupBrowser will
-also be profiled.
+Requests made with a testbrowser will also be profiled.
 
-    >>> from canonical.launchpad.testing.pages import setupBrowser
-    >>> browser = setupBrowser()
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
     >>> browser.open('http://launchpad.dev/')
-    >>> len(pagetests_framework.profiler.getstats()) > profile_count
+    >>> len(PageTestLayer.profiler.getstats()) > profile_count
     True
 
-At program exit, the write_profiler_stats() function is called that will
-save the profile data in the requested file.
+Once the layer finishes, it saves save the profile data in the requested file.
 
-    >>> pagetests_framework.write_profiler_stats()
+    >>> PageTestLayer.tearDown()
     >>> import pstats2
     >>> stats = pstats2.Stats(pagetests_profile)
     >>> os.remove(pagetests_profile)
@@ -69,13 +65,13 @@ When the environment isn't set, no profile is created.
 
     >>> del os.environ['PROFILE_PAGETESTS_REQUESTS']
 
-    >>> pagetests_framework.init_profiler()
-    >>> print pagetests_framework.profiler
+    >>> PageTestLayer.setUp()
+    >>> print PageTestLayer.profiler
     None
 
-And no stats file is written at the program exit.
+And no stats file is written when the layer is tore down.
 
-    >>> pagetests_framework.write_profiler_stats()
+    >>> PageTestLayer.tearDown()
     >>> os.path.exists(pagetests_profile)
     False
 
@@ -147,7 +143,6 @@ Making another request will create another profile.
     >>> import shutil
 
     >>> os.environ['PROFILE_PAGETESTS_REQUESTS'] = old_profile_environ
-    >>> pagetests_framework.profiler = old_pagetests_profiler
 
     >>> shutil.rmtree(pagetests_profile_dir)
     >>> shutil.rmtree(profile_dir)
