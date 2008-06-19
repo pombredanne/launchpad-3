@@ -19,146 +19,92 @@ OpenIDRPSummary objects.
     >>> verifyObject(IOpenIDRPSummarySet, rp_summary_set)
     True
 
-Any OpenIDRPSummary can be retrieved using the IOpenIDRPSummarySet
-get() method. If no OpenIDRPSummary has that specified id, None is
-returned.
+The getByIdentifier() method returns a list of all the summaries for an
+identifier.
 
-    >>> print_openid_rp_summaries(summaries):
+    >>> def print_openid_rp_summaries(summaries):
     ...     for summary in summaries:
     ...         print summary.person.name
     ...         print '  identifier:', summary.identifier
     ...         print '  trust_root:', summary.trust_root
 
-    >>> norwegian_blue_store = rp_summary_set.get(3)
-    >>> print_openid_rp_summaries([norwegian_blue_store])
-    no-priv
-      identifier: http://id.launchpad.dev/NorwegianBlue/no-priv
-      trust_root: https://shop.canonical.com
-
-    >>> print rp_summary_set.get(99)
-    None
-
-A list of all the summaries for a `Person` can be retrieved using the
-getByPerson() method. Note that since a person may have more than one
-identifier, he may have more than one summary for a trust root, like
-No Privileges Person. If the person has no summaries, an empty list is
-returned.
-
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> no_priv_summaries = rp_summary_set.getByPerson(no_priv)
-    >>> print_openid_rp_summaries(no_priv_summaries)
+    >>> nopriv_oid_summaries = rp_summary_set.getByIdentifier(
+    ...     'http://openid.launchpad.dev/+id/no-priv_oid')
+    >>> print_openid_rp_summaries(nopriv_oid_summaries)
     no-priv
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: https://shop.canonical.com
     no-priv
-      identifier: http://id.launchpad.dev/NorwegianBlue/no-priv
-      trust_root: https://shop.canonical.com
-    no-priv
-      identifier: http://id.launchpad.dev/NorwegianBlue/no-priv
-      trust_root: http://moodle.org
-
-    >>> foo_bar = getUtility(IPersonSet).getByName('foo-bar')
-    >>> rp_summary_set.getByPerson(foo_bar)
-    []
-
-Similarly, a list of all the summaries for an OpenID trust root can be
-gotten using the getByTrustRoot() method. A person may appear more than
-once because a person may have many identifiers. An empty list is
-returned when there are no summaries with the trust root.
-
-    >>> shop_summaries = rp_summary_set.getByTrustRoot(
-    ...     'https://shop.canonical.com')
-    >>> print_openid_rp_summaries(shop_summaries)
-    no-priv
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
-      trust_root: https://shop.canonical.com
-    former-person-deactivatedaccount
-      identifier: http://id.launchpad.dev/+id/former-personv_oid
-      trust_root: https://shop.canonical.com
-    no-priv
-      identifier: http://id.launchpad.dev/NorwegianBlue/no-priv
-      trust_root: https://shop.canonical.com
-    name12
-      identifier: http://id.launchpad.dev/Wensleydale/name12
-      trust_root: https://shop.canonical.com
-
-    >>> rp_summary_set.getByTrustRoot('never-used')
-    []
-
-The getByIdentifier() method returns a list of all the summaries for an
-identifier. The list is empty if the identifier has never been used.
-
-    >>> norwegian_blue_summaries = rp_summary_set.getByIdentifier(
-    ...     'http://id.launchpad.dev/NorwegianBlue/no-priv')
-    >>> print_openid_rp_summaries(norwegian_blue_summaries)
-    no-priv
-      identifier: http://id.launchpad.dev/NorwegianBlue/no-priv
-      trust_root: https://shop.canonical.com
-    no-priv
-      identifier: http://id.launchpad.dev/NorwegianBlue/no-priv
       trust_root: http://moodle.org
 
-    >>> rp_summary_set.getByIdentifier('never-used)
+The list is empty if the identifier has never been used.
+
+    >>> rp_summary_set.getByIdentifier('never-used')
     []
 
-The person associates with an OpenID identifier can be retrieved using
-the getPersonByIdentifier() method. If no person has used the identifier
-None is returned.
+The getByIdentifier() method raises an AssertionError if two or more
+persons share an identifier. The database does not have a constraint to
+guard against this.
 
-    >>> no_priv_2 = rp_summary_set.getPersonByIdentifier(
-    ...     'http://id.launchpad.dev/NorwegianBlue/no-priv')
-    >>> print no_priv_2.name
-    no-priv
-    >>> no_priv_2 is no_priv
-    True
+    >>> from canonical.database.sqlbase import cursor
 
-    >>> print rp_summary_set.getByIdentifier('never-used)
-    None
+    # Create an integrity error in the data.
+    >>> cur = cursor()
+    >>> cur.execute("""
+    ...     INSERT INTO OpenIDRPSummary (person, identifier, trust_root)
+    ...     VALUES(12, 'http://openid.launchpad.dev/+id/no-priv_oid',
+    ...            'an-irrelevant-trust-root')
+    ...     """)
 
-getByIdentifier() and getPersonByIdentifier() raise a
-ReusedIdentifierError if two or more persons share an identifier. The
-database does not have a constraint to guard against this.
+    >>> rp_summary_set.getByIdentifier(
+    ...     'http://openid.launchpad.dev/+id/no-priv_oid')
+    Traceback (most recent call last):
+     ...
+    AssertionError: More than 1 person has the OpenID identifier of
+                    http://openid.launchpad.dev/+id/no-priv_oid: ...
 
-XXX sinzui 2008-06-16: I cannot think how to test this behaviour.
-Do I dare to monkey patch sqlobject? Or, should I create a
-function or class for doing queries, and replace it in the test with
-something that returns bad data.
+    # Remove the bad data; OpenIDRPSummary should be sane.
+    >>> cur.execute("""
+    ...     DELETE FROM OpenIDRPSummary
+    ...     WHERE trust_root = 'an-irrelevant-trust-root'
+    ...     """)
 
 
-= IOpenIDRPSummary =
+== IOpenIDRPSummary ==
 
 The OpenIDRPSummary object implements the IOpenIDRPSummary interface.
 
-    >>> canonical.launchpad.interfaces.openidserver import IOpenIDRPSummary
+    >>> from canonical.launchpad.interfaces.openidserver import (
+    ...     IOpenIDRPSummary)
 
-    >>> verifyObject(IOpenIDRPSummary, norwegian_blue_store)
+    >>> nopriv_oid_store = nopriv_oid_summaries[0]
+    >>> verifyObject(IOpenIDRPSummary, nopriv_oid_store)
     True
 
 Each OpenIDRPSummary is a unique combination of Person, identifier,
 and trust_root. No other summary may contain the identical information.
 
-    >>> norwegian_blue_store.person.name
-    'no-priv'
-    >>> norwegian_blue_store.identifier
-    'http://id.launchpad.dev/NorwegianBlue/no-priv'
-    >>> norwegian_blue_store.trust_root
-    'https://shop.canonical.com'
+    >>> nopriv_oid_store.person.name
+    u'no-priv'
+    >>> nopriv_oid_store.identifier
+    u'http://openid.launchpad.dev/+id/no-priv_oid'
+    >>> nopriv_oid_store.trust_root
+    u'https://shop.canonical.com'
 
 Each summary contains a date_created, date_last_used, and the
 total_logins that that it has been used. The date_created property
 never changes.
 
-    >>> print norwegian_blue_store.date_created
-    '2008-02-01 13:01:01.000001'
-    >>> norwegian_blue_store.date_last_used
-    '2008-04-01 18:01:01.000001'
-    >>> norwegian_blue_store.total_logins
+    >>> print nopriv_oid_store.date_created
+    2008-02-01 13:01:01.000001+00:00
+    >>> print nopriv_oid_store.date_last_used
+    2008-04-01 18:01:01.000001+00:00
+    >>> nopriv_oid_store.total_logins
     3
 
 The date_last_used and total_logins properties do change. The
-incrementLogins() method increases the total_logins by 1, and updates
+increment() method increases the total_logins by 1, and updates
 the date_last_used property. If the date_used is not provided, the
 current time is used.
 
@@ -166,37 +112,36 @@ current time is used.
     >>> from pytz import UTC
 
     >>> yesterday = datetime.now(UTC) - timedelta(days=1)
-    >>> norwegian_blue_store.incrementTotal(date_used=yesterday)
-    >>> norwegian_blue_store.total_logins
+    >>> nopriv_oid_store.increment(date_used=yesterday)
+    >>> nopriv_oid_store.total_logins
     4
-    >>> norwegian_blue_store.date_last_used == yesterday
+    >>> nopriv_oid_store.date_last_used == yesterday
     True
 
-    >>> norwegian_blue_store.incrementTotal()
-    >>> norwegian_blue_store.total_logins
+    >>> nopriv_oid_store.increment()
+    >>> nopriv_oid_store.total_logins
     5
     >>> now = datetime.now(UTC)
-    >>> now - norwegian_blue_store.date_last_used < timedelta(seconds=5)
+    >>> now - nopriv_oid_store.date_last_used < timedelta(seconds=5)
     True
 
 
 == Creating and updating OpenIDRPSummary objects ==
 
 The OpenIDRPSummarySet object creates and updates OpenIDRPSummary
-objects. The recordOpenIDRPSummary() method decides when to create
-a new summary, or update an existing one.
+objects. The record() method decides when to create a new summary, or
+update an existing one.
 
 A new OpenIDRPSummary is created when the person, identifier, and trust
 root have never been used before. The date_created and date_last_used
 will be the same, and the total_logins is 1.
 
-    >>> summary = rp_summary_set.recordOpenIDRPSummary(
-    ...     no_priv,
-    ...     'http://id.launchpad.dev/NorwegianBlue/no-priv',
-    ...     'http://open-blog.org', date_used=yesterday)
+    >>> no_priv = nopriv_oid_store.person
+    >>> summary = rp_summary_set.record(
+    ...     no_priv, 'http://open-blog.org', date_used=yesterday)
     >>> print_openid_rp_summaries([summary])
     no-priv
-      identifier: http://id.launchpad.dev/NorwegianBlue/no-priv
+      identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: http://open-blog.org
 
     >>> summary.date_created == yesterday
@@ -206,17 +151,13 @@ will be the same, and the total_logins is 1.
     >>> summary.total_logins
     1
 
-Calling recordOpenIDRPSummary() a second time with the same person,
-identifier, and trust root updates and returns an instance of the
-summary just created. The date_used parameter is optional; the
-date_last_used is set to now.
+Calling record() a second time with the same person, identifier, and
+trust root updates and returns an instance of the summary just created.
+The date_used parameter is optional; the date_last_used is set to now.
 
     >>> now = datetime.now(UTC)
-    >>> summary_2 = rp_summary_set.recordOpenIDRPSummary(
-    ...     no_priv,
-    ...     'http://id.launchpad.dev/NorwegianBlue/no-priv',
-    ...     'http://open-blog.org')
-    >>> summary_2 is summary
+    >>> summary_2 = rp_summary_set.record(no_priv, 'http://open-blog.org')
+    >>> summary_2 == summary
     True
     >>> summary.total_logins
     2
@@ -226,10 +167,8 @@ date_last_used is set to now.
 A new summary is created if the person uses a trust root that he has
 never used before.
 
-    >>> ubuntu_live_summary = rp_summary_set.recordOpenIDRPSummary(
-    ...     no_priv,
-    ...     'http://id.launchpad.dev/NorwegianBlue/no-priv',
-    ...     'http://ubuntu-live.org')
+    >>> ubuntu_live_summary = rp_summary_set.record(
+    ...     no_priv, 'http://ubuntu-live.org')
     >>> ubuntu_live_summary is summary
     False
     >>> ubuntu_live_summary.total_logins
@@ -238,54 +177,55 @@ never used before.
 If the person uses a different identifier with a trust root that was
 used before, a new OpenIDRPSummary is created.
 
-    >>> ubuntu_live_summary_2 = rp_summary_set.recordOpenIDRPSummary(
-    ...     no_priv,
-    ...     'http://id.launchpad.dev/knightsOfNi/no-priv',
-    ...     'http://ubuntu-live.org')
-    >>> ubuntu_live_summary_2 is ubuntu_live_summary
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    # Simulate a privileged event that has changed openid_identifier.
+    >>> bare_no_priv = removeSecurityProxy(no_priv)
+    >>> bare_no_priv.openid_identifier = 'knightsOfNi'
+
+    >>> ubuntu_live_summary_2 = rp_summary_set.record(
+    ...     no_priv, 'http://ubuntu-live.org')
+    >>> ubuntu_live_summary_2 == ubuntu_live_summary
     False
     >>> ubuntu_live_summary_2.total_logins
     1
+    >>> print_openid_rp_summaries([ubuntu_live_summary_2])
+    no-priv
+      identifier: http://openid.launchpad.dev/+id/knightsOfNi
+      trust_root: http://ubuntu-live.org
 
 When a different person first uses the 'http://ubuntu-live.org' trust
 root, a new OpenIDRPSummary is created.
 
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
-    >>> ubuntu_live_summary_3 = rp_summary_set.recordOpenIDRPSummary(
-    ...     sample_person,
-    ...     'http://id.launchpad.dev/Wensleydale/name12',
-    ...     'http://ubuntu-live.org')
-
-Persons cannot share identifiers. A ReusedIdentifierError is raised
-is a person tries to use an identifier already used by another person.
-
-    >>> rp_summary_set.recordOpenIDRPSummary(
-    ...     sample_person,
-    ...     'http://id.launchpad.dev/knightsOfNi/no-priv',
-    ...     'http://ubuntu-live.org')
-    Traceback (most recent call last):
-     ...
-    ReusedIdentifierError: Sample Person used No Privileges Person's
-        identifier: 'http://id.launchpad.dev/knightsOfNi/no-priv',
+    >>> ubuntu_live_summary_3 = rp_summary_set.record(
+    ...     sample_person, 'http://ubuntu-live.org')
+    >>> print_openid_rp_summaries([ubuntu_live_summary_3])
+    name12
+      identifier: http://openid.launchpad.dev/+id/name12_oid
+      trust_root: http://ubuntu-live.org
 
 A OpenIDRPSummary object cannot be created or updated id the person
 is not valid, even if the person's account has been deactivated.
 
-    >>> former_member = getUtility(IPersonSet).getByName('former-member')
-    >>> former_summary = rp_summary_set.getByPerson(former_member)
-    >>> print_openid_rp_summaries(former_summary)
-    former-person-deactivatedaccount
-      identifier: http://id.launchpad.dev/+id/former-personv_oid
+    >>> former_summaries = rp_summary_set.getByIdentifier(
+    ...     'http://openid.launchpad.dev/+id/former-user_oid')
+    >>> print_openid_rp_summaries(former_summaries)
+    former-user-deactivatedaccount
+      identifier: http://openid.launchpad.dev/+id/former-user_oid
       trust_root: https://shop.canonical.com
 
-    >>> former_member.is_valid_person
+    >>> former_user = former_summaries[0].person
+    >>> former_user.is_valid_person
     False
 
-    >>> rp_summary_set.recordOpenIDRPSummary(
-    ...     former_member,
+    >>> rp_summary_set.record(
+    ...     former_user,
     ...     'http://openid.launchpad.dev/+id/former-member_oid',
     ...     'https://shop.canonical.com')
     Traceback (most recent call last):
      ...
-    AssertionError: former-person-deactivatedaccount is not a valid person.
+    AssertionError: former-user-deactivatedaccount is not a valid person.
 

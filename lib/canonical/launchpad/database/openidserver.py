@@ -5,27 +5,33 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdAuthorization', 'OpenIdAuthorizationSet', 'OpenIDRPConfig',
-    'OpenIDRPConfigSet']
+    'OpenIdAuthorization',
+    'OpenIdAuthorizationSet',
+    'OpenIDRPConfig',
+    'OpenIDRPConfigSet',
+    'OpenIDRPSummary',
+    'OpenIDRPSummarySet',
+    ]
 
-from random import random
-from time import time
 
-
+from datetime import datetime
+import pytz
 
 from openid.store.sqlstore import PostgreSQLStore
 import psycopg2
-from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
+from sqlobject import ForeignKey, IntCol, SQLObjectNotFound, StringCol
 from zope.interface import implements, classProvides
 
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
-from canonical.launchpad.interfaces import (
-    IOpenIdAuthorization, IOpenIdAuthorizationSet, IOpenIDRPConfig,
-    IOpenIDRPConfigSet, ILaunchpadOpenIdStoreFactory,
-    PersonCreationRationale)
+from canonical.launchpad.interfaces.openidserver import (
+    ILaunchpadOpenIdStoreFactory, IOpenIdAuthorization,
+    IOpenIdAuthorizationSet, IOpenIDRPConfig, IOpenIDRPConfigSet,
+    IOpenIDRPSummary, IOpenIDRPSummarySet)
+from canonical.launchpad.interfaces.person import PersonCreationRationale
+
 
 class OpenIdAuthorization(SQLBase):
     implements(IOpenIdAuthorization)
@@ -105,7 +111,8 @@ class OpenIDRPConfigSet:
 
     def new(self, trust_root, displayname, description, logo=None,
             allowed_sreg=None,
-            creation_rationale=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT):
+            creation_rationale=PersonCreationRationale
+                               .OWNER_CREATED_UNKNOWN_TRUSTROOT):
         """See `IOpenIdRPConfigSet`"""
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
@@ -171,3 +178,80 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
 
     txn_createTables = createTables
 
+
+class OpenIDRPSummary(SQLBase):
+    """A summary of the interaction between a `Person` and an OpenID RP."""
+    implements(IOpenIDRPSummary)
+    _table = 'OpenIDRPSummary'
+
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    identifier = StringCol(notNull=True)
+    trust_root = StringCol(notNull=True)
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    date_last_used = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    total_logins = IntCol(notNull=True, default=1)
+
+    def increment(self, date_used=None):
+        """See `IOpenRPIDSummary`.
+
+        :param date_used: an optional datetime the login happened. The current
+            datetime is used if date_used is None.
+        """
+        self.total_logins = self.total_logins + 1
+        if date_used is None:
+            date_used = datetime.now(pytz.UTC)
+        self.date_last_used = date_used
+
+
+class OpenIDRPSummarySet:
+    """A set of OpenID RP Summaries."""
+    implements(IOpenIDRPSummarySet)
+
+    def getByIdentifier(self, identifier):
+        """See `IOpenRPIDSummarySet`.
+
+        :raise AssertionError: If the identifier is used by more than
+            one person.
+        """
+        summaries = OpenIDRPSummary.selectBy(identifier=identifier)
+        summaries = list(summaries)
+        person_names = set()
+        for summary in summaries:
+            person_names.add(summary.person.name)
+        if len(person_names) > 1:
+            raise AssertionError(
+                'More than 1 person has the OpenID identifier of %s: %s' %
+                (identifier, ', '.join(list(person_names))))
+        return summaries
+
+    def record(self, person, trust_root, date_used=None):
+        """See `IOpenRPIDSummarySet`.
+
+        :param date_used: an optional datetime the login happened. The current
+            datetime is used if date_used is None.
+        :raise AssertionError: If the person is not valid.
+        """
+        if not person.is_valid_person:
+            raise AssertionError('%s is not a valid person.' % person.name)
+        identifier = self.openid_identifier_url(person)
+        if date_used is None:
+            date_used = datetime.now(pytz.UTC)
+        summary = OpenIDRPSummary.selectOneBy(
+            person=person, identifier=identifier, trust_root=trust_root)
+        if summary is not None:
+            # Update the existing summary.
+            summary.increment(date_used=date_used)
+        else:
+            # create a new summary.
+            summary = OpenIDRPSummary(
+                person=person, identifier=identifier, trust_root=trust_root,
+                date_created=date_used, date_last_used=date_used,
+                total_logins=1)
+        return summary
+
+    # XXX sinzui 2008-06-18: Move this to Account.
+    def openid_identifier_url(self, user):
+        """return the user's OpenID identifier URL."""
+        from canonical.launchpad.webapp.vhosts import allvhosts
+        identity_url_prefix = (allvhosts.configs['openid'].rooturl + '+id/')
+        return identity_url_prefix + user.openid_identifier

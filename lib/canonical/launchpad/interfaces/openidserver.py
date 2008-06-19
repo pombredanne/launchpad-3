@@ -10,6 +10,8 @@ __all__ = [
         'IOpenIDPersistentIdentity',
         'IOpenIDRPConfig',
         'IOpenIDRPConfigSet',
+        'IOpenIDRPSummary',
+        'IOpenIDRPSummarySet',
         'ILaunchpadOpenIdStoreFactory',
         'ILoginServiceAuthorizeForm',
         'ILoginServiceLoginForm',
@@ -23,7 +25,9 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BaseImageUpload, PasswordField, UniqueField)
-from canonical.launchpad.interfaces.person import PersonCreationRationale
+from canonical.launchpad.interfaces.person import (
+    IPerson, PersonCreationRationale)
+from canonical.lazr.fields import Reference
 
 
 class IOpenIdAuthorization(Interface):
@@ -154,14 +158,13 @@ class IOpenIDRPConfigSet(Interface):
         """Return the IOpenIdRPConfig for a particular trust root"""
 
 
-class ReusedIdentifierError(Exception):
-    """Two or more `Person`s share an OpenID identifier."""
-
-
-class IOpenRPSummary(Interface):
+class IOpenIDRPSummary(Interface):
     """A summary of the interaction between a `Person` and an OpenID RP."""
     id = Int(title=u'ID', required=True)
     person = Attribute('The IPerson this is for')
+    person = Reference(
+        title=u'The IPerson who logged in.', schema=IPerson,
+        required=True, readonly=True)
     identifier = TextLine(
         title=u'OpenID identifier', required=True, readonly=True)
     trust_root = TextLine(
@@ -171,67 +174,31 @@ class IOpenRPSummary(Interface):
     date_last_used = Datetime(title=u'Date last used', required=True)
     total_logins = Int(title=u'Total logins', required=True)
 
-    def incrementLogins(date_used=None):
+    def increment(date_used=None):
         """Increment the total_logins.
 
         :param date_used: an optional datetime the login happened. The current
             datetime is used if date_used is None.
         """
 
-class IOpenRPSummarySet(Interface):
+
+class IOpenIDRPSummarySet(Interface):
     """A set of OpenID RP Summaries."""
-
-    def get():
-        """Get the IOpenRPSummary by its ID.
-
-        :return: The `IOpenRPSummary` or None if no IOpenRPSummary has the ID.
-        """
-
-    def getByPerson(person):
-        """Get all the IOpenRPSummary objects for a Person.
-
-        :param person: An `IPerson`.
-        :return: A list of IOpenRPSummary objects. The list is emtpy if the
-            person has no never been used.
-        """
 
     def getByIdentifier(identifier):
         """Get all the IOpenRPSummary objects for an OpenID identifier.
 
         :param identifier: A string used as an OpenID identifier.
-        :return: A list of IOpenRPSummary objects. The list is emtpy if the
+        :return: A list of IOpenRPSummary objects. The list is empty if the
             identifier has never been used.
-        :raise ReusedIdentifierError: If the identifier is used by two or
-            more persons.
         """
 
-    def getByTrustRoot(trust_root):
-        """Get all the IOpenRPSummary objects for an OpenID trust root.
-
-        :param trust_root: A string used as an OpenID trust root.
-        :return: A list of IOpenRPSummary objects. The list is emtpy if the
-            trust root has never been used.
-        """
-
-    def getPersonByIdentifier(identifier):
-        """Get the person associated with the OpenID identifier.
-
-        :param identifier: A string used as an OpenID identifier.
-        :return: The `IPerson` or None is the identifier has never been used.
-        :raise ReusedIdentifierError: If the identifier is used by two or
-            more persons.
-        """
-
-    def recordOpenIDRPSummary(person, identifier, trust_root, date_used=None):
+    def record(person, trust_root):
         """Create or update an IOpenRPSummary.
 
         :param person: An `IPerson`.
-        :param identifier: A string used as an OpenID identifier.
         :param trust_root: A string used as an OpenID trust root.
-        :param date_used: an optional datetime the login happened. The current
-            datetime is used if date_used is None.
         :return: An `IOpenRPSummary`.
-        :raise AssertionError: If the identifier belongs to another IPerson.
         """
 
 
