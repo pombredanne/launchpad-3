@@ -8,8 +8,10 @@ __all__ = [
     'DistroArchSeriesBinaryPackageView',
     ]
 
-from canonical.launchpad.interfaces import (
-    IDistroArchSeriesBinaryPackage, IStructuralHeaderPresentation)
+from canonical.launchpad.interfaces.distroarchseriesbinarypackage import (
+    IDistroArchSeriesBinaryPackage)
+from canonical.launchpad.interfaces.launchpad import (
+    IStructuralHeaderPresentation)
 
 from canonical.launchpad.webapp import ApplicationMenu, GetitemNavigation
 

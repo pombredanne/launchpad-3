@@ -4,11 +4,11 @@ __metaclass__ = type
 
 __all__ = [
     'distroarchseries_to_structuralheading',
-    'DistroArchSeriesNavigation',
-    'DistroArchSeriesContextMenu',
-    'DistroArchSeriesView',
     'DistroArchSeriesAddView',
     'DistroArchSeriesBinariesView',
+    'DistroArchSeriesContextMenu',
+    'DistroArchSeriesNavigation',
+    'DistroArchSeriesView',
     ]
 
 from canonical.launchpad.webapp import (
@@ -18,8 +18,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
-from canonical.launchpad.interfaces import (
-    IDistroArchSeries, IStructuralHeaderPresentation)
+from canonical.launchpad.interfaces.distroarchseries import IDistroArchSeries
+from canonical.launchpad.interfaces.launchpad import (
+    IStructuralHeaderPresentation)
 
 
 def distroarchseries_to_structuralheading(distroarchseries):
