@@ -41,7 +41,7 @@ def login(email, participation=None):
         # IPersonSet.getByEmail() and since this is security wrapped, it needs
         # an interaction available.
         setupInteraction(authutil.unauthenticatedPrincipal())
-        principal = authutil.getPrincipalByLogin(email)
+        principal = authutil.getPrincipalByLogin(email, want_password=False)
         assert principal is not None, "Invalid login"
     else:
         principal = authutil.unauthenticatedPrincipal()

@@ -13,6 +13,7 @@ participation type.
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
 
+
 === search_text ===
 
 The search_text parameter will limit the questions to those matching
@@ -23,6 +24,7 @@ the query using the regular full text algorithm.
     Firefox loses focus and gets stuck              Open
     mailto: problem in webpage                      Solved
     Newly installed plug-in doesn't seem to be used Answered
+
 
 === sort ===
 
@@ -51,6 +53,7 @@ QuestionSort.NEWEST_FIRST.
      6 Newly installed plug-in doesn't seem to be used      Answered
      4 Firefox loses focus and gets stuck                   Open
 
+
 === status ===
 
 The last searches showed that by default, not all statuses are searched
@@ -69,6 +72,7 @@ The status parameter can also take a list of statuses.
     ...     print question.title, question.status.title
     mailto: problem in webpage                  Solved
     Firefox is slow and consumes too much RAM   Invalid
+
 
 === participation ===
 
@@ -138,6 +142,7 @@ will be selected:
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
 
+
 === language ===
 
 By default, questions in all languages are included in the results.
@@ -163,6 +168,7 @@ But carlos has one.
     [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)',
      u'es']
 
+
 === needs_attention ===
 
 The method accept a parameter called needs_attention which only selects
@@ -176,6 +182,7 @@ answer and that are back in the OPEN state.
     ...         question.title)
     Open              Sample Person Continue playing after shutdown
     Needs information Foo Bar       Slow system
+
 
 === Combination ===
 
@@ -239,6 +246,7 @@ And questions on which the user commented:
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
 
+
 == getDirectAnswerQuestionTargets() ==
 
 IPerson defines getDirectAnswerQuestionTargets that can be used to retrieve
@@ -278,8 +286,8 @@ answer contact through his team membership.
     >>> ubuntu.addAnswerContact(landscape_team)
     True
 
-    >>> sorted([target.name
-    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    >>> sorted(target.name
+    ...        for target in no_priv.getTeamAnswerQuestionTargets())
     [u'ubuntu']
 
 Indirect team membership is also taken in consideration. For example,
@@ -304,6 +312,36 @@ Person's supported IQuestionTargets:
     >>> translator_team.addLanguage(english)
     >>> evolution_package.addAnswerContact(translator_team)
     True
-    >>> sorted([target.name
-    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    >>> sorted(target.name
+    ...        for target in no_priv.getTeamAnswerQuestionTargets())
     [u'evolution', u'ubuntu']
+
+
+== Deactivated pillars and *AnswerQuestionTargets() ==
+
+getDirectAnswerQuestionTargets() and getTeamAnswerQuestionTargets() use
+a _getQuestionTargetsFromAnswerContacts() to build a distinct list of
+valid IQuestionTargets. It ensures that no deactivated pillars are in
+the list.
+
+If the Firefox project is deactivated, it is removed from the list of
+supported projects.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+
+    >>> login('foo.bar@canonical.com')
+    >>> firefox.active = False
+    >>> syncUpdate(firefox)
+    >>> sorted(target.name
+    ...        for target in no_priv.getDirectAnswerQuestionTargets())
+    []
+
+When the Firefox project is reactivated, the answer contact relationship
+is visible. It is important to preserve the continuity of the project in
+cases were we only want is deactivated for a short period.
+
+    >>> firefox.active = True
+    >>> syncUpdate(firefox)
+    >>> sorted(target.name
+    ...        for target in no_priv.getDirectAnswerQuestionTargets())
+    [u'firefox']

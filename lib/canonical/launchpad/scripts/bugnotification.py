@@ -139,7 +139,7 @@ def construct_email_notifications(bug_notifications):
     return bug_notifications, messages
 
 def _log_exception_and_restart_transaction():
-    """Log an execption and restart the current transaction.
+    """Log an exception and restart the current transaction.
 
     It's important to restart the transaction if an exception occurs,
     since if it's a DB exception, the transaction isn't usable anymore.
