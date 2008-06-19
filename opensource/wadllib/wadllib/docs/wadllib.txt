@@ -144,7 +144,7 @@ To invoke the special GET request, the client sets the 'ws.op' query
 parameter to the fixed string 'find'.
 
    >>> find_method = personset_resource.get_method(
-   ...     'get', fixed_params={'ws.op' : 'findPerson'})
+   ...     'get', query_params={'ws.op' : 'findPerson'})
    >>> find_method.id
    'PersonSetCollectionAdapter-findPerson'
 
@@ -163,18 +163,18 @@ parameter value, or omits a required parameter.
    >>> find_method.request_url()
    Traceback (most recent call last):
    ...
-   KeyError: "No value for required parameter 'text'"
+   ValueError: No value for required parameter 'text'
 
    >>> find_method.request_url({'ws.op' : 'findAPerson', 'text' : 'foo'})
    Traceback (most recent call last):
    ...
-   KeyError: "Value 'findAPerson' for parameter 'ws.op' conflicts with fixed value 'findPerson'"
+   ValueError: Value 'findAPerson' for parameter 'ws.op' conflicts with fixed value 'findPerson'
 
 To invoke the overloaded POST request, the client sets the 'ws.op'
 query variable to the fixed string 'newTeam':
 
    >>> create_team_method = personset_resource.get_method(
-   ...     'post', fixed_params={'ws.op' : 'newTeam'})
+   ...     'post', representation_params={'ws.op' : 'newTeam'})
    >>> create_team_method.id
    'PersonSetCollectionAdapter-newTeam'
 
@@ -185,7 +185,7 @@ name or the fixed parameters.
    None
 
    >>> print personset_resource.get_method(
-   ...     'post', fixed_params={'ws_op' : 'nosuchparam'})
+   ...     'post', query_params={'ws_op' : 'nosuchparam'})
    None
 
 Let's say the browser makes a GET request to the person set resource
@@ -229,6 +229,32 @@ by following links.
    >>> languages_link = bound_limi.get_param("languages_collection_link")
    >>> languages_link.get_value()
    u'http://api.launchpad.dev/beta/~limi/languages'
+
+
+== Representation creation ==
+
+You must provide a representation when invoking certain methods. The
+representation() method helps you build one without knowing the
+details of how a representation is put together.
+
+   >>> create_team_method.representation(
+   ...     display_name='Joe Bloggs', name='joebloggs')
+   'display_name=Joe+Bloggs&ws.op=newTeam&name=joebloggs'
+
+   >>> bound_limi.get_method('patch').representation(name='limi2')
+   '{"name": "limi2"}'
+
+Representations may require values for certain parameters.
+
+   >>> create_team_method.representation()
+   Traceback (most recent call last):
+   ...
+   ValueError: No value for required parameter 'display_name'
+
+   >>> bound_limi.get_method('put').representation(name='limi2')
+   Traceback (most recent call last):
+   ...
+   ValueError: No value for required parameter 'mugshot_link'
 
 
 == Error conditions ==

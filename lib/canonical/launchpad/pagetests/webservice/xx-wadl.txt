@@ -549,14 +549,15 @@ The <method> tag for a named operation will contain one or more
 'newTeam' custom operation takes a number of parameters.
 
     >>> new_team_request, new_team_response = newTeam
-    >>> [param.attrib['name'] for param in new_team_request]
+    >>> new_team_representation = single_list_value(new_team_request)
+    >>> [param.attrib['name'] for param in new_team_representation]
     ['ws.op', 'display_name', 'name', 'default_membership_period',
      'team_description', 'default_renewal_period', 'subscription_policy']
 
 The 'ws.op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
 
-    >>> ws_op = single_list_value(new_team_request)
+    >>> ws_op = new_team_representation[0]
     >>> ws_op.attrib['fixed']
     'newTeam'
 
