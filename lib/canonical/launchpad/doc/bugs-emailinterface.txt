@@ -1483,6 +1483,33 @@ Invalid assignee:
 
     >>> stub.test_emails = []
 
+== Multiple Commands ==
+
+An email can contain multiple commands, even for different bugs.
+
+    >>> bug_four_upstream_task = bug_four.bugtasks[0]
+    >>> print bug_four_upstream_task.status.name
+    NEW
+    >>> print bug_four_upstream_task.importance.name
+    CRITICAL
+    >>> bug_five_upstream_task = bug_five.bugtasks[0]
+    >>> print bug_five_upstream_task.status.name
+    NEW
+    >>> print bug_five_upstream_task.importance.name
+    CRITICAL
+    >>> submit_commands(bug_four,
+    ...     'bug 4', 'status confirmed', 'importance medium',
+    ...     'bug 5', 'status fixreleased', 'importance high')
+    >>> print bug_four_upstream_task.status.name
+    CONFIRMED
+    >>> print bug_four_upstream_task.importance.name
+    MEDIUM
+    >>> print bug_five_upstream_task.status.name
+    FIXRELEASED
+    >>> print bug_five_upstream_task.importance.name
+    HIGH
+
+
 == Default 'affects' target ==
 
 Most of the time it's not necessary to give the 'affects' command. If
