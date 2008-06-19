@@ -97,23 +97,6 @@ The status of the proxy server can be checked.
     >>> print status
     Server is running normally
 
-For testing the `getServerStatus` method has been instrumented to take
-over 0.5 seconds.  We can use it to ensure out timeout trap works.
-
-    >>> from canonical.lazr.timeout import (get_default_timeout_function,
-    ...     set_default_timeout_function)
-
-    >>> # Use 0.25s as default timeout.
-    >>> old_timeout_function = get_default_timeout_function()
-    >>> set_default_timeout_function(lambda: 0.25)
-    >>> status = voucher_proxy.getServerStatus()
-    Traceback (most recent call last):
-      ...
-    TimeoutError: timeout exceeded.
-
-    >>> # Reset the default timeout function.
-    >>> set_default_timeout_function(old_timeout_function)
-
 All of the unredeemed vouchers for a Launchpad user can be retrieved.
 
 If the user has no matching vouchers an empty list is returned.

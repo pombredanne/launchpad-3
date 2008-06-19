@@ -183,7 +183,7 @@ class TransportWithTimeout(Transport):
         self.conn = Transport.make_connection(self, host)
         return self.conn
 
-    @with_timeout(cleanup='cleanup')
+    @with_timeout(cleanup='cleanup', timeout=1)
     def request(self, host, handler, request_body, verbose=0):
         """Make the request but using the with_timeout decorator."""
         return Transport.request(
@@ -191,6 +191,12 @@ class TransportWithTimeout(Transport):
 
     def cleanup(self):
         """In the event of a timeout cleanup by closing the connection."""
+        try:
+            self.conn._conn.sock.shutdown(socket.SHUT_RDWR)
+        except AttributeError:
+            # It's possible that the other thread closed the socket
+            # beforehand.
+            pass
         self.conn._conn.close()
 
 
@@ -210,4 +216,10 @@ class SafeTransportWithTimeout(SafeTransport):
 
     def cleanup(self):
         """In the event of a timeout cleanup by closing the connection."""
+        try:
+            self.conn._conn.sock.shutdown(socket.SHUT_RDWR)
+        except AttributeError:
+            # It's possible that the other thread closed the socket
+            # beforehand.
+            pass
         self.conn._conn.close()
