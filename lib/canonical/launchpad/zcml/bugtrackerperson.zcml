@@ -12,20 +12,4 @@
         />
   </content>
 
-  <!-- BugTrackerPersonSet -->
-  <content
-      class="canonical.launchpad.database.bugtrackerperson.BugTrackerPersonSet">
-    <allow
-        interface="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPersonSet"
-        />
-  </content>
-
-  <securedutility
-      class="canonical.launchpad.database.bugtrackerperson.BugTrackerPersonSet"
-      provides="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPersonSet">
-    <allow
-        interface="canonical.launchpad.interfaces.bugtrackerperson.IBugTrackerPersonSet"
-        />
-  </securedutility>
-
 </configure>

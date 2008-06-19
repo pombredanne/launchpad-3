@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'IBugTrackerPerson',
-    'IBugTrackerPersonSet',
     'BugTrackerPersonAlreadyExists',
     ]
 
@@ -35,28 +34,3 @@ class IBugTrackerPerson(IHasBug):
         required=True)
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-
-
-class IBugTrackerPersonSet(Interface):
-    """A set of IBugTrackerPersons."""
-
-    def getByNameAndBugTracker(name, bugtracker):
-        """Return the `IBugTrackerPerson` for a given name on a bugtracker.
-
-        :param name: The name of the person on the bugtracker in
-            `bugtracker`.
-        :param bugtracker: The `IBugTracker` against which the `IPerson`
-            to be returned is registered with `name`.
-        :return: an `IBugTrackerPerson`.
-        """
-
-    def linkPersonToBugTracker(name, bugtracker, person):
-        """Link a Person to a BugTracker using a given name.
-
-        :param name: The name used for person on bugtracker.
-        :param bugtracker: The `IBugTracker` to which person should be linked.
-        :param person: The `IPerson` to link to bugtracker.
-        :raise BugTrackerPersonAlreadyExists: If `name` has already been
-            used to link a person to `bugtracker`.
-        :return: An `IBugTrackerPerson`.
-        """
