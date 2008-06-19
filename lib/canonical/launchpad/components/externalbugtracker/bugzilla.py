@@ -393,9 +393,28 @@ class BugzillaLPPlugin(Bugzilla):
         bug_comments_dict = server.Bug.comments(request_params)
 
         bug_comments = bug_comments_dict['bugs'][actual_bug_id]
-        comment_ids = [comment['id'] for comment in bug_comments]
+        return [comment['id'] for comment in bug_comments]
 
-        self.bugs[actual_bug_id]['comments'] = comment_ids
+    def fetchComments(self, bug_watch, comment_ids):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Complain if the bug doesn't exist.
+        if actual_bug_id not in self.bugs:
+            raise BugNotFound(bug_watch.remotebug)
+
+        server = xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+        # Fetch the comments we want.
+        request_params = {
+            'bug_ids': [actual_bug_id],
+            'ids': comment_ids,
+            }
+        bug_comments_dict = server.Bug.comments(request_params)
+        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
+
+        self.bugs[actual_bug_id]['comments'] = bug_comments
 
 
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):

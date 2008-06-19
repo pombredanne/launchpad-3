@@ -203,12 +203,8 @@ ISupportsCommentImport.getCommentIds() is the method used to get all the
 comment IDs for a given bug on a remote bugtracker.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.getCommentIds(bug_watch)
-
-The comment IDs will be stored in the bugs dict as a list under the key
-'comments'.
-
-    >>> print sorted(bugzilla.bugs[1]['comments'])
+    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch)
+    >>> print sorted(bug_comment_ids)
     [1, 3]
 
 getCommentIds() can only be called if initializeRemoteBugDB() has been
@@ -218,3 +214,34 @@ called and the bug exists locally.
     Traceback (most recent call last):
       ...
     BugNotFound: 42
+
+
+=== fetchComments() ===
+
+ISupportsCommentImport.fetchComments() is the method used to fetch a
+given set of comments from the remote bugtracker. It takes a bug watch
+and a list of the comment IDs to retrieve for that bug watch.
+
+    >>> bugzilla.fetchComments(bug_watch, [1, 3])
+
+The comments will be stored in the bugs dict as a list of dicts under
+the key 'comments'.
+
+    >>> import operator
+    >>> comments = bugzilla.bugs[1]['comments']
+    >>> for comment in sorted(comments, key=operator.itemgetter('number')):
+    ...     print "Comment %s:" % comment['id']
+    ...     for key in sorted(comment.keys()):
+    ...         print "    %s: %s" % (key, comment[key])
+    Comment 1:
+        author: trillian
+        id: 1
+        number: 1
+        text: I'd really appreciate it if Marvin would enjoy life a bit.
+        time: 20080616T12:44:29
+    Comment 3:
+        author: marvin
+        id: 3
+        number: 2
+        text: Life? Don't talk to me about life.
+        time: 20080616T13:22:29
