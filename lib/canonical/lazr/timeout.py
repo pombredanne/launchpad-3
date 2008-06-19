@@ -183,7 +183,7 @@ class TransportWithTimeout(Transport):
         self.conn = Transport.make_connection(self, host)
         return self.conn
 
-    @with_timeout(cleanup='cleanup', timeout=1)
+    @with_timeout(cleanup='cleanup')
     def request(self, host, handler, request_body, verbose=0):
         """Make the request but using the with_timeout decorator."""
         return Transport.request(
