@@ -184,3 +184,22 @@ The collection of bug watches is not exposed as a resource:
 
   >>> webservice.get("/beta/bug_watches").getStatus()
   404
+
+We can modify the remote bug.
+
+  >>> bug_watch['remote_bug']
+  u'2000'
+
+  >>> patch = {u'remote_bug': u'1234'}
+
+  >>> from simplejson import dumps
+  >>> patch_json = dumps(patch)
+  >>> patch_json
+  '{"remote_bug": "1234"}'
+
+  >>> response = webservice.patch(
+  ...     bug_watch_path, 'application/json', patch_json)
+
+  >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
+  >>> bug_watch['remote_bug']
+  u'1234'
