@@ -1174,7 +1174,7 @@ across cookbooks.
 
 The return value of a named operation is serialized to a JSON data
 structure, and the response's Content-Type header is set to
-application/json. This test shows how different return values are
+application/json. These examples show how different return values are
 serialized.
 
     >>> class DummyOperation(ResourceGETOperation):
@@ -1245,9 +1245,12 @@ the whole thing as a JSON list.
     >>> operation()
     '[{...}, {...}]'
 
-When a named operation returns a data-fetching object like a
-SQLObjectResultSet, we don't return the whole list. Instead, we return
-one batch of results, described as a JSON hash.
+When a named operation returns a non-builtin object that provides the
+iterator protocol, we don't return the whole list. The object probably
+provides access to a potentially huge dataset, like a list of database
+results. In this case we do the same thing we do when serving a
+collection resource. We fetch one batch of results and represent it as
+a JSON hash containing a list of entries.
 
     >>> class DummyResultSet(object):
     ...     results = [C1_D1, C2_D1]

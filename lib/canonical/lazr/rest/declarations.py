@@ -25,7 +25,8 @@ __all__ = [
     'generate_entry_interface',
     'generate_operation_adapter',
     'operation_parameters',
-    'operation_returns',
+    'operation_returns_entry',
+    'operation_returns_collection_of',
     'rename_parameters_as',
     'webservice_error',
     ]
@@ -49,6 +50,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.decorates import Passthrough
+from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
@@ -277,7 +279,7 @@ def annotate_exported_methods(interface):
             annotations['as'] = method.__name__
 
         # It's possible that call_with, operation_parameters, and/or
-        # operation_returns weren't used.
+        # operation_returns_* weren't used.
         annotations.setdefault('call_with', {})
         annotations.setdefault('params', {})
         annotations.setdefault('return_type', None)
@@ -409,15 +411,38 @@ class operation_parameters(_method_annotator):
             params[name] = param
 
 
-class operation_returns(_method_annotator):
-    """Specify the return value of the exported operation.
+class operation_returns_entry(_method_annotator):
+    """Specify that the exported operation returns an entry.
 
-    The decorator takes a single `IField` object.
+    The decorator takes a single argument: an interface that's been
+    exported as an entry.
     """
 
-    def __init__(self, return_type):
+    def __init__(self, schema):
         _check_called_from_interface_def('%s()' % self.__class__.__name__)
-        self.return_type = return_type
+        if not IInterface.providedBy(schema):
+            raise TypeError('Entry type %s does not provide IInterface.'
+                            % schema)
+        self.return_type = Reference(schema=schema)
+
+    def annotate_method(self, method, annotations):
+        annotations['return_type'] = self.return_type
+
+
+class operation_returns_collection_of(_method_annotator):
+    """Specify that the exported operation returns a collection.
+
+    The decorator takes a single argument: an interface that's been
+    exported as an entry.
+    """
+
+    def __init__(self, schema):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        if not IInterface.providedBy(schema):
+            raise TypeError('Collection value type %s does not provide '
+                            'IInterface.' % schema)
+        self.return_type = CollectionField(
+            value_type=Reference(schema=schema))
 
     def annotate_method(self, method, annotations):
         annotations['return_type'] = self.return_type
@@ -628,7 +653,7 @@ class BaseResourceOperationAdapter(ResourceOperation):
         """See `ResourceOperation`."""
         params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
-        return self.processResult(result)
+        return self.encodeResult(result)
 
 
 class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
@@ -673,9 +698,6 @@ def generate_operation_adapter(method):
     return_type = tag['return_type']
     if return_type is None:
         return_type = None
-    elif not IField.providedBy(tag['return_type']):
-        raise AssertionError('Return value type %s does not provide IField'
-                             % return_type)
 
     name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
     class_dict = {'params' : tuple(tag['params'].values()),

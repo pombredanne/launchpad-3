@@ -11,7 +11,7 @@ from zope.interface.interfaces import IInterface
 from zope.schema import Field
 from zope.schema.interfaces import (
     IField, RequiredMissing, ValidationError, WrongType)
-from zope.security.proxy import isinstance
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lazr.interfaces import (
     ICollection, IFieldMarshaller, IResourceGETOperation,
@@ -41,39 +41,47 @@ class ResourceOperation(BatchingResourceMixin):
     def __call__(self):
         values, errors = self.validate()
         if len(errors) == 0:
-            return self.processResult(self.call(**values))
+            return self.encodeResult(self.call(**values))
         else:
             self.request.response.setStatus(400)
             self.request.response.setHeader('Content-type', 'text/plain')
             return "\n".join(errors)
 
-    def processResult(self, result):
-        """Process the result of a custom operation."""
+    def encodeResult(self, result):
+        """Encode the result of a custom operation into a string.
+
+        This method is responsible for turning the return value of a
+        custom operation into a string that can be served . It's also
+        responsible for setting the Content-Type header and the status
+        code.
+        """
         if (self.request.response.getHeader('Content-Type') is not None
             or self.request.response.getStatus() != 599):
             # The operation took care of everything and just needs
             # this object served to the client.
             return result
 
-        # If the result provides an iterator but isn't a list or string,
-        # it's an object capable of batching a large dataset. Serve only
-        # one batch of the dataset.
-        if not(isinstance(result, basestring)
-               or isinstance(result, types.TupleType)
-               or isinstance(result, types.ListType)
-               or isinstance(result, types.DictionaryType)):
+        if queryAdapter(result, ICollection):
+            # If the result is a web service collection, serve only one
+            # batch of the collection.
+            result = CollectionResource(
+                ICollection(result), self.request).batch()
+        elif not(zope_isinstance(result,
+                                 (basestring, set, types.TupleType,
+                                  types.ListType, types.DictionaryType))):
+            # If the result provides an iterator but isn't a list or
+            # string, it's an object capable of batching a large
+            # dataset. Serve only one batch of the dataset.
             try:
                 iterator = iter(result)
                 # It's a list.
                 result = self.batch(result, self.request)
             except TypeError:
                 pass
-
-        # If the result is a web service collection, serve only one
-        # batch of the collection.
-        if queryAdapter(result, ICollection):
-            result = CollectionResource(
-                ICollection(result), self.request).batch()
+        else:
+            # The result doesn't need to be batched. Serialize the
+            # whole thing to JSON.
+            pass
 
         # Serialize the result to JSON. Any embedded entries will be
         # automatically serialized.
