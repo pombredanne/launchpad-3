@@ -245,3 +245,11 @@ the key 'comments'.
         number: 2
         text: Life? Don't talk to me about life.
         time: 20080616T13:22:29
+
+An error will be raised if initializeRemoteBugDB() hasn't been called or
+the bug doesn't exist locally.
+
+    >>> bugzilla.fetchComments(bug_watch_broken, [6, 9])
+    Traceback (most recent call last):
+      ...
+    BugNotFound: 42
