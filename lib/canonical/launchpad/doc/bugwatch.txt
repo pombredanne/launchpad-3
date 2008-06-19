@@ -451,7 +451,7 @@ slaves must be updated through their conjoined master.
     >>> bug_watch_updater = BugWatchUpdater(transaction)
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
+    INFO:root:Updating 1 watches on http://some.where
 
     >>> bug.bugtasks[0].status.title
     'New'
-
