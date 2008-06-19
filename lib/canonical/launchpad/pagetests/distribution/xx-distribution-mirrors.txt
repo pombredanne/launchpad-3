@@ -33,7 +33,7 @@ the release (cdimage) ones.
 
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> browser.getLink('Mirrors').click()
-    >>> browser.getLink('Archive mirrors').click()
+    >>> browser.getLink('Archive Mirrors').click()
     >>> browser.title
     'Mirrors of Ubuntu Linux'
     >>> print_mirrors_by_countries(browser.contents)

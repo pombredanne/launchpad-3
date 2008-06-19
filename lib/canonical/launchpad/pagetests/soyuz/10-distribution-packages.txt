@@ -13,8 +13,8 @@ This page is used to search packages in a distribution context.
     'http://localhost/ubuntu/+search?text=pmount'
 
     >>> for tag in find_tags_by_class(browser.contents, 'sources'):
-    ...     print extract_text(tag)
-    Source Package "pmount" in ...
+    ...     print extract_text(tag).encode('us-ascii', 'replace')
+    ?pmount? source package in ...
     hoary (editors): 0.1-2
     ...
 
@@ -57,8 +57,8 @@ Now run a search for mozilla-firefox and check that it is found:
     >>> field.value = 'mozilla-firefox'
     >>> browser.getControl("Search").click()
     >>> for tag in find_tags_by_class(browser.contents, 'sources'):
-    ...     print extract_text(tag)
-    Source Package "mozilla-firefox" in ...
+    ...     print extract_text(tag).encode('us-ascii', 'replace')
+    ?mozilla-firefox? source package in ...
     warty (web): 0.9
     ...
 
