@@ -191,6 +191,11 @@ class IBugWatch(IHasBug):
         """
 
 
+# Set the schema for watches in IBug. It's not possible to do this
+# earlier because of circular imports.
+IBug['watches'].value_type.schema = IBugWatch
+
+
 class IBugWatchSet(Interface):
     """The set of IBugWatch's."""
 

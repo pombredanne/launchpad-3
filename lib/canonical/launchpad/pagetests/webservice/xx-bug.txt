@@ -15,7 +15,9 @@ At the top level we provide a collection of bugs.
   >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
   >>> from pprint import pprint
   >>> pprint(sorted(bug_entries[0].items()))
-  [(u'bugtasks_collection_link',
+  [(u'bug_watches_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/11/bug_watches'),
+   (u'bugtasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bugtasks'),
    (u'can_expire', False),
    (u'date_created', u'2007-03-15T20:33:56.678930+00:00'),
@@ -110,7 +112,7 @@ data in a bug task is derived from the bug.
   >>> len(bug_one_bugtasks)
   3
 
-  >>> sorted(bug_one_bugtasks[0].items())
+  >>> pprint(sorted(bug_one_bugtasks[0].items()))
   [(u'assignee_link', None),
    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
@@ -147,22 +149,38 @@ The collection of bug tasks is not exposed as a resource:
 
 == Bug Watches ==
 
-  >>> bug_one_bugwatches_url = urlsplit(
-  ...     bug_one['bugwatches_collection_link'])[2]
-  >>> bug_one_bugwatches = sorted(webservice.get(
-  ...     bug_one_bugwatches_url).jsonBody()['entries'])
-  >>> len(bug_one_bugwatches)
-  X
+  >>> bug_one_bug_watches_url = urlsplit(
+  ...     bug_one['bug_watches_collection_link'])[2]
+  >>> bug_one_bug_watches = sorted(webservice.get(
+  ...     bug_one_bug_watches_url).jsonBody()['entries'])
+  >>> len(bug_one_bug_watches)
+  4
 
-  >>> sorted(bug_one_bugwatches[0].items())
-  X
+  >>> pprint(sorted(bug_one_bug_watches[0].items()))
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/1/+watch/2/bugtasks'),
+   (u'date_created', u'2004-10-04T01:00:00+00:00'),
+   (u'date_last_changed', u'2004-10-04T01:00:00+00:00'),
+   (u'date_last_checked', u'2004-10-04T01:00:00+00:00'),
+   (u'id', 2),
+   (u'last_error_type', None),
+   (u'owner_link', u'http://api.launchpad.dev/beta/~sabdfl'),
+   (u'remote_bug', u'2000'),
+   (u'remote_importance', None),
+   (u'remote_status', u''),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugWatchEntryAdapter'),
+   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/2'),
+   (u'title', u'The Mozilla.org Bug Tracker #2000'),
+   (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
 
-  >>> bugwatch_path = urlsplit(bug_one_bugwatches[0]['self_link'])[2]
-  >>> bugwatch = webservice.get(bugwatch_path).jsonBody()
-  >>> bugwatch == bug_one_bugwatches[0]
+  >>> bug_watch_path = urlsplit(bug_one_bug_watches[0]['self_link'])[2]
+  >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
+  >>> bug_watch == bug_one_bug_watches[0]
   True
 
 The collection of bug watches is not exposed as a resource:
 
-  >>> webservice.get("/beta/bugwatches").getStatus()
+  >>> webservice.get("/beta/bug_watches").getStatus()
   404

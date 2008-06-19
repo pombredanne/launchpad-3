@@ -20,7 +20,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, List, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -193,7 +193,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
-    watches = Attribute('SQLObject.Multijoin of IBugWatch')
+    watches = exported(
+        CollectionField(
+            title=_("All bug watches associated with this bug."),
+            value_type=Object(schema=Interface), # Redefined in bugwatch.py
+            readonly=True),
+        exported_as='bug_watches')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
