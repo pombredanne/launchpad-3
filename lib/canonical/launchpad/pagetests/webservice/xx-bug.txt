@@ -140,3 +140,25 @@ The collection of bug tasks is not exposed as a resource:
   >>> webservice.get("/beta/bugtasks").getStatus()
   404
 
+
+== Bug Watches ==
+
+  >>> bug_one_bugwatches_url = urlsplit(
+  ...     bug_one['bugwatches_collection_link'])[2]
+  >>> bug_one_bugwatches = sorted(webservice.get(
+  ...     bug_one_bugwatches_url).jsonBody()['entries'])
+  >>> len(bug_one_bugwatches)
+  X
+
+  >>> sorted(bug_one_bugwatches[0].items())
+  X
+
+  >>> bugwatch_path = urlsplit(bug_one_bugwatches[0]['self_link'])[2]
+  >>> bugwatch = webservice.get(bugwatch_path).jsonBody()
+  >>> bugwatch == bug_one_bugwatches[0]
+  True
+
+The collection of bug watches is not exposed as a resource:
+
+  >>> webservice.get("/beta/bugwatches").getStatus()
+  404
