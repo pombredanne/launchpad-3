@@ -17,10 +17,12 @@ from canonical.launchpad.interfaces.bugtask import (
     BugTaskImportance, BugTaskSearchParams, RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES)
 
-class BugTargetBase:
-    """Standard functionality for IBugTargets.
 
-    All IBugTargets should inherit from this class.
+class HasBugTasksBase:
+    """Standard functionality for IHasBugTasks.
+
+    All IHasBugTasks implementations should inherit from this class
+    or from `BugTargetBase`.
     """
     def searchTasks(self, query):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -30,34 +32,9 @@ class BugTargetBase:
         """Return an SQL snippet to filter bugtasks on this context."""
         raise NotImplementedError
 
-    def getMostCommonBugs(self, user, limit=10):
-        """See canonical.launchpad.interfaces.IBugTarget."""
-        constraints = []
-        bug_privacy_clause = get_bug_privacy_filter(user)
-        if bug_privacy_clause:
-            constraints.append(bug_privacy_clause)
-        constraints.append(self._getBugTaskContextWhereClause())
-        c = cursor()
-        c.execute("""
-        SELECT duplicateof, COUNT(duplicateof)
-        FROM Bug
-        WHERE duplicateof IN (
-            SELECT DISTINCT(Bug.id)
-            FROM Bug, BugTask
-            WHERE BugTask.bug = Bug.id AND
-            %s)
-        GROUP BY duplicateof
-        ORDER BY COUNT(duplicateof) DESC
-        LIMIT %d
-        """ % ("AND\n".join(constraints), limit))
-
-        common_bug_ids = [
-            str(bug_id) for (bug_id, dupe_count) in c.fetchall()]
-
-        if not common_bug_ids:
-            return []
-        return list(
-            Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
+    def _getBugTaskContextClause(self):
+        """Return a SQL clause for selecting this target's bugtasks."""
+        raise NotImplementedError(self._getBugTaskContextClause)
 
     @property
     def closed_bugtasks(self):
@@ -126,10 +103,6 @@ class BugTargetBase:
 
         return self.searchTasks(all_tasks_query)
 
-    def _getBugTaskContextClause(self):
-        """Return a SQL clause for selecting this target's bugtasks."""
-        raise NotImplementedError(self._getBugTaskContextClause)
-
     def getBugCounts(self, user, statuses=None):
         """See IBugTarget."""
         if statuses is None:
@@ -156,3 +129,39 @@ class BugTargetBase:
                 ', '.join(select_columns), ' AND '.join(conditions)))
         counts = cur.fetchone()
         return dict(zip(statuses, counts))
+
+
+
+class BugTargetBase(HasBugTasksBase):
+    """Standard functionality for IBugTargets.
+
+    All IBugTargets should inherit from this class.
+    """
+    def getMostCommonBugs(self, user, limit=10):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        constraints = []
+        bug_privacy_clause = get_bug_privacy_filter(user)
+        if bug_privacy_clause:
+            constraints.append(bug_privacy_clause)
+        constraints.append(self._getBugTaskContextWhereClause())
+        c = cursor()
+        c.execute("""
+        SELECT duplicateof, COUNT(duplicateof)
+        FROM Bug
+        WHERE duplicateof IN (
+            SELECT DISTINCT(Bug.id)
+            FROM Bug, BugTask
+            WHERE BugTask.bug = Bug.id AND
+            %s)
+        GROUP BY duplicateof
+        ORDER BY COUNT(duplicateof) DESC
+        LIMIT %d
+        """ % ("AND\n".join(constraints), limit))
+
+        common_bug_ids = [
+            str(bug_id) for (bug_id, dupe_count) in c.fetchall()]
+
+        if not common_bug_ids:
+            return []
+        return list(
+            Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))

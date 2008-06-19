@@ -263,7 +263,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     #      that makes sense for Project to implement, and one containing the
     #      rest of IBugTarget.
     bugtargetdisplayname = None
-    def createBug(self, bug_params):
+
         """See `IBugTarget`."""
         raise NotImplementedError('Cannot file bugs against a project')
 
