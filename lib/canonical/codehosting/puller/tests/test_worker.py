@@ -283,7 +283,7 @@ class TestPullerWorkerFormats(
             'base-branch', format, format.repository_format)
         revision_id = tree.branch.last_revision()
         stacked_bzrdir = tree.bzrdir.sprout(
-            local_path_to_url('stacked-branch'), revision_id, shallow=True)
+            local_path_to_url('stacked-branch'), revision_id, stacked=True)
         return stacked_bzrdir.open_branch()
 
     def test_stackedBranch(self):
@@ -293,8 +293,9 @@ class TestPullerWorkerFormats(
         mirrored_branch = self._mirror(stacked_branch.base)
         self.assertEqual(
             stacked_branch.last_revision(), mirrored_branch.last_revision())
-        self.assertEqual(
-            stacked_branch.get_stacked_on(), mirrored_branch.get_stacked_on())
+        orig = stacked_branch.get_stacked_on()
+        mirrored = mirrored_branch.get_stacked_on()
+        self.assertEqual(orig, mirrored)
 
     def test_loomBranch(self):
         # When we mirror a loom branch for the first time....

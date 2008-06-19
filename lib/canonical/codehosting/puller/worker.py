@@ -284,7 +284,7 @@ class PullerWorker:
         #    low-level operations.
         os.makedirs(self.dest)
         bzrdir = self._source_branch.bzrdir
-        bzrdir.clone(self.dest)
+        bzrdir.clone(self.dest, preserve_stacking=True)
         return Branch.open(self.dest)
 
     def _record_oops(self, message=None):
