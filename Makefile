@@ -23,6 +23,11 @@ MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
+APPSERVER_ENV = \
+  LPCONFIG=${LPCONFIG} \
+  PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+  STORM_CEXTENSIONS=1
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
@@ -132,20 +137,17 @@ ftest_inplace: inplace
 
 run: inplace stop bzr_version_info
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) \
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
 
 run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) \
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
 run_all_quickly_and_quietly: stop_quickly_and_quietly
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) \
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
 		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
 
@@ -177,18 +179,17 @@ bzr_version_info:
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop bzr_version_info
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
-		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
 stop: build
-	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
+	@ $(APPSERVER_ENV) ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 stop_quickly_and_quietly:
-	LPCONFIG=${LPCONFIG} ${PYTHON} \
+	$(APPSERVER_ENV) ${PYTHON} \
 	  utilities/killservice.py librarian buildsequencer launchpad mailman \
 	  > /dev/null 2>&1
 
@@ -202,17 +203,17 @@ scheduleoutage:
 	sleep ${MINS_TO_SHUTDOWN}m
 
 harness:
-	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
+	$(APPSERVER_ENV) $(PYTHON) -i lib/canonical/database/harness.py
 
 iharness:
-	PYTHONPATH=lib $(IPYTHON) -i lib/canonical/database/harness.py
+	$(APPSERVER_ENV) $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PYTHON) database/schema/fti.py -d launchpad_dev --force
 
 debug:
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+	$(APPSERVER_ENV) \
 		 $(PYTHON) -i -c \ "from zope.app import Application;\
 		    app = Application('Data.fs', 'site.zcml')()"
 
