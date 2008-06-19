@@ -9,6 +9,9 @@ __all__ = [
     ]
 
 
+from launchpadlib._utils.uri import URI
+
+
 class Entry:
     """Simple bag-like class for collection entry attributes."""
 
@@ -62,7 +65,7 @@ class Collection:
             next_link = current_page.get('next_collection_link')
             if next_link is None:
                 break
-            current_page = self._browser.get(next_link)
+            current_page = self._browser.get(URI(next_link))
 
     def __getitem__(self, name):
         """Return the named entry.
