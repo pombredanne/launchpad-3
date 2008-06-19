@@ -1061,7 +1061,11 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def show_ppa(self):
-        # The person's archive link changes depending on who's viewing it.
+        """Show the link to a Personal Package Archive.
+
+        The person's archive link changes depending on the status of the
+        archive and the priviledges of the viewer.
+        """
         archive = self.context.archive
         has_archive = archive is not None
         user_can_edit_archive = check_permission('launchpad.Edit',
@@ -1073,6 +1077,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
             target = '+archive'
             enable_link = check_permission('launchpad.View', archive)
         elif user_can_edit_archive:
+            summary = 'Activate Personal Package Archive'
             target = '+activate-ppa'
             enable_link = True
         else:
@@ -4264,4 +4269,4 @@ class PersonOAuthTokensView(LaunchpadView):
 
 def archive_to_person(archive):
     """Adapts an `IArchive` to an `IPerson`."""
-    return archive.owner
+    return IPerson(archive.owner)

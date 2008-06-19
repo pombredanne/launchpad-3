@@ -1411,8 +1411,8 @@ class INewPersonForm(IPerson):
 class IHasPersonNavigationMenu(Interface):
     """A marker interface for objects that use the Person navigation menus.
 
-    To have the Person navigation menu show up on a context object's pages
-    that object need only to provide this interface.
+    An object providing this interface will use the Person navigation menu
+    for it's pages.
     """
 
 
