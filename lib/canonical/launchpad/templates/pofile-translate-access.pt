@@ -4,33 +4,28 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag=""
 >
-  <p class="discreet">
+  <p class="discreet" id="translation-managers">
     <tal:translationgroups condition="view/has_translationgroup">
       This translation is managed by
-      <tal:loop repeat="manager view/managers">
-        <tal:and condition="manager/index">and</tal:and>
+      <!-- nospace --><tal:loop repeat="manager view/managers"><!-- 
+        --><tal:and condition="manager/index">, and </tal:and>
         <tal:team condition="manager/team">
           <a tal:replace="structure manager/team/fmt:link" />,
-          which is part of
+          assigned by
           <a tal:attributes="href manager/group/fmt:url"
              tal:content="manager/group/name">
-            Ubuntu translators
-          </a>
-        </tal:team>
-        <tal:noteam condition="not: manager/team">
+            Ubuntu translators</a></tal:team><tal:noteam condition="not: manager/team">
           translation group
           <a tal:attributes="href manager/group/fmt:url"
              tal:content="manager/group/name">
-	    Ubuntu translators</a>
-        </tal:noteam>
-      </tal:loop>
+	    Ubuntu translators</a></tal:noteam></tal:loop>.
     </tal:translationgroups>
     <tal:nogroups condition="not: view/has_translationgroup">
       No translation group has been assigned.
     </tal:nogroups>
   </p>
 
-  <p class="discreet">
+  <p class="discreet" id="translation-access">
     <tal:permission condition="view/user_can_edit">
       You have full access to this translation.
     </tal:permission>
