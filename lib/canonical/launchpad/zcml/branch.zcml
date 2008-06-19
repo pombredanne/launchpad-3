@@ -26,7 +26,8 @@
                     getBranchRevision getBranchRevisionByRevisionId
                     createBranchRevision getTipRevision updateScannedDetails
                     getNotificationRecipients getScannerData getPullURL
-                    requestMirror startMirroring mirrorComplete mirrorFailed"
+                    requestMirror startMirroring mirrorComplete mirrorFailed
+                    branch_format repository_format control_format"
                     />
     <require
         permission="launchpad.Edit"

@@ -389,7 +389,7 @@ class Branch(SQLBase):
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
-            for comment in merge_proposal.all_messages:
+            for comment in merge_proposal.all_comments:
                 deletion_operations.append(
                     DeletionCallable(comment,
                         _('This is a comment about merging this branch'
@@ -402,7 +402,7 @@ class Branch(SQLBase):
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
-            for comment in merge_proposal.all_messages:
+            for comment in merge_proposal.all_comments:
                 deletion_operations.append(
                     DeletionCallable(comment,
                         _('This is a comment about merging another branch'

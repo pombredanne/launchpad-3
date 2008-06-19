@@ -69,8 +69,8 @@ An email notification is emitted when the merge proposal is created.
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
-    Merge of Klingon support in GNOME Terminal into  GNOME Terminal Mainline
-    proposed
+    Proposed merge of Klingon support in GNOME Terminal into
+      GNOME Terminal Mainline
 
 Most of the time the merge proposal is looked at from the point
 of view of either the source branch or the target branch.
@@ -599,11 +599,11 @@ Resubmitting proposals without changing the whiteboard emits notifications.
     >>> # The order of notifications appears to be non-deterministic
     >>> subjects.sort()
     >>> print subjects[0]
-    Merge of ~name12/gnome-terminal/scanned into GNOME Terminal Mainline
-    proposed
+    Proposed merge of ~name12/gnome-terminal/scanned into
+      GNOME Terminal Mainline
     >>> print subjects[1]
-    Proposed merge of ~name12/gnome-terminal/scanned into GNOME Terminal
-    Mainline updated
+    Proposed merge of ~name12/gnome-terminal/scanned into
+       GNOME Terminal Mainline updated
 
 
 == Merge queues ==
