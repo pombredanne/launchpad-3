@@ -12,8 +12,6 @@ __all__ = [
     ]
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.lazr.enum import DBItem
-from canonical.launchpad.interfaces import IPerson, PersonVisibility
 from canonical.launchpad.fields import is_valid_public_person_link
 
 

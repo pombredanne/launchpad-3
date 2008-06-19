@@ -507,8 +507,11 @@ class IPlacelessAuthUtility(IAuthenticationService):
     login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        The principal's password is set to None if want_password is False.
+        """
 
 
 class IPlacelessLoginSource(IPrincipalSource):
@@ -517,8 +520,15 @@ class IPlacelessLoginSource(IPrincipalSource):
     between the user id and login name.
     """
 
-    def getPrincipalByLogin(login):
-        """Return a principal based on his login name."""
+    # want_password is temporary. Eventually we will have accounts
+    # without passwords at all, authenticated via other means such as external
+    # OpenID providers or SSL certificates. Principals having passwords
+    # doesn't really make sense.
+    def getPrincipalByLogin(login, want_password=True):
+        """Return a principal based on his login name.
+
+        If want_password is False, the principal's password is set to None.
+        """
 
     def getPrincipals(name):
         """Not implemented.
