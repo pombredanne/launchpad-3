@@ -6,11 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'AccountStatus',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
-    'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
     'InvalidName',
@@ -36,7 +34,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -56,6 +54,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
+from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.irc import IIrcID
 from canonical.launchpad.interfaces.jabber import IJabberID
@@ -76,40 +75,6 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
-
-
-class AccountStatus(DBEnumeratedType):
-    """The status of a Launchpad account."""
-
-    NOACCOUNT = DBItem(10, """
-        No Launchpad account
-
-        There's no Launchpad account for this Person record.
-        """)
-
-    ACTIVE = DBItem(20, """
-        Active Launchpad account
-
-        There's an active Launchpad account associated with this Person.
-        """)
-
-    DEACTIVATED = DBItem(30, """
-        Deactivated Launchpad account
-
-        The account associated with this Person has been deactivated by the
-        Person himself.
-        """)
-
-    SUSPENDED = DBItem(40, """
-        Suspended Launchpad account
-
-        The account associated with this Person has been suspended by a
-        Launchpad admin.
-        """)
-
-
-INACTIVE_ACCOUNT_STATUSES = [
-    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -412,6 +377,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
+    account = Object(schema=IAccount)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
@@ -545,9 +511,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    timezone = exported(
-        Choice(title=_('Timezone'), required=True, readonly=False,
-               description=_('The timezone of where you live.'),
+    time_zone = exported(
+        Choice(title=_('Time zone'), required=True, readonly=False,
+               description=_('The time zone of where you live.'),
                vocabulary='TimezoneName'))
 
     openid_identifier = TextLine(
@@ -1534,6 +1500,8 @@ class IPersonSet(Interface):
         The newly created EmailAddress will have a status of NEW and will be
         linked to the newly created Person.
 
+        An Account is also created, but this will change in the future!
+
         If the given name is None, we generate a unique nickname from the
         email address given.
 
@@ -1681,7 +1649,8 @@ class IPersonSet(Interface):
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
-    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
+    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
+                   must_have_email=False):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1696,6 +1665,9 @@ class IPersonSet(Interface):
         If exclude_inactive_accounts is True, any accounts whose
         account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
         returned set.
+
+        If must_have_email is True, only people with one or more email
+        addresses are returned.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email

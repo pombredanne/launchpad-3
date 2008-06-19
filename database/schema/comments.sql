@@ -397,7 +397,8 @@ COMMENT ON COLUMN DistroSeriesPackageCache.archive IS 'The archive where the bin
 -- EmailAddress
 
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
-COMMENT ON INDEX emailaddress_person_key IS 'Ensures that a person only has one preferred email address';
+COMMENT ON INDEX emailaddress__person__key IS 'Ensures that a Person only has one preferred email address';
+COMMENT ON INDEX emailaddress__account__key IS 'Ensures that an Account only has one preferred email address';
 
 
 -- FeaturedProject
@@ -1037,14 +1038,26 @@ COMMENT ON COLUMN Karma.product IS 'The Project to which this Product belongs.  
 COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
 COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
 
+
+-- Account
+COMMENT ON TABLE Account IS 'An account that may be used for authenticating to Canonical or other systems.';
+COMMENT ON COLUMN Account.status IS 'The status of the account.';
+COMMENT ON COLUMN Account.status_comment IS 'The comment on the status of the account.';
+COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this Account -- a PersonCreationRationale value.';
+COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
+COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
+COMMENT ON COLUMN Account.openid_identifier IS 'The key used to construct an OpenID identity URL for this account.';
+
+
+-- AccountPassword
+COMMENT ON TABLE AccountPassword IS 'A password used to authenticate an Account.';
+COMMENT ON COLUMN AccountPassword.password IS 'SSHA digest encrypted password.';
+
+
 -- Person
-COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
-COMMENT ON COLUMN Person.account_status IS 'The status of the account associated with this Person.';
-COMMENT ON COLUMN Person.account_status_comment IS 'The comment on the status of the account associated with this Person.';
-COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
-COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
+COMMENT ON TABLE Person IS 'A row represents a person if teamowner is NULL, and represents a team if teamowner is set.';
+COMMENT ON COLUMN Person.account IS 'The Account linked to this Person, if there is one.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
-COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
@@ -1056,6 +1069,8 @@ COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
+COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
+COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.personal_standing IS 'The standing of the person, which indicates (for now, just) whether the person can post to a mailing list without requiring first post moderation.  Values are documented in dbschema.PersonalStanding.';
 COMMENT ON COLUMN Person.personal_standing_reason IS 'The reason a person\'s standing has changed.';
 COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a date in the past indicates that there is no vacation in effect.  Vacations are granular to the day, so a datetime is not necessary.';
@@ -1064,7 +1079,7 @@ COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
 COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description.';
 
-COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
+COMMENT ON VIEW ValidPersonCache IS 'A materialized view listing the Person.ids of all valid people (but not teams).';
 
 -- PersonLanguage
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
@@ -1835,7 +1850,7 @@ COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this en
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
--- OpenIdRealmConfig
+-- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.displayname IS 'The human readable name for this RP';
@@ -1844,6 +1859,14 @@ COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 
+--OpenIDRPSummary
+COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
+COMMENT ON COLUMN OpenIDRPSummary.account IS 'The account who used the RP.';
+COMMENT ON COLUMN OpenIDRPSummary.openid_identifier IS 'The OpenID identifier used to login.';
+COMMENT ON COLUMN OpenIDRPSummary.trust_root IS 'The trust root for the RP';
+COMMENT ON COLUMN OpenIDRPSummary.date_created IS 'The creation date of this summary; the first time the person used the RP.';
+COMMENT ON COLUMN OpenIDRPSummary.date_last_used IS 'The date the RP was last used.';
+COMMENT ON COLUMN OpenIDRPSummary.total_logins IS 'The total number of times the RP was used by the person.';
 
 -- ProductSubscription
 -- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';

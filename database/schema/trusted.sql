@@ -324,6 +324,10 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
     'Trigger maintaining the PillarName table';
 
 
+-- XXX StuartBishop 20080605 bug=237576: The stored procedures
+-- maintaining the ValidPersonOrTeamCache materialized view can go
+-- once we have made a new baseline. They only still exist to stop the
+-- dev database build procedure from breaking.
 CREATE OR REPLACE FUNCTION mv_validpersonorteamcache_person() RETURNS TRIGGER
 LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
     # This trigger function could be simplified by simply issuing
@@ -349,9 +353,7 @@ LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
             WHERE Person.id = $1
                 AND ValidPersonOrTeamCache.id IS NULL
                 AND merged IS NULL
-                AND (teamowner IS NOT NULL OR (
-                    password IS NOT NULL AND EmailAddress.id IS NOT NULL
-                    ))
+                AND (teamowner IS NOT NULL OR EmailAddress.id IS NOT NULL)
             """ % vars(), param_types)
 
     new = TD["new"]
@@ -373,16 +375,13 @@ LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
 
     # Short circuit if there are no relevant changes
     if (new["teamowner"] == old["teamowner"]
-        and new["password"] == old["password"]
         and new["merged"] == old["merged"]):
         return
 
     # This function is only dealing with updates to the Person table.
     # This means we do not have to worry about EmailAddress changes here
 
-    if (new["merged"] is not None
-        or (new["teamowner"] is None and new["password"] is None)
-        ):
+    if (new["merged"] is not None or new["teamowner"] is None):
         plpy.execute(SD["delete_plan"], query_params)
     else:
         plpy.execute(SD["maybe_insert_plan"], query_params)
@@ -425,7 +424,7 @@ RETURNS TRIGGER LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS $$
                 AND ValidPersonOrTeamCache.id IS NULL
                 AND status = %(PREF)d
                 AND merged IS NULL
-                AND password IS NOT NULL
+                -- AND password IS NOT NULL
             """ % vars(), param_types)
 
     def is_team(person_id):
@@ -716,7 +715,45 @@ $$;
 
 COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized concatenation of the request''s address into the normalized_address column.';
 
+CREATE OR REPLACE FUNCTION generate_openid_identifier() RETURNS text
+LANGUAGE plpythonu VOLATILE AS
+$$
+    from random import choice
 
+    # Non display confusing characters.
+    chars = '34678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXY'
+
+    # Character length of tokens. Can be increased, decreased or even made
+    # random - Launchpad does not care. 7 means it takes 40 bytes to store
+    # a null-terminated Launchpad identity URL on the current domain name.
+    length=7
+
+    loop_count = 0
+    while loop_count < 20000:
+        # Generate a random openid_identifier
+        oid = ''.join(choice(chars) for count in range(length))
+
+        # Check if the oid is already in the db, although this is pretty
+        # unlikely
+        rv = plpy.execute("""
+            SELECT COUNT(*) AS num FROM Account WHERE openid_identifier = '%s'
+            """ % oid, 1)
+        if rv[0]['num'] == 0:
+            return oid
+        loop_count += 1
+        if loop_count == 1:
+            plpy.warning(
+                'Clash generating unique openid_identifier. '
+                'Increase length if you see this warning too much.')
+    plpy.error(
+        "Unable to generate unique openid_identifier. "
+        "Need to increase length of tokens.")
+$$;
+
+
+--
+-- Obsolete - remove after next baseline
+--
 CREATE OR REPLACE FUNCTION set_openid_identifier() RETURNS trigger
 LANGUAGE plpythonu AS
 $$
@@ -848,6 +885,20 @@ $$;
 
 COMMENT ON FUNCTION set_bug_message_count() IS
 'AFTER UPDATE trigger on BugMessage maintaining the Bug.message_count column';
+
+
+CREATE OR REPLACE FUNCTION set_date_status_set() RETURNS TRIGGER
+LANGUAGE plpgsql AS
+$$
+BEGIN
+    IF OLD.status <> NEW.status THEN
+        NEW.date_status_set = CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION set_date_status_set() IS 'BEFORE UPDATE trigger on Account that maintains the Account.date_status_set column.';
 
 CREATE OR REPLACE FUNCTION ulower(text) RETURNS text
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS

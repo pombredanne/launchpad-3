@@ -29,8 +29,8 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
         tz = pytz.timezone(self.context.time_zone)
         self.starts_widget = self.widgets['time_starts']
         self.ends_widget = self.widgets['time_ends']
-        self.starts_widget.required_timezone = tz
-        self.ends_widget.required_timezone = tz
+        self.starts_widget.required_time_zone = tz
+        self.ends_widget.required_time_zone = tz
         # We don't need to display seconds
         timeformat = '%Y-%m-%d %H:%M'
         self.starts_widget.timeformat = timeformat
