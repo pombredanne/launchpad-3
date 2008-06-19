@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     IProject,
     ISprint,
     IStructuralHeaderPresentation,
+    LicenseStatus,
     NotFoundError,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -981,11 +982,16 @@ class PillarFormatterAPI(CustomizableFormatter):
 
     def _link_summary_values(self):
         displayname = self._context.displayname
-        qualifies_for_free_hosting = getattr(
-            self._context, 'qualifies_for_free_hosting', None)
-        if qualifies_for_free_hosting == False:
-            displayname = '[PROPRIETARY] %s' % displayname
         return {'displayname': displayname}
+
+    def link(self, extra_path):
+        html = super(PillarFormatterAPI, self).link(extra_path)
+        if IProduct.providedBy(self._context):
+            if self._context.license_status != LicenseStatus.OPEN_SOURCE:
+                html += ' <span title="%s">[%s]</span>' % (
+                    escape(self._context.license_status.description),
+                    escape(self._context.license_status.title))
+        return html
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):

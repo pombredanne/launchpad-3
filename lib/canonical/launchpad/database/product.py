@@ -58,6 +58,7 @@ from canonical.launchpad.interfaces import (
     IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
     IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
+    LicenseStatus,
     NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
@@ -293,6 +294,29 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             return False
         else:
             return self.commercial_subscription.is_active
+
+    @property
+    def license_status(self):
+        if self.license_approved:
+            return LicenseStatus.OPEN_SOURCE
+        elif len(self.licenses) == 0:
+            # We don't know what the license is.
+            return LicenseStatus.UNREVIEWED
+        elif License.OTHER_PROPRIETARY in self.licenses:
+            # Notice the difference between the License and LicenseStatus.
+            return LicenseStatus.PROPRIETARY
+        elif License.OTHER_OPEN_SOURCE in self.licenses:
+            if self.license_reviewed:
+                # The OTHER_OPEN_SOURCE license was not manually approved
+                # by setting license_approved to true.
+                return LicenseStatus.PROPRIETARY
+            else:
+                # The OTHER_OPEN_SOURCE is pending review.
+                return LicenseStatus.UNREVIEWED
+        else:
+            # The project has at least one license and does not have
+            # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+            return LicenseStatus.OPEN_SOURCE
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""

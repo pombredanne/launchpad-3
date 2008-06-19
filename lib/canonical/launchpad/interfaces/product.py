@@ -9,10 +9,12 @@ __all__ = [
     'IProduct',
     'IProductSet',
     'License',
+    'LicenseStatus',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Set, Text, TextLine
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -37,6 +39,17 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class LicenseStatus(DBEnumeratedType):
+    """The status of a project's license review."""
+
+    OPEN_SOURCE = DBItem(10, "OPENSOURCE",
+                        "This project's license is open source.")
+    PROPRIETARY = DBItem(20, "PROPRIETARY",
+                         "This project's license is proprietary.")
+    UNREVIEWED = DBItem(30, "UNREVIEWED",
+                        "This project's license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
@@ -353,6 +366,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
     license_approved = Attribute("""
         Whether a license is manually approved for free hosting
         after automatic approval fails.""")
+
+    license_status = Attribute("""
+        Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):
