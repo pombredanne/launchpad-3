@@ -7,6 +7,7 @@ __all__ = [
     'LaunchpadScriptFailure',
     ]
 
+from cProfile import Profile
 import datetime
 import logging
 from optparse import OptionParser
@@ -213,14 +214,22 @@ class LaunchpadScript:
         self._init_db(implicit_begin=implicit_begin, isolation=isolation)
 
         date_started = datetime.datetime.now(UTC)
+        profiler = None
+        if self.options.profile:
+            profiler = Profile()
         try:
-            self.main()
+            if profiler:
+                profiler.runcall(self.main)
+            else:
+                self.main()
         except LaunchpadScriptFailure, e:
             self.logger.error(str(e))
             sys.exit(e.exit_status)
         else:
             date_completed = datetime.datetime.now(UTC)
             self.record_activity(date_started, date_completed)
+        if profiler:
+            profiler.dump_stats(self.options.profile)
 
     def _init_zca(self, use_web_security):
         """Initialize the ZCA, this can be overriden for testing purpose."""
