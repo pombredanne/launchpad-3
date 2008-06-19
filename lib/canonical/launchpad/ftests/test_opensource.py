@@ -17,6 +17,8 @@ __all__ = ['test_suite']
 
 import os
 import unittest
+
+import wadllib
 import launchpadlib
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
@@ -48,4 +50,5 @@ def add_testable_opensource_package(suite, package):
 def test_suite():
     suite = unittest.TestSuite()
     add_testable_opensource_package(suite, launchpadlib)
+    add_testable_opensource_package(suite, wadllib)
     return suite
