@@ -27,6 +27,7 @@ __all__ = [
     'WADLError',
     ]
 
+import urllib
 from urlparse import urlparse
 import simplejson
 try:
@@ -234,7 +235,7 @@ class Resource(WADLResolvableDefinition):
                         for param in request.findall(wadl_xpath('param')))
                     if not required_params.issubset(method_params):
                         continue
-                return Method(self.application, method_tag)
+                return Method(self, method_tag)
         return None
 
     def get_param(self, param_name):
@@ -265,13 +266,19 @@ class Resource(WADLResolvableDefinition):
 class Method(WADLBase):
     """A wrapper around an XML <method> tag.
     """
-    def __init__(self, application, method_tag):
+    def __init__(self, resource, method_tag):
         """Initialize with a <method> tag.
 
         :param method_tag: An ElementTree <method> tag.
         """
-        self.application = application
+        self.resource = resource
+        self.application = self.resource.application
         self.tag = method_tag
+
+    @property
+    def request(self):
+        """Return the definition of a request that invokes this method."""
+        return RequestDefinition(self, self.tag.find(wadl_xpath('request')))
 
     @property
     def response(self):
@@ -279,11 +286,83 @@ class Method(WADLBase):
         return ResponseDefinition(self.application,
                                   self.tag.find(wadl_xpath('response')))
 
-
     @property
     def id(self):
         """The XML ID of this method definition."""
         return self.tag.attrib.get('id')
+
+    @property
+    def name(self):
+        """The name of this method definition.
+
+        This is also the name of the HTTP method that should be used
+        to invoke the method.
+        """
+        return self.tag.attrib.get('name')
+
+    def request_url(self,  param_values={}, **kw_param_values):
+        """Return the request URL to use to invoke this method."""
+        return self.request.url(param_values, **kw_param_values)
+
+
+class RequestDefinition(WADLBase):
+    """A wrapper around the description of the request invoking a method."""
+    def __init__(self, method, request_tag):
+        """Initialize with a <request> tag.
+
+        :param resource: The resource to which this request can be sent.
+        :param request_tag: An ElementTree <request> tag.
+        """
+        self.method = method
+        self.resource = self.method.resource
+        self.application = self.resource.application
+        self.tag = request_tag
+
+    @property
+    def query_params(self):
+        """Return the query parameters for this method."""
+        if self.tag is None:
+            return []
+        param_tags = self.tag.findall(wadl_xpath('param'))
+        if param_tags is None:
+            return []
+        return [Parameter(self.resource, param_tag)
+                for param_tag in param_tags
+                if param_tag.attrib.get('style') == 'query']
+
+    def url(self, param_values={}, **kw_param_values):
+        """Return the request URL to use to invoke this method."""
+        full_param_values = dict(param_values)
+        full_param_values.update(kw_param_values)
+        validated_values = {}
+        for param in self.query_params:
+            param.name
+            name = param.name
+            if param.fixed_value is not None:
+                if (full_param_values.has_key(name)
+                    and full_param_values[name] != param.fixed_value):
+                    raise KeyError(("Value '%s' for parameter '%s' "
+                                    "conflicts with fixed value '%s'")
+                                   % (full_param_values[name], name,
+                                      param.fixed_value))
+                full_param_values[name] = param.fixed_value
+
+            if param.required and not full_param_values.has_key(name):
+                raise KeyError("No value for required parameter '%s'"
+                               % name)
+            validated_values[name] = full_param_values[name]
+            del full_param_values[name]
+        if len(full_param_values) > 0:
+            raise ValueError("Unrecognized parameter(s): '%s'"
+                             % "', '".join(full_param_values.keys()))
+        url = self.resource.url
+        if len(validated_values) > 0:
+            append = '?'
+            if '?' in url:
+                append = '&'
+            url += append + urllib.urlencode(validated_values)
+        return url
+
 
 
 class ResponseDefinition(WADLBase):
@@ -355,6 +434,21 @@ class Parameter(WADLBase):
         self.application = resource_definition.application
         self.resource_definition = resource_definition
         self.tag = tag
+
+    @property
+    def name(self):
+        """The name of this parameter."""
+        return self.tag.attrib.get('name')
+
+    @property
+    def fixed_value(self):
+        """The value to which this parameter is fixed."""
+        return self.tag.attrib.get('fixed')
+
+    @property
+    def required(self):
+        """Whether or not a value for this parameter is required."""
+        return self.tag.attrib.get('required', False).lower() in ['1', 'true']
 
     def get_value(self):
         """The value of this parameter in the bound representation.
