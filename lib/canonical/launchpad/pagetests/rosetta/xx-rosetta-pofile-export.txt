@@ -22,14 +22,12 @@ Logged in as a regular user, the +export page is accessible.
   Download translation for “Spanish (es) translation of evolution-2.2 in
   Ubuntu Hoary package "evolution"”
 
-  >>> print user_browser.contents
+  >>> print find_main_content(user_browser.contents)
   <...
   ...Download Spanish translation...
-  Export process would be quite slow and thus, most of the time, you
-  will need to wait until the system process your request and sends you
-  a notification email to
+  If the file is not available immediately, Launchpad will e-mail
   <code>no-priv@canonical.com</code>
-  with a link where you will be able to get the exported file...
+  with a link to the file once it is ready...
 
 If we POST the page, it should add the request to the queue.
 

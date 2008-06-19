@@ -24,7 +24,7 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import classImplements, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
@@ -41,6 +41,9 @@ __all__ = [
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
+
+
+classImplements(TimeoutError, IRequestExpired)
 
 
 def _get_dirty_commit_flags():

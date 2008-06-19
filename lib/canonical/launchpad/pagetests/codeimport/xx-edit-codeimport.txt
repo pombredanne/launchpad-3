@@ -102,6 +102,7 @@ import operators.
     Approve
     Mark Invalid
     Suspend
+    Mark Failing
 
 A cancel link is also shown next to the buttons, that takes the user
 back to the main branch details page.
@@ -164,6 +165,18 @@ When a code import is approved, a pending job is created for it.
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
     The code import has been suspended.
+
+
+=== Marking an import as failing ===
+
+    >>> import_browser.getLink('Edit import source or review import').click()
+    >>> import_browser.getControl('Mark Failing').click()
+    >>> print_import_details(import_browser)
+    Status: Failing
+    ...
+    >>> for message in get_feedback_messages(import_browser.contents):
+    ...     print extract_text(message)
+    The code import has been marked as failing.
 
 
 == Import details for a running job ==

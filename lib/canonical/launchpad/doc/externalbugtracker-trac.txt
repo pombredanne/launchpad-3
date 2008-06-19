@@ -346,24 +346,27 @@ watch hasn't altered:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> bug_watch = example_bug_tracker.watches[0]
+    >>> from operator import attrgetter
+    >>> sorted_bug_watches = sorted(
+    ...     (bug_watch for bug_watch in example_bug_tracker.watches),
+    ...     key=attrgetter('remotebug'))
+    >>> bug_watch = sorted_bug_watches[-1]
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
-    >>> bug_watch.id
-    >>> bug_watch.remotebug
-    >>> bug_watch.lastchanged
-    >>> bug_watch.remotestatus
-    >>> bug_watch.remote_importance
-    >>> bug_watch.last_error_type
     >>> old_last_changed = bug_watch.lastchanged
+    >>> bug_watch.remotebug
+    u'153'
+    >>> bug_watch.remotestatus
+    u'new'
+
+    >>> trac.batch_query_threshold = 0
     >>> trac.trace_calls = False
     >>> bug_watch_updater.updateBugWatches(trac, [bug_watch])
     INFO:...:Updating 1 watches on http://bugs.some.where
+
     >>> bug_watch.lastchanged == old_last_changed
     True
-    >>> bug_watch.id
     >>> bug_watch.remotebug
-    >>> bug_watch.lastchanged
+    u'153'
     >>> bug_watch.remotestatus
-    >>> bug_watch.remote_importance
-    >>> bug_watch.last_error_type
+    u'new'
