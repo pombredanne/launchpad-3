@@ -136,7 +136,6 @@ be able to import translations later on.
     ... msgstr ""
     ... '''
     >>> entry = import_pofile_or_potemplate(test_template, carlos,
-    ...                                     firefox_trunk,
     ...                                     potemplate=firefox_potemplate)
     >>> print entry.status.name
     IMPORTED
@@ -172,8 +171,7 @@ package upload in Ubuntu).
     >>> firefox_serbian = firefox_potemplate.newPOFile('sr')
     >>> firefox_serbian.path='sr.po'
     >>> entry = import_pofile_or_potemplate(test_translation_imported,
-    ...                                     carlos, firefox_trunk,
-    ...                                     pofile=firefox_serbian)
+    ...                                     carlos, pofile=firefox_serbian)
     >>> print entry.status.name
     IMPORTED
     >>> flush_database_caches()
@@ -238,8 +236,7 @@ from the "fourth" message, and the "fifth" message is newly translated.
     ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
 
     >>> entry = import_pofile_or_potemplate(test_translation_update1,
-    ...                                     carlos, firefox_trunk,
-    ...                                     pofile=firefox_serbian,
+    ...                                     carlos, pofile=firefox_serbian,
     ...                                     is_imported=False)
     >>> print entry.status.name
     IMPORTED
@@ -306,8 +303,7 @@ a fuzzy flag is removed from the "fourth" message, and both "fifth" and
     ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
 
     >>> entry = import_pofile_or_potemplate(test_translation_imported_update,
-    ...                                     carlos, firefox_trunk,
-    ...                                     pofile=firefox_serbian,
+    ...                                     carlos, pofile=firefox_serbian,
     ...                                     is_imported=True)
     >>> print entry.status.name
     IMPORTED
@@ -378,8 +374,7 @@ a new translation.
     ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
 
     >>> entry = import_pofile_or_potemplate(test_translation_update2,
-    ...                                     carlos, firefox_trunk,
-    ...                                     pofile=firefox_serbian,
+    ...                                     carlos, pofile=firefox_serbian,
     ...                                     is_imported=False)
     >>> print entry.status.name
     IMPORTED
@@ -448,8 +443,7 @@ suggestions.
     ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
-    ...                                     carlos, firefox_trunk,
-    ...                                     pofile=firefox_serbian,
+    ...                                     carlos, pofile=firefox_serbian,
     ...                                     is_imported=False)
     >>> print entry.status.name
     IMPORTED
@@ -520,8 +514,7 @@ one except for the plural expression definition.
     ... ''' % (ISO_FORMATTED_DATE(), ISO_FORMATTED_DATE())
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
-    ...                                     carlos, firefox_trunk,
-    ...                                     pofile=firefox_serbian,
+    ...                                     carlos, pofile=firefox_serbian,
     ...                                     is_imported=False)
     >>> print entry.status.name
     IMPORTED
@@ -548,8 +541,7 @@ Sometimes, people will send back their translations to upstream, which will
 be back with next automatic sync from upstream:
 
     >>> entry = import_pofile_or_potemplate(test_translation_update3,
-    ...                                     carlos, firefox_trunk,
-    ...                                     pofile=firefox_serbian,
+    ...                                     carlos, pofile=firefox_serbian,
     ...                                     is_imported=True)
     >>> print entry.status.name
     IMPORTED
