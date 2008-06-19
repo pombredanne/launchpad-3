@@ -9,7 +9,7 @@
   metal:use-macro="view/macro:page/freeform"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main" class="freeform">
 
   <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
