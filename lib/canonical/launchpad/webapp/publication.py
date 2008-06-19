@@ -4,10 +4,14 @@ __metaclass__ = type
 
 import gc
 import os
+from datetime import datetime
 import thread
+import threading
 from time import strftime
 import traceback
 import urllib
+
+from cProfile import Profile
 
 import tickcount
 
@@ -82,6 +86,7 @@ class LaunchpadBrowserPublication(
 
     def __init__(self, db):
         self.db = db
+        self.thread_locals = threading.local()
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -121,6 +126,7 @@ class LaunchpadBrowserPublication(
     # revisited.
 
     def beforeTraversal(self, request):
+        self.startProfilingHook()
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
@@ -470,6 +476,35 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
+
+        self.endProfilingHook()
+
+    def startProfilingHook(self):
+        """If profiling is turned on, start a profiler for this request."""
+        if not config.profiling.profile_requests:
+            return
+        self.thread_locals.profiler = Profile()
+        self.thread_locals.profiler.enable()
+
+    def endProfilingHook(self):
+        """If profiling is turned on, save profile data for the request."""
+        if not config.profiling.profile_requests:
+            return
+        profiler = self.thread_locals.profiler
+        profiler.disable()
+
+        # Create a timestamp including milliseconds.
+        now = datetime.now()
+        timestamp = now.strftime('%Y-%m-%d_%H:%M:%S')
+        filename = '%s.%d-%s.prof' % (
+            timestamp, int(now.microsecond/1000.0),
+            threading.currentThread().getName())
+
+        profiler.dump_stats(
+            os.path.join(config.profiling.profile_dir, filename))
+
+        # Free some memory.
+        self.thread_locals.profiler = None
 
     def debugReferencesLeak(self, request):
         """See what kind of references are increasing.
