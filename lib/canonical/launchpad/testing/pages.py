@@ -38,6 +38,7 @@ from canonical.launchpad.webapp.url import urlsplit
 from canonical.testing import PageTestLayer
 
 
+profiler = None
 def init_profiler():
     """Initialize the pagetests profiler, if configured."""
     global profiler
@@ -475,7 +476,7 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll(['strong','a'])
+    entries = navigation_links.findAll(['strong', 'a'])
     for entry in entries:
         try:
             print '%s: %s' % (entry.span.string, entry['href'])
