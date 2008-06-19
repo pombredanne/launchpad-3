@@ -32,7 +32,7 @@ class BugTrackerPerson(SQLBase):
 
 
 class BugTrackerPersonSet:
-    """See `IMessageSet`."""
+    """See `IBugTrackerPersonSet`."""
 
     implements(IBugTrackerPersonSet)
 
