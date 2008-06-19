@@ -189,7 +189,8 @@ class IBug(IMessageTarget, ICanBeMentored):
             title=_('BugTasks on this bug, sorted upstream, then '
                     'ubuntu, then other distroseriess.'),
             value_type=Reference(schema=IBugTask),
-            readonly=True))
+            readonly=True),
+        exported_as='bug_tasks')
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')

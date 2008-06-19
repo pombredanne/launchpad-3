@@ -674,7 +674,7 @@ collection of bug tasks.
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#BugTaskEntry-page-resource'
+    'http://api.launchpad.dev/beta/#BugTaskEntryAdapter-page-resource'
 
 The full representation contains all fields, even read-only ones,
 because it's describing the document you receive when you make a GET
@@ -889,7 +889,7 @@ URL. This <resource_type> describes the collection at that URL.
     >>> collection_type.tag
     '...resource_type'
     >>> collection_type.attrib['id']
-    'BugTaskEntry-page-resource'
+    'BugTaskEntryAdapter-page-resource'
 
 A top-level collection can have custom operations, but all other
 collection resources only support the standard GET operation. This
@@ -899,7 +899,7 @@ collection.
 
     >>> [get] = collection_type
     >>> get.attrib['id']
-    'BugTaskEntry-page-resource-get'
+    'BugTaskEntryAdapter-page-resource-get'
 
 In response to the standard GET operation, collection resources will
 serve a JSON representation, described immediately below.
@@ -949,7 +949,7 @@ type BugTaskEntry.
     "$['entries'][*]['self_link']"
     >>> [link] = entry_links
     >>> link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#BugTaskEntry'
+    'http://api.launchpad.dev/beta/#BugTaskEntryAdapter'
 
 This tells the client that a 'collection of bug tasks' resource
 contains lots of links to 'bug task' resources.
@@ -960,8 +960,8 @@ pages of the same collection!
 
     >>> [next_type] = next
     >>> next_type.attrib['resource_type']
-    '#BugTaskEntry-page-resource'
+    '#BugTaskEntryAdapter-page-resource'
 
     >>> [prev_type] = prev
     >>> prev_type.attrib['resource_type']
-    '#BugTaskEntry-page-resource'
+    '#BugTaskEntryAdapter-page-resource'
