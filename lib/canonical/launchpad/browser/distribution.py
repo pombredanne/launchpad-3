@@ -51,17 +51,22 @@ from canonical.launchpad.components.request_country import (
     ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IArchiveSet, IDistributionMirrorSet,
-    ILaunchBag, ILaunchpadCelebrities, IPublishedPackageSet, MirrorContent,
-    MirrorSpeed, NotFoundError)
+from canonical.launchpad.interfaces.archive import IArchiveSet
 from canonical.launchpad.interfaces.distribution import (
     IDistribution, IDistributionMirrorMenuMarker, IDistributionSet)
+from canonical.launchpad.interfaces.distributionmirror import (
+    IDistributionMirrorSet, MirrorContent, MirrorSpeed)
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.publishedpackage import (
+    IPublishedPackageSet)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
     StandardLaunchpadFacets, stepthrough, stepto)
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, NotFoundError)
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
