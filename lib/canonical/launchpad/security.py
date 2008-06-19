@@ -1,8 +1,9 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-"""Security policies for using content objects.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-"""
+"""Security policies for using content objects."""
+
 __metaclass__ = type
+__all__ = []
 
 from zope.interface import implements, Interface
 from zope.component import getUtility
@@ -27,7 +28,7 @@ from canonical.launchpad.interfaces import (
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility)
+    PersonVisibility, IAccount)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -105,6 +106,21 @@ class ViewPillar(AuthorizationBase):
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
                     or user.inTeam(celebrities.admin))
+
+
+class EditAccount(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IAccount
+
+    # This is wrong as we need to give an Account rather than a
+    # Person ability to edit an account.
+    def checkAuthenticated(self, user):
+        return ((user.account is not None and user.account.id == self.obj.id)
+                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+
+
+class ViewAccount(EditAccount):
+    permission = 'launchpad.View'
 
 
 class EditOAuthAccessToken(AuthorizationBase):
