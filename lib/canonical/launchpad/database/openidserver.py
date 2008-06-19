@@ -193,7 +193,7 @@ class OpenIDRPSummary(SQLBase):
     total_logins = IntCol(notNull=True, default=1)
 
     def increment(self, date_used=None):
-        """See `IOpenRPIDSummary`.
+        """See `IOpenIDRPSummary`.
 
         :param date_used: an optional datetime the login happened. The current
             datetime is used if date_used is None.
@@ -209,10 +209,10 @@ class OpenIDRPSummarySet:
     implements(IOpenIDRPSummarySet)
 
     def getByIdentifier(self, identifier):
-        """See `IOpenRPIDSummarySet`.
+        """See `IOpenIDRPSummarySet`.
 
         :raise AssertionError: If the identifier is used by more than
-            one person.
+            one account.
         """
         summaries = OpenIDRPSummary.selectBy(openid_identifier=identifier)
         summaries = list(summaries)
@@ -221,24 +221,24 @@ class OpenIDRPSummarySet:
 
     def _assert_0_or_1_accounts(self, identifier, summaries):
         """Assert 0 or 1 accounts in the summaries have the identifier."""
-        person_names = set()
+        account_ids = set()
         for summary in summaries:
-            person_names.add(summary.account.displayname)
-        if len(person_names) > 1:
+            account_ids.add(summary.account.id)
+        if len(account_ids) > 1:
             raise AssertionError(
-                'More than 1 accounts has the OpenID identifier of %s: %s' %
-                (identifier, ', '.join(list(person_names))))
+                'More than 1 account has the OpenID identifier of %s: %s' %
+                (identifier, ', '.join(list(account_ids))))
 
     def record(self, account, trust_root, date_used=None):
-        """See `IOpenRPIDSummarySet`.
+        """See `IOpenIDRPSummarySet`.
 
         :param date_used: an optional datetime the login happened. The current
             datetime is used if date_used is None.
-        :raise AssertionError: If the person is not valid.
+        :raise AssertionError: If the account is not ACTIVE.
         """
         if account.status != AccountStatus.ACTIVE:
             raise AssertionError(
-                '%s is not ACTIVE account.' % account.displayname)
+                'Account %d is not ACTIVE account.' % account.id)
         identifier = account.openid_identity_url
         if date_used is None:
             date_used = datetime.now(pytz.UTC)

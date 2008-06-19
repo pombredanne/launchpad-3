@@ -5,17 +5,17 @@
 
 __metaclass__ = type
 __all__ = [
-        'IOpenIdAuthorization',
-        'IOpenIdAuthorizationSet',
-        'IOpenIDPersistentIdentity',
-        'IOpenIDRPConfig',
-        'IOpenIDRPConfigSet',
-        'IOpenIDRPSummary',
-        'IOpenIDRPSummarySet',
-        'ILaunchpadOpenIdStoreFactory',
-        'ILoginServiceAuthorizeForm',
-        'ILoginServiceLoginForm',
-        ]
+    'IOpenIdAuthorization',
+    'IOpenIdAuthorizationSet',
+    'IOpenIDPersistentIdentity',
+    'IOpenIDRPConfig',
+    'IOpenIDRPConfigSet',
+    'IOpenIDRPSummary',
+    'IOpenIDRPSummarySet',
+    'ILaunchpadOpenIdStoreFactory',
+    'ILoginServiceAuthorizeForm',
+    'ILoginServiceLoginForm',
+    ]
 
 from zope.component import getUtility
 from zope.schema import Choice, Datetime, Int, List, Text, TextLine
@@ -159,7 +159,7 @@ class IOpenIDRPConfigSet(Interface):
 
 
 class IOpenIDRPSummary(Interface):
-    """A summary of the interaction between a `Person` and an OpenID RP."""
+    """A summary of the interaction between an `Account` and an OpenID RP."""
     id = Int(title=u'ID', required=True)
     account = Reference(
         title=u'The IAccount used to login.', schema=IAccount,
@@ -185,19 +185,19 @@ class IOpenIDRPSummarySet(Interface):
     """A set of OpenID RP Summaries."""
 
     def getByIdentifier(identifier):
-        """Get all the IOpenRPSummary objects for an OpenID identifier.
+        """Get all the IOpenIDRPSummary objects for an OpenID identifier.
 
         :param identifier: A string used as an OpenID identifier.
-        :return: A list of IOpenRPSummary objects. The list is empty if the
+        :return: A list of IOpenIDRPSummary objects. The list is empty if the
             identifier has never been used.
         """
 
     def record(account, trust_root):
-        """Create or update an IOpenRPSummary.
+        """Create or update an IOpenIDRPSummary.
 
         :param account: An `IAccount`.
         :param trust_root: A string used as an OpenID trust root.
-        :return: An `IOpenRPSummary`.
+        :return: An `IOpenIDRPSummary`.
         """
 
 

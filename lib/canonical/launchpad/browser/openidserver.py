@@ -30,16 +30,19 @@ from openid import oidutil
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.person import (
+    IPersonSet, PersonVisibility)
+from canonical.launchpad.interfaces.logintoken import (
+    ILoginTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.openidserver import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
-    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
-    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, PersonVisibility,
-    UnexpectedFormData)
+    ILoginServiceLoginForm, IOpenIdAuthorizationSet, IOpenIDRPConfigSet,
+    IOpenIDRPSummarySet)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource)
+    IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -89,7 +92,7 @@ class OpenIdMixin:
 
     @property
     def user_identity_url(self):
-        return self.user.account.user_identity_url
+        return self.user.account.openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
@@ -304,6 +307,10 @@ class OpenIdMixin:
             response.addExtension(sreg_response)
 
         self.checkTeamMembership(response)
+
+        rp_summary_set = getUtility(IOpenIDRPSummarySet)
+        rp_summary_set.record(
+            self.user.account, self.openid_request.trust_root)
 
         return response
 

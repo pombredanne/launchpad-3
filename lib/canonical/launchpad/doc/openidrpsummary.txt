@@ -1,6 +1,6 @@
 = OpenIDRPSummary =
 
-The summary of the interaction between a `Person` and an OpenID
+The summary of the interaction between an `Account` and an OpenID
 Relying Party is represented by the OpenIDRPSummary object.
 
 
@@ -22,6 +22,7 @@ OpenIDRPSummary objects.
 The getByIdentifier() method returns a list of all the summaries for an
 identifier.
 
+    # Only admins are privileged to work with multiple accounts.
     >>> login('foo.bar@canonical.com')
 
     >>> def print_openid_rp_summaries(summaries):
@@ -52,7 +53,7 @@ guard against this.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces.account import IAccountSet
 
-    >>> class FakeSummary:
+    >>> class StubSummary:
     ...     """A summary for assertion testing."""
     ...     def __init__(self, account, openid_identifier, trust_root):
     ...         self.account=account
@@ -63,25 +64,27 @@ guard against this.
     >>> sample_person = getUtility(IAccountSet).getByEmail(
     ...     'test@canonical.com')
 
+    # Instead of introducing an integrity error into the data, a list
+    # with a bad summary can be used.
     >>> bad_data = [
-    ...     FakeSummary(
+    ...     StubSummary(
     ...         no_priv, 'http://openid.launchpad.dev/+id/no-priv_oid',
     ...         'a_trust_root'),
-    ...     FakeSummary(
+    ...     StubSummary(
     ...         no_priv, 'http://openid.launchpad.dev/+id/no-priv_oid',
     ...         'another_trust_root'),
-    ...     FakeSummary(
+    ...     StubSummary(
     ...         sample_person, 'http://openid.launchpad.dev/+id/no-priv_oid',
     ...         'another_trust_root'),
     ...     ]
 
-    # getByIdentifier() calls _assert_0_or_1_accounts().
+    # IOpenIDRPSummarySet.getByIdentifier() calls _assert_0_or_1_accounts().
     >>> bare_rp_summary_set = removeSecurityProxy(rp_summary_set)
     >>> bare_rp_summary_set._assert_0_or_1_accounts(
     ...     'http://openid.launchpad.dev/+id/no-priv_oid', bad_data)
     Traceback (most recent call last):
      ...
-    AssertionError: More than 1 accounts has the OpenID identifier of
+    AssertionError: More than 1 account has the OpenID identifier of
                     http://openid.launchpad.dev/+id/no-priv_oid: ...
 
 
@@ -96,7 +99,7 @@ The OpenIDRPSummary object implements the IOpenIDRPSummary interface.
     >>> verifyObject(IOpenIDRPSummary, nopriv_oid_store)
     True
 
-Each OpenIDRPSummary is a unique combination of Person, identifier,
+Each OpenIDRPSummary is a unique combination of account, identifier,
 and trust_root. No other summary may contain the identical information.
 
     >>> nopriv_oid_store.account.displayname
@@ -146,7 +149,7 @@ The OpenIDRPSummarySet object creates and updates OpenIDRPSummary
 objects. The record() method decides when to create a new summary, or
 update an existing one.
 
-A new OpenIDRPSummary is created when the person, identifier, and trust
+A new OpenIDRPSummary is created when the account, identifier, and trust
 root have never been used before. The date_created and date_last_used
 will be the same, and the total_logins is 1.
 
@@ -164,7 +167,7 @@ will be the same, and the total_logins is 1.
     >>> summary.total_logins
     1
 
-Calling record() a second time with the same person, identifier, and
+Calling record() a second time with the same account, identifier, and
 trust root updates and returns an instance of the summary just created.
 The date_used parameter is optional; the date_last_used is set to now.
 
@@ -177,7 +180,7 @@ The date_used parameter is optional; the date_last_used is set to now.
     >>> now - summary.date_last_used < timedelta(seconds=5)
     True
 
-A new summary is created if the person uses a trust root that he has
+A new summary is created if the account uses a trust root that it has
 never used before.
 
     >>> ubuntu_live_summary = rp_summary_set.record(
@@ -187,7 +190,7 @@ never used before.
     >>> ubuntu_live_summary.total_logins
     1
 
-If the person uses a different identifier with a trust root that was
+If the account uses a different identifier with a trust root that was
 used before, a new OpenIDRPSummary is created.
 
     # Simulate a privileged event that has changed openid_identifier.
@@ -205,7 +208,7 @@ used before, a new OpenIDRPSummary is created.
       identifier: http://openid.launchpad.dev/+id/knightsOfNi
       trust_root: http://ubuntu-live.org
 
-When a different person first uses the 'http://ubuntu-live.org' trust
+When a different account first uses the 'http://ubuntu-live.org' trust
 root, a new OpenIDRPSummary is created.
 
     >>> ubuntu_live_summary_3 = rp_summary_set.record(
@@ -215,8 +218,9 @@ root, a new OpenIDRPSummary is created.
       identifier: http://openid.launchpad.dev/+id/name12_oid
       trust_root: http://ubuntu-live.org
 
-A OpenIDRPSummary object cannot be created or updated id the person
-is not valid, even if the person's account has been deactivated.
+A OpenIDRPSummary object cannot be created or updated id the account
+is not ACTIVE, even if the account already has a summary for the
+trust_root.
 
     >>> former_summaries = rp_summary_set.getByIdentifier(
     ...     'http://openid.launchpad.dev/+id/former-user_oid')
@@ -235,5 +239,5 @@ is not valid, even if the person's account has been deactivated.
     ...     'https://shop.canonical.com')
     Traceback (most recent call last):
      ...
-    AssertionError: Former User is not ACTIVE account.
+    AssertionError: Account ... is not ACTIVE account.
 

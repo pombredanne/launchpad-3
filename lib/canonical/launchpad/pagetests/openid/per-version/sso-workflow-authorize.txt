@@ -28,6 +28,21 @@ authenticate before starting the login procedure:
     >>> browser.open(request.redirectURL(
     ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
 
+Each OpenID authentication is recorded as an OpenIDRPSummary. This user
+has not ever used Launchpad to authenticate with a relying party.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IOpenIDRPSummarySet
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> rp_summary_set = getUtility(IOpenIDRPSummarySet)
+    >>> rp_summary_set.getByIdentifier(
+    ...     'http://openid.launchpad.dev/+id/sabdfl_oid')
+    []
+
+    >>> logout()
+
 At this point, the user is presented with a form asking if they want
 to authenticate to the relying party
 
@@ -46,6 +61,23 @@ party with their identity URL:
     success
     >>> print info.endpoint.claimed_id
     http://openid.launchpad.dev/+id/sabdfl_oid
+
+The authentication was recorded. There is a summary showing that the
+user has used the replying part once.
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> summaries = rp_summary_set.getByIdentifier(
+    ...     'http://openid.launchpad.dev/+id/sabdfl_oid')
+    >>> for summary in summaries:
+    ...     summary.openid_identifier
+    ...     summary.trust_root
+    ...     summary.total_logins
+    u'http://openid.launchpad.dev/+id/sabdfl_oid'
+    u'http://launchpad.dev/'
+    1
+
+    >>> logout()
 
 
 == Declining to Authenticate ==
