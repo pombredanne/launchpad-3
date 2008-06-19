@@ -5,6 +5,7 @@ import optparse
 from os import curdir, listdir, sep, symlink
 from os.path import abspath, exists, join, realpath
 from sys import stdout
+import sys
 from urllib import unquote
 from urlparse import urlparse
 
@@ -92,7 +93,12 @@ if __name__ == '__main__':
         abspath(join(options.target, 'sourcecode')))
 
     for target, link in missing_files:
-        symlink(target, link)
+        try:
+            symlink(target, link)
+        except OSError:
+            print 'Error creating %s:' % link
+            print '   ', sys.exc_value
+            continue
         if options.verbose:
             stdout.write('%s -> %s\n' % (
                     sep.join(link.rsplit(sep, 3)[-3:]), target))
