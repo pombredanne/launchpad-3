@@ -25,13 +25,13 @@ IBuild.archive header.
     >>> import zope.i18n
 
 As mentioned above, the build is targeted to the ubuntu PRIMARY
-archive, so the page header refers to the distribution (see
+archive, so the page header refers to the distribution source package (see
 browser.archive.archive_to_structuralheading).
 
     >>> hoary_failed_build_shp = build_to_structuralheading(
     ...     hoary_failed_build)
     >>> print zope.i18n.translate(hoary_failed_build_shp.getMainHeading())
-    Ubuntu Linux
+    pmount
 
 In a similar way, the menu presented in the build page depends on the
 targeted archive. For instance the 'PPA' action-menu link is not
