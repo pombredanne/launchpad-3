@@ -124,7 +124,7 @@ def convert_python_status(status, resolution):
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
-    login('test@canonical.com')
+    login('foo.bar@canonical.com')
     bug_watch.remotestatus = None
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)

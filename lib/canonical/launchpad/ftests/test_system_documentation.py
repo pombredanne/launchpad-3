@@ -555,6 +555,13 @@ special = {
                 setUp=setUp, tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker.txt',
+                setUp=setUp, tearDown=tearDown,
+                stdout_logging_level=logging.WARNING,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bug-imports.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bug-imports.txt',
