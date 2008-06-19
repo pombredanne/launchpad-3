@@ -2786,8 +2786,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         default = self.context.translations_relicensing_agreement
         if default is None:
             default = True
-        return { "allow_relicensing" : default,
-                 "back_to" : self.request.get('back_to') }
+        return {
+            "allow_relicensing" : default,
+            "back_to" : self.request.get('back_to'),
+            }
 
     @property
     def relicensing_url(self):
