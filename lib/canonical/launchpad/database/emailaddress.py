@@ -22,7 +22,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.mailinglist import MailingListSubscription
 from canonical.launchpad.interfaces import (
     EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
-    EmailAddressStatus)
+    EmailAddressStatus, InvalidEmailAddress)
+from canonical.launchpad.validators.email import valid_email
 
 
 class HasOwnerMixin:
@@ -40,9 +41,13 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     _table = 'EmailAddress'
     _defaultOrder = ['email']
 
-    email = StringCol(dbName='email', notNull=True, unique=True)
+    email = StringCol(
+            dbName='email', notNull=True, unique=True, alternateID=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=False)
+    account = ForeignKey(
+            dbName='account', foreignKey='Account', notNull=False,
+            default=None)
 
     def destroySelf(self):
         """See `IEmailAddress`."""
@@ -86,14 +91,22 @@ class EmailAddressSet:
         return EmailAddress.selectOne(
             "lower(email) = %s" % quote(email.strip().lower()))
 
-    def new(self, email, person, status=EmailAddressStatus.NEW):
-        """See `IEmailAddressSet`."""
+    def new(self, email, person=None, status=EmailAddressStatus.NEW,
+            account=None):
+        """See IEmailAddressSet."""
         email = email.strip()
+
+        if not valid_email(email):
+            raise InvalidEmailAddress(
+                "%s is not a valid email address." % email)
+
         if self.getByEmail(email) is not None:
             raise EmailAddressAlreadyTaken(
                 "The email address '%s' is already registered." % email)
         assert status in EmailAddressStatus.items
-        return EmailAddress(email=email, status=status, person=person)
+        return EmailAddress(
+                email=email, status=status, person=person, account=account)
+
 
 
 class UndeletableEmailAddress(Exception):
