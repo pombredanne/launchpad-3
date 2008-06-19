@@ -42,12 +42,10 @@ class Browser:
             OAuthSignatureMethod_PLAINTEXT(),
             self.credentials.consumer,
             self.credentials.access_token)
-        # Calculate the headers for the request.
-        headers = dict(Host=url.host)
-        headers.update(oauth_request.to_header(OAUTH_REALM))
         # Make the request.
         response, content = self._connection.request(
-            str(url), method=method, body=data, headers=headers)
+            str(url), method=method, body=data,
+            headers=oauth_request.to_header(OAUTH_REALM))
         # Turn non-2xx responses into exceptions.
         if response.status // 100 != 2:
             raise HTTPError(response, content)
