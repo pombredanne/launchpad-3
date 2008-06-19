@@ -510,6 +510,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no such bugtask is found.
         """
 
+# In order to avoid circular dependencies, we only import
+# IBugSubscription (which itself imports IBug) here, and assign it as
+# the value type for the `subscriptions` collection.
 from canonical.launchpad.interfaces.bugsubscription import IBugSubscription
 IBug['subscriptions'].value_type.schema = IBugSubscription
 

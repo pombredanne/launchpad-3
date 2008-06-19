@@ -83,7 +83,7 @@ class BugNavigation(Navigation):
             return getUtility(IBugWatchSet)[name]
 
     @stepthrough('+subscription')
-    def traverse_subscriptionss(self, person_name):
+    def traverse_subscriptions(self, person_name):
         """Retrieve a BugSubscription by person name."""
         for subscription in self.context.subscriptions:
             if subscription.person.name == person_name:

@@ -185,7 +185,7 @@ We can also create new subscriptions.
     {...u'self_link':
         u'http://api.launchpad.dev/beta/bugs/1/+subscription/cprov'...}
 
-But we can only ubsubscribe ourselves.
+But we can only unsubscribe ourselves.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
