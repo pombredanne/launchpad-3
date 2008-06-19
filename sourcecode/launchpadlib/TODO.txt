@@ -1,6 +1,6 @@
 Things still to do:
 
-- modify person
+- follow and change linked objects
 - find person, find team
 - join
 - Integrate wadllib branch

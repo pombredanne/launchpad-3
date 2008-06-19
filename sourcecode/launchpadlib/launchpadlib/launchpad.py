@@ -11,6 +11,7 @@ __all__ = [
 from launchpadlib._browser import Browser
 from launchpadlib._utils.uri import URI
 from launchpadlib.collection import Collection, Entry
+from launchpadlib.credentials import AccessToken, Consumer, Credentials
 from launchpadlib.person import People
 
 
@@ -48,6 +49,31 @@ class Launchpad:
             'MaloneApplicationCollectionAdapter_collection_link')
         self._people = People(self._browser, URI(person_set_link))
         self._bugs = _FakeBugCollection(self._browser, URI(bug_set_link))
+
+    @classmethod
+    def login(cls, consumer_name, token_string, access_secret):
+        """Convenience for setting up access credentials.
+
+        When all three pieces of credential information (the consumer
+        name, the access token and the access secret) are available, this
+        method can be used to quickly log into the service root.
+
+        :param consumer_name: the consumer name, as appropriate for the
+            `Consumer` constructor
+        :type consumer_name: string
+        :param token_string: the access token, as appropriate for the
+            `AccessToken` constructor
+        :type token_string: string
+        :param access_secret: the access token's secret, as appropriate for
+            the `AccessToken` constructor
+        :type access_secret: string
+        :return: The web service root
+        :rtype: `Launchpad`
+        """
+        consumer = Consumer(consumer_name)
+        access_token = AccessToken(token_string, access_secret)
+        credentials = Credentials(consumer, access_token)
+        return cls(credentials)
 
     @property
     def people(self):
