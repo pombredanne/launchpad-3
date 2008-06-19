@@ -103,6 +103,10 @@ class LaunchpadScript:
         self.parser = OptionParser(usage=self.usage,
                                    description=self.description)
         scripts.logger_options(self.parser, default=self.loglevel)
+        self.parser.add_option(
+            '--profile', dest='profile', metavar='FILE', help=(
+                    "Run the script under the profiler and saves the "
+                    "profiling stats in FILE."))
         self.add_my_options()
         self.options, self.args = self.parser.parse_args(args=test_args)
         self.logger = scripts.logger(self.options, name)
@@ -205,10 +209,8 @@ class LaunchpadScript:
     def run(self, use_web_security=False, implicit_begin=True,
             isolation=ISOLATION_LEVEL_DEFAULT):
         """Actually run the script, executing zcml and initZopeless."""
-        scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
-        self.txn = initZopeless(
-            dbuser=self.dbuser, implicitBegin=implicit_begin,
-            isolation=isolation)
+        self._init_zca(use_web_security=use_web_security)
+        self._init_db(implicit_begin=implicit_begin, isolation=isolation)
 
         date_started = datetime.datetime.now(UTC)
         try:
@@ -220,6 +222,18 @@ class LaunchpadScript:
             date_completed = datetime.datetime.now(UTC)
             self.record_activity(date_started, date_completed)
 
+    def _init_zca(self, use_web_security):
+        """Initialize the ZCA, this can be overriden for testing purpose."""
+        scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
+
+    def _init_db(self, implicit_begin, isolation):
+        """Initialize the database transaction.
+
+        Can be overriden for testing purpose.
+        """
+        self.txn = initZopeless(
+            dbuser=self.dbuser, implicitBegin=implicit_begin,
+            isolation=isolation)
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""
