@@ -111,19 +111,18 @@ class IBugWatch(IHasBug):
                                           "remote bug tracker.")),
         exported_as='remote_bug')
     remotestatus = exported(
-        TextLine(title=_('Remote Status'), readonly=True),
+        TextLine(title=_('Remote Status')),
         exported_as='remote_status')
     remote_importance = exported(
-        TextLine(title=_('Remote Importance'), readonly=True))
+        TextLine(title=_('Remote Importance')))
     lastchanged = exported(
-        Datetime(title=_('Last Changed'), readonly=True),
+        Datetime(title=_('Last Changed')),
         exported_as='date_last_changed')
     lastchecked = exported(
-        Datetime(title=_('Last Checked'), readonly=True),
+        Datetime(title=_('Last Checked')),
         exported_as='date_last_checked')
     last_error_type = exported(
-        Choice(title=_('Last Error Type'), readonly=True,
-               vocabulary=BugWatchErrorType))
+        Choice(title=_('Last Error Type'), vocabulary=BugWatchErrorType))
     datecreated = exported(
         Datetime(title=_('Date Created'), required=True, readonly=True),
         exported_as='date_created')
