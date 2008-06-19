@@ -12,8 +12,6 @@ TESTOPTS=
 
 SHHH=${PYTHON} utilities/shhh.py
 STARTSCRIPT=runlaunchpad.py
-Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
-TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
 LPCONFIG=development
@@ -25,7 +23,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 APPSERVER_ENV = \
   LPCONFIG=${LPCONFIG} \
-  PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+  PYTHONPATH=$(PYTHONPATH) \
   STORM_CEXTENSIONS=1
 
 # DO NOT ALTER : this should just build by default
