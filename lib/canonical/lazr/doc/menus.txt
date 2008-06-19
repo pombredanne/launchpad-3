@@ -288,8 +288,10 @@ methods can access `self.context`.
     >>> provideAdapter(MenuLink, [ILinkData], ILink)
     >>> provideAdapter(FacetLink, [ILinkData], IFacetLink)
     >>> defineChecker(FacetLink, InterfaceChecker(IFacetLink))
+    >>> defineChecker(MenuLink, InterfaceChecker(ILink))
     >>> defineChecker(URI, NamesChecker(dir(URI)))
 
+    >>> from canonical.lazr.utils import safe_hasattr
     >>> def summarise_links(menu, url=None, facet=None):
     ...     """List the links and their attributes."""
     ...     if url is not None:
@@ -301,6 +303,8 @@ methods can access `self.context`.
     ...         print 'link %s' % link.name
     ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:
+    ...             if not safe_hasattr(link, attrname):
+    ...                 continue
     ...             print '    %s: %s' % (attrname, getattr(link, attrname))
 
     >>> summarise_links(
@@ -437,13 +441,11 @@ is defined in by the RecipeMenu class and the view of recipe.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        selected: True
         linked: False
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        selected: False
         linked: True
 
 
@@ -614,7 +616,7 @@ view +edit-ingredients.
     <RecipeEditMenu ...>
 
 
-== Menu linked and selected links ==
+== Menu linked links ==
 
 A link is not linked (the anchor is not rendered) when its URL matches
 the request URI; the user should not navigate to a page he is already
@@ -630,13 +632,11 @@ seeing. The matched URI comes from the view's request...
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        selected: True
         linked: False
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        selected: False
         linked: True
 
 ...or from the request_url keyword argument for iterlinks() that
@@ -649,18 +649,15 @@ is passed by the helper function.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        selected: True
         linked: False
 
-A link that is unlinked is implicitly selected too. But there are
-additional rules for the different kinds of menus that may set a
-link to the selected state.
+(Some menu subclass have additional constraint on when the linked
+attribute might be True.)
 
 
 === FacetMenu selected links ===
@@ -696,16 +693,18 @@ is linked, as can be seen when the url is not explicitly passed.
         linked: True
 
 
-=== NavigationMenu selected links ===
+=== NavigationMenu linked links ===
 
 When navigational menus are associated with a content object and one
 of its views, they provide a menu and sub menu. The view's sub menu
 belongs to one of the content object's menu's links.
 
-A link will be selected and linked if request's url matches one of the
-links in the link's menu. A link's menu contains child links in the
-navigational hierarchy; when a child linzope_isinstancek is selected, the parent
-link is selected too.
+A link will be linked if request's url matches one of the links in the
+link's menu. A link's menu contains child links in the navigational
+hierarchy; when a child link is linked, the parent link is not linked
+itself. (It is assume that one of the link in the child menu, will be
+identical to the one in the parent's menu.)
+
 
     >>> request = make_fake_request(
     ...     'http://launchpad.dev'
@@ -722,13 +721,11 @@ link is selected too.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        selected: True
-        linked: True
+        linked: False
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        selected: False
         linked: True
 
     >>> recipe_overview_menu = queryAdapter(
@@ -738,13 +735,11 @@ link is selected too.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+edit-instructions
         enabled: True
         menu: None
-        selected: False
         linked: True
     link edit_ingredients
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+edit-ingredients
         enabled: True
         menu: None
-        selected: True
         linked: False
 
 The link state changes when a url corresponding with a link in another
@@ -763,14 +758,12 @@ menu of the RecipeMenu will change the state of both menus.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        selected: True
-        linked: True
+        linked: False
 
     >>> summarise_links(
     ...     queryAdapter(
@@ -779,19 +772,17 @@ menu of the RecipeMenu will change the state of both menus.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
         enabled: True
         menu: None
-        selected: True
         linked: False
     link write_entry
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
         enabled: True
         menu: None
-        selected: False
         linked: True
 
 
 ==== The current view's menu ====
 
-The selected state of a link may be determined from the menu adapted
+The linked state of a link may be determined from the menu adapted
 from the current view. The object responsible for rendering the page is
 the last object in the request.traversed_objects list, but that object
 is not always the view. It may be the view's instancemethod.
@@ -809,14 +800,12 @@ find the instancemethods object.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        selected: False
         linked: True
     link journal
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        selected: True
-        linked: True
+        linked: False
 
     # Restore the _last_obj_traversed to the view that matches the
     # request's URL.
@@ -851,6 +840,8 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
     ...         print 'link %s' % link.name
     ...         attributes = ('url', 'enabled', 'menu', 'selected', 'linked')
     ...         for attrname in attributes:
+    ...             if not safe_hasattr(link, attrname):
+    ...                 continue
     ...             print '    %s:' % attrname, getattr(link, attrname)
 
     # MenuAPI is normally registered as an IPathAdapter in ZCML. This
@@ -888,13 +879,11 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+journal
         enabled: True
         menu: <...IRecipeJournalMenuMarker...>
-        selected: True
-        linked: True
+        linked: False
     link summary
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+index
         enabled: True
         menu: <...IRecipeEditMenuMarker...>
-        selected: False
         linked: True
 
     >>> links_dict = test_tales(
@@ -905,13 +894,11 @@ over the links. The TALES takes the form of 'view/menu:navigation'.
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+read-journal
         enabled: True
         menu: None
-        selected: True
         linked: False
     link write_entry
         url: http://launchpad.dev/joy-of-cooking/fried-spam/+write-entry
         enabled: True
         menu: None
-        selected: False
         linked: True
 
 
@@ -943,8 +930,9 @@ NavigationMenus used in the previous TALES section.
     ...      <li tal:repeat="link view/links">
     ...        <a
     ...          tal:condition="link/linked"
+    ...          tal:define="selected link/selected|string:None"
     ...          tal:attributes="href link/url;
-    ...                          class string:selected-${link/selected}"
+    ...                          class string:selected-${selected}"
     ...          tal:content="structure link/escapedtext">link text</a>
     ...        <strong
     ...          tal:condition="not: link/linked"
@@ -1014,11 +1002,10 @@ available (as can be seen in the next example).
       <ul>
         <li>
           <a href=".../joy-of-cooking/fried-spam/+index"
-             class="selected-False">Summary</a>
+             class="selected-None">Summary</a>
         </li>
         <li>
-          <a href=".../joy-of-cooking/fried-spam/+journal"
-             class="selected-True">Journal</a>
+          <strong>Journal</strong>
         </li>
       </ul>
     </div>
@@ -1041,7 +1028,7 @@ URL.
         </li>
         <li>
           <a href=".../joy-of-cooking/fried-spam/+write-entry"
-             class="selected-False">Write
+             class="selected-None">Write
             a journal entry</a>
         </li>
       </ul>

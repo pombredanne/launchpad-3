@@ -394,10 +394,6 @@ class NavigationMenu(MenuBase):
 
     title = None
 
-    def _get_link(self, name):
-        return IFacetLink(
-            super(NavigationMenu, self)._get_link(name))
-
     def iterlinks(self, request_url=None):
         """See `INavigationMenu`.
 
@@ -414,13 +410,16 @@ class NavigationMenu(MenuBase):
 
         for link in super(NavigationMenu, self).iterlinks():
             link_url = str(link.url)
-            link.linked = not request_url.startswith(link_url)
-            # A link is selected when the request_url matches the link's URL
-            # or because the menu for the current view is the link's menu.
-            link.selected = (request_url.startswith(link_url)
-                             or self._is_menulink_for_view(link, view))
+            # The link should be unlinked if it is the current URL, or if
+            # the menu for the current view is the link's menu.
+            link.linked = not (self._is_current_url(request_url, link_url)
+                               or self._is_menulink_for_view(link, view))
             link.url = link.url.ensureNoSlash()
             yield link
+
+    def _is_current_url(self, request_url, link_url):
+        """Determines if <link_url> is the current URL."""
+        return request_url.startswith(link_url)
 
     def _is_menulink_for_view(self, link, view):
         """Return True if the menu-link is for the current view.
