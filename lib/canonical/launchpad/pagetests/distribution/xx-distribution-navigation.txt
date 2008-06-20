@@ -47,7 +47,7 @@ The Mirrors tab is special because it contains a second-level menu.
 
 The second level menu contains three tab items, "CD Mirrors,
 "Archive Mirrors" and "Register Mirror" and the former is the default
-selected tab when going into "Mirrors" for the first time.
+selected tab when selecting "Mirrors" in the top-level menu.
 
 When browsing as someone who is a mirror administrator, three more tabs
 appear:
