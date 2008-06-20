@@ -97,8 +97,7 @@ class IBugWatch(IHasBug):
     """A bug on a remote system."""
     export_as_webservice_entry()
 
-    id = exported(
-        Int(title=_('ID'), required=True, readonly=True))
+    id = Int(title=_('ID'), required=True, readonly=True)
     bug = exported(
         Reference(title=_('Bug'), schema=IBug, required=True, readonly=True))
     bugtracker = Choice(title=_('Bug System'), required=True,

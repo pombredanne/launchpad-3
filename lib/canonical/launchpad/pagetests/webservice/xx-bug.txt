@@ -163,7 +163,6 @@ The collection of bug tasks is not exposed as a resource:
    (u'date_created', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_changed', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_checked', u'2004-10-04T01:00:00+00:00'),
-   (u'id', 2),
    (u'last_error_type', None),
    (u'owner_link', u'http://api.launchpad.dev/beta/~sabdfl'),
    (u'remote_bug', u'2000'),
