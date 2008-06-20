@@ -37,8 +37,8 @@ An administrator may successfully access all of these pages.
 
 = Project list shows license status =
 
-The project list will show [PROPRIETARY] next to projects with a
-proprietary license and show [UNREVIEWED] next to projects without
+The project list will show (Proprietary) next to projects with a
+proprietary license and show (Unreviewed) next to projects without
 any license or with an unreviewed Other/OpenSource license.
 
 First, add a product with a proprietary license.
@@ -61,8 +61,8 @@ First, add a product with a proprietary license.
     >>> for subdiv in div.next.findNextSiblings('div'):
     ...     print ' '.join(text.strip()
     ...                    for text in subdiv.findAllNext(text=True)[:4])
-    &nbsp;Proprietary Product  [PROPRIETARY]
+    &nbsp;Proprietary Product  (Proprietary)
     &nbsp;Derby
-    &nbsp;Redfish  [UNREVIEWED]
-    &nbsp;Bazaar  [UNREVIEWED]
-    &nbsp;Jokosher  [UNREVIEWED]
+    &nbsp;Redfish  (Unreviewed)
+    &nbsp;Bazaar  (Unreviewed)
+    &nbsp;Jokosher  (Unreviewed)
