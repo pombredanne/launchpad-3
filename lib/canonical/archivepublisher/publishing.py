@@ -235,7 +235,8 @@ class Publisher(object):
                 source_query = " AND ".join(clauses)
                 sources = SourcePackagePublishingHistory.select(source_query)
                 if sources.count() > 0:
-                    self.dirty_pockets.add((distroseries.name, pocket))
+                    if self.isAllowed(distroseries, pocket):
+                        self.dirty_pockets.add((distroseries.name, pocket))
                     # No need to check binaries if the pocket is already
                     # dirtied from a source.
                     continue
@@ -250,7 +251,8 @@ class Publisher(object):
                 binaries = BinaryPackagePublishingHistory.select(binary_query,
                     clauseTables=['DistroArchSeries'])
                 if binaries.count() > 0:
-                    self.dirty_pockets.add((distroseries.name, pocket))
+                    if self.isAllowed(distroseries, pocket):
+                        self.dirty_pockets.add((distroseries.name, pocket))
 
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
