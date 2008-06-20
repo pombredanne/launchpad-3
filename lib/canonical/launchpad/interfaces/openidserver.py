@@ -188,8 +188,7 @@ class IOpenIDRPSummarySet(Interface):
         """Get all the IOpenIDRPSummary objects for an OpenID identifier.
 
         :param identifier: A string used as an OpenID identifier.
-        :return: A list of IOpenIDRPSummary objects. The list is empty if the
-            identifier has never been used.
+        :return: An iterator of IOpenIDRPSummary objects.
         """
 
     def record(account, trust_root):

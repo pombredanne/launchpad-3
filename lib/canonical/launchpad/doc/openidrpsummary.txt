@@ -19,8 +19,8 @@ OpenIDRPSummary objects.
     >>> verifyObject(IOpenIDRPSummarySet, rp_summary_set)
     True
 
-The getByIdentifier() method returns a list of all the summaries for an
-identifier.
+The getByIdentifier() method returns an iterator of all the summaries
+for an identifier.
 
     # Only admins are privileged to work with multiple accounts.
     >>> login('foo.bar@canonical.com')
@@ -41,10 +41,10 @@ identifier.
       identifier: http://openid.launchpad.dev/+id/no-priv_oid
       trust_root: http://moodle.org
 
-The list is empty if the identifier has never been used.
+The iterator has a count of 0 if there are no matches.
 
-    >>> rp_summary_set.getByIdentifier('never-used')
-    []
+    >>> rp_summary_set.getByIdentifier('never-used').count()
+    0
 
 
 == IOpenIDRPSummary ==
@@ -225,5 +225,5 @@ database does not have a constraint to guard against this.
     Traceback (most recent call last):
      ...
     AssertionError: More than 1 account has the OpenID identifier of
-                    http://openid.launchpad.dev/+id/no-priv_oid.
+                    http://openid.launchpad.dev/+id/knightsOfNi.
 
