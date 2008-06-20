@@ -53,15 +53,28 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget,
-    IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
-    IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
-    LicenseStatus,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+
+from canonical.launchpad.interfaces.branch import (
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, NotFoundError)
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License, LicenseStatus)
+from canonical.launchpad.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 
 
@@ -165,8 +178,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if not self._SO_creating and value != self.license_info:
             # Clear the license_reviewed and license_approved flags
             # if the license changes.
-            self.license_reviewed = False
-            self.license_approved = False
+            self._resetLicenseReview()
         return value
 
     license_info = StringCol(dbName='license_info', default=None,
@@ -297,6 +309,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def license_status(self):
+        """See `IProduct`.
+
+        :return: A LicenseStatus enum value.
+        """
         if self.license_approved:
             return LicenseStatus.OPEN_SOURCE
         elif len(self.licenses) == 0:
@@ -317,6 +333,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             # The project has at least one license and does not have
             # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
             return LicenseStatus.OPEN_SOURCE
+
+    def _resetLicenseReview(self):
+        """When the license is modified, it must be reviewed again."""
+        self.license_reviewed = False
+        self.license_approved = False
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
@@ -340,8 +361,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # to avoid changing the value when a Launchpad Admin sets
         # license_reviewed & licenses at the same time.
         if reset_license_reviewed:
-            self.license_reviewed = False
-            self.license_approved = False
+            self._resetLicenseReview()
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute
