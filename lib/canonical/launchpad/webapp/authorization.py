@@ -4,8 +4,6 @@ __metaclass__ = type
 
 import warnings
 
-from storm.zope.interfaces import IZStorm
-
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
 from zope.component.interfaces import IView

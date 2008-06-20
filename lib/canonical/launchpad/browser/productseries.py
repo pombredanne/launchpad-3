@@ -855,6 +855,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         return self.isAdmin() and self.context.importstatus in [
             ImportStatus.AUTOTESTED,
             ImportStatus.TESTING,
+            ImportStatus.TESTFAILED,
             ImportStatus.PROCESSING,
             ImportStatus.SYNCING,
             ImportStatus.STOPPED,

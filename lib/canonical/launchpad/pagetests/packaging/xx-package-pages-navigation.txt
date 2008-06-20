@@ -124,10 +124,12 @@ Ubuntu Hoary".)
 
 A distribution series source package release does not have its own
 Bugs, Translations, or anything else, so it is not part of the
-top-level hierarchy.
+top-level hierarchy. Instead, the hierarchy stops at the distribution
+series source package.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/1.0.9a-4ubuntu1')
+    ...     'http://launchpad.dev/ubuntu/hoary/'
+    ...     '+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_navigation(anon_browser.contents)
     Location: Ubuntu > 5.04 > ?alsa-utils? package
     Tabs:
@@ -144,7 +146,7 @@ top-level hierarchy.
 
 Distribution series architectures do not have their own Bugs,
 Translations, or anything else, so they are not part of the top-level
-hierarchy.
+hierarchy. Instead, the hierarchy stops at the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
     >>> print_navigation(anon_browser.contents)
@@ -163,6 +165,7 @@ hierarchy.
 
 Distribution series architecture binary packages are not part of the
 top-level hierarchy for the same reason as the architectures themselves.
+Instead, the hierarchy stops at the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386/pmount')
     >>> print_navigation(anon_browser.contents)
@@ -178,7 +181,7 @@ top-level hierarchy for the same reason as the architectures themselves.
     i386 (x86)
 
 (XXX mpt 20080613: Eventually this heading should be "?pmount? package in
-Ubuntu Hoary i386".)
+Ubuntu Hoary i386". <http://launchpad.net/bugs/241341>)
 
 But they do link back to the distribution series architecture.
 
@@ -191,7 +194,7 @@ But they do link back to the distribution series architecture.
 
 Distribution series architecture binary package releases are not part
 of the top-level hierarchy for the same reason as the architectures
-themselves.
+themselves. Instead, the hierarchy stops at the distribution series.
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')

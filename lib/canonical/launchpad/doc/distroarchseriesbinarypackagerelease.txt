@@ -48,9 +48,7 @@ Retrieving the parent object, a DistroArchSeriesBinaryPackage.
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
 
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> warty = ubuntu.getSeries('warty')
-    >>> warty_i386 = warty['i386']
+    >>> warty_i386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
 
     >>> warty_i386_pmount = warty_i386.getBinaryPackage('pmount')
     >>> print warty_i386_pmount.title
