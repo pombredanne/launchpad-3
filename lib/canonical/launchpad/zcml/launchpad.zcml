@@ -331,14 +331,6 @@
       permission="zope.Public"
       />
 
-  <!-- Menus debug page. -->
-  <browser:page
-      for="zope.interface.Interface"
-      name="+debug-menus"
-      template="../templates/launchpad-menus-debug.pt"
-      permission="zope.Public"
-      />
-
   <!-- one-zero status page -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
