@@ -105,6 +105,8 @@ class LocationWidget(BrowserWidget, InputWidget):
         longname = self.name + '.longitude'
         divname = self.name.replace('.', '_') + '_div'
         mapname = divname + '_map'
+        # Please look the other way while I build this huge string with the
+        # javascript necessary for the widget to work.
         return """
     %(latitude_widget)s
     %(longitude_widget)s
@@ -260,14 +262,18 @@ class LocationWidget(BrowserWidget, InputWidget):
         }
 
     def hasInput(self):
-        return self.time_zone_widget.hasInput() or \
-               self.latitude_widget.hasInput()
+        return (self.time_zone_widget.hasInput()
+                or self.latitude_widget.hasInput())
 
     def getInputValue(self):
         self._error = None
         time_zone = self.time_zone_widget.getInputValue()
-        latitude = self.latitude_widget.getInputValue()
-        longitude = self.longitude_widget.getInputValue()
+        latitude = None
+        longitude = None
+        if self.latitude_widget.hasInput():
+            latitude = self.latitude_widget.getInputValue()
+        if self.longitude_widget.hasInput():
+            longitude = self.longitude_widget.getInputValue()
         if time_zone is None:
             self._error = WidgetInputError(
                 self.name, self.label,
@@ -290,5 +296,3 @@ class LocationWidget(BrowserWidget, InputWidget):
                           'and longitude.')))
                 raise self._error
         return LocationValue(latitude, longitude, time_zone)
-
-
