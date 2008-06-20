@@ -178,19 +178,6 @@ class MenuAPI:
         else:
             return self._selectedfacetname
 
-    def application(self):
-        selectedfacetname = self._selectedfacetname
-        if selectedfacetname is None:
-            # No facet menu is selected.  So, return empty list.
-            return []
-        menu = queryAdapter(
-            self._context, IApplicationMenu, selectedfacetname)
-        if menu is None:
-            return []
-        else:
-            menu.request = self._request
-            return list(menu.iterlinks(request_url=self._request_url()))
-
     @property
     def context(self):
         menu = IContextMenu(self._context, None)
