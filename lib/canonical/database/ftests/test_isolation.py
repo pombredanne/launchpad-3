@@ -51,12 +51,12 @@ class TestIsolation(unittest.TestCase):
         # by seeing if we an roll back
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE password IS NULL")
+        cur.execute("SELECT COUNT(*) FROM Person WHERE country IS NULL")
         self.failIfEqual(cur.fetchone()[0], 0)
-        cur.execute("UPDATE Person SET password=NULL")
+        cur.execute("UPDATE Person SET country=NULL")
         con.rollback()
         cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE password IS NOT NULL")
+        cur.execute("SELECT COUNT(*) FROM Person WHERE country IS NOT NULL")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def test_readCommitted(self):
@@ -75,9 +75,9 @@ class TestIsolation(unittest.TestCase):
 
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("UPDATE Person SET password=NULL")
+        cur.execute("UPDATE Person SET country=NULL")
         con.commit()
-        cur.execute("UPDATE Person SET password='foo'")
+        cur.execute("UPDATE Person SET country=61")
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_rollback(self):
@@ -88,14 +88,15 @@ class TestIsolation(unittest.TestCase):
 
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("UPDATE Person SET password=NULL")
+        cur.execute("UPDATE Person SET country=NULL")
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_script(self):
         # Ensure that things work in stand alone scripts too, in case out
         # test infrustructure is faking something.
-        script = os.path.join(os.path.dirname(__file__), 'script_isolation.py')
+        script = os.path.join(
+                os.path.dirname(__file__), 'script_isolation.py')
         cmd = [sys.executable, script]
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
@@ -123,12 +124,6 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
-
-        # Note that it doesn't work to use the dbapi call on a
-        # connection that has already been used, as the call silently
-        # does nothing. This is psycopg behavior.
-        con.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
-        self.failIfEqual(self.getCurrentIsolation(con), 'read committed')
 
         # But on a fresh connection, it works just fine.
         con = connect(config.launchpad.dbuser)

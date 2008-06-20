@@ -10,7 +10,6 @@ __all__ = [
     'BugNominationsView',
     'BugTargetTraversalMixin',
     'BugTargetView',
-    'BugTaskBadges',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
@@ -35,6 +34,7 @@ __all__ = [
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
+    'get_visible_comments',
     ]
 
 from datetime import datetime, timedelta
@@ -72,7 +72,6 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
@@ -1218,9 +1217,6 @@ class BugTaskEditView(LaunchpadEditFormView):
             bugtask.transitionToStatus(new_status, self.user)
 
         if new_assignee is not missing and bugtask.assignee != new_assignee:
-            changed = True
-            bugtask.transitionToAssignee(new_assignee)
-
             if new_assignee is not None and new_assignee != self.user:
                 is_contributor = new_assignee.isBugContributorInTarget(
                     user=self.user, target=bugtask.pillar)
@@ -1242,6 +1238,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
                         canonical_url(bugtask))))
+            changed = True
+            bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
@@ -2387,7 +2385,7 @@ class BugTargetView(LaunchpadView):
         """Return the most recently updated bugtasks for this target."""
         params = BugTaskSearchParams(
             orderby="-date_last_updated", omit_dupes=True, user=self.user)
-        return self.context.searchTasks(params)[:limit]
+        return list(self.context.searchTasks(params)[:limit])
 
 
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):
@@ -2731,37 +2729,6 @@ class BugTaskPrivacyAdapter:
     def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
-
-
-class BugTaskBadges(HasBadgeBase):
-    """Provides `IHasBadges` for `IBugTask`."""
-
-    badges = ('security', 'private', 'mentoring', 'branch')
-
-    def isBranchBadgeVisible(self):
-        return self.context.bug.bug_branches.count() > 0
-
-    def isMentoringBadgeVisible(self):
-        return self.context.bug.mentoring_offers.count() > 0
-
-    def isSecurityBadgeVisible(self):
-        return self.context.bug.security_related
-
-    def getSecurityBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        return "This bug report is about a security vulnerability"
-
-    # HasBadgeBase supplies isPrivateBadgeVisible().
-    def getPrivateBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        if self.context.bug.date_made_private is None:
-            return "This bug report is private"
-        else:
-            date_formatter = DateTimeFormatterAPI(
-                self.context.bug.date_made_private)
-            return "This bug report was made private by %s %s" % (
-                self.context.bug.who_made_private.displayname,
-                date_formatter.displaydate())
 
 
 class BugTaskSOP(StructuralObjectPresentation):

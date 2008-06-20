@@ -55,7 +55,6 @@ from canonical.launchpad.interfaces import (
     IBranchSubscription,
     IBugBranch,
     IBugSet,
-    ICodeImportSet,
     ICodeImportJobWorkflow,
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
@@ -157,11 +156,6 @@ class BranchNavigation(Navigation):
         for proposal in self.context.landing_targets:
             if proposal.id == id:
                 return proposal
-
-    @stepto("+code-import")
-    def traverse_code_import(self):
-        """Traverses to an `ICodeImport`."""
-        return getUtility(ICodeImportSet).getByBranch(self.context)
 
 
 class BranchContextMenu(ContextMenu):
@@ -401,6 +395,22 @@ class BranchView(LaunchpadView, FeedsMixin):
                 return '<private server>'
 
         return branch.url
+
+    @property
+    def branch_format_description(self):
+        """Return branch's format, or 'Not recorded' if None."""
+        if self.context.branch_format is None:
+            return "Not recorded"
+        else:
+            return self.context.branch_format.description
+
+    @property
+    def repository_format_description(self):
+        """Return repository's format, or 'Not recorded' if None."""
+        if self.context.repository_format is None:
+            return "Not recorded"
+        else:
+            return self.context.repository_format.description
 
 
 class DecoratedMergeProposal:

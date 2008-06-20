@@ -188,7 +188,8 @@ This CodeImport is associated to the evolution/main ProductSeries
 
 Members of the VCS Imports team (import operators), or Launchpad
 administrators can update the review status of code imports.  This is
-done using the code import methods: approve; suspend; and invalidate.
+done using the code import methods: approve; suspend; invalidate and
+markFailing.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -247,9 +248,19 @@ invalidated.
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
-    Subject: Code import product-name6/name11 status: Invalid
+    Subject: Code import product.../name... status: Invalid
     <BLANKLINE>
     The import has been marked as invalid.
+    ...
+    ----------------------------------------
+
+    >>> code_import.markFailing({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Failing
+    <BLANKLINE>
+    The import has been marked as failing.
     ...
     ----------------------------------------
 
@@ -352,12 +363,13 @@ site:
     http://code.launchpad.dev/+code-imports
 
 The code imports themselves are viewed under the branch's URL,
-however.
+and are not traversable in themselves.
 
     >>> print canonical_url(svn_import.branch)
     http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
     >>> print canonical_url(svn_import)
-    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
+    Traceback (most recent call last):
+    NoCanonicalUrl: ...
 
 
 == Modifying CodeImports ==

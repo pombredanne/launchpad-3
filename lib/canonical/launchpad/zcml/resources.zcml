@@ -19,14 +19,17 @@
     <!-- arrowBlank is used in sorttable.js -->
     <resource name="arrowBlank" file="../images/arrowBlank.gif" />
     <resource name="arrowBottom" file="../images/arrowBottom.png" />
-    <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown" file="../images/arrowDown.png" />
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
     <resource name="arrowLeft" file="../images/arrowLeft.png" />
+    <resource name="batch-previous-inactive" file="../images/arrowLeft-inactive.png" />
     <resource name="arrowRight" file="../images/arrowRight.png" />
+    <resource name="batch-next-inactive" file="../images/arrowRight-inactive.png" />
     <resource name="arrowStart" file="../images/arrowStart.png" />
+    <resource name="batch-start-inactive" file="../images/arrowStart-inactive.png" />
     <resource name="arrowEnd" file="../images/arrowEnd.png" />
+    <resource name="batch-end-inactive" file="../images/arrowEnd-inactive.png" />
     <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />

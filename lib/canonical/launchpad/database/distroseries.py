@@ -82,7 +82,7 @@ from canonical.launchpad.interfaces import (
     SpecificationSort)
 from canonical.launchpad.database.packagecloner import clone_packages
 
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -112,10 +112,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
@@ -1377,12 +1377,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         for archive in self.parent_series.distribution.all_distro_archives:
             # We only want to copy PRIMARY and PARTNER archives.
-            if archive.purpose not in (
-                    ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER):
+            allowed_purposes = (
+                ArchivePurpose.PRIMARY,
+                ArchivePurpose.PARTNER,
+                )
+            if archive.purpose not in allowed_purposes:
                 continue
-            target_archive = archive_set.ensure(
-                distribution=self.distribution, purpose=archive.purpose,
-                owner=None)
+
+            # XXX cprov 20080612: Implicitly creating a PARTNER archive for
+            # the destination distroseries is bad. Why are we copying
+            # partner to a series in another distribution anyway ?
+            # See bug #239807 for further information.
+            target_archive = archive_set.getByDistroPurpose(
+                self.distribution, archive.purpose)
+            if target_archive is None:
+                target_archive = archive_set.new(
+                    distribution=self.distribution, purpose=archive.purpose,
+                    owner=self.distribution.owner)
 
             origin = PackageLocation(
                 archive, self.parent_series.distribution, self.parent_series,

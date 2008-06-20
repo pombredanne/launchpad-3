@@ -42,8 +42,8 @@ def main(argv):
     # don't send email
     config.zopeless.send_email = False
 
-    ztm = initZopeless()
     execute_zcml_for_scripts()
+    ztm = initZopeless()
     login('bug-importer@launchpad.net')
 
     product = getUtility(IProductSet).getByName(options.product)

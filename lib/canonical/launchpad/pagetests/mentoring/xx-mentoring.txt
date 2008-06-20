@@ -16,10 +16,10 @@ the bug and spec as an anonymous user. We should see neither the page link
 nor the menu link to offer mentoring.
 
   >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> anon_browser.getLink('Offer to mentor someone fixing this bug')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
   >>> page_mentoring_offer not in anon_browser.contents
   True
   >>> anon_browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
@@ -36,10 +36,8 @@ to retract it at the same time.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> print browser.getLink('Offer to mentor someone fixing this bug').url
+  http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
   >>> page_mentoring_offer in browser.contents
   True
   >>> for tag in find_tags_by_class(
@@ -88,10 +86,10 @@ complete.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/8')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> browser.getLink('Offer to mentor someone fixing this bug')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
   >>> page_mentoring_offer in browser.contents
   False
 
@@ -110,10 +108,10 @@ In the case of bugs, we should not be able to offer mentorship on a bug
 which is a duplicate:
 
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/6')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> browser.getLink('Offer to mentor someone fixing this bug')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
   >>> page_mentoring_offer in browser.contents
   False
 
@@ -127,7 +125,7 @@ First, we will make an offer of mentorship on a bug.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getLink('Offer to mentor someone fixing this bug').click()
   >>> print browser.url
   http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
   >>> print browser.title
@@ -146,20 +144,18 @@ We should see the listing of mentors, now:
 And most importantly, we should no longer be able to offer mentoring on this
 bug, because we are ALREADY a mentor!
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> browser.getLink('Offer to mentor someone fixing this bug')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
   >>> page_mentoring_offer not in browser.contents
   True
 
 Similarly, because we are now a mentor, we should see a menu and page link
 which allow us to retract this offer of mentorship.
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring'):
-  ...     print tag.renderContents()
-  Retract mentorship
+  >>> print browser.getLink('Retract my offer of mentorship').url
+  http://bugs.launchpad.dev/tomcat/+bug/2/+retractmentoring
   >>> page_mentoring_retract in browser.contents
   True
 
@@ -168,16 +164,14 @@ retract mentoring:
 
   >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> print browser.getLink('Offer to mentor someone fixing this bug').url
+  http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
   >>> page_mentoring_offer in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> browser.getLink('Retract my offer of mentorship')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
   >>> page_mentoring_retract in browser.contents
   False
 
@@ -530,10 +524,10 @@ retract mentoring that you have offered.
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> 'Mentors:' in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> browser.getLink('Retract my offer of mentorship')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
   >>> page_mentoring_retract in browser.contents
   False
 
@@ -583,16 +577,14 @@ mentoring again.
 And finally let's do it on the bug.
 
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> browser.getLink(menu_mentoring_retract).click()
+  >>> browser.getLink('Retract my offer of mentorship').click()
   >>> print browser.title
   Retract offer of mentorship
   >>> browser.getControl('Retract Mentoring').click()
   >>> 'Blackhole Trash folder' in browser.title
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> print browser.getLink('Offer to mentor someone fixing this bug').url
+  http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
 
 
 Subscribing when offering mentorship
@@ -641,7 +633,7 @@ bug:
 
 Now we offer mentoring, and along the way we request to be subscribed:
 
-  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getLink('Offer to mentor someone fixing this bug').click()
   >>> browser.getControl(name='field.subscription_request').value = True
   >>> browser.getControl('Offer Mentoring').click()
   >>> browser.url

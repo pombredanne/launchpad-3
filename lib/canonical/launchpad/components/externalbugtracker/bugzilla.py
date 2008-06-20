@@ -18,8 +18,8 @@ from xml.dom import minidom
 
 from canonical import encoding
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    InvalidBugId, UnknownRemoteStatusError, UnparseableBugData,
+    BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
+    LookupTree, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
@@ -113,63 +113,36 @@ class Bugzilla(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
+    _status_lookup = LookupTree(
+        ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
+         BugTaskStatus.INPROGRESS),
+        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+         BugTaskStatus.INCOMPLETE),
+        ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
+         BugTaskStatus.FIXCOMMITTED),
+        ('REJECTED', BugTaskStatus.INVALID),
+        ('RESOLVED', 'VERIFIED', 'CLOSED',
+            LookupTree(
+                ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 BugTaskStatus.FIXRELEASED),
+                ('WONTFIX', BugTaskStatus.WONTFIX),
+                (BugTaskStatus.INVALID,))),
+        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
+        ('UNCONFIRMED', BugTaskStatus.NEW),
+        )
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
-        if ' ' in remote_status:
-            remote_status, resolution = remote_status.split(' ', 1)
-        else:
-            resolution = ''
-
-        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
-            # FAILS_QA, ON_DEV: bugzilla.redhat.com
-            # STARTED: OOO Issuezilla
-            malone_status = BugTaskStatus.INPROGRESS
-        elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
-                               'WAITING', 'SUSPENDED']:
-            # NEEDINFO_REPORTER: bugzilla.redhat.com
-            # SUSPENDED, WAITING: http://gcc.gnu.org/bugzilla
-            #   though SUSPENDED applies to something pending discussion
-            #   in a larger/separate context.
-            malone_status = BugTaskStatus.INCOMPLETE
-        elif (remote_status in
-            ['PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA']):
-            # RELEASE_PENDING, MODIFIED, ON_QA: bugzilla.redhat.com
-            malone_status = BugTaskStatus.FIXCOMMITTED
-        elif remote_status in ['REJECTED']:
-            # REJECTED: bugzilla.kernel.org
-            malone_status = BugTaskStatus.INVALID
-        elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
-            # depends on the resolution:
-            if resolution in ['CODE_FIX', 'CURRENTRELEASE', 'ERRATA',
-                              'FIXED', 'NEXTRELEASE',
-                              'PATCH_ALREADY_AVAILABLE', 'RAWHIDE']:
-
-                # The following resolutions come from bugzilla.redhat.com.
-                # All of them map to Malone's FIXRELEASED status:
-                #     CODE_FIX, CURRENTRELEASE, ERRATA, NEXTRELEASE,
-                #     PATCH_ALREADY_AVAILABLE, RAWHIDE
-                malone_status = BugTaskStatus.FIXRELEASED
-            elif resolution == 'WONTFIX':
-                # VERIFIED WONTFIX maps directly to WONTFIX
-                malone_status = BugTaskStatus.WONTFIX
-            else:
-                #XXX: Bjorn Tillenius 2005-02-03 Bug=31745:
-                #     Which are the valid resolutions? We should fail
-                #     if we don't know of the resolution.
-                malone_status = BugTaskStatus.INVALID
-        elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED']:
-            # DEFERRED: bugzilla.redhat.com
-            malone_status = BugTaskStatus.CONFIRMED
-        elif remote_status in ['UNCONFIRMED']:
-            malone_status = BugTaskStatus.NEW
-        else:
+        try:
+            return self._status_lookup.find(*remote_status.split())
+        except KeyError:
             raise UnknownRemoteStatusError(remote_status)
-
-        return malone_status
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -320,6 +293,33 @@ class BugzillaLPPlugin(Bugzilla):
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
 
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `IExternalBugTracker`."""
+        self.bugs = {}
+        self.bug_aliases = {}
+
+        server = xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+        # First, grab the bugs from the remote server.
+        request_args = {
+            'ids': bug_ids,
+            'permissive': True,
+            }
+        response_dict = server.Bug.get_bugs(request_args)
+        remote_bugs = response_dict['bugs']
+
+        # Now copy them into the local bugs dict.
+        for remote_bug in remote_bugs:
+            self.bugs[remote_bug['id']] = remote_bug
+
+            # The bug_aliases dict is a mapping between aliases and bug
+            # IDs. We use the aliases dict to look up the correct ID for
+            # a bug. This allows us to reference a bug by either ID or
+            # alias.
+            if remote_bug['alias'] and remote_bug['alias'] in bug_ids:
+                self.bug_aliases[remote_bug['alias']] = remote_bug['id']
+
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
         server = xmlrpclib.ServerProxy(
@@ -335,6 +335,33 @@ class BugzillaLPPlugin(Bugzilla):
 
         server_utc_time = datetime.utcfromtimestamp(server_timestamp)
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
+
+    def getRemoteStatus(self, bug_id):
+        """See `IExternalBugTracker`."""
+        # See if bug_id is actually an alias.
+        actual_bug_id = self.bug_aliases.get(bug_id)
+
+        # bug_id isn't an alias, so try turning it into an int and
+        # looking the bug up by ID.
+        if actual_bug_id is None:
+            try:
+                actual_bug_id = int(bug_id)
+            except ValueError:
+                # If bug_id can't be int()'d then it's likely an alias
+                # that doesn't exist, so raise BugNotFound.
+                raise BugNotFound(bug_id)
+
+        try:
+            status = self.bugs[actual_bug_id]['status']
+            resolution = self.bugs[actual_bug_id]['resolution']
+
+            if resolution != '' and resolution is not None:
+                return "%s %s" % (status, resolution)
+            else:
+                return status
+
+        except KeyError:
+            raise BugNotFound(bug_id)
 
 
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):
