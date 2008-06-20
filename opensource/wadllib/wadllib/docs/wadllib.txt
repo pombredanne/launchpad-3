@@ -1,0 +1,216 @@
+Doctest for the wadllib library.
+
+An Application object represents a web service described by a WADL
+file.
+
+   >>> import os
+   >>> import sys
+   >>> import pkg_resources
+   >>> from wadllib.application import Application
+
+The first argument to the Application constructor is the URL at which
+the WADL file was found. The second argument may be raw WADL markup.
+
+   >>> wadl_string = pkg_resources.resource_string(
+   ...     'wadllib.docs.testdata', 'launchpad-wadl.xml')
+   >>> wadl = Application("http://api.launchpad.dev/beta/", wadl_string)
+
+Or the second argument may be an open filehandle containing the markup.
+
+   >>> wadl_stream = pkg_resources.resource_stream(
+   ...     'wadllib.docs.testdata', 'launchpad-wadl.xml')
+   >>> wadl = Application("http://api.launchpad.dev/beta/", wadl_stream)
+
+
+== Link navigation ==
+
+The preferred technique for finding a resource is to start at one of
+the resources defined in the WADL file, and follow links. This code
+retrieves the definition of the root resource.
+
+   >>> service_root = wadl.get_resource_by_path('')
+   >>> service_root.url
+   'http://api.launchpad.dev/beta/'
+
+The service root resource supports GET.
+
+   >>> get_method = service_root.get_method('get')
+   >>> get_method.id
+   'service-root-get'
+
+   >>> get_method = service_root.get_method('GET')
+   >>> get_method.id
+   'service-root-get'
+
+The WADL description of a resource knows which representations are
+available for that resource. In this case, the server root resource
+has a a JSON representation, and it defines parameters like
+'PersonSetCollectionAdapter_collection_link', a link to a list of
+people in Launchpad. We should be able to use the get_param() method
+to get the WADL definition of the
+'PersonSetCollectionAdapter_collection_link' parameter and find out
+more about it--for instance, is it a link to another resource?
+
+   >>> link_name = 'PersonSetCollectionAdapter_collection_link'
+   >>> link_param = service_root.get_param(link_name)
+   Traceback (most recent call last):
+   ...
+   NoBoundRepresentationError: Resource is not bound to any representation.
+
+Oops. In the absense of real data, there's no way to know whether
+we're talking about a JSON representation or some other kind of
+representation. There can be no
+'PersonSetCollectionAdapter_collection_link' parameter until there's
+real data to back it up.
+
+The browser can use the description of the GET method to make an
+actual GET request, and bind the resulting representation to the WADL
+description of the resource.
+
+You can't bind just any representation to a WADL resource description.
+It has to be of a media type understood by the WADL description.
+
+   >>> service_root.bind('<html>Some HTML</html>', 'text/html')
+   Traceback (most recent call last):
+   ...
+   UnsupportedMediaTypeError: This resource doesn't define a representation for media type text/html
+
+The WADL description of the service root resource has a JSON
+representation. Here it is.
+
+   >>> json_representation = service_root.get_representation_definition(
+   ...     'application/json')
+   >>> json_representation.media_type
+   'application/json'
+
+We already have a WADL representation of the service root resource, so
+let's try binding it to that JSON representation. We use test JSON
+data from a file to simulate the result of a GET request to the
+service root.
+
+   >>> def bind_to_testdata(resource, filename):
+   ...     data = pkg_resources.resource_string(
+   ...         'wadllib.docs.testdata', filename + '.json')
+   ...     return resource.bind(data, 'application/json')
+
+The return value is a new Resource object that's "bound" to that JSON
+test data.
+
+   >>> bound_service_root = bind_to_testdata(service_root, 'root')
+
+Now the bound resource object has a JSON representation, and now
+'PersonSetCollectionAdapter_collection_link' makes sense. We can
+follow the 'PersonSetCollectionAdapter_collection_link' to a
+new Resource object.
+
+   >>> link_param = bound_service_root.get_param(link_name)
+   >>> link_param.get_value()
+   u'http://api.launchpad.dev/beta/people'
+   >>> personset_resource = link_param.linked_resource
+   >>> personset_resource.__class__
+   <class 'wadllib.application.Resource'>
+   >>> personset_resource.url
+   u'http://api.launchpad.dev/beta/people'
+
+This new resource is a collection of people.
+
+   >>> personset_resource.id
+   'PersonSetCollectionAdapter'
+
+The "collection of people" resource supports a standard GET request as
+well as a special GET and an overloaded POST. The get_method() method
+is used to retrieve WADL definitions of the possible HTTP requests you
+might make. Here's how to get the WADL definition of the standard GET
+request.
+
+   >>> get_method = personset_resource.get_method('get')
+   >>> get_method.id
+   'PersonSetCollectionAdapter-get'
+
+The method name passed into get_method() is treated case-insensitively.
+
+   >>> personset_resource.get_method('GET').id
+   'PersonSetCollectionAdapter-get'
+
+To invoke the special GET request, the client sets the 'ws.op' query
+variable to the fixed string 'find':
+
+   >>> find_method = personset_resource.get_method(
+   ...     'get', fixed_params={'ws.op' : 'findPerson'})
+   >>> find_method.id
+   'PersonSetCollectionAdapter-findPerson'
+
+To invoke the overloaded POST request, the client sets the 'ws.op'
+query variable to the fixed string 'newTeam':
+
+   >>> create_team_method = personset_resource.get_method(
+   ...     'post', fixed_params={'ws.op' : 'newTeam'})
+   >>> create_team_method.id
+   'PersonSetCollectionAdapter-newTeam'
+
+findMethod() returns None when there's no WADL method matching the
+name or the fixed parameters.
+
+   >>> print personset_resource.get_method('nosuchmethod')
+   None
+
+   >>> print personset_resource.get_method(
+   ...     'post', fixed_params={'ws_op' : 'nosuchparam'})
+   None
+
+Let's say the browser makes a GET request to the person set resource
+and gets back a representation. We can bind that representation to our
+description of the person set resource.
+
+   >>> bound_personset = bind_to_testdata(personset_resource, 'personset')
+   >>> bound_personset.get_param("start").get_value()
+   0
+   >>> bound_personset.get_param("total_size").get_value()
+   63
+
+We can keep following links indefinitely, so long as we bind to a
+representation to each resource as we get it, and use the
+representation to find the next link.
+
+   >>> next_page_link = bound_personset.get_param("next_collection_link")
+   >>> next_page_link.get_value()
+   u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
+   >>> page_two = next_page_link.linked_resource
+   >>> bound_page_two = bind_to_testdata(page_two, 'personset-page2')
+   >>> bound_page_two.url
+   u'http://api.launchpad.dev/beta/people?ws.start=5&ws.size=5'
+   >>> bound_page_two.get_param("start").get_value()
+   5
+   >>> bound_page_two.get_param("next_collection_link").get_value()
+   u'http://api.launchpad.dev/beta/people?ws.start=10&ws.size=5'
+
+
+== Resource instantiation ==
+
+If you happen to have the URL to an object lying around, and you know
+its type, you can construct a Resource object directly instead of
+by following links.
+
+   >>> from wadllib.application import Resource
+   >>> limi_person = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
+   ...     "http://api.launchpad.dev/beta/#PersonEntryAdapter")
+
+   >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
+   >>> languages_link = bound_limi.get_param("languages_collection_link")
+   >>> languages_link.get_value()
+   u'http://api.launchpad.dev/beta/~limi/languages'
+
+
+== Error conditions ==
+
+You'll get None if you try to look up a nonexistent resource.
+
+   >>> print wadl.get_resource_by_path('nosuchresource')
+   None
+
+You'll get an exception if you try to look up a nonexistent resource
+type.
+
+   >>> print wadl.get_resource_type('#nosuchtype')
+   Traceback (most recent call last):
+   KeyError: 'No such XML ID: "#nosuchtype"'

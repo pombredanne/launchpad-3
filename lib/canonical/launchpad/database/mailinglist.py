@@ -19,7 +19,7 @@ from itertools import repeat
 from string import Template
 
 from sqlobject import ForeignKey, StringCol
-from zope.component import getUtility
+from zope.component import getUtility, queryAdapter
 from zope.event import notify
 from zope.interface import implements, providedBy
 
@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mailman.config import configure_hostname
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lazr.interfaces.objectprivacy import IObjectPrivacy
 
 
 class MessageApproval(SQLBase):
@@ -121,7 +122,6 @@ class MailingList(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        storm_validator=validate_public_person,
         notNull=True)
 
     registrant = ForeignKey(
@@ -242,7 +242,12 @@ class MailingList(SQLBase):
                 # when the list status goes back to ACTIVE the email
                 # will go from PREFERRED to VALIDATED and the list
                 # will stop being the contact method.
-                email.status = EmailAddressStatus.VALIDATED
+                # We also need to remove the email's security proxy because
+                # this method will be called via the internal XMLRPC rather
+                # than as a response to a user action.
+                from zope.security.proxy import removeSecurityProxy
+                removeSecurityProxy(email).status = (
+                    EmailAddressStatus.VALIDATED)
             assert email.person == self.team, (
                 "Email already associated with another team.")
 
@@ -288,8 +293,14 @@ class MailingList(SQLBase):
             "Only mailing lists in the REGISTERED state can be canceled.")
         self.destroySelf()
 
-    def isUsable(self):
-        """See `IMailingList`"""
+    @property
+    def is_public(self):
+        """See `IMailingList`."""
+        return not queryAdapter(self.team, IObjectPrivacy).is_private
+
+    @property
+    def is_usable(self):
+        """See `IMailingList`."""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
                                MailingListStatus.UPDATING,
@@ -306,7 +317,7 @@ class MailingList(SQLBase):
             # at list construction time.  It is enough to just set the
             # database attribute to properly notify Mailman what to do.
             pass
-        elif self.isUsable():
+        elif self.is_usable:
             # Transition the status to MODIFIED so that the XMLRPC layer knows
             # that it has to inform Mailman that a mailing list attribute has
             # been changed on an active list.
@@ -325,7 +336,7 @@ class MailingList(SQLBase):
 
     def subscribe(self, person, address=None):
         """See `IMailingList`."""
-        if not self.isUsable():
+        if not self.is_usable:
             raise CannotSubscribe('Mailing list is not usable: %s' %
                                   self.team.displayname)
         if person.isTeam():
