@@ -160,6 +160,8 @@ The collection of bug tasks is not exposed as a resource:
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bugtasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/1/+watch/2/bugtasks'),
+   (u'bug_tracker_link',
+    u'http://api.launchpad.dev/beta/bugs/bugtrackers/xxx'),
    (u'date_created', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_changed', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_checked', u'2004-10-04T01:00:00+00:00'),
@@ -207,3 +209,32 @@ But we can't change other things, like the URL.
   Content-Type: text/plain
   <BLANKLINE>
   url: You tried to modify a read-only attribute.
+
+
+== Bug Trackers ==
+
+  >>> bug_tracker_url = urlsplit(bug_watch['bug_tracker_link'])[2]
+  >>> bug_tracker = webservice.get(bug_tracker_url).jsonBody()
+
+  >>> pprint(sorted(bug_tracker.items()))
+  X
+
+  >>> bug_tracker_path = urlsplit(bug_tracker['self_link'])[2]
+
+We can change various aspects of bug trackers.
+
+  >>> patch = {
+  ...     u'name': u'bob',
+  ...     u'title': u"Bob's Tracker",
+  ...     u'summary': u"Where Bob files his bugs.",
+  ...     u'baseurl': u'http://bugs.example.com/',
+  ...     u'aliases': [u'http://bugs.example.com/bugs/',
+  ...                  u'http://www.example.com/bugtracker/'],
+  ...     u'contactdetails': u'bob@example.com',
+  ...     }
+  >>> response = webservice.patch(
+  ...     bug_tracker_path, 'application/json', dumps(patch))
+
+  >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
+  >>> pprint(sorted(bug_tracker.items()))
+  X
