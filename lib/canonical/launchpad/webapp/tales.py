@@ -114,38 +114,26 @@ class MenuAPI:
             self.view = None
             self._selectedfacetname = None
 
-    def __getattr__(self, attribute_name):
-        """Return a dictionary for retrieval of individual Links.
+    def __getattr__(self, facet):
+        """Retrieve the links associated with a facet.
 
         It's used with expressions like context/menu:bugs/subscribe.
-        """
-        for facet_entry in self.facet():
-            if attribute_name == facet_entry.name:
-                menu = self._getFacetLinks(facet_entry.name)
-                object.__setattr__(self, facet_entry.name, menu)
-                return menu
-        raise AttributeError(attribute_name)
 
-    def _getFacetLinks(self, facet_name):
-        """Return a dictionary with all links available in the given facet.
-
-        If the facet name is not valid, we raise the TraversalError exception
-        that we get from queryAdapter.
+        :returns: A dictionary mapping the link name to the associated Link
+            object.
+        :raises AttributeError: when there is no application menu for the
+            facet.
         """
-        menu = queryAdapter(self._context, IApplicationMenu, facet_name)
+        menu = queryAdapter(self._context, IApplicationMenu, facet)
         if menu is None:
-            # There aren't menu entries.
-            return {}
+            raise AttributeError(facet)
 
         menu.request = self._request
-        links = list(menu.iterlinks(request_url=self._request_url()))
-        return dict((link.name, link) for link in links)
-
-    def _nearest_menu(self, menutype):
-        try:
-            return nearest_adapter(self._context, menutype)
-        except NoCanonicalUrl:
-            return None
+        links_map = dict(
+            (link.name, link)
+            for link in menu.iterlinks(request_url=self._request_url()))
+        object.__setattr__(self, facet, links_map)
+        return links_map
 
     def _request_url(self):
         request = self._request
@@ -163,33 +151,24 @@ class MenuAPI:
         return request_urlobj
 
     def facet(self):
-        menu = self._nearest_menu(IFacetMenu)
+        """Returns the IFacetMenu related to the context."""
+        try:
+            menu = nearest_adapter(self._context, IFacetMenu)
+        except NoCanonicalUrl:
+            menu = None
+
         if menu is None:
             return []
-        else:
-            menu.request = self._request
-            return list(menu.iterlinks(
-                request_url=self._request_url(),
-                selectedfacetname=self._selectedfacetname))
+        menu.request = self._request
+        return list(menu.iterlinks(
+            request_url=self._request_url(),
+            selectedfacetname=self._selectedfacetname))
 
     def selectedfacetname(self):
         if self._selectedfacetname is None:
             return 'unknown'
         else:
             return self._selectedfacetname
-
-    def application(self):
-        selectedfacetname = self._selectedfacetname
-        if selectedfacetname is None:
-            # No facet menu is selected.  So, return empty list.
-            return []
-        menu = queryAdapter(
-            self._context, IApplicationMenu, selectedfacetname)
-        if menu is None:
-            return []
-        else:
-            menu.request = self._request
-            return list(menu.iterlinks(request_url=self._request_url()))
 
     @property
     def context(self):
