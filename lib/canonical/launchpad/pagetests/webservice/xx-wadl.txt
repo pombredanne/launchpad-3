@@ -557,7 +557,7 @@ The <method> tag for a named operation will contain one or more
 The 'ws.op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
 
-    >>> ws_op = new_team_representation[0]
+    >>> ws_op = single_list_value(new_team_representation)
     >>> ws_op.attrib['fixed']
     'newTeam'
 
