@@ -17,11 +17,12 @@ First we log in via cookie
 
 Now invalidate that person
 
+  >>> from canonical.launchpad.interfaces import AccountStatus
   >>> from canonical.launchpad.database import Person
   >>> foobar = Person.byName('name16')
-  >>> original_password = foobar.password
-  >>> foobar.password = None
-  >>> foobar.sync()
+  >>> foobar.account.status = AccountStatus.DEACTIVATED
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
 
 Now if we reload the front page, we should be logged out.
 
@@ -33,8 +34,8 @@ Now if we reload the front page, we should be logged out.
 
 We also can only connect via Basic auth when then user is valid
 
-  >>> foobar.password = original_password
-  >>> foobar.sync()
+  >>> foobar.account.status = AccountStatus.ACTIVE
+  >>> flush_database_updates()
 
   >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
   >>> browser.open('http://launchpad.dev')
@@ -43,8 +44,8 @@ We also can only connect via Basic auth when then user is valid
   >>> 'Logged in as' in browser.contents
   True
 
-  >>> foobar.password = None
-  >>> foobar.sync()
+  >>> foobar.account.status = AccountStatus.SUSPENDED
+  >>> flush_database_updates()
 
   >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
   >>> browser.open('http://launchpad.dev')

@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
+    <include file="account.zcml" />
     <include file="announcement.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
@@ -49,6 +50,7 @@
     <include file="codereviewcomment.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
+    <include file="customlanguagecode.zcml" />
     <include file="cve.zcml" />
     <include file="cve-events.zcml" />
     <include file="cvereference.zcml" />
