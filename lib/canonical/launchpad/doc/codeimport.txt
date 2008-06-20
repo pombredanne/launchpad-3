@@ -91,7 +91,7 @@ three members of the vcs-imports team.
     >>> print message.get_payload()
     A new code import has been requested by No Privileges Person:
         http://code.launchpad.dev/~vcs-imports/firefox/trunk-cvs
-    --
+    -- =
     You are getting this email because you are a member of the vcs-imports team.
 
 Creating a CodeImport object creates a corresponding CodeImportEvent.
@@ -224,7 +224,7 @@ created if done through the web UI, so we'll add nopriv here.
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
     The import has been approved and an import will start shortly.
-    --
+    -- =
     http://code.launchpad.dev/~vcs-imports/product.../name...
     You are receiving this email as you are subscribed to the branch.
     To unsubscribe from this branch go to http://code.launchpad.dev/~vcs-import=
