@@ -408,9 +408,6 @@
           frameborder="0"
           style="visibility:visible; z-index:999; position:absolute;
                  top:-500px; left:-500px;">
-        <LAYER name="gToday:datetimepicker:agenda.js"
-               src="/+popcalxp/npopeng.htm"
-               background="/+popcalxp/npopeng.htm">     </LAYER>
       </iframe>
     </tal:datetimepicker>
     <tal:datepicker condition="request/needs_datepicker_iframe">
