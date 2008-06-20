@@ -37,6 +37,7 @@ translation group of its own, that too is shown here.
     >>> from canonical.launchpad.database.translationgroup import (
     ...     TranslationGroup)
     >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
+
     >>> factory = LaunchpadObjectFactory()
     >>> spanish = Language.selectOneBy(code='es')
     >>> evolution = Product.selectOneBy(name='evolution')
@@ -96,7 +97,7 @@ the same information, except she's not allowed to enter anything.
 
     >>> print_tag(anon_browser.contents, 'translation-access')
     You are not logged in.  Please log in to work on translations.
- 
+
 Joe Regular is logged in, but has no particular relationship to this
 translation.  The page informs Joe that he can enter suggestions, which
 will be held for review by the translation's managers.
@@ -136,7 +137,7 @@ up translation for this language.
     #There is nobody to manage translation into this particular language.
     #If you are interested in working on it, please contact the
     #translation group.
- 
+
 Finally, if there is no translation group at all and the permissions do
 not allow Joe to translate, the page shows that the translation is
 closed.

@@ -6,19 +6,26 @@
 >
   <p id="translation-managers">
     <tal:translationgroups condition="view/has_translationgroup">
-      This translation is managed by
-      <!-- nospace --><tal:loop repeat="manager view/managers"><!-- 
-        --><tal:and condition="manager/index">, and </tal:and>
+      This translation is managed by <!-- (nospace)
+      --><tal:loop repeat="manager view/managers"><!-- (nospace)
+        --><tal:comma condition="repeat/manager/index">,</tal:comma>
+        <tal:and condition="repeat/manager/end"> and </tal:and>
         <tal:team condition="manager/team">
           <a tal:replace="structure manager/team/fmt:link" />,
           assigned by
           <a tal:attributes="href manager/group/fmt:url"
              tal:content="manager/group/name">
-            Ubuntu translators</a></tal:team><tal:noteam condition="not: manager/team">
+            Ubuntu translators<!-- (nospace)
+          --></a><!-- (nospace)
+        --></tal:team><!-- (nospace)
+        --><tal:noteam condition="not: manager/team">
           translation group
           <a tal:attributes="href manager/group/fmt:url"
              tal:content="manager/group/name">
-	    Ubuntu translators</a></tal:noteam></tal:loop>.
+	    Ubuntu translators<!-- (nospace)
+          --></a><!-- (nospace)
+        --></tal:noteam><!-- (nospace)
+      --></tal:loop>.
     </tal:translationgroups>
     <tal:nogroups condition="not: view/has_translationgroup">
       No translation group has been assigned.
@@ -29,6 +36,7 @@
     <tal:permission condition="view/user_can_edit">
       You have full access to this translation.
     </tal:permission>
+
     <tal:noedit condition="not: view/user_can_edit">
       <tal:permission condition="view/user_can_suggest">
         Your suggestions will be held for review by the managers of this
