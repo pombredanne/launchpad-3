@@ -16,11 +16,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingPocket)
-from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.interfaces.distribution import IDistributionSet
+from canonical.launchpad.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
@@ -80,7 +80,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
         self.assertEqual(0, len(checker.source_versions))
         self.assertEqual(0, len(checker.source_binaries))
 
-        # The 'dist_archive' is a absolute path to the 'dists' section
+        # The 'dist_archive' is an absolute path to the 'dists' section
         # based on the given 'archive_path'.
         self.assertEqual(
             checker.dist_archive,
@@ -99,7 +99,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
             ['main', 'multiverse', 'restricted', 'universe'])
 
         # The 'components_and_di' lists the relative 'dists' paths
-        # for all components subsections of the archive which contains
+        # for all components subsections of the archive which contain
         # indexes.
         expected = [
             'main',
@@ -131,7 +131,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
 
           * An unknown suite;
           * An unknown distribution;
-          * on the absence of distribution
+          * The absence of the distribution in the given archive path.
          """
         checker = ArchiveCruftChecker(
             self.log, distribution_name='ubuntu', suite='miserable',

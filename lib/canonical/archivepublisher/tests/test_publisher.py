@@ -495,16 +495,10 @@ class TestPublisher(TestNativePublishingBase):
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
 
-    def _ensureEmptyDirtyPockets(self, publisher):
-        """Run the deletion detection and check for empty dirty pockets."""
-        publisher.A2_markPocketsWithDeletionsDirty()
-        existing_num_dirty = len(publisher.dirty_pockets)
-
-        # There should be none.
-        self.assertEqual(
-            existing_num_dirty, 0,
-            "Expected no existing dirty pockets, got %d" %
-                existing_num_dirty)
+    def checkDirtyPockets(self, publisher, expected):
+        """Check dirty_pockets contents of a given publisher."""
+        sorted_dirty_pockets = sorted(list(publisher.dirty_pockets))
+        self.assertEqual(sorted_dirty_pockets, expected)
 
     def testDirtyingPocketsWithDeletedPackages(self):
         """Test that dirtying pockets with deleted packages works.
@@ -519,7 +513,8 @@ class TestPublisher(TestNativePublishingBase):
             self.ubuntutest.main_archive, allowed_suites, self.logger,
             distsroot)
 
-        self._ensureEmptyDirtyPockets(publisher)
+        publisher.A2_markPocketsWithDeletionsDirty()
+        self.checkDirtyPockets(publisher, expected=[])
 
         # Make a published source, a source that's been removed from disk
         # and one that's waiting to be deleted, each in different pockets.
@@ -545,44 +540,38 @@ class TestPublisher(TestNativePublishingBase):
         # Run the deletion detection.
         publisher.A2_markPocketsWithDeletionsDirty()
 
-        # There should now be two dirty pockets.
-        num_dirtied = len(publisher.dirty_pockets)
-        self.assertEqual(
-            num_dirtied, 2,
-            "Expected 2 dirty pockets, got %d" % num_dirtied)
+        # Only the pockets with pending deletions are marked as dirty.
+        expected_dirty_pockets = [
+            ('breezy-autotest', PackagePublishingPocket.SECURITY),
+            ('breezy-autotest', PackagePublishingPocket.BACKPORTS)
+            ]
+        self.checkDirtyPockets(publisher, expected=expected_dirty_pockets)
 
-        # The security pocket is dirtied by deleted_source, and the backports
-        # is dirtied by deleted_binary.
-        sorted_pocket_list = sorted(list(publisher.dirty_pockets))
-        [(binary_distroname, binary_pocket),
-         (source_distroname, source_pocket)] = sorted_pocket_list
-        self.assertEqual(
-            binary_pocket, PackagePublishingPocket.SECURITY,
-            "Expected security pocket, got %s" % binary_pocket)
-        self.assertEqual(
-            source_pocket, PackagePublishingPocket.BACKPORTS,
-            "Expected backports pocket, got %s" % source_pocket)
+    def testDeletionDetectionRespectsAllowedSuites(self):
+        """Check if the deletion detection mechanism respects allowed_suites.
 
-    def testDeletionDetectionRespectAllowedSuites(self):
-        """Check if the deletion detection mechanism respect allowed_suites.
+        The deletion detection should not request publications of pockets
+        that were not specified on the command-line ('allowed_suites').
 
-        The deletion detection should no request publications of pockets
-        the were not specified in the command-line ('allowed_suites').
-
-        This issue is reported as bug #241452, when running publisher
-        only for a specific suite, in most of cases a urgent security
+        This issue is reported as bug #241452, when running the publisher
+        only for a specific suite, in most of cases an urgent security
         release, only pockets with pending deletion that match the
         specified suites should be marked as dirty.
         """
         allowed_suites = [
-            ('breezy-autotest', PackagePublishingPocket.SECURITY)]
+            ('breezy-autotest', PackagePublishingPocket.SECURITY),
+            ('breezy-autotest', PackagePublishingPocket.UPDATES),
+            ]
         distsroot = None
         publisher = getPublisher(
             self.ubuntutest.main_archive, allowed_suites, self.logger,
             distsroot)
 
-        self._ensureEmptyDirtyPockets(publisher)
+        publisher.A2_markPocketsWithDeletionsDirty()
+        self.checkDirtyPockets(publisher, expected=[])
 
+        # Create pending deletions in RELEASE, BACKPORTS, SECURITY and
+        # UPDATES pockets.
         deleted_source = self.getPubSource(
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.DELETED)
@@ -591,7 +580,18 @@ class TestPublisher(TestNativePublishingBase):
             pocket=PackagePublishingPocket.BACKPORTS,
             status=PackagePublishingStatus.DELETED)[0]
 
-        self._ensureEmptyDirtyPockets(publisher)
+        allowed_source_deletion = self.getPubSource(
+            pocket=PackagePublishingPocket.SECURITY,
+            status=PackagePublishingStatus.DELETED)
+
+        allowed_binary_deletion = self.getPubBinaries(
+            pocket=PackagePublishingPocket.UPDATES,
+            status=PackagePublishingStatus.DELETED)[0]
+
+        publisher.A2_markPocketsWithDeletionsDirty()
+        # Only the pockets with pending deletions in the allowed suites
+        # are marked as dirty.
+        self.checkDirtyPockets(publisher, expected=allowed_suites)
 
     def assertReleaseFileRequested(self, publisher, suite_name,
                                    component_name, arch_name):
