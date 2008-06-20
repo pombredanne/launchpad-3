@@ -228,7 +228,7 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return Link('+archivemirrors', text, enabled=enabled, icon='info')
 
     def newmirror(self):
-        text = 'Register a New Mirror'
+        text = 'Register Mirror'
         enabled = self.distribution.full_functionality
         return Link('+newmirror', text, enabled=enabled, icon='add')
 
