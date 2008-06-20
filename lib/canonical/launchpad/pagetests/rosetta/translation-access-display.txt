@@ -79,7 +79,7 @@ If no translation group is assigned, the page also mentions that.
     >>> print_tag(admin_browser.contents, 'translation-managers')
     No translation group has been assigned.
 
-    >>> # Restore old situation.
+    # Restore old situation.
     >>> evolution.translationgroup = original_translation_group
 
 
