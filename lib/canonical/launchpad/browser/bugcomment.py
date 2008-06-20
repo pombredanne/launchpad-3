@@ -8,9 +8,12 @@ __all__ = ['BugCommentView', 'BugComment', 'build_comments_from_chunks']
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (IBugComment,
-    IBugMessageSet, ILaunchBag, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.bugmessage import (
+    IBugComment, IBugMessageSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.config import config
 
@@ -72,7 +75,23 @@ class BugComment:
         self.chunks = []
         self.bugattachments = []
 
-        self.display_if_from_bugwatch = config.malone.show_imported_comments
+        user = getUtility(ILaunchBag).user
+        # comment_syncing_team can be either None or '' to indicate unset.
+        if config.malone.comment_syncing_team:
+            comment_syncing_team = getUtility(IPersonSet).getByName(
+                config.malone.comment_syncing_team)
+            assert comment_syncing_team is not None, (
+                "comment_syncing_team was set to %s, which doesn't exist." % (
+                    config.malone.comment_syncing_team))
+        else:
+            comment_syncing_team = None
+
+        if comment_syncing_team is None:
+            self.display_if_from_bugwatch = True
+        else:
+            self.display_if_from_bugwatch = (
+                user is not None and user.inTeam(comment_syncing_team))
+
         self.synchronized = False
 
     @property

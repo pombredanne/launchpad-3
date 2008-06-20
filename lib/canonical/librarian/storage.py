@@ -4,14 +4,15 @@
 __metaclass__ = type
 
 import os
-import os.path
 import md5
 import sha
 import errno
 import tempfile
 
-import transaction
-from canonical.database.sqlbase import cursor
+from storm.zope.interfaces import IZStorm
+from zope.component import getUtility
+
+from canonical.librarian.db import write_transaction
 
 __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
            'DuplicateFileIDError', 'WrongDatabaseError',
@@ -30,9 +31,9 @@ class DuplicateFileIDError(Exception):
 class WrongDatabaseError(Exception):
     """The client's database name doesn't match our database."""
     def __init__(self, clientDatabaseName, serverDatabaseName):
+        Exception.__init__(self, clientDatabaseName, serverDatabaseName)
         self.clientDatabaseName = clientDatabaseName
         self.serverDatabaseName = serverDatabaseName
-        self.args = (clientDatabaseName, serverDatabaseName)
 
 
 class LibrarianStorage:
@@ -94,8 +95,10 @@ class LibraryFileUpload(object):
         self.shaDigester.update(data)
         self.md5Digester.update(data)
 
+    @write_transaction
     def store(self):
-        self.debugLog.append('storing %r, size %r' % (self.filename, self.size))
+        self.debugLog.append('storing %r, size %r'
+                             % (self.filename, self.size))
         self.tmpfile.close()
 
         # Verify the digest matches what the client sent us
@@ -107,14 +110,13 @@ class LibraryFileUpload(object):
             os.remove(self.tmpfilepath)
             raise DigestMismatchError, (self.srcDigest, dstDigest)
 
-        transaction.begin()
         try:
-            # If the client told us the name database of the database its using,
-            # check that it matches
+            # If the client told us the name database of the database
+            # its using, check that it matches
             if self.databaseName is not None:
-                cur = cursor()
-                cur.execute("SELECT current_database();")
-                databaseName = cur.fetchone()[0]
+                store = getUtility(IZStorm).get("main")
+                result = store.execute("SELECT current_database()")
+                databaseName = result.get_one()[0]
                 if self.databaseName != databaseName:
                     raise WrongDatabaseError(self.databaseName, databaseName)
 
@@ -136,7 +138,6 @@ class LibraryFileUpload(object):
         except:
             # Abort transaction and re-raise
             self.debugLog.append('failed to get contentID/aliasID, aborting')
-            transaction.abort()
             raise
 
         # Move file to final location
@@ -145,7 +146,6 @@ class LibraryFileUpload(object):
         except:
             # Abort DB transaction
             self.debugLog.append('failed to move file, aborting')
-            transaction.abort()
 
             # Remove file
             os.remove(self.tmpfilepath)
@@ -154,7 +154,6 @@ class LibraryFileUpload(object):
             raise
 
         # Commit any DB changes
-        transaction.commit()
         self.debugLog.append('committed')
 
         # Return the IDs if we created them, or None otherwise
