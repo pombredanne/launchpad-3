@@ -1727,7 +1727,7 @@ def notify_specification_subscription_modified(specsub, event):
 
 
 def notify_mailinglist_activated(mailinglist, event):
-    """Notification that a mailng list is available.
+    """Notification that a mailing list is available.
 
     All active members of a team and its subteams receive notification when
     the team's mailing list is available.
@@ -1739,7 +1739,7 @@ def notify_mailinglist_activated(mailinglist, event):
     new_date = event.object.date_activated
     list_looks_new = old_date is None and new_date is not None
 
-    if not (list_looks_new and mailinglist.isUsable()):
+    if not (list_looks_new and mailinglist.is_usable):
         return
 
     team = mailinglist.team

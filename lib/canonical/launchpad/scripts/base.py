@@ -18,6 +18,7 @@ import pytz
 from zope.component import getUtility
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
+from canonical.launchpad.ftests import ANONYMOUS
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
 from canonical.lp import initZopeless
@@ -248,10 +249,10 @@ class LaunchpadCronScript(LaunchpadScript):
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
         self.txn.begin()
-        from canonical.launchpad.ftests import ANONYMOUS, login
-        login(ANONYMOUS)
+        self.login(ANONYMOUS)
         getUtility(IScriptActivitySet).recordSuccess(
             name=self.name,
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
