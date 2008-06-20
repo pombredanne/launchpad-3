@@ -16,7 +16,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urlparse import urljoin, urlsplit
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
@@ -270,6 +270,10 @@ def find_main_content(content):
         # One-column pages don't use a <div id="maincontent">, so we
         # use the next best thing: <div id="container">.
         main_content = find_tag_by_id(content, 'container')
+    if main_content is None:
+        # Simple pages have neither of these, so as a last resort, we get
+        # the page <body>.
+        main_content = BeautifulSoup(content).body
     return main_content
 
 
@@ -437,7 +441,7 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll(['strong','a'])
+    entries = navigation_links.findAll(['strong', 'a'])
     for entry in entries:
         try:
             print '%s: %s' % (entry.span.string, entry['href'])

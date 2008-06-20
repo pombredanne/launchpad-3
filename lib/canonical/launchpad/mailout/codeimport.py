@@ -64,6 +64,8 @@ def code_import_status_updated(code_import, user):
             "The import has been approved and an import will start shortly.")
     elif code_import.review_status == CodeImportReviewStatus.SUSPENDED:
         status = "The import has been suspended."
+    elif code_import.review_status == CodeImportReviewStatus.FAILING:
+        status = "The import has been marked as failing."
     else:
         raise AssertionError('Unexpected review status for code import.')
 

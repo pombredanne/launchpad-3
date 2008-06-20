@@ -16,8 +16,8 @@
       <span id="karma-total" tal:content="context/karma">342</span><br />
 
       <b>Timezone:</b>
-      <tal:timezone replace="context/timezone">UTC</tal:timezone>
-      <i tal:condition="not: context/timezone">None given</i><br />
+      <tal:timezone replace="context/time_zone">UTC</tal:timezone>
+      <i tal:condition="not: context/time_zone">None given</i><br />
 
       <tal:ubuntero condition="context/is_ubuntero"><b>Ubuntero:</b>
         Yes<br /></tal:ubuntero>
