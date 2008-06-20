@@ -40,6 +40,8 @@ doing the authentication work with the remote server.
 
     >>> test_transport.print_method_calls = True
 
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
     >>> bugzilla._authenticate()
@@ -47,11 +49,6 @@ doing the authentication work with the remote server.
     Successfully validated login token.
 
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-
-An auth_cookie will have been set on the XML-RPC transport.
-
-    >>> print test_transport.auth_cookie
-    Bugzilla_logincookie=...
 
 
 == Getting the current time ==

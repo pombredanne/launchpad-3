@@ -470,6 +470,24 @@ class BugzillaLPPlugin(Bugzilla):
         return message
 
 
+def needs_authentication(func):
+    """Decorator for automatically authenticating if needed.
+
+    If an `xmlrpclib.Fault` with error code 410 is raised by the
+    function, we'll try to authenticate and call the function again.
+    """
+    def decorator(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except xmlrpclib.Fault, fault:
+            # Catch authentication errors only.
+            if fault.errcode != 410:
+                raise
+            self._authenticate()
+            return func(self, *args, **kwargs)
+    return decorator
+
+
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):
     """XML-RPC Transport for Bugzilla bug trackers.
 

@@ -480,6 +480,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
     def login(self, arguments):
         token_text = arguments['token']
+
         token = getUtility(ILoginTokenSet)[token_text]
 
         if token.tokentype.name != 'BUGTRACKER':
