@@ -15,8 +15,8 @@ import zope.thread
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.interfaces import (
-        IPerson, IProject, IProduct, IDistribution,
-        IDistroSeries, ISourcePackage, IBug, IDistroArchSeries,
+        IBug, IDistribution, IDistroSeries, IPerson,
+        IProject, IProduct, ISourcePackage, IDistroArchSeries,
         ISpecification, IBugTask, ILaunchpadCelebrities)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, ILaunchpadApplication, ILoggedInEvent, IOpenLaunchBag)
@@ -153,13 +153,12 @@ class LaunchBag:
         return self._store.bugtask
 
     @property
-    def timezone(self):
-        user = self.user
-        if user and user.timezone:
+    def time_zone(self):
+        if self.user and self.user.time_zone:
             try:
-                return pytz.timezone(user.timezone)
+                return pytz.timezone(self.user.time_zone)
             except KeyError:
-                pass # unknown timezone name
+                pass # unknown time zone name
         # fall back to UTC
         return _utc_tz
 
