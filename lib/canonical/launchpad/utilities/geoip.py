@@ -16,7 +16,6 @@ from zope.component import getUtility
 
 from zope.i18n.interfaces import IUserPreferredLanguages
 
-from canonical.config import config
 from canonical.launchpad.components.request_country import (
     ipaddress_from_request)
 from canonical.launchpad.interfaces.country import ICountrySet
@@ -24,17 +23,24 @@ from canonical.launchpad.interfaces.geoip import (
     IGeoIP, IGeoIPRecord, IRequestLocalLanguages, IRequestPreferredLanguages)
 from canonical.launchpad.interfaces.language import ILanguageSet
 
+GEOIP_CITY_DB = '/usr/share/GeoIP/GeoIPCity.dat'
+GEOIP_CITY_LITE_DB = '/usr/share/GeoIP/GeoLiteCity.dat'
+
 
 class GeoIP:
 
     implements(IGeoIP)
 
     def __init__(self):
-        geoip_db = config.launchpad.geoip_db
-        if not os.path.exists(geoip_db):
-            # XXX: What should we do here!?
-            pass
-        self._gi = libGeoIP.open(geoip_db, libGeoIP.GEOIP_MEMORY_CACHE)
+        if os.path.exists(GEOIP_CITY_DB):
+            db = GEOIP_CITY_DB
+        elif os.path.exists(GEOIP_CITY_LITE_DB):
+            db = GEOIP_CITY_LITE_DB
+        else:
+            raise NoGeoIPDatabaseFound(
+                "No GeoIP DB found. Please use utilities/get-geoip-db to "
+                "install it.")
+        self._gi = libGeoIP.open(db, libGeoIP.GEOIP_MEMORY_CACHE)
 
     def getRecordByAddress(self, ip_address):
         """See `IGeoIP`."""
@@ -69,10 +75,9 @@ class GeoIPRequest:
             # This happens during page testing, when the REMOTE_ADDR is not
             # set by Zope.
             ip_address = '127.0.0.1'
-        # XXX: May not need this.
-#         if ip_address.startswith('127.'):
-#             # Use a South African IP address for localhost.
-#             ip_address = '196.36.161.227'
+        if ip_address.startswith('127.'):
+            # Use a South African IP address for localhost.
+            ip_address = '196.36.161.227'
         self.ip_address = ip_address
         self.geoip_record = getUtility(IGeoIP).getRecordByAddress(
             self.ip_address)
@@ -161,3 +166,7 @@ class RequestPreferredLanguages(object):
 
         languages = [language for language in languages if language.visible]
         return sorted(languages, key=lambda x: x.englishname)
+
+
+class NoGeoIPDatabaseFound(Exception):
+    """No GeoIP database was found."""
