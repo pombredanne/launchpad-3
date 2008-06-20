@@ -139,7 +139,7 @@ from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreement)
+    ITranslationRelicensingAgreementEdit)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -2776,7 +2776,7 @@ class PersonTranslationView(LaunchpadView):
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
     label = "Use BSD licence for your translations?"
-    schema = ITranslationRelicensingAgreement
+    schema = ITranslationRelicensingAgreementEdit
     field_names = ['allow_relicensing', 'back_to']
     custom_widget('back_to', TextWidget, visible=False)
 
