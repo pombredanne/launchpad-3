@@ -8,6 +8,7 @@ import unittest
 import pytz
 from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import SQLConstant
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.codehosting.codeimport.publish import ensure_series_branch
@@ -140,10 +141,10 @@ class TestCodeImportDeletion(unittest.TestCase):
         """Ensure deleting CodeImport objects deletes associated events."""
         code_import_event = self.factory.makeCodeImportEvent()
         code_import_event_id = code_import_event.id
-        # CodeImportEvent.get should not raise anything.
-        # But since it populates the object cache, we must expire it.
-        CodeImportEvent.get(code_import_event_id).expire()
         CodeImportSet().delete(code_import_event.code_import)
+        # CodeImportEvent.get should not raise anything.
+        # But since it populates the object cache, we must invalidate it.
+        Store.of(code_import_event).invalidate(code_import_event)
         self.assertRaises(
             SQLObjectNotFound, CodeImportEvent.get, code_import_event_id)
 
@@ -151,10 +152,10 @@ class TestCodeImportDeletion(unittest.TestCase):
         """Ensure deleting CodeImport objects deletes associated results."""
         code_import_result = self.factory.makeCodeImportResult()
         code_import_result_id = code_import_result.id
-        # CodeImportResult.get should not raise anything.
-        # But since it populates the object cache, we must expire it.
-        CodeImportResult.get(code_import_result_id).expire()
         CodeImportSet().delete(code_import_result.code_import)
+        # CodeImportResult.get should not raise anything.
+        # But since it populates the object cache, we must invalidate it.
+        Store.of(code_import_result).invalidate(code_import_result)
         self.assertRaises(
             SQLObjectNotFound, CodeImportResult.get, code_import_result_id)
 
@@ -259,6 +260,42 @@ class TestCodeImportStatusUpdate(unittest.TestCase):
             CodeImportReviewStatus.INVALID,
             self.code_import.review_status)
 
+    def test_markFailing_no_job(self):
+        """Marking a new import as failing has no impact on jobs."""
+        self.code_import.markFailing({}, self.import_operator)
+        self.assertTrue(self.code_import.import_job is None)
+        self.assertEqual(
+            CodeImportReviewStatus.FAILING,
+            self.code_import.review_status)
+
+    def test_markFailing_pending_job(self):
+        """Marking an import with a pending job as failing, removes job."""
+        self.code_import.approve({}, self.import_operator)
+        self.assertEqual(
+            CodeImportJobState.PENDING,
+            self.code_import.import_job.state)
+        self.code_import.markFailing({}, self.import_operator)
+        self.assertTrue(self.code_import.import_job is None)
+        self.assertEqual(
+            CodeImportReviewStatus.FAILING,
+            self.code_import.review_status)
+
+    def test_markFailing_running_job(self):
+        """Marking an import with a running job as failing leaves job."""
+        self.code_import.approve({}, self.import_operator)
+        self.assertEqual(
+            CodeImportJobState.PENDING,
+            self.code_import.import_job.state)
+        # Have a machine claim the job.
+        job = CodeImportJobSet().getJobForMachine('machine')
+        # Make sure we have the correct job.
+        self.assertEqual(self.code_import.import_job, job)
+        self.code_import.markFailing({}, self.import_operator)
+        self.assertTrue(self.code_import.import_job is not None)
+        self.assertEqual(
+            CodeImportReviewStatus.FAILING,
+            self.code_import.review_status)
+
 
 class TestCodeImportResultsAttribute(unittest.TestCase):
     """Test the results attribute of a CodeImport."""
@@ -355,7 +392,8 @@ class TestReviewStatusFromImportStatus(unittest.TestCase):
             ImportStatus.TESTING, CodeImportReviewStatus.NEW)
 
     def testTestfailed(self):
-        self.assertImportStatusDoesNotTranslate(ImportStatus.TESTFAILED)
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.TESTFAILED, CodeImportReviewStatus.FAILING)
 
     def testAutotested(self):
         self.assertImportStatusTranslatesTo(
@@ -427,7 +465,7 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
         self.assertNoneIsReturned(ImportStatus.TESTING)
 
     def testTestfailed(self):
-        self.assertAssertionErrorRaised(ImportStatus.TESTFAILED)
+        self.assertNoneIsReturned(ImportStatus.TESTFAILED)
 
     def testAutotested(self):
         self.assertNoneIsReturned(ImportStatus.AUTOTESTED)

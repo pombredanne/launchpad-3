@@ -15,6 +15,7 @@ from zope.component import getUtility
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
+from storm.references import Reference
 
 from canonical.config import config
 
@@ -66,13 +67,8 @@ class Build(SQLBase):
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
     estimated_build_duration = IntervalCol(default=None)
 
-    @property
-    def buildqueue_record(self):
-        """See `IBuild`"""
-        # XXX cprov 2005-10-25 bug=3424:
-        # Would be nice if we can use fresh sqlobject feature 'singlejoin'
-        # instead.
-        return BuildQueue.selectOneBy(build=self)
+    buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
+                                  on_remote=True)
 
     @property
     def current_component(self):
@@ -152,8 +148,13 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See `IBuild`."""
-        bpklist = BinaryPackageRelease.selectBy(build=self, orderBy=['id'])
-        return sorted(bpklist, key=lambda a: a.binarypackagename.name)
+        return BinaryPackageRelease.select("""
+            BinaryPackageRelease.build = %s AND
+            BinaryPackageRelease.binarypackagename = BinaryPackageName.id
+            """ % sqlvalues(self),
+            clauseTables=["BinaryPackageName"],
+            orderBy=["BinaryPackageName.name", "BinaryPackageRelease.id"],
+            prejoins=["binarypackagename", "component", "section"])
 
     @property
     def distroarchseriesbinarypackages(self):

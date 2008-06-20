@@ -163,6 +163,16 @@ it issuing a DB query.
     [u'name16']
 
 
+=== Accounts ===
+
+A Person may be linked to an Account.
+
+>>> login('no-priv@canonical.com')
+>>> person = personset.getByEmail('no-priv@canonical.com')
+>>> person.account.openid_identifier
+u'no-priv_oid'
+
+
 === Personal standing ===
 
 People have a property called 'personal standing', which affects for
@@ -246,25 +256,16 @@ If we look up a string not associated with any user, None is returned:
     >>> print personset.getByOpenIdIdentifier('no-such-identifier')
     None
 
-While an identifier may be assigned to a team, it will not be
-returned:
-
-    >>> team = personset.getByName('simple-team')
-    >>> team.isTeam()
-    True
-    >>> team.openid_identifier
-    u'simple-team_oid'
-    >>> print personset.getByOpenIdIdentifier('simple-team_oid')
-    None
-
 Accounts that have not been validated are not returned either:
 
-    >>> person = personset.getByName('matsubara')
+    >>> person, email = personset.createPersonAndEmail(
+    ...     email='whatever@example.com', name='whatever',
+    ...     rationale=PersonCreationRationale.SOURCEPACKAGEIMPORT)
     >>> person.is_valid_person
     False
-    >>> person.openid_identifier
-    u'matsubara_oid'
-    >>> print personset.getByOpenIdIdentifier('matsubara_oid')
+    >>> person.openid_identifier is not None
+    True
+    >>> print personset.getByOpenIdIdentifier(person.openid_identifier)
     None
 
 
@@ -346,7 +347,8 @@ teams.
     True
     >>> verifyObject(ITeam, not_a_person)
     True
-    >>> print not_a_person.password
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> print removeSecurityProxy(not_a_person).password
     None
 
 The team owner is also added as an administrator of its team.
@@ -534,15 +536,15 @@ allowed to be connected with a few different database objects. This is
 enforced in the model, but there are also checks in the form handling to
 provide clearer error messages.
 
-The PublicPersonChoice for interface classes and the public_person_validator
-for SQLObject classes only allow public teams to be assigned to the
+The PublicPersonChoice for interface classes and the validate_public_person
+for database classes only allow public teams to be assigned to the
 specified field.
 
-The SQLObject validators will raise an InvalidField exception if an
-invalid team is passed to the constructor or is used to set one of
-the attributes.
+The validators will raise a PrivatePersonLinkageError exception if an
+invalid team is passed to the constructor or is used to set one of the
+attributes.
 
-myteam is a private-membership team, so public_person_validator
+myteam is a private-membership team, so validate_public_person
 will reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
@@ -557,14 +559,14 @@ BugSubscription.subscribed_by attributes.
     >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
-    InvalidField: Cannot link person
+    PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
     >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
     ...                                    subscribed_by=guadamen)
     >>> bug_subscription.person = myteam
     Traceback (most recent call last):
     ...
-    InvalidField: Cannot link person
+    PrivatePersonLinkageError: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
 == Latest Team Memberships ==
@@ -863,6 +865,27 @@ maintainer got omitted from the results:
     (u'iceweasel', u'1.0', u'sabdfl', u'sabdfl', u'sabdfl', u'Ubuntu Warty')
 
 
+== Packages a Person is subscribed to ==
+
+IPerson.getBugSubscriberPackages returns this list of packages, sorted
+alphabetically by package name.
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> pmount = ubuntu.getSourcePackage('pmount')
+    >>> pmount.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+    >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> mozilla_firefox.addBugSubscription(no_priv, no_priv)
+    <StructuralSubscription at ...>
+
+    >>> [package.name for package in no_priv.getBugSubscriberPackages()]
+    [u'mozilla-firefox', u'pmount']
+
+
 == Pillars owned or driven by a person or team ==
 
 To obtain all distributions, project groups and projects owned or driven by a
@@ -917,12 +940,12 @@ projects ordered by displayname.
 
     >>> for project in sabdfl.getOwnedProjects():
     ...     print project.displayname
-    a52dec
-    alsa-utils
     Derby
     Gnome Applets
-    gnomebaker
     Tomcat
+    a52dec
+    alsa-utils
+    gnomebaker
 
     >>> for project in ubuntu_team.getOwnedProjects():
     ...     print project.displayname
@@ -1162,7 +1185,6 @@ Reset firefox so we don't mess up later tests.
 We can ascertain whether a person has uploader rights to a distribution
 or not.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov.isUploader(ubuntu)
@@ -1272,13 +1294,12 @@ test it we need to instantiate PersonSet directly.
     >>> person_set = PersonSet()
 
 _newPerson() accepts parameters for name displayname and rationale. It
-also takes the parameters hide_email_addresses, comment, password and
-registrant.
+also takes the parameters hide_email_addresses, comment and registrant.
 
     >>> person_set._newPerson(
     ...     'new-name', 'New Person', True,
     ...     PersonCreationRationale.BUGIMPORT, "testing _newPerson().",
-    ...     'passw0rd', foo_bar)
+    ...     foo_bar)
     <Person at ...>
 
 If the name passed to _newPerson() is already taken, a NameAlreadyTaken

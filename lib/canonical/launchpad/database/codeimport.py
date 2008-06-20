@@ -13,8 +13,9 @@ __all__ = [
 
 from datetime import timedelta
 
+from storm.references import Reference
 from sqlobject import (
-    ForeignKey, IntervalCol, SingleJoin, StringCol, SQLMultipleJoin,
+    ForeignKey, IntervalCol, StringCol, SQLMultipleJoin,
     SQLObjectNotFound)
 from zope.component import getUtility
 from zope.event import notify
@@ -34,7 +35,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportSet, ILaunchpadCelebrities, ImportStatus, NotFoundError,
     RevisionControlSystems)
 from canonical.launchpad.mailout.codeimport import code_import_status_updated
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class _ProductSeriesCodeImport(SQLBase):
@@ -64,13 +65,13 @@ class CodeImport(SQLBase):
                         notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def product(self):
@@ -110,7 +111,8 @@ class CodeImport(SQLBase):
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
-    import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
+    import_job = Reference("<primary key>", "CodeImportJob.code_importID",
+                           on_remote=True)
 
     def getImportDetailsForDisplay(self):
         """See `ICodeImport`."""
@@ -176,6 +178,13 @@ class CodeImport(SQLBase):
         if self.review_status == CodeImportReviewStatus.INVALID:
             raise AssertionError('Review status is already invalid.')
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
+        self._removeJob()
+
+    def markFailing(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.FAILING:
+            raise AssertionError('Review status is already failing.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.FAILING)
         self._removeJob()
 
     def _setStatusAndEmail(self, data, user, status):
@@ -256,6 +265,8 @@ class CodeImportSet:
             review_status = CodeImportReviewStatus.REVIEWED
         elif import_status == ImportStatus.STOPPED:
             review_status = CodeImportReviewStatus.SUSPENDED
+        elif import_status == ImportStatus.TESTFAILED:
+            review_status = CodeImportReviewStatus.FAILING
         else:
             raise AssertionError(
                 "This import status should not produce a code import: %s"
@@ -273,7 +284,8 @@ class CodeImportSet:
             last_successful = series.datelastsynced
         elif series.importstatus in (ImportStatus.TESTING,
                                      ImportStatus.AUTOTESTED,
-                                     ImportStatus.PROCESSING):
+                                     ImportStatus.PROCESSING,
+                                     ImportStatus.TESTFAILED):
             last_successful = None
         else:
             raise AssertionError(
@@ -465,4 +477,4 @@ class CodeImportSet:
 
     def search(self, review_status):
         """See `ICodeImportSet`."""
-        return CodeImport.selectBy(review_status=review_status.value)
+        return CodeImport.selectBy(review_status=review_status)

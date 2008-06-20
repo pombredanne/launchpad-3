@@ -17,9 +17,12 @@ from StringIO import StringIO
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
+    AccountStatus,
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
@@ -148,29 +151,30 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString('person-name')
         if password is None:
             password = self.getUniqueString('password')
-        else:
-            # If a password was specified, validate the email address,
-            # unless told otherwise.
-            if email_address_status is None:
-                email_address_status = EmailAddressStatus.VALIDATED
+        # By default, make the email address preferred.
+        if (email_address_status is None 
+                or email_address_status == EmailAddressStatus.VALIDATED):
+            email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
+
         # To make the person someone valid in Launchpad, validate the
         # email.
-        if email_address_status == EmailAddressStatus.VALIDATED:
+        if email_address_status == EmailAddressStatus.PREFERRED:
             person.validateAndEnsurePreferredEmail(email)
-        elif email_address_status is not None:
-            email.status = email_address_status
-            email.syncUpdate()
-        else:
-            # Leave the email as NEW.
-            pass
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        # Make the account ACTIVE if we have a preferred email address now.
+        if (person.preferredemail is not None and
+            person.preferredemail.status == EmailAddressStatus.PREFERRED):
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        removeSecurityProxy(email).status = email_address_status
+        syncUpdate(email)
         return person
 
-    def makeTeam(self, owner, displayname=None, email=None):
+    def makeTeam(self, owner, displayname=None, email=None, name=None):
         """Create and return a new, arbitrary Team.
 
         The subscription policy of this new team will be OPEN.
@@ -180,7 +184,8 @@ class LaunchpadObjectFactory:
             the auto-generated name.
         :param email: The email address to use as the team's contact address.
         """
-        name = self.getUniqueString('team-name')
+        if name is None:
+            name = self.getUniqueString('team-name')
         if displayname is None:
             displayname = name
         team = getUtility(IPersonSet).newTeam(
@@ -284,8 +289,7 @@ class LaunchpadObjectFactory:
             target_branch = self.makeBranch(product=product)
         product = target_branch.product
         if registrant is None:
-            registrant = self.makePerson(
-                password=self.getUniqueString('password'))
+            registrant = self.makePerson()
         source_branch = self.makeBranch(product=product)
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, dependent_branch=dependent_branch)
@@ -325,8 +329,7 @@ class LaunchpadObjectFactory:
         :param person_displayname: The displayname for the created Person
         """
         branch = self.makeBranch(title=branch_title)
-        person = self.makePerson(displayname=person_displayname,
-            email_address_status=EmailAddressStatus.VALIDATED)
+        person = self.makePerson(displayname=person_displayname)
         return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
@@ -387,9 +390,12 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
-    def makeSignedMessage(self, msgid=None, body=None):
+    def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
         mail['From'] = self.getUniqueEmailAddress()
+        if subject is None:
+            subject = self.getUniqueString('subject')
+        mail['Subject'] = subject
         if msgid is None:
             msgid = make_msgid('launchpad')
         if body is None:
@@ -432,8 +438,7 @@ class LaunchpadObjectFactory:
         if branch_name is None:
             branch_name = self.getUniqueString('name')
         # The registrant gets emailed, so needs a preferred email.
-        registrant = self.makePerson(
-            email_address_status=EmailAddressStatus.VALIDATED)
+        registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -539,7 +544,7 @@ class LaunchpadObjectFactory:
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None):
         if sender is None:
-            sender = self.makePerson(password='password')
+            sender = self.makePerson()
         if subject is None:
             subject = self.getUniqueString('subject')
         if body is None:
@@ -603,7 +608,6 @@ class LaunchpadObjectFactory:
             person, name, brazil, city, addressline, phone)
         # We don't want to login() as the person used to create the request,
         # so we remove the security proxy for changing the status.
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
         template = getUtility(IStandardShipItRequestSet).getByFlavour(
             flavour)[0]

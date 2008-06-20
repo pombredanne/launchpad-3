@@ -20,7 +20,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, List, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -37,7 +37,7 @@ from canonical.launchpad.validators.bugattachment import (
 
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
-from canonical.lazr.rest.schema import CollectionField
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class CreateBugParams:
@@ -159,7 +159,7 @@ class IBug(IMessageTarget, ICanBeMentored):
              max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
-        Object(IPerson, title=_("The owner's IPerson")))
+        Reference(IPerson, title=_("The owner's IPerson")))
     duplicateof = exported(
         DuplicateBug(title=_('Duplicate Of'), required=False),
         exported_as='duplicate_of')
@@ -187,7 +187,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         CollectionField(
             title=_('BugTasks on this bug, sorted upstream, then '
                     'ubuntu, then other distroseriess.'),
-            value_type=Object(schema=IBugTask),
+            value_type=Reference(schema=IBugTask),
             readonly=True))
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
@@ -582,7 +582,7 @@ class IProjectBugAddForm(IBugAddForm):
 class IFrontPageBugAddForm(IBugAddForm):
     """Create a bug for any bug target."""
 
-    bugtarget = Object(
+    bugtarget = Reference(
         schema=IBugTarget, title=_("Where did you find the bug?"),
         required=True)
 

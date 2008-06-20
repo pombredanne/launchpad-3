@@ -7,7 +7,8 @@ from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
-from canonical.database.sqlbase import begin, commit, rollback
+from canonical.librarian.db import read_transaction, write_transaction
+
 
 defaultResource = static.Data("""
         <html>
@@ -22,6 +23,7 @@ defaultResource = static.Data("""
         </body></html>
         """, type='text/html')
 fourOhFour = error.NoResource('No such resource')
+
 
 class NotFound(Exception):
     pass
@@ -75,17 +77,14 @@ class LibraryFileAliasResource(resource.Resource):
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
+    @write_transaction
     def _getFileAlias(self, aliasID):
-        begin()
         try:
-            try:
-                alias = self.storage.getFileAlias(aliasID)
-                alias.updateLastAccessed()
-                return alias.contentID, alias.filename, alias.mimetype
-            except LookupError:
-                raise NotFound
-        finally:
-            commit()
+            alias = self.storage.getFileAlias(aliasID)
+            alias.updateLastAccessed()
+            return alias.contentID, alias.filename, alias.mimetype
+        except LookupError:
+            raise NotFound
 
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)
@@ -153,16 +152,13 @@ class DigestSearchResource(resource.Resource):
         deferred.addErrback(_eb, request)
         return server.NOT_DONE_YET
 
+    @read_transaction
     def _matchingAliases(self, digest):
-        begin()
-        try:
-            library = self.storage.library
-            matches = ['%s/%s' % (aID, quote(aName))
-                       for fID in library.lookupBySHA1(digest)
-                       for aID, aName, aType in library.getAliases(fID)]
-            return matches
-        finally:
-            rollback()
+        library = self.storage.library
+        matches = ['%s/%s' % (aID, quote(aName))
+                   for fID in library.lookupBySHA1(digest)
+                   for aID, aName, aType in library.getAliases(fID)]
+        return matches
 
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)

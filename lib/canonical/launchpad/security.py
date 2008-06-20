@@ -1,8 +1,9 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-"""Security policies for using content objects.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-"""
+"""Security policies for using content objects."""
+
 __metaclass__ = type
+__all__ = []
 
 from zope.interface import implements, Interface
 from zope.component import getUtility
@@ -12,7 +13,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranch, IBranchMergeProposal, IBranchSubscription,
     IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker, IBuild,
     IBuilder, IBuilderSet, ICodeImport, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportMachine, ICodeImportSet,
+    ICodeImportJobWorkflow, ICodeImportMachine,
     ICodeReviewComment, IDistribution, IDistributionMirror, IDistroSeries,
     IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHWSubmission,
     IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack, ILanguageSet,
@@ -27,7 +28,7 @@ from canonical.launchpad.interfaces import (
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility)
+    PersonVisibility, IAccount)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -105,6 +106,21 @@ class ViewPillar(AuthorizationBase):
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
                     or user.inTeam(celebrities.admin))
+
+
+class EditAccount(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IAccount
+
+    # This is wrong as we need to give an Account rather than a
+    # Person ability to edit an account.
+    def checkAuthenticated(self, user):
+        return ((user.account is not None and user.account.id == self.obj.id)
+                or user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+
+
+class ViewAccount(EditAccount):
+    permission = 'launchpad.View'
 
 
 class EditOAuthAccessToken(AuthorizationBase):
@@ -909,17 +925,6 @@ class OnlyVcsImportsAndAdmins(AuthorizationBase):
 class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IBazaarApplication
-
-
-class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
-    """Control who can see the CodeImport listing page.
-
-    Currently, we restrict the visibility of the new code import
-    system to members of ~vcs-imports and Launchpad admins.
-    """
-
-    permission = 'launchpad.View'
-    usedfor = ICodeImportSet
 
 
 class EditCodeImport(OnlyVcsImportsAndAdmins):

@@ -17,11 +17,12 @@ import pytz
 import random
 from datetime import datetime
 
+from storm.store import Store
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
+    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND, OR)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -31,7 +32,7 @@ from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
     PollStatus, IVoteCastSet, IVoteSet, PollAlgorithm, PollSecrecy,
     OptionIsNotFromSimplePoll)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class Poll(SQLBase):
@@ -44,7 +45,7 @@ class Poll(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     name = StringCol(dbName='name', notNull=True)
 
@@ -205,7 +206,7 @@ class Poll(SQLBase):
                  "HAVING COUNT(*) = (SELECT COUNT(*) FROM Vote WHERE poll = %d "
                  "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)"
                  % (self.id, self.id))
-        results = self._connection.queryAll(query)
+        results = Store.of(self).execute(query).get_all()
         if not results:
             return None
         return [PollOption.get(id) for (id,) in results]
@@ -238,7 +239,7 @@ class Poll(SQLBase):
                 if option1 == option2:
                     pairwise_row.append(None)
                 else:
-                    points = self._connection.queryOne(points_query)[0]
+                    points = Store.of(self).execute(points_query).get_one()[0]
                     pairwise_row.append(points)
             pairwise_matrix.append(pairwise_row)
         return pairwise_matrix
@@ -265,23 +266,21 @@ class PollSet:
         if orderBy is None:
             orderBy = Poll.sortingColumns
 
-        teamfilter = Poll.q.teamID == team.id
-        results = Poll.select(teamfilter)
+
         status = set(status)
+        status_clauses = []
+        if PollStatus.OPEN in status:
+            status_clauses.append(AND(Poll.q.dateopens <= when,
+                                    Poll.q.datecloses > when))
+        if PollStatus.CLOSED in status:
+            status_clauses.append(Poll.q.datecloses <= when)
+        if PollStatus.NOT_YET_OPENED in status:
+            status_clauses.append(Poll.q.dateopens > when)
 
-        if PollStatus.OPEN not in status:
-            openpolls = Poll.select(
-                AND(teamfilter, Poll.q.dateopens<=when, Poll.q.datecloses>when))
-            results = results.except_(openpolls)
+        assert len(status_clauses) > 0, "No poll statuses were selected"
 
-        if PollStatus.CLOSED not in status:
-            closedpolls = Poll.select(AND(teamfilter, Poll.q.datecloses<=when))
-            results = results.except_(closedpolls)
-
-        if PollStatus.NOT_YET_OPENED not in status:
-            notyetopenedpolls = Poll.select(
-                AND(teamfilter, Poll.q.dateopens>when))
-            results = results.except_(notyetopenedpolls)
+        results = Poll.select(AND(Poll.q.teamID == team.id,
+                                  OR(*status_clauses)))
 
         return results.orderBy(orderBy)
 
@@ -345,7 +344,7 @@ class VoteCast(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
@@ -369,13 +368,13 @@ class Vote(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=public_person_validator)
+        storm_validator=validate_public_person)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
     option = ForeignKey(dbName='option', foreignKey='PollOption')
 
-    preference = IntCol(dbName='preference', notNull=True)
+    preference = IntCol(dbName='preference')
 
     token = StringCol(dbName='token', notNull=True, unique=True)
 
