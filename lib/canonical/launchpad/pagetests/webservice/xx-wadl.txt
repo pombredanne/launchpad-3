@@ -625,17 +625,17 @@ key of the hash.
     >>> full_rep_names = sorted([param.attrib['name']
     ...                         for param in full_params])
     >>> full_rep_names
-    ['assignee_link', 'bug_link', ... 'title']
+    [..., 'bug_link', ... 'title']
 
 In addition to a name, each representation parameter has a 'path', a
 JSONPath expression you can apply to the JSON data structure to get
 the parameter's value.
 
     >>> sorted([param.attrib['path'] for param in full_params])
-    ["$['assignee_link']", "$['bug_link']", ... "$['title']"]
+    [..., "$['bug_link']", ... "$['title']"]
 
-So to get the assignee link out of a JSON data structure you need to
-look up the element called "assignee_link".
+So to get the bug link out of a JSON data structure you need to
+look up the element called "bug_link".
 
 A parameter may also have human-readable documentation: an optional
 name for the parameter and an optional short description.
@@ -643,24 +643,25 @@ name for the parameter and an optional short description.
     >>> doc = full_params[0][0]
     >>> doc.tag
     '...doc'
-    >>> doc.text
-    '<strong>Status</strong>'
+    >>> print doc.text
+    Date Closed: The date on which this task was
+    marked either Fix Committed or Fix Released.
 
 Some parameters are links to other resources. These parameters have a
 child tag called 'link' with information about what's on the other end
 of the link.
 
-    >>> [assignee_param] = [param for param in full_params
-    ...                    if param.attrib['name'] == 'assignee_link']
-    >>> [assignee_link] = assignee_param
-    >>> assignee_link.tag
+    >>> [bug_param] = [param for param in full_params
+    ...                if param.attrib['name'] == 'bug_link']
+    >>> bug_link = bug_param[1]
+    >>> bug_link.tag
     '...link'
 
 The link's 'resource_type' attribute tells the client about the capabilities of
 the resource at the other end of the link.
 
-    >>> assignee_link.attrib['resource_type']
-    'http://api.launchpad.dev/beta/#PersonEntryAdapter'
+    >>> bug_link.attrib['resource_type']
+    'http://api.launchpad.dev/beta/#BugEntryAdapter'
 
 If the link is a link to a collection, the 'resource_type' will be a
 reference to the appropriate entry page resource type (defined
@@ -727,11 +728,6 @@ is kept in the <resource_type> tag.
     >>> doc = doc_and_methods[0]
     >>> methods = doc_and_methods[1:]
     >>> get, put, patch, post = methods
-
-A resource type may have some human-readable documentation:
-
-    >>> doc.text
-    'A bugtask.'
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
