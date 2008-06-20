@@ -46,22 +46,10 @@ def update_archive_counters(obj, attr, value):
     """Updates the archive build counters upon build state change.
     """
     if obj._SO_creating:
-        # A new build instance was created.
-        if value == BuildStatus.NEEDSBUILD:
-            # A pending build was created.
-            obj.createdAsPending()
-        elif value == BuildStatus.FULLYBUILT:
-            # A successfully completed build was created.
-            obj.createdAsSucceeded()
-        elif value == BuildStatus.SUPERSEDED:
-            # A superseded build was created, no-op.
-            obj.createdAsDiscontinued()
-        elif value == BuildStatus.BUILDING:
-            # A currently building build was created.
-            obj.createdAsStarted()
-        else:
-            # A failed build was created.
-            obj.createdAsFailed()
+        # The necessary initializations will be performed in the initialize()
+        # method. Please note that all Build instances are now created via
+        # the BuildSet.newBuild() method.
+        pass
     else:
         # The build state of a build instance was updated.
         # Check whether the build state value actually changed.
@@ -74,6 +62,7 @@ def update_archive_counters(obj, attr, value):
                 # This is a forced build state change. The actual
                 # value is contained within a 1-tuple.
                 [value] = value
+                obj.stateForced(value)
             else:
                 # This is a normal build state change, invoke the
                 # corresponding state transition method.
@@ -714,30 +703,6 @@ class Build(SQLBase):
                                    BuildStatus.CHROOTWAIT,
                                    BuildStatus.FAILEDTOUPLOAD]
 
-    def createdAsPending(self):
-        """Handle the creation of a build in a 'pending' state."""
-        self.archive.total_count += 1
-        self.archive.pending_count += 1
-
-    def createdAsSucceeded(self):
-        """Handle the creation of a build in a 'succeeded' state."""
-        self.archive.total_count += 1
-        self.archive.succeeded_count += 1
-
-    def createdAsDiscontinued(self):
-        """Handle the creation of a build in a 'superseded' state."""
-        pass
-
-    def createdAsStarted(self):
-        """Handle the creation of a build in a 'building' state."""
-        self.archive.total_count += 1
-        self.archive.building_count += 1
-
-    def createdAsFailed(self):
-        """Handle the creation of a build in a 'failed' state."""
-        self.archive.total_count += 1
-        self.archive.failed_count += 1
-
     def buildRetried(self):
         """Handle the transition of the build state to 'pending'."""
         # Only failed builds may be retried.
@@ -788,7 +753,72 @@ class Build(SQLBase):
         """Set the build state to the value passed no matter what."""
         # Packing the actual build state value in a 1-tuple will indicate
         # that this is a forced state change to the validator function.
-        self.buildstate = (value,)
+        if value != self.buildstate:
+            self.buildstate = (value,)
+
+    def stateForced(self, value):
+        """Handle the forced change of the build state to new value.
+        """
+        # Take action according to the previous state.
+        if self.buildstate == BuildStatus.NEEDSBUILD:
+            # A pending build was changed.
+            self.archive.pending_count -= 1
+        elif self.buildstate == BuildStatus.FULLYBUILT:
+            # A successfully completed build was changed.
+            self.archive.succeeded_count -= 1
+        elif self.buildstate == BuildStatus.SUPERSEDED:
+            # A superseded build was changed.
+            self.archive.total_count += 1
+        elif self.buildstate == BuildStatus.BUILDING:
+            # A currently building build was changed.
+            self.archive.building_count -= 1
+        else:
+            # A failed build was changed.
+            self.archive.failed_count -= 1
+
+        # Take action according to the new state.
+        if value == BuildStatus.NEEDSBUILD:
+            # This is a pending build now.
+            self.archive.pending_count += 1
+        elif value == BuildStatus.FULLYBUILT:
+            # This is a succeeded build now.
+            self.archive.succeeded_count += 1
+        elif value == BuildStatus.SUPERSEDED:
+            # This is a superseded build now.
+            self.archive.total_count -= 1
+        elif value == BuildStatus.BUILDING:
+            # This is a currently active/building build now.
+            self.archive.building_count += 1
+        else:
+            # This is a failed build now.
+            self.archive.failed_count += 1
+
+    def initialize(self):
+        """Update archive counters according to build state.
+
+        This method is called immediately after a Build instance
+        creation.
+        """
+        # A new build instance was created.
+        if self.buildstate == BuildStatus.NEEDSBUILD:
+            # A pending build was created.
+            self.archive.total_count += 1
+            self.archive.pending_count += 1
+        elif self.buildstate == BuildStatus.FULLYBUILT:
+            # A successfully completed build was created.
+            self.archive.total_count += 1
+            self.archive.succeeded_count += 1
+        elif self.buildstate == BuildStatus.SUPERSEDED:
+            # A superseded build was created, no-op.
+            pass
+        elif self.buildstate == BuildStatus.BUILDING:
+            # A currently building build was created.
+            self.archive.total_count += 1
+            self.archive.building_count += 1
+        else:
+            # A failed build was created.
+            self.archive.total_count += 1
+            self.archive.failed_count += 1
 
 
 class BuildSet:
@@ -1033,3 +1063,44 @@ class BuildSet:
             logger.info("Retrying %s" % build.title)
             build.retry()
             build.buildqueue_record.score()
+
+    def newBuild(
+        self, sourcepackagerelease, distroarchseries, pocket, processor,
+        archive, buildstate=BuildStatus.NEEDSBUILD, buildduration=None,
+        datecreated=None, datebuilt=None, estimated_build_duration=None,
+        builder=None, buildlog=None):
+        """Creates a new build object using the parameter values passed.
+        """
+        # These are mandatory Build instantiation parameters.
+        init_params = dict(
+            sourcepackagerelease=sourcepackagerelease,
+            distroarchseries=distroarchseries,
+            pocket=pocket,
+            processor=processor,
+            archive=archive)
+
+        # These are optional Build instantiation parameters and will
+        # be passed if set.
+        if buildstate is not None:
+            init_params['buildstate'] = buildstate
+        if buildduration is not None:
+            init_params['buildduration'] = buildduration
+        if datecreated is not None:
+            init_params['datecreated'] = datecreated
+        if datebuilt is not None:
+            init_params['datebuilt'] = datebuilt
+        if estimated_build_duration is not None:
+            init_params['estimated_build_duration'] = estimated_build_duration
+        if builder is not None:
+            init_params['builder'] = builder
+        if buildlog is not None:
+            init_params['buildlog'] = buildlog
+
+        # Create build instance.
+        new_build = Build(**init_params)
+
+        # Allow the new Build instance to perform the necessary
+        # initializations (e.g. archive build counters maintenance)
+        new_build.initialize()
+
+        return new_build
