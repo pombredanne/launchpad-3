@@ -783,6 +783,12 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
+        # Check whether the bug is public first, since that's the common
+        # case, and it's cheap to check.
+        if not self.obj.bug.private:
+            # This is a public bug.
+            return True
+
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):
@@ -790,16 +796,12 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
             # private.
             return True
 
-        if not self.obj.bug.private:
-            # This is a public bug.
-            return True
-        else:
-            # This is a private bug.
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
+        # This is a private bug.
+        for subscription in self.obj.bug.subscriptions:
+            if user.inTeam(subscription.person):
+                return True
 
-            return False
+        return False
 
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
