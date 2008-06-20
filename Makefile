@@ -83,7 +83,7 @@ check_merge_edge: dbfreeze_check check_merge
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
 
-check: build
+check: build bzr_version_info
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
