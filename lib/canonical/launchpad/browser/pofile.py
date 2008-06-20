@@ -153,9 +153,7 @@ class POFileView(LaunchpadView):
     @property
     def has_translationgroup(self):
         """Is there a translation group for this translation?"""
-        for group in self.context.potemplate.translationgroups:
-            return True
-        return False
+        return self.context.potemplate.translationgroups
 
     @property
     def is_managed(self):

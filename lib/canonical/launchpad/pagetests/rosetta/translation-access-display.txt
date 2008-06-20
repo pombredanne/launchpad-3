@@ -4,8 +4,6 @@ Ed Minh, an administrator, visits a translation page for Evolution.  The
 page tells him what translation team is responsible for maintaining that
 translation, and also reminds him that he has full editing privileges.
 
-    >>> import re
-
     >>> def print_tag(page, id):
     ...     """Find and print tag with given id."""
     ...     tag = find_tag_by_id(page, id)
@@ -30,11 +28,12 @@ translation, and also reminds him that he has full editing privileges.
 Evolution is part of the Gnome project, and when Gnome sets a
 translation group of its own, that too is shown here.
 
+    >>> import re
+
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.database.language import Language
     >>> from canonical.launchpad.database.person import Person
     >>> from canonical.launchpad.database.product import Product
-    >>> from canonical.launchpad.database.translator import Translator
     >>> from canonical.launchpad.database.translationgroup import (
     ...     TranslationGroup)
     >>> from canonical.launchpad.testing.factory import LaunchpadObjectFactory
@@ -67,8 +66,20 @@ If the two groups are identical, however, it is only listed once.
     >>> print re.search(',\s+and', managers_tag)
     None
 
-    >>> # Restore old situation.
+If no translation group is assigned, the page also mentions that.
+
+    >>> original_translation_group = evolution.translationgroup
+    >>> evolution.translationgroup = None
     >>> evolution.project.translationgroup = None
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/'
+    ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
+    >>> print_tag(admin_browser.contents, 'translation-managers')
+    No translation group has been assigned.
+
+    >>> # Restore old situation.
+    >>> evolution.translationgroup = original_translation_group
 
 
 == Displaying access privileges ==

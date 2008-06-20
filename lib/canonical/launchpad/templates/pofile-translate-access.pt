@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag=""
 >
-  <p class="discreet" id="translation-managers">
+  <p id="translation-managers">
     <tal:translationgroups condition="view/has_translationgroup">
       This translation is managed by
       <!-- nospace --><tal:loop repeat="manager view/managers"><!-- 
@@ -25,7 +25,7 @@
     </tal:nogroups>
   </p>
 
-  <p class="discreet" id="translation-access">
+  <p id="translation-access">
     <tal:permission condition="view/user_can_edit">
       You have full access to this translation.
     </tal:permission>
