@@ -28,7 +28,7 @@ GEOIP_CITY_LITE_DB = '/usr/share/GeoIP/GeoLiteCity.dat'
 
 
 class GeoIP:
-
+    """See `IGeoIP`."""
     implements(IGeoIP)
 
     def __init__(self):
@@ -44,12 +44,12 @@ class GeoIP:
 
     def getRecordByAddress(self, ip_address):
         """See `IGeoIP`."""
+        ip_address = ensure_address_is_not_private(ip_address)
         return self._gi.record_by_addr(ip_address)
 
     def country_by_addr(self, ip_address):
-        if ip_address.startswith('127.'):
-            # Use a South African IP address for localhost.
-            ip_address = '196.36.161.227'
+        """See `IGeoIP`."""
+        ip_address = ensure_address_is_not_private(ip_address)
         geoip_record = self.getRecordByAddress(ip_address)
         if geoip_record is None:
             return None
@@ -65,7 +65,7 @@ class GeoIP:
 
 
 class GeoIPRequest:
-
+    """An adapter for a BrowserRequest into an IGeoIPRecord."""
     implements(IGeoIPRecord)
 
     def __init__(self, request):
@@ -75,9 +75,7 @@ class GeoIPRequest:
             # This happens during page testing, when the REMOTE_ADDR is not
             # set by Zope.
             ip_address = '127.0.0.1'
-        if ip_address.startswith('127.'):
-            # Use a South African IP address for localhost.
-            ip_address = '196.36.161.227'
+        ip_address = ensure_address_is_not_private(ip_address)
         self.ip_address = ip_address
         self.geoip_record = getUtility(IGeoIP).getRecordByAddress(
             self.ip_address)
@@ -166,6 +164,16 @@ class RequestPreferredLanguages(object):
 
         languages = [language for language in languages if language.visible]
         return sorted(languages, key=lambda x: x.englishname)
+
+
+def ensure_address_is_not_private(ip_address):
+    """Return the given IP address if it doesn't start with '127.'.
+
+    If it does start with '127.' then we return a South African IP address.
+    """
+    if ip_address.startswith('127.'):
+        return '196.36.161.227'
+    return ip_address
 
 
 class NoGeoIPDatabaseFound(Exception):
