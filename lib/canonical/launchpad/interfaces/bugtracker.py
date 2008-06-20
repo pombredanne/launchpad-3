@@ -129,6 +129,12 @@ class BugTrackerType(DBEnumeratedType):
         is GNU's Savannah.
         """)
 
+    PHPPROJECT = DBItem(10, """
+        PHP Project Bugtracker
+
+        The bug tracker developed by the PHP project.
+        """)
+
 
 class IBugTracker(Interface):
     """A remote bug system."""
