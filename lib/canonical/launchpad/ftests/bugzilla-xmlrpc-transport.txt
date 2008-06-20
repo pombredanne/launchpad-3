@@ -11,6 +11,39 @@ and the additional Launchpad plugin API.
     >>> server = xmlrpclib.ServerProxy(
     ...     'http://example.com/', transport=bugzilla_transport)
 
+The transport will only allow calls to methods in a predefined set of
+namespaces.
+
+    >>> server.spam.eggs()
+    Traceback (most recent call last):
+      ...
+    AssertionError: All methods should be in one of the following
+    namespaces: ...
+
+Adding a new namespace to the transport's methods dict will make methods
+in that namespace callable. Of course, if the method doesn't exist, an
+error will be raised.
+
+    >>> bugzilla_transport.methods['spam'] = ['eggs']
+    >>> server.spam.eggs()
+    Traceback (most recent call last):
+      ...
+    AttributeError: 'TestBugzillaXMLRPCTransport' object has no
+    attribute 'eggs'
+
+    >>> del bugzilla_transport.methods['spam']
+
+If a namespace exists but there is no method registered under that
+namespace with a given method name, an AssertionError will be raised.
+
+    >>> 'unregistered_method' in bugzilla_transport.methods['Bug']
+    False
+
+    >>> server.Bug.unregistered_method()
+    Traceback (most recent call last):
+      ...
+    AssertionError: No method 'unregistered_method' in namespace 'Bug'.
+
 
 == Launchpad.time() ==
 
@@ -43,3 +76,93 @@ more useful.
     local_time: 20080515T16:19:53
     tz_name: US/Central
     utc_time: 20080515T22:19:53
+
+
+== Bug.get_bugs() ==
+
+The common Bugzilla bug API offers a get_bugs() method which can be used
+to retrieve bugs from a remote Bugzilla instance. It takes a list of bug
+IDs to retrieve and returns a list of dicts containing those bugs' data.
+As is standard with the Bugzilla XMLRPC API, arguments are enclosed in a
+dict so that they are treated as key: value pairs.
+
+    >>> return_value = server.Bug.get_bugs({'ids': [1], 'permissive': True})
+    >>> [bug_dict] = return_value['bugs']
+    >>> for key in sorted(bug_dict.keys()):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: 
+    assigned_to: test@canonical.com
+    component: GPPSystems
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:...
+    is_open: True
+    last_change_time: 20080610T16:19:53
+    priority: P1
+    product: HeartOfGold
+    resolution: FIXED
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists.
+
+If more than one ID is specified when get_bugs() is called, more than
+one bug will be returned (assuming they all exist and are accessible).
+
+    >>> return_value = server.Bug.get_bugs({'ids': [1, 2], 'permissive': True})
+    >>> bug_dicts = return_value['bugs']
+    >>> for bug_dict in bug_dicts:
+    ...     for key in sorted(bug_dict.keys()):
+    ...         print "%s: %s" % (key, bug_dict[key])
+    ...     print
+    alias: 
+    assigned_to: test@canonical.com
+    component: GPPSystems
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:...
+    is_open: True
+    last_change_time: 20080610T16:19:53
+    priority: P1
+    product: HeartOfGold
+    resolution: FIXED
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists.
+    <BLANKLINE>
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution:
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+
+Bug aliases can also be used to request remote bugs.
+
+    >>> return_value = server.Bug.get_bugs(
+    ...     {'ids': ['bug-two'], 'permissive': True})
+    >>> [bug_dict] = return_value['bugs']
+    >>> for key in sorted(bug_dict.keys()):
+    ...     print "%s: %s" % (key, bug_dict[key])
+    alias: bug-two
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 20080611T09:23:12
+    id: 2
+    internals:...
+    is_open: True
+    last_change_time: 20080611T09:24:29
+    priority: P1
+    product: HeartOfGold
+    resolution: 
+    severity: high
+    status: NEW
+    summary: Collect unknown persons in docking bay 2.
+

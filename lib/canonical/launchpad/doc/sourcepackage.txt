@@ -175,8 +175,8 @@ method on a distribution:
     True
     >>> print ubuntu_firefox.name
     mozilla-firefox
-    >>> print ubuntu_firefox.title
-    Source Package "mozilla-firefox" in Ubuntu Linux
+    >>> print ubuntu_firefox.title.encode('ascii', 'backslashreplace')
+    \u201cmozilla-firefox\u201d source package in Ubuntu
     >>> print ubuntu_firefox.displayname
     mozilla-firefox in ubuntu
     >>> ubuntu_firefox.distribution == ubuntu
