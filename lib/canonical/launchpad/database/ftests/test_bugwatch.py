@@ -274,6 +274,17 @@ class EmailAddressExtractBugTrackerAndBugTest(
             url='this\.is@@a.bad.email.address')
 
 
+class PHPProjectBugTrackerExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with PHP bug URLs.
+    """
+
+    bugtracker_type = BugTrackerType.PHPPROJECT
+    bug_url = 'http://phptracker.example.com/bug.php?id=12345'
+    base_url = 'http://phptracker.example.com/'
+    bug_id = '12345'
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -291,6 +302,8 @@ def test_suite():
     suite.addTest(unittest.makeSuite(SavannahExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(SavaneExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(EmailAddressExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(
+       PHPProjectBugTrackerExtractBugTrackerAndBugTest))
     return suite
 
 
