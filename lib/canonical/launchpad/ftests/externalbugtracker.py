@@ -375,9 +375,42 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         'bug-two': 2,
         }
 
+    # Comments are mapped to bug IDs.
+    bug_comments = {
+        1: {
+            1: {'author': 'trillian',
+                'id': 1,
+                'number': 1,
+                'text': "I'd really appreciate it if Marvin would "
+                        "enjoy life a bit.",
+                'time': datetime(2008, 6, 16, 12, 44, 29),
+                },
+            2: {'author': 'marvin',
+                'id': 3,
+                'number': 2,
+                'text': "Life? Don't talk to me about life.",
+                'time': datetime(2008, 6, 16, 13, 22, 29),
+                },
+            },
+        2: {
+            1: {'author': 'trillian',
+                'id': 2,
+                'number': 1,
+                'text': "Bring the passengers to the bridge please Marvin.",
+                'time': datetime(2008, 6, 16, 13, 8, 8),
+                },
+             2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
+                'id': 4,
+                'number': 2,
+                'text': "I appear to have become a perfectly safe penguin.",
+                'time': datetime(2008, 6, 17, 20, 28, 40),
+                },
+            },
+        }
+
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['get_bugs'],
+        'Bug': ['comments', 'get_bugs'],
         'Launchpad': ['time'],
         'Test': ['login_required']
         }
@@ -475,10 +508,41 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
             bugs_to_return.append(bug_dict)
 
         # "Why are you returning a list here?" I hear you cry. Well,
-        # dear reader, it's becaus xmlrpclib:1387 tries to expand
+        # dear reader, it's because xmlrpclib:1387 tries to expand
         # sequences of length 1. When you return a dict, that line
         # explodes in your face. Annoying? Insane? You bet.
         return [{'bugs': bugs_to_return}]
+
+    def comments(self, arguments):
+        """Return comments for a given set of bugs."""
+        # We'll always pass bug IDs when we call comments().
+        assert 'bug_ids' in arguments, (
+            "Bug.comments() must always be called with a bug_ids parameter.")
+
+        bug_ids = arguments['bug_ids']
+        comment_ids = arguments.get('ids')
+        fields_to_return = arguments.get('include')
+        comments_by_bug_id = {}
+
+        def copy_comment(comment):
+            # Copy wanted fields.
+            comment = dict(
+                (key, value) for (key, value) in comment.iteritems()
+                if fields_to_return is None or key in fields_to_return)
+            # Replace the time field with an XML-RPC DateTime.
+            if 'time' in comment:
+                comment['time'] = xmlrpclib.DateTime(
+                    comment['time'].timetuple())
+            return comment
+
+        for bug_id in bug_ids:
+            comments_for_bug = self.bug_comments[bug_id].values()
+            comments_by_bug_id[bug_id] = [
+                copy_comment(comment) for comment in comments_for_bug
+                if comment_ids is None or comment['id'] in comment_ids]
+
+        # More xmlrpclib:1387 odd-knobbery avoidance.
+        return [{'bugs': comments_by_bug_id}]
 
 
 class TestMantis(Mantis):
