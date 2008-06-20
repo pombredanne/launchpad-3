@@ -21,6 +21,8 @@ from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac, TracXMLRPCTransport)
+from canonical.launchpad.components.externalbugtracker.bugzilla import (
+    BugzillaXMLRPCTransport)
 from canonical.launchpad.components.externalbugtracker.trac import (
     LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
@@ -327,7 +329,7 @@ class TestOldBugzilla(TestBugzilla):
                 123543: ('ASSIGNED', '')}
 
 
-class TestBugzillaXMLRPCTransport:
+class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 
     seconds_since_epoch = None
@@ -377,7 +379,17 @@ class TestBugzillaXMLRPCTransport:
     methods = {
         'Bug': ['get_bugs'],
         'Launchpad': ['time'],
+        'Test': ['login_required']
         }
+
+    # Methods that require authentication.
+    auth_required_methods = ['login_required']
+
+    expired_cookie = None
+
+    def expireCookie(self, cookie):
+        """Mark the cookie as expired."""
+        self.expired_cookie = cookie
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -396,6 +408,13 @@ class TestBugzillaXMLRPCTransport:
         assert method_name in self.methods[method_prefix], (
             "No method '%s' in namespace '%s'." %
             (method_name, method_prefix))
+
+        # If the method requires authentication and we have no auth
+        # cookie, throw a Fault.
+        if (method_name in self.auth_required_methods and
+            (self.auth_cookie is None or
+             self.auth_cookie == self.expired_cookie)):
+             raise xmlrpclib.Fault(410, 'Login Required')
 
         if self.print_method_calls:
             print "CALLED %s.%s(%s)" % (method_prefix, method_name, args[0])
@@ -419,6 +438,10 @@ class TestBugzillaXMLRPCTransport:
             'utc_time': utc_time,
             'tz_name': self.timezone,
             }
+
+    def login_required(self):
+        # This method only exists to demonstrate login required methods.
+        return "Wonderful, you've logged in! Aren't you a clever biped?"
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""

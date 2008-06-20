@@ -376,4 +376,4 @@ class BugzillaXMLRPCTransport(xmlrpclib.Transport):
         """Send the host and cookie headers."""
         xmlrpclib.Transport.send_host(self, connection, host)
         if self.auth_cookie is not None:
-            connection.putheader('Cookie', self.auth_cookie)
+            connection.putheader('Bugzilla_logincookie', self.auth_cookie)
