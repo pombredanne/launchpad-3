@@ -830,9 +830,10 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
-        specification_ids = [spec.id for spec in specifications]
-        if len(specification_ids) == 0:
+        if len(specifications) == 0:
             return {}
+
+        specification_ids = [spec.id for spec in specifications]
 
         results = Store.of(specifications[0]).execute("""
             SELECT SpecificationDependency.specification,
@@ -840,7 +841,7 @@ class SpecificationSet(HasSpecificationsMixin):
             FROM SpecificationDependency, Specification
             WHERE SpecificationDependency.specification IN %s
             AND SpecificationDependency.dependency = Specification.id
-            ORDER BY Specification.priority DESC
+            ORDER BY Specification.priority DESC, Specification.name, Specification.id
         """ % sqlvalues(specification_ids)).get_all()
 
         dependencies = {}
