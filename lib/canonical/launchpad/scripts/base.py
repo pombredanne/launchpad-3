@@ -106,7 +106,7 @@ class LaunchpadScript:
         scripts.logger_options(self.parser, default=self.loglevel)
         self.parser.add_option(
             '--profile', dest='profile', metavar='FILE', help=(
-                    "Run the script under the profiler and saves the "
+                    "Run the script under the profiler and save the "
                     "profiling stats in FILE."))
         self.add_my_options()
         self.options, self.args = self.parser.parse_args(args=test_args)

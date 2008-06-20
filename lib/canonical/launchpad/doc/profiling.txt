@@ -54,7 +54,7 @@ Requests made with a testbrowser will also be profiled.
     >>> len(PageTestLayer.profiler.getstats()) > profile_count
     True
 
-Once the layer finishes, it saves save the profile data in the requested file.
+Once the layer finishes, it saves the profile data in the requested file.
 
     >>> PageTestLayer.tearDown()
     >>> import pstats2
@@ -140,7 +140,7 @@ Making another request will create another profile.
 
 == Profiling scripts ==
 
-All scripts derived from LaunchpadScript supports a --profile option.
+All scripts derived from LaunchpadScript support a --profile option.
 The profile data is saved in the argument when the program exits.
 
     >>> from canonical.launchpad.scripts.base import LaunchpadScript
@@ -159,16 +159,6 @@ The profile data is saved in the argument when the program exits.
 
     >>> script.run()
     >>> stats = pstats2.Stats(profile_file)
-
-When that option isn't given, no profiling is done.
-
-    >>> os.remove(profile_file)
-    >>> script = ProfiledScript(
-    ...     'test-script.py', test_args=['test-script.py'])
-    >>> script.run()
-
-    >>> os.path.exists(profile_file)
-    False
 
 
 == Clean up ==
