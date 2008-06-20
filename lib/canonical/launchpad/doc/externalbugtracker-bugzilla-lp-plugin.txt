@@ -13,8 +13,35 @@ so that we can avoid network traffic in tests.
     >>> test_transport = TestBugzillaXMLRPCTransport()
     >>> bugzilla = BugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
-    >>> bugzilla.xmlrpc_transport is test_transport
+    >>> bugzilla.xmlrpc_transport == test_transport
     True
+
+
+== Authentication ==
+
+XML-RPC methods that modify data on the remote server require
+authentication. To authenticate, we create a LoginToken of type
+BUGTRACKER and pass it to the remote service's Launchapd.login() method.
+The remote service then checks that this token is valid and returns an
+appropriate response.
+
+We use the internal XML-RPC service to generate the token, which allows
+us to sidestep the issue of committing the new token to the database in
+order to make it visible to the remote Bugzilla.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestInternalXMLRPCTransport)
+    >>> bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport())
+
+BugzillaLPPlugin has an _authenticate() method, which is responsible for
+doing the authentication work with the remote server.
+
+    >>> test_transport.print_method_calls = True
+    >>> bugzilla._authenticate()
+    Using XML-RPC to generate token.
+    Successfully validated login token.
 
 
 == Getting the current time ==
@@ -22,6 +49,9 @@ so that we can avoid network traffic in tests.
 The BugzillaLPPlugin ExternalBugTracker, like all other
 ExternalBugTrackers, has a getCurrentDBTime() method, which returns the
 current time on the remote server.
+
+    >>> bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport)
 
     >>> from datetime import datetime
     >>> # It seems there's no way to create a UTC timestamp without

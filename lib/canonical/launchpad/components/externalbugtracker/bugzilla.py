@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical import encoding
+from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
     LookupTree, UnknownRemoteStatusError, UnparseableBugData,
@@ -292,17 +293,27 @@ class BugzillaLPPlugin(Bugzilla):
 
     implements(ISupportsCommentImport)
 
-    def __init__(self, baseurl, xmlrpc_transport=None):
+    def __init__(self, baseurl, xmlrpc_transport=None,
+                 internal_xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
+        self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
-            xmlrpc_transport = BugzillaXMLRPCTransport()
+            self.xmlrpc_transport = BugzillaXMLRPCTransport()
         else:
             self.xmlrpc_transport = xmlrpc_transport
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
         self.server = xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+    def _authenticate(self):
+        """Authenticate with the remote Bugzilla instance."""
+        internal_xmlrpc_server = xmlrpclib.ServerProxy(
+            config.checkwatches.xmlrpc_url,
+            transport=self.internal_xmlrpc_transport)
+
+        token_text = internal_xmlrpc_server.newBugTrackerToken()
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""

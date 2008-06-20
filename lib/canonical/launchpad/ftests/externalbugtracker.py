@@ -642,7 +642,7 @@ class MockTracRemoteBug:
             'resolution': self.resolution,}
 
 
-class TestTracInternalXMLRPCTransport:
+class TestInternalXMLRPCTransport:
     """Test XML-RPC Transport for the internal XML-RPC server.
 
     This transport executes all methods as the 'launchpad' db user, and
