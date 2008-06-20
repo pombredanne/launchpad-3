@@ -830,10 +830,10 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
-        if len(specifications) == 0:
-            return {}
-
         specification_ids = [spec.id for spec in specifications]
+
+        if len(specification_ids) == 0:
+            return {}
 
         results = Store.of(specifications[0]).execute("""
             SELECT SpecificationDependency.specification,
