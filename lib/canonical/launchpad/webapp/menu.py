@@ -423,7 +423,7 @@ class NavigationMenu(MenuBase):
         2) If the link target has query parameters, the request url must be
         a prefix of it to be the current url.
         """
-        if link_url.query:
+        if link_url.query is not None:
             return str(request_url).startswith(str(link_url))
         else:
             request_url_without_query = (
