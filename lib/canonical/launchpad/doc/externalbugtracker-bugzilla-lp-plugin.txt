@@ -39,9 +39,19 @@ BugzillaLPPlugin has an _authenticate() method, which is responsible for
 doing the authentication work with the remote server.
 
     >>> test_transport.print_method_calls = True
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
     >>> bugzilla._authenticate()
     Using XML-RPC to generate token.
     Successfully validated login token.
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+An auth_cookie will have been set on the XML-RPC transport.
+
+    >>> print test_transport.auth_cookie
+    Bugzilla_logincookie=...
 
 
 == Getting the current time ==
