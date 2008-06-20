@@ -382,9 +382,9 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO Override Section to: 'devel'\n"
             "INFO Override Priority to: 'EXTRA'\n"
             "INFO 'pmount-2:1.9-1/main/base/EXTRA' binary "
-                "overridden in hoary hppa\n"
+                "overridden in Ubuntu Hoary hppa\n"
             "INFO 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
-                "overridden in hoary i386")
+                "overridden in Ubuntu Hoary i386")
 
         self.assertCurrentBinary(
             hoary_i386, 'pmount', '0.1-1', 'main', 'devel', 'EXTRA')
