@@ -206,8 +206,8 @@ class OpenIdMixin:
         values['nickname'] = self.user.name
         values['fullname'] = self.user.displayname
         values['email'] = self.user.preferredemail.email
-        if self.user.timezone is not None:
-            values['timezone'] = self.user.timezone
+        if self.user.time_zone is not None:
+            values['timezone'] = self.user.time_zone
         shipment = self.user.lastShippedRequest()
         if shipment is not None:
             values['x_address1'] = shipment.addressline1
