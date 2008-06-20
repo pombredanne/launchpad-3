@@ -18,7 +18,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId,
+    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
     UnknownRemoteStatusError, UnparseableBugData)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
@@ -232,26 +232,21 @@ class Trac(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Trac status',
+    _status_lookup = LookupTree(
+        ('new', 'open', 'reopened', BugTaskStatus.NEW),
+        # XXX, 2007-08-06 Graham Binns:
+        #      We should follow dupes if possible.
+        ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
+        ('fixed', 'closed', BugTaskStatus.FIXRELEASED),
+        ('invalid', 'worksforme', BugTaskStatus.INVALID),
+        ('wontfix', BugTaskStatus.WONTFIX),
+        )
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`"""
-        status_map = {
-            'accepted': BugTaskStatus.CONFIRMED,
-            'assigned': BugTaskStatus.CONFIRMED,
-            # XXX: 2007-08-06 Graham Binns:
-            #      We should follow dupes if possible.
-            'duplicate': BugTaskStatus.CONFIRMED,
-            'fixed': BugTaskStatus.FIXRELEASED,
-            'closed': BugTaskStatus.FIXRELEASED,
-            'invalid': BugTaskStatus.INVALID,
-            'new': BugTaskStatus.NEW,
-            'open': BugTaskStatus.NEW,
-            'reopened': BugTaskStatus.NEW,
-            'wontfix': BugTaskStatus.WONTFIX,
-            'worksforme': BugTaskStatus.INVALID,
-        }
-
         try:
-            return status_map[remote_status]
+            return self._status_lookup.find(remote_status)
         except KeyError:
             raise UnknownRemoteStatusError(remote_status)
 

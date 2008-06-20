@@ -24,7 +24,7 @@ def nl_term_candidates(phrase):
     :phrase: a search phrase
     """
     cur = cursor()
-    cur.execute("SELECT ftq(%(phrase)s)" % sqlvalues(phrase=phrase))
+    cur.execute("SELECT ftq(%(phrase)s)::text" % sqlvalues(phrase=phrase))
     rs = cur.fetchall()
     assert len(rs) == 1, "ftq() returned more than one row"
     terms = rs[0][0]

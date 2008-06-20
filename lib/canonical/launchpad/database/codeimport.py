@@ -180,6 +180,13 @@ class CodeImport(SQLBase):
         self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
         self._removeJob()
 
+    def markFailing(self, data, user):
+        """See `ICodeImport`."""
+        if self.review_status == CodeImportReviewStatus.FAILING:
+            raise AssertionError('Review status is already failing.')
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.FAILING)
+        self._removeJob()
+
     def _setStatusAndEmail(self, data, user, status):
         """Update the review_status and email interested parties."""
         data['review_status'] = status
@@ -258,6 +265,8 @@ class CodeImportSet:
             review_status = CodeImportReviewStatus.REVIEWED
         elif import_status == ImportStatus.STOPPED:
             review_status = CodeImportReviewStatus.SUSPENDED
+        elif import_status == ImportStatus.TESTFAILED:
+            review_status = CodeImportReviewStatus.FAILING
         else:
             raise AssertionError(
                 "This import status should not produce a code import: %s"
@@ -275,7 +284,8 @@ class CodeImportSet:
             last_successful = series.datelastsynced
         elif series.importstatus in (ImportStatus.TESTING,
                                      ImportStatus.AUTOTESTED,
-                                     ImportStatus.PROCESSING):
+                                     ImportStatus.PROCESSING,
+                                     ImportStatus.TESTFAILED):
             last_successful = None
         else:
             raise AssertionError(

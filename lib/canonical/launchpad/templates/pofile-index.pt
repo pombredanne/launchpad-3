@@ -6,21 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="view/macro:page/default2.0"
-  i18n:domain="rosetta"
+  metal:use-macro="view/macro:page/onecolumn"
 >
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-stats" />
-
-</metal:leftportlets>
-
-
-<div metal:fill-slot="main">
+  <body>
+    <div metal:fill-slot="main">
 
     <div>
       <a tal:attributes="href context/potemplate/fmt:url"
@@ -57,6 +46,8 @@
         tal:condition="not: view/contributors"
         class="informational message"
       >No contributors recorded for this PO file.</p>
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-stats" />
     </div>
   </body>
 </html>

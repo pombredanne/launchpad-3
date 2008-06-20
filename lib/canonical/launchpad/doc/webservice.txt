@@ -876,9 +876,9 @@ describes the capabilities of the web service as a whole.
     >>> wadl_resource = wadl_request.traverse(app)
     >>> print wadl_resource(wadl_request)
     <?xml version="1.0"?>
-    <application ...>
+    <wadl:application ...>
     ...
-    </application>
+    </wadl:application>
 
 If the resources are improperly configured, the WADL can't be
 generated. Here's an example, where DishCollection is registered as an
@@ -917,6 +917,9 @@ Calling the collection resource yields a JSON document, which can be
 parsed with standard tools.
 
     >>> representation = simplejson.loads(collection())
+    >>> representation['resource_type_link']
+    u'http://api.launchpad.dev/beta/#CookbookCollection'
+
 
 === Pagination ===
 
@@ -925,7 +928,7 @@ particular collection is small enough to fit on one page; it's only
 got three entries.
 
     >>> sorted(representation.keys())
-    [u'entries', u'start', u'total_size']
+    [u'entries', u'resource_type_link', u'start', u'total_size']
     >>> len(representation['entries'])
     3
     >>> representation['total_size']
@@ -940,7 +943,8 @@ works. Here's page one, with two cookbooks on it.
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
-    [u'entries', u'next_collection_link', u'start', u'total_size']
+    [u'entries', u'next_collection_link', u'resource_type_link', 
+     u'start', u'total_size']
     >>> representation['next_collection_link']
     u'http://api.launchpad.dev/beta/cookbooks?ws.start=2&ws.size=2'
     >>> len(representation['entries'])
@@ -958,7 +962,8 @@ has the last cookbook on it.
     >>> representation = simplejson.loads(collection())
 
     >>> sorted(representation.keys())
-    [u'entries', u'prev_collection_link', u'start', u'total_size']
+    [u'entries', u'prev_collection_link', u'resource_type_link',
+     u'start', u'total_size']
     >>> representation['prev_collection_link']
     u'http://api.launchpad.dev/beta/cookbooks?ws.start=0&ws.size=2'
     >>> len(representation['entries'])
@@ -1104,6 +1109,8 @@ value (Brazilian) specified in CookbookFactoryOperation for it.
      (u'name', u'Feijoada'),
      (u'recipes_collection_link',
       u'http://api.launchpad.dev/beta/cookbooks/Feijoada/recipes'),
+     (u'resource_type_link',
+      u'http://api.launchpad.dev/beta/#CookbookEntry'),
      (u'self_link', u'http://api.launchpad.dev/beta/cookbooks/Feijoada')]
 
 You can also traverse from an entry to an item in a scoped collection:
@@ -1138,7 +1145,8 @@ Another example traversing to a comment:
     >>> comment_one_resource = request.traverse(app)
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
-    [(u'self_link',
+    [(u'resource_type_link', u'http://api.launchpad.dev/beta/#CommentEntry'),
+     (u'self_link',
       u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]
 

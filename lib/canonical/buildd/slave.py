@@ -17,6 +17,11 @@ from twisted.internet import reactor
 from twisted.internet import process
 from twisted.web import xmlrpc
 
+# cprov 20080611: in python2.4 posixfile.SEEK_END is deprecated and our
+# importfascist-check denies its import. When we migrate to python2.5,
+# we can use os.SEEK_END. See bug #239213.
+SEEK_END = 2
+
 devnull = open("/dev/null", "r")
 
 
@@ -24,7 +29,7 @@ def _sanitizeURLs(text_seq):
     """A generator that deletes URL passwords from a string sequence.
 
     This generator removes user/password data from URLs if embedded
-    in the latter as follows: scheme://user:passwd@netloc/path. 
+    in the latter as follows: scheme://user:passwd@netloc/path.
 
     :param text_seq: A sequence of strings (that may contain URLs).
     :return: A (sanitized) line stripped of authentication credentials.
@@ -366,21 +371,43 @@ class BuildDSlave(object):
         print "Build log: " + data
 
     def getLogTail(self):
-        """Return the tail of the log."""
-        ret = ""
-        if self._log is not None:
-            rlog = None
+        """Return the tail of the log.
+
+        If the buildlog is not yet opened for writing (self._log is None),
+        return a empty string.
+
+        It safely tries to open the 'buildlog', if it doesn't exist, due to
+        job cleanup or buildlog sanitization race-conditions, it also returns
+        an empty string.
+
+        When the 'buildlog' is present it return up to 2 KiB character of
+        the end of the file.
+
+        The returned content will be 'sanitized', see `_sanitizeURLs` for
+        further information.
+        """
+        if self._log is None:
+            return ""
+
+        rlog = None
+        try:
             try:
                 rlog = open(self.cachePath("buildlog"), "r")
-                rlog.seek(0, 2)
+            except IOError:
+                ret = ""
+            else:
+                # We rely on good OS practices that keep the file handler
+                # usable once it's opened. So, if open() is ok, a subsequent
+                # seek/tell/read will be safe.
+                rlog.seek(0, SEEK_END)
                 count = rlog.tell()
                 if count > 2048:
                     count = 2048
-                rlog.seek(-count, 2)
+                rlog.seek(-count, SEEK_END)
                 ret = rlog.read(count)
-            finally:
-                if rlog is not None:
-                    rlog.close()
+        finally:
+            if rlog is not None:
+                rlog.close()
 
         if self.manager.is_archive_private:
             # This is a build in a private archive. We need to scrub
