@@ -724,10 +724,8 @@ is kept in the <resource_type> tag.
     >>> entry_type.tag
     '...resource_type'
 
-    >>> doc_and_methods = list(entry_type)
-    >>> doc = doc_and_methods[0]
-    >>> methods = doc_and_methods[1:]
-    >>> get, put, patch, post = methods
+    >>> methods = list(entry_type)
+    >>> get, put, patch, transitionToStatus, transitionToAssignee = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
@@ -739,7 +737,7 @@ XML id. Here that's not a problem; we have one custom POST method
 ('BugTaskEntryAdapter-transitionToStatus'), plus the standard GET, PATCH, and PUT.
 
     >>> [method.attrib['name'] for method in methods]
-    ['GET', 'PUT', 'PATCH', 'POST']
+    ['GET', 'PUT', 'PATCH', 'POST', 'POST']
 
     >>> [method.attrib['id'] for method in methods]
     ['BugTaskEntryAdapter-get', 'BugTaskEntryAdapter-put',
@@ -790,16 +788,9 @@ link to them instead of describing them every time.
 
 === Custom operations ===
 
-Custom operations may have human-readable documentation.
-
-    >>> post[0].tag
-    '...doc'
-    >>> post[0].text
-    "<p>An operation that modifies a bug task's status.</p>..."
-
 Custom operations define parameters, just like representations do.
 
-    >>> post_params = post[1]
+    >>> post_params = transitionToStatus[0]
     >>> [param.attrib['name'] for param in post_params]
     ['ws.op', 'status']
 
@@ -810,13 +801,14 @@ required, and fixed to a particular value.
     >>> ws_op.attrib['required']
     'true'
     >>> ws_op.attrib['fixed']
-    'change_status'
+    'transitionToStatus'
 
 Depending on the operation there might be other parameters. If the
 parameters of the right type, they too can be described with a list of
 valid values.
 
-    >>> sorted([value.attrib['value'] for value in list(status)])
+    >>> values = status[1:]
+    >>> sorted([value.attrib['value'] for value in values])
     ['Confirmed', 'Fix Committed', ... "Won't Fix"]
 
 
