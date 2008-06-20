@@ -3,7 +3,7 @@
 import optparse
 
 from os import curdir, listdir, sep, symlink
-from os.path import abspath, exists, join, realpath
+from os.path import abspath, basename, exists, join, realpath
 from sys import stdout
 import sys
 from urllib import unquote
@@ -96,8 +96,7 @@ if __name__ == '__main__':
         try:
             symlink(target, link)
         except OSError:
-            print 'Error creating %s:' % link
-            print '   ', sys.exc_value
+            print 'Error linking %s:' % basename(link), sys.exc_value
             continue
         if options.verbose:
             stdout.write('%s -> %s\n' % (
