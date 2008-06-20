@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import os
 import re
+import random
 import time
 import urlparse
 import xmlrpclib
@@ -32,6 +33,7 @@ from canonical.launchpad.interfaces import (
     UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -411,7 +413,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
     # Map namespaces onto method names.
     methods = {
         'Bug': ['comments', 'get_bugs'],
-        'Launchpad': ['time'],
+        'Launchpad': ['login', 'time'],
         'Test': ['login_required']
         }
 
@@ -475,6 +477,31 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
     def login_required(self):
         # This method only exists to demonstrate login required methods.
         return "Wonderful, you've logged in! Aren't you a clever biped?"
+
+    def login(self, arguments):
+        token_text = arguments['token']
+        token = getUtility(ILoginTokenSet)[token_text]
+
+        if token.tokentype.name != 'BUGTRACKER':
+            raise AssertionError(
+                'Invalid token type: %s' % token.tokentype.name)
+        if token.date_consumed is not None:
+            raise AssertionError("Token has already been consumed.")
+        token.consume()
+
+        if self.print_method_calls:
+            print "Successfully validated the token."
+
+        # Cheekily set the Set-Cookie header.
+        random_cookie = str(random.random())
+        self.last_response_headers = {
+            'Set-Cookie': 'Set-Cookie: Bugzilla_logincookie=%s;' %
+                           random_cookie,
+            }
+
+        # We always return the same user ID.
+        # And yes, we have to listify this. Because of xmlrpclib.py:1387.
+        return [{'user_id': 42}]
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""

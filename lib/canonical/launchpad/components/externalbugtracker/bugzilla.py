@@ -315,6 +315,20 @@ class BugzillaLPPlugin(Bugzilla):
 
         token_text = internal_xmlrpc_server.newBugTrackerToken()
 
+        user_id = self.server.Launchpad.login({'token': token_text})
+        auth_cookie = self._extractAuthCookie(
+            self.xmlrpc_transport.last_response_headers['Set-Cookie'])
+
+        self.xmlrpc_transport.auth_cookie = auth_cookie
+
+    def _extractAuthCookie(self, cookie_header):
+        """Extract the Bugzilla authentication cookie from the header."""
+        cookie = cookie_header.split(';')[0]
+        if cookie.startswith('Bugzilla_logincookie='):
+            return cookie
+        else:
+            return None
+
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}
@@ -462,10 +476,49 @@ class BugzillaXMLRPCTransport(xmlrpclib.Transport):
     Sends a cookie header for authentication.
     """
 
-    auth_cookie = None
+    def __init__(self):
+        self.last_response_headers = None
+        self.auth_cookie = None
 
     def send_host(self, connection, host):
         """Send the host and cookie headers."""
         xmlrpclib.Transport.send_host(self, connection, host)
         if self.auth_cookie is not None:
-            connection.putheader('Bugzilla_logincookie', self.auth_cookie)
+            connection.putheader('Cookie', self.auth_cookie)
+
+    # XXX 2008-08-20 gmb:
+    #     Yes, this is really, really, really nasty. This is basically
+    #     an exact copy of the request() method in xmlrpclib. The
+    #     trouble is that the original just discards the response
+    #     headers, with which we actually want to do something.
+    def request(self, host, handler, request_body, verbose=0):
+        """Issue an XML-RPC request.
+
+        This method overrides the original request() method of Transport in
+        order to allow us to handle cookies correctly.
+        """
+        connection = self.make_connection(host)
+        if verbose:
+            connection.set_debuglevel(1)
+
+        self.send_request(connection, handler, request_body)
+        self.send_host(connection, host)
+        self.send_user_agent(connection)
+        self.send_content(connection, request_body)
+
+        errcode, errmsg, headers = connection.getreply()
+        self.last_response_headers = headers
+
+        if errcode != 200:
+            raise ProtocolError(
+                host + handler, errcode, errmsg, headers)
+
+        self.verbose = verbose
+
+        try:
+            sock = connection._conn.sock
+        except AttributeError:
+            sock = None
+
+        return self._parse_response(connection.getfile(), sock)
+
