@@ -131,7 +131,7 @@ class HasParamsMixin:
                                      % (param_values[name], name,
                                         param.fixed_value))
                 param_values[name] = param.fixed_value
-            if (param.required and not param_values.has_key(name)
+            if (param.is_required and not param_values.has_key(name)
                 and enforce_completeness):
                 raise ValueError("No value for required parameter '%s'"
                                  % name)
@@ -593,7 +593,7 @@ class Parameter(WADLBase):
         return self.tag.attrib.get('fixed')
 
     @property
-    def required(self):
+    def is_required(self):
         """Whether or not a value for this parameter is required."""
         return self.tag.attrib.get('required', False).lower() in ['1', 'true']
 
