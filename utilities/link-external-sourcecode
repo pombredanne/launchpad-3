@@ -96,7 +96,7 @@ if __name__ == '__main__':
         try:
             symlink(target, link)
         except OSError:
-            print 'Error linking %s:' % basename(link), sys.exc_value
+            print '  Error linking %s:' % basename(link), sys.exc_value
             continue
         if options.verbose:
             stdout.write('%s -> %s\n' % (
