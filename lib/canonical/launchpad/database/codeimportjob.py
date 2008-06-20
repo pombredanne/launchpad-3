@@ -238,7 +238,7 @@ class CodeImportJobWorkflow:
         # interface to do this. So we must use removeSecurityProxy here.
         naked_job = removeSecurityProxy(import_job)
         naked_job.destroySelf()
-        # Only start a new one if not invalid or suspended.
+        # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import)
         # If the status was successful, update the date_last_successful and
