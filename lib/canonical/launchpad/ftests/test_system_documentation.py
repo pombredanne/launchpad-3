@@ -425,6 +425,11 @@ special = {
             tearDown=uploadQueueTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'bugnotification-comment-syncing-team.txt': LayeredDocFileSuite(
+            '../doc/bugnotification-comment-syncing-team.txt',
+            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
+            tearDown=bugNotificationSendingTearDown
+            ),
     'bugnotificationrecipients.txt': LayeredDocFileSuite(
             '../doc/bugnotificationrecipients.txt',
             setUp=lobotomizeSteveASetUp, tearDown=tearDown,
