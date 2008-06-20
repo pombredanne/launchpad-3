@@ -662,6 +662,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL);
@@ -1884,6 +1890,13 @@ INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, c
 
 
 ALTER TABLE country ENABLE TRIGGER ALL;
+
+
+ALTER TABLE customlanguagecode DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE customlanguagecode ENABLE TRIGGER ALL;
 
 
 ALTER TABLE cve DISABLE TRIGGER ALL;
@@ -4171,6 +4184,13 @@ ALTER TABLE openidrpconfig DISABLE TRIGGER ALL;
 
 
 ALTER TABLE openidrpconfig ENABLE TRIGGER ALL;
+
+
+ALTER TABLE openidrpsummary DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidrpsummary ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagebugsupervisor DISABLE TRIGGER ALL;
