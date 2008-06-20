@@ -95,3 +95,27 @@ If the 'Cancel' button is selected the person's overview page is shown.
     >>> browser.getControl('Cancel').click()
     >>> print browser.url
     http://launchpad.dev/~sabdfl
+
+== Protecting the rollout ==
+
+If the is_subscription_feature_active config variable is false,
+then a simple message will be displayed instead of showing the form.
+# XXX BradCrittenden 2008-05-22 bug=234070
+# Remove this config when the feature is launched.
+
+    >>> from canonical.config import config
+    >>> from textwrap import dedent
+    >>> import transaction
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> test_data = dedent("""
+    ...     [commercial]
+    ...     is_subscription_feature_active: False
+    ...     """)
+    >>> config.push('test_data', test_data)
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> main = find_main_content(browser.contents)
+    >>> print extract_text(main)
+    Redeem Vouchers for Commercial Subscriptions
+    Voucher redemption is not yet enabled in Launchpad.
