@@ -889,6 +889,21 @@ class SubmissionParser:
             if parent_udi is not None:
                 hal_devices[parent_udi].addChild(device)
 
+    def getKernelPackageName(self):
+        """Return the kernel package name of the submission,"""
+        root_hal_device = self.hal_devices[ROOT_UDI]
+        kernel_version = root_hal_device.getProperty('system.kernel.version')
+        kernel_package_name = 'linux-image-' + kernel_version
+        if (not kernel_package_name in
+                self.parsed_data['software']['packages']):
+            self._logWarning(
+                'Inconsistent kernel version data: According to HAL the '
+                'kernel is %s, but the submission does not know about a '
+                'kernel package %s' %(kernel_version, kernel_package_name),
+                self.submission_key)
+            return None
+        return kernel_package_name
+
 
 class HALDevice:
     """The representation of a HAL device node."""
@@ -975,12 +990,14 @@ class HALDevice:
         parent = self.parent
         if parent is None:
             self.parser._logWarning(
-                'Found SCSI device without a parent: %s.' % self.udi)
+                'Found SCSI device without a parent: %s.' % self.udi,
+                self.parser.submission_key)
             return None
         grandparent = parent.parent
         if grandparent is None:
             self.parser._logWarning(
-                'Found SCSI device without a grandparent: %s.' % self.udi)
+                'Found SCSI device without a grandparent: %s.' % self.udi,
+                self.parser.submission_key)
             return None
 
         grandparent_bus = grandparent.getProperty('info.bus')
@@ -990,10 +1007,13 @@ class HALDevice:
                 # This is not a storage class PCI device? This
                 # indicates a bug somewhere in HAL or in the hwdb
                 # client, or a fake submission.
-                self.parser.logWarning(
+                self.parser._logWarning(
                     'A (possibly fake) SCSI device %s is connected to '
                     'PCI device %s that has the PCI device class %s; '
-                    'expected class 1.')
+                    'expected class 1.'
+                    % (self.udi, grandparent.udi,
+                       grandparent.getProperty('pci.device_class')),
+                    self.parser.submission_key)
                 return None
             pci_subclass = grandparent.getProperty('pci.device_subclass')
             return self.pci_storage_subclass_hwbus.get(pci_subclass)
@@ -1075,9 +1095,10 @@ class HALDevice:
             return self.translateScsiBus()
         elif device_bus == 'pci':
             return self.translatePciBus()
-        elif self.udi == '/org/freedesktop/Hal/devices/computer':
-            # The computer itself. HAL gives it the info.bus property,
-            # 'unknown', hence it is better to rely on the machine's
+        elif self.udi == ROOT_UDI:
+            # The computer itself. HAL provides noo info.bus property on
+            # from Hardy on and info.bus to 'unknown' on older Ubuntu
+            # version, hence it is better to rely on the machine's
             # UDI for identification.
             return HWBus.SYSTEM
         else:
@@ -1167,7 +1188,7 @@ class HALDevice:
           parent and by their USB vendor/product IDs, which are 0:0.
         """
         bus = self.getProperty('info.bus')
-        if bus in (None, 'platform', 'pnp', 'usb'):
+        if bus in (None, 'usb'):
             # bus is None for a number of "virtual components", like
             # /org/freedesktop/Hal/devices/computer_alsa_timer or
             # /org/freedesktop/Hal/devices/computer_oss_sequencer, so
@@ -1179,18 +1200,15 @@ class HALDevice:
             # Since these components are not the most important ones
             # for the HWDB, we'll ignore them for now. Bug 237038.
             #
-            # info.bus == 'platform' is used for devices like the i8042
-            # which controls keyboard and mouse; HAL has no vendor
-            # information for these devices, so there is no point to
-            # treat them as real devices.
-            #
-            # info.bus == 'pnp' is used for components like the ancient
-            # AT DMA controller or the keyboard. Like for the bus
-            # 'platform', HAL does not provide any vendor data.
-            #
             # info.bus == 'usb' is used for end points of USB devices;
             # the root node of a USB device has info.bus == 'usb_device'.
-            return False
+            #
+            # The HAL version from Hardy does not provide an info.bus
+            # property for the computer itself.
+            if self.udi == ROOT_UDI:
+                return True
+            else:
+                return False
         elif bus == 'usb_device':
             vendor_id = self.getProperty('usb_device.vendor_id')
             product_id = self.getProperty('usb_device.product_id')
@@ -1249,6 +1267,46 @@ class HALDevice:
                 result.extend(sub_device.getRealChildren())
         return result
 
+    @property
+    def is_processible(self):
+        """Can this device be stored in the HWDB?
+
+        Devices are identifed by (bus, vendor_id, product_id).
+        At present we cannot generate reliable vendor and/or product
+        IDs for devices where
+        info.bus in ('pnp', 'platform', 'ieee1394', 'pcmcia').
+
+        info.bus == 'platform' is used for devices like the i8042
+        which controls keyboard and mouse; HAL has no vendor
+        information for these devices, so there is no point to
+        treat them as real devices.
+
+        info.bus == 'pnp' is used for components like the ancient
+        AT DMA controller or the keyboard. Like for the bus
+        'platform', HAL does not provide any vendor data.
+
+        XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
+        nasty: The standard does not define any specification
+        for product IDs or product names, hence HAL often uses
+        the value 0 for the property ieee1394.product_id and a
+        value like "Unknown (0x00d04b)" for ieee.product, where
+        0x00d04b is the vendor ID. I have currently no idea how
+        to find or generate something that could be used as the
+        product ID, so IEEE1394 devices are at present simply
+        not stored in the HWDB. Otherwise, we'd pollute the HWDB
+        with unreliable data.
+
+        While PCMCIA devices have a manufacturer ID, at least its
+        value as provided by HAL in pcmcia.manf_id it is not very
+        reliable. The HAL property pcmcia.prod_id1 is too not
+        reliable. Sometimes it contains a useful vendor name like
+        "O2Micro" or "ATMEL", but sometimes useless values like
+        "IEEE 802.11b". See for example
+        drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
+        """
+        bus = self.getProperty('info.bus')
+        return not bus in ('pnp', 'platform', 'ieee1394', 'pcmcia')
+
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
 
@@ -1261,11 +1319,11 @@ class HALDevice:
             'Unexpected value of type_: %r' % type_)
 
         bus = self.getProperty('info.bus')
-        if self.udi == '/org/freedesktop/Hal/devices/computer':
+        if self.udi == ROOT_UDI:
             # HAL sets info.product to "Computer", provides no property
             # info.vendor and info.bus is "unknown", hence the logic
             # below does not work properly.
-            return self.getProperty('system.' + type_)
+            return self.getProperty('system.hardware.' + type_)
         elif bus == 'scsi':
             if type_ == 'vendor':
                 result = self.getProperty('scsi.vendor').strip()
@@ -1320,10 +1378,13 @@ class HALDevice:
         assert type_ in ('vendor', 'product'), (
             'Unexpected value of type_: %r' % type_)
         bus = self.getProperty('info.bus')
-        if bus is None:
+        if self.udi == ROOT_UDI:
+            # HAL does not provide IDs for a system itself, we use the
+            #vendor resp. product name instead.
+            return self.getVendorOrProduct(type_)
+        elif bus is None:
             return None
-        elif (bus == 'scsi'
-              or self.udi == '/org/freedesktop/Hal/devices/computer'):
+        elif bus == 'scsi' or self.udi == ROOT_UDI:
             # The SCSI specification does not distinguish between a
             # vendor/model ID and vendor/model name: the SCSI INQUIRY
             # command returns an 8 byte string as the vendor name and
@@ -1347,3 +1408,48 @@ class HALDevice:
     def product_id(self):
         """The product ID of this device."""
         return self.getVendorOrProductID('product')
+
+
+    db_format_for_vendor_id = {
+        'pci': '0x%04x',
+        'usb_device': '0x%04x',
+        'scsi': '%-8s',
+    }
+
+    @property
+    def vendor_id_for_db(self):
+        """The vendor ID in the representation needed for the HWDB tables.
+
+        USB and PCI IDs are represented in the database in hexadecimal,
+        while the IDs provided by HAL are integers.
+
+        The SCSI vendor name is right-padded with spaces to 8 bytes.
+        """
+        bus = self.getProperty('info.bus')
+        format = self.db_format_for_vendor_id.get(bus, None)
+        if format is None:
+            return self.vendor_id
+        else:
+            return format % self.vendor_id
+
+    db_format_for_product_id = {
+        'pci': '0x%04x',
+        'usb_device': '0x%04x',
+        'scsi': '%-16s',
+    }
+
+    @property
+    def product_id_for_db(self):
+        """The product ID in the representation needed for the HWDB tables.
+
+        USB and PCI IDs are represented in the database in hexadecimal,
+        while the IDs provided by HAL are integers.
+
+        The SCSI product name is right-padded with spaces to 16 bytes.
+        """
+        bus = self.getProperty('info.bus')
+        format = self.db_format_for_product_id.get(bus, None)
+        if format is None:
+            return self.product_id
+        else:
+            return format % self.product_id
