@@ -467,7 +467,7 @@ class RequestDefinition(WADLBase, HasParamsMixin):
     def representation_definition(self, media_type=None):
         """Return the appropriate representation definition."""
         for representation in self.representations:
-            if media_type is None or definition.media_type == media_type:
+            if media_type is None or representation.media_type == media_type:
                 return representation
         return None
 
