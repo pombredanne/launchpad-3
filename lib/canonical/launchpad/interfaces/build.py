@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildstateTransitionError',
     'BuildStatus',
     'IBuild',
     'IBuildSet',
@@ -17,6 +18,10 @@ from zope.schema import Timedelta
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
+
+class BuildstateTransitionError(Exception):
+    """Error raised when an invalid buildstate transition occurs."""
+
 
 class IBuild(Interface):
     """A Build interface"""
@@ -140,6 +145,10 @@ class IBuild(Interface):
         :raise: AssertionError when the build job is not in the
             `BuildStatus.NEEDSBUILD` state.
         """
+
+    def forceState(value):
+        """Set the build state to the value passed no matter what."""
+
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""

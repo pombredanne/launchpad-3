@@ -34,12 +34,67 @@ from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IBuild, IBuildSet, IBuilderSet,
-    NotFoundError, ILaunchpadCelebrities, PackagePublishingPocket,
-    PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, BuildstateTransitionError, IBuild,
+    IBuildSet, IBuilderSet, NotFoundError, ILaunchpadCelebrities,
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+
+
+def update_archive_counters(obj, attr, value):
+    """Updates the archive build counters upon build state change.
+    """
+    if obj._SO_creating:
+        # A new build instance was created.
+        if value == BuildStatus.NEEDSBUILD:
+            # A pending build was created.
+            obj.createdAsPending()
+        elif value == BuildStatus.FULLYBUILT:
+            # A successfully completed build was created.
+            obj.createdAsSucceeded()
+        elif value == BuildStatus.SUPERSEDED:
+            # A superseded build was created, no-op.
+            obj.createdAsDiscontinued()
+        elif value == BuildStatus.BUILDING:
+            # A currently building build was created.
+            obj.createdAsStarted()
+        else:
+            # A failed build was created.
+            obj.createdAsFailed()
+    else:
+        # The build state of a build instance was updated.
+        # Check whether the build state value actually changed.
+        if obj.buildstate == value:
+            # The value did not change, nothing to do.
+            pass
+        else:
+            # The build state value did change.
+            if isinstance(value, tuple):
+                # This is a forced build state change. The actual
+                # value is contained within a 1-tuple.
+                [value] = value
+            else:
+                # This is a normal build state change, invoke the
+                # corresponding state transition method.
+                if value == BuildStatus.NEEDSBUILD:
+                    # A build is being retried.
+                    obj.buildRetried()
+                elif value == BuildStatus.FULLYBUILT:
+                    # A build succeeded.
+                    obj.buildSucceeded()
+                elif value == BuildStatus.SUPERSEDED:
+                    # A build was superseded.
+                    obj.buildDiscontinued()
+                elif value == BuildStatus.BUILDING:
+                    # A build started.
+                    obj.buildStarted()
+                else:
+                    # A build failed.
+                    obj.buildFailed(value)
+
+    return value
+
 
 class Build(SQLBase):
     implements(IBuild)
@@ -52,7 +107,8 @@ class Build(SQLBase):
     distroarchseries = ForeignKey(dbName='distroarchseries',
         foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True,
-                         schema=BuildStatus)
+                         schema=BuildStatus,
+                         storm_validator=update_archive_counters)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
@@ -177,16 +233,9 @@ class Build(SQLBase):
             # re-tried.
             return False
 
-        failed_buildstates = [
-            BuildStatus.FAILEDTOBUILD,
-            BuildStatus.MANUALDEPWAIT,
-            BuildStatus.CHROOTWAIT,
-            BuildStatus.FAILEDTOUPLOAD,
-            ]
-
         # If the build is currently in any of the failed states,
         # it may be retried.
-        return self.buildstate in failed_buildstates
+        return self.hasFailed()
 
     @property
     def can_be_rescored(self):
@@ -658,6 +707,88 @@ class Build(SQLBase):
             simple_sendmail(
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
+
+    def hasFailed(self):
+        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
+                                   BuildStatus.MANUALDEPWAIT,
+                                   BuildStatus.CHROOTWAIT,
+                                   BuildStatus.FAILEDTOUPLOAD]
+
+    def createdAsPending(self):
+        """Handle the creation of a build in a 'pending' state."""
+        self.archive.total_count += 1
+        self.archive.pending_count += 1
+
+    def createdAsSucceeded(self):
+        """Handle the creation of a build in a 'succeeded' state."""
+        self.archive.total_count += 1
+        self.archive.succeeded_count += 1
+
+    def createdAsDiscontinued(self):
+        """Handle the creation of a build in a 'superseded' state."""
+        pass
+
+    def createdAsStarted(self):
+        """Handle the creation of a build in a 'building' state."""
+        self.archive.total_count += 1
+        self.archive.building_count += 1
+
+    def createdAsFailed(self):
+        """Handle the creation of a build in a 'failed' state."""
+        self.archive.total_count += 1
+        self.archive.failed_count += 1
+
+    def buildRetried(self):
+        """Handle the transition of the build state to 'pending'."""
+        # Only failed builds may be retried.
+        if not self.hasFailed():
+            raise BuildstateTransitionError(
+            "Build state transition failure (%s -> %s)" % (
+            self.buildstate, BuildStatus.NEEDSBUILD))
+        self.archive.pending_count += 1
+        self.archive.failed_count -= 1
+
+    def buildSucceeded(self):
+        """Handle the transition of the build state to 'succeeded'."""
+        if self.buildstate != BuildStatus.BUILDING:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, BuildStatus.FULLYBUILT))
+        self.archive.succeeded_count += 1
+        self.archive.building_count -= 1
+
+    def buildDiscontinued(self):
+        """Handle the transition of the build state to 'superseded'."""
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, BuildStatus.SUPERSEDED))
+        self.archive.pending_count -= 1
+        self.archive.total_count -= 1
+
+    def buildStarted(self):
+        """Handle the transition of the build state to 'building'."""
+        if self.buildstate != BuildStatus.NEEDSBUILD:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, BuildStatus.BUILDING))
+        self.archive.building_count += 1
+        self.archive.pending_count -= 1
+
+    def buildFailed(self, value):
+        """Handle the transition of the build state to 'failed'."""
+        if self.buildstate != BuildStatus.BUILDING:
+            raise BuildstateTransitionError(
+                "Build state transition failure (%s -> %s)" % (
+                self.buildstate, value))
+        self.archive.failed_count += 1
+        self.archive.building_count -= 1
+
+    def forceState(self, value):
+        """Set the build state to the value passed no matter what."""
+        # Packing the actual build state value in a 1-tuple will indicate
+        # that this is a forced state change to the validator function.
+        self.buildstate = (value,)
 
 
 class BuildSet:
