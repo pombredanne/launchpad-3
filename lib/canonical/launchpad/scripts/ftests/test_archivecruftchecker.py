@@ -18,7 +18,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackagePublishingPocket)
-from canonical.launchpad.scripts.ftests.test_ftpmaster import LocalLogger
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
 from canonical.testing import LaunchpadZopelessLayer
@@ -46,13 +46,9 @@ class TestArchiveCruftChecker(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        """Setup the test environment.
-
-        Retrieve useful instances and create a test archive.
-        """
+        """Setup the test environment."""
         self.layer.switchDbUser(config.archivepublisher.dbuser)
-        self.log = LocalLogger()
-
+        self.log = QuietFakeLogger()
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.archive_path = "/var/tmp/archive"
@@ -62,7 +58,8 @@ class TestArchiveCruftChecker(unittest.TestCase):
         """Clean up test environment and remove the test archive."""
         removeTestArchive()
 
-    def test_initialize_success(self):
+
+    def testInitializeSuccess(self):
         """Test ArchiveCruftChecker initialization process.
 
         Check if the correct attributes are built after initialization.
@@ -71,6 +68,7 @@ class TestArchiveCruftChecker(unittest.TestCase):
             self.log, distribution_name='ubuntutest', suite='breezy-autotest',
             archive_path=self.archive_path)
         checker.initialize()
+
         self.assertEqual(self.ubuntutest, checker.distro)
         self.assertEqual(self.breezy_autotest, checker.distroseries)
         self.assertEqual(PackagePublishingPocket.RELEASE, checker.pocket)
@@ -81,34 +79,74 @@ class TestArchiveCruftChecker(unittest.TestCase):
         self.assertEqual(0, len(checker.arch_any))
         self.assertEqual(0, len(checker.source_versions))
         self.assertEqual(0, len(checker.source_binaries))
-        self.log.read()
 
-    def test_initialize_unknown_suite(self):
-        """ArchiveCruftChecker should raise on an unknown suite."""
+        # The 'dist_archive' is a absolute path to the 'dists' section
+        # based on the given 'archive_path'.
+        self.assertEqual(
+            checker.dist_archive,
+            '/var/tmp/archive/ubuntutest/dists/breezy-autotest'
+            )
+
+        # The 'components' dictionary contains all components selected
+        # for the given distroseries organized as:
+        #  {$component_name: IComponent, ...}
+        for component_name, component in checker.components.iteritems():
+            self.assertEqual(component_name, component.name)
+        checker_components = sorted(
+            [component_name for component_name in checker.components.keys()])
+        self.assertEqual(
+            checker_components,
+            ['main', 'multiverse', 'restricted', 'universe'])
+
+        # The 'components_and_di' lists the relative 'dists' paths
+        # for all components subsections of the archive which contains
+        # indexes.
+        expected = [
+            'main',
+            'main/debian-installer',
+            'multiverse',
+            'multiverse/debian-installer',
+            'restricted',
+            'restricted/debian-installer',
+            'universe',
+            'universe/debian-installer'
+            ]
+        self.assertEqual(sorted(checker.components_and_di), expected)
+
+    def testSuiteDistArchive(self):
+        """Check if 'dist_archive' path considers pocket correctly."""
         checker = ArchiveCruftChecker(
-            self.log, distribution_name='ubuntu', suite='misarable',
+            self.log, distribution_name='ubuntutest',
+            suite='breezy-autotest-security',
             archive_path=self.archive_path)
-        self.assertRaises(
-            ArchiveCruftCheckerError, checker.initialize)
-        self.log.read()
+        checker.initialize()
 
-    def test_initialize_unknown_distribution(self):
-        """ArchiveCruftChecker should raise on an unknown distribution."""
+        self.assertEqual(
+            checker.dist_archive,
+            '/var/tmp/archive/ubuntutest/dists/breezy-autotest-security'
+            )
+
+    def testInitializeFailure(self):
+        """ArchiveCruftCheck initialization failures.
+
+          * An unknown suite;
+          * An unknown distribution;
+          * on the absence of distribution
+         """
+        checker = ArchiveCruftChecker(
+            self.log, distribution_name='ubuntu', suite='miserable',
+            archive_path=self.archive_path)
+        self.assertRaises(ArchiveCruftCheckerError, checker.initialize)
+
         checker = ArchiveCruftChecker(
             self.log, distribution_name='foobuntu', suite='breezy-autotest',
             archive_path=self.archive_path)
-        self.assertRaises(
-            ArchiveCruftCheckerError, checker.initialize)
-        self.log.read()
+        self.assertRaises(ArchiveCruftCheckerError, checker.initialize)
 
-    def test_initialize_no_distro_in_archive(self):
-        """ArchiveCruftChecker should raise on the absence of distribution."""
         checker = ArchiveCruftChecker(
             self.log, distribution_name='ubuntu', suite='breezy-autotest',
             archive_path=self.archive_path)
-        self.assertRaises(
-            ArchiveCruftCheckerError, checker.initialize)
-        self.log.read()
+        self.assertRaises(ArchiveCruftCheckerError, checker.initialize)
 
 
 def test_suite():
