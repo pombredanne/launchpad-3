@@ -140,8 +140,8 @@ if the product has License.OTHER_PROPRIETARY.
     >>> bzr.qualifies_for_free_hosting
     True
 
-If the licenses or license_info attributes are changed, the license_reviewed
-and license_approved attributes are reset to false.
+If the licenses or license_info attributes are changed, the
+license_reviewed and license_approved attributes are reset to false.
 
     >>> bzr.license_approved = True
     >>> bzr.license_reviewed = True
