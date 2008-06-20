@@ -119,9 +119,9 @@ class MenuAPI:
 
         It's used with expressions like context/menu:bugs/subscribe.
 
-        :returns: A dictionary mapping the link name to the associated Link
+        :return: A dictionary mapping the link name to the associated Link
             object.
-        :raises AttributeError: when there is no application menu for the
+        :raise AttributeError: when there is no application menu for the
             facet.
         """
         menu = queryAdapter(self._context, IApplicationMenu, facet)
@@ -151,7 +151,7 @@ class MenuAPI:
         return request_urlobj
 
     def facet(self):
-        """Returns the IFacetMenu related to the context."""
+        """Return the IFacetMenu related to the context."""
         try:
             menu = nearest_adapter(self._context, IFacetMenu)
         except NoCanonicalUrl:
