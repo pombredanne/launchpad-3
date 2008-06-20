@@ -392,6 +392,12 @@ class BranchMergeProposal(SQLBase):
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
+        # Delete the related CodeReviewVoteReferences.
+        for vote in self.votes:
+            vote.destroySelf()
+        # Delete the related CodeReviewComments.
+        for comment in self.all_comments:
+            comment.destroySelf()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):

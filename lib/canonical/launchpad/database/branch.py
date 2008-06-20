@@ -389,28 +389,18 @@ class Branch(SQLBase):
         deletion_operations = []
         # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
-            for comment in merge_proposal.all_comments:
-                deletion_operations.append(
-                    DeletionCallable(comment,
-                        _('This is a comment about merging this branch'
-                        ' into another.'), comment.destroySelf))
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the source branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
-            for comment in merge_proposal.all_comments:
-                deletion_operations.append(
-                    DeletionCallable(comment,
-                        _('This is a comment about merging another branch'
-                        ' into this one.'), comment.destroySelf))
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the target branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))

@@ -431,6 +431,20 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
 
+    def test_sourceBranchWithCodeReviewVoteReference(self):
+        """Break_references handles CodeReviewVoteReference source branch."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.nominateReviewer(self.factory.makePerson(),
+                                        self.factory.makePerson())
+        merge_proposal.source_branch.destroySelf(break_references=True)
+
+    def test_targetBranchWithCodeReviewVoteReference(self):
+        """Break_references handles CodeReviewVoteReference target branch."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.nominateReviewer(self.factory.makePerson(),
+                                        self.factory.makePerson())
+        merge_proposal.target_branch.destroySelf(break_references=True)
+
     def test_ClearDependentBranch(self):
         """ClearDependent.__call__ must clear the dependent branch."""
         merge_proposal = removeSecurityProxy(self.makeMergeProposals()[0])
