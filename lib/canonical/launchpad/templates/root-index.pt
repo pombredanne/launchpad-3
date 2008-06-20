@@ -30,6 +30,7 @@
 
       <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
       <form
+        id="project-search"
         class="central front_page"
         style="text-align: center;"
         action="/projects/"

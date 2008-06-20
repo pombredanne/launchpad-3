@@ -14,12 +14,9 @@
 
   <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-    <form class="central" method="get" action="#"
+    <form id="project-search" class="central" method="get"
           tal:attributes="action request/URL"
           accept-charset="UTF-8">
       <input size="30" name="text" tal:attributes="value view/search_string" />

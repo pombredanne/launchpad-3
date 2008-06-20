@@ -56,7 +56,7 @@ A search may yield no result. In this case, we describe the search
 that was done, and explain that no matches were found.
 
     >>> anon_browser.getControl(name="text").value = "biscoito"
-    >>> anon_browser.getControl("Search").click()
+    >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'search-results'))
     No packages matching "biscoito" are published in Ubuntu Warty i386.

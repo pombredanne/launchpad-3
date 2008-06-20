@@ -13,7 +13,7 @@ Search for a package and check if the result page is not broken
 
     >>> field = browser.getControl(name="text")
     >>> field.value = 'pmount'
-    >>> browser.getControl("Search").click()
+    >>> browser.getControl('Search', index=0).click()
     >>> browser.contents
     '...pmount...0.1-2...'
 
@@ -55,7 +55,7 @@ Now run a search for mozilla-firefox and check that it is found:
     >>> browser.getLink("Search packages").click()
     >>> field = browser.getControl(name="text")
     >>> field.value = 'mozilla-firefox'
-    >>> browser.getControl("Search").click()
+    >>> browser.getControl('Search', index=0).click()
     >>> browser.contents
     '...mozilla-firefox...0.9...'
 
@@ -75,7 +75,7 @@ The search page will also present commercial packages:
     >>> browser.goBack()
     >>> field = browser.getControl(name="text")
     >>> field.value = 'commercialpackage'
-    >>> browser.getControl("Search").click()
+    >>> browser.getControl('Search', index=0).click()
     >>> extract_text(find_main_content(browser.contents))
     u'...commercialpackage... source package...'
 
@@ -89,7 +89,7 @@ text is not mentioned in anything else that is indexed.
     >>> browser.getLink("Search packages").click()
     >>> field = browser.getControl(name="text")
     >>> field.value = 'placeholder'
-    >>> browser.getControl("Search").click()
+    >>> browser.getControl('Search', index=0).click()
     >>> browser.contents
     '...2...results...'
 
