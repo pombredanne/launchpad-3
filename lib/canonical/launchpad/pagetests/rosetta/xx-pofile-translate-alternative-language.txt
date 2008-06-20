@@ -141,9 +141,10 @@ languages are defined.  Suggestions just work for anonymous users.
 The translate page also allows the user to filter the translatable strings to
 show only the strings he is interested in.
 
-    >>> browser.getControl('Show').displayOptions
-    ['all', 'untranslated', 'need review', 'translated',
-     'with new suggestions', 'changed in Launchpad']
+    >>> browser.getControl(name='show', index=1).displayOptions
+    ['all items', 'untranslated items', 'items that need review',
+     'translated items', 'items with new suggestions',
+     'items changed in Launchpad']
 
 Carlos sets the filter to display only the untranslated strings.
 
