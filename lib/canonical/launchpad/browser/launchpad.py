@@ -193,9 +193,11 @@ class NavigationMenuTabs(LaunchpadView):
             self.links = []
             return
         self.title = menu.title
+        # We are only interested on enabled links in non development mode.
         menu.request = self.request
         self.links = sorted([
-            link for link in menu.iterlinks() if link.enabled],
+            link for link in menu.iterlinks() if (link.enabled or
+                                                  config.devmode)],
             key=operator.attrgetter('sort_key'))
 
     def render(self):
