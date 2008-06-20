@@ -22,7 +22,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -255,13 +255,17 @@ class IMailingList(Interface):
             'be None.'),
         readonly=True)
 
-    def isUsable():
-        """Is this mailing list in a state to accept messages?
+    is_public = Bool(
+        title=_('Is this mailing list, and its team, public?'),
+        readonly=True)
 
-        This doesn't neccessarily mean that the list is in perfect
-        shape: its status might be `MailingListStatus.MOD_FAILED`. But
-        it should be able to handle messages.
-        """
+    is_usable = Bool(
+        title=_('Is this mailing list in a state to accept messages?'),
+        description=_(
+            "This doesn't necessarily mean that the list is in perfect "
+            'shape; its status might be `MailingListStatus.MOD_FAILED`. But '
+            'it should be able to handle messages.'),
+        readonly=True)
 
     def review(reviewer, status):
         """Review the mailing list's registration.

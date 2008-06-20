@@ -13,7 +13,7 @@ ubuntuteam_default = [
     u'limi, --none--',
     u'name16, foo.bar@canonical.com',
     u'sabdfl, mark@hbd.com',
-    u'stevea, --none--',
+    u'stevea, steve.alexander@ubuntulinux.com',
     u'warty-gnome, --none--',
     ]
 
@@ -24,11 +24,12 @@ ubuntuteam_email = [
     u'daniel.silverstone@canonical.com',
     u'foo.bar@canonical.com',
     u'jeff.waugh@ubuntulinux.com',
-    u'mark@hbd.com']
+    u'mark@hbd.com',
+    u'steve.alexander@ubuntulinux.com']
 
 ubuntuteam_full = [
     u'ubuntu-team|10|limi|--none--|Alexander Limi|no',
-    u'ubuntu-team|11|stevea|--none--|Steve Alexander|no',
+    u'ubuntu-team|11|stevea|steve.alexander@ubuntulinux.com|Steve Alexander|no',
     u'ubuntu-team|16|name16|foo.bar@canonical.com|Foo Bar|yes',
     u'ubuntu-team|19|warty-gnome|--none--|Warty Gnome Team|no',
     u'ubuntu-team|1|sabdfl|mark@hbd.com|Mark Shuttleworth|no',

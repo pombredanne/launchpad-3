@@ -19,6 +19,7 @@ GLOBAL_NAMES = set([
     'ANONYMOUS',
     'ILaunchBag',
     'bugtarget',
+    'canonical_url',
     'commit',
     'create_view',
     'flush_database_updates',

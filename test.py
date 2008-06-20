@@ -35,6 +35,9 @@ if os.getsid(0) == os.getsid(os.getppid()):
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
+# Enable Storm's C extensions
+os.environ['STORM_CEXTENSIONS'] = '1'
+
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
 

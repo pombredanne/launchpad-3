@@ -11,16 +11,16 @@ __all__ = [
     'IEmailAddressSet',
     'InvalidEmailAddress']
 
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Choice, Int, Object, TextLine
 from zope.interface import Interface
 
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.lazr.rest.declarations import (
     export_as_webservice_entry, exported)
 from canonical.lazr.fields import Reference
-
-from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
 class InvalidEmailAddress(Exception):
@@ -87,6 +87,8 @@ class IEmailAddress(IHasOwner):
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
+    account = Object(title=_('Account'), schema=IAccount, required=False)
+    accountID = Int(title=_('AccountID'), required=False, readonly=True)
     person = exported(
         Reference(title=_('Person'), required=True, readonly=True,
                   schema=Interface))
@@ -116,10 +118,15 @@ class IEmailAddress(IHasOwner):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, person, status=EmailAddressStatus.NEW):
-        """Create a new EmailAddress with the given email, pointing to person.
+    def new(email, person=None, status=EmailAddressStatus.NEW, account=None):
+        """Create a new EmailAddress with the given email.
+
+        The newly created EmailAddress will point to the person
+        and/or account.
 
         The given status must be an item of EmailAddressStatus.
+
+        :raises InvalidEmailAddress: If the email address is invalid.
         """
 
     def getByPerson(person):
