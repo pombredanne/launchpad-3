@@ -73,8 +73,7 @@ html {
   background-color: #fff;
 }
 body {
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 10pt; /* pt to be independent of font size/resolution */
   /* Minimal width to display the application tabs and rounded corners. */
   min-width: 529px;
 }
