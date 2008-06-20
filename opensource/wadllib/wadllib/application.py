@@ -50,6 +50,7 @@ def wadl_xpath(tag_name):
 
 
 class WADLError(Exception):
+    """An exception having to do with the state of the WADL application."""
     pass
 
 
@@ -349,35 +350,35 @@ class Method(WADLBase):
 
     @property
     def request(self):
-        """Return the definition of a request that invokes this method."""
+        """Return the definition of a request that invokes the WADL method."""
         return RequestDefinition(self, self.tag.find(wadl_xpath('request')))
 
     @property
     def response(self):
-        """Return the definition of the response to this method."""
+        """Return the definition of the response to the WADL method."""
         return ResponseDefinition(self.resource,
                                   self.tag.find(wadl_xpath('response')))
 
     @property
     def id(self):
-        """The XML ID of this method definition."""
+        """The XML ID of the WADL method definition."""
         return self.tag.attrib.get('id')
 
     @property
     def name(self):
-        """The name of this method definition.
+        """The name of the WADL method definition.
 
-        This is also the name of the HTTP method that should be used
-        to invoke the method.
+        This is also the name of the HTTP method (GET, POST, etc.)
+        that should be used to invoke the WADL method.
         """
         return self.tag.attrib.get('name')
 
-    def request_url(self,  param_values=None, **kw_param_values):
+    def build_request_url(self,  param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""
-        return self.request.url(param_values, **kw_param_values)
+        return self.request.build_url(param_values, **kw_param_values)
 
-    def representation(self, media_type=None,
-                       param_values=None, **kw_param_values):
+    def build_representation(self, media_type=None,
+                             param_values=None, **kw_param_values):
         """Build a representation to be sent when invoking this method."""
         return self.request.representation(
             media_type, param_values, **kw_param_values)
@@ -476,15 +477,16 @@ class RequestDefinition(WADLBase, HasParamsMixin):
         return self.representation_definition(media_type).bind(
             param_values, **kw_param_values)
 
-    def url(self, param_values=None, **kw_param_values):
+    def build_url(self, param_values=None, **kw_param_values):
         """Return the request URL to use to invoke this method."""
         validated_values = self.validate_param_values(
             self.query_params, param_values, **kw_param_values)
         url = self.resource.url
         if len(validated_values) > 0:
-            append = '?'
             if '?' in url:
                 append = '&'
+            else:
+                append = '?'
             url += append + urllib.urlencode(validated_values)
         return url
 
@@ -581,7 +583,13 @@ class Parameter(WADLBase):
 
     @property
     def fixed_value(self):
-        """The value to which this parameter is fixed."""
+        """The value to which this parameter is fixed, if any.
+
+        A fixed parameter must be present in invocations of a WADL
+        method, and it must have a particular value. This is commonly
+        used to designate one parameter as containing the name of the
+        server-side operation to be invoked.
+        """
         return self.tag.attrib.get('fixed')
 
     @property

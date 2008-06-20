@@ -47,7 +47,7 @@ root URL.
 
    >>> get_method.name
    'GET'
-   >>> get_method.request_url()
+   >>> get_method.build_request_url()
    'http://api.launchpad.dev/beta/'
 
 The WADL description of a resource knows which representations are
@@ -151,24 +151,27 @@ parameter to the fixed string 'find'.
 Given an end-user's values for the non-fixed parameters, it's possible
 to get the URL that should be used to invoke the method.
 
-   >>> find_method.request_url(text='foo')
+   >>> find_method.build_request_url(text='foo')
    u'http://api.launchpad.dev/beta/people?text=foo&ws.op=findPerson'
 
-   >>> find_method.request_url({'ws.op' : 'findPerson', 'text' : 'bar'})
+   >>> find_method.build_request_url({'ws.op' : 'findPerson', 'text' : 'bar'})
    u'http://api.launchpad.dev/beta/people?text=bar&ws.op=findPerson'
 
 An error occurs if the end-user gives an incorrect value for a fixed
 parameter value, or omits a required parameter.
 
-   >>> find_method.request_url()
+   >>> find_method.build_request_url()
    Traceback (most recent call last):
    ...
    ValueError: No value for required parameter 'text'
 
-   >>> find_method.request_url({'ws.op' : 'findAPerson', 'text' : 'foo'})
+   >>> find_method.build_request_url(
+   ...     {'ws.op' : 'findAPerson', 'text' : 'foo'})
+   ... # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
    Traceback (most recent call last):
    ...
-   ValueError: Value 'findAPerson' for parameter 'ws.op' conflicts with fixed value 'findPerson'
+   ValueError: Value 'findAPerson' for parameter 'ws.op' conflicts
+   with fixed value 'findPerson'
 
 To invoke the overloaded POST request, the client sets the 'ws.op'
 query variable to the fixed string 'newTeam':
@@ -237,21 +240,21 @@ You must provide a representation when invoking certain methods. The
 representation() method helps you build one without knowing the
 details of how a representation is put together.
 
-   >>> create_team_method.representation(
+   >>> create_team_method.build_representation(
    ...     display_name='Joe Bloggs', name='joebloggs')
    'display_name=Joe+Bloggs&ws.op=newTeam&name=joebloggs'
 
-   >>> bound_limi.get_method('patch').representation(name='limi2')
+   >>> bound_limi.get_method('patch').build_representation(name='limi2')
    '{"name": "limi2"}'
 
 Representations may require values for certain parameters.
 
-   >>> create_team_method.representation()
+   >>> create_team_method.build_representation()
    Traceback (most recent call last):
    ...
    ValueError: No value for required parameter 'display_name'
 
-   >>> bound_limi.get_method('put').representation(name='limi2')
+   >>> bound_limi.get_method('put').build_representation(name='limi2')
    Traceback (most recent call last):
    ...
    ValueError: No value for required parameter 'mugshot_link'
