@@ -150,11 +150,24 @@ class ValidPersonCache(SQLBase):
 
 
 def validate_person_visibility(person, attr, value):
-    """Prevent teams with inconsistent connections from being made private."""
+    """Validate changes in visibility.
+
+    * Prevent teams with inconsistent connections from being made private
+    * Prevent private teams with mailing lists from going public
+    """
+    mailing_list = getUtility(IMailingListSet).get(person.name)
+
+    if (value == PersonVisibility.PUBLIC and
+        person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
+        mailing_list is not None):
+        raise ValueError('This team cannot be made public since it has '
+                         'a mailing list')
+
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
             raise ValueError(warning)
+
     return value
 
 
@@ -2182,7 +2195,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
-        if mailinglist is None or not mailinglist.isUsable():
+        if mailinglist is None or not mailinglist.is_usable:
             return False
 
         if mailinglist.getSubscription(self):
