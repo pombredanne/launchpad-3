@@ -46,47 +46,6 @@ The list is empty if the identifier has never been used.
     >>> rp_summary_set.getByIdentifier('never-used')
     []
 
-The getByIdentifier() method raises an AssertionError if two or more
-persons share an identifier. The database does not have a constraint to
-guard against this.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.account import IAccountSet
-
-    >>> class StubSummary:
-    ...     """A summary for assertion testing."""
-    ...     def __init__(self, account, openid_identifier, trust_root):
-    ...         self.account=account
-    ...         self.openid_identifier=openid_identifier
-    ...         self.trust_root=trust_root
-
-    >>> no_priv = nopriv_oid_summaries[0].account
-    >>> sample_person = getUtility(IAccountSet).getByEmail(
-    ...     'test@canonical.com')
-
-    # Instead of introducing an integrity error into the data, a list
-    # with a bad summary can be used.
-    >>> bad_data = [
-    ...     StubSummary(
-    ...         no_priv, 'http://openid.launchpad.dev/+id/no-priv_oid',
-    ...         'a_trust_root'),
-    ...     StubSummary(
-    ...         no_priv, 'http://openid.launchpad.dev/+id/no-priv_oid',
-    ...         'another_trust_root'),
-    ...     StubSummary(
-    ...         sample_person, 'http://openid.launchpad.dev/+id/no-priv_oid',
-    ...         'another_trust_root'),
-    ...     ]
-
-    # IOpenIDRPSummarySet.getByIdentifier() calls _assert_0_or_1_accounts().
-    >>> bare_rp_summary_set = removeSecurityProxy(rp_summary_set)
-    >>> bare_rp_summary_set._assert_0_or_1_accounts(
-    ...     'http://openid.launchpad.dev/+id/no-priv_oid', bad_data)
-    Traceback (most recent call last):
-     ...
-    AssertionError: More than 1 account has the OpenID identifier of
-                    http://openid.launchpad.dev/+id/no-priv_oid: ...
-
 
 == IOpenIDRPSummary ==
 
@@ -153,6 +112,8 @@ A new OpenIDRPSummary is created when the account, identifier, and trust
 root have never been used before. The date_created and date_last_used
 will be the same, and the total_logins is 1.
 
+    >>> no_priv = nopriv_oid_summaries[0].account
+
     >>> summary = rp_summary_set.record(
     ...     no_priv, 'http://open-blog.org', date_used=yesterday)
     >>> print_openid_rp_summaries([summary])
@@ -193,6 +154,8 @@ never used before.
 If the account uses a different identifier with a trust root that was
 used before, a new OpenIDRPSummary is created.
 
+    >>> from zope.security.proxy import removeSecurityProxy
+
     # Simulate a privileged event that has changed openid_identifier.
     >>> bare_no_priv = removeSecurityProxy(no_priv)
     >>> bare_no_priv.openid_identifier = 'knightsOfNi'
@@ -211,6 +174,10 @@ used before, a new OpenIDRPSummary is created.
 When a different account first uses the 'http://ubuntu-live.org' trust
 root, a new OpenIDRPSummary is created.
 
+    >>> from canonical.launchpad.interfaces.account import IAccountSet
+
+    >>> sample_person = getUtility(IAccountSet).getByEmail(
+    ...     'test@canonical.com')
     >>> ubuntu_live_summary_3 = rp_summary_set.record(
     ...     sample_person, 'http://ubuntu-live.org')
     >>> print_openid_rp_summaries([ubuntu_live_summary_3])
@@ -234,10 +201,29 @@ trust_root.
     <DBItem AccountStatus.SUSPENDED, ...>
 
     >>> rp_summary_set.record(
-    ...     former_user,
-    ...     'http://openid.launchpad.dev/+id/former-member_oid',
-    ...     'https://shop.canonical.com')
+    ...     former_user, 'https://shop.canonical.com')
     Traceback (most recent call last):
      ...
     AssertionError: Account ... is not ACTIVE account.
+
+An AssertionError if two or more accounts share an identifier. The
+database does not have a constraint to guard against this.
+
+    >>> from canonical.database.sqlbase import cursor
+
+    # Create an integrity error in the data by assigning No Privileges
+    # Person's openid_identifier to Sample Person.
+    >>> cur = cursor()
+    >>> cur.execute("""
+    ...     INSERT INTO OpenIDRPSummary (
+    ...         account, openid_identifier, trust_root)
+    ...     VALUES(12, 'http://openid.launchpad.dev/+id/knightsOfNi',
+    ...            'an-irrelevant-trust-root')
+    ...     """)
+
+    >>> rp_summary_set.record(no_priv, 'an-irrelevant-trust-root')
+    Traceback (most recent call last):
+     ...
+    AssertionError: More than 1 account has the OpenID identifier of
+                    http://openid.launchpad.dev/+id/no-priv_oid.
 

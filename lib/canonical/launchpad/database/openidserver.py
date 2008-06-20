@@ -181,7 +181,7 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
 
 
 class OpenIDRPSummary(SQLBase):
-    """A summary of the interaction between a `Person` and an OpenID RP."""
+    """A summary of the interaction between a `IAccount` and an OpenID RP."""
     implements(IOpenIDRPSummary)
     _table = 'OpenIDRPSummary'
 
@@ -215,19 +215,18 @@ class OpenIDRPSummarySet:
             one account.
         """
         summaries = OpenIDRPSummary.selectBy(openid_identifier=identifier)
-        summaries = list(summaries)
-        self._assert_0_or_1_accounts(identifier, summaries)
-        return summaries
+        return list(summaries)
 
-    def _assert_0_or_1_accounts(self, identifier, summaries):
-        """Assert 0 or 1 accounts in the summaries have the identifier."""
-        account_ids = set()
-        for summary in summaries:
-            account_ids.add(summary.account.id)
-        if len(account_ids) > 1:
+    def _assert_identifier_is_not_reused(self, account, identifier):
+        """Assert no other account in the summaries has the identifier."""
+        summaries = OpenIDRPSummary.select("""
+            account != %s
+            AND openid_identifier = %s
+            """ % sqlvalues(account.id, identifier))
+        if summaries.count() > 0:
             raise AssertionError(
-                'More than 1 account has the OpenID identifier of %s: %s' %
-                (identifier, ', '.join(list(account_ids))))
+                'More than 1 account has the OpenID identifier of %s.' %
+                identifier)
 
     def record(self, account, trust_root, date_used=None):
         """See `IOpenIDRPSummarySet`.
@@ -240,6 +239,7 @@ class OpenIDRPSummarySet:
             raise AssertionError(
                 'Account %d is not ACTIVE account.' % account.id)
         identifier = account.openid_identity_url
+        self.assert_identifier_is_not_reused(account, identifier)
         if date_used is None:
             date_used = datetime.now(pytz.UTC)
         summary = OpenIDRPSummary.selectOneBy(
