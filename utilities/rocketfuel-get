@@ -27,7 +27,6 @@ if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
 if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
 
 rsync $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
-make
 
 cd ~/canonical/lp-branches
 for branch in *; do
@@ -38,3 +37,5 @@ for branch in *; do
   fi
 done
 
+cd trunk
+make
