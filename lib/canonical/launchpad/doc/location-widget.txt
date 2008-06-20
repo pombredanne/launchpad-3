@@ -1,0 +1,136 @@
+= Location widget =
+
+A widget used when setting the geographic location of a given person.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.fields import LocationField
+    >>> from canonical.widgets.location import LocationWidget
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> field = LocationField(__name__='location', title=u'Location')
+
+It uses the javascript for Google maps API, so it'll set that
+information in the request for our main-template to include the
+javascript.
+
+    >>> bound_field = field.bind(salgado)
+    >>> request = LaunchpadTestRequest(
+    ...     # Let's pretend requests are coming from Brazil.
+    ...     environ={'REMOTE_ADDR': '201.13.165.145'})
+    >>> request.needs_gmap2
+    False
+    >>> request.needs_json
+    False
+
+    >>> widget = LocationWidget(bound_field, request)
+    >>> request.needs_gmap2
+    True
+    >>> request.needs_json
+    True
+
+When salgado sets his own location, we'll center the map around the
+location where he seems to be, based on the IP address of the request.
+
+    >>> login(salgado.preferredemail.email)
+    >>> widget = LocationWidget(bound_field, request)
+    >>> widget.zoom
+    7
+    >>> widget.center_lat
+    -23...
+    >>> widget.center_long
+    -47...
+    >>> widget.show_marker
+    0
+
+If someone else sets salgado's location, though, we have no way of
+guessing what coordinates to center the map around, so we won't try
+to do so.
+
+    >>> login(ANONYMOUS)
+    >>> widget = LocationWidget(bound_field, request)
+    >>> widget.zoom
+    2
+    >>> widget.center_lat
+    15.0
+    >>> widget.center_long
+    0.0
+    >>> widget.show_marker
+    0
+
+When setting the location of someone who already specified a location,
+we'll obviously center the map around that, but we'll also put a marker
+in the place specified.
+
+    >>> kamion = getUtility(IPersonSet).getByName('kamion')
+    >>> bound_field = field.bind(kamion)
+    >>> login(kamion.preferredemail.email)
+    >>> widget = LocationWidget(bound_field, request)
+    >>> widget.zoom
+    9
+    >>> widget.center_lat
+    52...
+    >>> widget.center_long
+    0.29...
+    >>> widget.show_marker
+    1
+
+The widget's getInputValue() method will return a LocationValue object,
+which stored the geographic coordinates and the timezone.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.location.time_zone': 'Europe/London',
+    ...           'field.location.latitude': '51.3',
+    ...           'field.location.longitude': '0.32'})
+    >>> widget = LocationWidget(bound_field, request)
+    >>> widget.hasInput()
+    True
+    >>> location = widget.getInputValue()
+    >>> location
+    <canonical.widgets.location.LocationValue...
+    >>> location.latitude
+    51.29...
+    >>> location.longitude
+    0.32...
+    >>> location.time_zone
+    'Europe/London'
+
+If we try to set only the latitude *or* longitude, but not both, we'll
+get an error.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.location.time_zone': 'Europe/London',
+    ...           'field.location.longitude': '0.32'})
+    >>> widget = LocationWidget(bound_field, request)
+    >>> widget.hasInput()
+    True
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError:...Please provide both latitude and longitude...
+
+We also get errors if we don't specify a time zone or if the
+latitude/longitude have non-realistic values.
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.location.latitude': '51.3',
+    ...           'field.location.longitude': '0.32'})
+    >>> widget = LocationWidget(bound_field, request)
+    >>> widget.hasInput()
+    True
+    >>> location = widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    MissingInputError: ('field.location.time_zone'...
+
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.location.time_zone': 'Europe/London',
+    ...           'field.location.latitude': '99.3',
+    ...           'field.location.longitude': '0.32'})
+    >>> widget = LocationWidget(bound_field, request)
+    >>> widget.hasInput()
+    True
+    >>> widget.getInputValue()
+    Traceback (most recent call last):
+    ...
+    WidgetInputError:...Please provide a more realistic latitude and
+    longitude...
