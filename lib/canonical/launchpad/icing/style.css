@@ -828,16 +828,6 @@ border. */
   background-position: bottom left;
   position: relative;
 }
-#mainarea div.v {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_bottomleft.gif) bottom left no-repeat;
-}
-#mainarea div.w {
-  position: relative;
-  width: 100%;
-  background: url(mainarea_bottomright.gif) bottom right no-repeat;
-}
 #mainarea div.x {
   position: relative;
   width: 100%;
