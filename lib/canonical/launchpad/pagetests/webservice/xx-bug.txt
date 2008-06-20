@@ -15,8 +15,8 @@ At the top level we provide a collection of bugs.
   >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
   >>> from pprint import pprint
   >>> pprint(sorted(bug_entries[0].items()))
-  [(u'bugtasks_collection_link',
-    u'http://api.launchpad.dev/beta/bugs/11/bugtasks'),
+  [(u'bug_tasks_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/11/bug_tasks'),
    (u'can_expire', False),
    (u'date_created', u'2007-03-15T20:33:56.678930+00:00'),
    (u'date_last_message', None),
@@ -104,7 +104,7 @@ relation to some bug.
 Each bug may be associated with one or more bug tasks. Much of the
 data in a bug task is derived from the bug.
 
-  >>> bug_one_bugtasks_url = urlsplit(bug_one['bugtasks_collection_link'])[2]
+  >>> bug_one_bugtasks_url = urlsplit(bug_one['bug_tasks_collection_link'])[2]
   >>> bug_one_bugtasks = sorted(webservice.get(
   ...     bug_one_bugtasks_url).jsonBody()['entries'])
   >>> len(bug_one_bugtasks)
@@ -144,7 +144,7 @@ data in a bug task is derived from the bug.
 
 The collection of bug tasks is not exposed as a resource:
 
-  >>> webservice.get("/beta/bugtasks").getStatus()
+  >>> webservice.get("/beta/bug_tasks").getStatus()
   404
 
 It's possible to change the task's assignee.
