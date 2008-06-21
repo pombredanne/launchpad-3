@@ -1739,7 +1739,7 @@ def notify_mailinglist_activated(mailinglist, event):
     new_date = event.object.date_activated
     list_looks_new = old_date is None and new_date is not None
 
-    if not (list_looks_new and mailinglist.isUsable()):
+    if not (list_looks_new and mailinglist.is_usable):
         return
 
     team = mailinglist.team

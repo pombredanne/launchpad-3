@@ -2249,7 +2249,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def team_has_mailing_list(self):
         """Is the team mailing list available for subscription?"""
         mailing_list = self.context.mailing_list
-        return mailing_list is not None and mailing_list.isUsable()
+        return mailing_list is not None and mailing_list.is_usable
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -2372,13 +2372,21 @@ class PersonView(LaunchpadView, FeedsMixin):
     def archive_url(self):
         """Return a url to a mailing list archive for the team's list.
 
-        If the person is not a team, does not have a mailing list, or that
-        mailing list has never been activated, return None instead.
+        If the person is not a team, does not have a mailing list, that
+        mailing list has never been activated, or the team is private and the
+        logged in user is not a team member, return None instead.
         """
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
-        return mailing_list.archive_url
+        elif mailing_list.is_public:
+            return mailing_list.archive_url
+        elif self.user is None:
+            return None
+        elif self.user.inTeam(self.context):
+            return mailing_list.archive_url
+        else:
+            return None
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
@@ -3421,7 +3429,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    for email in self.validated_addresses]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
-            if mailing_list is not None and mailing_list.isUsable():
+            if mailing_list is not None and mailing_list.is_usable:
                 name = 'subscription.%s' % team.name
                 value = self._mailing_list_subscription_type(mailing_list)
                 field = Choice(__name__=name,
