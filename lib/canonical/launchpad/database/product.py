@@ -942,9 +942,94 @@ class ProductSet:
 
         return product
 
-    def forReview(self):
+    def forReview(self, search_text=None, active=None,
+                  license_reviewed=None, licenses=None,
+                  license_info_is_empty=None,
+                  created_after=None, created_before=None,
+                  subscription_expires_after=None,
+                  subscription_expires_before=None,
+                  subscription_modified_after=None,
+                  subscription_modified_before=None):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return Product.select("reviewed IS FALSE")
+
+        conditions = []
+
+        if license_reviewed is not None:
+            conditions.append('Product.reviewed = %s'
+                              % sqlvalues(license_reviewed))
+
+        if active is not None:
+            conditions.append('Product.active = %s' % sqlvalues(active))
+
+        if search_text is not None and search_text.strip() != '':
+            conditions.append('Product.fti @@ ftq(%s)'
+                              % sqlvalues(search_text))
+
+        if created_after is not None:
+            conditions.append('Product.datecreated >= %s'
+                              % sqlvalues(created_after))
+        if created_before is not None:
+            conditions.append('Product.datecreated <= %s'
+                              % sqlvalues(created_before))
+
+        needs_join = False
+        if subscription_expires_after is not None:
+            conditions.append('CommercialSubscription.date_expires >= %s'
+                              % sqlvalues(subscription_expires_after))
+            needs_join = True
+        if subscription_expires_before is not None:
+            conditions.append('CommercialSubscription.date_expires <= %s'
+                              % sqlvalues(subscription_expires_before))
+            needs_join = True
+
+        if subscription_modified_after is not None:
+            conditions.append(
+                'CommercialSubscription.date_last_modified >= %s'
+                % sqlvalues(subscription_modified_after))
+            needs_join = True
+        if subscription_modified_before is not None:
+            conditions.append(
+                'CommercialSubscription.date_last_modified <= %s'
+                % sqlvalues(subscription_modified_before))
+            needs_join = True
+
+        clause_tables = []
+        if needs_join:
+            conditions.append(
+                'CommercialSubscription.product = Product.id')
+            clause_tables.append('CommercialSubscription')
+
+        or_conditions = []
+        if license_info_is_empty is True:
+            # Match products whose license_info doesn't contain
+            # any non-space characters.
+            or_conditions.append("Product.license_info IS NULL")
+            or_conditions.append(r"Product.license_info ~ E'^\\s*$'")
+        elif license_info_is_empty is False:
+            # license_info contains something besides spaces.
+            or_conditions.append(r"Product.license_info ~ E'[^\\s]'")
+        elif license_info_is_empty is None:
+            # Don't restrict result if license_info_is_empty is None.
+            pass
+        else:
+            raise AssertionError('license_info_is_empty invalid: %r'
+                                 % license_info_is_empty)
+
+        if licenses is not None and len(licenses) > 0:
+            for license in licenses:
+                or_conditions.append('ProductLicense.license = %s'
+                                     % sqlvalues(license))
+            conditions.append('ProductLicense.product = Product.id')
+            clause_tables.append('ProductLicense')
+
+        if len(or_conditions) != 0:
+            conditions.append('(%s)' % '\nOR '.join(or_conditions))
+
+        conditions_string = '\nAND '.join(conditions)
+        result = Product.select(
+            conditions_string, clauseTables=clause_tables,
+            orderBy=['displayname', 'name'], distinct=True)
+        return result
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,

@@ -32,6 +32,7 @@ __all__ = [
     'ProductReassignmentView',
     'ProductRdfView',
     'ProductSetFacets',
+    'ProductSetReviewLicensesView',
     'ProductSetSOP',
     'ProductSetNavigation',
     'ProductSetContextMenu',
@@ -59,7 +60,8 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort,
     IBranchSet, IBugTracker, ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
+    IPersonSet, IPillarNameSet, IProduct,
+    IProductReviewSearch, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
@@ -92,6 +94,10 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
+from canonical.widgets.date import DateWidget
+from canonical.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget)
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -955,7 +961,27 @@ class ProductAdminView(ProductEditView):
 class ProductReviewLicenseView(ProductAdminView):
     label = "Review project licensing"
     field_names = ["active", "private_bugs",
-                   "license_reviewed", "reviewer_whiteboard"]
+                   "license_reviewed", "license_approved",
+                   "reviewer_whiteboard"]
+
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+        if referrer is None:
+            referrer = self.request.getHeader('referer')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return self.next_url
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1136,6 +1162,68 @@ class ProductSetView(LaunchpadView):
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
+
+
+class ProductSetReviewLicensesView(LaunchpadFormView):
+    """View for searching products to be reviewed."""
+
+    schema = IProductReviewSearch
+
+    full_row_field_names = [
+        'search_text',
+        'active',
+        'license_reviewed',
+        'license_info_is_empty',
+        'licenses',
+        ]
+
+    side_by_side_field_names = [
+        ('created_after', 'created_before'),
+        ('subscription_expires_after', 'subscription_expires_before'),
+        ('subscription_modified_after', 'subscription_modified_before'),
+        ]
+
+    custom_widget(
+        'licenses', CheckBoxMatrixWidget, column_count=4,
+        orientation='vertical')
+    custom_widget('active', LaunchpadRadioWidget)
+    custom_widget('license_reviewed', LaunchpadRadioWidget)
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
+    custom_widget('created_after', DateWidget)
+    custom_widget('created_before', DateWidget)
+    custom_widget('subscription_expires_after', DateWidget)
+    custom_widget('subscription_expires_before', DateWidget)
+    custom_widget('subscription_modified_after', DateWidget)
+    custom_widget('subscription_modified_before', DateWidget)
+
+    @property
+    def left_side_widgets(self):
+        return (self.widgets.get(left)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def right_side_widgets(self):
+        return (self.widgets.get(right)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def full_row_widgets(self):
+        return (self.widgets[name] for name in self.full_row_field_names)
+
+    def forReviewBatched(self):
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
+        data = {}
+        self._validate(None, data)
+        # Get default values from the schema since the form defaults
+        # aren't available until the search button is pressed.
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        # Override the defaults with the form values if available.
+        search_params.update(data)
+        return BatchNavigator(self.context.forReview(**search_params),
+                              self.request, size=10)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
