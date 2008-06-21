@@ -960,6 +960,9 @@ person_translations_relicensing = "Translations licensing"
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
+person_vouchers = ContextDisplayName(
+    'Commercial subscription vouchers for %s')
+
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))

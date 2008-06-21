@@ -880,6 +880,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :param match_name: string optional project name to screen the results.
         """
 
+    def getCommercialSubscriptionVouchers():
+        """Return all commercial subscription vouchers.
+
+        The vouchers are separated into two lists, unredeemed vouchers and
+        redeemed vouchers.
+        :return: tuple (unredeemed_vouchers, redeemed_vouchers)
+        """
+
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """Assign karma for the action named <action_name> to this person.

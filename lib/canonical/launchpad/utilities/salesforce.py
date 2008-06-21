@@ -20,27 +20,10 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces.product import IProductSet
 from canonical.launchpad.interfaces.salesforce import (
-    ISalesforceVoucher, ISalesforceVoucherProxy)
+    ISalesforceVoucher, ISalesforceVoucherProxy, SFDCError,
+    SVPAlreadyRedeemedException, SVPNotAllowedException, SVPNotFoundException,
+    SalesforceVoucherProxyException)
 from canonical.lazr.timeout import SafeTransportWithTimeout
-
-class SalesforceVoucherProxyException(Exception):
-    """Exception raised on failed call to the SalesforceVoucherProxy."""
-
-
-class SFDCError(SalesforceVoucherProxyException):
-    """An exception was reported by salesforce.com."""
-
-
-class SVPNotFoundException(SalesforceVoucherProxyException):
-    """A named object was not found."""
-
-
-class SVPAlreadyRedeemedException(SalesforceVoucherProxyException):
-    """The voucher has already been redeemed."""
-
-
-class SVPNotAllowedException(SalesforceVoucherProxyException):
-    """The operation is not allowed by the current user."""
 
 
 def fault_mapper(func):

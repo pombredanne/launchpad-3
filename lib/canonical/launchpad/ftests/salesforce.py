@@ -20,13 +20,6 @@ from canonical.launchpad.utilities import SalesforceVoucherProxy
 from canonical.launchpad.interfaces import ISalesforceVoucherProxy
 
 
-STATUSES = [
-    'Unredeemed',
-    'Redeemed',
-    'Reserved',
-    ]
-
-
 TERM_RE = re.compile("^LPCBS(\d{2})-.*")
 
 class Voucher:
