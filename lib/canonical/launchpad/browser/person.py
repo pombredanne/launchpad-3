@@ -4185,6 +4185,7 @@ class PersonBranchCountMixin:
 class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person."""
 
+    no_sort_by = (BranchListingSort.DEFAULT,)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
 
@@ -4192,7 +4193,7 @@ class PersonRegisteredBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's registered branches."""
 
     heading_template = 'Bazaar branches registered by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
     @property
     def branch_search_context(self):
@@ -4205,7 +4206,7 @@ class PersonOwnedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's owned branches."""
 
     heading_template = 'Bazaar branches owned by %(displayname)s'
-    no_sort_by = (BranchListingSort.REGISTRANT,)
+    no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.REGISTRANT)
 
     @property
     def branch_search_context(self):
