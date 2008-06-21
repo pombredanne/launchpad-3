@@ -21,20 +21,6 @@ However, the unprivileged user can see "+all" and "+new".
     >>> user_browser.title
     'Register a project in Launchpad'
 
-An administrator may successfully access all of these pages.
-
-    >>> admin_browser.open('http://launchpad.dev/projects/+review')
-    >>> admin_browser.title
-    'Review Launchpad items'
-
-    >>> admin_browser.open('http://launchpad.dev/projects/+all')
-    >>> admin_browser.title
-    'Upstream projects registered in Launchpad'
-
-    >>> admin_browser.open('http://launchpad.dev/projects/+new')
-    >>> admin_browser.title
-    'Register a project in Launchpad'
-
 The Commercial Admins may successfully access the +review-licenses page.
 
     >>> commercial_browser = setupBrowser(
@@ -140,4 +126,3 @@ First, add a product with a proprietary license.
     &nbsp;Redfish  (Unreviewed)
     &nbsp;Bazaar  (Unreviewed)
     &nbsp;Jokosher  (Unreviewed)
-=======
