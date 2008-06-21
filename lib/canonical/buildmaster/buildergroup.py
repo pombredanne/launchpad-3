@@ -406,10 +406,10 @@ class BuilderGroup:
         # binary upload when it was the case.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
         if (build.buildstate != BuildStatus.FULLYBUILT or
-            len(build.binarypackages) == 0):
+            build.binarypackages.count() == 0):
             self.logger.debug("Build %s upload failed." % build.id)
             # update builder
-            queueItem.build.buildstate = BuildStatus.FAILEDTOUPLOAD
+            queueItem.build.forceState(BuildStatus.FAILEDTOUPLOAD)
             # Retrieve log file content.
             possible_locations = (
                 'failed', 'failed-to-move', 'rejected', 'accepted')
@@ -448,7 +448,7 @@ class BuilderGroup:
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        queueItem.build.buildstate = BuildStatus.FAILEDTOBUILD
+        queueItem.build.forceState(BuildStatus.FAILEDTOBUILD)
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder.cleanSlave()
         queueItem.build.notify()
@@ -462,7 +462,7 @@ class BuilderGroup:
         MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        queueItem.build.buildstate = BuildStatus.MANUALDEPWAIT
+        queueItem.build.forceState(BuildStatus.MANUALDEPWAIT)
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
@@ -477,7 +477,7 @@ class BuilderGroup:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        queueItem.build.buildstate = BuildStatus.CHROOTWAIT
+        queueItem.build.forceState(BuildStatus.CHROOTWAIT)
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
@@ -499,7 +499,7 @@ class BuilderGroup:
                          ("Builder returned BUILDERFAIL when asked "
                           "for its status"))
         # simply reset job
-        queueItem.build.buildstate = BuildStatus.NEEDSBUILD
+        queueItem.build.forceState(BuildStatus.NEEDSBUILD)
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder = None
         queueItem.buildstart = None
@@ -514,7 +514,7 @@ class BuilderGroup:
         """
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
-        queueItem.build.buildstate = BuildStatus.NEEDSBUILD
+        queueItem.build.forceState(BuildStatus.NEEDSBUILD)
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in

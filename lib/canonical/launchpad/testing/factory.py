@@ -17,9 +17,12 @@ from StringIO import StringIO
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import (
+    AccountStatus,
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
@@ -31,6 +34,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus,
     IBranchSet,
     IBugSet,
+    IBugWatchSet,
     ICodeImportJobWorkflow,
     ICodeImportMachineSet,
     ICodeImportEventSet,
@@ -149,16 +153,26 @@ class LaunchpadObjectFactory:
         if password is None:
             password = self.getUniqueString('password')
         # By default, make the email address preferred.
-        if email_address_status is None:
+        if (email_address_status is None 
+                or email_address_status == EmailAddressStatus.VALIDATED):
             email_address_status = EmailAddressStatus.PREFERRED
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
             password=password, displayname=displayname)
-        # Set the status on the email.
-        email.status = email_address_status
-        email.syncUpdate()
+
+        # To make the person someone valid in Launchpad, validate the
+        # email.
+        if email_address_status == EmailAddressStatus.PREFERRED:
+            person.validateAndEnsurePreferredEmail(email)
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        # Make the account ACTIVE if we have a preferred email address now.
+        if (person.preferredemail is not None and
+            person.preferredemail.status == EmailAddressStatus.PREFERRED):
+            removeSecurityProxy(person.account).status = AccountStatus.ACTIVE
+        removeSecurityProxy(email).status = email_address_status
+        syncUpdate(email)
         return person
 
     def makeTeam(self, owner, displayname=None, email=None, name=None):
@@ -362,7 +376,7 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, product=None):
+    def makeBug(self, product=None, owner=None, bug_watch_url=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -370,15 +384,23 @@ class LaunchpadObjectFactory:
 
         :param product: If the product is not set, one is created
             and this is used as the primary bug target.
+        :param owner: The reporter of the bug. If not set, one is created.
+        :param bug_watch_url: If specified, create a bug watch pointing
+            to this URL.
         """
         if product is None:
             product = self.makeProduct()
-        owner = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=product)
-        return getUtility(IBugSet).createBug(create_bug_params)
+        bug = getUtility(IBugSet).createBug(create_bug_params)
+        if bug_watch_url is not None:
+            # fromText() creates a bug watch associated with the bug.
+            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+        return bug
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None):
         mail = SignedMessage()
@@ -598,7 +620,6 @@ class LaunchpadObjectFactory:
             person, name, brazil, city, addressline, phone)
         # We don't want to login() as the person used to create the request,
         # so we remove the security proxy for changing the status.
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(request).status = ShippingRequestStatus.APPROVED
         template = getUtility(IStandardShipItRequestSet).getByFlavour(
             flavour)[0]

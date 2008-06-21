@@ -188,7 +188,8 @@ This CodeImport is associated to the evolution/main ProductSeries
 
 Members of the VCS Imports team (import operators), or Launchpad
 administrators can update the review status of code imports.  This is
-done using the code import methods: approve; suspend; and invalidate.
+done using the code import methods: approve; suspend; invalidate and
+markFailing.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -250,6 +251,16 @@ invalidated.
     Subject: Code import product.../name... status: Invalid
     <BLANKLINE>
     The import has been marked as invalid.
+    ...
+    ----------------------------------------
+
+    >>> code_import.markFailing({}, nopriv)
+    >>> print_emails(group_similar=True)
+    From: No Privileges Person <no-priv@canonical.com>
+    To: no-priv@canonical.com
+    Subject: Code import product.../name... status: Failing
+    <BLANKLINE>
+    The import has been marked as failing.
     ...
     ----------------------------------------
 

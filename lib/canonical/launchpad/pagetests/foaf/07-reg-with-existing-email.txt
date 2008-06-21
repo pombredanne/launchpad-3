@@ -27,9 +27,8 @@ on with the registration process.
     >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
     >>> browser.getControl('Register').click()
 
-    >>> print find_tag_by_id(browser.contents, 'nonhelp')
-    <...
-    ...Instructions on completing your registration have been sent to...
+    >>> print extract_text(find_tag_by_id(browser.contents, 'address'))
+    Instructions on completing your registration have been sent to...
 
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.launchpad.ftests.logintoken import (

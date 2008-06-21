@@ -9,7 +9,7 @@ import unittest
 from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
 from canonical.librarian.storage import LibraryFileUpload, DuplicateFileIDError
 from canonical.librarian import db
-from canonical.database.sqlbase import begin, flush_database_updates
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 from canonical.testing import LaunchpadZopelessLayer
 
