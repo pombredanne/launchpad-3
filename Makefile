@@ -187,7 +187,7 @@ stop: build
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 stop_quickly_and_quietly:
-	$(APPSERVER_ENV) ${PYTHON} \
+	@ $(APPSERVER_ENV) ${PYTHON} \
 	  utilities/killservice.py librarian buildsequencer launchpad mailman \
 	  > /dev/null 2>&1
 
