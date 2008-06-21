@@ -13,12 +13,11 @@ __all__ = [
 
 
 import re
-from xmlrpclib import Fault, loads
+from xmlrpclib import Fault, loads, Transport
 from zope.interface import implements
 
 from canonical.launchpad.utilities import SalesforceVoucherProxy
 from canonical.launchpad.interfaces import ISalesforceVoucherProxy
-from canonical.lazr.timeout import TransportWithTimeout, with_timeout
 
 
 TERM_RE = re.compile("^LPCBS(\d{2})-.*")
@@ -61,7 +60,7 @@ class TestSalesforceVoucherProxy(SalesforceVoucherProxy):
         self.xmlrpc_transport = SalesforceXMLRPCTestTransport()
 
 
-class SalesforceXMLRPCTestTransport(TransportWithTimeout):
+class SalesforceXMLRPCTestTransport(Transport):
     """An XML-RPC test transport for the Salesforce proxy.
 
     This transport contains a small amount of sample data and intercepts
@@ -196,7 +195,6 @@ class SalesforceXMLRPCTestTransport(TransportWithTimeout):
         voucher = self._createVoucher(recipient_openid, term_months)
         return voucher.voucher_id
 
-    @with_timeout(cleanup='cleanup')
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
 
@@ -207,7 +205,3 @@ class SalesforceXMLRPCTestTransport(TransportWithTimeout):
         args, method_name = loads(request)
         method = getattr(self, method_name)
         return method(*args)
-
-    def cleanup(self):
-        """Override the cleanup method to do nothing."""
-        pass

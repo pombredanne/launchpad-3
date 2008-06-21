@@ -115,8 +115,6 @@ class SalesforceVoucherProxy:
     @fault_mapper
     def getServerStatus(self):
         """See `ISalesforceVoucherProxy`."""
-        import time
-        time.sleep(0.5)
         status = self.server.getServerStatus()
         return status
 
