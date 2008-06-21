@@ -198,6 +198,24 @@ class IBugTracker(Interface):
         updated.
         """
 
+    def getLinkedPersonByName(name):
+        """Return the `IBugTrackerPerson` for a given name on a bugtracker.
+
+        :param name: The name of the person on the bugtracker in
+            `bugtracker`.
+        :return: an `IBugTrackerPerson`.
+        """
+
+    def linkPersonToSelf(name, person):
+        """Link a Person to the BugTracker using a given name.
+
+        :param name: The name used for person on bugtracker.
+        :param person: The `IPerson` to link to bugtracker.
+        :raise BugTrackerPersonAlreadyExists: If `name` has already been
+            used to link a person to `bugtracker`.
+        :return: An `IBugTrackerPerson`.
+        """
+
     def destroySelf():
         """Delete this bug tracker."""
 
