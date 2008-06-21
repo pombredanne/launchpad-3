@@ -469,7 +469,7 @@ participant, use the 'findPathToTeam' custom operation.
     >>> json = webservice.named_get(
     ...     '/beta/~salgado', 'findPathToTeam', team=ml_experts['self_link']
     ...     ).jsonBody()
-    >>> for entry in json['entries']:
+    >>> for entry in json:
     ...     print entry['self_link']
     http://api.launchpad.dev/beta/~admins
     http://api.launchpad.dev/beta/~mailing-list-experts
