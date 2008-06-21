@@ -202,10 +202,10 @@ class MailingListTeamBaseView(LaunchpadFormView):
         """Checks whether or not the list is usable; ie. accepting messages.
 
         The list must exist and must be in a state acceptable to
-        MailingList.isUsable.
+        MailingList.is_usable.
         """
         mailing_list = self._getList()
-        return mailing_list is not None and mailing_list.isUsable()
+        return mailing_list is not None and mailing_list.is_usable
 
     @property
     def mailinglist_address(self):
@@ -297,7 +297,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
                                        structured(str(error)))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
-            if mailing_list is None or not mailing_list.isUsable():
+            if mailing_list is None or not mailing_list.is_usable:
                 self.addError(
                     "This team's mailing list is not active and may not be "
                     "used as its contact address yet")
@@ -333,7 +333,7 @@ class TeamContactAddressView(MailingListTeamBaseView):
             context.setContactAddress(None)
         elif contact_method == TeamContactMethod.HOSTED_LIST:
             mailing_list = list_set.get(context.name)
-            assert mailing_list is not None and mailing_list.isUsable(), (
+            assert mailing_list is not None and mailing_list.is_usable, (
                 "A team can only use a usable mailing list as its contact "
                 "address.")
             email = email_set.getByEmail(mailing_list.address)
@@ -393,7 +393,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """Sets the welcome message for a mailing list."""
         welcome_message = data.get('welcome_message')
         assert (self.mailing_list is not None
-                and self.mailing_list.isUsable()), (
+                and self.mailing_list.is_usable), (
             "Only a usable mailing list can be configured.")
 
         if (welcome_message is not None
