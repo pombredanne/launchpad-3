@@ -27,7 +27,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
-from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.build import BuildStatus, IBuildSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
@@ -356,14 +356,11 @@ class SourcePackageRelease(SQLBase):
                 estimate = 5
             estimated_build_duration = datetime.timedelta(minutes=estimate)
 
-        return Build(distroarchseries=distroarchseries,
-                     sourcepackagerelease=self,
-                     processor=processor,
-                     buildstate=status,
-                     datecreated=datecreated,
-                     pocket=pocket,
-                     estimated_build_duration=estimated_build_duration,
-                     archive=archive)
+        return getUtility(IBuildSet).newBuild(
+            distroarchseries=distroarchseries, sourcepackagerelease=self,
+            processor=processor, buildstate=status, datecreated=datecreated,
+            pocket=pocket, estimated_build_duration=estimated_build_duration,
+            archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
