@@ -8,6 +8,11 @@ __metaclass__ = type
 __all__ = [
     'ISalesforceVoucher',
     'ISalesforceVoucherProxy',
+    'SalesforceVoucherProxyException',
+    'SFDCError',
+    'SVPAlreadyRedeemedException',
+    'SVPNotAllowedException',
+    'SVPNotFoundException',
     'VOUCHER_STATUSES',
     ]
 
@@ -22,6 +27,26 @@ VOUCHER_STATUSES = [
     'Redeemed',
     'Reserved',
     ]
+
+
+class SalesforceVoucherProxyException(Exception):
+    """Exception raised on failed call to the SalesforceVoucherProxy."""
+
+
+class SFDCError(SalesforceVoucherProxyException):
+    """An exception was reported by salesforce.com."""
+
+
+class SVPNotFoundException(SalesforceVoucherProxyException):
+    """A named object was not found."""
+
+
+class SVPAlreadyRedeemedException(SalesforceVoucherProxyException):
+    """The voucher has already been redeemed."""
+
+
+class SVPNotAllowedException(SalesforceVoucherProxyException):
+    """The operation is not allowed by the current user."""
 
 
 class ISalesforceVoucherProxy(Interface):

@@ -119,3 +119,8 @@ then a simple message will be displayed instead of showing the form.
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions
     Voucher redemption is not yet enabled in Launchpad.
+
+
+== Cleanup ==
+
+    >>> test_config_data = config.pop('test_data')
