@@ -9,6 +9,7 @@ __all__ = [
     'IProduct',
     'IProductSet',
     'License',
+    'LicenseStatus',
     ]
 
 from zope.interface import Interface, Attribute
@@ -37,6 +38,17 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class LicenseStatus(DBEnumeratedType):
+    """The status of a project's license review."""
+
+    OPEN_SOURCE = DBItem(10, "Open Source",
+                        u"This project\u2018s license is open source.")
+    PROPRIETARY = DBItem(20, "Proprietary",
+                         u"This project\u2018s license is proprietary.")
+    UNREVIEWED = DBItem(30, "Unreviewed",
+                        u"This project\u2018s license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
@@ -354,6 +366,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Whether a license is manually approved for free hosting
         after automatic approval fails.""")
 
+    license_status = Attribute("""
+        Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
+
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):
         """Redeem a voucher and extend the subscription expiration date.
@@ -390,6 +405,13 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
 
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this product. Return None.
+        """
+
+    def getCustomLanguageCode(language_code):
+        """Look up `ICustomLanguageCode` for `language_code`, if any.
+
+        Products may override language code definitions for translation
+        import purposes.
         """
 
 

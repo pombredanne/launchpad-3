@@ -31,6 +31,7 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.commercialsubscription import (
     CommercialSubscription)
+from canonical.launchpad.database.customlanguagecode import CustomLanguageCode
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
@@ -53,14 +54,28 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (
-    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget,
-    IHasBugSupervisor, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
-    IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+
+from canonical.launchpad.interfaces.branch import (
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from canonical.launchpad.interfaces.bugsupervisor import IHasBugSupervisor
+from canonical.launchpad.interfaces.faqtarget import IFAQTarget
+from canonical.launchpad.interfaces.launchpad import (
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, NotFoundError)
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import (
+    IProduct, IProductSet, License, LicenseStatus)
+from canonical.launchpad.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from canonical.launchpad.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    SpecificationImplementationStatus, SpecificationSort)
+from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
 
 
@@ -162,8 +177,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
-            # Clear the license_reviewed flag if the license changes.
-            self.license_reviewed = False
+            # Clear the license_reviewed and license_approved flags
+            # if the license changes.
+            self._resetLicenseReview()
         return value
 
     license_info = StringCol(dbName='license_info', default=None,
@@ -292,6 +308,38 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         else:
             return self.commercial_subscription.is_active
 
+    @property
+    def license_status(self):
+        """See `IProduct`.
+
+        :return: A LicenseStatus enum value.
+        """
+        if self.license_approved:
+            return LicenseStatus.OPEN_SOURCE
+        elif len(self.licenses) == 0:
+            # We don't know what the license is.
+            return LicenseStatus.UNREVIEWED
+        elif License.OTHER_PROPRIETARY in self.licenses:
+            # Notice the difference between the License and LicenseStatus.
+            return LicenseStatus.PROPRIETARY
+        elif License.OTHER_OPEN_SOURCE in self.licenses:
+            if self.license_reviewed:
+                # The OTHER_OPEN_SOURCE license was not manually approved
+                # by setting license_approved to true.
+                return LicenseStatus.PROPRIETARY
+            else:
+                # The OTHER_OPEN_SOURCE is pending review.
+                return LicenseStatus.UNREVIEWED
+        else:
+            # The project has at least one license and does not have
+            # OTHER_PROPRIETARY or OTHER_OPEN_SOURCE as a license.
+            return LicenseStatus.OPEN_SOURCE
+
+    def _resetLicenseReview(self):
+        """When the license is modified, it must be reviewed again."""
+        self.license_reviewed = False
+        self.license_approved = False
+
     def _getLicenses(self):
         """Get the licenses as a tuple."""
         return tuple(
@@ -308,12 +356,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         old_licenses = set(self.licenses)
         if licenses == old_licenses:
             return
-        # Clear the license_reviewed flag if the license changes.
+        # Clear the license_reviewed and license_approved flags
+        # if the license changes.
         # ProductSet.createProduct() passes in reset_license_reviewed=False
         # to avoid changing the value when a Launchpad Admin sets
         # license_reviewed & licenses at the same time.
         if reset_license_reviewed:
-            self.license_reviewed = False
+            self._resetLicenseReview()
         # $product/+edit doesn't require a license if a license hasn't
         # already been set, but updateContextFromData() updates all the
         # fields, so we have to avoid this assertion when the attribute
@@ -782,6 +831,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
+
+    def getCustomLanguageCode(self, language_code):
+        """See `IProduct`."""
+        return CustomLanguageCode.selectOneBy(
+            product=self, language_code=language_code)
 
 
 class ProductSet:

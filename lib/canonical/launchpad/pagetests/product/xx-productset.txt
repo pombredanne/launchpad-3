@@ -35,3 +35,34 @@ An administrator may successfully access all of these pages.
     >>> admin_browser.title
     'Register a project in Launchpad'
 
+= Project list shows license status =
+
+The project list will show (Proprietary) next to projects with a
+proprietary license and show (Unreviewed) next to projects without
+any license or with an unreviewed Other/OpenSource license.
+
+First, add a product with a proprietary license.
+
+    >>> user_browser.open('http://launchpad.dev/products/+new')
+    >>> user_browser.getControl('Name', index=0).value = 'proprietary'
+    >>> user_browser.getControl('Display Name').value = 'Proprietary Product'
+    >>> user_browser.getControl('Title').value = 'title'
+    >>> user_browser.getControl('Summary').value = 'summary'
+    >>> user_browser.getControl(name='field.description').value = 'description'
+    >>> user_browser.getControl(name='field.licenses').value = [
+    ...     'OTHER_PROPRIETARY']
+    >>> user_browser.getControl(name='field.license_info').value = 'foo'
+    >>> user_browser.getControl('Add').click()
+    >>> print user_browser.url
+    http://launchpad.dev/proprietary
+
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
+    >>> for subdiv in div.next.findNextSiblings('div'):
+    ...     print ' '.join(text.strip()
+    ...                    for text in subdiv.findAllNext(text=True)[:4])
+    &nbsp;Proprietary Product  (Proprietary)
+    &nbsp;Derby
+    &nbsp;Redfish  (Unreviewed)
+    &nbsp;Bazaar  (Unreviewed)
+    &nbsp;Jokosher  (Unreviewed)
