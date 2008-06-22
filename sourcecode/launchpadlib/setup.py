@@ -7,8 +7,8 @@ import ez_setup
 ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
-
 from launchpadlib import __version__
+
 
 setup(
     name        = 'launchpadlib',
@@ -25,6 +25,10 @@ projects.""",
     packages    = find_packages(),
     include_package_data = True,
     zip_safe    = True,
+    install_requires = [
+        'httplib2',
+        'simplejson',
+        ],
     setup_requires = [
         'setuptools_bzr',
         ]
