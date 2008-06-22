@@ -161,6 +161,33 @@ The profile data is saved in the argument when the program exits.
     >>> stats = pstats2.Stats(profile_file)
 
 
+== Memory profiling ==
+
+It is possible to keep a log of the memory profile of the application. That's
+useful to try to figure out what requests are causing the memory usage of the
+server to increase.
+
+To create that log, you set the configuration variable memory_profile_log. 
+
+    >>> memory_profile_log = os.path.join(profile_dir, 'memory.log')
+    >>> config.push('memory_profile', dedent("""
+    ...     [profiling]
+    ...     memory_profile_log: %s""" % memory_profile_log))
+
+After each request is done, that log will have the timestamp of the request,
+the page id, the duration, the starting VSS and RSS, and the ending VSS 
+and RSS. 
+
+    >>> response = http('GET / HTTP/1.0')
+    >>> (timestamp, page_id, duration, 
+    ...  start_vss, start_rss, end_vss, end_rss) = (
+    ...     file(memory_profile_log).readline().split())
+    >>> print timestamp
+    20...
+    >>> print page_id
+    RootObject:index.html
+
+
 == Clean up ==
 
     >>> import shutil
@@ -171,3 +198,4 @@ The profile data is saved in the argument when the program exits.
     >>> shutil.rmtree(profile_dir)
 
     >>> old_config = config.pop('profile_dir')
+

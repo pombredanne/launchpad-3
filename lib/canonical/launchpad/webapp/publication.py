@@ -36,7 +36,8 @@ from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.mem import (
-    countsByType, deltaCounts, mostRefs, printCounts, readCounts, resident)
+    countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
+    resident)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
@@ -488,6 +489,10 @@ class LaunchpadBrowserPublication(
         self.thread_locals.profiler = Profile()
         self.thread_locals.profiler.enable()
 
+        # If we are keeping a memory log profile, save the VSS/RSS.
+        if config.profiling.memory_profile_log:
+            self.thread_locals.memory_profile_start = (memory(), resident())
+
     def endProfilingHook(self, request):
         """If profiling is turned on, save profile data for the request."""
         if not config.profiling.profile_requests:
@@ -497,17 +502,27 @@ class LaunchpadBrowserPublication(
 
         # Create a timestamp including milliseconds.
         now = datetime.fromtimestamp(da.get_request_start_time())
-        timestamp = now.strftime('%Y-%m-%d_%H:%M:%S')
-        filename = '%s.%d-%s-%s.prof' % (
-            timestamp, int(now.microsecond/1000.0),
-            request._orig_env.get('launchpad.pageid', 'Unknown'),
-            threading.currentThread().getName())
+        timestamp = "%s.%d" % (
+            now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
+        pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+        filename = '%s-%s-%s.prof' % (
+            timestamp, pageid, threading.currentThread().getName())
 
         profiler.dump_stats(
             os.path.join(config.profiling.profile_dir, filename))
 
         # Free some memory.
         self.thread_locals.profiler = None
+
+        # Dump memory profiling info.
+        if config.profiling.memory_profile_log:
+            log = file(config.profiling.memory_profile_log, 'a')
+            vss_start, rss_start = self.thread_locals.memory_profile_start
+            vss_end, rss_end = memory(), resident()
+            log.write('%s %s %f %d %d %d %d' % (
+                timestamp, pageid, da.get_request_duration(),
+                vss_start, rss_start, vss_end, vss_end))
+            log.close()
 
     def debugReferencesLeak(self, request):
         """See what kind of references are increasing.
