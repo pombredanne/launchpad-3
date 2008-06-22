@@ -1203,10 +1203,14 @@ is listed as not "allowed":
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> branch_delete_view = getMultiAdapter(
     ...   (branch, LaunchpadTestRequest()), name="+delete")
-    >>> for req in branch_delete_view.display_deletion_requirements:
-    ...     print req[0], 'allowed:', req[3]
-    <...BranchSubscription...> allowed: False
-    <...BranchMergeProposal...> allowed: False
+    >>> deletion_requirements = [
+    ...     "%s allowed: %s" % (req[0].__class__.__name__, req[3])
+    ...     for req in branch_delete_view.display_deletion_requirements]
+    >>> for req in sorted(deletion_requirements):
+    ...     print req
+    BranchMergeProposal allowed: False
+    BranchSubscription allowed: False
+
 
 The "allowed: False" status is mirrored in the display.
 
