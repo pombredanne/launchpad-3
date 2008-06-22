@@ -217,6 +217,11 @@ class Branch(SQLBase):
         notify(SQLObjectCreatedEvent(bmp))
         return bmp
 
+    # XXX: Tim Penhey, 2008-06-18, bug 240881
+    merge_queue = ForeignKey(
+        dbName='merge_robot', foreignKey='MultiBranchMergeQueue',
+        default=None)
+
     def getMergeQueue(self):
         """See `IBranch`."""
         return BranchMergeProposal.select("""

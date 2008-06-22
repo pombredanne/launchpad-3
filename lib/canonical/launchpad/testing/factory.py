@@ -60,6 +60,8 @@ from canonical.launchpad.interfaces import (
     TeamSubscriptionPolicy,
     UnknownBranchTypeError,
     )
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueueSet)
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.database import Message, MessageChunk
 from canonical.launchpad.mail.signedmessage import SignedMessage
@@ -282,6 +284,16 @@ class LaunchpadObjectFactory:
         return getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+
+    def makeBranchMergeQueue(self, name=None):
+        """Create a new multi branch merge queue."""
+        if name is None:
+            name = self.getUniqueString('name')
+        return getUtility(IBranchMergeQueueSet).newMultiBranchMergeQueue(
+            registrant=self.makePerson(),
+            owner=self.makePerson(),
+            name=name,
+            summary=self.getUniqueString())
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, dependent_branch=None):

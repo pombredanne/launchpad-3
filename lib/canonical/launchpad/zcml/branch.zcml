@@ -18,7 +18,7 @@
                         mirror_failures pull_disabled next_mirror_time
                         last_scanned last_scanned_id revision_count branch_type
                         reviewer branch_format repository_format
-                        control_format"
+                        control_format merge_queue"
         />
     <require
         permission="launchpad.AnyPerson"
