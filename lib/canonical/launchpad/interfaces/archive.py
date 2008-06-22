@@ -48,7 +48,7 @@ class IArchive(IHasOwner):
         description=_("""The PPA owner."""))
 
     name = TextLine(
-        title=_("Name"), required=True,
+        title=_("Name"), required=True, readonly=True,
         constraint=name_validator,
         description=_("The name of this archive."))
 
