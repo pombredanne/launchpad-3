@@ -678,7 +678,7 @@ Subscribing to an inactive list also does nothing.
 
     >>> team_off, list_off = new_team('team-off', with_list=True)
     >>> list_off.deactivate()
-    >>> list_off.isUsable()
+    >>> list_off.is_usable
     False
 
     >>> mary.autoSubscribeToMailingList(list_off)
