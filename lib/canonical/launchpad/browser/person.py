@@ -3168,6 +3168,16 @@ class PersonEditView(BasePersonEditView):
         'verbose_bugnotifications', 'time_zone']
     custom_widget('time_zone', SelectWidget, size=15)
 
+    # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
+    # for setting a person's location/time_zone lands.
+    def updateContextFromData(self, data):
+        """Overwrite it here because the time_zone can't be set directly."""
+        time_zone = data.pop('time_zone')
+        self.context.setLocation(
+            self.context.latitude, self.context.longitude,
+            time_zone, self.user)
+        super(PersonEditView, self).updateContextFromData(data)
+
 
 class PersonBrandingView(BrandingChangeView):
 
