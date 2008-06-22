@@ -8,7 +8,7 @@ relicensed under BSD license.
     >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/'
     ...              '+pots/alsa-utils/es/+translate')
     >>> browser.url
-    'http://translations.launchpad.dev/~karl/+licensing'
+    'http://translations.launchpad.dev/~karl/+licensing?back_to=...'
 
 Karl realises that he is not on the translate page, he can see that
 that this page has information about relicensing.
@@ -38,6 +38,11 @@ Launchpad Translations switches to a BSD license.
     >>> get_feedback_messages(browser.contents)
     [u'Your choice has been saved. Your translations will be removed
     once we completely switch to BSD license for translations.']
+
+He's also forwarded back to the Spanish alsa-utils translations page.
+
+    >>> browser.url
+    'http://translations.launchpad.dev/...+pots/alsa-utils/es/+translate'
 
 Karl changes his mind. He returns to the relicensing page.
 

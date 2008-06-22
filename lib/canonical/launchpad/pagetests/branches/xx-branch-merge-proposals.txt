@@ -997,11 +997,10 @@ When a branch is set as the development focus, then a radio button
 is shown.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/trunk')
-    >>> admin_browser.getLink('Edit source').click()
-    >>> admin_browser.getControl('Bazaar').click()
+    >>> admin_browser.getLink('Link to branch').click()
     >>> admin_browser.getControl(name='field.user_branch').value = (
     ...     '~name12/firefox/main')
-    >>> admin_browser.getControl('Update Details').click()
+    >>> admin_browser.getControl('Update').click()
 
     # Just show the radio buttons for the branch widgets.
     >>> def print_radio_options(browser):
