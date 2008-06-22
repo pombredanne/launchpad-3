@@ -33,12 +33,12 @@ rm -f germinate.output ALL ALL.sources UBUNTU-* KUBUNTU-* EDUBUNTU-* XUBUNTU-* G
 rm -f all_* all.sources_*
 
 # Grab a local copy of Sources files
-for component in main universe restricted; do 
+for component in main universe restricted; do
   zcat $ARCHIVEROOT/dists/"$suite"/"$component"/source/Sources.gz > "$suite"_"$component"_Sources;
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
-for distro in ubuntu kubuntu edubuntu xubuntu gobuntu kubuntu-kde4; do
+for distro in ubuntu kubuntu edubuntu xubuntu; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
   if [ "$distro" = gobuntu ]; then
