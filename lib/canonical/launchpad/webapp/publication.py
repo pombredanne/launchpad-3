@@ -483,36 +483,38 @@ class LaunchpadBrowserPublication(
 
 
     def startProfilingHook(self):
-        """If profiling is turned on, start a profiler for this request."""
-        if not config.profiling.profile_requests:
-            return
-        self.thread_locals.profiler = Profile()
-        self.thread_locals.profiler.enable()
+        """Handle profiling.
 
-        # If we are keeping a memory log profile, save the VSS/RSS.
+        If requests profiling start a profiler. If memory profiling is
+        requested, save the VSS and RSS.
+        """
+        if config.profiling.profile_requests:
+            self.thread_locals.profiler = Profile()
+            self.thread_locals.profiler.enable()
+
         if config.profiling.memory_profile_log:
             self.thread_locals.memory_profile_start = (memory(), resident())
 
     def endProfilingHook(self, request):
         """If profiling is turned on, save profile data for the request."""
-        if not config.profiling.profile_requests:
-            return
-        profiler = self.thread_locals.profiler
-        profiler.disable()
-
         # Create a timestamp including milliseconds.
         now = datetime.fromtimestamp(da.get_request_start_time())
         timestamp = "%s.%d" % (
             now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
         pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
-        filename = '%s-%s-%s.prof' % (
-            timestamp, pageid, threading.currentThread().getName())
 
-        profiler.dump_stats(
-            os.path.join(config.profiling.profile_dir, filename))
+        if config.profiling.profile_requests:
+            profiler = self.thread_locals.profiler
+            profiler.disable()
 
-        # Free some memory.
-        self.thread_locals.profiler = None
+            filename = '%s-%s-%s.prof' % (
+                timestamp, pageid, threading.currentThread().getName())
+
+            profiler.dump_stats(
+                os.path.join(config.profiling.profile_dir, filename))
+
+            # Free some memory.
+            self.thread_locals.profiler = None
 
         # Dump memory profiling info.
         if config.profiling.memory_profile_log:

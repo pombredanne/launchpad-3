@@ -172,6 +172,7 @@ To create that log, you set the configuration variable memory_profile_log.
     >>> memory_profile_log = os.path.join(profile_dir, 'memory.log')
     >>> config.push('memory_profile', dedent("""
     ...     [profiling]
+    ...     profile_request: False
     ...     memory_profile_log: %s""" % memory_profile_log))
 
 After each request is done, that log will have the timestamp of the request,
