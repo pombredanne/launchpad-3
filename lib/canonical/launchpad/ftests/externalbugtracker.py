@@ -333,6 +333,84 @@ class TestBugzillaXMLRPCTransport:
     seconds_since_epoch = None
     timezone = 'UTC'
     utc_offset = 0
+    print_method_calls = False
+
+    bugs = {
+        1: {'alias': '',
+            'assigned_to': 'test@canonical.com',
+            'component': 'GPPSystems',
+            'creation_time': datetime(2008, 6, 10, 16, 19, 53),
+            'id': 1,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
+            'priority': 'P1',
+            'product': 'HeartOfGold',
+            'resolution': 'FIXED',
+            'severity': 'normal',
+            'status': 'RESOLVED',
+            'summary': "That bloody robot still exists.",
+            },
+        2: {'alias': 'bug-two',
+            'assigned_to': 'marvin@heartofgold.ship',
+            'component': 'Crew',
+            'creation_time': datetime(2008, 6, 11, 9, 23, 12),
+            'id': 2,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 11, 9, 24, 29),
+            'priority': 'P1',
+            'product': 'HeartOfGold',
+            'resolution': '',
+            'severity': 'high',
+            'status': 'NEW',
+            'summary': 'Collect unknown persons in docking bay 2.',
+            },
+        }
+
+    # Map aliases onto bugs.
+    bug_aliases = {
+        'bug-two': 2,
+        }
+
+    # Comments are mapped to bug IDs.
+    bug_comments = {
+        1: {
+            1: {'author': 'trillian',
+                'id': 1,
+                'number': 1,
+                'text': "I'd really appreciate it if Marvin would "
+                        "enjoy life a bit.",
+                'time': datetime(2008, 6, 16, 12, 44, 29),
+                },
+            2: {'author': 'marvin',
+                'id': 3,
+                'number': 2,
+                'text': "Life? Don't talk to me about life.",
+                'time': datetime(2008, 6, 16, 13, 22, 29),
+                },
+            },
+        2: {
+            1: {'author': 'trillian',
+                'id': 2,
+                'number': 1,
+                'text': "Bring the passengers to the bridge please Marvin.",
+                'time': datetime(2008, 6, 16, 13, 8, 8),
+                },
+             2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
+                'id': 4,
+                'number': 2,
+                'text': "I appear to have become a perfectly safe penguin.",
+                'time': datetime(2008, 6, 17, 20, 28, 40),
+                },
+            },
+        }
+
+    # Map namespaces onto method names.
+    methods = {
+        'Bug': ['comments', 'get_bugs'],
+        'Launchpad': ['time'],
+        }
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -342,11 +420,19 @@ class TestBugzillaXMLRPCTransport:
         called, with the extracted arguments passed on to it.
         """
         args, method_name = xmlrpclib.loads(request)
-        prefix = 'Launchpad.'
-        assert method_name.startswith(prefix), (
-            'All methods should be in the Launchpad namespace')
+        method_prefix, method_name = method_name.split('.')
 
-        method_name = method_name[len(prefix):]
+        assert method_prefix in self.methods, (
+            "All methods should be in one of the following namespaces: %s"
+            % self.methods.keys())
+
+        assert method_name in self.methods[method_prefix], (
+            "No method '%s' in namespace '%s'." %
+            (method_name, method_prefix))
+
+        if self.print_method_calls:
+            print "CALLED %s.%s(%s)" % (method_prefix, method_name, args[0])
+
         method = getattr(self, method_name)
         return method(*args)
 
@@ -366,6 +452,74 @@ class TestBugzillaXMLRPCTransport:
             'utc_time': utc_time,
             'tz_name': self.timezone,
             }
+
+    def get_bugs(self, arguments):
+        """Return a list of bug dicts for a given set of bug IDs."""
+        bug_ids = arguments['ids']
+        bugs_to_return = []
+        bugs = dict(self.bugs)
+
+        # We enforce permissiveness, since we'll always call this method
+        # with permissive=True in the Real World.
+        permissive = arguments.get('permissive', False)
+        assert permissive, "get_bugs() must be called with permissive=True"
+
+        for id in bug_ids:
+            # If the ID is an int, look up the bug directly. We copy the
+            # bug dict into a local variable so we can manipulate the
+            # data in it.
+            try:
+                id = int(id)
+                bug_dict = dict(self.bugs[int(id)])
+            except ValueError:
+                bug_dict = dict(self.bugs[self.bug_aliases[id]])
+
+            # Update the DateTime fields of the bug dict so that they
+            # look like ones that would be sent over XML-RPC.
+            for time_field in ('creation_time', 'last_change_time'):
+                datetime_value = bug_dict[time_field]
+                timestamp = time.mktime(datetime_value.timetuple())
+                xmlrpc_datetime = xmlrpclib.DateTime(timestamp)
+                bug_dict[time_field] = xmlrpc_datetime
+
+            bugs_to_return.append(bug_dict)
+
+        # "Why are you returning a list here?" I hear you cry. Well,
+        # dear reader, it's because xmlrpclib:1387 tries to expand
+        # sequences of length 1. When you return a dict, that line
+        # explodes in your face. Annoying? Insane? You bet.
+        return [{'bugs': bugs_to_return}]
+
+    def comments(self, arguments):
+        """Return comments for a given set of bugs."""
+        # We'll always pass bug IDs when we call comments().
+        assert 'bug_ids' in arguments, (
+            "Bug.comments() must always be called with a bug_ids parameter.")
+
+        bug_ids = arguments['bug_ids']
+        comment_ids = arguments.get('ids')
+        fields_to_return = arguments.get('include')
+        comments_by_bug_id = {}
+
+        def copy_comment(comment):
+            # Copy wanted fields.
+            comment = dict(
+                (key, value) for (key, value) in comment.iteritems()
+                if fields_to_return is None or key in fields_to_return)
+            # Replace the time field with an XML-RPC DateTime.
+            if 'time' in comment:
+                comment['time'] = xmlrpclib.DateTime(
+                    comment['time'].timetuple())
+            return comment
+
+        for bug_id in bug_ids:
+            comments_for_bug = self.bug_comments[bug_id].values()
+            comments_by_bug_id[bug_id] = [
+                copy_comment(comment) for comment in comments_for_bug
+                if comment_ids is None or comment['id'] in comment_ids]
+
+        # More xmlrpclib:1387 odd-knobbery avoidance.
+        return [{'bugs': comments_by_bug_id}]
 
 
 class TestMantis(Mantis):

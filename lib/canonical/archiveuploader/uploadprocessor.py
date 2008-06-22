@@ -265,15 +265,12 @@ class UploadProcessor:
             # emailer that it was a PPA failure.
             distribution = getUtility(IDistributionSet)['ubuntu']
             suite_name = None
-            archive = distribution.main_archive
-            # This is fine because the transaction will be aborted when
-            # the rejection happens.
-            archive.purpose = ArchivePurpose.PPA
-            # XXX cprov 20071212: overriding primary-archive is not exactly
+            # XXX cprov 20071212: using the first available PPA is not exactly
             # fine because it can confuse the code that sends rejection
             # messages if it relies only on archive.purpose (which should be
             # enough). On the other hand if we set an arbitrary owner it
             # will break nascentupload ACL calculations.
+            archive = distribution.getAllPPAs()[0]
             error = str(e)
 
         self.log.debug("Finding fresh policy")
