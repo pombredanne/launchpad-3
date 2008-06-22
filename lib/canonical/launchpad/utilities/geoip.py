@@ -47,7 +47,7 @@ class GeoIP:
         ip_address = ensure_address_is_not_private(ip_address)
         return self._gi.record_by_addr(ip_address)
 
-    def country_by_addr(self, ip_address):
+    def getCountryByAddr(self, ip_address):
         """See `IGeoIP`."""
         ip_address = ensure_address_is_not_private(ip_address)
         geoip_record = self.getRecordByAddress(ip_address)
