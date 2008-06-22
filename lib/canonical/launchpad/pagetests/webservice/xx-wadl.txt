@@ -49,7 +49,12 @@ this point on.
 The <application> tag for a WADL representation of an entry contains a
 single <resources> tag.
 
-    >>> [resources] = tree
+    >>> def single_list_value(single_item_list):
+    ...     assert (len(single_item_list) == 1,
+    ...         "Expected 1 value, but received %s" % len(single_item_list))
+    ...     return single_item_list[0]
+
+    >>> resources = single_list_value(tree)
     >>> resources.tag
     '...resources'
 
@@ -63,7 +68,7 @@ The <resources> tag contains a single <resource> tag. The WADL
 description of a person describes only one resource: the person
 itself.
 
-    >>> [resource] = (resources)
+    >>> resource = single_list_value(resources)
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -102,7 +107,7 @@ description of an entry. It's an <application> tag that contains a
     >>> tree.tag
     '...application'
 
-    >>> [resources] = tree
+    >>> resources = single_list_value(tree)
     >>> resources.tag
     '...resources'
     >>> resources.attrib['base']
@@ -111,7 +116,7 @@ description of an entry. It's an <application> tag that contains a
 The <resource> tag defines the capabilities of the collection resource
 by referencing another WADL document.
 
-    >>> [resource] = resources
+    >>> resource = single_list_value(resources)
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -136,13 +141,13 @@ the representation of a top-level collection.
     >>> tree.tag
     '...application'
 
-    >>> [resources] = tree
+    >>> resources = single_list_value(tree)
     >>> resources.tag
     '...resources'
     >>> resources.attrib['base']
     'http://api.launchpad.dev/beta/~admins/members'
 
-    >>> [resource] = resources
+    >>> resource = single_list_value(resources)
     >>> resource.attrib['path']
     ''
     >>> resource.attrib['type']
@@ -195,13 +200,13 @@ ID "HostedFile".
     >>> tree.tag
     '...application'
 
-    >>> [resources] = tree
+    >>> resources = single_list_value(tree)
     >>> resources.tag
     '...resources'
     >>> resources.attrib['base']
     'http://api.launchpad.dev/beta/~salgado/mugshot'
 
-    >>> [resource] = resources
+    >>> resource = single_list_value(resources)
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -226,7 +231,6 @@ resources. It's a big document.
     True
     >>> wadl_schema.error_log
     ''
-
     >>> tree = etree.fromstring(wadl)
 
 Like all WADL documents, the WADL representation of the service root
@@ -275,7 +279,7 @@ representation of type 'service-root-json', or it can get a WADL
 representation. The WADL representation is the document we're looking
 at right now.
 
-    >>> [response] = get
+    >>> response = single_list_value(get)
     >>> json_repr, wadl_repr = list(response)
     >>> json_repr.attrib['href']
     '#service-root-json'
@@ -316,7 +320,7 @@ resource. This is represented in WADL by giving the <param> tag a
 child <link> tag. The <link> tag explains what sort of resource is at
 the other end of the link.
 
-    >>> [person_set_param_link] = person_set_param
+    >>> person_set_param_link = single_list_value(person_set_param)
     >>> person_set_param_link.tag
     '...link'
     >>> person_set_param_link.attrib['resource_type']
@@ -342,7 +346,7 @@ everything.
 As with the <resources> tags shown earlier, this one contains a single
 <resource> tag.
 
-    >>> [resource] = resources
+    >>> resource = single_list_value(resources)
     >>> resource.tag
     '...resource'
     >>> resource.attrib['path']
@@ -519,7 +523,7 @@ custom operations.
      ('GET', 'PersonSetCollectionAdapter-getByEmail'),
      ('POST', 'PersonSetCollectionAdapter-newTeam')]
 
-    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams, 
+    >>> (find, findPerson, findTeam, get, getAllPerson, getAllTeams,
     ...  getByEmail, newTeam) = sorted(methods, key=lambda i: i.attrib['id'])
 
 The standard GET operation is a way of getting either a page of the
@@ -527,7 +531,7 @@ collection (see "The representation of a collection" later in this
 test) or else a short WADL description of a particular collection,
 like the one shown earlier in this test.
 
-    >>> [response] = get
+    >>> response = single_list_value(get)
     >>> json_rep, wadl_rep = list(response)
     >>> json_rep.attrib['href']
     'http://api.launchpad.dev/beta/#PersonEntryAdapter-page'
@@ -544,7 +548,7 @@ The <method> tag for a named operation will contain one or more
 <parameter> tags describing the parameters the operation accepts. The
 'newTeam' custom operation takes a number of parameters.
 
-    >>> [new_team_request] = newTeam
+    >>> new_team_request, new_team_response = newTeam
     >>> [param.attrib['name'] for param in new_team_request]
     ['ws.op', 'display_name', 'name', 'default_membership_period',
      'team_description', 'default_renewal_period', 'subscription_policy']
@@ -552,20 +556,41 @@ The <method> tag for a named operation will contain one or more
 The 'ws.op' parameter is present for every named operation, and has a
 fixed value: the name of the operation.
 
-    >>> ws_op = new_team_request[0]
+    >>> ws_op = single_list_value(new_team_request)
     >>> ws_op.attrib['fixed']
     'newTeam'
+
+The 'newTeam' custom operation also defines a return value. When you
+invoke that operation you get back a link to a new team in the
+Location header.
+
+    >>> new_team_response_param = single_list_value(new_team_response)
+    >>> new_team_response_param.attrib['style']
+    'header'
+    >>> new_team_response_param.attrib['name']
+    'Location'
+
+    >>> new_team_response_param_link = single_list_value(
+    ...     new_team_response_param)
+    >>> new_team_response_param_link.attrib['resource_type']
+    'http://api.launchpad.dev/beta/#TeamEntryAdapter'
 
 The 'find' custom operation accepts one parameter in addition to
 'ws.op'.
 
-    >>> [find_request] = find
+    >>> find_request, find_response = find
     >>> [param.attrib['name'] for param in find_request]
     ['ws.op', 'text']
 
     >>> ws_op = find_request[0]
     >>> ws_op.attrib['fixed']
     'find'
+
+The 'find' custom operation returns a collection of people.
+
+    >>> find_response_representation = single_list_value(find_response)
+    >>> find_response_representation.attrib['href']
+    'http://api.launchpad.dev/beta/#PersonEntryAdapter-page'
 
 
 == An entry resource type ==
@@ -668,10 +693,10 @@ reference to the appropriate entry page resource type (defined
 below). For example, the list of a bug task's related tasks is a
 collection of bug tasks.
 
-    >>> [related_tasks] = [
+    >>> related_tasks = single_list_value([
     ...     param for param in full_params
-    ...     if param.attrib['name'] == 'related_tasks_collection_link']
-    >>> (doc, related_tasks_link) = related_tasks.getchildren()
+    ...     if param.attrib['name'] == 'related_tasks_collection_link'])
+    >>> doc, related_tasks_link = related_tasks.getchildren()
     >>> related_tasks_link.tag
     '...link'
     >>> related_tasks_link.attrib['resource_type']
@@ -702,8 +727,9 @@ who take their vocabulary from an EnumeratedValue. For these
 parameters, the server provides the client with information about the
 possible values.
 
-    >>> [status_param] = [param for param in full_params
-    ...                   if param.attrib['name'] == 'status']
+    >>> status_param = single_list_value(
+    ...     [param for param in full_params
+    ...      if param.attrib['name'] == 'status'])
     >>> status_options = status_param.getchildren()
     >>> status_options[0].tag
     '...doc'
@@ -753,7 +779,7 @@ representations of a bug task: the JSON one described above as
 "BugTask-full", and a WADL document--the sort of document shown in the
 very first section of this test.
 
-    >>> [response] = get
+    >>> response = single_list_value(get)
     >>> response.tag
     '...response'
     >>> full, wadl = list(response)
@@ -772,10 +798,10 @@ Similarly, the standard PUT and PATCH methods each include a 'request'
 tag, which tells the client which representation it should send along
 with a request.
 
-    >>> [request] = put
+    >>> request = single_list_value(put)
     >>> request.tag
     '...request'
-    >>> [representation] = request
+    >>> representation = single_list_value(request)
     >>> representation.attrib['href']
     'http://api.launchpad.dev/beta/#BugTaskEntryAdapter-full'
 
@@ -817,12 +843,14 @@ valid values.
 One interesting type of parameter not shown above is a link to a
 binary file managed by the web service, such as a person's mugshot.
 
-    >>> person_desc = [entry for entry in entry_resource_descriptions
-    ...                if entry[0].attrib['id'] == 'PersonEntryAdapter'][0]
+    >>> person_desc = single_list_value(
+    ...     [entry for entry in entry_resource_descriptions
+    ...      if entry[0].attrib['id'] == 'PersonEntryAdapter'])
     >>> (person_entry_type, person_full_rep, person_diff_rep,
     ...  person_page_collection_type, person_collection_rep) = person_desc
-    >>> mugshot_param = [param for param in person_full_rep
-    ...                  if param.attrib['name'] == 'mugshot_link'][0]
+    >>> mugshot_param = single_list_value(
+    ...     [param for param in person_full_rep
+    ...      if param.attrib['name'] == 'mugshot_link'])
     >>> doc, mugshot_link = mugshot_param
     >>> mugshot_link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#HostedFile'
@@ -838,11 +866,11 @@ file hosted externally.
     '...method'
     >>> get.attrib['name']
     'GET'
-    >>> [get_response] = get
-    >>> [get_representation] = get_response
+    >>> get_response = single_list_value(get)
+    >>> get_representation = single_list_value(get_response)
     >>> get_representation.attrib['status']
     '303'
-    >>> [redirect_param] = get_representation
+    >>> redirect_param = single_list_value(get_representation)
     >>> redirect_param.tag
     '...param'
     >>> redirect_param.attrib['style']
@@ -885,15 +913,15 @@ includes scoped collections like the collection of tasks for a bug. It
 also includes the second and subsequent pages of a top-level
 collection.
 
-    >>> [get] = collection_type
+    >>> get = single_list_value(collection_type)
     >>> get.attrib['id']
     'BugTaskEntryAdapter-page-resource-get'
 
 In response to the standard GET operation, collection resources will
 serve a JSON representation, described immediately below.
 
-    >>> [get_response] = get
-    >>> [json_representation] = get_response
+    >>> get_response = single_list_value(get)
+    >>> json_representation = single_list_value(get_response)
     >>> json_representation.attrib['href']
     '#BugTaskEntryAdapter-page'
 
@@ -916,11 +944,10 @@ collection).
 
 All collection representations have the same five <param> tags.
 
-    >>> params = list(collection_rep)
-    >>> [param.attrib['name'] for param in params]
+    >>> [param.attrib['name'] for param in collection_rep]
     ['total_size', 'start', 'next_collection_link', 'prev_collection_link',
      'entries', 'entry_links']
-    >>> size, start, next, prev, entries, entry_links = params
+    >>> size, start, next, prev, entries, entry_links = collection_rep
 
 So what's the difference between a collection of people and a
 collection of bug tasks? Well, the ID is different, but that's just a
@@ -935,7 +962,7 @@ type BugTaskEntry.
 
     >>> entry_links.attrib['path']
     "$['entries'][*]['self_link']"
-    >>> [link] = entry_links
+    >>> link = single_list_value(entry_links)
     >>> link.attrib['resource_type']
     'http://api.launchpad.dev/beta/#BugTaskEntryAdapter'
 
@@ -946,10 +973,10 @@ The 'next_collection_link' and 'prev_collection_link' parameters are
 also links to other resources. What are these other resources? Other
 pages of the same collection!
 
-    >>> [next_type] = next
+    >>> next_type = single_list_value(next)
     >>> next_type.attrib['resource_type']
     '#BugTaskEntryAdapter-page-resource'
 
-    >>> [prev_type] = prev
+    >>> prev_type = single_list_value(prev)
     >>> prev_type.attrib['resource_type']
     '#BugTaskEntryAdapter-page-resource'

@@ -658,7 +658,7 @@ class Builder(SQLBase):
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
                     % (candidate.build.id, candidate.id))
-                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+                candidate.build.forceState(BuildStatus.FAILEDTOBUILD)
                 candidate.destroySelf()
                 candidate = self._findBuildCandidate()
                 continue

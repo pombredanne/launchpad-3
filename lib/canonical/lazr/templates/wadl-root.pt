@@ -84,12 +84,27 @@
                  xmlns="http://www.w3.org/1999/xhtml/">
               Field title: field description
             </wadl:doc>
-            <link tal:condition="field/wadl:is_link"
+            <link tal:condition="field/wadl:is_represented_as_link"
                   tal:attributes="resource_type field/wadl:type_link" />
             <option tal:repeat="option field/wadl:options"
                     tal:attributes="value option/title" />
           </param>
         </request>
+        <response
+           tal:condition="operation/op/wadl_operation:has_return_type">
+          <param tal:condition="operation/op/wadl_operation:returns_link"
+                 name="Location" style="header">
+            <link
+               tal:attributes="resource_type
+                   operation/op/wadl_operation:return_type_resource_type_link"
+               />
+          </param>
+          <representation
+             tal:condition="not:operation/op/wadl_operation:returns_link"
+             tal:attributes="href
+                 operation/op/wadl_operation:return_type_representation_link"
+             />
+        </response>
       </method>
     </resource_type>
 
@@ -150,12 +165,27 @@
                  xmlns="http://www.w3.org/1999/xhtml/">
               Field title: field description
             </wadl:doc>
-            <link tal:condition="field/wadl:is_link"
+            <link tal:condition="field/wadl:is_represented_as_link"
                   tal:attributes="resource_type field/wadl:type_link" />
             <option tal:repeat="option field/wadl:options"
                     tal:attributes="value option/title" />
           </param>
         </request>
+        <response
+           tal:condition="operation/op/wadl_operation:has_return_type">
+          <param tal:condition="operation/op/wadl_operation:returns_link"
+                 name="Location" style="header">
+            <link
+               tal:attributes="resource_type
+                   operation/op/wadl_operation:return_type_resource_type_link"
+               />
+          </param>
+          <representation
+             tal:condition="not:operation/op/wadl_operation:returns_link"
+             tal:attributes="href
+                 operation/op/wadl_operation:return_type_representation_link"
+             />
+        </response>
       </method>
     </resource_type>
 
@@ -171,7 +201,7 @@
              xmlns="http://www.w3.org/1999/xhtml/">
           Field title: field description
         </wadl:doc>
-        <link tal:condition="field/wadl:is_link"
+        <link tal:condition="field/wadl:is_represented_as_link"
               tal:attributes="resource_type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />
@@ -189,7 +219,7 @@
              xmlns="http://www.w3.org/1999/xhtml/">
           Field title: field description
         </wadl:doc>
-        <link tal:condition="field/wadl:is_link"
+        <link tal:condition="field/wadl:is_represented_as_link"
               tal:attributes="resource_type field/wadl:type_link" />
         <option tal:repeat="option field/wadl:options"
                 tal:attributes="value option/title" />

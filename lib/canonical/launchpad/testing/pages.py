@@ -49,13 +49,14 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        HTTPCaller.__init__(self, *args, **kw)
+        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+
     def __call__(self, *args, **kw):
         if self._debug:
             import pdb
             pdb.set_trace()
         try:
-            return HTTPCaller.__call__(self, *args, **kw)
+            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
         finally:
             self.resetCookies()
 
@@ -556,9 +557,9 @@ def setupBrowser(auth=None):
         string of the form 'Basic email:password' for an authenticated user.
     :return: A `Browser` object.
     """
+    browser = Browser()
     # Set up our Browser objects with handleErrors set to False, since
     # that gives a tracebacks instead of unhelpful error messages.
-    browser = Browser()
     browser.handleErrors = False
     if auth is not None:
         browser.addHeader("Authorization", auth)

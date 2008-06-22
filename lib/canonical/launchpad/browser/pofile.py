@@ -18,6 +18,8 @@ __all__ = [
 
 import re
 import os.path
+import urllib
+
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -318,8 +320,13 @@ class POFileTranslateView(BaseTranslationView):
         self.pofile = self.context
         if (self.user is not None and
             self.user.translations_relicensing_agreement is None):
+            url = str(self.request.URL).decode('US-ASCII', 'replace')
+            if self.request.get('QUERY_STRING', None):
+                url = url + '?' + self.request['QUERY_STRING']
+
             return self.request.response.redirect(
-                canonical_url(self.user, view_name='+licensing'))
+                canonical_url(self.user, view_name='+licensing') +
+                '?' + urllib.urlencode({'back_to': url}))
 
         # The handling of errors is slightly tricky here. Because this
         # form displays multiple POMsgSetViews, we need to track the
