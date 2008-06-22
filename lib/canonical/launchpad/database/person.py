@@ -2359,9 +2359,6 @@ class PersonSet:
         if name is None:
             name = nickname.generate_nick(email)
 
-        if not passwordEncrypted and password is not None:
-            password = getUtility(IPasswordEncryptor).encrypt(password)
-
         if not displayname:
             displayname = name.capitalize()
 
