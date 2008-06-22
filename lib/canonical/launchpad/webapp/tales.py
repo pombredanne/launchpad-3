@@ -562,6 +562,7 @@ class ObjectImageDisplayAPI:
         return logo % url
 
     def mugshot_url(self):
+        """Return the URL for the object's mugshot stored in the librarian."""
         context = self._context
         assert IHasMugshot.providedBy(context), 'No Mugshot for this item'
         if context.mugshot is not None:
