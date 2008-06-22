@@ -52,11 +52,18 @@ He can see that there are 22 messages.
     >>> print_batch_header(contents)
     1 ... 10  of 22 results
 
+There is also an option for changing which items to show/translate on
+this page, and which alternate language to get suggestions from (tested
+in xx-pofile-translate-alternative-language.txt).
+
+    >>> print contents
+    <... Translating ... using ... as a guide...
+
 
 === Untranslated ===
 
 No Privileges Person chooses to see the untranslated messages in the
-evolution-2.2 sourcepackage. He sets the 'Show' list to 'Untranslated'
+evolution-2.2 sourcepackage. He sets the view filter to 'Untranslated'
 to filter the messages. He sees 13 messages are not translated.
 
     >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
@@ -107,7 +114,7 @@ translations into Australian English.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/en_AU/+translate')
-    >>> user_browser.getControl('Show').value = ['untranslated']
+    >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
     >>> user_browser.title
     'Translating evolution-2.2 in ... "evolution" into English (Australia)'
@@ -153,7 +160,7 @@ navigation.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/en_AU/+translate')
-    >>> user_browser.getControl('Show').value = ['untranslated']
+    >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
     >>> user_browser.title
     'Translating evolution-2.2 in Evolution trunk into English (Australia)'
@@ -212,7 +219,8 @@ No Privileges Person can view just the entries that need to be
 reviewed by filtering on 'need review'. There are two messages in the
 batch.
 
-    >>> user_browser.getControl('Show:').displayValue = ['need review']
+    >>> user_browser.getControl(name='show', index=1).displayValue = [
+    ...     'need review']
     >>> user_browser.getControl('Change').click()
 
     >>> contents = find_main_content(user_browser.contents)
@@ -236,7 +244,8 @@ actions.
     >>> print_batch_header(contents)
     1 ... 10  of 63 results
 
-    >>> user_browser.getControl('Show:').displayValue = ['need review']
+    >>> user_browser.getControl(name='show', index=1).displayValue = [
+    ...     'need review']
     >>> user_browser.getControl('Change').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -263,7 +272,7 @@ There is only one message in the batch.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
-    >>> user_browser.getControl('Show:').displayValue = [
+    >>> user_browser.getControl(name='show', index=1).displayValue = [
     ...     'changed in Launchpad']
     >>> user_browser.getControl('Change').click()
     >>> print extract_url_parameter(user_browser.url, 'batch')
@@ -341,7 +350,7 @@ error.
 
 The exact same batch of messages is shown again, but with the error.
 
-    >>> user_browser.getControl('Show').value
+    >>> user_browser.getControl(name='show', index=1).value
     ['untranslated']
 
     >>> contents = find_main_content(user_browser.contents)
@@ -379,7 +388,7 @@ Person submits Chinese translations using Spanish suggestions.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/zh_CN/+translate')
-    >>> user_browser.getControl('Show').value = ['untranslated']
+    >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
     >>> user_browser.getControl('Spanish (es)').selected = True
     >>> user_browser.getControl('Change').click()

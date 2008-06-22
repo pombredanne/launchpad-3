@@ -353,6 +353,14 @@ COMMENT ON COLUMN CommercialSubscription.purchaser IS 'The person who purchased 
 COMMENT ON COLUMN CommercialSubscription.whiteboard IS 'A place for administrators to store comments related to this subscription.';
 COMMENT ON COLUMN CommercialSubscription.sales_system_id IS 'A reference in the external sales system (e.g. Salesforce) that can be used to identify this subscription.';
 
+-- CustomLanguageCode
+COMMENT ON TABLE CustomLanguageCode IS 'Overrides translation importer''s interpretation of language codes where needed.';
+COMMENT ON COLUMN CustomLanguageCode.product IS 'Product for which this custom language code applies (alternative to distribution + source package name).';
+COMMENT ON COLUMN CustomLanguageCode.distribution IS 'Distribution in which this custom language code applies (if not a product).';
+COMMENT ON COLUMN CustomLanguageCode.sourcepackagename IS 'Source package name to which this custom language code applies; goes with distribution.';
+COMMENT ON COLUMN CustomLanguageCode.language_code IS 'Custom language code; need not be for a real language, and typically not for a "useful" language.';
+COMMENT ON COLUMN CustomLanguageCode.language IS 'Language to which code really refers in this context, or NULL if files with this code are to be rejected.';
+
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
@@ -1047,6 +1055,7 @@ COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation o
 COMMENT ON COLUMN Account.date_status_set IS 'When the status was last changed.';
 COMMENT ON COLUMN Account.displayname IS 'Name to display when rendering information about this account.';
 COMMENT ON COLUMN Account.openid_identifier IS 'The key used to construct an OpenID identity URL for this account.';
+COMMENT ON COLUMN Account.old_openid_identifier IS 'The previous openid_identifier, used for transitions to the current openid_identifier.';
 
 
 -- AccountPassword
@@ -1419,7 +1428,8 @@ COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line 
 COMMENT ON COLUMN Build.archive IS 'Targeted archive for this build.';
 COMMENT ON COLUMN Build.estimated_build_duration IS 'How long does the previous attempt to build this source took in this architecture.';
 COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provided by the builder while building this job.';
-
+COMMENT ON COLUMN Build.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN Build.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the binaries resulted from this build.';
 
 -- Builder
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
@@ -2006,6 +2016,10 @@ COMMENT ON COLUMN OAuthRequestToken.secret IS 'The secret used by the consumer (
 COMMENT ON COLUMN OAuthRequestToken.date_created IS 'The date/time in which the token was created.';
 COMMENT ON COLUMN OAuthRequestToken.date_expires IS 'When the authorization is to expire.';
 COMMENT ON COLUMN OAuthRequestToken.date_reviewed IS 'When the authorization request was authorized or rejected by the person.';
+COMMENT ON COLUMN OAuthRequestToken.product IS 'The product associated with this token.';
+COMMENT ON COLUMN OAuthRequestToken.project IS 'The project associated with this token.';
+COMMENT ON COLUMN OAuthRequestToken.distribution IS 'The distribution associated with this token.';
+COMMENT ON COLUMN OAuthRequestToken.sourcepackagename IS 'The sourcepackagename associated with this token.';
 
 COMMENT ON TABLE OAuthAccessToken IS 'An access token used by the consumer to act on behalf of one of our users.';
 COMMENT ON COLUMN OAuthAccessToken.consumer IS 'The consumer which is going to access the protected resources.';
@@ -2016,8 +2030,21 @@ COMMENT ON COLUMN OAuthAccessToken.key IS 'This token\'s unique key.';
 COMMENT ON COLUMN OAuthAccessToken.secret IS 'The secret used by the consumer (together with the token\'s key) to access Launchpad on behalf of the person.';
 COMMENT ON COLUMN OAuthAccessToken.date_created IS 'The date/time in which the token was created.';
 COMMENT ON COLUMN OAuthAccessToken.date_expires IS 'The date/time in which this token will stop being accepted by Launchpad.';
+COMMENT ON COLUMN OAuthAccessToken.product IS 'The product associated with this token.';
+COMMENT ON COLUMN OAuthAccessToken.project IS 'The project associated with this token.';
+COMMENT ON COLUMN OAuthAccessToken.distribution IS 'The distribution associated with this token.';
+COMMENT ON COLUMN OAuthAccessToken.sourcepackagename IS 'The sourcepackagename associated with this token.';
 
 COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a given timestamp and access token. This is generated by the consumer.';
 COMMENT ON COLUMN OAuthNonce.access_token IS 'The access token.';
 COMMENT ON COLUMN OAuthNonce.nonce IS 'The nonce itself.';
 COMMENT ON COLUMN OAuthNonce.request_timestamp IS 'The date and time (as a timestamp) in which the request was made.';
+
+COMMENT ON TABLE WebServiceBan IS 'A list of specifications of clients which should be denied access on the web service.';
+COMMENT ON COLUMN WebServiceBan.person IS 'If set, all access by this person should be denied access.';
+COMMENT ON COLUMN WebServiceBan.consumer IS 'If set, all access by this consumer should be denied.';
+COMMENT ON COLUMN WebServiceBan.token IS 'If set, all all access using this token should be denied.';
+COMMENT ON COLUMN WebServiceBan.ip IS 'If set, all requests from that host or network should be denied. If either person, consumer or token is also set, then only requests matching both the IP and the other constraint will be denied.';
+COMMENT ON COLUMN WebServiceBan.date_created IS 'When this ban was created.';
+COMMENT ON COLUMN WebServiceBan.active IS 'Is the ban still in effect?';
+
