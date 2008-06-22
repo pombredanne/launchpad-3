@@ -18,7 +18,7 @@
                   import_job results getImportDetailsForDisplay" />
     <require
       permission="launchpad.Edit"
-      attributes="approve invalidate suspend updateFromData" />
+      attributes="approve invalidate suspend markFailing updateFromData" />
 
     <!-- ICodeImport has no set_schema, because all modifications should be
       done through methods that create CodeImportEvent objects when

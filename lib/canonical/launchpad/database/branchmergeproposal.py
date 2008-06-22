@@ -11,6 +11,7 @@ __all__ = [
 
 from email.Utils import make_msgid
 
+from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -36,6 +37,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposalGetter, IBranchMergeProposal,
     UserNotBranchReviewer, WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
@@ -509,6 +511,45 @@ class BranchMergeProposalGetter:
         return ('%sBranchMergeProposal.source_branch in (%s) '
                 ' AND BranchMergeProposal.target_branch in (%s)'
                 % (query, private_subquery, private_subquery))
+
+    @staticmethod
+    def getVoteSummariesForProposals(proposals):
+        """See `IBranchMergeProposalGetter`."""
+        if len(proposals) == 0:
+            return {}
+        ids = quote([proposal.id for proposal in proposals])
+        store = Store.of(proposals[0])
+        # First get the count of comments.
+        query = """
+            SELECT bmp.id, count(crm.*)
+            FROM BranchMergeProposal bmp, CodeReviewMessage crm
+            WHERE bmp.id IN %s
+              AND bmp.id = crm.branch_merge_proposal
+            GROUP BY bmp.id
+            """ % ids
+        comment_counts = dict(store.execute(query))
+        # Now get the vote counts.
+        query = """
+            SELECT bmp.id, crm.vote, count(crv.*)
+            FROM BranchMergeProposal bmp, CodeReviewVote crv,
+                 CodeReviewMessage crm
+            WHERE bmp.id IN %s
+              AND bmp.id = crv.branch_merge_proposal
+              AND crv.vote_message = crm.id
+            GROUP BY bmp.id, crm.vote
+            """ % ids
+        vote_counts = {}
+        for proposal_id, vote_value, count in store.execute(query):
+            vote = CodeReviewVote.items[vote_value]
+            vote_counts.setdefault(proposal_id, {})[vote] = count
+        # Now assemble the resulting dict.
+        result = {}
+        for proposal in proposals:
+            summary = result.setdefault(proposal, {})
+            summary['comment_count'] = (
+                comment_counts.get(proposal.id, 0))
+            summary.update(vote_counts.get(proposal.id, {}))
+        return result
 
 
 class BranchMergeProposalQueryBuilder:

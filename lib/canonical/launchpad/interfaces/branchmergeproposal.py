@@ -12,6 +12,7 @@ __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
+    'IBranchMergeProposalListingBatchNavigator',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -21,6 +22,7 @@ from zope.schema import Choice, Datetime, Int, List
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -392,6 +394,10 @@ class IBranchMergeProposal(Interface):
         """Delete the proposal to merge."""
 
 
+class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
+    """A marker interface for registering the appropriate listings."""
+
+
 class IBranchMergeProposalGetter(Interface):
     """Utility for getting BranchMergeProposals."""
 
@@ -413,4 +419,13 @@ class IBranchMergeProposalGetter(Interface):
             the branch, and to LP admins.
         :raises BadBranchMergeProposalSearchContext: If the context is not
             understood.
+        """
+
+    def getVoteSummariesForProposals(proposals):
+        """Return the vote summaries for the proposals.
+
+        A vote summary is a dict has a 'comment_count' and may also have
+        values for each of the CodeReviewVote enumerated values.
+
+        :return: A dict keyed on the proposals.
         """

@@ -1205,7 +1205,8 @@ is listed as not "allowed":
     ...   (branch, LaunchpadTestRequest()), name="+delete")
     >>> for req in branch_delete_view.display_deletion_requirements:
     ...     print req[0], 'allowed:', req[3]
-    <...CodeReviewComment...> allowed: False
+    <...BranchSubscription...> allowed: False
+    <...BranchMergeProposal...> allowed: False
 
 The "allowed: False" status is mirrored in the display.
 

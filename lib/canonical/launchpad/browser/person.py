@@ -10,9 +10,11 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'PeopleListView',
+    'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
+    'PersonApprovedMergesView',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBranchesMenu',
     'PersonBranchesView',
@@ -21,6 +23,7 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
     'PersonDynMenu',
@@ -134,16 +137,19 @@ from canonical.launchpad.interfaces import (
     TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
     UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreement)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
@@ -699,11 +705,71 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonBranchesMenu(ApplicationMenu):
+class PersonBranchCountMixin:
+    """A mixin class for person branch listings."""
+
+    @cachedproperty
+    def total_branch_count(self):
+        """Return the number of branches related to the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            self.context, visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def registered_branch_count(self):
+        """Return the number of branches registered by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.REGISTERED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def owned_branch_count(self):
+        """Return the number of branches owned by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.OWNED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def subscribed_branch_count(self):
+        """Return the number of branches subscribed to by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
+
+class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
+    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
+             'active_reviews', 'approved_merges']
 
     def all_related(self):
         return Link(canonical_url(self.context, rootsite='code'),
@@ -717,6 +783,20 @@ class PersonBranchesMenu(ApplicationMenu):
 
     def subscribed(self):
         return Link('+subscribedbranches', 'subscribed')
+
+    def active_reviews(self):
+        if self.active_review_count == 1:
+            text = 'active review'
+        else:
+            text = 'active reviews'
+        return Link('+activereviews', text)
+
+    def approved_merges(self):
+        if self.approved_merge_count == 1:
+            text = 'approved merge'
+        else:
+            text = 'approved merges'
+        return Link('+approvedmerges', text)
 
     def addbranch(self):
         if self.user is None:
@@ -2249,7 +2329,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def team_has_mailing_list(self):
         """Is the team mailing list available for subscription?"""
         mailing_list = self.context.mailing_list
-        return mailing_list is not None and mailing_list.isUsable()
+        return mailing_list is not None and mailing_list.is_usable
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -2372,13 +2452,21 @@ class PersonView(LaunchpadView, FeedsMixin):
     def archive_url(self):
         """Return a url to a mailing list archive for the team's list.
 
-        If the person is not a team, does not have a mailing list, or that
-        mailing list has never been activated, return None instead.
+        If the person is not a team, does not have a mailing list, that
+        mailing list has never been activated, or the team is private and the
+        logged in user is not a team member, return None instead.
         """
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
-        return mailing_list.archive_url
+        elif mailing_list.is_public:
+            return mailing_list.archive_url
+        elif self.user is None:
+            return None
+        elif self.user.inTeam(self.context):
+            return mailing_list.archive_url
+        else:
+            return None
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
@@ -3421,7 +3509,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    for email in self.validated_addresses]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
-            if mailing_list is not None and mailing_list.isUsable():
+            if mailing_list is not None and mailing_list.is_usable:
                 name = 'subscription.%s' % team.name
                 value = self._mailing_list_subscription_type(mailing_list)
                 field = Choice(__name__=name,
@@ -4035,50 +4123,6 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchCountMixin:
-    """A mixin class for person branch listings."""
-
-    @cachedproperty
-    def total_branch_count(self):
-        """Return the number of branches related to the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            self.context, visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def registered_branch_count(self):
-        """Return the number of branches registered by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.REGISTERED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def owned_branch_count(self):
-        """Return the number of branches owned by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.OWNED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def subscribed_branch_count(self):
-        """Return the number of branches subscribed to by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @property
-    def user_in_context_team(self):
-        if self.user is None:
-            return False
-        return self.user.inTeam(self.context)
-
-
 class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person."""
 
@@ -4239,3 +4283,50 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
+
+
+class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
+    """A view to render the code page summary for a person."""
+
+    __used_for__ = IPerson
+
+    @property
+    def show_summary(self):
+        """Right now we show the summary if the person has branches.
+
+        When we add support for reviews commented on, we'll want to add
+        support for showing the summary even if there are no branches.
+        """
+        return self.total_branch_count
+
+
+class PersonActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the person that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class PersonApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals that have been approved for the person."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname

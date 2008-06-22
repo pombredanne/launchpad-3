@@ -150,11 +150,24 @@ class ValidPersonCache(SQLBase):
 
 
 def validate_person_visibility(person, attr, value):
-    """Prevent teams with inconsistent connections from being made private."""
+    """Validate changes in visibility.
+
+    * Prevent teams with inconsistent connections from being made private
+    * Prevent private teams with mailing lists from going public
+    """
+    mailing_list = getUtility(IMailingListSet).get(person.name)
+
+    if (value == PersonVisibility.PUBLIC and
+        person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
+        mailing_list is not None):
+        raise ValueError('This team cannot be made public since it has '
+                         'a mailing list')
+
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
             raise ValueError(warning)
+
     return value
 
 
@@ -2182,7 +2195,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
-        if mailinglist is None or not mailinglist.isUsable():
+        if mailinglist is None or not mailinglist.is_usable:
             return False
 
         if mailinglist.getSubscription(self):
@@ -3032,8 +3045,6 @@ class PersonSet:
         skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
-        # XXX: StuartBishop 2005-03-31:
-        # Add sampledata and test to confirm this case.
         cur.execute('''
             UPDATE POSubscription
             SET person=%(to_id)d
@@ -3112,6 +3123,35 @@ class PersonSet:
         # to the old PPA to the new one, performing a careful_publishing on it
         # and removing the old one from disk.
         skip.append(('archive', 'owner'))
+
+        # Update only the CodeReviewVote that will not conflict
+        cur.execute('''
+            UPDATE CodeReviewVote
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM CodeReviewVote AS a, CodeReviewVote AS b
+                WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
+                AND a.branch_merge_proposal = b.branch_merge_proposal
+                )
+            ''' % vars())
+        # And leave conflicts as noise
+        skip.append(('codereviewvote', 'reviewer'))
+
+        # Update only the WebServiceBan that will not conflict
+        cur.execute('''
+            UPDATE WebServiceBan
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
+                )
+            ''' % vars())
+        # And delete the rest 
+        cur.execute('''
+            DELETE FROM WebServiceBan WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('webserviceban', 'person'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

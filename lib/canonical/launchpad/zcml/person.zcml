@@ -565,6 +565,33 @@
     />
 
   <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonCodeSummaryView"
+    permission="zope.Public"
+    facet="branches"
+    name="+codesummary"
+    template="../templates/person-codesummary.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonActiveReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+activereviews"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonApprovedMergesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+approvedmerges"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
     name="+oauth-tokens"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonOAuthTokensView"
