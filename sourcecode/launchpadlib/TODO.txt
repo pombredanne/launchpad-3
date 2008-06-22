@@ -1,0 +1,10 @@
+Things still to do:
+
+- modify person
+- find person, find team
+- join
+- Integrate wadllib branch
+- Move Launchpad.create_team() to Launchpad.people.newTeam()
+- Add AGPL3 bling
+- Flesh out HTTPErrors as per Francis email
+- Move launchpadlib._utils.uri into a separate cheeseshop package

@@ -119,7 +119,6 @@ status is returned.
 >>> check("/firefox/1.0")
 >>> check("/firefox/1.0/+addpackage", auth=True)
 >>> check("/firefox/1.0/+ubuntupkg", auth=True)
->>> check("/firefox/1.0/+source", auth=True)
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)

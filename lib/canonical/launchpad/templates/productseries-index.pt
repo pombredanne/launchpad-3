@@ -20,7 +20,6 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/product/@@+portlet-summary" />
-  <div tal:replace="structure context/@@+portlet-source" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
@@ -58,7 +57,7 @@
 
     <h2>Code for this series</h2>
 
-    <div tal:replace="structure context/@@+importstatus" />
+    <div tal:replace="structure context/@@+code-summary" />
 
 </div>
 
