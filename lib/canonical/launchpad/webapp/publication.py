@@ -523,7 +523,7 @@ class LaunchpadBrowserPublication(
             vss_end, rss_end = memory(), resident()
             log.write('%s %s %f %d %d %d %d\n' % (
                 timestamp, pageid, da.get_request_duration(),
-                vss_start, rss_start, vss_end, vss_end))
+                vss_start, rss_start, vss_end, rss_end))
             log.close()
 
     def debugReferencesLeak(self, request):
