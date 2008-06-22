@@ -24,7 +24,10 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 
+from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.bugtrackerperson import (
+    BugTrackerPersonAlreadyExists, IBugTrackerPerson)
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
@@ -232,6 +235,23 @@ class BugTracker(SQLBase):
             AND((BugMessage.q.bugwatchID == BugWatch.q.id),
                 (BugWatch.q.bugtrackerID == self.id)),
             orderBy=BugMessage.q.id)
+
+    def getLinkedPersonByName(self, name):
+        """Return the Person with a given name on this bugtracker."""
+        return BugTrackerPerson.selectOneBy(name=name, bugtracker=self)
+
+    def linkPersonToSelf(self, name, person):
+        """See `IBugTrackerSet`."""
+        # Check that this name isn't already in use for this bugtracker.
+        if self.getLinkedPersonByName(name) is not None:
+            raise BugTrackerPersonAlreadyExists(
+                "Name '%s' is already in use for bugtracker '%s'." %
+                (name, self.name))
+
+        bugtracker_person = BugTrackerPerson(
+            name=name, bugtracker=self, person=person)
+
+        return bugtracker_person
 
 
 class BugTrackerSet:

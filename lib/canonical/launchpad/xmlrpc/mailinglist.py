@@ -156,12 +156,13 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             for email_address in mailing_list.getSubscribedAddresses():
                 real_name = email_address.person.displayname
                 members[email_address.email] = (real_name, flags, ENABLED)
-            # Finally, add the archive recipient if there is one.  This
-            # address should never be registered in Launchpad, meaning
-            # specifically that the isRegisteredInLaunchpad() test below
-            # should always fail for it.  That way, the address can never be
-            # used to forge spam onto a list.
-            if config.mailman.archive_address:
+            # Finally, add the archive recipient if there is one, and if the
+            # team is public.  This address should never be registered in
+            # Launchpad, meaning specifically that the
+            # isRegisteredInLaunchpad() test below should always fail for it.
+            # That way, the address can never be used to forge spam onto a
+            # list.
+            if config.mailman.archive_address and mailing_list.is_public:
                 members[config.mailman.archive_address] = ('', flags, ENABLED)
             # The response must be a list of tuples.
             response[team_name] = [

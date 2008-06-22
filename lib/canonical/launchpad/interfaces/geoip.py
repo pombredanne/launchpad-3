@@ -17,11 +17,9 @@ class IGeoIP(Interface):
     def getRecordByAddress(ip_address):
         """Return the IGeoIPRecord for the given IP address, or None."""
 
-    # XXX: salgado, 2008-06-18: This method should be renamed to
-    # getCountryByAddr().
-    def country_by_addr(ip_address):
+    def getCountryByAddr(ip_address):
         """Find and return an ICountry based on the given IP address.
-        
+
         :param ip_address: Must be text in the dotted-address notation,
             for example '196.131.31.25'
         """
