@@ -521,7 +521,7 @@ class LaunchpadBrowserPublication(
             log = file(config.profiling.memory_profile_log, 'a')
             vss_start, rss_start = self.thread_locals.memory_profile_start
             vss_end, rss_end = memory(), resident()
-            log.write('%s %s %f %d %d %d %d' % (
+            log.write('%s %s %f %d %d %d %d\n' % (
                 timestamp, pageid, da.get_request_duration(),
                 vss_start, rss_start, vss_end, vss_end))
             log.close()
