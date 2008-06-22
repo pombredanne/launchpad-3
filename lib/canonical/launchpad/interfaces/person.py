@@ -62,6 +62,8 @@ from canonical.launchpad.interfaces.jabber import IJabberID
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.location import (
+    IHasLocation, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -374,7 +376,8 @@ class IHasStanding(Interface):
 
 
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
-                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
+                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon,
+                    IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -512,6 +515,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
+    # XXX: salgado, 2008-06-19: This should probably be removed from here as
+    # it's already defined in IHasLocation (from which IPerson extends).
     time_zone = exported(
         Choice(title=_('Time zone'), required=True, readonly=False,
                description=_('The time zone of where you live.'),
@@ -1206,6 +1211,13 @@ class IPersonViewRestricted(Interface):
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
+    mapped_participants = CollectionField(
+        title=_("List of participants with coordinates."),
+        value_type=Reference(schema=Interface))
+    unmapped_participants = CollectionField(
+        title=_("List of participants with no coordinates recorded."),
+        value_type=Reference(schema=Interface))
+
     def getDirectAdministrators():
         """Return this team's administrators.
 
@@ -1360,7 +1372,7 @@ class IPersonAdminWriteRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IHasStanding):
+              IPersonAdminWriteRestricted, IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry()
 
@@ -1913,7 +1925,8 @@ class NameAlreadyTaken(Exception):
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
-             'invited_members', 'deactivatedmembers', 'expiredmembers']:
+             'invited_members', 'deactivatedmembers', 'expiredmembers',
+             'mapped_participants', 'unmapped_participants']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
