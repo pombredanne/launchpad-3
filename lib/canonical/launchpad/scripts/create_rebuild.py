@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = ['RebuildArchiveCreator']
 
 
-import sys
-
 from zope.component import getUtility
 
 from canonical.launchpad.components.packagelocation import (
