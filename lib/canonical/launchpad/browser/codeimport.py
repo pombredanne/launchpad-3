@@ -280,7 +280,7 @@ class CodeImportNewView(CodeImportBaseView):
         # Make sure fields for unselected revision control systems
         # are blanked out:
         if rcs_type == RevisionControlSystems.CVS:
-            data['svn_repository'] = None
+            data['svn_branch_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.SVN:
             data['cvs_root'] = None
@@ -367,6 +367,10 @@ class CodeImportEditView(CodeImportBaseView):
         """Show the Suspend button if the import is not suspended."""
         return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
 
+    def _showMarkFailing(self, ignored):
+        """Show the Mark Failing button if the import is not failing."""
+        return self._showButtonForStatus(CodeImportReviewStatus.FAILING)
+
     @action(_('Update'), name='update')
     def update_action(self, action, data):
         """Update the details."""
@@ -392,6 +396,13 @@ class CodeImportEditView(CodeImportBaseView):
         self.code_import.suspend(data, self.user)
         self.request.response.addNotification(
             'The code import has been suspended.')
+
+    @action(_('Mark Failing'), name='markFailing', condition=_showMarkFailing)
+    def markFailing_action(self, action, data):
+        """Mark the import as failing."""
+        self.code_import.markFailing(data, self.user)
+        self.request.response.addNotification(
+            'The code import has been marked as failing.')
 
     def validate(self, data):
         """See `LaunchpadFormView`."""

@@ -141,6 +141,8 @@ def _can_add_suggestions(pofile, person):
     Any user that can edit translations can add suggestions, the others will
     be able to add suggestions only if the permission is not CLOSED.
     """
+    if person is None:
+        return False
     return (_can_edit_translations(pofile, person) or
             pofile.translationpermission != TranslationPermission.CLOSED)
 

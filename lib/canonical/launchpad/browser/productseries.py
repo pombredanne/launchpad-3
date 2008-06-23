@@ -19,7 +19,6 @@ __all__ = [
     'ProductSeriesSOP',
     'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
-    'ProductSeriesSourceView',
     'ProductSeriesSpecificationsMenu',
     'ProductSeriesTranslationMenu',
     'ProductSeriesTranslationsExportView',
@@ -28,15 +27,10 @@ __all__ = [
 
 import cgi
 import os.path
-import pytz
-from datetime import datetime
-from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
 from zope.publisher.browser import FileUpload
-from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
@@ -49,9 +43,8 @@ from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICodeImportSet, ICountry, ILaunchpadCelebrities, IPOTemplateSet,
-    IProductSeries, IProductSeriesSet, ISourcePackageNameSet,
-    ITranslationImportQueue, ITranslationImporter, ImportStatus,
-    NotFoundError, RevisionControlSystems)
+    IProductSeries, ISourcePackageNameSet, ITranslationImportQueue,
+    ITranslationImporter, ImportStatus, NotFoundError)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadView,
@@ -60,9 +53,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.enum import EnumeratedType, Item, use_template
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 
 def quote(text):
@@ -133,7 +124,7 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'driver', 'editsource', 'link_branch', 'ubuntupkg',
+        'edit', 'driver', 'link_branch', 'ubuntupkg',
         'add_package', 'add_milestone', 'add_release', 'rdf', 'review',
         'subscribe'
         ]
@@ -148,11 +139,6 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals this series'
         return Link('+driver', text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.EditSource')
-    def editsource(self):
-        text = 'Edit source'
-        return Link('+source', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def link_branch(self):
@@ -493,55 +479,10 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
 
-    def hasVcsImportSuccessStatus(self):
-        """Whether we know if the the last import attempt was successful."""
-        return (
-            self.context.importstatus is not None
-            and self.context.importstatus >= ImportStatus.PROCESSING
-            and self.context.datefinished is not None
-            and self.context.datelastsynced is not None
-            and self.context.datefinished >= self.context.datelastsynced)
-
-    def lastVcsImportSuccessful(self):
-        """Whether the last attempt to sync with upstream succeeded."""
-        assert self.context.datefinished is not None
-        assert self.context.datelastsynced is not None
-        return self.context.datefinished == self.context.datelastsynced
-
     @property
-    def lastVcsImportAttemptAge(self):
-        """How long ago was a vcs-import sync last attempted."""
-        assert self.context.datefinished is not None
-        now = datetime.now(pytz.timezone('UTC'))
-        return now - self.context.datefinished
-
-    def hasVcsImportBranchAge(self):
-        """Whether we know when the published branch was last synced."""
-        if (self.context.datelastsynced is None
-                or self.context.import_branch is None
-                or self.context.import_branch.last_mirrored is None):
-            return False
-        last_mirrored = self.context.import_branch.last_mirrored
-        return (last_mirrored > self.context.datelastsynced
-                or self.context.datepublishedsync is not None)
-
-    @property
-    def currentVcsImportBranchAge(self):
-        """How long ago the published Bazaar branch was last synced."""
-        branch = self.context.import_branch
-        assert branch is not None
-        assert branch.last_mirrored is not None
-        assert self.context.datelastsynced is not None
-        if branch.last_mirrored > self.context.datelastsynced:
-            # Branch was published since last successful sync.
-            timestamp = self.context.datelastsynced
-        else:
-            # The currently published branch still has the data from the
-            # previous sync.
-            timestamp = self.context.datepublishedsync
-        assert timestamp is not None
-        now = datetime.now(pytz.timezone('UTC'))
-        return now - timestamp
+    def request_import_link(self):
+        """A link to the page for requesting a new code import."""
+        return canonical_url(getUtility(ICodeImportSet), view_name='+new')
 
     @property
     def user_branch_visible(self):
@@ -606,277 +547,6 @@ class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
     def next_url(self):
         """Take the user back to the code overview page."""
         return canonical_url(self.context.product, rootsite="code")
-
-
-class UIRevisionControlSystems(EnumeratedType):
-    """A vocabulary to control the user visible choices.
-
-    The DBEnumeratedType `RevisionControlSystems` is being extended here
-    with the addition of an item for Bazaar.
-
-    If the user selects the Bazaar option, a `user_branch` value is stored
-    and the `rcstype` of the product series remains None.  The Bazaar option
-    in the user interface is purely a visual artifact rather than a database
-    one.
-    """
-
-    use_template(RevisionControlSystems)
-
-    sort_order = 'BZR', 'CVS', 'SVN'
-
-    BZR = Item("""
-        Bazaar
-
-        The Bazaar distributed revision control system.
-        """)
-
-
-class ProductSeriesSourceView(LaunchpadEditFormView):
-    """View for editing upstream RCS details for the product series.
-
-    This form is protected by the launchpad.EditSource permission,
-    which basically allows anyone to edit the details until the import
-    has been certified (at which point only vcs-imports team members
-    can edit it).
-
-    In addition, users with launchpad.Admin (i.e. vcs-imports team
-    members or administrators) permission are provided with a few
-    extra buttons to certify the import or reset failed test imports.
-    """
-    schema = IProductSeries
-    # The rcstype field is now create separately below.
-    field_names = ['user_branch', 'cvsroot', 'cvsmodule',
-                   'cvsbranch', 'svnrepository']
-
-    custom_widget('rcstype', LaunchpadRadioWidget)
-    custom_widget('cvsroot', StrippedTextWidget, displayWidth=50)
-    custom_widget('cvsmodule', StrippedTextWidget, displayWidth=20)
-    custom_widget('cvsbranch', StrippedTextWidget, displayWidth=20)
-    custom_widget('svnrepository', URIWidget, displayWidth=50)
-
-    @property
-    def initial_values(self):
-        """Provide the correct value for rcstype."""
-        # Instead of magic casting or token values, be explicit in the
-        # default value.
-        if self.context.rcstype is None:
-            if self.context.user_branch is None:
-                rcstype_value = None
-            else:
-                rcstype_value = UIRevisionControlSystems.BZR
-        elif self.context.rcstype == RevisionControlSystems.CVS:
-            rcstype_value = UIRevisionControlSystems.CVS
-        elif self.context.rcstype == RevisionControlSystems.SVN:
-            rcstype_value = UIRevisionControlSystems.SVN
-        else:
-            raise AssertionError('Unknown rcstype %s' % self.context.rcstype)
-
-        return {'rcstype': rcstype_value}
-
-    def setUpFields(self):
-        """See `LaunchpadFormView`."""
-        LaunchpadEditFormView.setUpFields(self)
-        # Add in the special rcstype field.
-        self.form_fields = self.createRCSTypeField() + self.form_fields
-
-    def createRCSTypeField(self):
-        """Provide a different vocabulary for the rcstype field."""
-        return form.Fields(
-            Choice(__name__='rcstype',
-                 title=_('Type of RCS'),
-                 vocabulary=UIRevisionControlSystems,
-                 required=False,
-                 description=_(
-                    "The type of revision control used for the upstream "
-                    "branch of this series.")),
-            custom_widget=self.custom_widgets['rcstype'],
-            render_context=self.render_context)
-
-    def setUpWidgets(self):
-        LaunchpadEditFormView.setUpWidgets(self)
-
-        # Extract the radio buttons from the rcstype widget, so we can
-        # display them separately in the form.
-        soup = BeautifulSoup(self.widgets['rcstype']())
-        [norcs_button, bzr_button, cvs_button,
-         svn_button, empty_marker] = soup.findAll('input')
-        bzr_button['onclick'] = 'updateWidgets()'
-        cvs_button['onclick'] = 'updateWidgets()'
-        svn_button['onclick'] = 'updateWidgets()'
-        norcs_button['onclick'] = 'updateWidgets()'
-        # These are just only in the page template.
-        # XXX thumper: 2008-01-06
-        #   When the new code import UI stuff is enabled, the product
-        #   series revision control details become read only, and this
-        #   view will be much simplified.
-        self.rcstype_bzr = str(bzr_button)
-        self.rcstype_cvs = str(cvs_button)
-        self.rcstype_svn = str(svn_button)
-        self.rcstype_none = str(norcs_button)
-        self.rcstype_emptymarker = str(empty_marker)
-
-    def validate(self, data):
-        rcstype = data.get('rcstype')
-        if 'rcstype' in data:
-            # Make sure fields for unselected revision control systems
-            # are blanked out:
-            if rcstype != UIRevisionControlSystems.BZR:
-                data['user_branch'] = None
-            if rcstype != UIRevisionControlSystems.CVS:
-                data['cvsroot'] = None
-                data['cvsmodule'] = None
-                data['cvsbranch'] = None
-            if rcstype != UIRevisionControlSystems.SVN:
-                data['svnrepository'] = None
-
-        if rcstype == UIRevisionControlSystems.BZR:
-            if not data.get('user_branch'):
-                self.setFieldError('user_branch',
-                                   'Enter the Bazaar branch.')
-            del data['rcstype']
-        elif rcstype == UIRevisionControlSystems.CVS:
-            data['rcstype'] = RevisionControlSystems.CVS
-            cvsroot = data.get('cvsroot')
-            cvsmodule = data.get('cvsmodule')
-            cvsbranch = data.get('cvsbranch')
-            # Make sure there is an error set for these fields if they
-            # are unset.
-            if not (cvsroot or self.getFieldError('cvsroot')):
-                self.setFieldError('cvsroot',
-                                   'Enter a CVS root.')
-            if not (cvsmodule or self.getFieldError('cvsmodule')):
-                self.setFieldError('cvsmodule',
-                                   'Enter a CVS module.')
-            if not (cvsbranch or self.getFieldError('cvsbranch')):
-                self.setFieldError('cvsbranch',
-                                   'Enter a CVS branch.')
-            if cvsroot and cvsmodule and cvsbranch:
-                series = getUtility(IProductSeriesSet).getByCVSDetails(
-                    cvsroot, cvsmodule, cvsbranch)
-                if self.context != series and series is not None:
-                    self.addError(
-                        structured(
-                        "Those CVS details are already specified for"
-                        " <a href=\"%s\">%s %s</a>.",
-                        canonical_url(series),
-                        series.product.displayname,
-                        series.displayname))
-
-        elif rcstype == UIRevisionControlSystems.SVN:
-            data['rcstype'] = RevisionControlSystems.SVN
-            svnrepository = data.get('svnrepository')
-            if not (svnrepository or self.getFieldError('svnrepository')):
-                self.setFieldError('svnrepository',
-                    "Enter the URL of a Subversion branch.")
-            if svnrepository:
-                series = getUtility(IProductSeriesSet).getBySVNDetails(
-                    svnrepository)
-                if self.context != series and series is not None:
-                    self.setFieldError('svnrepository',
-                        structured(
-                        "This Subversion branch URL is already specified for"
-                        " <a href=\"%s\">%s %s</a>.",
-                        canonical_url(series),
-                        series.product.displayname,
-                        series.displayname))
-
-        if self.resettoautotest_action.submitted():
-            if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
-                self.addError('Cannot rerun import without CVS or '
-                              'Subversion details.')
-        elif self.certify_action.submitted():
-            if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
-                self.addError('Cannot certify import without CVS or '
-                              'Subversion details.')
-            if self.context.syncCertified():
-                self.addError('Import has already been approved.')
-
-    def isAdmin(self, action=None):
-        # The optional action parameter is so this method can be
-        # supplied as the condition argument to an @action.  We treat
-        # all such actions the same though, so we ignore it.
-        return check_permission('launchpad.Admin', self.context)
-
-    @action(_('Update Details'), name='update')
-    def update_action(self, action, data):
-        old_rcstype = self.context.rcstype
-        self.updateContextFromData(data)
-        if self.context.rcstype is None:
-            # Don't import Bazaar branches.
-            self.context.importstatus = None
-        else:
-            if not self.isAdmin() or (old_rcstype is None and
-                                      self.context.rcstype is not None):
-                self.context.importstatus = ImportStatus.TESTING
-        self.request.response.addInfoNotification(
-            'Upstream source details updated.')
-
-    def allowResetToAutotest(self, action):
-        return self.isAdmin() and self.context.autoTestFailed()
-
-    @action(_('Rerun import in the Autotester'), name='resettoautotest',
-            condition=allowResetToAutotest)
-    def resettoautotest_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.importstatus = ImportStatus.TESTING
-        self.request.response.addInfoNotification(
-            'Source import reset to TESTING')
-
-    def allowCertify(self, action):
-        return self.isAdmin() and not self.context.syncCertified()
-
-    @action(_('Approve import for production and publication'),
-            name='certify', condition=allowCertify)
-    def certify_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.certifyForSync()
-        self.request.response.addInfoNotification(
-            'Source import certified for publication')
-
-    @action(_('Mark Import TESTFAILED'), name='testfailed',
-            condition=isAdmin)
-    def testfailed_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.markTestFailed()
-        self.request.response.addInfoNotification(
-            'Source import marked as TESTFAILED.')
-
-    @action(_('Mark Import DONTSYNC'), name='dontsync',
-            condition=isAdmin)
-    def dontsync_action(self, action, data):
-        self.updateContextFromData(data)
-        self.context.markDontSync()
-        self.request.response.addInfoNotification(
-            'Source import marked as DONTSYNC.')
-
-    @action(_('Delete Import'), name='delete',
-            condition=isAdmin)
-    def delete_action(self, action, data):
-        # No need to update the details from the submitted data when
-        # we're about to clear them all anyway.
-        self.context.deleteImport()
-        self.request.response.addInfoNotification(
-            'Source import deleted.')
-
-    def allowConversion(self, action):
-        return self.isAdmin() and self.context.importstatus in [
-            ImportStatus.AUTOTESTED,
-            ImportStatus.TESTING,
-            ImportStatus.PROCESSING,
-            ImportStatus.SYNCING,
-            ImportStatus.STOPPED,
-            ]
-
-    @action(_('Convert To New Style Import'), name='convert',
-            condition=allowConversion)
-    def convert_action(self, action, data):
-        getUtility(ICodeImportSet).newFromProductSeries(self.context)
-        self.request.response.addInfoNotification(
-            'Import converted to new style.')
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
 
 
 class ProductSeriesReviewView(SQLObjectEditView):

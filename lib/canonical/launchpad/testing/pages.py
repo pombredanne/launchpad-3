@@ -16,7 +16,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
-from urlparse import urljoin, urlsplit
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
@@ -48,13 +48,14 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        HTTPCaller.__init__(self, *args, **kw)
+        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+
     def __call__(self, *args, **kw):
         if self._debug:
             import pdb
             pdb.set_trace()
         try:
-            return HTTPCaller.__call__(self, *args, **kw)
+            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
         finally:
             self.resetCookies()
 
@@ -441,7 +442,7 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll(['strong','a'])
+    entries = navigation_links.findAll(['strong', 'a'])
     for entry in entries:
         try:
             print '%s: %s' % (entry.span.string, entry['href'])
@@ -549,6 +550,12 @@ def print_navigation(contents):
     print "Main heading: %s" % main_heading
 
 
+def print_tag_with_id(contents, id):
+    """A simple helper to print the extracted text of the tag."""
+    tag = find_tag_by_id(contents, id)
+    print extract_text(tag)
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -556,9 +563,9 @@ def setupBrowser(auth=None):
         string of the form 'Basic email:password' for an authenticated user.
     :return: A `Browser` object.
     """
+    browser = Browser()
     # Set up our Browser objects with handleErrors set to False, since
     # that gives a tracebacks instead of unhelpful error messages.
-    browser = Browser()
     browser.handleErrors = False
     if auth is not None:
         browser.addHeader("Authorization", auth)
@@ -614,6 +621,7 @@ def setUpGlobs(test):
     test.globs['print_batch_header'] = print_batch_header
     test.globs['print_ppa_packages'] = print_ppa_packages
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
+    test.globs['print_tag_with_id'] = print_tag_with_id
 
 
 class PageStoryTestCase(unittest.TestCase):

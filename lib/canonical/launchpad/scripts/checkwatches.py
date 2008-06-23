@@ -157,7 +157,8 @@ class BugWatchUpdater(object):
         """Set up an interaction as the Bug Watch Updater"""
         auth_utility = getUtility(IPlacelessAuthUtility)
         setupInteraction(
-            auth_utility.getPrincipalByLogin('bugwatch@bugs.launchpad.net'),
+            auth_utility.getPrincipalByLogin(
+                'bugwatch@bugs.launchpad.net', want_password=False),
             login='bugwatch@bugs.launchpad.net')
 
     def _logout(self):
@@ -622,9 +623,20 @@ class BugWatchUpdater(object):
             displayname, email = external_bugtracker.getPosterForComment(
                 bug_watch, comment_id)
 
-            poster = getUtility(IPersonSet).ensurePerson(
-                email, displayname, PersonCreationRationale.BUGIMPORT,
-                comment='when importing comments for %s.' % bug_watch.title)
+            if displayname is None and email is None:
+                # If we don't have a displayname or an email address
+                # then we can't create a Launchpad Person as the author
+                # of this comment. We raise an OOPS and continue.
+                self.warning(
+                    "Unable to import remote comment author. No email "
+                    "address or display name found.",
+                    self._getOOPSProperties(external_bugtracker),
+                    sys.exc_info())
+                continue
+
+            poster = bug_watch.bugtracker.ensurePersonForSelf(
+                displayname, email, PersonCreationRationale.BUGIMPORT,
+                "when importing comments for %s." % bug_watch.title)
 
             comment_message = external_bugtracker.getMessageForComment(
                 bug_watch, comment_id, poster)

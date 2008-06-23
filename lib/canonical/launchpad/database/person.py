@@ -25,7 +25,6 @@ from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
-
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     SQLRelatedJoin, StringCol)
@@ -34,7 +33,7 @@ from storm.store import Store
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -43,6 +42,7 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
@@ -54,8 +54,12 @@ from canonical.launchpad.database.translationrelicensingagreement import (
     TranslationRelicensingAgreement)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
-from canonical.launchpad.helpers import contactEmailAddresses, shortlist
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, get_email_template, shortlist)
 
+from canonical.launchpad.interfaces.account import (
+    AccountCreationRationale, AccountStatus, IAccountSet,
+    INACTIVE_ACCOUNT_STATUSES)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces.archivepermission import (
     IArchivePermissionSet)
@@ -72,8 +76,7 @@ from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.irc import IIrcID, IIrcIDSet
 from canonical.launchpad.interfaces.jabber import IJabberID, IJabberIDSet
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
-    IPasswordEncryptor)
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import (
@@ -83,16 +86,19 @@ from canonical.launchpad.interfaces.mailinglist import (
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.person import (
-    AccountStatus, INACTIVE_ACCOUNT_STATUSES, InvalidName, IPerson,
-    IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
+    InvalidName, IPerson, IPersonSet, ITeam, JoinNotAllowed, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility, PersonalStanding,
     TeamMembershipRenewalPolicy, TeamSubscriptionPolicy)
+from canonical.launchpad.interfaces.personnotification import (
+    IPersonNotificationSet)
 from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.interfaces.product import IProduct
 from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.salesforce import (
+    ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.shipit import (
     ShipItConstants, ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (
@@ -140,21 +146,33 @@ from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
 
-class ValidPersonOrTeamCache(SQLBase):
-    """Flags if a Person or Team is active and usable in Launchpad.
+class ValidPersonCache(SQLBase):
+    """Flags if a Person is active and usable in Launchpad.
 
-    This is readonly, as the underlying table is maintained using
-    database triggers.
+    This is readonly, as this is a view in the database.
     """
     # Look Ma, no columns! (apart from id)
 
 
 def validate_person_visibility(person, attr, value):
-    """Prevent teams with inconsistent connections from being made private."""
+    """Validate changes in visibility.
+
+    * Prevent teams with inconsistent connections from being made private
+    * Prevent private teams with mailing lists from going public
+    """
+    mailing_list = getUtility(IMailingListSet).get(person.name)
+
+    if (value == PersonVisibility.PUBLIC and
+        person.visibility == PersonVisibility.PRIVATE_MEMBERSHIP and
+        mailing_list is not None):
+        raise ValueError('This team cannot be made public since it has '
+                         'a mailing list')
+
     if value != PersonVisibility.PUBLIC:
         warning = person.visibility_consistency_warning
         if warning is not None:
             raise ValueError(warning)
+
     return value
 
 
@@ -171,6 +189,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     _sortingColumnsForSetOperations = SQLConstant(
         "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
+
+    account = ForeignKey(dbName='account', foreignKey='Account', default=None)
 
     def _validate_name(self, attr, value):
         """Check that rename is allowed."""
@@ -192,8 +212,19 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     name = StringCol(dbName='name', alternateID=True, notNull=True,
                      storm_validator=_validate_name)
 
-    password = StringCol(dbName='password', default=None)
-    displayname = StringCol(dbName='displayname', notNull=True)
+    def _sync_displayname(self, attr, value):
+        """Update any related Account.displayname.
+
+        We can't do this in a DB trigger as soon the Account table will
+        in a seperate database to the Person table.
+        """
+        if self.account is not None and self.account.displayname != value:
+            self.account.displayname = value
+        return value
+
+    displayname = StringCol(dbName='displayname', notNull=True,
+                            storm_validator=_sync_displayname)
+
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
@@ -202,13 +233,53 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-    openid_identifier = StringCol(
-            dbName='openid_identifier', alternateID=True, notNull=True,
-            default=DEFAULT)
+   
+    # XXX StuartBishop 2008-05-13 bug=237280: The openid_identifier, password,
+    # account_status and account_status_comment properties should go. Note
+    # that they override # the current strict controls on Account, allowing
+    # access via Person to use the less strinct controls on that interface.
+    # Part of the process of removing these methods from Person will be
+    # losening the permissions on Account or fixing the callsites.
+    @property
+    def openid_identifier(self):
+        if self.account is not None:
+            return removeSecurityProxy(self.account).openid_identifier
 
-    account_status = EnumCol(
-        enum=AccountStatus, default=AccountStatus.NOACCOUNT)
-    account_status_comment = StringCol(default=None)
+    def _get_password(self):
+        # We have to remove the security proxy because the password is
+        # needed before we are authenticated. I'm not overly worried because
+        # this method is scheduled for demolition -- StuartBishop 20080514
+        if self.account is not None:
+            return removeSecurityProxy(self.account).password
+
+    def _set_password(self, value):
+        assert self.account is not None, 'No account for this Person'
+        removeSecurityProxy(self.account).password = value
+
+    password = property(_get_password, _set_password)
+
+    def _get_account_status(self):
+        if self.account is not None:
+            return removeSecurityProxy(self.account).status
+        else:
+            return AccountStatus.NOACCOUNT
+
+    def _set_account_status(self, value):
+        assert self.account is not None, 'No account for this Person'
+        removeSecurityProxy(self.account).status = value
+
+    account_status = property(_get_account_status, _set_account_status)
+
+    def _get_account_status_comment(self):
+        if self.account is not None:
+            return removeSecurityProxy(self.account).status_comment
+
+    def _set_account_status_comment(self, value):
+        assert self.account is not None, 'No account for this Person'
+        removeSecurityProxy(self.account).status_comment = value
+
+    account_status_comment = property(
+            _get_account_status_comment, _set_account_status_comment)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -289,6 +360,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     personal_standing_reason = StringCol(default=None)
 
+    commercial_vouchers = None
+
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
         SQLBase._init(self, *args, **kw)
@@ -301,7 +374,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert self.account_status == AccountStatus.NOACCOUNT, (
             "Only Person entries whose account_status is NOACCOUNT can be "
             "converted into teams.")
-        self.password = None
+        # Teams don't have Account records
+        if self.account is not None:
+            account_id = self.account.id
+            self.account = None
+            Account.delete(account_id)
         self.creation_rationale = None
         self.teamowner = team_owner
         alsoProvides(self, ITeam)
@@ -318,29 +395,63 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             AND (date_expires IS NULL OR date_expires > %s)
             """ % sqlvalues(self, UTC_NOW))
 
-    @cachedproperty
-    def _location(self):
+    @cachedproperty('_location')
+    def location(self):
+        """See `IObjectWithLocation`."""
         return PersonLocation.selectOneBy(person=self)
 
-    def set_time_zone(self, timezone):
-        location = self._location
-        if location is None:
-            location = PersonLocation(
-                person=self,
-                latitude=None,
-                longitude=None,
-                time_zone=timezone,
-                last_modified_by=self)
-        location.time_zone = timezone
-        self._location = location
-
-    def get_time_zone(self):
-        location = self._location
-        if location is None:
+    @property
+    def time_zone(self):
+        """See `IHasLocation`."""
+        if self.location is None:
             return None
-        return location.time_zone
-    time_zone = property(get_time_zone, set_time_zone)
+        return self.location.time_zone
 
+    @property
+    def latitude(self):
+        """See `IHasLocation`."""
+        if self.location is None:
+            return None
+        return self.location.latitude
+
+    @property
+    def longitude(self):
+        """See `IHasLocation`."""
+        if self.location is None:
+            return None
+        return self.location.longitude
+
+    def setLocation(self, latitude, longitude, time_zone, user):
+        """See `ISetLocation`."""
+        assert not self.is_team, 'Cannot edit team location.'
+        assert ((latitude is None and longitude is None) or 
+                (latitude is not None and longitude is not None)), (
+            "Cannot set a latitude without longitude (and vice-versa).")
+
+        if self.location is not None:
+            self.location.time_zone = time_zone
+            self.location.latitude = latitude
+            self.location.longitude = longitude
+            self.location.last_modified_by = user
+            self.location.date_last_modified = UTC_NOW
+        else:
+            self._location = PersonLocation(
+                person=self, time_zone=time_zone, latitude=latitude,
+                longitude=longitude, last_modified_by=user)
+
+        # Make a note that we need to tell this person that their
+        # information was updated by the user. We can only do this if we
+        # have a validated email address for this person.
+        if user != self and self.preferredemail is not None:
+            mail_text = get_email_template('person-location-modified.txt')
+            mail_text = mail_text % {
+                'actor': user.name,
+                'actor_browsername': user.browsername,
+                'person': self.name}
+            subject = '%s updated your location and time zone' % (
+                user.browsername)
+            getUtility(IPersonNotificationSet).addNotification(
+                self, subject, mail_text)
 
     def get_translations_relicensing_agreement(self):
         """Return whether translator agrees to relicense their translations.
@@ -747,7 +858,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
-        # import here to work around a circular import problem
+        # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
 
         if product_name is None or product_name == '+junk':
@@ -958,8 +1069,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             WHERE TeamParticipation.person = %(person)s
             AND owner = TeamParticipation.team
             """ % sqlvalues(person=self)]
-        if match_name is not None:
 
+        # We only want to use the extra query if match_name is not None and it
+        # is not the empty string ('' or u'').
+        if match_name:
             like_query = "'%%' || %s || '%%'" % quote_like(match_name)
             quoted_query = quote(match_name)
             clauses.append(
@@ -972,6 +1085,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         results = Product.select("""id IN (%s)""" % query,
                                  orderBy=['displayname'])
         return results
+
+    def getCommercialSubscriptionVouchers(self):
+        """See `IPerson`."""
+        if self.commercial_vouchers is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
+            self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
+            self.unredeemed_commercial_vouchers = []
+            self.redeemed_commercial_vouchers = []
+            for voucher in self.commercial_vouchers:
+                assert voucher.status in VOUCHER_STATUSES, (
+                    "Voucher %s has unrecoginzed status %s" %
+                    (voucher.voucher_id, voucher.status))
+                if voucher.status == 'Redeemed':
+                    self.redeemed_commercial_vouchers.append(voucher)
+                else:
+                    self.unredeemed_commercial_vouchers.append(voucher)
+        return (self.unredeemed_commercial_vouchers,
+                self.redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -1033,19 +1164,22 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     @property
     def is_valid_person_or_team(self):
         """See `IPerson`."""
-        try:
-            if ValidPersonOrTeamCache.get(self.id) is not None:
-                return True
-        except SQLObjectNotFound:
-            pass
-        return False
+        # Teams are always valid
+        if self.isTeam():
+            return True
+
+        return self.is_valid_person
 
     @property
     def is_valid_person(self):
         """See `IPerson`."""
         if self.is_team:
             return False
-        return self.is_valid_person_or_team
+        try:
+            ValidPersonCache.get(self.id)
+            return True
+        except SQLObjectNotFound:
+            return False
 
     @property
     def is_openid_enabled(self):
@@ -1514,6 +1648,45 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             orderBy=Person.sortingColumns)
 
     @property
+    def mapped_participants(self):
+        """See `IPersonViewRestricted`."""
+        locations = PersonLocation.select("""
+            PersonLocation.person = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            -- We only need to check for a latitude here because there's a DB
+            -- constraint which ensures they are both set or unset.
+            PersonLocation.latitude IS NOT NULL AND
+            Person.id = PersonLocation.person AND
+            Person.teamowner IS NULL
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation', 'Person'],
+            prejoins=['person',])
+        # Pre-cache this location against its person.  Since we'll always
+        # iterate over all persons returned by this property (to build the map
+        # of team members), it becomes more important to cache their locations
+        # than to return a lazy SelectResults (or similar) object that only
+        # fetches the rows when they're needed.
+        for location in locations:
+            location.person._location = location
+        return [location.person for location in locations]
+
+    @property
+    def unmapped_participants(self):
+        """See `IPersonViewRestricted`."""
+        return Person.select("""
+            Person.id = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            TeamParticipation.person NOT IN (
+                SELECT PersonLocation.person
+                FROM PersonLocation INNER JOIN TeamParticipation ON
+                     PersonLocation.person = TeamParticipation.person
+                WHERE TeamParticipation.team = %s AND
+                      PersonLocation.latitude IS NOT NULL) AND
+            Person.teamowner IS NULL
+            """ % sqlvalues(self.id, self.id),
+            clauseTables=['TeamParticipation'])
+
+    @property
     def open_membership_invitations(self):
         """See `IPerson`."""
         return TeamMembership.select("""
@@ -1642,8 +1815,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # A private-membership team must be able to participate in itself.
             ('teamparticipation', 'person'),
             ('teamparticipation', 'team'),
-            # This table is handled entirely by triggers.
-            ('validpersonorteamcache', 'id'),
             ]
         warnings = set()
         for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
@@ -1857,7 +2028,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self._setPreferredEmail(email)
+            self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
             getUtility(IHWSubmissionSet).setOwnership(email)
@@ -1887,8 +2058,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             # XXX: This is a hack! In the future we won't have this
             # association between accounts and confirmed addresses, but this
             # will do for now. -- Guilherme Salgado, 2007-07-03
-            self.account_status = AccountStatus.ACTIVE
-            self.account_status_comment = None
+            self.account.status = AccountStatus.ACTIVE
+            self.account.status_comment = None
+            self.account.sync() # sync so validpersoncache updates.
         self._setPreferredEmail(email)
 
     def _setPreferredEmail(self, email):
@@ -2123,7 +2295,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
-        if mailinglist is None or not mailinglist.isUsable():
+        if mailinglist is None or not mailinglist.is_usable:
             return False
 
         if mailinglist.getSubscription(self):
@@ -2199,13 +2371,56 @@ class PersonSet:
             displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
         """See `IPersonSet`."""
+
+        # This check is also done in EmailAddressSet.new() and also
+        # generate_nick(). We repeat it here as some call sites want
+        # InvalidEmailAddress rather than NicknameGenerationError that
+        # generate_nick() will raise.
         if not valid_email(email):
             raise InvalidEmailAddress(
                 "%s is not a valid email address." % email)
 
         if name is None:
             name = nickname.generate_nick(email)
-        elif not valid_name(name):
+
+        if not displayname:
+            displayname = name.capitalize()
+
+        # Convert the PersonCreationRationale to an AccountCreationRationale
+        account_rationale = getattr(AccountCreationRationale, rationale.name)
+
+        account = getUtility(IAccountSet).new(
+                account_rationale, displayname,
+                password=password, password_is_encrypted=passwordEncrypted)
+
+        person = self._newPerson(
+            name, displayname, hide_email_addresses, rationale=rationale,
+            comment=comment, registrant=registrant, account=account)
+
+        email = getUtility(IEmailAddressSet).new(
+                email, person, account=account)
+
+        return person, email
+
+    def createPersonWithoutEmail(
+        self, name, rationale, comment=None, displayname=None,
+        registrant=None):
+        """Create and return a new Person without using an email address.
+
+        See `IPersonSet`.
+        """
+        return self._newPerson(
+            name, displayname, hide_email_addresses=True, rationale=rationale,
+            comment=comment, registrant=registrant)
+
+    def _newPerson(self, name, displayname, hide_email_addresses,
+                   rationale, comment=None, registrant=None, account=None):
+        """Create and return a new Person with the given attributes.
+
+        Also generate a wikiname for this person that's not yet used in the
+        Ubuntu wiki.
+        """
+        if not valid_name(name):
             raise InvalidName(
                 "%s is not a valid name for a person." % name)
         else:
@@ -2215,28 +2430,11 @@ class PersonSet:
             raise NameAlreadyTaken(
                 "The name '%s' is already taken." % name)
 
-        if not passwordEncrypted and password is not None:
-            password = getUtility(IPasswordEncryptor).encrypt(password)
-
         if not displayname:
             displayname = name.capitalize()
-        person = self._newPerson(
-            name, displayname, hide_email_addresses, rationale=rationale,
-            comment=comment, password=password, registrant=registrant)
 
-        email = getUtility(IEmailAddressSet).new(email, person)
-        return person, email
-
-    def _newPerson(self, name, displayname, hide_email_addresses,
-                   rationale, comment=None, password=None, registrant=None):
-        """Create and return a new Person with the given attributes.
-
-        Also generate a wikiname for this person that's not yet used in the
-        Ubuntu wiki.
-        """
-        assert self.getByName(name, ignore_merged=False) is None
         person = Person(
-            name=name, displayname=displayname, password=password,
+            name=name, displayname=displayname, account=account,
             creation_rationale=rationale, creation_comment=comment,
             hide_email_addresses=hide_email_addresses, registrant=registrant)
 
@@ -2265,12 +2463,21 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None."""
-        person = Person.selectOneBy(openid_identifier=openid_identifier)
-        if person is not None and person.is_valid_person:
-            return person
-        else:
-            return None
+        """Returns a Person with the given openid_identifier, or None.
+
+        XXX StuartBishop 2008-05-16 bug=237283: This method no longer makes
+        sense. The only things we need to lookup by openid identifier are
+        Accounts.
+        """
+        return Person.selectOne(
+                AND(
+                    Person.q.accountID == Account.q.id,
+                    Account.q.openid_identifier == openid_identifier,
+                    Account.q.status == AccountStatus.ACTIVE,
+                    EmailAddress.q.personID == Person.q.id,
+                    EmailAddress.q.status == EmailAddressStatus.PREFERRED,
+                    ),
+                )
 
     def updateStatistics(self, ztm):
         """See `IPersonSet`."""
@@ -2291,6 +2498,13 @@ class PersonSet:
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
+    def getAllValidPersons(self, orderBy=None):
+        """See `IPersonSet`."""
+        if orderBy is None:
+            orderBy = Person.sortingColumns
+        return Person.select(
+                Person.q.id == ValidPersonCache.q.id, orderBy=orderBy)
+
     def teamsCount(self):
         """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
@@ -2307,48 +2521,95 @@ class PersonSet:
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = ("Person.account_status not in (%s)"
-                      % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
+
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries. Using a UNION makes
+        # OUTER JOIN or do a UNION between four queries. Using a UNION makes
         # it a lot faster than with a LEFT OUTER JOIN.
-        email_query = base_query + """
+        args = (quote_like(text),) + sqlvalues(INACTIVE_ACCOUNT_STATUSES)
+        person_email_query = """
+            Person.teamowner IS NULL
+            AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
             AND lower(EmailAddress.email) LIKE %s || '%%'
-            """ % quote_like(text)
-        results = Person.select(email_query, clauseTables=['EmailAddress'])
-        name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
-        name_query += " AND " + base_query
-        return results.union(Person.select(name_query), orderBy=orderBy)
+            AND Person.account = Account.id
+            AND Account.status NOT IN %s
+            """ % args
+        results = Person.select(
+            person_email_query, clauseTables=['EmailAddress', 'Account'])
+
+        person_name_query = """
+            Person.teamowner IS NULL
+            AND Person.merged is NULL
+            AND Person.fti @@ ftq(%s)
+            AND Person.account = Account.id
+            AND Account.status NOT IN %s
+            """ % sqlvalues(text, INACTIVE_ACCOUNT_STATUSES)
+        results = results.union(Person.select(
+            person_name_query, clauseTables=['Account']))
+
+        team_email_query = """
+            Person.teamowner IS NOT NULL
+            AND Person.merged IS NULL
+            AND EmailAddress.person = Person.id
+            AND lower(EmailAddress.email) LIKE %s || '%%'
+            """ % (quote_like(text),)
+        results = results.union(Person.select(
+            team_email_query, clauseTables=['EmailAddress']))
+
+        team_name_query = """
+            Person.teamowner IS NOT NULL
+            AND Person.merged IS NULL
+            AND Person.fti @@ ftq(%s)
+            """ % (quote(text),)
+        results = results.union(
+                Person.select(team_name_query), orderBy=orderBy)
+        return results
 
     def findPerson(
-            self, text="", orderBy=None, exclude_inactive_accounts=True):
+            self, text="", orderBy=None, exclude_inactive_accounts=True,
+            must_have_email=False):
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = """
-            Person.teamowner IS NULL
-            AND Person.merged IS NULL
-            AND EmailAddress.person = Person.id
-            """
+
+        base_query = [
+                'Person.teamowner IS NULL',
+                'Person.merged IS NULL',
+                ]
+        clause_tables = []
+
         if exclude_inactive_accounts:
-            base_query += (" AND Person.account_status not in (%s)"
-                           % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
-        clauseTables = ['EmailAddress']
-        if text:
-            # We use a UNION here because this makes things *a lot* faster
-            # than if we did a single SELECT with the two following clauses
-            # ORed.
-            email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
-                           % (base_query, quote_like(text)))
-            name_query = ('%s AND Person.fti @@ ftq(%s)'
-                          % (base_query, quote(text)))
-            results = Person.select(email_query, clauseTables=clauseTables)
-            results = results.union(
-                Person.select(name_query, clauseTables=clauseTables))
-        else:
-            results = Person.select(base_query, clauseTables=clauseTables)
+            clause_tables.append('Account')
+            base_query.append('Person.account = Account.id')
+            base_query.append(
+                'Account.status NOT IN (%s)'
+                % ','.join(sqlvalues(*INACTIVE_ACCOUNT_STATUSES)))
+
+        email_clause_tables = clause_tables + ['EmailAddress']
+        if must_have_email:
+            clause_tables = email_clause_tables
+            base_query.append('EmailAddress.person = Person.id')
+
+        # Short circuit for returning all users in order
+        if not text:
+            return Person.select(
+                    ' AND '.join(base_query), clauseTables=clause_tables)
+
+        # We use a UNION here because this makes things *a lot* faster
+        # than if we did a single SELECT with the two following clauses
+        # ORed.
+        email_query = base_query + [
+                'EmailAddress.person = Person.id',
+                "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text)
+                ]
+        name_query = base_query + ["Person.fti @@ ftq(%s)" % quote(text)]
+
+        results = Person.select(
+                ' AND '.join(email_query), clauseTables=email_clause_tables)
+        results = results.union(
+                Person.select(
+                    ' AND '.join(name_query), clauseTables=clause_tables))
 
         return results.orderBy(orderBy)
 
@@ -2555,8 +2816,6 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
-            # This table is handled entirely by triggers.
-            ('validpersonorteamcache', 'id'),
             ('translationrelicensingagreement', 'person'),
             ]
 
@@ -2905,8 +3164,6 @@ class PersonSet:
         skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
-        # XXX: StuartBishop 2005-03-31:
-        # Add sampledata and test to confirm this case.
         cur.execute('''
             UPDATE POSubscription
             SET person=%(to_id)d
@@ -2985,6 +3242,35 @@ class PersonSet:
         # to the old PPA to the new one, performing a careful_publishing on it
         # and removing the old one from disk.
         skip.append(('archive', 'owner'))
+
+        # Update only the CodeReviewVote that will not conflict
+        cur.execute('''
+            UPDATE CodeReviewVote
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM CodeReviewVote AS a, CodeReviewVote AS b
+                WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
+                AND a.branch_merge_proposal = b.branch_merge_proposal
+                )
+            ''' % vars())
+        # And leave conflicts as noise
+        skip.append(('codereviewvote', 'reviewer'))
+
+        # Update only the WebServiceBan that will not conflict
+        cur.execute('''
+            UPDATE WebServiceBan
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
+                )
+            ''' % vars())
+        # And delete the rest 
+        cur.execute('''
+            DELETE FROM WebServiceBan WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('webserviceban', 'person'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
@@ -3069,6 +3355,12 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
+        # And nuke any referencing Account
+        cur.execute('''
+            DELETE FROM Account USING Person
+            WHERE Person.account = Account.id AND Person.id=%(from_id)d
+            ''' % vars())
+
         # Append a -merged suffix to the account's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
         cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
@@ -3111,9 +3403,13 @@ class PersonSet:
         person_ids = [person.id for person in persons]
         if len(person_ids) == 0:
             return []
-        valid_person_cache = ValidPersonOrTeamCache.select(
-            "id IN %s" % sqlvalues(person_ids))
-        valid_person_ids = set(cache.id for cache in valid_person_cache)
+
+        # This has the side effect of sucking in the ValidPersonCache
+        # items into the cache, allowing Person.is_valid_person calls to
+        # not hit the DB.
+        valid_person_ids = set(
+                person_id.id for person_id in ValidPersonCache.select(
+                    "id IN %s" % sqlvalues(person_ids)))
         return [
             person for person in persons if person.id in valid_person_ids]
 
