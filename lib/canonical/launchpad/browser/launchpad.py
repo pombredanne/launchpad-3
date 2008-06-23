@@ -166,8 +166,14 @@ class MenuBox(LaunchpadView):
             link for link in menuapi.context.values()
             if link.enabled or config.devmode],
             key=operator.attrgetter('sort_key'))
-        application_links = getattr(
-            menuapi, menuapi.selectedfacetname()).values()
+        facet = menuapi.selectedfacetname()
+        if facet not in ('unknown', 'bounties'):
+            # XXX sinzui 2008-06-23 bug=242453:
+            # Why are we getting unknown? Bouties are borked. We need
+            # to end the facet hacks to get a clear state for the menus.
+            application_links = getattr(menuapi, facet).values()
+        else:
+            application_links = []
         self.applicationmenuitems = sorted([
             link for link in application_links
             if link.enabled or config.devmode],
