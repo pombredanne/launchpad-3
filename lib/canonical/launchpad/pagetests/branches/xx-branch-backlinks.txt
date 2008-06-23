@@ -13,10 +13,10 @@ The link appears on the edit details page.
 
     >>> browser.getLink('Change branch details').click()
     >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
-    >>> print back_link.renderContents()
+    >>> print back_link.renderContents().strip()
     <img src="/@@/branch" alt="" />
-    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
-    for the <a href="/firefox">Mozilla Firefox</a> project
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>...
+    for the <a href="/firefox"><img...>&nbsp;Mozilla Firefox</a>...project
 
 The link can be used to go back to the main branch page.
 
@@ -31,10 +31,10 @@ The link also appears on the branch subscription page.
 
     >>> browser.getLink('Subscribe').click()
     >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
-    >>> print back_link.renderContents()
+    >>> print back_link.renderContents().strip()
     <img src="/@@/branch" alt="" />
-    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
-    for the <a href="/firefox">Mozilla Firefox</a> project
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>...
+    for the <a href="/firefox"><img...>&nbsp;Mozilla Firefox</a>...project
 
 In order to check the edit subscription page, we need to subscribe.
 
@@ -47,10 +47,10 @@ The link appears on the edit subscription page.
 
     >>> browser.getLink('Edit subscription').click()
     >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
-    >>> print back_link.renderContents()
+    >>> print back_link.renderContents().strip()
     <img src="/@@/branch" alt="" />
-    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
-    for the <a href="/firefox">Mozilla Firefox</a> project
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>...
+    for the <a href="/firefox"><img...>&nbsp;Mozilla Firefox</a>...project
 
 
 == Subscribe someone else ==
@@ -59,10 +59,10 @@ The link appears on the subscribe someone else page.
 
     >>> browser.getLink('Subscribe someone else').click()
     >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
-    >>> print back_link.renderContents()
+    >>> print back_link.renderContents().strip()
     <img src="/@@/branch" alt="" />
-    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
-    for the <a href="/firefox">Mozilla Firefox</a> project
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>...
+    for the <a href="/firefox"><img...>&nbsp;Mozilla Firefox</a>...project
 
 
 == Change registrant ==

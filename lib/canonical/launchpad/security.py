@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces.codeimportjob import (
 from canonical.launchpad.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from canonical.launchpad.interfaces.codereviewcomment import (
-    ICodeReviewComment)
+    ICodeReviewComment, ICodeReviewCommentDeletion)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -567,6 +567,30 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
+
+
+class EditPersonLocation(AuthorizationBase):
+    permission = 'launchpad.EditLocation'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """Anybody can edit a person's location until that person sets it.
+
+        Once a person sets his own location that information can only be
+        changed by the person himself or admins.
+        """
+        location = self.obj.location
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user == self.obj or user.inTeam(admins):
+            # The person himself and LP admins can always change that person's
+            # location.
+            return True
+        elif location is None or location.last_modified_by != self.obj:
+            # No location has been specified yet or it has been specified by a
+            # non-authoritative source (not the person himself).
+            return True
+        else:
+            return False
 
 
 class EditPersonBySelf(AuthorizationBase):
@@ -1496,6 +1520,29 @@ class CodeReviewCommentView(AuthorizationBase):
         return bmp_checker.checkUnauthenticated()
 
 
+class CodeReviewCommentDelete(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewCommentDeletion
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Are not-logged-in people able to view the code review message?
+
+        They can see a code review message if they can see the branch merge
+        proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
+
+
 class BranchMergeProposalEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchMergeProposal
@@ -1719,5 +1766,7 @@ class ViewEmailAddress(AuthorizationBase):
         """
         if not self.obj.person.hide_email_addresses:
             return True
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user == self.obj.person or user.inTeam(admins)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user == self.obj.person
+                or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.admin))

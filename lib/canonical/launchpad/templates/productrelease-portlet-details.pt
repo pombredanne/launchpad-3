@@ -19,10 +19,7 @@
               tal:content="context/datecreated/fmt:approximatedate" /><br />
 
             <b>Project:</b>
-            <a href="#"
-               tal:attributes="href context/product/fmt:url"
-               tal:content="context/product/displayname"
-               class="link">project displayname</a><br />
+            <tal:link replace="structure context/product/fmt:link" /><br />
 
             <b>Series:</b>
             <span tal:replace="context/productseries/name" /><br />
