@@ -1103,6 +1103,15 @@ COMMENT ON COLUMN PersonLocation.longitude IS 'The longitude this person has giv
 COMMENT ON COLUMN PersonLocation.last_modified_by IS 'The person who last updated this record. We allow people to provide location and time zone information for other users, when those users have not specified their own location. This allows people to garden the location information for their teams, for example, like a wiki.';
 COMMENT ON COLUMN PersonLocation.date_last_modified IS 'The date this record was last modified.';
 
+
+-- PersonNotification
+COMMENT ON TABLE PersonNotification IS 'Notifications to be sent that are related to edits and changes of the details of a specific person or team. Note that these are not keyed against the "person who will be notified", these are notifications "about a person". We use this table to queue up notifications that can then be sent asyncronously - when one user edits information about another person (like the PersonLocation) we want to notify the person concerned that their details have been modified but we do not want to do this during the handling of the form submission. So we store the reminder to notify here, and send it later in a batch. This is modelled on the pattern of BugNotification.';
+COMMENT ON COLUMN PersonNotification.person IS 'The Person who has been edited or modified.';
+COMMENT ON COLUMN PersonNotification.body IS 'The textual body of the notification to be sent.';
+COMMENT ON COLUMN PersonNotification.subject IS 'The subject of the mail to be sent.';
+COMMENT ON COLUMN PersonNotification.date_emailed IS 'When this notification was emailed to the relevant people.';
+
+
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
 COMMENT ON COLUMN Bounty.usdvalue IS 'This is the ESTIMATED value in US Dollars of the bounty. We say "estimated" because the bounty might one day be offered in one of several currencies, or people might contribute different amounts in different currencies to each bounty. This field will reflect an estimate based on recent currency exchange rates of the value of this bounty in USD.';
