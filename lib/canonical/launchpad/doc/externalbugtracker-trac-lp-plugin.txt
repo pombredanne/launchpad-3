@@ -399,13 +399,11 @@ name will be generated for the user from their email address.
 
 getPosterForComment() will also return displayname, email tuples in
 cases where the 'user' field is set to a plain username (e.g. 'foo').
-This is to avoid having to add unnecessary error checking to
-BugWatchUpdater.importBugComments(), however, when the contents of the
-tuple are passed to ensurePerson() an InvalidEmailAddress error will be
-raised, thus avoiding invalid data being imported into Launchpad.
+However, in these cases it is the email address that will be set to
+None.
 
     >>> trac.getPosterForComment(bug_watch_two, '2-2')
-    (None, 'foo.bar')
+    ('foo.bar', None)
 
 Finally, getMessageForComment() will return a Message instance for a
 given comment. For the sake of brevity we'll use test@canonical.com as
