@@ -579,7 +579,7 @@ archive where the targeted SourcePackageRelease ('to_source') were
 originally uploaded to.
 
 Let's use one of the diffs already requested in this test setup to
-explain how this meachism works.
+explain how this mechanism works.
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
     >>> print diff.title
