@@ -34,6 +34,33 @@ from canonical.testing import (
 
 here = os.path.dirname(os.path.realpath(__file__))
 
+def lobotomize_stevea():
+    """Set SteveA's email address' status to NEW.
+
+    Call this method first in a test's setUp where needed. Tests
+    using this function should be refactored to use the unaltered
+    sample data and this function eventually removed.
+
+    In the past, SteveA's account erroneously appeared in the old
+    ValidPersonOrTeamCache materialized view. This materialized view
+    has since been replaced and now SteveA is correctly listed as
+    invalid in the sampledata. This fix broke some tests testing
+    code that did not use the ValidPersonOrTeamCache to determine
+    validity.
+    """
+    from canonical.launchpad.database import EmailAddress
+    from canonical.launchpad.interfaces import EmailAddressStatus
+    stevea_emailaddress = EmailAddress.byEmail(
+            'steve.alexander@ubuntulinux.com')
+    stevea_emailaddress.status = EmailAddressStatus.NEW
+    commit()
+
+
+def lobotomizeSteveASetUp(test):
+    """Call lobotomize_stevea() and standard setUp"""
+    lobotomize_stevea()
+    setUp(test)
+
 
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
@@ -96,6 +123,7 @@ def branchStatusTearDown(test):
     test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
+    lobotomize_stevea()
     LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
     setUp(test)
 
@@ -126,6 +154,7 @@ def distroseriesqueueTearDown(test):
     tearDown(test)
 
 def uploadQueueSetUp(test):
+    lobotomize_stevea()
     test_dbuser = config.uploadqueue.dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
@@ -138,6 +167,7 @@ def uploaderBugsSetUp(test):
     In order to test that these functions work as expected from the uploader,
     we run them using the same db user used by the uploader.
     """
+    lobotomize_stevea()
     test_dbuser = config.uploader.dbuser
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setUp(test)
@@ -368,6 +398,10 @@ special = {
             layer=LaunchpadZopelessLayer,
             stdout_logging_level=logging.WARNING
             ),
+    'close-account.txt': LayeredDocFileSuite(
+            '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
@@ -385,11 +419,26 @@ special = {
             tearDown=uploaderBugsTearDown,
             layer=LaunchpadZopelessLayer
             ),
-     'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
+    'bugnotificationrecipients.txt-queued': LayeredDocFileSuite(
             '../doc/bugnotificationrecipients.txt',
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
             layer=LaunchpadZopelessLayer
+            ),
+    'bugnotification-comment-syncing-team.txt': LayeredDocFileSuite(
+            '../doc/bugnotification-comment-syncing-team.txt',
+            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
+            tearDown=bugNotificationSendingTearDown
+            ),
+    'bugnotificationrecipients.txt': LayeredDocFileSuite(
+            '../doc/bugnotificationrecipients.txt',
+            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'bugnotification-threading.txt': LayeredDocFileSuite(
+            '../doc/bugnotification-threading.txt',
+            setUp=lobotomizeSteveASetUp, tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
             ),
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
@@ -510,6 +559,12 @@ special = {
             '../doc/bug-private-by-default.txt',
             setUp=setUp,
             tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'bugtracker-person.txt': LayeredDocFileSuite(
+            '../doc/bugtracker-person.txt',
+            setUp=checkwatchesSetUp,
+            tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(

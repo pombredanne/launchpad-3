@@ -24,6 +24,8 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~salgado/jabber_ids
     karma: 0
     languages_collection_link: http://.../~salgado/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
     members_collection_link: http://.../~salgado/members
     members_details_collection_link: http://.../~salgado/members_details
@@ -40,7 +42,7 @@ for teams (as they're defined in the ITeam interface).
     sub_teams_collection_link: http://.../~salgado/sub_teams
     super_teams_collection_link: http://.../~salgado/super_teams
     team_owner_link: None
-    timezone: None
+    time_zone: None
     visibility: Public
     wiki_names_collection_link: http://.../~salgado/wiki_names
 
@@ -65,6 +67,8 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~ubuntu-team/jabber_ids
     karma: 0
     languages_collection_link: http://.../~ubuntu-team/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
     members_collection_link: http://.../~ubuntu-team/members
     members_details_collection_link: http://.../~ubuntu-team/members_details
@@ -84,7 +88,7 @@ for teams (as they're defined in the ITeam interface).
     super_teams_collection_link: http://.../~ubuntu-team/super_teams
     team_description: This Team is responsible for the Ubuntu Distribution
     team_owner_link: http://.../~sabdfl
-    timezone: None
+    time_zone: None
     visibility: Public
     wiki_names_collection_link: http://.../~ubuntu-team/wiki_names
 
@@ -469,7 +473,7 @@ participant, use the 'findPathToTeam' custom operation.
     >>> json = webservice.named_get(
     ...     '/beta/~salgado', 'findPathToTeam', team=ml_experts['self_link']
     ...     ).jsonBody()
-    >>> for entry in json['entries']:
+    >>> for entry in json:
     ...     print entry['self_link']
     http://api.launchpad.dev/beta/~admins
     http://api.launchpad.dev/beta/~mailing-list-experts

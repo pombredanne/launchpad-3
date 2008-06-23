@@ -430,10 +430,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
 
     retry_max_count = 5    # How many times we're willing to retry
 
-    def __init__(self, body_instream, environ, response=None):
-        super(LaunchpadBrowserRequest, self).__init__(
-            body_instream, environ, response)
-
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
@@ -1106,7 +1102,7 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
 
     def __init__(self, body_instream=None, environ=None, **kw):
         test_environ = {
-            'SERVERL_URL': 'http://api.launchpad.dev',
+            'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
             }
         if environ is not None:

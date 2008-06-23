@@ -78,6 +78,12 @@ body {
   /* Minimal width to display the application tabs and rounded corners. */
   min-width: 529px;
 }
+/*
+  The page has no margin/padding because of the navigation bar and tab border,
+  but the main content has 20px left and right margin:
+*/
+div.freeform {margin: 2em 20px;}
+/* (In other page types this margin is on an inner container element.) */
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -104,8 +110,8 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
-.offline {text-align: center; width: 100%; margin: 2em auto !important;}
-/* That !important is necessary only while #nonhelp exists. */
+.offline {text-align: center; margin: 2em 20px;}
+/* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
 
 /* --- Error, warning, and info messages --- */
@@ -307,9 +313,6 @@ h1 span, h2 span, h3 span, h4 span, h5 span {
 strong em {
   font-style: normal;
   color: #353535;
-}
-strong span {
-  color: #656565;
 }
 .link_img {border: 0;}
 .debug {
@@ -634,79 +637,8 @@ ul#menuroot li.selected a.breadcrumb {
     color: #000000;
 }
 
-/* Under the location bar is a Help widget that expands when clicked. */
-#help {
-  clear: both;
-  position: absolute;
-  top: 27px;
-  left: 0;
-  width: 300px;
-  z-index: 100;
-}
-/* The widget has two parts. First, the tab itself. */
-#help-tab {
-  background: url(help-tab.gif);
-  float: right;
-  /* The help-tab.gif dimensions are 32x62. We must set absolute width and
-     height and override any padding that could be applied by less specific
-     rules. */
-  width: 32px;
-  height: 62px;
-  padding: 0;
-  /* The help-tab element contains the "Help" text for rendering without CSS.
-     For reasonable minimum font sizes, this text should fit in the gray area
-     at the top of the image. We set the text color to the background color of
-     the image to make it invisible. */
-  color: #f7f7f7;
-  font-size: 1px;
-  /* For correct positioning, the help-tab must have zero margin. Reset
-     margins set by less specific rules (such as "h2"). */
-  margin: 0;
-}
-/* Second, the help panel, which takes up the rest of the 300px. */
-#help-panel {float: left; width: 268px;}
-/* The help panel needs to be longer than the tab -- 70px will do. */
-#help-content {
-  background: #fff url(help_bg.gif) top right repeat-y;
-  margin: 0;
-  padding: 0;
-  min-height: 70px;
-}
-/* IE6 and lower ignore "min-height", but treat "height" as min-height. */
-* html #help-content {height: 70px;}
-/* The "help-text" element exists only to provide padding. */
-/* The "1px" is because Gecko malfunctions if the top padding is 0. */
-#help-text {padding: 1px 14px 6px 10px;}
-/* The "help-bottom" element exists to provide the rounded bottom border. */
-#help-bottom {
-  clear: both;
-  font-size: 1px;
-  height: 6px;
-  background: url(help-bottom.gif) bottom right no-repeat;
-}
-/* When the tab is opened, the triangle in it swivels to show it's a toggle. */
-#help.open #help-tab {background: url(help-tab-open.gif);}
-/* When the tab is closed, the help panel is not displayed. */
-#help.closed {width: 32px;}
-#help.closed #help-panel {display: none;}
-
 /*
-Showing the help panel all the time would be in the way,
-and there shouldn't be a "Help" tab that does nothing.
-So it's hidden initially, and then revealed if JavaScript is available. 
-*/
-#help {visibility: hidden;}
-
-/* The rest of the page keeps clear of the collapsed help panel. */
-/* test: http://launchpad.dev/+logout */
-#nonhelp {
-  margin: 0 20px 0 38px;
-  padding-top: 10px;
-}
-
-/*
-Inline help is different from the pop-out help panel. It is contained in
-a <div> and dynamically positioned by JavaScript.
+Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
 #help-pane {
   position: absolute;
@@ -750,8 +682,57 @@ it out of the page flow. */
 
 span.help {font-weight: normal;}
 
+/* Navigation menus appear as a segmented pill overlaid on a groove: */
+.navigation.menu {
+  background: url(/+icing/navigation-menu-groove.png) repeat-x center left;
+  margin: 1em 0 2em;
+  text-align: center;
+}
+/* Segments have slight padding, and are normally mid-blue: */
+.navigation.menu * {background: #2064ef; padding: 0.25em 0;}
+/* But the selected element is slightly darker: */
+.navigation.menu strong * {background-color: #888;}
+/* The segments have a thin separator, and padding around their text: */
+.navigation.menu * * {border-right: 1px solid #fff; padding: 0.25em 0.5em;}
+/* For text browsers, there's a " / " separator, hidden from CSS browsers: */
+.navigation.menu small {display: none;}
+/* All text in the navigation menu is white, even the links: */
+.navigation.menu, .navigation.menu a {color: #fff;}
+/* The first segment has a rounded cap, matching its color: */
+.navigation.menu > :first-child {
+  background: url(/+icing/navigation-nw-w-normal.png) top left no-repeat;
+}
+.navigation.menu > strong:first-child {
+  background-image: url(/+icing/navigation-nw-w-selected.png);
+}
+.navigation.menu > :first-child::before {
+  content: '';
+  background: url(/+icing/navigation-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+}
+.navigation.menu > strong:first-child::before {
+  background-image: url(/+icing/navigation-sw-selected.png);
+}
+/* The last segment has a rounded cap, matching its color: */
+.navigation.menu > :last-child {
+  background: url(/+icing/navigation-ne-e-normal.png) top right no-repeat;
+}
+.navigation.menu > strong:last-child {
+  background-image: url(/+icing/navigation-ne-e-selected.png);
+}
+.navigation.menu > :last-child * {border-right: none;}
+.navigation.menu > :last-child::after {
+  content: '';
+  background: url(/+icing/navigation-se-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+}
+.navigation.menu > strong:last-child::after {
+  background-image: url(/+icing/navigation-se-selected.png);
+}
+
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin-left: -20px;}
+#globalfooter {clear: both; margin: 0.5em 20px;}
+/* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
   border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
@@ -804,6 +785,9 @@ body.pillarindex table#applications th {padding-left: 0;}
         above the "#mainarea". This margin provides the needed visual
         separation. */
   margin-bottom: 8px;
+  /* The right margin for the search matches the left margin of the structural
+     object heading. */
+  margin-right: 20px;
 }
 #globalsearch #searchbutton {
   position: relative;
@@ -842,6 +826,8 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   background: none;
   color: black;
   float: left;
+  margin: 10px 20px 0; /* XXX 20080617 mpt: remove 20px in 2.0 (bug 240657). */
+ */
   width: 70%;
 }
 /* Structural headings contain an icon, maybe an intro, and a main heading.
@@ -879,7 +865,6 @@ border. */
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
-  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
 }
 #mainarea div.v {
@@ -1765,6 +1750,10 @@ table.duplicate.listing * {color: #999;}
 
 table.listing table.simple {margin-left: 2em;}
 table.listing table.simple td {padding: 0.25em;}
+
+table.compressed { width: auto }
+table.compressed td { padding: 0.25em 0.5em }
+
 /* --- Sortable tables --- */
 
 table.sortable a.sortheader {
@@ -1833,11 +1822,12 @@ div.popupTitle {
 /* Search results*/
 
 #search-results {
-    margin-top: 1em;
+  margin-top: 1em;
 }
 
+
 #search-results ul {
-  margin: .5em 0 .5em 0;
+  margin: 0 0 .5em 0;
   padding: 0;
   list-style-type: none;
 }
@@ -1852,7 +1842,7 @@ div.popupTitle {
 }
 
 #search-results ul.exact-matches {
-  margin-top: 2em;
+  margin-top: 1em;
   margin-bottom: 1em;
 }
 
@@ -1863,7 +1853,7 @@ div.popupTitle {
 #search-results div.upper-batch-nav {
   border-top: 1px solid #d2d2d2;
   margin-top: 1.5em;
-  margin-bottom: 1.5em;
+  margin-bottom: 0.5em;
 }
 
 #search-results div.lower-batch-nav {

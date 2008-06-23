@@ -8,7 +8,7 @@ import pytz
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates, SQLBase
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import ANONYMOUS, login
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
