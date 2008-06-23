@@ -98,13 +98,19 @@
           <li tal:content="license/title">GPL</li>
         </ul>
         <tal:none condition="not:context/licenses">None specified</tal:none>
-        <div class="description" 
+        <div class="description"
              tal:content="structure context/license_info/fmt:text-to-html" />
       </td>
     </tr>
     <tr tal:condition="context/programminglang">
       <th>Languages:</th>
       <td id="product-languages" tal:content="context/programminglang" />
+    </tr>
+    <tr tal:condition="context/commercial_subscription">
+      <th>Subscription expires:</th>
+      <td tal:condition="context/commercial_subscription"
+          tal:content="context/commercial_subscription/date_expires/fmt:date"
+          />
     </tr>
   </tbody>
 </table>

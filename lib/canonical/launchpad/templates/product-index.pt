@@ -35,6 +35,11 @@
 
   <span tal:replace="structure context/image:mugshot" />
   <h1 tal:content="context/title">Name of project</h1>
+  <p>
+    <strong tal:content="context/license_status/description">
+      This project's license is open source.
+    </strong>
+  </p>
 
   <div class="description" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,

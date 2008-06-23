@@ -49,8 +49,18 @@
 
   <tal:votes replace="structure context/@@+votes"/>
 
-  <a href="#" tal:attributes="href view/comment_location"
-     ><img src="/@@/add"/>Add comment</a>
+  <div tal:define="link context/menu:context/request_review"
+       tal:condition="link/enabled"
+       tal:content="structure link/render">
+       Request review
+  </div>
+
+  <div tal:define="link context/menu:context/add_comment"
+       tal:condition="link/enabled"
+       tal:content="structure link/render">
+       Add comment
+  </div>
+
       <tal:comments repeat="row view/comments" >
       <div tal:content="structure row/comment/@@+fragment-summary"
            tal:attributes="style row/style" />
