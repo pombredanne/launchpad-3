@@ -36,23 +36,29 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BadBranchSearchContext, BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    BranchCreationException, BranchCreationForbidden,
+    ILaunchpadCelebrities, IPerson, IProduct, IProject, NotFoundError)
+from canonical.launchpad.interfaces.branch import (
+    BadBranchSearchContext, BranchCreationException, BranchCreationForbidden,
     BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchFormat, BranchLifecycleStatus, BranchListingSort,
-    BranchMergeProposalStatus, BranchPersonSearchRestriction,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, BranchTypeError, BranchVisibilityRule, CannotDeleteBranch,
-    CodeReviewNotificationLevel, ControlFormat,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchPersonSearchContext,
-    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, IPerson,
-    IProduct, IProject, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
-    NotFoundError, RepositoryFormat)
+    BranchMergeControlStatus, BranchPersonSearchRestriction,
+    BranchType, BranchTypeError,
+    CannotDeleteBranch, ControlFormat,
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch, IBranchPersonSearchContext,
+    IBranchSet,
+    MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    RepositoryFormat)
 from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal)
+     BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposal,
+     BranchMergeProposalStatus, InvalidBranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.branchsubscription import (
+    BranchSubscription, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+from canonical.launchpad.database.branchvisibilitypolicy import (
+    BranchVisibilityRule)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.event import SQLObjectCreatedEvent
@@ -221,6 +227,10 @@ class Branch(SQLBase):
     merge_queue = ForeignKey(
         dbName='merge_robot', foreignKey='MultiBranchMergeQueue',
         default=None)
+
+    merge_control_status = EnumCol(
+        enum=BranchMergeControlStatus, notNull=True,
+        default=BranchMergeControlStatus.NO_QUEUE)
 
     def getMergeQueue(self):
         """See `IBranch`."""
@@ -905,7 +915,8 @@ class BranchSet:
             url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, whiteboard=None, date_created=None,
-            branch_format=None, repository_format=None, control_format=None):
+            branch_format=None, repository_format=None, control_format=None,
+            merge_control_status=BranchMergeControlStatus.NO_QUEUE):
         """See `IBranchSet`."""
         if date_created is None:
             date_created = UTC_NOW

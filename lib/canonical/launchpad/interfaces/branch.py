@@ -19,6 +19,7 @@ __all__ = [
     'BranchListingSort',
     'BranchPersonSearchContext',
     'BranchPersonSearchRestriction',
+    'BranchMergeControlStatus',
     'BranchType',
     'BranchTypeError',
     'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
@@ -130,6 +131,44 @@ class BranchLifecycleStatus(DBEnumeratedType):
 
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
+        """)
+
+
+class BranchMergeControlStatus(DBEnumeratedType):
+    """Branch Merge Control Status
+
+    Does the branch want Launchpad to manage a merge queue, and if it does,
+    how does the branch owner handle removing items from the queue.
+    """
+
+    NO_QUEUE = DBItem(1, """
+        Does not use a merge queue
+
+        The branch does not use the merge queue managed by Launchpad.  Merges
+        are tracked and managed elsewhere.  Users will not be able to queue up
+        approved branch merge proposals.
+        """)
+
+    MANUAL = DBItem(2, """
+        Manual processing of the merge queue
+
+        One or more people are responsible for manually processing the queued
+        branch merge proposals.
+        """)
+
+    ROBOT = DBItem(3, """
+        A branch merge robot is used to process the merge queue
+
+        An external application, like PQM, is used to merge in the queued
+        approved proposed merges.
+        """)
+
+    ROBOT_RESTRICTED = DBItem(4, """
+        The branch merge robot used to process the queue is in restricted mode
+
+        When the robot is in restricted mode, normal queued branches are not
+        returned for merging, only those with "Queued for Restricted
+        merging" will be.
         """)
 
 
@@ -646,6 +685,11 @@ class IBranch(IHasOwner):
 
     merge_queue = Attribute(
         "The queue that contains the QUEUED proposals for this branch.")
+
+    merge_control_status = Choice(
+        title=_('Merge Control Status'), required=True,
+        vocabulary=BranchMergeControlStatus,
+        default=BranchMergeControlStatus.NO_QUEUE)
 
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""

@@ -106,6 +106,14 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         target branch.
         """)
 
+    QUEUED_RESTRICTED = DBItem(8, """
+        Queued for restricted merging
+
+        The changes from the source branch are queued to be merged into the
+        target branch, and will be landed by a merge robot running in
+        restricted mode.
+        """)
+
     SUPERSEDED = DBItem(10, """
         Superseded
 
