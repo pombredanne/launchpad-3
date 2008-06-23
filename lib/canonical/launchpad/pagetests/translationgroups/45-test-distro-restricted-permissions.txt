@@ -25,7 +25,7 @@ suggestions.
   >>> browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/st/+translate')
-  >>> main_content = find_main_content(browser.contents).renderContents()
+  >>> main_content = find_main_content(browser.contents).p.renderContents()
   >>> 'New translation:' in main_content
   False
   >>> 'New suggestion:' in main_content
@@ -49,13 +49,12 @@ will only accept suggestions.
   >>> browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/st/+translate')
-  >>> main_content = find_main_content(browser.contents).renderContents()
+  >>> main_content = find_main_content(browser.contents).p.renderContents()
   >>> 'New translation:' in main_content
   False
-  >>> 'New suggestion:' in main_content
-  True
-  >>> 'Your translations will be held for review' in main_content
-  True
+  >>> print main_content
+  <...New suggestion:...
+  Your translations will be held for review...
 
 However, in Welsh, No Privileges Person DOES have the ability to edit
 directly.

@@ -154,6 +154,9 @@ navigation.
     >>> from canonical.launchpad.database.person import Person
     >>> from canonical.launchpad.database.product import Product
     >>> from canonical.launchpad.database.translator import Translator
+
+    # Evolution uses Restricted mode, so a translation without reviewer
+    # is closed.  Assign an en_AU reviewer to active the translation.
     >>> evolution = Product.selectOneBy(name='evolution')
     >>> evolution_translation_group = evolution.translationgroup
     >>> ozzie_english = Language.selectOneBy(code='en_AU')

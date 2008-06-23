@@ -151,7 +151,8 @@ def _can_add_suggestions(pofile, person):
     if pofile.translationpermission == TranslationPermission.OPEN:
         # We would return True here, except OPEN mode already allows
         # anyone to edit (see above).
-        assert False, "Translation is OPEN, but user is not allowed to edit."
+        raise AssertionError(
+            "Translation is OPEN, but user is not allowed to edit.")
     elif pofile.translationpermission == TranslationPermission.STRUCTURED:
         return True
     elif pofile.translationpermission == TranslationPermission.RESTRICTED:
@@ -164,7 +165,7 @@ def _can_add_suggestions(pofile, person):
     elif pofile.translationpermission == TranslationPermission.CLOSED:
         return False
 
-    assert False, "Unknown translation mode."
+    raise AssertionError("Unknown translation mode.")
 
 
 class POFileMixIn(RosettaStats):

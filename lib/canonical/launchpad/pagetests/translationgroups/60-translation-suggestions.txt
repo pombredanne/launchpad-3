@@ -15,6 +15,7 @@ suggestions in Spanish.
   >>> from canonical.launchpad.database.person import Person
   >>> from canonical.launchpad.database.language import Language
   >>> from canonical.launchpad.database.translator import Translator
+
   >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
   >>> spanish = Language.selectOneBy(code='es')
   >>> carlos = Person.selectOneBy(name='carlos')
