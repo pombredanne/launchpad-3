@@ -9,8 +9,7 @@
 
   <div class="portletBody portletContent">
     <b>Project:</b>
-    <a tal:attributes="href context/product/fmt:url"
-       tal:content="context/product/displayname">product</a><br />
+    <tal:link replace="structure context/product/fmt:link" /><br />
 
     <b>Series:</b>
     <span tal:replace="context/name">name</span><br />

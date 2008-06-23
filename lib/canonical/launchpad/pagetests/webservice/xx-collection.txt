@@ -144,6 +144,8 @@ The elements of a collection can be looked up by unique identifier:
   jabber_ids_collection_link: http://.../~admins/jabber_ids
   karma: 0
   languages_collection_link: http://.../~admins/languages
+  latitude: None
+  longitude: None
   mailing_list_auto_subscribe_policy: Ask me when I join a team
   members_collection_link: http://.../~admins/members
   members_details_collection_link: http://.../~admins/members_details
