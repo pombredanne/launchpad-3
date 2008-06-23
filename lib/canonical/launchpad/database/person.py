@@ -97,6 +97,8 @@ from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.revision import IRevisionSet
+from canonical.launchpad.interfaces.salesforce import (
+    ISalesforceVoucherProxy, VOUCHER_STATUSES)
 from canonical.launchpad.interfaces.shipit import (
     ShipItConstants, ShippingRequestStatus)
 from canonical.launchpad.interfaces.specification import (
@@ -357,6 +359,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    commercial_vouchers = None
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -854,7 +858,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     def getBranch(self, product_name, branch_name):
         """See `IPerson`."""
-        # import here to work around a circular import problem
+        # Import here to work around a circular import problem.
         from canonical.launchpad.database import Product
 
         if product_name is None or product_name == '+junk':
@@ -1065,8 +1069,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             WHERE TeamParticipation.person = %(person)s
             AND owner = TeamParticipation.team
             """ % sqlvalues(person=self)]
-        if match_name is not None:
 
+        # We only want to use the extra query if match_name is not None and it
+        # is not the empty string ('' or u'').
+        if match_name:
             like_query = "'%%' || %s || '%%'" % quote_like(match_name)
             quoted_query = quote(match_name)
             clauses.append(
@@ -1079,6 +1085,24 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         results = Product.select("""id IN (%s)""" % query,
                                  orderBy=['displayname'])
         return results
+
+    def getCommercialSubscriptionVouchers(self):
+        """See `IPerson`."""
+        if self.commercial_vouchers is None:
+            voucher_proxy = getUtility(ISalesforceVoucherProxy)
+            self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
+            self.unredeemed_commercial_vouchers = []
+            self.redeemed_commercial_vouchers = []
+            for voucher in self.commercial_vouchers:
+                assert voucher.status in VOUCHER_STATUSES, (
+                    "Voucher %s has unrecoginzed status %s" %
+                    (voucher.voucher_id, voucher.status))
+                if voucher.status == 'Redeemed':
+                    self.redeemed_commercial_vouchers.append(voucher)
+                else:
+                    self.unredeemed_commercial_vouchers.append(voucher)
+        return (self.unredeemed_commercial_vouchers,
+                self.redeemed_commercial_vouchers)
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -2358,10 +2382,6 @@ class PersonSet:
 
         if name is None:
             name = nickname.generate_nick(email)
-        if not valid_name(name):
-            raise InvalidName("%s is not a valid name for a person." % name)
-        if self.getByName(name, ignore_merged=False) is not None:
-            raise NameAlreadyTaken("The name '%s' is already taken." % name)
 
         if not displayname:
             displayname = name.capitalize()
@@ -2382,6 +2402,17 @@ class PersonSet:
 
         return person, email
 
+    def createPersonWithoutEmail(
+        self, name, rationale, comment=None, displayname=None,
+        registrant=None):
+        """Create and return a new Person without using an email address.
+
+        See `IPersonSet`.
+        """
+        return self._newPerson(
+            name, displayname, hide_email_addresses=True, rationale=rationale,
+            comment=comment, registrant=registrant)
+
     def _newPerson(self, name, displayname, hide_email_addresses,
                    rationale, comment=None, registrant=None, account=None):
         """Create and return a new Person with the given attributes.
@@ -2389,7 +2420,19 @@ class PersonSet:
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
-        assert self.getByName(name, ignore_merged=False) is None
+        if not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a person." % name)
+        else:
+            # The name should be okay, move on...
+            pass
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
+
+        if not displayname:
+            displayname = name.capitalize()
+
         person = Person(
             name=name, displayname=displayname, account=account,
             creation_rationale=rationale, creation_comment=comment,

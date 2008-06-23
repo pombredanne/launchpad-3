@@ -165,7 +165,7 @@ for the branch's canonical location.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(get_branch_details_table())
-    Project: GNOME Terminal
+    Project: GNOME Terminal (Unreviewed)
     Upload URL: Only Sample Person can upload to this branch.
       If you are Sample Person please log in for upload directions.
     Branch format: Not recorded
@@ -204,7 +204,7 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print extract_text(get_branch_details_table())
-    Project: GNOME Terminal
+    Project: GNOME Terminal (Unreviewed)
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
@@ -319,7 +319,7 @@ So we need to fake that here.
     ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    Project: The Landscape Project
+    Project: The Landscape Project (Unreviewed)
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -330,7 +330,7 @@ Public branches use the lp spec bzr lookup name.
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
-    Project: GNOME Terminal
+    Project: GNOME Terminal (Unreviewed)
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 

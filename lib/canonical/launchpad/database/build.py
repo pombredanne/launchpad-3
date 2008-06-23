@@ -20,7 +20,7 @@ from storm.references import Reference
 from canonical.config import config
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import cursor
@@ -1026,9 +1026,10 @@ class BuildSet:
             DistroArchSeries.distroseries = DistroSeries.id AND
             DistroSeries.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
-            Archive.purpose != %s AND
+            Archive.purpose IN (%s) AND
             Archive.id = Build.archive
-            """ % quote(ArchivePurpose.PPA))
+            """ % ','.join(
+                sqlvalues(ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER)))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
