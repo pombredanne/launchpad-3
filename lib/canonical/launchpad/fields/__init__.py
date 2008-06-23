@@ -81,7 +81,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
 
-from canonical.lazr.fields import Reference, ReferenceChoice
+from canonical.lazr.fields import Reference
 from canonical.lazr.interfaces.fields import IReferenceChoice
 from canonical.foaf import nickname
 

@@ -11,7 +11,7 @@ __all__ = [
 
 from zope.interface import implements
 from zope.schema import Choice, Field, Object
-from zope.schema.interfaces import IChoice, IObject, SchemaNotProvided
+from zope.schema.interfaces import IObject, SchemaNotProvided
 from zope.schema._field import AbstractCollection
 
 from canonical.lazr.interfaces.fields import (
