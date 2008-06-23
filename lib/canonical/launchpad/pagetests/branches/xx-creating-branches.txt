@@ -38,7 +38,7 @@ Branch URLs are not valid for hosted branches.
     ...     for row in table.findAll('tr'):
     ...         print extract_text(row)
     >>> print_details_table(browser)
-    Project: Redfish
+    Project: Redfish (Unreviewed)
     Update this branch:
         bzr push lp://dev/~name12/redfish/hosted-branch
     Branch format: Not recorded
@@ -73,7 +73,7 @@ Branch URLs are required for mirrored branches.
     >>> browser.getControl('Register Branch').click()
 
     >>> print_details_table(browser)
-    Project: Redfish
+    Project: Redfish (Unreviewed)
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
@@ -97,7 +97,7 @@ A remote branch may have a URL, but doesn't have to.
     ...     'http://example.com/remote-branch')
     >>> browser.getControl('Register Branch').click()
     >>> print_details_table(browser)
-    Project: Redfish
+    Project: Redfish (Unreviewed)
     Location: http://example.com/remote-branch
     Branch format: Not recorded
     Repository format: Not recorded
