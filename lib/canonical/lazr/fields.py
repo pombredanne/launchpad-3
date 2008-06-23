@@ -6,14 +6,16 @@ __metaclass__ = type
 __all__ = [
     'CollectionField',
     'Reference',
+    'ReferenceChoice',
     ]
 
 from zope.interface import implements
-from zope.schema import Field, Object
-from zope.schema.interfaces import SchemaNotProvided
+from zope.schema import Choice, Field, Object
+from zope.schema.interfaces import IChoice, IObject, SchemaNotProvided
 from zope.schema._field import AbstractCollection
 
-from canonical.lazr.interfaces.fields import ICollectionField, IReference
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReference, IReferenceChoice)
 
 
 class CollectionField(AbstractCollection):
@@ -48,3 +50,14 @@ class Reference(Object):
         Field._validate(self, value)
         if not self.schema.providedBy(value):
             raise SchemaNotProvided()
+
+
+class ReferenceChoice(Choice):
+    """A choice among objects."""
+    implements(IReferenceChoice)
+
+    def __init__(self, *args, **kwargs):
+        schema = kwargs.pop('schema', IObject)
+        self.schema = schema
+        super(ReferenceChoice, self).__init__(*args, **kwargs)
+

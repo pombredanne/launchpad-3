@@ -226,7 +226,7 @@ resources. It's a big document.
     True
     >>> wadl_schema.error_log
     ''
-
+    >>> open("/home/leonardr/foo.wadl", "w").write(wadl)
     >>> tree = etree.fromstring(wadl)
 
 Like all WADL documents, the WADL representation of the service root
@@ -724,10 +724,8 @@ is kept in the <resource_type> tag.
     >>> entry_type.tag
     '...resource_type'
 
-    >>> doc_and_methods = list(entry_type)
-    >>> doc = doc_and_methods[0]
-    >>> methods = doc_and_methods[1:]
-    >>> get, put, patch, post = methods
+    >>> methods = list(entry_type)
+    >>> get, put, patch, post, post2 = methods
 
 A resource type tells the client about the three standard operations
 on a resource (GET, PUT, and PATCH), as well as any custom GET or POST
@@ -739,7 +737,7 @@ XML id. Here that's not a problem; we have one custom POST method
 ('BugTaskEntryAdapter-transitionToStatus'), plus the standard GET, PATCH, and PUT.
 
     >>> [method.attrib['name'] for method in methods]
-    ['GET', 'PUT', 'PATCH', 'POST']
+    ['GET', 'PUT', 'PATCH', 'POST', 'POST']
 
     >>> [method.attrib['id'] for method in methods]
     ['BugTaskEntryAdapter-get', 'BugTaskEntryAdapter-put',

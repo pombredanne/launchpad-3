@@ -1362,6 +1362,8 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
     """A Person."""
     export_as_webservice_entry()
 
+# Set the PublicPersonChoice schema to the newly defined interface.
+PublicPersonChoice.schema = IPerson
 
 class INewPersonForm(IPerson):
     """Interface used to create new Launchpad accounts.

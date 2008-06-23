@@ -23,7 +23,8 @@ from canonical.lazr.enum import IEnumeratedType
 from canonical.lazr.interfaces import (
     ICollection, IEntry, IResourceGETOperation, IResourceOperation,
     IResourcePOSTOperation, IScopedCollection)
-from canonical.lazr.interfaces.fields import ICollectionField
+from canonical.lazr.interfaces.fields import (
+    ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import (
     CollectionResource, EntryAdapterUtility, RESTUtilityBase)
@@ -342,6 +343,7 @@ class WadlFieldAPI(WadlAPI):
     def is_link(self):
         """Is this field a link to another resource?"""
         return (IObject.providedBy(self.field) or
+                IReferenceChoice.providedBy(self.field) or
                 ICollectionField.providedBy(self.field) or
                 IBytes.providedBy(self.field))
 
@@ -355,7 +357,8 @@ class WadlFieldAPI(WadlAPI):
         # Handle entries and collections of entries.
         if ICollectionField.providedBy(self.field):
             schema = self.field.value_type.schema
-        elif IObject.providedBy(self.field):
+        elif (IObject.providedBy(self.field)
+              or IReferenceChoice.providedBy(self.field)):
             schema = self.field.schema
         else:
             raise AssertionError("Field is not a link to another resource.")
