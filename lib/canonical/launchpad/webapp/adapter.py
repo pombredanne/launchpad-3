@@ -24,7 +24,7 @@ from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import classImplements, implements
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
@@ -37,10 +37,14 @@ __all__ = [
     'set_request_started',
     'clear_request_started',
     'get_request_statements',
+    'get_request_start_time',
     'get_request_duration',
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
+
+
+classImplements(TimeoutError, IRequestExpired)
 
 
 def _get_dirty_commit_flags():
@@ -111,6 +115,11 @@ def get_request_statements():
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
+
+
+def get_request_start_time():
+    """Get the time at which the request started."""
+    return getattr(_local, 'request_start_time', None)
 
 
 def get_request_duration(now=None):
@@ -192,6 +201,7 @@ def break_main_thread_db_access(*ignored):
     for using connections from the main thread.
     """
     # Record the ID of the main thread.
+    # pylint: disable-msg=W0603
     global _main_thread_id
     _main_thread_id = thread.get_ident()
 

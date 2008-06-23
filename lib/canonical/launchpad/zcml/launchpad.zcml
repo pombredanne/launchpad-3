@@ -54,15 +54,6 @@
 
   <!-- TimeoutError -->
   <browser:page
-      for="storm.exceptions.TimeoutError"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-requestexpired.pt"
-      class="canonical.launchpad.webapp.error.RequestExpiredView"
-      />
-
-  <!-- TimeoutError -->
-  <browser:page
       for="canonical.lazr.timeout.TimeoutError"
       name="index.html"
       permission="zope.Public"
@@ -265,6 +256,20 @@
       template="../templates/launchpad-search.pt"
       permission="zope.Public" />
 
+  <browser:page
+      for="*"
+      name="+search-form"
+      class="canonical.launchpad.browser.root.LaunchpadSearchFormView"
+      template="../templates/launchpad-search-form.pt"
+      permission="zope.Public" />
+
+  <browser:page
+      for="*"
+      name="+primary-search-form"
+      class="canonical.launchpad.browser.root.LaunchpadPrimarySearchFormView"
+      template="../templates/launchpad-search-form.pt"
+      permission="zope.Public" />
+
   <!-- Declare robots.txt file for the root -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -456,6 +461,13 @@ these URLs in Apache.
   name="+icing-ubuntu"
   class="canonical.launchpad.browser.launchpad.UbuntuIcingFolder"
   layer="canonical.launchpad.layers.ShipItUbuntuLayer"
+  attribute="__call__"
+  permission="zope.Public"
+  />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-contrib"
+  class="canonical.launchpad.browser.launchpad.ContribIcingFolder"
   attribute="__call__"
   permission="zope.Public"
   />
