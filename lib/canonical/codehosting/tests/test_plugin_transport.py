@@ -31,8 +31,14 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
-    LaunchpadServer, set_up_logging, VirtualTransport)
+    AsyncLaunchpadTransport,
+    BlockingProxy,
+    InvalidControlDirectory,
+    LaunchpadInternalServer,
+    LaunchpadServer,
+    set_up_logging,
+    VirtualTransport,
+    )
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
@@ -124,7 +130,8 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         # handlers.
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
-        self.assertTrue(self.server.scheme in _get_protocol_handlers().keys())
+        self.assertTrue(
+            self.server.get_url() in _get_protocol_handlers().keys())
 
     def test_tearDown(self):
         # Setting up then tearing down the server removes its schema from the
@@ -132,7 +139,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         self.server.setUp()
         self.server.tearDown()
         self.assertFalse(
-            self.server.scheme in _get_protocol_handlers().keys())
+            self.server.get_url() in _get_protocol_handlers().keys())
 
     def test_noMirrorsRequestedIfNoBranchesChanged(self):
         # Starting up and shutting down the server will send no mirror
@@ -188,8 +195,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             '~testuser/evolution/.bzr/control.conf')
         def check_control_file((transport, path)):
             self.assertEqual(
-                'default_stack_on=%s\n'
-                % self.server._getStackOnURL('~vcs-imports/evolution/main'),
+                'default_stack_on=/~vcs-imports/evolution/main\n',
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
@@ -197,10 +203,10 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
 
-        branch = '~user/product/branch'
+        branch = 'http://example.com/~user/product/branch'
         transport = self.server._buildControlDirectory(branch)
         self.assertEqual(
-            'default_stack_on=%s\n' % self.server._getStackOnURL(branch),
+            'default_stack_on=%s\n' % branch,
             transport.get_bytes('.bzr/control.conf'))
 
     def test_buildControlDirectory_no_branch(self):
@@ -247,6 +253,37 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             InvalidControlDirectory,
             self.server._parseProductControlDirectory,
             'user/product/.bzr/foo')
+
+
+class TestLaunchpadInternalServer(TestLaunchpadServer):
+    """Tests for the LaunchpadInternalServer, used by the puller and scanner.
+    """
+
+    def setUp(self):
+        self.authserver = FakeLaunchpad()
+        self.branch_transport = MemoryTransport()
+        self.server = LaunchpadInternalServer(
+            BlockingProxy(self.authserver), self.branch_transport)
+
+    def test_get_url(self):
+        # Rather than the magic per-instance URL of the standard
+        # LaunchpadServer, the LaunchpadInternalServer returns a fixed
+        # 'lp-internal://' URL.
+        self.assertEqual('lp-internal:///', self.server.get_url())
+
+    def test_backing_transport_is_mirror_transport(self):
+        # The internal server provides read-only access to exactly one branch
+        # area. This means that the 'backing transport' (for regular servers,
+        # the hosted area) is the same as the 'mirror transport' (which
+        # normally refers to the mirrored area in regular servers).
+        self.assertIdentical(
+            self.server._backing_transport, self.server._mirror_transport)
+
+    def test_backing_transport_read_only(self):
+        # The backing transport is read only. This acts as a safeguard
+        # preventing the puller and the scanner from accidentally doing
+        # anything.
+        self.assertEqual(True, self.server._backing_transport.is_readonly())
 
 
 class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):

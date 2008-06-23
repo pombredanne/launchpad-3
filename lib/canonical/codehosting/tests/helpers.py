@@ -31,7 +31,10 @@ from bzrlib.errors import SmartProtocolError
 
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 
-from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
+from canonical.authserver.interfaces import (
+    LAUNCHPAD_SERVICES,
+    PERMISSION_DENIED_FAULT_CODE,
+    )
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -304,12 +307,12 @@ class FakeLaunchpad:
         item_set[new_id] = item_dict
         return new_id
 
-    def getDefaultStackedOnBranch(self, product_name):
+    def getDefaultStackedOnBranch(self, login_id, product_name):
         if product_name == '+junk':
             return ''
         elif product_name == 'evolution':
             # This has to match the sample data. :(
-            return '~vcs-imports/evolution/main'
+            return '/~vcs-imports/evolution/main'
         elif product_name == 'firefox':
             return ''
         else:
@@ -364,6 +367,8 @@ class FakeLaunchpad:
                 product = self._product_set[branch['product_id']]['name']
             if ((owner['name'], product, branch['name'])
                 == (user_name, product_name, branch_name)):
+                if login_id == LAUNCHPAD_SERVICES:
+                    return branch_id, 'r'
                 logged_in_user = self._lookup(self._person_set, login_id)
                 if owner['id'] in logged_in_user['teams']:
                     return branch_id, 'w'
