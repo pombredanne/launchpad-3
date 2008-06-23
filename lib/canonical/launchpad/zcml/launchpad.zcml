@@ -464,6 +464,13 @@ these URLs in Apache.
   attribute="__call__"
   permission="zope.Public"
   />
+<browser:page
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+  name="+icing-contrib"
+  class="canonical.launchpad.browser.launchpad.ContribIcingFolder"
+  attribute="__call__"
+  permission="zope.Public"
+  />
 
 
 <adapter
