@@ -15,6 +15,7 @@ from canonical.launchpad.mail import format_address
 from canonical.launchpad.mailout.codereviewcomment import (
     CodeReviewCommentMailer)
 from canonical.launchpad.testing import TestCaseWithFactory
+from canonical.launchpad.webapp import canonical_url
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -28,15 +29,15 @@ class TestCodeReviewComment(TestCaseWithFactory):
 
     def makeCommentAndSubscriber(self, notification_level=None,
                                  body=None, as_reply=False, vote=None,
-                                 vote_tag=None):
+                                 vote_tag=None, subject=None):
         """Return a comment and a subscriber."""
         sender = self.factory.makePerson(
             displayname='Sender', email='sender@example.com')
         comment = self.factory.makeCodeReviewComment(
-            sender, body=body, vote=vote, vote_tag=vote_tag)
+            sender, body=body, vote=vote, vote_tag=vote_tag, subject=subject)
         if as_reply:
             comment = self.factory.makeCodeReviewComment(
-                sender, body=body, parent=comment)
+                sender, body=body, parent=comment, subject=subject)
         subscriber = self.factory.makePerson(
             displayname='Subscriber', email='subscriber@example.com')
         if notification_level is None:
@@ -96,6 +97,15 @@ class TestCodeReviewComment(TestCaseWithFactory):
                               bmp.target_branch.owner]),
                          mailer._recipients.getRecipientPersons())
 
+    def test_subjectWithStringExpansions(self):
+        # The mailer should not attempt to expand templates in the subject.
+        comment, subscriber = self.makeCommentAndSubscriber(
+            subject='A %(carefully)s constructed subject')
+        mailer = CodeReviewCommentMailer.forCreation(comment)
+        self.assertEqual(
+            'A %(carefully)s constructed subject',
+            mailer._getSubject(recipient=None))
+
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""
         mailer, subscriber = self.makeMailer()
@@ -109,12 +119,13 @@ class TestCodeReviewComment(TestCaseWithFactory):
         headers, subject, body = mailer.generateEmail(subscriber)
         message = mailer.code_review_comment.message
         self.assertEqual(subject, message.subject)
-        self.assertEqual(body.splitlines()[:-2],
+        self.assertEqual(body.splitlines()[:-3],
                          message.text_contents.splitlines())
         source_branch = mailer.merge_proposal.source_branch
         branch_name = source_branch.displayname
-        self.assertEqual(body.splitlines()[-2:],
-            ['-- ', 'You are subscribed to branch %s.' % branch_name])
+        self.assertEqual(body.splitlines()[-3:],
+                         ['-- ', canonical_url(mailer.merge_proposal),
+                          'You are subscribed to branch %s.' % branch_name])
         rationale = mailer._recipients.getReason('subscriber@example.com')[1]
         expected = {'X-Launchpad-Branch': source_branch.unique_name,
                     'X-Launchpad-Message-Rationale': rationale,
@@ -135,6 +146,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         body = mailer._getBody(subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',
+             canonical_url(mailer.merge_proposal),
              'You are subscribed to branch %s.' % branch_name])
 
     def test_generateEmailWithVote(self):
@@ -143,7 +155,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE)
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Vote: Approve', body.splitlines()[0])
-        self.assertEqual(body.splitlines()[1:-2],
+        self.assertEqual(body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
@@ -152,7 +164,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE, vote_tag='DBTAG')
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual('Vote: Approve DBTAG', body.splitlines()[0])
-        self.assertEqual(body.splitlines()[1:-2],
+        self.assertEqual(body.splitlines()[1:-3],
                          mailer.message.text_contents.splitlines())
 
 

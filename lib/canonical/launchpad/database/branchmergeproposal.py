@@ -41,6 +41,7 @@ from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.mailout.branchmergeproposal import RecipientReason
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -150,6 +151,13 @@ class BranchMergeProposal(SQLBase):
             """ % self.id)
 
     @property
+    def title(self):
+        """See `IBranchMergeProposal`."""
+        return "Proposed merge of %(source)s into %(target)s" % {
+            'source': self.source_branch.displayname,
+            'target': self.target_branch.displayname}
+
+    @property
     def all_comments(self):
         """See `IBranchMergeProposal`."""
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
@@ -179,7 +187,8 @@ class BranchMergeProposal(SQLBase):
                     recipient)
                 if (subscription.review_level < min_level):
                     continue
-                recipients[recipient] = (subscription, rationale)
+                recipients[recipient] = RecipientReason.forBranchSubscriber(
+                    subscription, recipient, self, rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -369,18 +378,28 @@ class BranchMergeProposal(SQLBase):
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
-        return CodeReviewVoteReference(
+        vote_reference = CodeReviewVoteReference.selectOneBy(
+            branch_merge_proposal=self, reviewer=reviewer)
+        if vote_reference is None:
+            vote_reference = CodeReviewVoteReference(
             branch_merge_proposal=self,
             registrant=registrant,
             reviewer=reviewer,
-            review_type=review_type,
             date_created=_date_created)
+        vote_reference.review_type = review_type
+        return vote_reference
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
+        # Delete the related CodeReviewVoteReferences.
+        for vote in self.votes:
+            vote.destroySelf()
+        # Delete the related CodeReviewComments.
+        for comment in self.all_comments:
+            comment.destroySelf()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
@@ -406,6 +425,16 @@ class BranchMergeProposal(SQLBase):
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
+        if not subject:
+            # Get the subject from the parent if there is one, or use a nice
+            # default.
+            if parent is None:
+                subject = self.title
+            else:
+                subject = parent.message.subject
+            if not subject.startswith('Re: '):
+                subject = 'Re: ' + subject
+
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
