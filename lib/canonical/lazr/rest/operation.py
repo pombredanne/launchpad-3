@@ -111,7 +111,6 @@ class ResourceOperation(BatchingResourceMixin):
         # and that will be useful when the operation is invoked.
         missing = object()
         for field in self.params:
-            field = field.bind(self.context)
             name = field.__name__
             field = field.bind(self.context)
             if (self.request.get(name, missing) is missing
