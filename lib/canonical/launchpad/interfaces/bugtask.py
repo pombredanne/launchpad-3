@@ -1051,6 +1051,7 @@ class IBugTaskSet(Interface):
             'open_inprogress': The number of open bugs that are In Progress.
         """
 
+
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""
     try:

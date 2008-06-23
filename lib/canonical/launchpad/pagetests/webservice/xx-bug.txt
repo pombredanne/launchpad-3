@@ -335,7 +335,7 @@ the bug tracker can be found has changed.
 Naturally, if we follow the Location: header then we'll get the
 renamed bug tracker.
 
-  >>> bug_tracker_path = '/beta/bugs/bugtrackers/bob'
+  >>> bug_tracker_path = get_path(response.getHeader('Location'))
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> show(bug_tracker)
   [(u'base_url', u'http://bugs.example.com/'),
