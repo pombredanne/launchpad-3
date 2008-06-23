@@ -512,11 +512,10 @@ class BugzillaXMLRPCTransport(xmlrpclib.Transport):
         if self.auth_cookie is not None:
             connection.putheader('Cookie', cookie)
 
-    # XXX 2008-08-20 gmb:
-    #     Yes, this is really, really, really nasty. This is basically
-    #     an exact copy of the request() method in xmlrpclib. The
-    #     trouble is that the original just discards the response
-    #     headers, with which we actually want to do something.
+    # Yes, this is really, really, really nasty. This is basically an
+    # exact copy of the request() method in xmlrpclib. The trouble is
+    # that the original just discards the response headers, with which
+    # we actually want to do something.
     def request(self, host, handler, request_body, verbose=0):
         """Issue an XML-RPC request.
 
