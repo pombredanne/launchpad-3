@@ -192,7 +192,7 @@ report described by the bugwatch.
    (u'title', u'The Mozilla.org Bug Tracker #2000'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
 
-  >>> bug_watch_path = get_path(bug_one_bug_watches[0]['self_link'])
+  >>> bug_watch_path = get_path(bug_watch_2000['self_link'])
   >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
   >>> bug_watch == bug_watch_2000
   True
@@ -276,16 +276,36 @@ We can change various aspects of bug trackers.
 Note the 301 response. We changed the name, so the API URL at which
 the bug tracker can be found has changed.
 
-  >>> bug_tracker = webservice.get(bug_tracker_path).getOutput()
+  >>> print webservice.get(bug_tracker_path).getOutput()
+  HTTP/1.1 404 Not Found
+  Content-Length: ...
+  Content-Type: text/plain
+  X-Lazr-Oopsid: OOPS-...
+  <BLANKLINE>
+  Object: <...BugTrackerSet object at ...>, name: u'mozilla.org'
+  <BLANKLINE>
   Traceback (most recent call last):
   ...
-  NotFound: Object: <...>, name: u'mozilla.org'
+  NotFound: Object: <...BugTrackerSet object at ...>, name: u'mozilla.org'
+  <BLANKLINE>
 
 Naturally, if we follow the Location: header then we'll get the
 renamed bug tracker.
 
-  >>> import pdb; pdb.set_trace()
-
   >>> bug_tracker_path = '/beta/bugs/bugtrackers/bob'
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> pprint(sorted(bug_tracker.items()))
+  [(u'base_url', u'http://bugs.example.com/'),
+   (u'base_url_aliases',
+    [u'http://bugs.example.com/bugs/',
+     u'http://www.example.com/bugtracker/']),
+   (u'bug_tracker_type', u'Bugzilla'),
+   (u'contact_details', u'bob@example.com'),
+   (u'name', u'bob'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
+   (u'self_link', u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob'),
+   (u'summary', u'Where Bob files his bugs.'),
+   (u'title', u"Bob's Tracker"),
+   (u'watches_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/bugtrackers/bob/watches')]
