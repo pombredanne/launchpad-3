@@ -216,6 +216,22 @@ class IBugTracker(Interface):
         :return: An `IBugTrackerPerson`.
         """
 
+    def ensurePersonForSelf(
+        display_name, email, rationale, creation_comment):
+        """Return the correct `IPerson` for a given name on a bugtracker.
+
+        :param bugtracker: The `IBugTracker` for which we should have a
+            given Person.
+        :param display_name: The name of the Person on `bugtracker`.
+        :param email: The Person's email address if available. If `email`
+            is supplied a Person will be created or retrieved using that
+            email address and no `IBugTrackerPerson` records will be created.
+        :param rationale: The `PersonCreationRationale` used to create a
+            new `IPerson` for this `name` and `bugtracker`, if necessary.
+        :param creation_comment: The creation comment for the `IPerson`
+            if one is created.
+         """
+
     def destroySelf():
         """Delete this bug tracker."""
 
