@@ -217,7 +217,7 @@ class IBugTracker(Interface):
         """
 
     def ensurePersonForSelf(
-        self, display_name, email, rationale, creation_comment):
+        display_name, email, rationale, creation_comment):
         """Return the correct `IPerson` for a given name on a bugtracker.
 
         :param bugtracker: The `IBugTracker` for which we should have a
