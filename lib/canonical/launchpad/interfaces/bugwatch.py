@@ -100,14 +100,18 @@ class IBugWatch(IHasBug):
     id = Int(title=_('ID'), required=True, readonly=True)
     bug = exported(
         Reference(title=_('Bug'), schema=IBug, required=True, readonly=True))
-    bugtracker = Choice(title=_('Bug System'), required=True,
-        vocabulary='BugTracker', description=_("You can register "
-        "new bug trackers from the Launchpad Bugs home page."))
+    bugtracker = exported(
+        Choice(
+            title=_('Bug System'), required=True,
+            vocabulary='BugTracker', description=_(
+                "You can register new bug trackers from the Launchpad "
+                "Bugs home page.")),
+        exported_as='bug_tracker')
     remotebug = exported(
         StrippedTextLine(
             title=_('Remote Bug'), required=True,
-            readonly=False, description=_("The bug number of this bug in the "
-                                          "remote bug tracker.")),
+            readonly=False, description=_(
+                "The bug number of this bug in the remote bug tracker.")),
         exported_as='remote_bug')
     remotestatus = exported(
         TextLine(title=_('Remote Status')),

@@ -3,6 +3,8 @@
 Bugs are some of the more complex objects in Launchpad. They have a
 lot of state and many relationships to other objects.
 
+  >>> from pprint import PrettyPrinter
+  >>> pprint = PrettyPrinter(width=72).pprint
 
 == Bugs themselves ==
 
@@ -13,7 +15,6 @@ At the top level we provide a collection of bugs.
   >>> bugs['total_size']
   15
   >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
-  >>> from pprint import pprint
   >>> pprint(sorted(bug_entries[0].items()))
   [(u'bug_watches_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bug_watches'),
@@ -36,7 +37,8 @@ At the top level we provide a collection of bugs.
    (u'owner_link', u'http://api.launchpad.dev/beta/~name16'),
    (u'permits_expiration', False),
    (u'private', False),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugEntryAdapter'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugEntryAdapter'),
    (u'security_related', False),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/11'),
    (u'tags', []),
@@ -70,15 +72,16 @@ Bugs have relationships to other bugs, like "duplicate_of".
 Each bug has a collection of messages.
 
   >>> messages = webservice.get("/beta/bugs/5/messages").jsonBody()['entries']
-  >>> sorted(messages[0].items())
+  >>> pprint(sorted(messages[0].items()))
   [(u'content',
-      u'All ways of downloading firefox should provide...'),
+    u'All ways of downloading firefox should provide...'),
    (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'parent_link', None),
    (u'resource_type_link',
     u'http://api.launchpad.dev/beta/#MessageEntryAdapter'),
-   (u'self_link', u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0'),
+   (u'self_link',
+    u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0'),
    (u'subject', u'Firefox install instructions should be complete')]
 
 The messages are stored beneath the bug-specific collection. Their
@@ -156,12 +159,16 @@ The collection of bug tasks is not exposed as a resource:
   >>> len(bug_one_bug_watches)
   4
 
-  >>> pprint(sorted(bug_one_bug_watches[0].items()))
+  >>> [bug_watch_2000] = [
+  ...     bug_watch for bug_watch in bug_one_bug_watches
+  ...     if bug_watch['remote_bug'] == u'2000']
+
+  >>> pprint(sorted(bug_watch_2000.items()))
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'bug_tracker_link',
+    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
    (u'bugtasks_collection_link',
     u'http://api.launchpad.dev/beta/bugs/1/+watch/2/bugtasks'),
-   (u'bug_tracker_link',
-    u'http://api.launchpad.dev/beta/bugs/bugtrackers/xxx'),
    (u'date_created', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_changed', u'2004-10-04T01:00:00+00:00'),
    (u'date_last_checked', u'2004-10-04T01:00:00+00:00'),
@@ -176,9 +183,9 @@ The collection of bug tasks is not exposed as a resource:
    (u'title', u'The Mozilla.org Bug Tracker #2000'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
 
-  >>> bug_watch_path = urlsplit(bug_one_bug_watches[0]['self_link'])[2]
+  >>> bug_watch_path = urlsplit(bug_watch_2000['self_link'])[2]
   >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
-  >>> bug_watch == bug_one_bug_watches[0]
+  >>> bug_watch == bug_watch_2000
   True
 
 The collection of bug watches is not exposed as a resource:
@@ -217,7 +224,20 @@ But we can't change other things, like the URL.
   >>> bug_tracker = webservice.get(bug_tracker_url).jsonBody()
 
   >>> pprint(sorted(bug_tracker.items()))
-  X
+  [(u'base_url', u'https://bugzilla.mozilla.org/'),
+   (u'base_url_aliases', []),
+   (u'bug_tracker_type', u'Bugzilla'),
+   (u'contact_details', u'Carrier pigeon only'),
+   (u'name', u'mozilla.org'),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugTrackerEntryAdapter'),
+   (u'self_link',
+    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
+   (u'summary',
+    u'The Mozilla.org bug tracker is the grand-daddy of bugzillas...'),
+   (u'title', u'The Mozilla.org Bug Tracker'),
+   (u'watches_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org/watches')]
 
   >>> bug_tracker_path = urlsplit(bug_tracker['self_link'])[2]
 
@@ -227,14 +247,33 @@ We can change various aspects of bug trackers.
   ...     u'name': u'bob',
   ...     u'title': u"Bob's Tracker",
   ...     u'summary': u"Where Bob files his bugs.",
-  ...     u'baseurl': u'http://bugs.example.com/',
-  ...     u'aliases': [u'http://bugs.example.com/bugs/',
-  ...                  u'http://www.example.com/bugtracker/'],
-  ...     u'contactdetails': u'bob@example.com',
+  ...     u'base_url': u'http://bugs.example.com/',
+  ...     u'base_url_aliases': [u'http://bugs.example.com/bugs/',
+  ...                           u'http://www.example.com/bugtracker/'],
+  ...     u'contact_details': u'bob@example.com',
   ...     }
   >>> response = webservice.patch(
   ...     bug_tracker_path, 'application/json', dumps(patch))
+  >>> print response.getOutput()
+  HTTP/1.1 301 Moved Permanently
+  Content-Length: 0
+  Content-Type: text/plain
+  Location: http://api.launchpad.dev/beta/bugs/bugtrackers/bob
+  <BLANKLINE>
 
+Note the 301 response. We changed the name, so the API URL at which
+the bug tracker can be found has changed.
+
+  >>> bug_tracker = webservice.get(bug_tracker_path).getOutput()
+  Traceback (most recent call last):
+  ...
+  NotFound: Object: <...>, name: u'mozilla.org'
+
+Naturally, if we follow the Location: header then we'll get the
+renamed bug tracker.
+
+  >>> import pdb; pdb.set_trace()
+
+  >>> bug_tracker_path = '/beta/bugs/bugtrackers/bob'
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
   >>> pprint(sorted(bug_tracker.items()))
-  X
