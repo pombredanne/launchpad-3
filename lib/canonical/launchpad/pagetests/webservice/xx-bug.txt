@@ -5,6 +5,11 @@ lot of state and many relationships to other objects.
 
   >>> from pprint import PrettyPrinter
   >>> pprint = PrettyPrinter(width=72).pprint
+  >>> def show(thing):
+  ...     if isinstance(thing, dict):
+  ...         thing = sorted(thing.iteritems())
+  ...     pprint(thing)
+
 
 == Bugs themselves ==
 
@@ -15,7 +20,7 @@ At the top level we provide a collection of bugs.
   >>> bugs['total_size']
   15
   >>> bug_entries = sorted(bugs['entries'], key=operator.itemgetter('id'))
-  >>> pprint(sorted(bug_entries[0].items()))
+  >>> show(bug_entries[0])
   [(u'bug_watches_collection_link',
     u'http://api.launchpad.dev/beta/bugs/11/bug_watches'),
    (u'bugtasks_collection_link',
@@ -76,7 +81,7 @@ Bugs have relationships to other bugs, like "duplicate_of".
 Each bug has a collection of messages.
 
   >>> messages = webservice.get("/beta/bugs/5/messages").jsonBody()['entries']
-  >>> pprint(sorted(messages[0].items()))
+  >>> show(messages[0])
   [(u'content',
     u'All ways of downloading firefox should provide...'),
    (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
@@ -119,7 +124,7 @@ data in a bug task is derived from the bug.
   >>> len(bug_one_bugtasks)
   3
 
-  >>> pprint(sorted(bug_one_bugtasks[0].items()))
+  >>> show(bug_one_bugtasks[0])
   [(u'assignee_link', None),
    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
@@ -172,7 +177,7 @@ report described by the bugwatch.
   ...     bug_watch for bug_watch in bug_one_bug_watches
   ...     if bug_watch['remote_bug'] == u'2000']
 
-  >>> pprint(sorted(bug_watch_2000.items()))
+  >>> show(bug_watch_2000)
   [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_tracker_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
@@ -229,13 +234,51 @@ But we can't change other things, like the URL.
   <BLANKLINE>
   url: You tried to modify a read-only attribute.
 
+We can use the factory function `addWatch` to create a new bug watch
+associated with a bug.
+
+  >>> response = webservice.named_post(
+  ...     bug_one['self_link'], 'addWatch',
+  ...     bug_tracker=('http://api.launchpad.dev'
+  ...                  '/beta/bugs/bugtrackers/mozilla.org'),
+  ...     remote_bug='9876')
+  >>> print response.getOutput()
+  HTTP/1.1 201 Created
+  Content-Length: 0
+  Content-Type: text/plain;charset=utf-8
+  Location: http://api.launchpad.dev/beta/bugs/1/+watch/13
+
+Following the redirect, we can see the new bug watch:
+
+  >>> new_bug_watch_path = get_path(response.getHeader('Location'))
+  >>> new_bug_watch = webservice.get(new_bug_watch_path).jsonBody()
+  >>> show(new_bug_watch)
+  [(u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
+   (u'bug_tracker_link',
+    u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org'),
+   (u'bugtasks_collection_link',
+    u'http://api.launchpad.dev/beta/bugs/1/+watch/13/bugtasks'),
+   (u'date_created', u'...'),
+   (u'date_last_changed', None),
+   (u'date_last_checked', None),
+   (u'last_error_type', None),
+   (u'owner_link', u'http://api.launchpad.dev/beta/~salgado'),
+   (u'remote_bug', u'9876'),
+   (u'remote_importance', None),
+   (u'remote_status', None),
+   (u'resource_type_link',
+    u'http://api.launchpad.dev/beta/#BugWatchEntryAdapter'),
+   (u'self_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/13'),
+   (u'title', u'The Mozilla.org Bug Tracker #9876'),
+   (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876')]
+
 
 == Bug Trackers ==
 
   >>> bug_tracker_url = get_path(bug_watch['bug_tracker_link'])
   >>> bug_tracker = webservice.get(bug_tracker_url).jsonBody()
 
-  >>> pprint(sorted(bug_tracker.items()))
+  >>> show(bug_tracker)
   [(u'base_url', u'https://bugzilla.mozilla.org/'),
    (u'base_url_aliases', []),
    (u'bug_tracker_type', u'Bugzilla'),
@@ -294,7 +337,7 @@ renamed bug tracker.
 
   >>> bug_tracker_path = '/beta/bugs/bugtrackers/bob'
   >>> bug_tracker = webservice.get(bug_tracker_path).jsonBody()
-  >>> pprint(sorted(bug_tracker.items()))
+  >>> show(bug_tracker)
   [(u'base_url', u'http://bugs.example.com/'),
    (u'base_url_aliases',
     [u'http://bugs.example.com/bugs/',

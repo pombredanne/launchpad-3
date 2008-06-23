@@ -45,6 +45,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ProductNameField, PublicPersonChoice,
     StrippedTextLine, Summary, Tag)
+from canonical.launchpad.interfaces.bugwatch import (
+    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -548,6 +550,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         """
 
 
+# We are forced to define this now to avoid circular import problems.
+IBugWatch['bugtasks'].value_type.schema = IBugTask
+
+
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
 
@@ -1047,8 +1053,6 @@ class IBugTaskSet(Interface):
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""
-    from canonical.launchpad.interfaces.bugwatch import (
-        IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
     try:
         getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
     except NoBugTrackerFound:
