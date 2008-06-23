@@ -140,7 +140,6 @@ class TestStartRebuildScript(unittest.TestCase):
         match what was raised an AssertionError is raised.
         """
         exception_name = str(exception).split('.')[-1]
-        print args
 
         try:
             func(*args)
