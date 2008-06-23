@@ -449,7 +449,8 @@ class SourcePackageRelease(SQLBase):
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
         # and so on
-        if archive.purpose != ArchivePurpose.PPA:
+        if archive.purpose in (ArchivePurpose.PARTNER,
+                               ArchivePurpose.PRIMARY):
             parent_archives = set()
             archive_set = getUtility(IArchiveSet)
             for series in parent_series:
