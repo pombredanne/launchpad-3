@@ -58,6 +58,9 @@ tooltip containing the package details.
     >>> print anon_browser.getLink('mozilla-firefox (Debian)').attrs['title']
     No current release for this source package in Debian
 
+(XXX 20080623 mpt: Projects and distributions should similarly have a tooltip
+listing their latest release. <http://launchpad.net/bugs/242491>)
+
 If you are logged in, each "Affects" row contains a form for editing the
 status in that context. The forms are hidden initially using CSS.
 
