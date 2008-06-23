@@ -41,7 +41,7 @@
   <div tal:replace="structure context/@@+portlet-latestquestions" />
 </metal:leftportlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" class="pillar">
 
   <tal:icon replace="structure context/image:mugshot" />
 
