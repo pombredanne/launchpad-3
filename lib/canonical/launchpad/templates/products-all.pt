@@ -13,8 +13,10 @@
   <div metal:fill-slot="main" tal:define="batch view/all_batched">
     <h1>All projects registered</h1>
     <tal:navigation replace="structure batch/@@+navigation-links-upper" />
-    <div tal:repeat="product batch/currentBatch"
-         tal:replace="structure product/@@+listing-detailed" />
+      <div id="product-listing">
+        <tal:product repeat="product batch/currentBatch"
+                     replace="structure product/@@+listing-detailed" />
+      </div>
     <tal:navigation replace="structure batch/@@+navigation-links-lower" />
   </div>
 </body>
