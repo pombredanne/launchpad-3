@@ -3,6 +3,11 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'test_suite',
+    ]
+
+
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
