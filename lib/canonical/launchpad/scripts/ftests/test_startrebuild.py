@@ -17,6 +17,9 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildStatus, IArchiveSet, IBuildSet, IDistroSeriesSet,
     PackagePublishingStatus)
+from canonical.launchpad.scripts.ftpmaster import (
+    PackageLocationError, SoyuzScriptError)
+from canonical.launchpad.scripts.create_rebuild import RebuildArchiveCreator
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -108,7 +111,7 @@ class TestStartRebuildScript(unittest.TestCase):
 
         self.assertEqual(rebuild_src_names, expected_src_names)
 
-        def get_spn(self, binary_package):
+        def get_spn(binary_package):
             """Return the SourcePackageName of the binary."""
             pub = binary_package.getCurrentPublication()
             return pub.sourcepackagerelease.sourcepackagename
@@ -128,6 +131,26 @@ class TestStartRebuildScript(unittest.TestCase):
             get_spn(removeSecurityProxy(build)).name for build in builds]
 
         self.assertEqual(build_spns, expected_build_spns)
+
+    def assertRaisesWithContent(self, exception, exception_content,
+                                func, *args):
+        """Check if the given exception is raised with given content.
+
+        If the expection isn't raised or the exception_content doesn't
+        match what was raised an AssertionError is raised.
+        """
+        exception_name = str(exception).split('.')[-1]
+        print args
+
+        try:
+            func(*args)
+        except exception, err:
+            if not str(err).startswith(exception_content):
+                raise AssertionError(
+                    "'%s' was not the reason expected" % str(err))
+        else:
+            raise AssertionError(
+                "'%s' was not raised" % exception_name)
 
     def testInvalidRebuildArchiveName(self):
         """Try rebuild with invalid archive name.
@@ -151,11 +174,12 @@ class TestStartRebuildScript(unittest.TestCase):
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
             '-r', invalid_archive_name, '-u', 'salgado']
 
-        # Start rebuild now!
-        (return_code, out, err) = self.runScript(extra_args)
-
-        # Check for appropriate exit code.
-        self.assertEqual(return_code, 2)
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=extra_args)
+        self.assertRaisesWithContent(
+            SoyuzScriptError, "Invalid rebuild archive name",
+            script.mainTask)
 
         # Make sure the rebuild archive with the desired name was
         # not created
@@ -184,11 +208,12 @@ class TestStartRebuildScript(unittest.TestCase):
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
             '-r', archive_name, '-u', 'salgado']
 
-        # Start rebuild now!
-        (return_code, out, err) = self.runScript(extra_args)
-
-        # Check for appropriate exit code.
-        self.assertEqual(return_code, 3)
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=extra_args)
+        self.assertRaisesWithContent(
+            SoyuzScriptError, "Invalid component name",
+            script.mainTask)
 
         # Make sure the rebuild archive with the desired name was
         # not created
@@ -217,11 +242,12 @@ class TestStartRebuildScript(unittest.TestCase):
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
             '-r', archive_name, '-u', 'salgado']
 
-        # Start rebuild now!
-        (return_code, out, err) = self.runScript(extra_args)
-
-        # Check for appropriate exit code.
-        self.assertEqual(return_code, 1)
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=extra_args)
+        self.assertRaisesWithContent(
+            PackageLocationError, "Could not find suite", 
+            script.mainTask)
 
         # Make sure the rebuild archive with the desired name was
         # not created
@@ -250,11 +276,12 @@ class TestStartRebuildScript(unittest.TestCase):
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
             '-r', archive_name, '-u', invalid_user]
 
-        # Start rebuild now!
-        (return_code, out, err) = self.runScript(extra_args)
-
-        # Check for appropriate exit code.
-        self.assertEqual(return_code, 4)
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=extra_args)
+        self.assertRaisesWithContent(
+            SoyuzScriptError, "Invalid user name",
+            script.mainTask)
 
         # Make sure the rebuild archive with the desired name was
         # not created
@@ -279,11 +306,12 @@ class TestStartRebuildScript(unittest.TestCase):
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
             '-r', self.rebld_archive_name, '-u', 'salgado']
 
-        # Start rebuild now!
-        (return_code, out, err) = self.runScript(extra_args)
-
-        # Check for appropriate exit code.
-        self.assertEqual(return_code, 5)
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=extra_args)
+        self.assertRaisesWithContent(
+            SoyuzScriptError, "An archive rebuild named",
+            script.mainTask)
 
 
 def test_suite():

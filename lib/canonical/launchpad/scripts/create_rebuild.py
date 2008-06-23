@@ -20,7 +20,8 @@ from canonical.launchpad.interfaces.archiverebuild import (
 from canonical.launchpad.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.packagecloner import IPackageCloner
 from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.scripts.ftpmasterbase import SoyuzScript
+from canonical.launchpad.scripts.ftpmasterbase import (
+    SoyuzScript, SoyuzScriptError)
 from canonical.launchpad.validators.name import valid_name
 
 
@@ -69,31 +70,28 @@ class RebuildArchiveCreator(SoyuzScript):
         """
 
         if not valid_name(rebuild_archive_name):
-            print "Invalid rebuild archive name: '%s'" % rebuild_archive_name
-            sys.exit(2)
+            raise SoyuzScriptError(
+                "Invalid rebuild archive name: '%s'" % rebuild_archive_name)
 
         origin = build_package_location(distro, suite=suite)
 
         try:
             origin.component = getUtility(IComponentSet)[component]
         except NotFoundError, e:
-            print "Invalid component name: '%s'" % component
-            sys.exit(3)
+            raise SoyuzScriptError("Invalid component name: '%s'" % component)
 
         print origin
 
         registrant = getUtility(IPersonSet).getByName(user_name)
         if registrant is None:
-            print "Invalid user name: '%s'" % user_name
-            sys.exit(4)
+            raise SoyuzScriptError("Invalid user name: '%s'" % user_name)
 
         try:
             archive_rebuild = getUtility(IArchiveRebuildSet).new(
                 rebuild_archive_name, origin.distroseries, registrant,
                 rebuild_reason)
         except ArchiveRebuildAlreadyExists, e:
-            print str(e)
-            sys.exit(5)
+            raise SoyuzScriptError(str(e))
 
         destination = PackageLocation(
             archive_rebuild.archive, origin.distribution,
@@ -113,29 +111,22 @@ class RebuildArchiveCreator(SoyuzScript):
         args_missing = 0
 
         if self.options.component is None:
-            print "error: component not specified"
-            args_missing += 8
+            raise SoyuzScriptError("error: component not specified")
 
         if self.options.distribution_name is None:
-            print "error: distribution not specified"
-            args_missing += 16
+            raise SoyuzScriptError("error: distribution not specified")
 
         if self.options.rebuildarchivename is None:
-            print "error: rebuild archive name not specified"
-            args_missing += 32
+            raise SoyuzScriptError(
+                "error: rebuild archive name not specified")
 
         if self.options.rebuildreason is None:
-            print "error: rebuild reason not specified"
-            args_missing += 64
+            raise SoyuzScriptError("error: rebuild reason not specified")
 
         if self.options.suite is None:
-            print ('error: suite (distribution series + publishing pocket)'
-                  ' not specified')
-            args_missing += 128
-
-        if args_missing > 0:
-            print "\n---\n\n%s" % self.usage
-            sys.exit(args_missing)
+            raise SoyuzScriptError(
+                'error: suite (distribution series + publishing pocket)'
+                ' not specified')
 
         self.createRebuildArchive(
             self.options.component, self.options.rebuildarchivename,
@@ -184,7 +175,7 @@ class RebuildArchiveCreator(SoyuzScript):
         self.logger.info(
             "Found %d source(s) published." % sources_published.count())
 
-        def get_spn(self, pub):
+        def get_spn(pub):
             return pub.sourcepackagerelease.sourcepackagename.name
 
         for pubrec in sources_published:

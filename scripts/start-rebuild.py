@@ -24,13 +24,14 @@ import _pythonpath
 
 from canonical.config import config
 from canonical.launchpad.scripts.create_rebuild import RebuildArchiveCreator
+from canonical.launchpad.scripts.ftpmaster import (
+    PackageLocationError, SoyuzScriptError)
 
 if __name__ == '__main__':
-    from canonical.launchpad.scripts.ftpmaster import PackageLocationError
     script = RebuildArchiveCreator(
         'start-rebuild', dbuser=config.uploader.dbuser)
     try:
         script.lock_and_run()
-    except PackageLocationError, e:
+    except (SoyuzScriptError, PackageLocationError), e:
         print str(e)
         sys.exit(1)
