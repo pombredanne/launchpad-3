@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd
+# Copyright 2004-2008 Canonical Ltd
 
 """Person-related wiew classes."""
 
@@ -10,9 +10,11 @@ __all__ = [
     'BugSubscriberPackageBugsSearchListingView',
     'FOAFSearchView',
     'PeopleListView',
+    'PersonActiveReviewsView',
     'PersonAddView',
     'PersonAnswerContactForView',
     'PersonAnswersMenu',
+    'PersonApprovedMergesView',
     'PersonAssignedBugTaskSearchListingView',
     'PersonBranchesMenu',
     'PersonBranchesView',
@@ -21,6 +23,7 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonCodeSummaryView',
     'PersonCommentedBugTaskSearchListingView',
     'PersonDeactivateAccountView',
     'PersonDynMenu',
@@ -61,6 +64,7 @@ __all__ = [
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
     'PersonView',
+    'PersonVouchersView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'RestrictedMembershipsPersonView',
@@ -91,6 +95,7 @@ import pytz
 import subprocess
 import urllib
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
@@ -108,43 +113,45 @@ from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
-    LaunchpadRadioWidget, LocationWidget,
-    LaunchpadRadioWidgetWithDescription, PasswordChangeWidget)
+    LaunchpadDropdownWidget, LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription, LocationWidget, PasswordChangeWidget)
+from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort,
-    BranchPersonSearchContext, BranchPersonSearchRestriction,
-    BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
-    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
-    IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
-    IPOTemplateSet, IPasswordEncryptor, IPerson,
-    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
-    IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership,
-    ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, MailingListAutoSubscribePolicy,
-    NotFoundError, PersonCreationRationale,
-    PersonVisibility, QuestionParticipation, SSHKeyType,
-    SpecificationFilter, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    AccountStatus, BranchListingSort, BranchPersonSearchContext,
+    BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
+    CannotUnsubscribe, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry,
+    IEmailAddress, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet,
+    INewPerson, IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet,
+    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType,
+    MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
+    PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
+from canonical.launchpad.interfaces.salesforce import (
+    ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
-
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
     ITranslationRelicensingAgreementEdit)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
@@ -701,11 +708,71 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
 
-class PersonBranchesMenu(ApplicationMenu):
+class PersonBranchCountMixin:
+    """A mixin class for person branch listings."""
+
+    @cachedproperty
+    def total_branch_count(self):
+        """Return the number of branches related to the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            self.context, visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def registered_branch_count(self):
+        """Return the number of branches registered by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.REGISTERED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def owned_branch_count(self):
+        """Return the number of branches owned by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.OWNED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @cachedproperty
+    def subscribed_branch_count(self):
+        """Return the number of branches subscribed to by the person."""
+        query = getUtility(IBranchSet).getBranchesForContext(
+            BranchPersonSearchContext(
+                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
+            visible_by_user=self.user)
+        return query.count()
+
+    @property
+    def user_in_context_team(self):
+        if self.user is None:
+            return False
+        return self.user.inTeam(self.context)
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
+
+class PersonBranchesMenu(ApplicationMenu, PersonBranchCountMixin):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
+    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch',
+             'active_reviews', 'approved_merges']
 
     def all_related(self):
         return Link(canonical_url(self.context, rootsite='code'),
@@ -719,6 +786,20 @@ class PersonBranchesMenu(ApplicationMenu):
 
     def subscribed(self):
         return Link('+subscribedbranches', 'subscribed')
+
+    def active_reviews(self):
+        if self.active_review_count == 1:
+            text = 'active review'
+        else:
+            text = 'active reviews'
+        return Link('+activereviews', text)
+
+    def approved_merges(self):
+        if self.approved_merge_count == 1:
+            text = 'approved merge'
+        else:
+            text = 'approved merges'
+        return Link('+approvedmerges', text)
 
     def addbranch(self):
         if self.user is None:
@@ -2029,6 +2110,100 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+commentedbugs"
+
+
+class PersonVouchersView(LaunchpadFormView):
+    """Form for displaying and redeeming commercial subscription vouchers."""
+
+    custom_widget('voucher', LaunchpadDropdownWidget)
+    custom_widget('project', SinglePopupWidget)
+
+    def setUpFields(self):
+        self.form_fields = (self.createProjectField() +
+                            self.createVoucherField())
+
+    def createProjectField(self):
+        """Create the project field for selection commercial projects.
+
+        The vocabulary shows commercial projects owned by the current user.
+        """
+        field = FormFields(
+            Choice(__name__='project',
+                   title=_('Select the project you wish to subscribe'),
+                   description=_('Commercial projects you administer'),
+                   vocabulary='CommercialProjects',
+                   required=True),
+            custom_widget=self.custom_widgets['project'],
+            render_context=self.render_context)
+        return field
+
+    def createVoucherField(self):
+        """Create voucher field.
+
+        Only unredeemed vouchers owned by the user are shown.
+        """
+        unredeemed, redeemed = (
+            self.context.getCommercialSubscriptionVouchers())
+        terms = []
+        for voucher in unredeemed:
+            text = "%s (%d months)" % (
+                voucher.voucher_id, voucher.term_months)
+            terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
+        voucher_vocabulary = SimpleVocabulary(terms)
+        field = FormFields(
+            Choice(__name__='voucher',
+                   title=_('Select a voucher'),
+                   description=_('Choose one of these unredeemed vouchers'),
+                   vocabulary=voucher_vocabulary,
+                   required=False),
+            custom_widget=self.custom_widgets['voucher'],
+            render_context=self.render_context)
+        return field
+
+    @cachedproperty
+    def owned_commercial_projects(self):
+        commercial_projects = []
+        for project in self.context.getOwnedProjects():
+            if not project.qualifies_for_free_hosting:
+                commercial_projects.append(project)
+        return commercial_projects
+
+    @action(_("Cancel"), name="cancel",
+            validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Simply redirect to the user's page."""
+        self.next_url = canonical_url(self.context)
+
+    @action(_("Redeem"), name="redeem")
+    def redeem_action(self, action, data):
+        error_msg = None
+        salesforce_proxy = getUtility(ISalesforceVoucherProxy)
+        project = data['project']
+        voucher = data['voucher']
+        try:
+            # The call to redeemVoucher returns True if it succeeds or it
+            # raises an exception.  Therefore the return value does not need
+            # to be checked.
+            result = salesforce_proxy.redeemVoucher(voucher.voucher_id,
+                                                    self.context,
+                                                    project)
+            project.redeemSubscriptionVoucher(
+                voucher=voucher.voucher_id,
+                registrant=self.context,
+                purchaser=self.context,
+                subscription_months=voucher.term_months)
+            self.request.response.addInfoNotification(
+                _("Voucher redeemed successfully"))
+            # Force the page to reload so the just consumed voucher is not
+            # displayed again (since the field has already been created.)
+            self.next_url = self.request.URL
+        except SalesforceVoucherProxyException, error:
+            self.error_message = (
+                "The voucher could not be redeemed at this time.")
+            # Log an oops report with raising an error.
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info, self.context.request)
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
@@ -4127,50 +4302,6 @@ class PersonAnswersMenu(ApplicationMenu):
         return Link('+subscribedquestions', text, summary, icon='question')
 
 
-class PersonBranchCountMixin:
-    """A mixin class for person branch listings."""
-
-    @cachedproperty
-    def total_branch_count(self):
-        """Return the number of branches related to the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            self.context, visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def registered_branch_count(self):
-        """Return the number of branches registered by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.REGISTERED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def owned_branch_count(self):
-        """Return the number of branches owned by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.OWNED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @cachedproperty
-    def subscribed_branch_count(self):
-        """Return the number of branches subscribed to by the person."""
-        query = getUtility(IBranchSet).getBranchesForContext(
-            BranchPersonSearchContext(
-                self.context, BranchPersonSearchRestriction.SUBSCRIBED),
-            visible_by_user=self.user)
-        return query.count()
-
-    @property
-    def user_in_context_team(self):
-        if self.user is None:
-            return False
-        return self.user.inTeam(self.context)
-
-
 class PersonBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person."""
 
@@ -4286,7 +4417,6 @@ class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT,)
 
     @property
     def branch_search_context(self):
@@ -4331,6 +4461,53 @@ class PersonOAuthTokensView(LaunchpadView):
             self.request.response.addInfoNotification(
                 "Couldn't find authorization given to %s. Maybe it has been "
                 "revoked already?" % consumer.key)
+
+
+class PersonCodeSummaryView(LaunchpadView, PersonBranchCountMixin):
+    """A view to render the code page summary for a person."""
+
+    __used_for__ = IPerson
+
+    @property
+    def show_summary(self):
+        """Right now we show the summary if the person has branches.
+
+        When we add support for reviews commented on, we'll want to add
+        support for showing the summary even if there are no branches.
+        """
+        return self.total_branch_count
+
+
+class PersonActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the person that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class PersonApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals that have been approved for the person."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname
 
 
 class PersonLocationForm(Interface):
