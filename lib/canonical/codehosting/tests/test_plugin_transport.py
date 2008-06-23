@@ -124,7 +124,8 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         # handlers.
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
-        self.assertTrue(self.server.scheme in _get_protocol_handlers().keys())
+        self.assertTrue(
+            self.server.get_url() in _get_protocol_handlers().keys())
 
     def test_tearDown(self):
         # Setting up then tearing down the server removes its schema from the
@@ -132,7 +133,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         self.server.setUp()
         self.server.tearDown()
         self.assertFalse(
-            self.server.scheme in _get_protocol_handlers().keys())
+            self.server.get_url() in _get_protocol_handlers().keys())
 
     def test_noMirrorsRequestedIfNoBranchesChanged(self):
         # Starting up and shutting down the server will send no mirror
@@ -188,8 +189,7 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             '~testuser/evolution/.bzr/control.conf')
         def check_control_file((transport, path)):
             self.assertEqual(
-                'default_stack_on=%s\n'
-                % self.server._getStackOnURL('~vcs-imports/evolution/main'),
+                'default_stack_on=/~vcs-imports/evolution/main\n',
                 transport.get_bytes(path))
         return deferred.addCallback(check_control_file)
 
@@ -197,10 +197,10 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
 
-        branch = '~user/product/branch'
+        branch = 'http://example.com/~user/product/branch'
         transport = self.server._buildControlDirectory(branch)
         self.assertEqual(
-            'default_stack_on=%s\n' % self.server._getStackOnURL(branch),
+            'default_stack_on=%s\n' % branch,
             transport.get_bytes('.bzr/control.conf'))
 
     def test_buildControlDirectory_no_branch(self):

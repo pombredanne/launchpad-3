@@ -304,7 +304,8 @@ class CachingAuthserverClient:
             return defer.succeed(branch_name)
 
         deferred = defer.maybeDeferred(
-            self._authserver.callRemote, 'getDefaultStackedOnBranch', product)
+            self._authserver.callRemote, 'getDefaultStackedOnBranch',
+            self._user_id, product)
         def add_to_cache(branch_name):
             self._stacked_branch_cache[product] = branch_name
             return branch_name
@@ -539,26 +540,16 @@ class LaunchpadServer(Server):
             'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
-    def _getStackOnURL(self, unique_name):
-        stack_on_url = urlutils.join(
-            config.codehosting.supermirror_root, unique_name)
-        # XXX: JonathanLange 2008-05-20: We can't serve stacked branches over
-        # HTTP until the puller understands stacked branches. Until then,
-        # we'll stack on the SFTP branch, which the user is definitely able to
-        # access.
-        return stack_on_url.replace('http', 'sftp')
-
-    def _buildControlDirectory(self, unique_name):
+    def _buildControlDirectory(self, stack_on_url):
         """Return a MemoryTransport that has '.bzr/control.conf' in it."""
         memory_server = MemoryServer()
         memory_server.setUp()
         transport = get_transport(memory_server.get_url())
-        if unique_name == '':
+        if stack_on_url == '':
             return transport
 
         format = BzrDirFormat.get_default_format()
         format.initialize_on_transport(transport)
-        stack_on_url = self._getStackOnURL(unique_name)
         # XXX: JonathanLange 2008-05-20 bug=232242: We should use the
         # higher-level bzrlib APIs to do this:
         # bzrdir.get_config().set_default_stack_on(). But those APIs aren't in
@@ -687,7 +678,7 @@ class LaunchpadServer(Server):
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
-        assert url.startswith(self.scheme)
+        assert url.startswith(self.get_url())
         return LaunchpadTransport(self, url)
 
     def get_url(self):
@@ -700,12 +691,11 @@ class LaunchpadServer(Server):
 
         See Server.get_url.
         """
-        return self.scheme
+        return 'lp-%d:///' % id(self)
 
     def setUp(self):
         """See Server.setUp."""
-        self.scheme = 'lp-%d:///' % id(self)
-        register_transport(self.scheme, self._factory)
+        register_transport(self.get_url(), self._factory)
         self._is_set_up = True
 
     def tearDown(self):
@@ -713,7 +703,7 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        unregister_transport(self.scheme, self._factory)
+        unregister_transport(self.get_url(), self._factory)
 
 
 class VirtualTransport(Transport):
@@ -742,7 +732,7 @@ class VirtualTransport(Transport):
         """Return the absolute, escaped path to `relpath` without the schema.
         """
         return urlutils.joinpath(
-            self.base[len(self.server.scheme)-1:], relpath)
+            self.base[len(self.server.get_url())-1:], relpath)
 
     def _getUnderylingTransportAndPath(self, relpath):
         """Return the underlying transport and path for `relpath`."""
