@@ -80,8 +80,6 @@ class RebuildArchiveCreator(SoyuzScript):
         except NotFoundError, e:
             raise SoyuzScriptError("Invalid component name: '%s'" % component)
 
-        print origin
-
         registrant = getUtility(IPersonSet).getByName(user_name)
         if registrant is None:
             raise SoyuzScriptError("Invalid user name: '%s'" % user_name)
