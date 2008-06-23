@@ -1002,3 +1002,21 @@ class EntryAdapterUtility(RESTUtilityBase):
         return "%s#%s" % (
             self._service_root_url(), self.entry_page_type)
 
+    @property
+    def entry_page_representation_id(self):
+        "The name of the description of a colleciton of this kind of object."
+        return "%s-page" % self.singular_type
+
+    @property
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return "%s#%s" % (
+            self._service_root_url(),
+            self.entry_page_representation_id)
+
+    @property
+    def full_representation_link(self):
+        """The URL to the description of the object's full representation."""
+        return "%s#%s-full" % (
+            self._service_root_url(), self.singular_type)
+

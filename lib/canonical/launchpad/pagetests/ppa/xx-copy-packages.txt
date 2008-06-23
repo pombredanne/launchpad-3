@@ -277,10 +277,10 @@ build created during the copy is ready to be dispatched.
 
     >>> jblack_browser.getLink('i386').click()
     >>> print jblack_browser.title
-    Build details for i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
-    Build details for i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
     Changes file: not available
     Archive: James Blackwell PPA
     Component: main
@@ -432,7 +432,7 @@ wait until the next publishing cycle to be published in the archive.
     >>> test_publisher = SoyuzTestPublisher()
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
-    >>> pmount_build.buildstate = BuildStatus.FULLYBUILT
+    >>> pmount_build.forceState(BuildStatus.FULLYBUILT)
     >>> flush_database_updates()
     >>> logout()
 

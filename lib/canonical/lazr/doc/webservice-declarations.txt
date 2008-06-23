@@ -291,14 +291,21 @@ exported.
 
 The specification of the web service's acceptable method parameters
 should be described using the @operation_parameters decorator, which
-takes normal IField instances. The @operation_returns decorator
-should be used to descibe the type of the method's return value--this
-also takes an IField instance.
+takes normal IField instances.
+
+When an operation returns an object that's exposed as a resource, you
+should describe its return value with the
+@operation_returns_collection_of and @operation_returns_entry
+decorators. Both decorators take an interface that has been exposed as
+an entry. @operation_returns_entry is used when the operation returns
+a single entry; @operation_returns_collection_of is used when the
+operation returns a collection of entries.
 
     >>> from canonical.lazr.rest.declarations import (
     ...     export_operation_as, export_factory_operation,
     ...     export_read_operation, operation_parameters,
-    ...     operation_returns, rename_parameters_as)
+    ...     operation_returns_entry, operation_returns_collection_of,
+    ...     rename_parameters_as)
     >>> from canonical.lazr.interface import copy_field
     >>> from canonical.lazr.fields import Reference
     >>> class IBookSetOnSteroids(IBookSet):
@@ -308,11 +315,17 @@ also takes an IField instance.
     ...     @collection_default_content()
     ...     @operation_parameters(
     ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
-    ...     @operation_returns(
-    ...         CollectionField(value_type=Reference(schema=IBook)))
+    ...     @operation_returns_collection_of(IBook)
     ...     @export_read_operation()
     ...     def searchBooks(text):
     ...         """Return list of books containing 'text'."""
+    ...
+    ...     @operation_parameters(
+    ...         text=copy_field(IBook['title'], title=u'Text to search for.'))
+    ...     @operation_returns_entry(IBook)
+    ...     @export_read_operation()
+    ...     def bestMatch(text):
+    ...         """Return the best match for books containing 'text'."""
     ...
     ...     @export_operation_as('create_book')
     ...     @rename_parameters_as(base_price='price')
@@ -359,7 +372,7 @@ newly-created object.
     params: {'author': <...TextLine...>,
         'base_price': <...Float...>,
         'title': <...TextLine...>}
-    return_type: <zope.schema._field.Object object...>
+    return_type: <canonical.lazr.rest.operation.ObjectLink object...>
     type: 'factory'
 
 We did specify the return type for the 'searchBooks' method: it
@@ -370,6 +383,15 @@ returns a collection.
     call_with: {}
     params: {'text': <...TextLine...>}
     return_type: <canonical.lazr.fields.CollectionField object...>
+    type: 'read_operation'
+
+The 'bestMatch' method returns an entry.
+
+    >>> print_export_tag(IBookSetOnSteroids['bestMatch'])
+    as: 'bestMatch'
+    call_with: {}
+    params: {'text': <...TextLine...>}
+    return_type: <canonical.lazr.fields.Reference object...>
     type: 'read_operation'
 
 The 'checkout' method doesn't return anything.
@@ -409,7 +431,7 @@ schema.
     params: {'author': <...TextLine...>,
         'collection': <...TextLine...>,
         'title': <...TextLine...>}
-    return_type: <zope.schema._field.Object object...>
+    return_type: <canonical.lazr.rest.operation.ObjectLink object...>
     type: 'factory'
 
 Parameters default and required attributes are set automatically based
@@ -582,6 +604,29 @@ results in an error.
     Traceback (most recent call last):
       ...
     TypeError: "a_method" isn't exported on the webservice.
+
+The decorators @operation_returns_entry and
+@operation_returns_collection_of will only accept an IInterface as
+argument.
+
+    >>> class ReturnOtherThanInterface(Interface):
+    ...     export_as_webservice_entry()
+    ...     @operation_returns_entry("not-an-interface")
+    ...     @export_read_operation()
+    ...     def a_method(**kwargs): pass
+    Traceback (most recent call last):
+    ...
+    TypeError: Entry type not-an-interface does not provide IInterface.
+
+    >>> class ReturnOtherThanInterface(Interface):
+    ...     export_as_webservice_entry()
+    ...     @operation_returns_collection_of("not-an-interface")
+    ...     @export_read_operation()
+    ...     def a_method(**kwargs): pass
+    Traceback (most recent call last):
+    ...
+    TypeError: Collection value type not-an-interface does not
+    provide IInterface.
 
 
 === Exporting exceptions ===
@@ -939,7 +984,6 @@ The adapter's params property also contains the available parameters
     ...     def checkout(self, who, kind):
     ...         print "%s did a %s check out of '%s'." % (
     ...             who, kind, self.title)
-    ...         return None
 
     >>> write_method_adapter = write_method_adapter_factory(
     ...     BookOnSteroids(

@@ -132,7 +132,7 @@ Salgado's credentials.
     >>> credentials.save(stream)
     >>> print encrypted_file.getvalue()
     [1]
-    pbafhzre_frperg = 
+    pbafhzre_frperg =
     npprff_gbxra = fnytnqb-punatr-nalguvat
     pbafhzre_xrl = ynhapucnq-yvoenel
     npprff_frperg = grfg
