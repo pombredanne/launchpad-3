@@ -146,7 +146,7 @@
 
   </tal:is-person>
 
-  <tal:is-team tal:condition="context/isTeam">
+  <tal:is-team tal:condition="context/is_team">
     <div
       class="description"
       tal:content="structure context/teamdescription/fmt:text-to-html"
@@ -174,10 +174,7 @@
       </tal:not-restricted>
     </ul>
 
-  <tal:valid-person-or-team condition="context/is_valid_person_or_team">
     <div class="left" tal:define="contributions view/contributions">
-      <tal:recent-members condition="context/isTeam">
-        <div class="section">
       <div class="portlet" id="your-involvement">
         <h2>Your involvement</h2>
 
@@ -249,7 +246,6 @@
 	  </tal:block>
         </tal:block>
       </div>
-      </div>
       <div tal:condition="context/@@+restricted-membership/userCanViewMembership"
            class="section">
       <div class="portlet" id="recently-approved"
@@ -280,7 +276,7 @@
         </ul>
       </div>
       </div>
-      </tal:recent-members>
+
       <div class="section"
            tal:content="structure context/@@+portlet-related-projects" />
     </div>
@@ -290,34 +286,31 @@
            tal:content="structure context/@@+portlet-details" />
       <div class="section"
            tal:content="structure context/@@+portlet-contact-details" />
-      <tal:isteam condition="context/isTeam">
-        <div class="section">
-          <div class="portlet" id="subteam-of">
-            <h2>Subteam of</h2>
 
-            <p tal:condition="not:context/super_teams">
+      <div class="section">
+        <div class="portlet" id="subteam-of">
+          <h2>Subteam of</h2>
+
+          <p tal:condition="not:context/super_teams">
+            &#8220;<span tal:replace="context/browsername"/>&#8221;
+            itself is not a member of any other team.
+          </p>
+
+          <tal:block condition="context/super_teams">
+            <p>
               &#8220;<span tal:replace="context/browsername"/>&#8221;
-              itself is not a member of any other team.
+              is a member of these teams:
             </p>
-
-            <tal:block condition="context/super_teams">
-              <p>
-                &#8220;<span tal:replace="context/browsername"/>&#8221;
-                is a member of these teams:
-              </p>
-              <ul>
-                <li tal:repeat="team context/super_teams">
-                  <a tal:attributes="href team/fmt:url"
-                     tal:content="team/browsername">name</a>
-                </li>
-              </ul>
-            </tal:block>
-          </div>
+            <ul>
+              <li tal:repeat="team context/super_teams">
+                <a tal:attributes="href team/fmt:url"
+                   tal:content="team/browsername">name</a>
+              </li>
+            </ul>
+          </tal:block>
         </div>
-      </tal:isteam>
-
+      </div>
     </div>
-  </tal:valid-person-or-team>
   </tal:is-team>
 
   <div id="not-lp-user-or-team"
