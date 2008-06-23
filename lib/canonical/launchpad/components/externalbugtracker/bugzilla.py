@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'Bugzilla',
     'BugzillaLPPlugin',
+    'needs_authentication',
     ]
 
 import pytz
@@ -487,7 +488,7 @@ def needs_authentication(func):
             return func(self, *args, **kwargs)
         except xmlrpclib.Fault, fault:
             # Catch authentication errors only.
-            if fault.errcode != 410:
+            if fault.faultCode != 410:
                 raise
             self._authenticate()
             return func(self, *args, **kwargs)
