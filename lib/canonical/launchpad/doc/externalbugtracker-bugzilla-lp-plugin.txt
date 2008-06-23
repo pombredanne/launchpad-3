@@ -29,26 +29,35 @@ We use the internal XML-RPC service to generate the token, which allows
 us to sidestep the issue of committing the new token to the database in
 order to make it visible to the remote Bugzilla.
 
+BugzillaLPPlugin has an _authenticate() method, which is responsible for
+doing the authentication work with the remote server. We'll override the
+_handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
+work with the right database user.
+
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestInternalXMLRPCTransport)
+
+    >>> class ZopelessBugzillaXMLRPCTransport(TestBugzillaXMLRPCTransport):
+    ...     def _handleLoginToken(self, token_text):
+    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...         self._consumeLoginToken(token_text)
+    ...         LaunchpadZopelessLayer.switchDbUser(
+    ...             config.checkwatches.dbuser)
+
+    >>> test_transport = ZopelessBugzillaXMLRPCTransport()
+    >>> test_transport.print_method_calls = True
     >>> bugzilla = BugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport,
     ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport())
 
-BugzillaLPPlugin has an _authenticate() method, which is responsible for
-doing the authentication work with the remote server.
-
-    >>> test_transport.print_method_calls = True
-
-    >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-
     >>> bugzilla._authenticate()
     Using XML-RPC to generate token.
-    Successfully validated login token.
+    CALLED Launchpad.login({'token': '...'})
+    Successfully validated the token.
 
-    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> test_transport.print_method_calls = False
 
 
 == Getting the current time ==
@@ -56,9 +65,6 @@ doing the authentication work with the remote server.
 The BugzillaLPPlugin ExternalBugTracker, like all other
 ExternalBugTrackers, has a getCurrentDBTime() method, which returns the
 current time on the remote server.
-
-    >>> bugzilla = BugzillaLPPlugin(
-    ...     'http://example.com/', xmlrpc_transport=test_transport)
 
     >>> from datetime import datetime
     >>> # It seems there's no way to create a UTC timestamp without

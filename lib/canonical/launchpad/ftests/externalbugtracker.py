@@ -452,7 +452,12 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
              raise xmlrpclib.Fault(410, 'Login Required')
 
         if self.print_method_calls:
-            print "CALLED %s.%s(%s)" % (method_prefix, method_name, args[0])
+            if len(args) > 0:
+                arguments = args[0]
+            else:
+                arguments = ''
+
+            print "CALLED %s.%s(%s)" % (method_prefix, method_name, arguments)
 
         method = getattr(self, method_name)
         return method(*args)
@@ -478,9 +483,8 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         # This method only exists to demonstrate login required methods.
         return "Wonderful, you've logged in! Aren't you a clever biped?"
 
-    def login(self, arguments):
-        token_text = arguments['token']
-
+    def _consumeLoginToken(self, token_text):
+        """Try to consume a login token."""
         token = getUtility(ILoginTokenSet)[token_text]
 
         if token.tokentype.name != 'BUGTRACKER':
@@ -492,6 +496,18 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
         if self.print_method_calls:
             print "Successfully validated the token."
+
+    def _handleLoginToken(self, token_text):
+        """A wrapper around _consumeLoginToken().
+
+        We can override this method when we need to do things Zopelessly.
+        """
+        self._consumeLoginToken(token_text)
+
+    def login(self, arguments):
+        token_text = arguments['token']
+
+        self._handleLoginToken(token_text)
 
         # Cheekily set the Set-Cookie header.
         random_cookie = str(random.random())
