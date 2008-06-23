@@ -265,7 +265,6 @@ instance.
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces.bug import CreateBugParams
     >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
@@ -273,7 +272,6 @@ bugtracker and a couple of bugwatches.
     >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
