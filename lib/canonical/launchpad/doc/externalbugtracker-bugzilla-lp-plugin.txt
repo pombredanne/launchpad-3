@@ -57,6 +57,14 @@ work with the right database user.
     CALLED Launchpad.login({'token': '...'})
     Successfully validated the token.
 
+
+The authorisation cookie will be stored in the auth_cookie property of
+the XML-RPC transport.
+
+    >>> print test_transport.auth_cookie
+    Bugzilla_login=...
+    Bugzilla_logincookie=...
+
     >>> test_transport.print_method_calls = False
 
 

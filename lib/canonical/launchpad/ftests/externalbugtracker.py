@@ -12,7 +12,9 @@ import time
 import urlparse
 import xmlrpclib
 
+from cStringIO import StringIO
 from datetime import datetime
+from httplib import HTTPMessage
 
 from zope.component import getUtility
 
@@ -422,6 +424,12 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
     expired_cookie = None
 
+    def __init__(self):
+        # Can't use super() here because xmlrpclib.Transport is an
+        # old-style class.
+        BugzillaXMLRPCTransport.__init__(self)
+        self.last_response_headers = HTTPMessage(StringIO())
+
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
         self.expired_cookie = cookie
@@ -509,12 +517,18 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
         self._handleLoginToken(token_text)
 
-        # Cheekily set the Set-Cookie header.
-        random_cookie = str(random.random())
-        self.last_response_headers = {
-            'Set-Cookie': 'Set-Cookie: Bugzilla_logincookie=%s;' %
-                           random_cookie,
-            }
+        # Generate some random cookies to use.
+        random_cookie_1 = str(random.random())
+        random_cookie_2 = str(random.random())
+
+        # Reset the headers to that we don't end up with long strings of
+        # repeating cookies.
+        self.last_response_headers = HTTPMessage(StringIO())
+
+        self.last_response_headers.addheader(
+            'set-cookie', 'Bugzilla_login=%s;' % random_cookie_1)
+        self.last_response_headers.addheader(
+            'set-cookie', 'Bugzilla_logincookie=%s;' % random_cookie_2)
 
         # We always return the same user ID.
         # And yes, we have to listify this. Because of xmlrpclib.py:1387.

@@ -73,9 +73,9 @@ We can use the internal XML-RPC API to generate such a token.
     >>> token_api = ExternalBugTrackerTokenAPI(None, None)
     >>> token_text = token_api.newBugTrackerToken()
 
-Launchpad.login() will check that the token is valid and will set a
-Bugzilla_logincookie cookie in its response. It will also return the
-user ID of the user on the Bugzilla instance.
+Launchpad.login() will check that the token is valid and will set two
+cookies, Bugzilla_logincookie and Bugzilla_login, in its response. It
+will also return the user ID of the user on the Bugzilla instance.
 
 In the test instance, the cookie is randomly generated. The returned
 user id is always the same.
@@ -84,10 +84,11 @@ user id is always the same.
     >>> print response_dict['user_id']
     42
 
-The login cookie is in the response headers.
+The login cookies are in the response headers.
 
     >>> print bugzilla_transport.last_response_headers['Set-Cookie']
-    Set-Cookie: Bugzilla_logincookie=...
+    Bugzilla_login=...
+    Bugzilla_logincookie=...
 
 
 == Launchpad.time() ==

@@ -315,19 +315,25 @@ class BugzillaLPPlugin(Bugzilla):
 
         token_text = internal_xmlrpc_server.newBugTrackerToken()
 
+        transport = self.xmlrpc_transport
         user_id = self.server.Launchpad.login({'token': token_text})
+
         auth_cookie = self._extractAuthCookie(
-            self.xmlrpc_transport.last_response_headers['Set-Cookie'])
+            transport.last_response_headers['Set-Cookie'])
 
         self.xmlrpc_transport.auth_cookie = auth_cookie
 
     def _extractAuthCookie(self, cookie_header):
-        """Extract the Bugzilla authentication cookie from the header."""
-        cookie = cookie_header.split(';')[0]
-        if cookie.startswith('Bugzilla_logincookie='):
-            return cookie
-        else:
-            return None
+        """Extract the Bugzilla authentication cookies from the header."""
+        cookies = []
+        for cookie_header_part in cookie_header.split(','):
+            cookie = cookie_header_part.split(';')[0]
+            cookie = cookie.strip()
+
+            if cookie.startswith('Bugzilla_login'):
+                cookies.append(cookie)
+
+        return '; '.join(cookies)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
@@ -501,8 +507,9 @@ class BugzillaXMLRPCTransport(xmlrpclib.Transport):
     def send_host(self, connection, host):
         """Send the host and cookie headers."""
         xmlrpclib.Transport.send_host(self, connection, host)
+
         if self.auth_cookie is not None:
-            connection.putheader('Cookie', self.auth_cookie)
+            connection.putheader('Cookie', cookie)
 
     # XXX 2008-08-20 gmb:
     #     Yes, this is really, really, really nasty. This is basically
