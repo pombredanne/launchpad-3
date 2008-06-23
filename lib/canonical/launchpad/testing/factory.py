@@ -216,7 +216,10 @@ class LaunchpadObjectFactory:
         if name is None:
             name = self.getUniqueString('product-name')
         if displayname is None:
-            displayname = self.getUniqueString('displayname')
+            if name is None:
+                displayname = self.getUniqueString('displayname')
+            else:
+                displayname = name.capitalize()
         if licenses is None:
             licenses = [License.GNU_GPL_V2]
         return getUtility(IProductSet).createProduct(
