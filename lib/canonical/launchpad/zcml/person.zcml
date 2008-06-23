@@ -56,6 +56,10 @@
       interface="canonical.launchpad.interfaces.person.IPersonViewRestricted"
       />
     <require
+      permission="launchpad.EditLocation"
+      interface="canonical.launchpad.interfaces.location.ISetLocation"
+      />
+    <require
       permission="launchpad.Edit"
       interface="canonical.launchpad.interfaces.person.IPersonEditRestricted"
       />
@@ -287,6 +291,14 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonRelatedProjectsView"
     template="../templates/person-portlet-related-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+vouchers"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonVouchersView"
+    template="../templates/person-vouchers.pt"
     />
 
   <browser:page
@@ -562,6 +574,33 @@
     facet="branches"
     name="+registeredbranches"
     template="../templates/person-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonCodeSummaryView"
+    permission="zope.Public"
+    facet="branches"
+    name="+codesummary"
+    template="../templates/person-codesummary.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonActiveReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+activereviews"
+    template="../templates/person-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.person.PersonApprovedMergesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+approvedmerges"
+    template="../templates/person-mergeproposals.pt"
     />
 
   <browser:page

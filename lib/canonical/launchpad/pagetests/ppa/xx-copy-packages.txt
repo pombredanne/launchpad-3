@@ -432,7 +432,7 @@ wait until the next publishing cycle to be published in the archive.
     >>> test_publisher = SoyuzTestPublisher()
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
-    >>> pmount_build.buildstate = BuildStatus.FULLYBUILT
+    >>> pmount_build.forceState(BuildStatus.FULLYBUILT)
     >>> flush_database_updates()
     >>> logout()
 
