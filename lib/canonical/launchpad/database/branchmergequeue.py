@@ -13,6 +13,7 @@ __all__ = [
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin)
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -26,7 +27,7 @@ from canonical.launchpad.interfaces.branchmergequeue import (
     IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue,
     NotSupportedWithManualQueues)
 from canonical.launchpad.interfaces.branchmergeproposal import (
-    BranchMergeProposalStatus)
+    BadStateTransition, BranchMergeProposalStatus)
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -101,6 +102,17 @@ class BaseBranchMergeQueue:
                     BranchMergeControlStatus.ROBOT_RESTRICTED):
                     return item
         return None
+
+    def allowRestrictedLanding(self, proposal):
+        """See `IBranchMergeQueue`."""
+        restricted = BranchMergeProposalStatus.QUEUED_RESTRICTED
+        if proposal.queue_status != BranchMergeProposalStatus.QUEUED:
+            raise BadStateTransition(
+                'Invalid state transition for merge proposal: %s -> %s'
+                % (proposal.queue_status.title, restricted.title))
+        # Remove the security proxy, as queue_status is not settable directly.
+        naked_proposal = removeSecurityProxy(proposal)
+        naked_proposal.queue_status = restricted
 
 
 class SingleBranchMergeQueue(BaseBranchMergeQueue):

@@ -167,12 +167,15 @@ class BranchMergeQueueTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def setUp(self):
+        # Login with an administrator as we are not testing authorisation
+        # here.
+        TestCaseWithFactory.setUp(self, 'foo.bar@canonical.com')
+
     def _make_branch_and_associate_with_queue(self, queue):
         # Small helper to make a branch and set the merge queue.
         branch = self.factory.makeBranch(
             merge_control_status=BranchMergeControlStatus.ROBOT)
-        # Login the branch owner to allow launchpad.Edit on merge_queue.
-        loginPerson(branch.owner)
         branch.merge_queue = queue
         return branch
 
@@ -196,12 +199,8 @@ class TestMultiBranchMergeQueue(BranchMergeQueueTestCase):
         queue = self.factory.makeBranchMergeQueue()
         branch1 = self._make_branch_and_associate_with_queue(queue)
         branch2 = self._make_branch_and_associate_with_queue(queue)
-        # Login the branch owner to make the proposals.  ANONYMOUS is not
-        # good enough as the date_last_modified needs launchpad.AnyPerson.
-        loginPerson(branch1.owner)
         first_item = self.factory.makeBranchMergeProposal(
             target_branch=branch1, set_state=BranchMergeProposalStatus.QUEUED)
-        loginPerson(branch2.owner)
         second_item = self.factory.makeBranchMergeProposal(
             target_branch=branch2, set_state=BranchMergeProposalStatus.QUEUED)
         non_queued_item = self.factory.makeBranchMergeProposal(
@@ -237,9 +236,6 @@ class TestMergeQueueRestrictedMode(BranchMergeQueueTestCase):
         branch.merge_control_status = (
             BranchMergeControlStatus.ROBOT_RESTRICTED)
         self.assertEqual(True, queue.restricted_mode)
-        # The owner of the branch is the owner of the queue.  The queue owner
-        # controls the setting of the property.
-        loginPerson(branch.owner)
         # Setting the restricted mode through the queue updates the
         # merge_control_status of the branch.
         queue.restricted_mode = False
@@ -259,7 +255,6 @@ class TestMergeQueueRestrictedMode(BranchMergeQueueTestCase):
         # Attempting to set the restricted_mode on a merge queue with no
         # branches does not really make sense, but is valid to do, but does
         # nothing.
-        loginPerson(queue.owner)
         queue.restricted_mode = True
         self.assertEqual(False, queue.restricted_mode)
 
@@ -272,20 +267,17 @@ class TestMergeQueueRestrictedMode(BranchMergeQueueTestCase):
         self.assertEqual(False, queue.restricted_mode)
         # Setting one branch to restricted, still leaves the queue
         # unrestricted.
-        loginPerson(branch1.owner)
         branch1.merge_control_status = (
             BranchMergeControlStatus.ROBOT_RESTRICTED)
         self.assertEqual(False, queue.restricted_mode)
         # Setting the second branch to restricted changes the restricted state
         # of the queue.
-        loginPerson(branch2.owner)
         branch2.merge_control_status = (
             BranchMergeControlStatus.ROBOT_RESTRICTED)
         self.assertEqual(True, queue.restricted_mode)
 
         # Setting the restricted_mode on the queue updates the status for all
         # branches, overriding whatever status they may be in.
-        loginPerson(queue.owner)
         queue.restricted_mode = False
         self.assertEqual(False, queue.restricted_mode)
         self.assertEqual(
@@ -349,7 +341,7 @@ class TestMergeQueueFront(BranchMergeQueueTestCase):
         self.assertTrue(queue.front is None)
         # If the second item is maked as QUEUED_RESTRICTED, it wil be move to
         # the front.
-        second_item.queue_status = BranchMergeProposalStatus.QUEUED_RESTRICTED
+        queue.allowRestrictedLanding(second_item)
         self.assertEqual(second_item, queue.front)
 
     def test_multi_front_no_restrictions(self):
@@ -381,7 +373,7 @@ class TestMergeQueueFront(BranchMergeQueueTestCase):
         self.assertEqual(second_item, queue.front)
         # If the first_item however is QUEUED_RESTRICTED, it is chosen as the
         # front of the queue.
-        first_item.queue_status = BranchMergeProposalStatus.QUEUED_RESTRICTED
+        queue.allowRestrictedLanding(first_item)
         self.assertEqual(first_item, queue.front)
 
     def test_multi_front_queue_restricted(self):
@@ -399,11 +391,11 @@ class TestMergeQueueFront(BranchMergeQueueTestCase):
         self.assertTrue(queue.front is None)
         # If the second_item however is QUEUED_RESTRICTED, it is chosen over
         # the first_item that is just QUEUED.
-        second_item.queue_status = BranchMergeProposalStatus.QUEUED_RESTRICTED
+        queue.allowRestrictedLanding(second_item)
         self.assertEqual(second_item, queue.front)
         # If the first_item however is QUEUED_RESTRICTED, it is chosen as the
         # front of the queue.
-        first_item.queue_status = BranchMergeProposalStatus.QUEUED_RESTRICTED
+        queue.allowRestrictedLanding(first_item)
         self.assertEqual(first_item, queue.front)
 
 

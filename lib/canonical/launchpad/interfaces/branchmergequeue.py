@@ -54,6 +54,9 @@ class IBranchMergeQueue(Interface):
         description=_("Either yourself or a team you are a member of. "
                       "This controls who can manipulate the queue."))
 
+    def allowRestrictedLanding(proposal):
+        """Sets the proposal's status to allow landing in restricted mode."""
+
 
 class IMultiBranchMergeQueue(IBranchMergeQueue):
     """A queue that has proposals from a number of branches."""
