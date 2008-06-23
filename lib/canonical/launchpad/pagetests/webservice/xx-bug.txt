@@ -232,7 +232,7 @@ But we can't change other things, like the URL.
 
 == Bug Trackers ==
 
-  >>> bug_tracker_url = urlsplit(bug_watch['bug_tracker_link'])[2]
+  >>> bug_tracker_url = get_path(bug_watch['bug_tracker_link'])
   >>> bug_tracker = webservice.get(bug_tracker_url).jsonBody()
 
   >>> pprint(sorted(bug_tracker.items()))
@@ -251,7 +251,7 @@ But we can't change other things, like the URL.
    (u'watches_collection_link',
     u'http://api.launchpad.dev/beta/bugs/bugtrackers/mozilla.org/watches')]
 
-  >>> bug_tracker_path = urlsplit(bug_tracker['self_link'])[2]
+  >>> bug_tracker_path = get_path(bug_tracker['self_link'])
 
 We can change various aspects of bug trackers.
 
