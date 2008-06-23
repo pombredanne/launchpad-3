@@ -44,8 +44,8 @@ from canonical.launchpad.database import (Distribution, DistroSeries,
     SecureSourcePackagePublishingHistory, BinaryPackageFile)
 
 from canonical.launchpad.interfaces import (
-    BuildStatus, IPersonSet, IBinaryPackageNameSet, PersonCreationRationale,
-    PackagePublishingStatus, SourcePackageFormat)
+    BuildStatus, IPersonSet, IBinaryPackageNameSet, IBuildSet,
+    PersonCreationRationale, PackagePublishingStatus, SourcePackageFormat)
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 
@@ -823,16 +823,11 @@ class BinaryPackageHandler:
             key = None
 
             processor = distroarchinfo['processor']
-            build = Build(processor=processor.id,
-                          distroarchseries=distroarchseries.id,
-                          buildstate=BuildStatus.FULLYBUILT,
-                          sourcepackagerelease=srcpkg.id,
-                          buildduration=None,
-                          buildlog=None,
-                          builder=None,
-                          datebuilt=None,
-                          pocket=self.pocket,
-                          archive=distroarchseries.main_archive)
+            build = getUtility(IBuildSet).newBuild(
+                processor=processor, distroarchseries=distroarchseries,
+                buildstate=BuildStatus.FULLYBUILT,
+                sourcepackagerelease=srcpkg, pocket=self.pocket,
+                archive=distroarchseries.main_archive)
         return build
 
 
