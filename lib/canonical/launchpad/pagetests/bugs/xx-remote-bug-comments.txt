@@ -8,7 +8,7 @@ entered within Launchpad itself.
     >>> from textwrap import dedent
     >>> test_data = dedent("""
     ...     [malone]
-    ...     show_imported_comments: True
+    ...     comment_syncing_team: None
     ...     """)
     >>> config.push('test_data', test_data)
 

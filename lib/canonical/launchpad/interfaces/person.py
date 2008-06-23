@@ -46,7 +46,8 @@ from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
-   operation_parameters, rename_parameters_as, REQUEST_USER, webservice_error)
+   operation_parameters, operation_returns_collection_of,
+   rename_parameters_as, REQUEST_USER, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
@@ -61,6 +62,8 @@ from canonical.launchpad.interfaces.jabber import IJabberID
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.location import (
+    IHasLocation, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -373,7 +376,8 @@ class IHasStanding(Interface):
 
 
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
-                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
+                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon,
+                    IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -511,6 +515,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
+    # XXX: salgado, 2008-06-19: This should probably be removed from here as
+    # it's already defined in IHasLocation (from which IPerson extends).
     time_zone = exported(
         Choice(title=_('Time zone'), required=True, readonly=False,
                description=_('The time zone of where you live.'),
@@ -828,6 +834,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @operation_returns_collection_of(Interface) # Really IPerson
     @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
@@ -1204,6 +1211,13 @@ class IPersonViewRestricted(Interface):
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
+    mapped_participants = CollectionField(
+        title=_("List of participants with coordinates."),
+        value_type=Reference(schema=Interface))
+    unmapped_participants = CollectionField(
+        title=_("List of participants with no coordinates recorded."),
+        value_type=Reference(schema=Interface))
+
     def getDirectAdministrators():
         """Return this team's administrators.
 
@@ -1358,7 +1372,7 @@ class IPersonAdminWriteRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IHasStanding):
+              IPersonAdminWriteRestricted, IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry()
 
@@ -1632,6 +1646,7 @@ class IPersonSet(Interface):
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
+    @operation_returns_collection_of(IPerson)
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
@@ -1894,7 +1909,8 @@ class NameAlreadyTaken(Exception):
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
-             'invited_members', 'deactivatedmembers', 'expiredmembers']:
+             'invited_members', 'deactivatedmembers', 'expiredmembers',
+             'mapped_participants', 'unmapped_participants']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
@@ -1915,6 +1931,10 @@ params_to_fix = [
 for method, name in params_to_fix:
     method.queryTaggedValue(
         'lazr.webservice.exported')['params'][name].schema = IPerson
+
+# Fix schema of operation return values.
+IPersonPublic['findPathToTeam'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

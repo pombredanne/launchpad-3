@@ -90,7 +90,7 @@ import pytz
 import subprocess
 import urllib
 
-from zope.app.form.browser import SelectWidget, TextAreaWidget
+from zope.app.form.browser import SelectWidget, TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
 from zope.interface import implements, Interface
@@ -139,7 +139,7 @@ from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreement)
+    ITranslationRelicensingAgreementEdit)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -2249,7 +2249,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def team_has_mailing_list(self):
         """Is the team mailing list available for subscription?"""
         mailing_list = self.context.mailing_list
-        return mailing_list is not None and mailing_list.isUsable()
+        return mailing_list is not None and mailing_list.is_usable
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -2372,13 +2372,21 @@ class PersonView(LaunchpadView, FeedsMixin):
     def archive_url(self):
         """Return a url to a mailing list archive for the team's list.
 
-        If the person is not a team, does not have a mailing list, or that
-        mailing list has never been activated, return None instead.
+        If the person is not a team, does not have a mailing list, that
+        mailing list has never been activated, or the team is private and the
+        logged in user is not a team member, return None instead.
         """
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             return None
-        return mailing_list.archive_url
+        elif mailing_list.is_public:
+            return mailing_list.archive_url
+        elif self.user is None:
+            return None
+        elif self.user.inTeam(self.context):
+            return mailing_list.archive_url
+        else:
+            return None
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
@@ -2776,8 +2784,9 @@ class PersonTranslationView(LaunchpadView):
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
     label = "Use BSD licence for your translations?"
-    schema = ITranslationRelicensingAgreement
-    field_names = ['allow_relicensing']
+    schema = ITranslationRelicensingAgreementEdit
+    field_names = ['allow_relicensing', 'back_to']
+    custom_widget('back_to', TextWidget, visible=False)
 
     @property
     def initial_values(self):
@@ -2785,19 +2794,20 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         default = self.context.translations_relicensing_agreement
         if default is None:
             default = True
-        return { "allow_relicensing" : default }
+        return {
+            "allow_relicensing" : default,
+            "back_to" : self.request.get('back_to'),
+            }
 
     @property
     def relicensing_url(self):
         """Return an URL for this view."""
         return canonical_url(self.context, view_name='+licensing')
 
-    @property
-    def next_url(self):
+    def getSafeRedirectURL(self, url):
         """Successful form submission should send to this URL."""
-        referrer = self.request.getHeader('referer')
-        if referrer and referrer.startswith(self.request.getApplicationURL()):
-            return referrer
+        if url and url.startswith(self.request.getApplicationURL()):
+            return url
         else:
             return canonical_url(self.context)
 
@@ -2821,6 +2831,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
                 "Your choice has been saved. "
                 "Your translations will be removed once we completely "
                 "switch to BSD license for translations."))
+
+        self.next_url = self.getSafeRedirectURL(data['back_to'])
 
 
 class PersonGPGView(LaunchpadView):
@@ -3060,6 +3072,16 @@ class PersonEditView(BasePersonEditView):
     field_names = ['displayname', 'name', 'hide_email_addresses',
         'verbose_bugnotifications', 'time_zone']
     custom_widget('time_zone', SelectWidget, size=15)
+
+    # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
+    # for setting a person's location/time_zone lands.
+    def updateContextFromData(self, data):
+        """Overwrite it here because the time_zone can't be set directly."""
+        time_zone = data.pop('time_zone')
+        self.context.setLocation(
+            self.context.latitude, self.context.longitude,
+            time_zone, self.user)
+        super(PersonEditView, self).updateContextFromData(data)
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -3421,7 +3443,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    for email in self.validated_addresses]
         for team in self.context.teams_participated_in:
             mailing_list = mailing_list_set.get(team.name)
-            if mailing_list is not None and mailing_list.isUsable():
+            if mailing_list is not None and mailing_list.is_usable:
                 name = 'subscription.%s' % team.name
                 value = self._mailing_list_subscription_type(mailing_list)
                 field = Choice(__name__=name,
