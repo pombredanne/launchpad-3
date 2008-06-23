@@ -169,8 +169,15 @@ class RebuildArchiveCreator(SoyuzScript):
             " ".join(arch_series.architecturetag
                      for arch_series in architectures))
 
-        sources_published = self._getSourcesPublishedForArchive(
-            distroseries, archive)
+        # Both, PENDING and PUBLISHED sources will be considered for
+        # as PUBLISHED. It's part of the assumptions made in:
+        # https://launchpad.net/soyuz/+spec/build-unpublished-source
+        pending = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            )
+        sources_published = archive.getPublishedSources(
+            distroseries=distroseries, status=pending)
 
         self.logger.info(
             "Found %d source(s) published." % sources_published.count())
@@ -188,24 +195,3 @@ class RebuildArchiveCreator(SoyuzScript):
             self.logger.info("%s has %s build(s)." %
                              (get_spn(pubrec), len(builds)))
             self.txn.commit()
-
-    def _getSourcesPublishedForArchive(self, distroseries, archive):
-        """Get published sources for given distroseries and archive.
-
-        :type distroseries: `DistroSeries`
-        :param distroseries: the distro series for which to get
-            published sources.
-        :type archive: `Archive`
-        :param archive: the archive for which to get published
-            sources.
-        """
-        # Both, PENDING and PUBLISHED sources will be considered for
-        # as PUBLISHED. It's part of the assumptions made in:
-        # https://launchpad.net/soyuz/+spec/build-unpublished-source
-        pending = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED,
-            )
-
-        return archive.getPublishedSources(
-            distroseries=distroseries, status=pending)
