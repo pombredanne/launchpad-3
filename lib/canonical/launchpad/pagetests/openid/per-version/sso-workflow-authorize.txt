@@ -37,9 +37,10 @@ has not ever used Launchpad to authenticate with a relying party.
     >>> login('foo.bar@canonical.com')
 
     >>> rp_summary_set = getUtility(IOpenIDRPSummarySet)
-    >>> rp_summary_set.getByIdentifier(
+    >>> summaries = rp_summary_set.getByIdentifier(
     ...     'http://openid.launchpad.dev/+id/sabdfl_oid')
-    []
+    >>> summaries.count()
+    0
 
     >>> logout()
 

@@ -4413,9 +4413,12 @@ ALTER TABLE personlanguage ENABLE TRIGGER ALL;
 
 ALTER TABLE personlocation DISABLE TRIGGER ALL;
 
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (1, '2008-01-17 09:09:36.619926', 12, NULL, NULL, 'Australia/Perth', 12, '2008-01-17 09:09:36.619926');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (2, '2008-01-17 09:09:36.619926', 16, NULL, NULL, 'Africa/Johannesburg', 16, '2008-01-17 09:09:36.619926');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (3, '2008-01-17 09:09:36.619926', 55, NULL, NULL, 'America/Los_Angeles', 55, '2008-01-17 09:09:36.619926');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (1, 12, 12, NULL, NULL, 'Australia/Perth', '2007-06-05 18:34:52.127945', '2007-06-05 18:34:52.127945');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (2, 55, 16, NULL, NULL, 'Africa/Johannesburg', '2007-06-05 18:34:52.127945', '2007-06-05 18:34:52.127945');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (3, 16, 55, NULL, NULL, 'Africa/Maseru', '2007-06-05 18:34:52.127945', '2007-06-05 18:34:52.127945');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (4, 55, 23, NULL, NULL, 'UTC', '2007-07-05 18:34:52.127945', '2007-08-09 18:24:00.5');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (5, 55, 52, NULL, NULL, 'Europe/Paris', '2007-07-08 18:34:52', '2007-09-02 11:54:10');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (6, 4, 4, 52.2, 0.3, 'Europe/London', '2007-09-08 13:44:51', '2007-12-22 10:24:15');
 
 
 ALTER TABLE personlocation ENABLE TRIGGER ALL;
@@ -8907,6 +8910,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (180, 243620, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (181, 243621, 243621);
 INSERT INTO teamparticipation (id, team, person) VALUES (182, 243621, 243622);
 INSERT INTO teamparticipation (id, team, person) VALUES (183, 243622, 243622);
+INSERT INTO teamparticipation (id, team, person) VALUES (184, 70, 70);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
