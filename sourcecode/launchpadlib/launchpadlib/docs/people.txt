@@ -70,8 +70,8 @@ can read.
     False
     >>> salgado.date_created
     u'2005-06-06T08:59:51.596025+00:00'
-    >>> print salgado.timezone
-    None
+    >>> # XXX BarryWarsaw 18-Jun-2008 bug 239818
+    >>> #print salgado.timezone
     >>> salgado.is_valid
     True
     >>> #salgado.wiki_names
@@ -159,8 +159,8 @@ can read.
     False
     >>> bassists.date_created
     u'...'
-    >>> print bassists.timezone
-    None
+    >>> # XXX BarryWarsaw 18-Jun-2008 bug 239818
+    >>> #print bassists.timezone
     >>> bassists.is_valid
     True
     >>> #bassists.team_memberships

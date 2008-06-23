@@ -166,7 +166,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         description=_(
             "The DistroSeries that should get the translation effort focus."),
         required=False,
-        vocabulary='FilteredDistroSeriesVocabulary')
+        vocabulary='FilteredDistroSeries')
 
     language_pack_admin = Choice(
         title=_("Language Pack Administrator"),
@@ -347,6 +347,13 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
             - triaged bugs with an upstream task
             - triaged bugs with upstream tasks that are either linked to
               bug watches or to products that use_malone.
+        """
+
+    def getCustomLanguageCode(sourcepackagename, language_code):
+        """Look up `ICustomLanguageCode`.
+
+        A `SourcePackageName` in a Distribution may override some
+        language codes for translation import purposes.
         """
 
 

@@ -43,10 +43,12 @@ class Launchpad:
         # Get the root resource.
         self._browser = Browser(self.credentials)
         response = self._browser.get(self._root)
-        self._person_set_link = response.get(
+        person_set_link = response.get(
             'PersonSetCollectionAdapter_collection_link')
-        self._bug_set_link = response.get(
+        bug_set_link = response.get(
             'MaloneApplicationCollectionAdapter_collection_link')
+        self._people = People(self._browser, URI(person_set_link))
+        self._bugs = _FakeBugCollection(self._browser, URI(bug_set_link))
 
     @classmethod
     def login(cls, consumer_name, token_string, access_secret):
@@ -75,13 +77,8 @@ class Launchpad:
 
     @property
     def people(self):
-        if self._person_set_link is None:
-            return None
-        return People(self._browser, URI(self._person_set_link))
+        return self._people
 
     @property
     def bugs(self):
-        # XXX Temporary
-        if self._bug_set_link is None:
-            return None
-        return _FakeBugCollection(self._browser, URI(self._bug_set_link))
+        return self._bugs

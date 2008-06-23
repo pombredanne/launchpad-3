@@ -1,15 +1,18 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0401,C0301
 
+from canonical.launchpad.database.account import *
 from canonical.launchpad.database.codeimport import *
 from canonical.launchpad.database.codeimportevent import *
 from canonical.launchpad.database.codeimportjob import *
 from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.codeimportresult import *
 from canonical.launchpad.database.codereviewvote import *
+from canonical.launchpad.database.customlanguagecode import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.personlocation import *
+from canonical.launchpad.database.personnotification import *
 from canonical.launchpad.database.pillar import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productbounty import *
