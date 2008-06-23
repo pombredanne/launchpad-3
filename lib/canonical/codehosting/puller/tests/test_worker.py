@@ -34,8 +34,6 @@ from canonical.codehosting.puller.worker import (
     BranchReferenceForbidden, BranchReferenceValueError,
     get_canonical_url_for_branch_name, install_worker_ui_factory,
     PullerWorkerProtocol)
-from canonical.codehosting.tests.helpers import (
-    create_branch_with_one_revision)
 from canonical.launchpad.database import Branch
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import canonical_url
@@ -169,36 +167,35 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self.assertEqual(error, expected_error)
 
 
-class TestPullerWorker(unittest.TestCase, PullerWorkerMixin):
+class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
 
     test_dir = None
 
     def setUp(self):
+        TestCaseWithTransport.setUp(self)
         PullerWorkerMixin.setUp(self)
 
     def tearDown(self):
         PullerWorkerMixin.tearDown(self)
+        TestCaseWithTransport.tearDown(self)
 
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
-        to_mirror = self.makePullerWorker()
-        tree = create_branch_with_one_revision(to_mirror.source)
+        source_tree = self.make_branch_and_tree('source-branch')
+        to_mirror = self.makePullerWorker(source_tree.branch.base)
+        source_tree.commit('commit message')
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
-            tree.last_revision(), mirrored_branch.last_revision())
+            source_tree.last_revision(), mirrored_branch.last_revision())
 
     def testMirrorEmptyBranch(self):
         # Check that we can mirror an empty branch, and that the
         # last_mirrored_id for an empty branch can be distinguished from an
         # unmirrored branch.
-        to_mirror = self.makePullerWorker()
-
-        # Create an empty source branch.
-        os.makedirs(to_mirror.source)
-        tree = bzrdir.BzrDir.create_branch_and_repo(to_mirror.source)
-
+        source_branch = self.make_branch('source-branch')
+        to_mirror = self.makePullerWorker(source_branch.base)
         to_mirror.mirror()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
