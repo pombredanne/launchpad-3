@@ -125,16 +125,27 @@ class MenuAPI:
         :raise AttributeError: when there is no application menu for the
             facet.
         """
-        menu = queryAdapter(self._context, IApplicationMenu, facet)
-        if menu is None:
+        if not self._has_facet(facet):
             raise AttributeError(facet)
-
-        menu.request = self._request
-        links_map = dict(
-            (link.name, link)
-            for link in menu.iterlinks(request_url=self._request_url()))
+        menu = queryAdapter(self._context, IApplicationMenu, facet)
+        if menu is not None:
+            menu.request = self._request
+            links_map = dict(
+                (link.name, link)
+                for link in menu.iterlinks(request_url=self._request_url()))
+        else:
+            # The object has the facet, but does not have a menu, this
+            # is propbably the overview menu with is the default facet.
+            links_map = {}
         object.__setattr__(self, facet, links_map)
         return links_map
+
+    def _has_facet(self, facet):
+        """Does the object have the named facet?"""
+        for facet_entry in self.facet():
+            if facet == facet_entry.name:
+                return True
+        return False
 
     def _request_url(self):
         request = self._request
