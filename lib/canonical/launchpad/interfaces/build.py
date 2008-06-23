@@ -21,12 +21,6 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
-incomplete_building_status = (
-    BuildStatus.NEEDSBUILD,
-    BuildStatus.BUILDING,
-    )
-
-
 class BuildstateTransitionError(Exception):
     """Error raised when an invalid buildstate transition occurs."""
 
@@ -109,6 +103,12 @@ class BuildStatus(DBEnumeratedType):
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
         """)
+
+
+incomplete_building_status = (
+    BuildStatus.NEEDSBUILD,
+    BuildStatus.BUILDING,
+    )
 
 
 class IBuild(Interface):
