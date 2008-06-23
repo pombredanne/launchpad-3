@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     IProject,
     ISprint,
     IStructuralHeaderPresentation,
+    LicenseStatus,
     NotFoundError,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -980,7 +981,17 @@ class PillarFormatterAPI(CustomizableFormatter):
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
-        return {'displayname': self._context.displayname}
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+    def link(self, extra_path):
+        html = super(PillarFormatterAPI, self).link(extra_path)
+        if IProduct.providedBy(self._context):
+            if self._context.license_status != LicenseStatus.OPEN_SOURCE:
+                html += ' <span title="%s">(%s)</span>' % (
+                    escape(self._context.license_status.description),
+                    escape(self._context.license_status.title))
+        return html
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
@@ -1057,12 +1068,11 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
 
 class BranchMergeProposalFormatterAPI(CustomizableFormatter):
 
-    _link_summary_template = _('Proposed merge of %(source)s into %(target)s')
+    _link_summary_template = _('%(title)s')
 
     def _link_summary_values(self):
         return {
-            'source': self._context.source_branch.title,
-            'target': self._context.target_branch.title,
+            'title': self._context.title,
             }
 
 
@@ -1416,7 +1426,8 @@ class DateTimeFormatterAPI:
 
     def time(self):
         if self._datetime.tzinfo:
-            value = self._datetime.astimezone(getUtility(ILaunchBag).timezone)
+            value = self._datetime.astimezone(
+                getUtility(ILaunchBag).time_zone)
             return value.strftime('%T %Z')
         else:
             return self._datetime.strftime('%T')
@@ -1424,7 +1435,8 @@ class DateTimeFormatterAPI:
     def date(self):
         value = self._datetime
         if value.tzinfo:
-            value = value.astimezone(getUtility(ILaunchBag).timezone)
+            value = value.astimezone(
+                getUtility(ILaunchBag).time_zone)
         return value.strftime('%Y-%m-%d')
 
     def _now(self):
