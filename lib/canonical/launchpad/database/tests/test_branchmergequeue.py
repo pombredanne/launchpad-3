@@ -16,7 +16,8 @@ from canonical.launchpad.database.branch import (
 from canonical.launchpad.database.branchmergequeue import (
     BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
 from canonical.launchpad.interfaces.branchmergequeue import (
-    IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
+    IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue,
+    NotSupportedWithManualQueues)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus)
 from canonical.launchpad.webapp.testing import verifyObject
@@ -236,6 +237,9 @@ class TestMergeQueueRestrictedMode(BranchMergeQueueTestCase):
         branch.merge_control_status = (
             BranchMergeControlStatus.ROBOT_RESTRICTED)
         self.assertEqual(True, queue.restricted_mode)
+        # The owner of the branch is the owner of the queue.  The queue owner
+        # controls the setting of the property.
+        loginPerson(branch.owner)
         # Setting the restricted mode through the queue updates the
         # merge_control_status of the branch.
         queue.restricted_mode = False
@@ -255,6 +259,7 @@ class TestMergeQueueRestrictedMode(BranchMergeQueueTestCase):
         # Attempting to set the restricted_mode on a merge queue with no
         # branches does not really make sense, but is valid to do, but does
         # nothing.
+        loginPerson(queue.owner)
         queue.restricted_mode = True
         self.assertEqual(False, queue.restricted_mode)
 

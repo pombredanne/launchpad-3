@@ -7,6 +7,9 @@
   <!-- Branch Merge Queue -->
   <content class="canonical.launchpad.database.branchmergequeue.SingleBranchMergeQueue">
     <allow interface="canonical.launchpad.interfaces.branchmergequeue.IBranchMergeQueue" />
+    <require
+        permission="launchpad.Edit"
+        set_attributes="restricted_mode" />
   </content>
 
   <content class="canonical.launchpad.database.branchmergequeue.MultiBranchMergeQueue">

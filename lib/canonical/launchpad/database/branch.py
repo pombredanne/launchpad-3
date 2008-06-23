@@ -35,6 +35,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import _
+from canonical.launchpad.database.branchmergeproposal import (
+     BranchMergeProposal)
+from canonical.launchpad.database.branchrevision import BranchRevision
+from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPerson, IProduct, IProject, NotFoundError)
 from canonical.launchpad.interfaces.branch import (
@@ -50,14 +54,13 @@ from canonical.launchpad.interfaces.branch import (
     IBranchSet,
     MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
     RepositoryFormat)
-from canonical.launchpad.database.branchmergeproposal import (
-     BRANCH_MERGE_PROPOSAL_FINAL_STATES, BranchMergeProposal,
+from canonical.launchpad.interfaces.branchmergeproposal import (
+     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
      BranchMergeProposalStatus, InvalidBranchMergeProposal)
-from canonical.launchpad.database.branchrevision import BranchRevision
-from canonical.launchpad.database.branchsubscription import (
-    BranchSubscription, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from canonical.launchpad.database.branchvisibilitypolicy import (
+from canonical.launchpad.interfaces.branchsubscription import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel)
+from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     BranchVisibilityRule)
 from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.revision import Revision
@@ -954,7 +957,8 @@ class BranchSet:
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
-            control_format=control_format)
+            control_format=control_format,
+            merge_control_status=merge_control_status)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at

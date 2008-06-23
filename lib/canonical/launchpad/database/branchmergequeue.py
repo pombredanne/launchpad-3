@@ -51,13 +51,16 @@ class BaseBranchMergeQueue:
                  BranchMergeProposalStatus.QUEUED_RESTRICTED)),
             orderBy="queue_position")
 
-    def _set_restricted_mode(self):
+    def _set_restricted_mode(self, value):
         """Setting restricted mode updates the status for all branches."""
-        restricted = BranchMergeControlStatus.ROBOT_RESTRICTED
+        if value:
+            status = BranchMergeControlStatus.ROBOT_RESTRICTED
+        else:
+            status = BranchMergeControlStatus.ROBOT
         for branch in self.branches:
             if branch.merge_control_status == BranchMergeControlStatus.MANUAL:
                 raise NotSupportedWithManualQueues()
-            branch.merge_control_status = restricted
+            branch.merge_control_status = status
 
     def _get_restricted_mode(self):
         """The queue is in restricted mode if all branches are restricted."""
@@ -78,7 +81,11 @@ class BaseBranchMergeQueue:
         # written as a single SQL select statement, but given that almost all
         # of the merge queues are likely to be relatively short, this should
         # never matter.
-        for item in self.items:
+        items = self.items
+        if items is None:
+            return None
+
+        for item in items:
             # If the item is QUEUED_RESTRICTED, then return that only if the
             # target branch is ROBOT_RESTRICTED.
             if (item.queue_status ==
@@ -151,7 +158,13 @@ class BranchMergeQueueSet:
     def getForBranch(branch):
         """See `IBranchMergeQueueSet`."""
         if branch.merge_queue is None:
-            return SingleBranchMergeQueue(branch)
+            # If the user has not specified that the branch uses Launchpad
+            # queues, then they don't get one.
+            if (branch.merge_control_status ==
+                BranchMergeControlStatus.NO_QUEUE):
+                return None
+            else:
+                return SingleBranchMergeQueue(branch)
         else:
             return branch.merge_queue
 

@@ -64,8 +64,12 @@ VALID_TRANSITION_GRAPH = {
     BranchMergeProposalStatus.MERGE_FAILED:
         BranchMergeProposalStatus.items,
     # Queued can only be transitioned to merged or merge failed.
-    # Dequeing is a special case.
+    # Dequeing, and Queue restricted is a special case.
     BranchMergeProposalStatus.QUEUED: [
+        BranchMergeProposalStatus.MERGED,
+        BranchMergeProposalStatus.MERGE_FAILED,
+        ],
+    BranchMergeProposalStatus.QUEUED_RESTRICTED: [
         BranchMergeProposalStatus.MERGED,
         BranchMergeProposalStatus.MERGE_FAILED,
         ],
@@ -185,12 +189,14 @@ class BranchMergeProposal(SQLBase):
     def isValidTransition(self, next_state, user=None):
         """See `IBranchMergeProposal`."""
         [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, queued, superseded
+         merged, merge_failed, queued, queued_restricted, superseded
          ] = BranchMergeProposalStatus.items
         # Transitioning to code approved, rejected or queued from
         # work in progress, needs review or merge failed needs the
         # user to be a valid reviewer, other states are fine.
-        if (next_state in (code_approved, rejected, queued) and
+        state_needs_reviewer = (
+            code_approved, rejected, queued, queued_restricted)
+        if (next_state in state_needs_reviewer and
             self.queue_status in (wip, needs_review, merge_failed)):
             if not self.isPersonValidReviewer(user):
                 return False

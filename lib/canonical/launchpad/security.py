@@ -18,6 +18,8 @@ from canonical.launchpad.interfaces.archiverebuild import IArchiveRebuild
 from canonical.launchpad.interfaces.branch import IBranch
 from canonical.launchpad.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
+from canonical.launchpad.interfaces.branchmergequeue import (
+    IBranchMergeQueue)
 from canonical.launchpad.interfaces.branchsubscription import (
     IBranchSubscription)
 from canonical.launchpad.interfaces.bug import IBug
@@ -1471,6 +1473,22 @@ class BranchSubscriptionEdit(AuthorizationBase):
 
 class BranchSubscriptionView(BranchSubscriptionEdit):
     permission = 'launchpad.View'
+
+
+class BranchMergeQueueEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBranchMergeQueue
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the branch merge proposal?
+
+        The user can see a merge proposal between two branches
+        that the user can see.
+        """
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class BranchMergeProposalView(AuthorizationBase):
