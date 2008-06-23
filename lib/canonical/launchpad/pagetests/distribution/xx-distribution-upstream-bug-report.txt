@@ -253,11 +253,10 @@ change to account for the fact that firefox no longer uses_malone.
 Finally, you can associate default branches to products. This is done by
 specifying a user_branch for the product's main_series:
 
-    >>> admin_browser.open("http://launchpad.dev/firefox/trunk/+source")
-    >>> admin_browser.getControl("Bazaar").click()
+    >>> admin_browser.open("http://launchpad.dev/firefox/trunk/+linkbranch")
     >>> branch_control = admin_browser.getControl(name="field.user_branch")
     >>> branch_control.value = "~name12/firefox/main"
-    >>> admin_browser.getControl("Update Details").click()
+    >>> admin_browser.getControl("Update").click()
     >>> admin_browser.url
     'http://launchpad.dev/firefox/trunk'
 

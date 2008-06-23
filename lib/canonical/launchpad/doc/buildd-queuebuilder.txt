@@ -230,10 +230,30 @@ distroseries (see bug 181328).
     >>> copied_pub = pub_failed.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
-    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> from canonical.launchpad.interfaces import (
+    ...     BuildStatus, IArchiveSet)
+
+Show the number of builds for the corresponding archive.
+
+    >>> def print_counts_for_archive(archive_id):
+    ...     archive = getUtility(IArchiveSet).get(archive_id)
+    ...     print ("total: %s, pending: %s, succeeded: %s, building: %s "
+    ...            "failed: %s" % (archive.total_count,
+    ...            archive.pending_count, archive.succeeded_count,
+    ...            archive.building_count, archive.failed_count))
+
+    >>> print_counts_for_archive(pub_failed.archive.id)
+    total: 20, pending: 6, succeeded: 8, building: 1 failed: 5
+
+After the failed build is created the total and the failed number of
+builds will go up by one respectively.
+
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
+    >>> commit()
+    >>> print_counts_for_archive(failed_build.archive.id)
+    total: 21, pending: 6, succeeded: 8, building: 1 failed: 6
 
 In contrast with the previous case, if we publish the same source in
 warty and hoary, and attach a successfully built build record in the
@@ -251,6 +271,12 @@ build in the hoary context.
     >>> ok_build = pub_success.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FULLYBUILT)
+
+After the creation of the FULLYBUILT build the total and succeeded
+build counters will be incremented by one respectively.
+
+    >>> print_counts_for_archive(ok_build.archive.id)
+    total: 22, pending: 6, succeeded: 9, building: 1 failed: 6
 
 If a source is published in Celso's PPA, a build will be created
 for it respecting only 'architecturehintlist' and PPA-supported

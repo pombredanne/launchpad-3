@@ -15,7 +15,7 @@
     <require
       permission="launchpad.Admin"
       set_attributes="authorized_size buildd_secret distribution enabled
-                      private purpose require_virtualized"
+                      private require_virtualized"
       />
   </content>
 
