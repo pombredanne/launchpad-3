@@ -1743,5 +1743,7 @@ class ViewEmailAddress(AuthorizationBase):
         """
         if not self.obj.person.hide_email_addresses:
             return True
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user == self.obj.person or user.inTeam(admins)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user == self.obj.person
+                or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.admin))
