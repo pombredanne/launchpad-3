@@ -202,7 +202,6 @@ class RequestExpiredView(SystemErrorView):
         set_request_started()
 
 
-
 class InvalidBatchSizeView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
 
