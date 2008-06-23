@@ -19,9 +19,11 @@ __all__ = [
     'ProductView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
+    'ProductActiveReviewsView',
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
+    'ProductApprovedMergesView',
     'ProductBranchListingView',
     'ProductBrandingView',
     'ProductEditView',
@@ -62,10 +64,14 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposalGetter, BranchMergeProposalStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -403,11 +409,31 @@ class ProductBugsMenu(ApplicationMenu):
         return Link('+securitycontact', text, icon='edit')
 
 
-class ProductBranchesMenu(ApplicationMenu):
+class ProductReviewCountMixin:
+    """A mixin used by the menu and the code index view."""
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
+
+class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', 'list_branches']
+    links = ['branch_add', 'list_branches', 'active_reviews',
+             'approved_merges']
 
     def branch_add(self):
         text = 'Register branch'
@@ -418,6 +444,20 @@ class ProductBranchesMenu(ApplicationMenu):
         text = 'List branches'
         summary = 'List the branches for this project'
         return Link('+branches', text, summary, icon='add')
+
+    def active_reviews(self):
+        if self.active_review_count == 1:
+            text = 'active review'
+        else:
+            text = 'active reviews'
+        return Link('+activereviews', text)
+
+    def approved_merges(self):
+        if self.approved_merge_count == 1:
+            text = 'approved merge'
+        else:
+            text = 'approved merges'
+        return Link('+approvedmerges', text)
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -1324,7 +1364,7 @@ class ProductBranchListingView(BranchListingView):
 
 
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin):
+                           ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
 
     @property
@@ -1522,3 +1562,35 @@ class ProductBranchesView(ProductBranchListingView):
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.LIFECYCLE,
             }
+
+
+class ProductActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class ProductApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that have been approved."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname

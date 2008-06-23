@@ -177,6 +177,12 @@
       attribute_to_parent="source_branch"
       rootsite="code" />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IBranchMergeProposalListingBatchNavigator"
+      name="+listing"
+      template="../templates/branchmergeproposal-listing.pt"
+      permission="zope.Public" />
+
   <securedutility
       class="canonical.launchpad.database.BranchMergeProposalGetter"
       provides="canonical.launchpad.interfaces.IBranchMergeProposalGetter" >
