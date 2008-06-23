@@ -129,7 +129,7 @@ class IBugWatch(IHasBug):
         Reference(title=_('Owner'), required=True,
                   readonly=True, schema=IPerson))
 
-    # useful joins
+    # Useful joins.
     bugtasks = exported(
         CollectionField(
             description=_(
@@ -140,14 +140,14 @@ class IBugWatch(IHasBug):
                 'Launchpad bug task accordingly.'),
             value_type=Reference(schema=IBugTask)))
 
-    # properties
+    # Properties.
     needscheck = Attribute("A True or False indicator of whether or not "
         "this watch needs to be synchronised. The algorithm used considers "
         "the severity of the bug, as well as the activity on the bug, to "
         "ensure that we spend most effort on high-importance and "
         "high-activity bugs.")
 
-    # required for launchpad pages
+    # Required for Launchpad pages.
     title = exported(
         Text(title=_('Bug watch title'), readonly=True))
 
@@ -196,7 +196,7 @@ IBug['watches'].value_type.schema = IBugWatch
 
 
 class IBugWatchSet(Interface):
-    """The set of IBugWatch's."""
+    """The set of `IBugWatch`es."""
 
     bug = Int(title=_("Bug id"), readonly=True)
     title = Attribute('Title')

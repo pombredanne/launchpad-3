@@ -59,7 +59,11 @@ Bugs have relationships to other bugs, like "duplicate_of".
   6
 
   >>> from urlparse import urlsplit
-  >>> bug_six_url = urlsplit(duplicates_of_five[0]['self_link'])[2]
+  >>> def get_path(url):
+  ...     scheme, netloc, path, query, fragment = urlsplit(url)
+  ...     return path
+
+  >>> bug_six_url = get_path(duplicates_of_five[0]['self_link'])
   >>> bug_six = webservice.get(bug_six_url).jsonBody()
   >>> bug_six['duplicate_of_link']
   u'http://api.launchpad.dev/beta/bugs/5'
@@ -86,7 +90,7 @@ URLs are based on their position with respect to the
 bug. /firefox/+bug/5/comments/0 is the first message for bug 5, and it's
 different from /firefox/+bug/1/comments/0.
 
-  >>> message_path = urlsplit(messages[0]['self_link'])[2]
+  >>> message_path = get_path(messages[0]['self_link'])
   >>> message_path
   u'/beta/firefox/+bug/5/comments/0'
 
@@ -106,7 +110,7 @@ relation to some bug.
 Each bug may be associated with one or more bug tasks. Much of the
 data in a bug task is derived from the bug.
 
-  >>> bug_one_bugtasks_url = urlsplit(bug_one['bugtasks_collection_link'])[2]
+  >>> bug_one_bugtasks_url = get_path(bug_one['bugtasks_collection_link'])
   >>> bug_one_bugtasks = sorted(webservice.get(
   ...     bug_one_bugtasks_url).jsonBody()['entries'])
   >>> len(bug_one_bugtasks)
@@ -136,7 +140,7 @@ data in a bug task is derived from the bug.
    (u'status_explanation', u''),
    (u'title', u'Bug #1 in mozilla-firefox (Debian):...')]
 
-  >>> bugtask_path = urlsplit(bug_one_bugtasks[0]['self_link'])[2]
+  >>> bugtask_path = get_path(bug_one_bugtasks[0]['self_link'])
   >>> bugtask = webservice.get(bugtask_path).jsonBody()
   >>> bugtask == bug_one_bugtasks[0]
   True
@@ -149,8 +153,13 @@ The collection of bug tasks is not exposed as a resource:
 
 == Bug Watches ==
 
-  >>> bug_one_bug_watches_url = urlsplit(
-  ...     bug_one['bug_watches_collection_link'])[2]
+Bugs can have bug watches associated with them. Each bugwatch can also
+be optionally associated with one of the bugtasks in a bug, in which
+case aspects of the bugtask (like status) are slaved to the remote bug
+report described by the bugwatch.
+
+  >>> bug_one_bug_watches_url = get_path(
+  ...     bug_one['bug_watches_collection_link'])
   >>> bug_one_bug_watches = sorted(webservice.get(
   ...     bug_one_bug_watches_url).jsonBody()['entries'])
   >>> len(bug_one_bug_watches)
@@ -174,7 +183,7 @@ The collection of bug tasks is not exposed as a resource:
    (u'title', u'The Mozilla.org Bug Tracker #2000'),
    (u'url', u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000')]
 
-  >>> bug_watch_path = urlsplit(bug_one_bug_watches[0]['self_link'])[2]
+  >>> bug_watch_path = get_path(bug_one_bug_watches[0]['self_link'])
   >>> bug_watch = webservice.get(bug_watch_path).jsonBody()
   >>> bug_watch == bug_one_bug_watches[0]
   True
@@ -187,6 +196,9 @@ The collection of bug watches is not exposed as a resource:
 We can modify the remote bug.
 
   >>> from simplejson import dumps
+
+  >>> bug_watch['remote_bug']
+  u'2000'
 
   >>> patch = {u'remote_bug': u'1234'}
   >>> response = webservice.patch(
