@@ -29,7 +29,7 @@ from zope.component import getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface
-from zope.schema import Int
+from zope.schema import Int, TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -38,7 +38,7 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.branch import BranchMergeProposalDelta
 from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.fields import Summary, Whiteboard
+from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus,
@@ -51,6 +51,8 @@ from canonical.launchpad.interfaces.codereviewcomment import (
     CodeReviewVote)
 from canonical.launchpad.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
+from canonical.launchpad.mailout.branchmergeproposal import (
+    BMPMailer, RecipientReason)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action, stepthrough, Navigation)
@@ -104,7 +106,12 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
-             'review', 'merge', 'enqueue', 'dequeue', 'resubmit']
+             'add_comment', 'review', 'merge', 'enqueue', 'dequeue',
+             'resubmit']
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def add_comment(self):
+        return Link('+comment', 'Add comment', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -141,6 +148,11 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Request review'
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.NEEDS_REVIEW)
+        if (self.context.queue_status ==
+            BranchMergeProposalStatus.NEEDS_REVIEW):
+            enabled = True
+            if (self.context.votes.count()) > 0:
+                text = 'Request another review'
         return Link('+request-review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -386,26 +398,67 @@ class BranchMergeProposalWorkInProgressView(LaunchpadEditFormView):
                           "mark as 'Work in progress'.")
 
 
+class IReviewRequest(Interface):
+    """Schema for requesting a review."""
+
+    whiteboard = Whiteboard(
+        title=_('Whiteboard'), required=False,
+        description=_('Notes about the merge.'))
+
+    review_candidate = PublicPersonChoice(
+        title=_('Reviewer'), required=False,
+        description=_('A person who you want to review this.'),
+        vocabulary='ValidPersonOrTeam')
+
+    review_type = TextLine(
+        title=_('Review type'), required=False)
+
+
 class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
     """The view used to request a review of the merge proposal."""
 
-    schema = IBranchMergeProposal
-    field_names = ["whiteboard"]
+    schema = IReviewRequest
     label = "Request review"
+
+    @property
+    def initial_values(self):
+        """Force the non-BMP values to None."""
+        return {'review_candidate': None, 'review_type': None}
+
+    @property
+    def adapters(self):
+        """Force IReviewRequest handling for BranchMergeProposal."""
+        return {IReviewRequest: self.context}
+
+    @property
+    def is_needs_review(self):
+        """Return True if queue status is NEEDS_REVIEW."""
+        return (self.context.queue_status ==
+            BranchMergeProposalStatus.NEEDS_REVIEW)
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    @action('Request review', name='review')
-    @update_and_notify
-    def review_action(self, action, data):
-        """Set the status to 'Needs review'."""
-        self.context.requestReview()
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the source branch."""
+    @action('Request review', name='review')
+    @notify
+    def review_action(self, action, data):
+        """Set 'Needs review' status, nominate reviewers, send emails."""
+        self.context.requestReview()
+        candidate = data.pop('review_candidate', None)
+        review_type = data.pop('review_type', None)
+        if candidate is not None:
+            vote_reference = self.context.nominateReviewer(
+                candidate, self.user, review_type)
+            reason = RecipientReason.forReviewer(vote_reference, candidate)
+            mailer = BMPMailer.forReviewRequest(
+                reason, self.context, self.user)
+            mailer.sendAll()
+        form.applyChanges(self, self.form_fields, data, self.adapters)
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""
