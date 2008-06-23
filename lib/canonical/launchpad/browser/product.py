@@ -19,9 +19,11 @@ __all__ = [
     'ProductView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
+    'ProductActiveReviewsView',
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
+    'ProductApprovedMergesView',
     'ProductBranchListingView',
     'ProductBrandingView',
     'ProductEditView',
@@ -32,6 +34,7 @@ __all__ = [
     'ProductReassignmentView',
     'ProductRdfView',
     'ProductSetFacets',
+    'ProductSetReviewLicensesView',
     'ProductSetSOP',
     'ProductSetNavigation',
     'ProductSetContextMenu',
@@ -59,13 +62,18 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatusFilter, BranchListingSort,
     IBranchSet, IBugTracker, ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IPersonSet, IPillarNameSet, IProduct, IProductSeries, IProductSet,
+    IPersonSet, IPillarNameSet, IProduct,
+    IProductReviewSearch, IProductSeries, IProductSet,
     IProject, IRevisionSet, ITranslationImportQueue, License, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+from canonical.launchpad.interfaces.branchmergeproposal import (
+    IBranchMergeProposalGetter, BranchMergeProposalStatus)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
+from canonical.launchpad.browser.branchmergeproposallisting import (
+    BranchMergeProposalListingView)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
@@ -92,6 +100,10 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
+from canonical.widgets.date import DateWidget
+from canonical.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget)
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -403,11 +415,31 @@ class ProductBugsMenu(ApplicationMenu):
         return Link('+securitycontact', text, icon='edit')
 
 
-class ProductBranchesMenu(ApplicationMenu):
+class ProductReviewCountMixin:
+    """A mixin used by the menu and the code index view."""
+
+    @cachedproperty
+    def active_review_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.NEEDS_REVIEW], self.user)
+        return query.count()
+
+    @cachedproperty
+    def approved_merge_count(self):
+        """Return the number of active reviews for the user."""
+        query = getUtility(IBranchMergeProposalGetter).getProposalsForContext(
+            self.context, [BranchMergeProposalStatus.CODE_APPROVED],
+            self.user)
+        return query.count()
+
+
+class ProductBranchesMenu(ApplicationMenu, ProductReviewCountMixin):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', 'list_branches']
+    links = ['branch_add', 'list_branches', 'active_reviews',
+             'approved_merges']
 
     def branch_add(self):
         text = 'Register branch'
@@ -418,6 +450,20 @@ class ProductBranchesMenu(ApplicationMenu):
         text = 'List branches'
         summary = 'List the branches for this project'
         return Link('+branches', text, summary, icon='add')
+
+    def active_reviews(self):
+        if self.active_review_count == 1:
+            text = 'active review'
+        else:
+            text = 'active reviews'
+        return Link('+activereviews', text)
+
+    def approved_merges(self):
+        if self.approved_merge_count == 1:
+            text = 'approved merge'
+        else:
+            text = 'approved merges'
+        return Link('+approvedmerges', text)
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -955,7 +1001,27 @@ class ProductAdminView(ProductEditView):
 class ProductReviewLicenseView(ProductAdminView):
     label = "Review project licensing"
     field_names = ["active", "private_bugs",
-                   "license_reviewed", "reviewer_whiteboard"]
+                   "license_reviewed", "license_approved",
+                   "reviewer_whiteboard"]
+
+    @property
+    def next_url(self):
+        """Successful form submission should send to this URL."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('next_url')
+        if referrer is None:
+            referrer = self.request.getHeader('referer')
+
+        if (referrer is not None
+            and referrer.startswith(self.request.getApplicationURL())):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return self.next_url
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1136,6 +1202,68 @@ class ProductSetView(LaunchpadView):
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display
+
+
+class ProductSetReviewLicensesView(LaunchpadFormView):
+    """View for searching products to be reviewed."""
+
+    schema = IProductReviewSearch
+
+    full_row_field_names = [
+        'search_text',
+        'active',
+        'license_reviewed',
+        'license_info_is_empty',
+        'licenses',
+        ]
+
+    side_by_side_field_names = [
+        ('created_after', 'created_before'),
+        ('subscription_expires_after', 'subscription_expires_before'),
+        ('subscription_modified_after', 'subscription_modified_before'),
+        ]
+
+    custom_widget(
+        'licenses', CheckBoxMatrixWidget, column_count=4,
+        orientation='vertical')
+    custom_widget('active', LaunchpadRadioWidget)
+    custom_widget('license_reviewed', LaunchpadRadioWidget)
+    custom_widget('license_info_is_empty', LaunchpadRadioWidget)
+    custom_widget('created_after', DateWidget)
+    custom_widget('created_before', DateWidget)
+    custom_widget('subscription_expires_after', DateWidget)
+    custom_widget('subscription_expires_before', DateWidget)
+    custom_widget('subscription_modified_after', DateWidget)
+    custom_widget('subscription_modified_before', DateWidget)
+
+    @property
+    def left_side_widgets(self):
+        return (self.widgets.get(left)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def right_side_widgets(self):
+        return (self.widgets.get(right)
+                for left, right in self.side_by_side_field_names)
+
+    @property
+    def full_row_widgets(self):
+        return (self.widgets[name] for name in self.full_row_field_names)
+
+    def forReviewBatched(self):
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
+        data = {}
+        self._validate(None, data)
+        # Get default values from the schema since the form defaults
+        # aren't available until the search button is pressed.
+        search_params = {}
+        for name in self.schema:
+            search_params[name] = self.schema[name].default
+        # Override the defaults with the form values if available.
+        search_params.update(data)
+        return BatchNavigator(self.context.forReview(**search_params),
+                              self.request, size=10)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
@@ -1324,7 +1452,7 @@ class ProductBranchListingView(BranchListingView):
 
 
 class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
-                           ProductDownloadFileMixin):
+                           ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
 
     @property
@@ -1522,3 +1650,35 @@ class ProductBranchesView(ProductBranchListingView):
             'lifecycle': BranchLifecycleStatusFilter.CURRENT,
             'sort_by': BranchListingSort.LIFECYCLE,
             }
+
+
+class ProductActiveReviewsView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that are needing review."""
+
+    extra_columns = ['date_review_requested', 'vote_summary']
+    _queue_status = [BranchMergeProposalStatus.NEEDS_REVIEW]
+
+    @property
+    def heading(self):
+        return "Active code reviews for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no active code reviews." % self.context.displayname
+
+
+class ProductApprovedMergesView(BranchMergeProposalListingView):
+    """Branch merge proposals for the product that have been approved."""
+
+    extra_columns = ['date_reviewed']
+    _queue_status = [BranchMergeProposalStatus.CODE_APPROVED]
+
+    @property
+    def heading(self):
+        return "Approved merges for %s" % self.context.displayname
+
+    @property
+    def no_proposal_message(self):
+        """Shown when there is no table to show."""
+        return "%s has no approved merges." % self.context.displayname
