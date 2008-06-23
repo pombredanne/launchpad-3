@@ -662,6 +662,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'sabdfl_oid', NULL);
@@ -854,17 +860,17 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (1, 17, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:12.241774', 0, 0, 0, 0, 0, NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (1, 17, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:12.241774', 15, 1, 8, 5, 1, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (2, 1, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.863812', 0, 0, 0, 0, 0, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (3, 1, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.864941', 0, 0, 0, 0, 0, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (4, 1, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.865502', 0, 0, 0, 0, 0, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (5, 1, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866015', 0, 0, 0, 0, 0, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (7, 4, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.866529', 0, 0, 0, 0, 0, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (8, 17, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL, false, 'primary', true, '2008-05-27 18:15:15.867154', 0, 0, 0, 0, 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 3, 3, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.867684', 0, 0, 0, 0, 0, NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 3, 3, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.867684', 4, 0, 3, 1, 0, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, 1, 1, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.868202', 0, 0, 0, 0, 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 0, 0, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.868709', 0, 0, 0, 0, 0, NULL);
-INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (12, 17, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869209', 0, 0, 0, 0, 0, NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 0, 0, NULL, NULL, true, 'default', true, '2008-05-27 18:15:15.868709', 1, 0, 0, 1, 0, NULL);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (12, 17, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869209', 1, 0, 1, 0, 0, NULL);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, fti) VALUES (13, 17, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869732', 0, 0, 0, 0, 0, NULL);
 
 
@@ -1884,6 +1890,13 @@ INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description, c
 
 
 ALTER TABLE country ENABLE TRIGGER ALL;
+
+
+ALTER TABLE customlanguagecode DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE customlanguagecode ENABLE TRIGGER ALL;
 
 
 ALTER TABLE cve DISABLE TRIGGER ALL;
@@ -4173,6 +4186,13 @@ ALTER TABLE openidrpconfig DISABLE TRIGGER ALL;
 ALTER TABLE openidrpconfig ENABLE TRIGGER ALL;
 
 
+ALTER TABLE openidrpsummary DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidrpsummary ENABLE TRIGGER ALL;
+
+
 ALTER TABLE packagebugsupervisor DISABLE TRIGGER ALL;
 
 
@@ -4381,10 +4401,12 @@ ALTER TABLE personlanguage ENABLE TRIGGER ALL;
 
 ALTER TABLE personlocation DISABLE TRIGGER ALL;
 
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (1, '2008-01-17 09:09:36.619926', 12, NULL, NULL, 'Australia/Perth', 12, '2008-01-17 09:09:36.619926');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (2, '2008-01-17 09:09:36.619926', 16, NULL, NULL, 'Africa/Johannesburg', 16, '2008-01-17 09:09:36.619926');
-INSERT INTO personlocation (id, date_created, person, latitude, longitude, time_zone, last_modified_by, date_last_modified) VALUES (3, '2008-01-17 09:09:36.619926', 55, NULL, NULL, 'America/Los_Angeles', 55, '2008-01-17 09:09:36.619926');
-
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (1, 12, 12, NULL, NULL, 'Australia/Perth', '2007-06-05 18:34:52.127945', '2007-06-05 18:34:52.127945');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (2, 55, 16, NULL, NULL, 'Africa/Johannesburg', '2007-06-05 18:34:52.127945', '2007-06-05 18:34:52.127945');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (3, 16, 55, NULL, NULL, 'Africa/Maseru', '2007-06-05 18:34:52.127945', '2007-06-05 18:34:52.127945');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (4, 55, 23, NULL, NULL, 'UTC', '2007-07-05 18:34:52.127945', '2007-08-09 18:24:00.5');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (5, 55, 52, NULL, NULL, 'Europe/Paris', '2007-07-08 18:34:52', '2007-09-02 11:54:10');
+INSERT INTO personlocation (id, last_modified_by, person, latitude, longitude, time_zone, date_created, date_last_modified) VALUES (6, 4, 4, 52.2, 0.3, 'Europe/London', '2007-09-08 13:44:51', '2007-12-22 10:24:15');
 
 ALTER TABLE personlocation ENABLE TRIGGER ALL;
 

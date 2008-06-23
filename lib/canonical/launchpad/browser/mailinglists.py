@@ -205,7 +205,7 @@ class enabled_with_active_mailing_list:
             if not ITeam.providedBy(obj.context) or not obj.context.isTeam():
                 link.enabled = False
             mailing_list = getUtility(IMailingListSet).get(obj.context.name)
-            if mailing_list is None or not mailing_list.isUsable():
+            if mailing_list is None or not mailing_list.is_usable:
                 link.enabled = False
             return link
         return enable_if_active
