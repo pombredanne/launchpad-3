@@ -217,4 +217,3 @@ class RebuildArchiveCreator(SoyuzScript):
                 continue
             self.logger.info("%s has %s build(s)." %
                              (get_spn(pubrec), len(builds)))
-            self.txn.commit()

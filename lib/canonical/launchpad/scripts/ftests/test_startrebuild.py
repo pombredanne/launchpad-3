@@ -23,10 +23,25 @@ from canonical.launchpad.scripts.create_rebuild import RebuildArchiveCreator
 from canonical.testing import LaunchpadZopelessLayer
 
 
+def get_spn(binary_package):
+    """Return the SourcePackageName of the binary."""
+    pub = binary_package.getCurrentPublication()
+    return pub.sourcepackagerelease.sourcepackagename
+
+
 class TestStartRebuildScript(unittest.TestCase):
     """Test the copy-package.py script."""
     layer = LaunchpadZopelessLayer
     rebld_archive_name = "ra%s" % int(time.time())
+    expected_build_spns = [
+        u'alsa-utils', u'cnews', u'evolution', u'libstdc++',
+        u'linux-source-2.6.15', u'netapplet']
+    expected_src_names = [
+        u'alsa-utils 1.0.9a-4ubuntu1 in hoary',
+        u'cnews cr.g7-37 in hoary', u'evolution 1.0 in hoary',
+        u'libstdc++ b8p in hoary',
+        u'linux-source-2.6.15 2.6.15.3 in hoary', 
+        u'netapplet 1.0-1 in hoary', u'pmount 0.1-2 in hoary']
 
     def runScript(self, extra_args=None):
         """Run start-rebuild.py, returning the result and output.
@@ -77,12 +92,7 @@ class TestStartRebuildScript(unittest.TestCase):
             distroseries=hoary, status=pending_statuses)
 
         src_names = sorted(source.displayname for source in hoary_sources)
-        expected_src_names = [u'alsa-utils 1.0.9a-4ubuntu1 in hoary',
-            u'cnews cr.g7-37 in hoary', u'evolution 1.0 in hoary',
-            u'libstdc++ b8p in hoary',
-            u'linux-source-2.6.15 2.6.15.3 in hoary', 
-            u'netapplet 1.0-1 in hoary', u'pmount 0.1-2 in hoary']
-        self.assertEqual(src_names, expected_src_names)
+        self.assertEqual(src_names, self.expected_src_names)
 
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
@@ -109,12 +119,7 @@ class TestStartRebuildScript(unittest.TestCase):
         rebuild_src_names = sorted(
             source.displayname for source in rebuild_sources)
 
-        self.assertEqual(rebuild_src_names, expected_src_names)
-
-        def get_spn(binary_package):
-            """Return the SourcePackageName of the binary."""
-            pub = binary_package.getCurrentPublication()
-            return pub.sourcepackagerelease.sourcepackagename
+        self.assertEqual(rebuild_src_names, self.expected_src_names)
 
         # Now check that we have build records for the sources cloned.
         builds = list(getUtility(IBuildSet).getBuildsForArchive(
@@ -124,13 +129,10 @@ class TestStartRebuildScript(unittest.TestCase):
         # since it is architecture independent and the 'hoary'
         # DistroSeries in the sample data has no DistroArchSeries
         # with chroots set up.
-        expected_build_spns = [
-            u'alsa-utils', u'cnews', u'evolution', u'libstdc++',
-            u'linux-source-2.6.15', u'netapplet']
         build_spns = [
             get_spn(removeSecurityProxy(build)).name for build in builds]
 
-        self.assertEqual(build_spns, expected_build_spns)
+        self.assertEqual(build_spns, self.expected_build_spns)
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
@@ -302,6 +304,127 @@ class TestStartRebuildScript(unittest.TestCase):
             SoyuzScriptError, "An archive rebuild named",
             script.mainTask)
 
+    def testArchWithoutBuilds(self):
+        """Start rebuild with zero build for given architecture tag.
+
+        Use the hoary-RELEASE suite along with the main component.
+        """
+        # Make sure a rebuild archive with the desired name does
+        # not exist yet.
+        my_rebld_archive_name = "ra%s" % int(time.time())
+        self.assertTrue(self.isNameVacant(my_rebld_archive_name) is None)
+
+        pending_statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+        # These source packages will be copied to the rebuild archive.
+        hoary_sources = hoary.distribution.main_archive.getPublishedSources(
+            distroseries=hoary, status=pending_statuses)
+
+        src_names = sorted(source.displayname for source in hoary_sources)
+        self.assertEqual(src_names, self.expected_src_names)
+
+        # Command line arguments required for the invocation of the
+        # 'start-rebuild.py' script. Please note: there will be no builds
+        # for the 'hppa' DistroArchSeries.
+        extra_args = [
+            '-d', 'ubuntu', '-s', 'hoary', '-c', 'main', '-t',
+            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
+            '-r', self.rebld_archive_name, '-u', 'salgado', '-a', 'hppa']
+
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=extra_args)
+        script.mainTask()
+
+        # Make sure the rebuild archive with the desired name was
+        # created
+        rebuild_archive = self.isNameVacant(self.rebld_archive_name)
+        self.assertTrue(rebuild_archive is not None)
+
+        # Make sure the source packages were cloned.
+        rebuild_sources = rebuild_archive.getPublishedSources(
+            distroseries=hoary, status=pending_statuses)
+
+        rebuild_src_names = sorted(
+            source.displayname for source in rebuild_sources)
+
+        self.assertEqual(rebuild_src_names, self.expected_src_names)
+
+        # Now check that we have zero build records for the sources cloned.
+        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+            rebuild_archive, status=BuildStatus.NEEDSBUILD))
+        build_spns = [
+            get_spn(removeSecurityProxy(build)).name for build in builds]
+
+        self.assertTrue(len(build_spns) == 0)
+
+    def testMultipleDistroArchSeriesSpecified(self):
+        """Start rebuild with multiple architecture tags.
+
+        Use the hoary-RELEASE suite along with the main component.
+        """
+        # Make sure a rebuild archive with the desired name does
+        # not exist yet.
+        my_rebld_archive_name = "ra%s" % int(time.time())
+        self.assertTrue(self.isNameVacant(my_rebld_archive_name) is None)
+
+        pending_statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED)
+
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+        # These source packages will be copied to the rebuild archive.
+        hoary_sources = hoary.distribution.main_archive.getPublishedSources(
+            distroseries=hoary, status=pending_statuses)
+
+        src_names = sorted(source.displayname for source in hoary_sources)
+        self.assertEqual(src_names, self.expected_src_names)
+
+        # Command line arguments required for the invocation of the
+        # 'start-rebuild.py' script.
+
+        # Please note:
+        #   * the 'hppa' DistroArchSeries has no resulting builds.
+        #   * the '-a' command line parameter is cumulative in nature
+        #     i.e. the 'hppa' architecture tag specfied after the 'i386'
+        #     tag does not overwrite the latter but is added to it.
+        extra_args = [
+            '-d', 'ubuntu', '-s', 'hoary', '-c', 'main', '-t',
+            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
+            '-r', self.rebld_archive_name, '-u', 'salgado',
+            '-a', 'i386', '-a', 'hppa']
+
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=extra_args)
+        script.mainTask()
+
+        # Make sure the rebuild archive with the desired name was
+        # created
+        rebuild_archive = self.isNameVacant(self.rebld_archive_name)
+        self.assertTrue(rebuild_archive is not None)
+
+        # Make sure the source packages were cloned.
+        rebuild_sources = rebuild_archive.getPublishedSources(
+            distroseries=hoary, status=pending_statuses)
+
+        rebuild_src_names = sorted(
+            source.displayname for source in rebuild_sources)
+
+        self.assertEqual(rebuild_src_names, self.expected_src_names)
+
+        # Now check that we have zero build records for the sources cloned.
+        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+            rebuild_archive, status=BuildStatus.NEEDSBUILD))
+        build_spns = [
+            get_spn(removeSecurityProxy(build)).name for build in builds]
+
+        self.assertEqual(build_spns, self.expected_build_spns)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
