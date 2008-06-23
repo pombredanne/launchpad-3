@@ -52,6 +52,7 @@ import sys
 import threading
 import time
 
+from cProfile import Profile
 from textwrap import dedent
 from unittest import TestCase, TestResult
 from urllib import urlopen
@@ -552,7 +553,8 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup(
-                reset_sequences_sql=DatabaseLayer._reset_sequences_sql).setUp()
+                reset_sequences_sql=DatabaseLayer._reset_sequences_sql
+                ).setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
@@ -1114,6 +1116,10 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def setUp(cls):
+        if os.environ.get('PROFILE_PAGETESTS_REQUESTS'):
+            PageTestLayer.profiler = Profile()
+        else:
+            PageTestLayer.profiler = None
         file_handler = logging.FileHandler('pagetests-access.log', 'w')
         file_handler.setFormatter(logging.Formatter())
         logger = PythonLogger('pagetests-access')
@@ -1122,8 +1128,14 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         access_logger = LaunchpadAccessLogger(logger)
         def my__call__(obj, request_string, handle_errors=True, form=None):
             """Call HTTPCaller.__call__ and log the page hit."""
-            response = orig__call__(
-                obj, request_string, handle_errors=handle_errors, form=form)
+            if PageTestLayer.profiler:
+                response = PageTestLayer.profiler.runcall(
+                    orig__call__, obj, request_string,
+                    handle_errors=handle_errors, form=form)
+            else:
+                response = orig__call__(
+                    obj, request_string, handle_errors=handle_errors,
+                    form=form)
             first_line = request_string.strip().splitlines()[0]
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
@@ -1139,6 +1151,10 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
+        if PageTestLayer.profiler:
+            PageTestLayer.profiler.dump_stats(
+                os.environ.get('PROFILE_PAGETESTS_REQUESTS'))
+
 
     @classmethod
     @profiled
