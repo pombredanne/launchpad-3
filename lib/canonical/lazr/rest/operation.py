@@ -112,6 +112,7 @@ class ResourceOperation(BatchingResourceMixin):
         missing = object()
         for field in self.params:
             name = field.__name__
+            field = field.bind(self.context)
             if (self.request.get(name, missing) is missing
                 and not field.required):
                 value = field.default
@@ -124,7 +125,6 @@ class ResourceOperation(BatchingResourceMixin):
                 except ValueError, e:
                     errors.append("%s: %s" % (name, e))
                     continue
-            field = field.bind(self.context)
             try:
                 field.validate(value)
             except RequiredMissing:
