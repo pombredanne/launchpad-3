@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces.codeimportjob import (
 from canonical.launchpad.interfaces.codeimportmachine import (
     ICodeImportMachine)
 from canonical.launchpad.interfaces.codereviewcomment import (
-    ICodeReviewComment)
+    ICodeReviewComment, ICodeReviewCommentDeletion)
 from canonical.launchpad.interfaces.distribution import IDistribution
 from canonical.launchpad.interfaces.distributionmirror import (
     IDistributionMirror)
@@ -1520,6 +1520,29 @@ class CodeReviewCommentView(AuthorizationBase):
         return bmp_checker.checkUnauthenticated()
 
 
+class CodeReviewCommentDelete(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ICodeReviewCommentDeletion
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the code review message?
+
+        The user can see a code review message if they can see the branch
+        merge proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkAuthenticated(user)
+
+    def checkUnauthenticated(self):
+        """Are not-logged-in people able to view the code review message?
+
+        They can see a code review message if they can see the branch merge
+        proposal.
+        """
+        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
+        return bmp_checker.checkUnauthenticated()
+
+
 class BranchMergeProposalEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchMergeProposal
@@ -1743,5 +1766,7 @@ class ViewEmailAddress(AuthorizationBase):
         """
         if not self.obj.person.hide_email_addresses:
             return True
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user == self.obj.person or user.inTeam(admins)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        return (user == self.obj.person
+                or user.inTeam(celebrities.commercial_admin)
+                or user.inTeam(celebrities.admin))
