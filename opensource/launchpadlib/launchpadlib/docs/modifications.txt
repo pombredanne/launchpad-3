@@ -75,7 +75,7 @@ changed when the entry is saved.
     >>> print salgado.mailing_list_auto_subscribe_policy
     Never subscribe to mailing lists
 
-Salgado cannot set his timezone to an illegal value.
+Salgado cannot set his time zone to an illegal value.
 
     >>> from launchpadlib.errors import HTTPError
     >>> def print_error_on_save(entry):
@@ -87,9 +87,9 @@ Salgado cannot set his timezone to an illegal value.
     ...     else:
     ...         print 'Did not get expected HTTPError!'
 
-    >>> salgado.timezone = 'SouthPole'
+    >>> salgado.time_zone = 'SouthPole'
     >>> print_error_on_save(salgado)
-    timezone: u'SouthPole' isn't a valid token
+    time_zone: u'SouthPole' isn't a valid token
 
 Teams also have attributes that can be changed.  For example, Salgado creates
 the most awesome team in the world.
