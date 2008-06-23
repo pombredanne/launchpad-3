@@ -56,6 +56,10 @@
       interface="canonical.launchpad.interfaces.person.IPersonViewRestricted"
       />
     <require
+      permission="launchpad.EditLocation"
+      interface="canonical.launchpad.interfaces.location.ISetLocation"
+      />
+    <require
       permission="launchpad.Edit"
       interface="canonical.launchpad.interfaces.person.IPersonEditRestricted"
       />
@@ -287,6 +291,14 @@
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonRelatedProjectsView"
     template="../templates/person-portlet-related-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+vouchers"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonVouchersView"
+    template="../templates/person-vouchers.pt"
     />
 
   <browser:page
