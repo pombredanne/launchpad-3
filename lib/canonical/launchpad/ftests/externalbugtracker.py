@@ -374,6 +374,8 @@ class TestBugzillaXMLRPCTransport:
         }
 
     # Comments are mapped to bug IDs.
+    comment_id_index = 4
+    new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
     bug_comments = {
         1: {
             1: {'author': 'trillian',
@@ -408,7 +410,7 @@ class TestBugzillaXMLRPCTransport:
 
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['comments', 'get_bugs'],
+        'Bug': ['add_comment', 'comments', 'get_bugs'],
         'Launchpad': ['time'],
         }
 
@@ -520,6 +522,50 @@ class TestBugzillaXMLRPCTransport:
 
         # More xmlrpclib:1387 odd-knobbery avoidance.
         return [{'bugs': comments_by_bug_id}]
+
+    def add_comment(self, arguments):
+        """Add a comment to a bug."""
+        assert 'id' in arguments, (
+            "Bug.add_comment() must always be called with an id parameter.")
+        assert 'comment' in arguments, (
+            "Bug.add_comment() must always be called with an comment "
+            "parameter.")
+
+        bug_id = arguments['id']
+        comment = arguments['comment']
+
+        # If the bug doesn't exist, raise a fault.
+        if int(bug_id) not in self.bugs:
+            raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+        # If we don't have comments for the bug already, create an empty
+        # comment dict.
+        if bug_id not in self.bug_comments:
+            self.bug_comments[bug_id] = {}
+
+        # Work out the number for the new comment on that bug.
+        if len(self.bug_comments[bug_id]) == 0:
+            comment_number = 1
+        else:
+            comment_numbers = sorted(self.bug_comments[bug_id].keys())
+            latest_comment_number = comment_numbers[-1]
+            comment_number = latest_comment_number + 1
+
+        # Add the comment to the bug.
+        comment_id = self.comment_id_index + 1
+        comment_dict = {
+            'author': 'launchpad',
+            'id': comment_id,
+            'number': comment_number,
+            'time': self.new_comment_time,
+            'text': comment,
+            }
+        self.bug_comments[bug_id][comment_number] = comment_dict
+
+        self.comment_id_index = comment_id
+
+        # Once again, we bow to xmlrpclib:1387's whim.
+        return [{'comment_id': comment_id}]
 
 
 class TestMantis(Mantis):
