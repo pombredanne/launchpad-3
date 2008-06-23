@@ -76,7 +76,7 @@ are no subscribers so there whould be no emails.
 
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table').tbody)
-    Project: GNOME Terminal
+    Project: GNOME Terminal (Unreviewed)
     Location: http://trekkies.example.com/gnome-terminal/klingon
     Last mirrored: ...
 

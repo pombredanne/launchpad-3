@@ -69,8 +69,8 @@ An email notification is emitted when the merge proposal is created.
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> [notification] = pop_notifications()
     >>> print notification['Subject']
-    Merge of Klingon support in GNOME Terminal into  GNOME Terminal Mainline
-    proposed
+    Proposed merge of Klingon support in GNOME Terminal into
+      GNOME Terminal Mainline
 
 Most of the time the merge proposal is looked at from the point
 of view of either the source branch or the target branch.
@@ -212,6 +212,7 @@ target branches or the registrant of the merge proposal.
     Delete proposal to merge: .../+merge/.../+delete
     Work in progress (disabled)
     Request review: .../+merge/.../+request-review
+    Add comment: .../+merge/.../+comment
     Review proposal: .../+merge/.../+review
     Mark as merged: .../+merge/.../+merged
     Queue for merging: .../+merge/.../+enqueue
@@ -227,6 +228,7 @@ proposal to merge get no actions.
     Delete proposal to merge (disabled)
     Work in progress (disabled)
     Request review (disabled)
+    Add comment (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
     Queue for merging (disabled)
@@ -239,6 +241,7 @@ proposal to merge get no actions.
     Delete proposal to merge (disabled)
     Work in progress (disabled)
     Request review (disabled)
+    Add comment (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
     Queue for merging (disabled)
@@ -335,11 +338,16 @@ You can request a review of a merge proposal.
     ...    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1'
     ...    )
     >>> sample_browser.getLink('Request review').click()
+    >>> sample_browser.getControl('Reviewer').value = 'sabdfl'
+    >>> sample_browser.getControl('Review type').value = 'first'
     >>> sample_browser.getControl('Request review').click()
 
-This causes a notification to be sent.
+This causes a two notifications to be sent.
 
-    >>> [notification] = pop_notifications()
+    >>> [notification, notification2] = pop_notifications()
+
+The first indicates a status change to branch subscribers.
+
     >>> print notification.get_payload(decode=True)
     The proposal to merge Klingon support in GNOME Terminal into GNOME
     Terminal Mainline has been updated.
@@ -350,12 +358,71 @@ This causes a notification to be sent.
     You are subscribed to branch GNOME Terminal Mainline.
     <BLANKLINE>
 
+The second notifies the requested reviewer.
+
+    >>> print notification2.get_payload(decode=True)
+    You have been requested to review the proposed merge of Klingon support
+    in GNOME Terminal into GNOME Terminal Mainline.
+    <BLANKLINE>
+    -- 
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    You are requested to review the proposed merge of Klingon support in
+    GNOME Terminal into GNOME Terminal Mainline.
+    <BLANKLINE>
+
 The status of the merge proposal is updated to "Needs review".
 
     >>> print_summary(sample_browser)
     Source branch: ~name12/gnome-terminal/klingon
     Target branch: ~name12/gnome-terminal/main
            Status: Needs review
+
+Additional reviews can be requested.
+
+    >>> sample_browser.getLink('Request another review').click()
+    >>> sample_browser.getControl('Reviewer').value = 'name12'
+    >>> sample_browser.getControl('Request review').click()
+
+This sends a notification only to the requested reviewer.
+
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload(decode=True)
+    You have been requested to review the proposed merge of Klingon support
+    in GNOME Terminal into GNOME Terminal Mainline.
+    <BLANKLINE>
+    -- 
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    You are requested to review the proposed merge of Klingon support in
+    GNOME Terminal into GNOME Terminal Mainline.
+    <BLANKLINE>
+
+You can even re-request the same person to review, so that a new email is
+sent.
+
+    >>> sample_browser.getLink('Request another review').click()
+    >>> sample_browser.getControl('Reviewer').value = 'sabdfl'
+    >>> sample_browser.getControl('Review type').value = 'second'
+    >>> sample_browser.getControl('Request review').click()
+    >>> [notification] = pop_notifications()
+    >>> print notification.get_payload(decode=True)
+    You have been requested to review the proposed merge of Klingon support
+    in GNOME Terminal into GNOME Terminal Mainline.
+    <BLANKLINE>
+    -- 
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    You are requested to review the proposed merge of Klingon support in
+    GNOME Terminal into GNOME Terminal Mainline.
+    <BLANKLINE>
+
+Only the last request is listed, showing the last review type.
+
+    >>> pending = find_tag_by_id(
+    ...     sample_browser.contents, 'code-review-votes')
+    >>> print extract_text(pending)
+    Pending reviews
+    Reviewer          Review type Requested by  Date
+    Sample Person                 Sample Person ... ago
+    Mark Shuttleworth second      Sample Person ... ago
 
 
 == Marking as merged ==
@@ -532,11 +599,11 @@ Resubmitting proposals without changing the whiteboard emits notifications.
     >>> # The order of notifications appears to be non-deterministic
     >>> subjects.sort()
     >>> print subjects[0]
-    Merge of ~name12/gnome-terminal/scanned into GNOME Terminal Mainline
-    proposed
+    Proposed merge of ~name12/gnome-terminal/scanned into
+      GNOME Terminal Mainline
     >>> print subjects[1]
-    Proposed merge of ~name12/gnome-terminal/scanned into GNOME Terminal
-    Mainline updated
+    Proposed merge of ~name12/gnome-terminal/scanned into
+       GNOME Terminal Mainline updated
 
 
 == Merge queues ==
@@ -930,11 +997,10 @@ When a branch is set as the development focus, then a radio button
 is shown.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/trunk')
-    >>> admin_browser.getLink('Edit source').click()
-    >>> admin_browser.getControl('Bazaar').click()
+    >>> admin_browser.getLink('Link to branch').click()
     >>> admin_browser.getControl(name='field.user_branch').value = (
     ...     '~name12/firefox/main')
-    >>> admin_browser.getControl('Update Details').click()
+    >>> admin_browser.getControl('Update').click()
 
     # Just show the radio buttons for the branch widgets.
     >>> def print_radio_options(browser):

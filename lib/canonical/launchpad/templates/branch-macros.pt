@@ -9,8 +9,7 @@
        tal:content="branch/displayname" />
     <tal:not-junk condition="branch/product">
       for the
-      <a tal:attributes="href branch/product/fmt:url"
-         tal:content="branch/product/displayname" />
+      <tal:link replace="structure branch/product/fmt:link" />
       project
     </tal:not-junk>
   </div>
