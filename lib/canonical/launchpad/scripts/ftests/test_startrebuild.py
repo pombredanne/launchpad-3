@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IArchiveSet, IBuildSet, IDistroSeriesSet,
+    ArchivePurpose, BuildStatus, IArchiveSet, IBuildSet, IDistributionSet,
     PackagePublishingStatus)
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
@@ -66,11 +66,11 @@ class TestStartRebuildScript(unittest.TestCase):
         # not exist yet.
         self.assertTrue(self.isNameVacant(self.rebld_archive_name) is None)
 
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
         pending_statuses = (
             PackagePublishingStatus.PENDING,
             PackagePublishingStatus.PUBLISHED)
+
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
         # These source packages will be copied to the rebuild archive.
         hoary_sources = hoary.distribution.main_archive.getPublishedSources(
@@ -164,8 +164,6 @@ class TestStartRebuildScript(unittest.TestCase):
         # not exist yet.
         self.assertTrue(self.isNameVacant(invalid_archive_name) is None)
 
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
         extra_args = [
@@ -196,8 +194,6 @@ class TestStartRebuildScript(unittest.TestCase):
         # Make sure a rebuild archive with the desired name does
         # not exist yet.
         self.assertTrue(self.isNameVacant(archive_name) is None)
-
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
 
         invalid_component = "component/:/%s" % now
         # Command line arguments required for the invocation of the
@@ -231,8 +227,6 @@ class TestStartRebuildScript(unittest.TestCase):
         # not exist yet.
         self.assertTrue(self.isNameVacant(archive_name) is None)
 
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
         invalid_suite = "suite/:/%s" % now
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
@@ -265,8 +259,6 @@ class TestStartRebuildScript(unittest.TestCase):
         # not exist yet.
         self.assertTrue(self.isNameVacant(archive_name) is None)
 
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
         invalid_user = "user/:/%s" % now
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
@@ -295,8 +287,6 @@ class TestStartRebuildScript(unittest.TestCase):
         # Make sure a rebuild archive with the desired name does
         # not exist yet.
         self.assertFalse(self.isNameVacant(self.rebld_archive_name) is None)
-
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
 
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
