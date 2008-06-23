@@ -8,9 +8,9 @@ has been assigned as the translator for.
   http://translations.launchpad.dev/+groups/polyglot
   >>> portlet = find_portlet(browser.contents, 'This group translates for')
   >>> for link in portlet.findAll('a'):
-  ...     print '%s: %s' % (link.string, link['href'])
+  ...     print '%s: %s' % (link.find(text=True), link['href'])
   Ubuntu: /ubuntu
-  NetApplet: /netapplet
+  &nbsp;NetApplet: /netapplet
   GNOME: /gnome
 
 If we disable some of these projects...

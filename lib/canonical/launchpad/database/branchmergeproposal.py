@@ -11,6 +11,7 @@ __all__ = [
 
 from email.Utils import make_msgid
 
+from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
@@ -36,9 +37,11 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus,BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposalGetter, IBranchMergeProposal,
     UserNotBranchReviewer, WrongBranchMergeProposal)
+from canonical.launchpad.interfaces.codereviewcomment import CodeReviewVote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.mailout.branchmergeproposal import RecipientReason
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -148,6 +151,13 @@ class BranchMergeProposal(SQLBase):
             """ % self.id)
 
     @property
+    def title(self):
+        """See `IBranchMergeProposal`."""
+        return "Proposed merge of %(source)s into %(target)s" % {
+            'source': self.source_branch.displayname,
+            'target': self.target_branch.displayname}
+
+    @property
     def all_comments(self):
         """See `IBranchMergeProposal`."""
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
@@ -177,7 +187,8 @@ class BranchMergeProposal(SQLBase):
                     recipient)
                 if (subscription.review_level < min_level):
                     continue
-                recipients[recipient] = (subscription, rationale)
+                recipients[recipient] = RecipientReason.forBranchSubscriber(
+                    subscription, recipient, self, rationale)
         return recipients
 
     def isValidTransition(self, next_state, user=None):
@@ -367,18 +378,28 @@ class BranchMergeProposal(SQLBase):
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT):
         """See `IBranchMergeProposal`."""
-        return CodeReviewVoteReference(
+        vote_reference = CodeReviewVoteReference.selectOneBy(
+            branch_merge_proposal=self, reviewer=reviewer)
+        if vote_reference is None:
+            vote_reference = CodeReviewVoteReference(
             branch_merge_proposal=self,
             registrant=registrant,
             reviewer=reviewer,
-            review_type=review_type,
             date_created=_date_created)
+        vote_reference.review_type = review_type
+        return vote_reference
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
         # Delete this proposal, but keep the superseded chain linked.
         if self.supersedes is not None:
             self.supersedes.superseded_by = self.superseded_by
+        # Delete the related CodeReviewVoteReferences.
+        for vote in self.votes:
+            vote.destroySelf()
+        # Delete the related CodeReviewComments.
+        for comment in self.all_comments:
+            comment.destroySelf()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
@@ -404,6 +425,16 @@ class BranchMergeProposal(SQLBase):
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
+        if not subject:
+            # Get the subject from the parent if there is one, or use a nice
+            # default.
+            if parent is None:
+                subject = self.title
+            else:
+                subject = parent.message.subject
+            if not subject.startswith('Re: '):
+                subject = 'Re: ' + subject
+
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
@@ -480,6 +511,45 @@ class BranchMergeProposalGetter:
         return ('%sBranchMergeProposal.source_branch in (%s) '
                 ' AND BranchMergeProposal.target_branch in (%s)'
                 % (query, private_subquery, private_subquery))
+
+    @staticmethod
+    def getVoteSummariesForProposals(proposals):
+        """See `IBranchMergeProposalGetter`."""
+        if len(proposals) == 0:
+            return {}
+        ids = quote([proposal.id for proposal in proposals])
+        store = Store.of(proposals[0])
+        # First get the count of comments.
+        query = """
+            SELECT bmp.id, count(crm.*)
+            FROM BranchMergeProposal bmp, CodeReviewMessage crm
+            WHERE bmp.id IN %s
+              AND bmp.id = crm.branch_merge_proposal
+            GROUP BY bmp.id
+            """ % ids
+        comment_counts = dict(store.execute(query))
+        # Now get the vote counts.
+        query = """
+            SELECT bmp.id, crm.vote, count(crv.*)
+            FROM BranchMergeProposal bmp, CodeReviewVote crv,
+                 CodeReviewMessage crm
+            WHERE bmp.id IN %s
+              AND bmp.id = crv.branch_merge_proposal
+              AND crv.vote_message = crm.id
+            GROUP BY bmp.id, crm.vote
+            """ % ids
+        vote_counts = {}
+        for proposal_id, vote_value, count in store.execute(query):
+            vote = CodeReviewVote.items[vote_value]
+            vote_counts.setdefault(proposal_id, {})[vote] = count
+        # Now assemble the resulting dict.
+        result = {}
+        for proposal in proposals:
+            summary = result.setdefault(proposal, {})
+            summary['comment_count'] = (
+                comment_counts.get(proposal.id, 0))
+            summary.update(vote_counts.get(proposal.id, {}))
+        return result
 
 
 class BranchMergeProposalQueryBuilder:

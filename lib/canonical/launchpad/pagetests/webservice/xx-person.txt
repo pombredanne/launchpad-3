@@ -24,6 +24,8 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~salgado/jabber_ids
     karma: 0
     languages_collection_link: http://.../~salgado/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
     members_collection_link: http://.../~salgado/members
     members_details_collection_link: http://.../~salgado/members_details
@@ -65,6 +67,8 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~ubuntu-team/jabber_ids
     karma: 0
     languages_collection_link: http://.../~ubuntu-team/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
     members_collection_link: http://.../~ubuntu-team/members
     members_details_collection_link: http://.../~ubuntu-team/members_details
