@@ -29,7 +29,7 @@ APPSERVER_ENV = \
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-schema: build clean_codehosting
+schema: build clean_codehosting check_geoip_db
 	$(MAKE) -C database/schema
 	$(PYTHON) ./utilities/make-dummy-hosted-branches
 	rm -rf /var/tmp/fatsam
@@ -83,11 +83,14 @@ check_merge_edge: dbfreeze_check check_merge
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
 
-check: build bzr_version_info
+check: build bzr_version_info check_geoip_db
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
+
+check_geoip_db:
+	@bash ./utilities/check-geoip-db
 
 lint:
 	@bash ./utilities/lint.sh
@@ -133,7 +136,7 @@ ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
-run: inplace stop bzr_version_info
+run: inplace stop bzr_version_info check_geoip_db
 	rm -f thread*.request
 	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
@@ -200,10 +203,10 @@ scheduleoutage:
 	echo Sleeping ${MINS_TO_SHUTDOWN} mins
 	sleep ${MINS_TO_SHUTDOWN}m
 
-harness:
+harness: check_geoip_db
 	$(APPSERVER_ENV) $(PYTHON) -i lib/canonical/database/harness.py
 
-iharness:
+iharness: check_geoip_db
 	$(APPSERVER_ENV) $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
