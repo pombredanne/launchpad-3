@@ -617,6 +617,8 @@ class LaunchpadTestRequest(TestRequest):
     principal = None
     interaction = None
 
+    oopsid = None
+
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
         super(LaunchpadTestRequest, self).__init__(

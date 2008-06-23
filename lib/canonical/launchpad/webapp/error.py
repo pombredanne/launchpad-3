@@ -14,6 +14,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started, set_request_started)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
@@ -194,6 +196,11 @@ class RequestExpiredView(SystemErrorView):
         # is really just a guess and I don't think any clients actually
         # pay attention to it - it is just a hint.
         request.response.setHeader('Retry-After', 900)
+        # Reset the timeout timer, so that we can issue db queries when
+        # rendering the page.
+        clear_request_started()
+        set_request_started()
+
 
 
 class InvalidBatchSizeView(SystemErrorView):
