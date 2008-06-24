@@ -62,11 +62,22 @@ class TestStartRebuildScript(unittest.TestCase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def getRebuildArchive(self, name):
-        """Return rebuild archive with given name or None."""
-        archives = [archive for archive in getUtility(IArchiveSet)
-                    if archive.purpose == ArchivePurpose.REBUILD]
+    def getRebuildArchive(self, suite, name):
+        """Return rebuild archive with given suite/name or None."""
+        archives = []
+        series = suite.split('-')[0]
+        # Rebuild archive names are prefixed with the DistroSeries name
+        # upon creation.
+        name = "%s-%s" % (series, name)
 
+        for archive in getUtility(IArchiveSet):
+            purpose = removeSecurityProxy(archive.purpose).name
+            print "'%s': %s" % (archive.name, purpose)
+            if (archive.purpose == ArchivePurpose.REBUILD and
+                archive.name == name):
+                archives.append(archive)
+
+        print ">>> name: '%s', #archives: %s" % (name, len(archives))
         # Return the archive if found, None otherwise.
         if len(archives) == 1:
             [result] = archives
@@ -80,10 +91,12 @@ class TestStartRebuildScript(unittest.TestCase):
 
         Use the hoary-RELEASE suite along with the main component.
         """
+        suite = 'hoary'
+
         # Make sure a rebuild archive with the desired name does
         # not exist yet.
         self.assertTrue(
-            self.getRebuildArchive(self.rebld_archive_name) is None)
+            self.getRebuildArchive(suite, self.rebld_archive_name) is None)
 
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -97,7 +110,7 @@ class TestStartRebuildScript(unittest.TestCase):
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
         extra_args = [
-            '-d', 'ubuntu', '-s', 'hoary', '-c', 'main', '-t',
+            '-d', 'ubuntu', '-s', suite, '-c', 'main', '-t',
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
             '-r', self.rebld_archive_name, '-u', 'salgado']
 
@@ -109,7 +122,8 @@ class TestStartRebuildScript(unittest.TestCase):
 
         # Make sure the rebuild archive with the desired name was
         # created
-        rebuild_archive = self.getRebuildArchive(self.rebld_archive_name)
+        rebuild_archive = self.getRebuildArchive(
+            suite, self.rebld_archive_name)
         self.assertTrue(rebuild_archive is not None)
 
         # Make sure the source packages were cloned.
@@ -187,7 +201,7 @@ class TestStartRebuildScript(unittest.TestCase):
         if archive_name is None:
             archive_name = "ra%s" % now
 
-        rebuild_archive = self.getRebuildArchive(archive_name)
+        rebuild_archive = self.getRebuildArchive(suite, archive_name)
         if exists_before:
             self.assertTrue(rebuild_archive is not None)
         else:
@@ -213,7 +227,7 @@ class TestStartRebuildScript(unittest.TestCase):
         else:
             script.mainTask()
 
-        rebuild_archive = self.getRebuildArchive(archive_name)
+        rebuild_archive = self.getRebuildArchive(suite, archive_name)
         if exists_after:
             self.assertTrue(rebuild_archive is not None)
         else:
