@@ -82,7 +82,8 @@ class TestStartRebuildScript(unittest.TestCase):
         """
         # Make sure a rebuild archive with the desired name does
         # not exist yet.
-        self.assertTrue(self.getRebuildArchive(self.rebld_archive_name) is None)
+        self.assertTrue(
+            self.getRebuildArchive(self.rebld_archive_name) is None)
 
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
