@@ -403,10 +403,9 @@ IPerson supports a bunch of operations.
 
 Joining and leaving teams:
 
-    >>> from urllib import quote
     >>> print webservice.named_post(
     ...     salgado['self_link'], 'join', {},
-    ...     team=quote(ubuntu_team['self_link']))
+    ...     team=ubuntu_team['self_link'])
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get(
@@ -415,7 +414,7 @@ Joining and leaving teams:
 
     >>> print webservice.named_post(
     ...     salgado['self_link'], 'leave', {},
-    ...     team=quote(landscape_developers['self_link']))
+    ...     team=landscape_developers['self_link'])
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get(
@@ -426,7 +425,7 @@ Adding an arbitrary member to a team:
 
     >>> print webservice.named_post(
     ...     ubuntu_team['self_link'], 'addMember', {},
-    ...     person=quote(landscape_developers['self_link']),
+    ...     person=landscape_developers['self_link'],
     ...     comment='Just a test')
     HTTP/1.1 200 Ok
     ...
@@ -438,7 +437,7 @@ Accepting or declining a membership invitation:
 
     >>> print webservice.named_post(
     ...     landscape_developers['self_link'], 'acceptInvitationToBeMemberOf',
-    ...     {}, team=quote(ubuntu_team['self_link']), comment='Just a test')
+    ...     {}, team=ubuntu_team['self_link'], comment='Just a test')
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get("/beta/~ubuntu-team/+member/landscape-developers"
@@ -447,7 +446,7 @@ Accepting or declining a membership invitation:
 
     >>> print webservice.named_post(
     ...     '/beta/~name20', 'declineInvitationToBeMemberOf', {},
-    ...     team=quote(ubuntu_team['self_link']), comment='Just a test')
+    ...     team=ubuntu_team['self_link'], comment='Just a test')
     HTTP/1.1 200 Ok
     ...
     >>> webservice.get("/beta/~ubuntu-team/+member/name20").jsonBody()['status']

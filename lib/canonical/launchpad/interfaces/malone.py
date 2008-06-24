@@ -11,8 +11,7 @@ from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 from canonical.lazr.rest.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_read_operation)
+    collection_default_content, export_as_webservice_collection, REQUEST_USER)
 
 
 __all__ = [
@@ -38,7 +37,9 @@ class IMaloneApplication(ILaunchpadApplication):
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
 
-    @collection_default_content()
-    @export_read_operation()
-    def default_bug_list():
-        """Return a default list of bugs."""
+    @collection_default_content(user=REQUEST_USER)
+    def default_bug_list(user):
+        """Return a default list of bugs.
+
+        :param user: The user who's doing the search.
+        """
