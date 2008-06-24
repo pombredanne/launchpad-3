@@ -41,8 +41,6 @@ class TestBranchMergeProposalTransitions(TestCase):
         BranchMergeProposalStatus.MERGED: 'markAsMerged',
         BranchMergeProposalStatus.MERGE_FAILED: 'mergeFailed',
         BranchMergeProposalStatus.QUEUED: 'enqueue',
-        # There is no transition function for queued restricted.
-        BranchMergeProposalStatus.QUEUED_RESTRICTED: None,
         BranchMergeProposalStatus.SUPERSEDED: 'resubmit',
         }
 
@@ -62,10 +60,7 @@ class TestBranchMergeProposalTransitions(TestCase):
 
     def _attemptTransition(self, proposal, to_state):
         """Try to transition the proposal into the state `to_state`."""
-        transition_func = self.transition_functions[to_state]
-        if transition_func is None:
-            return
-        method = getattr(proposal, transition_func)
+        method = getattr(proposal, self.transition_functions[to_state])
         if to_state in (BranchMergeProposalStatus.CODE_APPROVED,
                         BranchMergeProposalStatus.REJECTED,
                         BranchMergeProposalStatus.QUEUED):
@@ -96,24 +91,14 @@ class TestBranchMergeProposalTransitions(TestCase):
                           self._attemptTransition,
                           proposal, to_state)
 
-    def normalStates(self):
-        """States that have normal transitions.
-
-        The queued restricted state has no transition function as part
-        of the branch merge proposal.
-        """
-        for status in BranchMergeProposalStatus.items:
-            if status != BranchMergeProposalStatus.QUEUED_RESTRICTED:
-                yield status
-
     def assertAllTransitionsGood(self, from_state):
         """Assert that we can go from `from_state` to any state."""
-        for status in self.normalStates():
+        for status in BranchMergeProposalStatus.items:
             self.assertGoodTransition(from_state, status)
 
     def assertTerminatingState(self, from_state):
         """Assert that the proposal cannot go to any other state."""
-        for status in self.normalStates():
+        for status in BranchMergeProposalStatus.items:
             self.assertBadTransition(from_state, status)
 
     def test_transitions_from_wip(self):
@@ -135,7 +120,7 @@ class TestBranchMergeProposalTransitions(TestCase):
         """Rejected proposals can only be resubmitted."""
         # Test the transitions from rejected.
         [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, queued, queued_restricted, superseded
+         merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
 
         for status in (wip, needs_review, code_approved, rejected,
@@ -159,7 +144,7 @@ class TestBranchMergeProposalTransitions(TestCase):
         method, and no other transitions are valid.
         """
         queued = BranchMergeProposalStatus.QUEUED
-        for status in self.normalStates():
+        for status in BranchMergeProposalStatus.items:
             if status in (BranchMergeProposalStatus.MERGED,
                           BranchMergeProposalStatus.MERGE_FAILED):
                 self.assertGoodTransition(queued, status)

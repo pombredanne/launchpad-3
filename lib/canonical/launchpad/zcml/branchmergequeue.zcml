@@ -6,20 +6,14 @@
 
   <!-- Branch Merge Queue -->
   <content class="canonical.launchpad.database.branchmergequeue.SingleBranchMergeQueue">
-    <allow attributes="branches items front restricted_mode owner" />
-    <require
-        permission="launchpad.Edit"
-        attributes="allowRestrictedLanding"
-        set_attributes="restricted_mode" />
+    <allow interface="canonical.launchpad.interfaces.branchmergequeue.IBranchMergeQueue" />
   </content>
 
   <content class="canonical.launchpad.database.branchmergequeue.MultiBranchMergeQueue">
-    <allow attributes="branches items front restricted_mode owner
-                       name summary registrant date_created" />
+    <allow interface="canonical.launchpad.interfaces.branchmergequeue.IMultiBranchMergeQueue" />
     <require
         permission="launchpad.Edit"
-        attributes="allowRestrictedLanding"
-        set_attributes="restricted_mode name summary owner" />
+        set_schema="canonical.launchpad.interfaces.branchmergequeue.IMultiBranchMergeQueue" />
   </content>
 
   <securedutility
