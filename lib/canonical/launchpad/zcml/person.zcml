@@ -243,10 +243,6 @@
       name="+portlet-contact-details"
       template="../templates/person-portlet-contact-details.pt"
       />
-    <browser:page
-      name="+portlet-map"
-      template="../templates/person-portlet-map.pt"
-      />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
     <browser:page
@@ -286,6 +282,10 @@
     <browser:page
       name="+xrds"
       attribute="xrds"
+      />
+    <browser:page
+      name="+portlet-map"
+      template="../templates/person-portlet-map.pt"
       />
   </browser:pages>
 

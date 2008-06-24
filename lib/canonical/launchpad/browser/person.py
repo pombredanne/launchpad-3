@@ -2522,61 +2522,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return self.userIsActiveMember()
 
-    def map_portlet_html(self):
-        """Generate the HTML which shows the map portlet."""
-
-        if self.context.latitude is None:
-            return 'No location specified.'
-
-        center_lat = self.context.latitude
-        center_lng = self.context.longitude
-        map_html = """
-        <script type="text/javascript">
-
-        //<![CDATA[
-
-        if (GBrowserIsCompatible()) {
-          var myWidth = 0, myHeight = 0;
-          if( typeof( window.innerWidth ) == 'number' ) {
-            //Non-IE
-            myWidth = window.innerWidth;
-            myHeight = window.innerHeight;
-            }
-          else if( document.documentElement && (
-            document.documentElement.clientWidth ||
-            document.documentElement.clientHeight ) ) {
-            //IE 6+ in 'standards compliant mode'
-            myWidth = document.documentElement.clientWidth;
-            myHeight = document.documentElement.clientHeight;
-          } else if( document.body && (
-                document.body.clientWidth ||
-                document.body.clientHeight ) ) {
-            //IE 4 compatible
-            myWidth = document.body.clientWidth;
-            myHeight = document.body.clientHeight;
-          }
-          var mapdiv = document.getElementById("person_map_div");
-
-          var map = new GMap2(mapdiv);
-          center = new GLatLng(%(center_lat)s, %(center_lng)s);
-          map.setCenter(center, 1);
-          map.setMapType(G_NORMAL_MAP);
-          map.addControl(new GSmallZoomControl());
-          map.enableScrollWheelZoom();
-          var marker = new GMarker(center);
-          map.addOverlay(marker);
-
-          }
-
-        //]]>
-        </script>
-        """ % {
-            'center_lat': center_lat,
-            'center_lng': center_lng,
-            }
-        return map_html
-
-
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
             return obfuscateEmail(self.context.preferredemail.email)
@@ -2641,6 +2586,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
+        # This view requires the gmap2 Javascript in order to render the map
+        # with the person's usual location.
         self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
@@ -2674,6 +2621,38 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                 _("You have been unsubscribed from the team "
                   "mailing list."))
         self.request.response.redirect(canonical_url(self.context))
+
+    def map_portlet_html(self):
+        """Generate the HTML which shows the map portlet."""
+        assert self.request.needs_gmap2, (
+            "To use this method a view must flag that it needs gmap2.")
+        assert self.context.latitude is not None, (
+            "Can't generate the map for a person who hasn't set a location.")
+
+        replacements = {'center_lat': self.context.latitude,
+                        'center_lng': self.context.longitude}
+        return u"""
+            <script type="text/javascript">
+            //<![CDATA[
+
+            if (GBrowserIsCompatible()) {
+              var width_and_height = getWindowWidthAndHeight();
+              var myWidth = width_and_height[0];
+              var myHeight = width_and_height[1];
+              var mapdiv = document.getElementById("person_map_div");
+
+              var map = new GMap2(mapdiv);
+              center = new GLatLng(%(center_lat)s, %(center_lng)s);
+              map.setCenter(center, 1);
+              map.setMapType(G_NORMAL_MAP);
+              map.addControl(new GSmallZoomControl());
+              map.enableScrollWheelZoom();
+              var marker = new GMarker(center);
+              map.addOverlay(marker);
+            }
+
+            //]]>
+            </script>""" % replacements
 
 
 class PersonRelatedProjectsView(LaunchpadView):
