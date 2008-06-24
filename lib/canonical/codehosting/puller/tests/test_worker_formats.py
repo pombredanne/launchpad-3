@@ -93,8 +93,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
         # The mirrored branch should now be in knit format.
         self.assertMirrored(
-            Branch.open(self.worker.source),
-            Branch.open(self.worker.dest))
+            Branch.open(self.worker.source), Branch.open(self.worker.dest))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
