@@ -3,105 +3,113 @@
 An Account is used by someone to Authenticate with the Launchpad login
 service.
 
->>> from canonical.launchpad.interfaces import (
-...     IAccount, IAccountSet, AccountStatus, AccountCreationRationale)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAccount, IAccountSet, AccountStatus)
 
-Accounts are generally looked up by email address
+Accounts are generally looked up by email address.
 
->>> login('no-priv@canonical.com')
->>> account_set = getUtility(IAccountSet)
->>> account = account_set.getByEmail('no-priv@canonical.com')
->>> IAccount.providedBy(account)
-True
->>> print account_set.getByEmail('invalid@whatever')
-None
+    >>> login('no-priv@canonical.com')
+    >>> account_set = getUtility(IAccountSet)
+    >>> account = account_set.getByEmail('no-priv@canonical.com')
+    >>> IAccount.providedBy(account)
+    True
 
+    >>> print account_set.getByEmail('invalid@whatever')
+    None
 
-Only admins or the person attached to an account can see or edit
-Account details. This is obviously wrong, as the account should have
-access rather than the (optional) attached person. In particular,
-it means Accounts without Person records cannot be managed by the
-Account owner. Fixing this involves more surgery to Launchpad's
-security systems.
+Only admins or the person attached to an account can see or edit Account
+details. This is obviously wrong, as the account should have access
+rather than the (optional) attached person. In particular, it means
+Accounts without Person records cannot be managed by the Account owner.
+Fixing this involves more surgery to Launchpad's security systems.
 
->>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
->>> stub_account.date_created
-Traceback (most recent call last):
-...
-Unauthorized...
->>> del stub_account
+    >>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
+    >>> stub_account.date_created
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
 
+    >>> del stub_account
 
-An Account has an encrypted password and an OpenID identifier used
-to generate the OpenID identity URL
+An Account has an encrypted password.
 
->>> account.openid_identifier
-u'no-priv_oid'
+    >>> account.password
+    u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
 
->>> account.password
-u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+Ensure the password changes are sticky, as this is a property hiding the
+AccountPassword table.
 
-Ensure the password changes are sticky, as this is a property hiding
-the AccountPassword table.
+    >>> account.password = None
+    >>> account.password
+    >>> account.password = u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+    >>> account.password
+    u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
 
->>> account.password = None
->>> account.password
->>> account.password = u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
->>> account.password
-u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+And other account metadata.
 
+    >>> account.date_created
+    datetime.datetime(...)
 
-And other account metadata
+    >>> print account.creation_rationale.name
+    OWNER_CREATED_LAUNCHPAD
 
->>> account.date_created
-datetime.datetime(...)
->>> print account.creation_rationale.name
-OWNER_CREATED_LAUNCHPAD
->>> print account.status.name
-ACTIVE
+    >>> print account.status.name
+    ACTIVE
 
->>> account.date_status_set >= account.date_created
-True
->>> print account.status_comment
-None
->>> account.displayname
-u'No Privileges Person'
+    >>> account.date_status_set >= account.date_created
+    True
 
+    >>> print account.status_comment
+    None
+
+    >>> account.displayname
+    u'No Privileges Person'
 
 When the status is changed, the date_status_set is updated in the
 database.
 
->>> original_date_status_set = account.date_status_set
->>> account.status = AccountStatus.SUSPENDED
->>> from zope.security.proxy import removeSecurityProxy
->>> removeSecurityProxy(account).sync() # Shouldn't be necessary with Storm!
->>> account.date_status_set > original_date_status_set
-True
->>> account.status = AccountStatus.ACTIVE
+    >>> original_date_status_set = account.date_status_set
+    >>> account.status = AccountStatus.SUSPENDED
 
+    # Shouldn't be necessary with Storm!
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(account).sync()
+    >>> account.date_status_set > original_date_status_set
+    True
 
-The Account's displayname is synced to the Person's displayname
-if there is one. If the Person.displayname is changed, the
-Account.displayname is changed too.
+    >>> account.status = AccountStatus.ACTIVE
 
->>> from canonical.launchpad.interfaces import IPersonSet
->>> personset = getUtility(IPersonSet)
->>> person = personset.getByEmail('no-priv@canonical.com')
->>> person.displayname = 'Something New'
->>> account.displayname
-u'Something New'
+The Account's displayname is synced to the Person's displayname if there
+is one. If the Person.displayname is changed, the Account.displayname is
+changed too.
 
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> person = personset.getByEmail('no-priv@canonical.com')
+    >>> person.displayname = 'Something New'
+    >>> account.displayname
+    u'Something New'
 
 However, the reverse is not true. If we change the Account.displayname,
 the linked Person.displayname (if there is one) is not updated
-immediately.  Instead, a cron job will sync this information
-later. This allows displayname changes to happen even when the Person
-table is unavailable.
+immediately.  Instead, a cron job will sync this information later. This
+allows displayname changes to happen even when the Person table is
+unavailable.
 
->>> account.displayname = 'No Privileges Account'
->>> person.displayname
-u'Something New'
->>> person.displayname = 'No Privileges Person'
->>> account.displayname
-u'No Privileges Person'
+    >>> account.displayname = 'No Privileges Account'
+    >>> person.displayname
+    u'Something New'
+
+    >>> person.displayname = 'No Privileges Person'
+    >>> account.displayname
+    u'No Privileges Person'
+
+An Account has an OpenID identifier used to generate the OpenID identity
+URL, and a property that contains that url.
+
+    >>> account.openid_identifier
+    u'no-priv_oid'
+
+    >>> account.openid_identity_url
+    'http://openid.launchpad.dev/+id/no-priv_oid'
 
