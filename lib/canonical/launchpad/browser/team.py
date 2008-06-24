@@ -845,7 +845,7 @@ class TeamMapView(LaunchpadView):
 
     @cachedproperty
     def bounds(self):
-        """Bounds and center of the map.
+        """A dictionary with the bounds and center of the map.
 
         We look at the set of latitudes and longitudes for the people who
         have coordinates, start out with a maximum minimum, and vice
@@ -866,175 +866,83 @@ class TeamMapView(LaunchpadView):
                 max_lng = IObjectWithLocation(participant).longitude
         center_lat = (max_lat + min_lat) / 2.0
         center_lng = (max_lng + min_lng) / 2.0
-        return (min_lat, min_lng, max_lat, max_lng, center_lat, center_lng)
+        return dict(
+            min_lat=min_lat, min_lng=min_lng, max_lat=max_lat,
+            max_lng=max_lng, center_lat=center_lat, center_lng=center_lng)
 
-    # XXX: There's some considerable code to be shared between this method and
-    # map_portlet_html.
     @property
     def map_html(self):
         """The HTML which shows the map."""
-        (min_lat, min_lng, max_lat, max_lng, center_lat,
-         center_lng) = self.bounds
+        return """
+            <script type="text/javascript">
 
-        map_html = """
-        <script type="text/javascript">
+            //<![CDATA[
 
-        //<![CDATA[
-
-        if (GBrowserIsCompatible()) {
-          // XXX: This whole if/elif block is identical in the two methods.
-          var myWidth = 0, myHeight = 0;
-          if( typeof( window.innerWidth ) == 'number' ) {
-            //Non-IE
-            myWidth = window.innerWidth;
-            myHeight = window.innerHeight;
+            if (GBrowserIsCompatible()) {
+                var dims = getViewportDimensions();
+                var myWidth = dims.w;
+                var myHeight = dims.h;
+                var mapdiv = document.getElementById("team_map_div");
+                var mapheight = (parseInt(mapdiv.offsetWidth) / 16 * 9);
+                mapheight = Math.min(mapheight, myHeight - 180);
+                mapheight = Math.max(mapheight, 400);
+                mapdiv.style.height = mapheight + 'px';
+               
+                var team_map = new GMap2(mapdiv);
+                center = new GLatLng(%(center_lat)s, %(center_lng)s);
+                team_map.setCenter(center, 0);
+                team_map.setMapType(G_HYBRID_MAP);
+                sw = GLatLng(%(min_lat)s, %(min_lng)s);
+                ne = GLatLng(%(max_lat)s, %(max_lng)s);
+                required_bounds = new GLatLngBounds(sw, ne);
+                zoom_level = team_map.getBoundsZoomLevel(required_bounds);
+                zoom_level = Math.min(
+                    G_HYBRID_MAP.getMaximumResolution(), zoom_level);
+                team_map.setZoom(zoom_level);
+                team_map.addControl(new GLargeMapControl());
+                team_map.addControl(new GMapTypeControl());
+                team_map.addControl(new GOverviewMapControl());
+                team_map.addControl(new GScaleControl());
+                team_map.enableScrollWheelZoom();
+                GDownloadUrl("+mapdata", function(data) {
+                    var required_bounds = new GLatLngBounds();
+                    setMarkersInfoWindow(data, team_map, required_bounds);
+                  });
             }
-          else if( document.documentElement && (
-            document.documentElement.clientWidth ||
-            document.documentElement.clientHeight ) ) {
-            //IE 6+ in 'standards compliant mode'
-            myWidth = document.documentElement.clientWidth;
-            myHeight = document.documentElement.clientHeight;
-          } else if( document.body && (
-                document.body.clientWidth ||
-                document.body.clientHeight ) ) {
-            //IE 4 compatible
-            myWidth = document.body.clientWidth;
-            myHeight = document.body.clientHeight;
-          }
-          var mapdiv = document.getElementById("team_map_div");
-          var mapheight = (parseInt(mapdiv.offsetWidth) / 16 * 9);
-          mapheight = Math.min(mapheight, myHeight - 180);
-          mapheight = Math.max(mapheight, 400);
-          mapdiv.style.height = mapheight + 'px';
 
-          var team_map = new GMap2(mapdiv);
-          center = new GLatLng(%(center_lat)s, %(center_lng)s);
-          team_map.setCenter(center, 0);
-          team_map.setMapType(G_HYBRID_MAP);
-          sw = GLatLng(%(min_lat)s, %(min_lng)s);
-          ne = GLatLng(%(max_lat)s, %(max_lng)s);
-          required_bounds = new GLatLngBounds(sw, ne);
-          zoom_level = team_map.getBoundsZoomLevel(required_bounds);
-          zoom_level = Math.min(
-              G_HYBRID_MAP.getMaximumResolution(), zoom_level);
-          team_map.setZoom(zoom_level);
-          team_map.addControl(new GLargeMapControl());
-          team_map.addControl(new GMapTypeControl());
-          team_map.addControl(new GOverviewMapControl());
-          team_map.addControl(new GScaleControl());
-          team_map.enableScrollWheelZoom();
-          GDownloadUrl("+mapdata", function(data) {
-            var xml = GXml.parse(data);
-            var markers = xml.documentElement.getElementsByTagName("participant");
-
-            // XXX: This whole for block is identical in the two methods.
-            for (var i = 0; i < markers.length; i++) {
-              var point = new GLatLng(
-                parseFloat(markers[i].getAttribute("lat")),
-                parseFloat(markers[i].getAttribute("lng")));
-              var marker = new GMarker(point);
-              var myHTML = '<div align="center">'
-              myHTML += '<strong>' + markers[i].getAttribute("displayname")
-              myHTML += '</strong><br />'
-              myHTML += markers[i].getAttribute("logo_html")+'<br />'
-              myHTML += '<a href="' + markers[i].getAttribute("url") + '">'
-              myHTML += markers[i].getAttribute("name")+'</a></div>'
-              marker.bindInfoWindowHtml(myHTML);
-              team_map.addOverlay(marker);
-              }
-            });
-
-          }
-
-        //]]>
-        </script>
-        """ % {
-            'center_lat': center_lat,
-            'center_lng': center_lng,
-            'min_lat': min_lat,
-            'min_lng': min_lng,
-            'max_lat': max_lat,
-            'max_lng': max_lng,
-            }
-        return map_html
+            //]]>
+            </script>""" % self.bounds
 
     @property
     def map_portlet_html(self):
         """The HTML which shows the map portlet."""
-        (min_lat, min_lng, max_lat, max_lng, center_lat,
-         center_lng) = self.bounds
+        return """
+            <script type="text/javascript">
 
-        map_html = """
-        <script type="text/javascript">
+            //<![CDATA[
 
-        //<![CDATA[
-
-        if (GBrowserIsCompatible()) {
-          var myWidth = 0, myHeight = 0;
-          if( typeof( window.innerWidth ) == 'number' ) {
-            //Non-IE
-            myWidth = window.innerWidth;
-            myHeight = window.innerHeight;
+            if (GBrowserIsCompatible()) {
+                var dims = getViewportDimensions();
+                var myWidth = dims.w;
+                var myHeight = dims.h;
+                var mapdiv = document.getElementById("team_map_div");
+               
+                var team_map = new GMap2(mapdiv);
+                center = new GLatLng(%(center_lat)s, %(center_lng)s);
+                team_map.setCenter(center, 1);
+                team_map.setMapType(G_NORMAL_MAP);
+                team_map.enableScrollWheelZoom();
+                GDownloadUrl("+mapdata", function(data) {
+                    var required_bounds = new GLatLngBounds();
+                    setMarkersInfoWindow(data, team_map, required_bounds);
+                    zoom_level = team_map.getBoundsZoomLevel(required_bounds);
+                    zoom_level = Math.min(4, zoom_level - 1);
+                    team_map.setZoom(zoom_level);
+                    });
             }
-          else if( document.documentElement && (
-            document.documentElement.clientWidth ||
-            document.documentElement.clientHeight ) ) {
-            //IE 6+ in 'standards compliant mode'
-            myWidth = document.documentElement.clientWidth;
-            myHeight = document.documentElement.clientHeight;
-          } else if( document.body && (
-                document.body.clientWidth ||
-                document.body.clientHeight ) ) {
-            //IE 4 compatible
-            myWidth = document.body.clientWidth;
-            myHeight = document.body.clientHeight;
-          }
-          var mapdiv = document.getElementById("team_map_div");
 
-          var team_map = new GMap2(mapdiv);
-          center = new GLatLng(%(center_lat)s, %(center_lng)s);
-          team_map.setCenter(center, 1);
-          team_map.setMapType(G_NORMAL_MAP);
-          team_map.enableScrollWheelZoom();
-          GDownloadUrl("+mapdata", function(data) {
-            var xml = GXml.parse(data);
-            var markers = xml.documentElement.getElementsByTagName("participant");
-            var required_bounds = new GLatLngBounds();
-
-            for (var i = 0; i < markers.length; i++) {
-              var point = new GLatLng(
-                parseFloat(markers[i].getAttribute("lat")),
-                parseFloat(markers[i].getAttribute("lng")));
-              required_bounds.extend(point);
-              var marker = new GMarker(point);
-              var myHTML = '<div align="center">'
-              myHTML += '<strong>' + markers[i].getAttribute("displayname")
-              myHTML += '</strong><br />'
-              myHTML += markers[i].getAttribute("logo_html")+'<br />'
-              myHTML += '<a href="' + markers[i].getAttribute("url") + '">'
-              myHTML += markers[i].getAttribute("name")+'</a></div>'
-              marker.bindInfoWindowHtml(myHTML);
-              team_map.addOverlay(marker);
-              }
-            zoom_level = team_map.getBoundsZoomLevel(required_bounds);
-            zoom_level = Math.min(4, zoom_level - 1);
-            team_map.setZoom(zoom_level);
-            });
-
-          }
-
-        //]]>
-        </script>
-        """ % {
-            'center_lat': center_lat,
-            'center_lng': center_lng,
-            'min_lat': min_lat,
-            'min_lng': min_lng,
-            'max_lat': max_lat,
-            'max_lng': max_lng,
-            }
-        return map_html
+            //]]>
+            </script>""" % self.bounds
 
 
 class TeamMapData(TeamMapView):
