@@ -422,7 +422,10 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         }
 
     # Methods that require authentication.
-    auth_required_methods = ['login_required']
+    auth_required_methods = [
+        'add_comment',
+        'login_required',
+        ]
 
     expired_cookie = None
 
