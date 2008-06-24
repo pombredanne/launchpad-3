@@ -79,14 +79,21 @@ def writing_transaction(function):
 
 def run_as_requester(function):
     """Decorate 'function' by logging in as the user identified by its first
-    parameter, the `Person` object is then passed in to the function instead of
-    the login ID.
+    parameter, the `Person` object is then passed in to the function instead
+    of the login ID.
+
+    The exception is when the requesting login ID is `LAUNCHPAD_SERVICES`. In
+    that case, we'll pass through the `LAUNCHPAD_SERVICES` variable and the
+    method will do whatever security proxy hackery is required to provide read
+    privileges to the Launchpad services.
 
     Assumes that 'function' is on an object that implements a '_getPerson'
     method similar to `UserDetailsStorageMixin._getPerson`.
     """
     def as_user(self, loginID, *args, **kwargs):
         if loginID == LAUNCHPAD_SERVICES:
+            # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
+            # and expect `function` to use `removeSecurityProxy` or similar.
             return function(self, LAUNCHPAD_SERVICES, *args, **kwargs)
         requester = self._getPerson(loginID)
         login(requester.preferredemail.email)

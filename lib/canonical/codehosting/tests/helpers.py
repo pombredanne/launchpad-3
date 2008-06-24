@@ -24,9 +24,7 @@ from bzrlib.errors import SmartProtocolError
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 
 from canonical.authserver.interfaces import (
-    LAUNCHPAD_SERVICES,
-    PERMISSION_DENIED_FAULT_CODE,
-    )
+    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
