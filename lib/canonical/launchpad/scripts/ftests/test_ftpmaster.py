@@ -327,9 +327,9 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO Override Section to: 'devel'\n"
             "INFO Override Priority to: 'EXTRA'\n"
             "INFO 'pmount-2:1.9-1/main/base/EXTRA' binary "
-                "overridden in hoary hppa\n"
+                "overridden in Ubuntu Hoary hppa\n"
             "INFO 'pmount-0.1-1/universe/editors/IMPORTANT' binary "
-                "overridden in hoary i386")
+                "overridden in Ubuntu Hoary i386")
 
         self.assertCurrentBinary(
             hoary_i386, 'pmount', '0.1-1', 'main', 'devel', 'EXTRA')
@@ -456,13 +456,13 @@ class TestArchiveOverrider(unittest.TestCase):
             "INFO Override Section to: 'web'\n"
             "INFO Override Priority to: 'EXTRA'\n"
             "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
-                "binary overridden in warty hppa\n"
+                "binary overridden in Ubuntu Warty hppa\n"
             "INFO 'mozilla-firefox-data-0.9/main/base/EXTRA' "
-                "binary overridden in warty i386\n"
+                "binary overridden in Ubuntu Warty i386\n"
             "INFO 'mozilla-firefox-0.9/main/base/EXTRA' "
-                "binary overridden in warty hppa\n"
+                "binary overridden in Ubuntu Warty hppa\n"
             "INFO 'mozilla-firefox-1.0/main/base/IMPORTANT' "
-                "binary overridden in warty i386")
+                "binary overridden in Ubuntu Warty i386")
 
         self.assertCurrentBinary(
             warty_i386, 'mozilla-firefox', '1.0', 'main', 'web', 'EXTRA')
