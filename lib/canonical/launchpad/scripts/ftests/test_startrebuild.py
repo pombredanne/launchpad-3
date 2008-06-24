@@ -62,41 +62,20 @@ class TestStartRebuildScript(unittest.TestCase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def getRebuildArchive(self, suite, name):
-        """Return rebuild archive with given suite/name or None."""
-        series = suite.split('-')[0]
-        # Rebuild archive names are prefixed with the DistroSeries name
-        # upon creation.
-        name = "%s-%s" % (series, name)
-
-        archives = []
-        for archive in getUtility(IArchiveSet):
-            if (archive.purpose == ArchivePurpose.REBUILD and
-                archive.name == name):
-                archives.append(archive)
-
-        archives_found = len(archives)
-        assert archives_found <= 1, "Too many rebuild archives"
-
-        # Return the archive if found, None otherwise.
-        if archives_found == 1:
-            [result] = archives
-        else:
-            result = None
-
-        return result
-
     def testRebuildArchiveCreation(self):
         """Start rebuild, check data before and after.
 
         Use the hoary-RELEASE suite along with the main component.
         """
-        suite = 'hoary'
-
         # Make sure a rebuild archive with the desired name does
         # not exist yet.
-        self.assertTrue(
-            self.getRebuildArchive(suite, self.rebld_archive_name) is None)
+        distro_name = 'ubuntu'
+        name = self.rebld_archive_name
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, name)
+        self.assertTrue(rebuild_archive is None)
 
         hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -110,9 +89,9 @@ class TestStartRebuildScript(unittest.TestCase):
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
         extra_args = [
-            '-d', 'ubuntu', '-s', suite, '-c', 'main', '-t',
+            '-d', distro_name, '-s', 'hoary', '-c', 'main', '-t',
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '-r', self.rebld_archive_name, '-u', 'salgado']
+            '-r', name, '-u', 'salgado']
 
         # Start rebuild now!
         (return_code, out, err) = self.runWrapperScript(extra_args)
@@ -122,8 +101,8 @@ class TestStartRebuildScript(unittest.TestCase):
 
         # Make sure the rebuild archive with the desired name was
         # created
-        rebuild_archive = self.getRebuildArchive(
-            suite, self.rebld_archive_name)
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, name)
         self.assertTrue(rebuild_archive is not None)
 
         # Make sure the source packages were cloned.
@@ -201,7 +180,12 @@ class TestStartRebuildScript(unittest.TestCase):
         if archive_name is None:
             archive_name = "ra%s" % now
 
-        rebuild_archive = self.getRebuildArchive(suite, archive_name)
+        distro_name = 'ubuntu'
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, archive_name)
+
         if exists_before:
             self.assertTrue(rebuild_archive is not None)
         else:
@@ -210,7 +194,7 @@ class TestStartRebuildScript(unittest.TestCase):
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
         script_args = [
-            '-d', 'ubuntu', '-s', suite, '-c', component, '-t',
+            '-d', distro_name, '-s', suite, '-c', component, '-t',
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
             '-r', archive_name, '-u', user]
 
@@ -227,7 +211,9 @@ class TestStartRebuildScript(unittest.TestCase):
         else:
             script.mainTask()
 
-        rebuild_archive = self.getRebuildArchive(suite, archive_name)
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, archive_name)
+
         if exists_after:
             self.assertTrue(rebuild_archive is not None)
         else:

@@ -4,7 +4,9 @@
 
 
 __metaclass__ = type
-__all__ = ['RebuildArchiveCreator']
+__all__ = [
+    'RebuildArchiveCreator',
+    ]
 
 
 from zope.component import getUtility
