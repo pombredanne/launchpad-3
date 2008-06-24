@@ -9,19 +9,7 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-
   <body>
-
-    <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/pofile/@@+portlet-details" />
-      <div tal:replace="structure context/pofile/@@+portlet-stats" />
-    </metal:leftportlets>
-
-    <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/pofile/@@+portlet-translators" />
-      <div tal:replace="structure context/pofile/@@+portlet-contributors" />
-    </metal:rightportlets>
-
     <div metal:fill-slot="main">
 
       <div>
@@ -30,6 +18,7 @@
           evolution 2.10 template
         </a>
       </div>
+
       <tal:form-not-writeable condition="not:view/form_is_writeable">
         <h1>
           Browsing
@@ -100,11 +89,12 @@
           </table>
 
         </form>
+
         <!-- Paging doodads. -->
         <tal:navigation
           replace="structure view/batchnav/@@+navigation-links-lower" />
-      </tal:havepluralforms>
       <tal:status replace="structure context/pofile/@@+access" />
+      </tal:havepluralforms>
     </div>
 
   </body>
