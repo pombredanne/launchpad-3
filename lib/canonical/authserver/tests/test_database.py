@@ -732,6 +732,14 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         branch_id = store._createBranchInteraction(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
+        login(ANONYMOUS)
+        try:
+            branch = getUtility(IBranchSet).get(branch_id)
+            self.assertTrue(
+                removeSecurityProxy(branch).private,
+                "%r not private" % (branch,))
+        finally:
+            logout()
         branch_info = store._getBranchInformationInteraction(
             LAUNCHPAD_SERVICES, 'landscape-developers', 'landscape',
             'some-branch')
@@ -748,9 +756,6 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch
         removeSecurityProxy(branch).private = True
-        syncUpdate(branch)
-        syncUpdate(product.development_focus)
-        syncUpdate(product)
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):
