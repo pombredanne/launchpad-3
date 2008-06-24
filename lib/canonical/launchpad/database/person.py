@@ -2382,10 +2382,6 @@ class PersonSet:
 
         if name is None:
             name = nickname.generate_nick(email)
-        if not valid_name(name):
-            raise InvalidName("%s is not a valid name for a person." % name)
-        if self.getByName(name, ignore_merged=False) is not None:
-            raise NameAlreadyTaken("The name '%s' is already taken." % name)
 
         if not displayname:
             displayname = name.capitalize()
@@ -2406,6 +2402,17 @@ class PersonSet:
 
         return person, email
 
+    def createPersonWithoutEmail(
+        self, name, rationale, comment=None, displayname=None,
+        registrant=None):
+        """Create and return a new Person without using an email address.
+
+        See `IPersonSet`.
+        """
+        return self._newPerson(
+            name, displayname, hide_email_addresses=True, rationale=rationale,
+            comment=comment, registrant=registrant)
+
     def _newPerson(self, name, displayname, hide_email_addresses,
                    rationale, comment=None, registrant=None, account=None):
         """Create and return a new Person with the given attributes.
@@ -2413,7 +2420,19 @@ class PersonSet:
         Also generate a wikiname for this person that's not yet used in the
         Ubuntu wiki.
         """
-        assert self.getByName(name, ignore_merged=False) is None
+        if not valid_name(name):
+            raise InvalidName(
+                "%s is not a valid name for a person." % name)
+        else:
+            # The name should be okay, move on...
+            pass
+        if self.getByName(name, ignore_merged=False) is not None:
+            raise NameAlreadyTaken(
+                "The name '%s' is already taken." % name)
+
+        if not displayname:
+            displayname = name.capitalize()
+
         person = Person(
             name=name, displayname=displayname, account=account,
             creation_rationale=rationale, creation_comment=comment,

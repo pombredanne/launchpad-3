@@ -27,6 +27,7 @@ __all__ = [
     'WADLError',
     ]
 
+import urllib
 from urlparse import urlparse
 import simplejson
 try:
@@ -48,7 +49,12 @@ def wadl_xpath(tag_name):
     return './' + wadl_tag(tag_name)
 
 
-class NoBoundRepresentationError(Exception):
+class WADLError(Exception):
+    """An exception having to do with the state of the WADL application."""
+    pass
+
+
+class NoBoundRepresentationError(WADLError):
     """An unbound resource was used where wadllib expected a bound resource.
 
     To obtain the value of a resource's parameter, you first must bind
@@ -58,7 +64,7 @@ class NoBoundRepresentationError(Exception):
     """
 
 
-class UnsupportedMediaTypeError(Exception):
+class UnsupportedMediaTypeError(WADLError):
     """A media type was given that's not supported in this context.
 
     A resource can only be bound to media types it has representations
@@ -234,7 +240,7 @@ class Resource(WADLResolvableDefinition):
                         for param in request.findall(wadl_xpath('param')))
                     if not required_params.issubset(method_params):
                         continue
-                return Method(self.application, method_tag)
+                return Method(self, method_tag)
         return None
 
     def get_param(self, param_name):
@@ -242,7 +248,8 @@ class Resource(WADLResolvableDefinition):
         if self.representation is None:
             raise NoBoundRepresentationError(
                 "Resource is not bound to any representation.")
-        representation_tag = self.representation_definition.resolve_definition().tag
+        definition = self.representation_definition.resolve_definition()
+        representation_tag = definition.tag
         for param_tag in representation_tag.findall(wadl_xpath('param')):
             if param_tag.attrib.get('name') == param_name:
                 return Parameter(self, param_tag)
@@ -265,25 +272,107 @@ class Resource(WADLResolvableDefinition):
 class Method(WADLBase):
     """A wrapper around an XML <method> tag.
     """
-    def __init__(self, application, method_tag):
+    def __init__(self, resource, method_tag):
         """Initialize with a <method> tag.
 
         :param method_tag: An ElementTree <method> tag.
         """
-        self.application = application
+        self.resource = resource
+        self.application = self.resource.application
         self.tag = method_tag
 
     @property
+    def request(self):
+        """Return the definition of a request that invokes the WADL method."""
+        return RequestDefinition(self, self.tag.find(wadl_xpath('request')))
+
+    @property
     def response(self):
-        """Return the definition of the response to this method."""
+        """Return the definition of the response to the WADL method."""
         return ResponseDefinition(self.application,
                                   self.tag.find(wadl_xpath('response')))
 
-
     @property
     def id(self):
-        """The XML ID of this method definition."""
+        """The XML ID of the WADL method definition."""
         return self.tag.attrib.get('id')
+
+    @property
+    def name(self):
+        """The name of the WADL method definition.
+
+        This is also the name of the HTTP method (GET, POST, etc.)
+        that should be used to invoke the WADL method.
+        """
+        return self.tag.attrib.get('name')
+
+    def build_request_url(self,  param_values=None, **kw_param_values):
+        """Return the request URL to use to invoke this method."""
+        return self.request.build_url(param_values, **kw_param_values)
+
+
+class RequestDefinition(WADLBase):
+    """A wrapper around the description of the request invoking a method."""
+    def __init__(self, method, request_tag):
+        """Initialize with a <request> tag.
+
+        :param resource: The resource to which this request can be sent.
+        :param request_tag: An ElementTree <request> tag.
+        """
+        self.method = method
+        self.resource = self.method.resource
+        self.application = self.resource.application
+        self.tag = request_tag
+
+    @property
+    def query_params(self):
+        """Return the query parameters for this method."""
+        if self.tag is None:
+            return []
+        param_tags = self.tag.findall(wadl_xpath('param'))
+        if param_tags is None:
+            return []
+        return [Parameter(self.resource, param_tag)
+                for param_tag in param_tags
+                if param_tag.attrib.get('style') == 'query']
+
+    def build_url(self, param_values=None, **kw_param_values):
+        """Return the request URL to use to invoke this method."""
+        if param_values is None:
+            full_param_values = {}
+        else:
+            full_param_values = dict(param_values)
+        full_param_values.update(kw_param_values)
+        validated_values = {}
+        for param in self.query_params:
+            name = param.name
+            if param.fixed_value is not None:
+                conflict = (full_param_values.has_key(name)
+                            and full_param_values[name] != param.fixed_value)
+                if conflict:
+                    raise KeyError(("Value '%s' for parameter '%s' "
+                                    "conflicts with fixed value '%s'")
+                                   % (full_param_values[name], name,
+                                      param.fixed_value))
+                full_param_values[name] = param.fixed_value
+
+            if param.is_required and not full_param_values.has_key(name):
+                raise KeyError(
+                    "No value for required parameter '%s'" % name)
+            validated_values[name] = full_param_values[name]
+            del full_param_values[name]
+        if len(full_param_values) > 0:
+            raise ValueError("Unrecognized parameter(s): '%s'"
+                             % "', '".join(full_param_values.keys()))
+        url = self.resource.url
+        if len(validated_values) > 0:
+            if '?' in url:
+                append = '&'
+            else:
+                append = '?'
+            url += append + urllib.urlencode(validated_values)
+        return url
+
 
 
 class ResponseDefinition(WADLBase):
@@ -355,6 +444,27 @@ class Parameter(WADLBase):
         self.application = resource_definition.application
         self.resource_definition = resource_definition
         self.tag = tag
+
+    @property
+    def name(self):
+        """The name of this parameter."""
+        return self.tag.attrib.get('name')
+
+    @property
+    def fixed_value(self):
+        """The value to which this parameter is fixed, if any.
+
+        A fixed parameter must be present in invocations of a WADL
+        method, and it must have a particular value. This is commonly
+        used to designate one parameter as containing the name of the
+        server-side operation to be invoked.
+        """
+        return self.tag.attrib.get('fixed')
+
+    @property
+    def is_required(self):
+        """Whether or not a value for this parameter is required."""
+        return self.tag.attrib.get('required', False).lower() in ['1', 'true']
 
     def get_value(self):
         """The value of this parameter in the bound representation.
@@ -476,14 +586,6 @@ class Application(WADLBase):
         if resource_type is None:
             raise KeyError('No such XML ID: "%s"' % resource_type_url)
         return resource_type
-
-        # XXX leonardr 2008-05-28:
-        # Eventually we need to implement this for non-relative URLs,
-        # so that a script using this client can navigate from a WADL
-        # representation of a non-root resource to its definition at
-        # the server root.
-        raise NotImplementedError("Can't look up definition in another "
-                                  "url (%s)" % resource_type_url)
 
     def lookup_xml_id(self, url):
         """A helper method for locating a part of a WADL document.
