@@ -121,6 +121,7 @@ data in a bug task is derived from the bug.
    (u'bug_link', u'http://api.launchpad.dev/beta/bugs/1'),
    (u'bug_target_display_name', u'mozilla-firefox (Debian)'),
    (u'bug_target_name', u'mozilla-firefox (Debian)'),
+   (u'bug_watch_link', u'http://api.launchpad.dev/beta/bugs/1/+watch/8'),
    (u'date_assigned', u'2005-01-04T11:07:20.584746+00:00'),
    (u'date_closed', None),
    (u'date_confirmed', None),
