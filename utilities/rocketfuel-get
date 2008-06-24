@@ -13,24 +13,29 @@ RSYNCOPTIONS="-avp --partial --progress --delete"
 ssh-add -l
 if [ $? -gt 0 ]; then ssh-add; fi
 
+# Pull from devpad trunk
+cd ~/canonical/lp-branches/trunk
+INITIAL_REV=$(bzr revno)
+bzr pull
+FINAL_REV=$(bzr revno)
+
+# Exit if there are no new revisions
+if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
+
+
+# Update the source dependencies
 if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
 
 rsync $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
 
 cd ~/canonical/lp-branches
 for branch in *; do
-  if [ -d $branch ]
+  if [ -d $branch/sourcecode ]
   then
-     cd $branch
-     if [ -d sourcecode ]
-     then
-        echo "Updating sourcecode dependencies for ${branch}"
-        ../trunk/utilities/link-external-sourcecode ../../lp-sourcedeps
-     fi
-     cd ..
+    echo "Updating sourcecode dependencies for ${branch}"
+    trunk/utilities/link-external-sourcecode --target=$branch --parent=../lp-sourcedeps
   fi
 done
 
-cd ~/canonical/lp-branches/trunk
-bzr pull
+cd trunk
 make

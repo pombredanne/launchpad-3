@@ -14,7 +14,11 @@ import xml.parsers.expat
 import xmlrpclib
 
 from datetime import datetime
+from email.Utils import parseaddr
 from xml.dom import minidom
+
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical import encoding
 from canonical.launchpad.components.externalbugtracker import (
@@ -23,6 +27,9 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.interfaces.externalbugtracker import (
+    ISupportsCommentImport)
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -283,6 +290,8 @@ class Bugzilla(ExternalBugTracker):
 class BugzillaLPPlugin(Bugzilla):
     """An `ExternalBugTracker` to handle BugZillas using the LP Plugin."""
 
+    implements(ISupportsCommentImport)
+
     def __init__(self, baseurl, xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
@@ -292,21 +301,20 @@ class BugzillaLPPlugin(Bugzilla):
             self.xmlrpc_transport = xmlrpc_transport
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+        self.server = xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}
         self.bug_aliases = {}
 
-        server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
         # First, grab the bugs from the remote server.
         request_args = {
             'ids': bug_ids,
             'permissive': True,
             }
-        response_dict = server.Bug.get_bugs(request_args)
+        response_dict = self.server.Bug.get_bugs(request_args)
         remote_bugs = response_dict['bugs']
 
         # Now copy them into the local bugs dict.
@@ -322,10 +330,7 @@ class BugzillaLPPlugin(Bugzilla):
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
-        time_dict = server.Launchpad.time()
+        time_dict = self.server.Launchpad.time()
 
         # Return the UTC time sent by the server so that we don't have
         # to care about timezones.
@@ -336,20 +341,26 @@ class BugzillaLPPlugin(Bugzilla):
         server_utc_time = datetime.utcfromtimestamp(server_timestamp)
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
-    def getRemoteStatus(self, bug_id):
-        """See `IExternalBugTracker`."""
+    def _getActualBugId(self, bug_id):
+        """Return the actual bug id for an alias or id."""
         # See if bug_id is actually an alias.
         actual_bug_id = self.bug_aliases.get(bug_id)
 
         # bug_id isn't an alias, so try turning it into an int and
         # looking the bug up by ID.
-        if actual_bug_id is None:
+        if actual_bug_id is not None:
+            return actual_bug_id
+        else:
             try:
-                actual_bug_id = int(bug_id)
+                return int(bug_id)
             except ValueError:
                 # If bug_id can't be int()'d then it's likely an alias
                 # that doesn't exist, so raise BugNotFound.
                 raise BugNotFound(bug_id)
+
+    def getRemoteStatus(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
 
         try:
             status = self.bugs[actual_bug_id]['status']
@@ -362,6 +373,76 @@ class BugzillaLPPlugin(Bugzilla):
 
         except KeyError:
             raise BugNotFound(bug_id)
+
+    def getCommentIds(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Check that the bug exists, first.
+        if actual_bug_id not in self.bugs:
+            raise BugNotFound(bug_watch.remotebug)
+
+        # Get only the remote comment IDs and store them in the
+        # 'comments' field of the bug.
+        request_params = {
+            'bug_ids': [actual_bug_id],
+            'include': ['id'],
+            }
+        bug_comments_dict = self.server.Bug.comments(request_params)
+
+        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
+        return [comment['id'] for comment in bug_comments]
+
+    def fetchComments(self, bug_watch, comment_ids):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Fetch the comments we want.
+        request_params = {
+            'bug_ids': [actual_bug_id],
+            'ids': comment_ids,
+            }
+        bug_comments_dict = self.server.Bug.comments(request_params)
+        comment_list = bug_comments_dict['bugs'][actual_bug_id]
+
+        # Transfer the comment list into a dict.
+        bug_comments = dict(
+            (comment['id'], comment) for comment in comment_list)
+
+        self.bugs[actual_bug_id]['comments'] = bug_comments
+
+    def getPosterForComment(self, bug_watch, comment_id):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+        display_name, email = parseaddr(comment['author'])
+
+        # If the name is empty then we return None so that
+        # IPersonSet.ensurePerson() can actually do something with it.
+        if not display_name:
+            display_name = None
+
+        return (display_name, email)
+
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+
+        # Turn the time in the comment, which is an XML-RPC datetime
+        # into something more useful to us.
+        comment_timestamp = time.mktime(
+            time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
+        comment_datetime = datetime.fromtimestamp(comment_timestamp)
+        comment_datetime = comment_datetime.replace(
+            tzinfo=pytz.timezone('UTC'))
+
+        message = getUtility(IMessageSet).fromText(
+            owner=poster, subject='', content=comment['text'],
+            datecreated=comment_datetime)
+
+        return message
 
 
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):
