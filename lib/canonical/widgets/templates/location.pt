@@ -23,28 +23,30 @@ function setLocation(lat, lng, field_name, latname, lngname) {
     document.getElementById(lngname).value = lng;
 
     var request = new JSONScriptRequest();
-    var url = "%(tz_ws_url)s"+"?username=launchpad&lat="+lat.toString()+"&lng="+lng.toString();
+    var url = "%(tz_ws_url)s" + "?username=launchpad&lat=" + lat.toString() +
+        "&lng=" + lng.toString();
 
-    document.getElementById(field_name+".spinner").src = "/@@/spin";
+    document.getElementById(field_name + ".spinner").src = "/@@/spin";
     request.open("GET", url);
 
-    request.onreadystatechange = function() {
+    function succeeded() {
       if (request.readyState == 4) {
         if (request.responseText) {
           tz = request.responseJSON.timezoneId;
           document.getElementById(field_name).value = tz;
-          document.getElementById(field_name+".spinner").src = "/@@/nospin";
+          document.getElementById(field_name + ".spinner").src = "/@@/nospin";
         }
       }
-    };
+    }
+    request.onreadystatechange = succeeded;
     request.send(null);
 }
 
 
 if (GBrowserIsCompatible()) {
-    var width_and_height = getWindowWidthAndHeight();
-    var myWidth = width_and_height[0];
-    var myHeight = width_and_height[1];
+    var dims = getViewportDimensions();
+    var myWidth = dims.w;
+    var myHeight = dims.h;
     var mapdiv = document.getElementById("%(div)s");
     var mapheight = (parseInt(mapdiv.offsetWidth) / 16 * 9);
     mapheight = Math.min(mapheight, myHeight - 180);
@@ -62,42 +64,42 @@ if (GBrowserIsCompatible()) {
     %(map)s.enableScrollWheelZoom();
 
     var marker = new GMarker(center, {draggable: true});
-    var myHTML = '<div align="center">'
+    var myHTML = '<div style="text-align: center">'
     myHTML = myHTML + '<strong>%(displayname)s</strong><br />'
     myHTML = myHTML + '%(logo_html)s<br />'
     myHTML = myHTML + '(%(name)s)'+ '</div>'
     marker.bindInfoWindowHtml(myHTML, {maxWidth: 120});
 
     GEvent.addListener(marker, "dragend", function() {
-      point = marker.getLatLng();
-      setLocation(
-        point.lat(), point.lng(), "%(tz_name)s",
-        "%(latname)s", "%(lngname)s");
+        point = marker.getLatLng();
+        setLocation(
+            point.lat(), point.lng(), "%(tz_name)s",
+            "%(latname)s", "%(lngname)s");
     });
 
     GEvent.addListener(marker, "dragstart", function() {
-      marker.closeInfoWindow();
+        marker.closeInfoWindow();
     });
 
     %(map)s.addOverlay(marker);
     if (!%(show_marker)s) {
-      marker.hide();
-      };
+        marker.hide();
+    };
 
     GEvent.addListener(%(map)s, "zoomend", function() {
-      marker.closeInfoWindow();
-      });
+        marker.closeInfoWindow();
+    });
 
     GEvent.addListener(%(map)s, "click", function(overlay, point) {
-      marker.setPoint(point);
-      if (marker.isHidden()) {
-        marker.show();
-        %(map)s.panTo(point);
+        marker.setPoint(point);
+        if (marker.isHidden()) {
+            marker.show();
+            %(map)s.panTo(point);
         };
-      setLocation(
-        point.lat(), point.lng(), "%(tz_name)s",
-        "%(latname)s", "%(lngname)s");
-     });
+        setLocation(
+            point.lat(), point.lng(), "%(tz_name)s",
+            "%(latname)s", "%(lngname)s");
+    });
 
   }
 
