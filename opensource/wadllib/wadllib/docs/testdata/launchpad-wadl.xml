@@ -2537,3 +2537,4 @@ transitionToStatus() when the client writes to the bug task's
     <wadl:method name="DELETE" id="HostedFile-put"/>
   </wadl:resource_type>
 </wadl:application>
+
