@@ -29,8 +29,8 @@
           attributes="destroySelf"
           set_attributes="aliases baseurl bugtrackertype contactdetails
                           getBugWatchesNeedingUpdate getBugsWatching
-                          getLinkedPersonByName linkPersonToSelf owner
-                          summary title" />
+                          getLinkedPersonByName linkPersonToSelf name
+                          owner summary title" />
     </content>
 
     <browser:defaultView
