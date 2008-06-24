@@ -28,8 +28,9 @@ javascript.
     >>> request.needs_json
     True
 
-When salgado sets his own location, we'll center the map around the
-location where he seems to be, based on the IP address of the request.
+When rendering salgado's location widget to himself, we'll center the
+map around the location where he seems to be, based on the IP address of
+the request.
 
     >>> login(salgado.preferredemail.email)
     >>> widget = LocationWidget(bound_field, request)
@@ -39,12 +40,16 @@ location where he seems to be, based on the IP address of the request.
     -23...
     >>> widget.center_long
     -47...
+
+Since salgado's location hasn't been specified yet, there'll be no
+visual marker indicating where he is in the map.
+
     >>> widget.show_marker
     0
 
-If someone else sets salgado's location, though, we have no way of
-guessing what coordinates to center the map around, so we won't try
-to do so.
+If someone else sees salgado's location widget, though, we have no way
+of guessing what coordinates to center the map around (because the
+request doesn't come from salgado's browser), so we won't try to do so.
 
     >>> login(ANONYMOUS)
     >>> widget = LocationWidget(bound_field, request)
@@ -57,9 +62,10 @@ to do so.
     >>> widget.show_marker
     0
 
-When setting the location of someone who already specified a location,
-we'll obviously center the map around that, but we'll also put a marker
-in the place specified.
+When rendering the location widget of someone who already specified a
+location, we'll obviously center the map around that, but we'll also put
+a visual marker in the latitude/longitude specified as that person's
+location.
 
     >>> kamion = getUtility(IPersonSet).getByName('kamion')
     >>> bound_field = field.bind(kamion)
