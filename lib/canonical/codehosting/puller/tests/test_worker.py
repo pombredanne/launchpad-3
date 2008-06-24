@@ -33,16 +33,6 @@ from canonical.testing import LaunchpadScriptLayer, reset_logging
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
 
-    test_dir = None
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        PullerWorkerMixin.setUp(self)
-
-    def tearDown(self):
-        PullerWorkerMixin.tearDown(self)
-        TestCaseWithTransport.tearDown(self)
-
     def testMirrorActuallyMirrors(self):
         # Check that mirror() will mirror the Bazaar branch.
         source_tree = self.make_branch_and_tree('source-branch')
@@ -151,12 +141,6 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
 class TestCanTraverseReferences(unittest.TestCase, PullerWorkerMixin):
     """Unit tests for PullerWorker._canTraverseReferences."""
-
-    def setUp(self):
-        PullerWorkerMixin.setUp(self)
-
-    def tearDown(self):
-        PullerWorkerMixin.setUp(self)
 
     def makeBranch(self, branch_type):
         """Helper to create a PullerWorker with a specified branch_type."""
@@ -323,14 +307,10 @@ class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
     """
 
     def setUp(self):
-        PullerWorkerMixin.setUp(self)
         self.test_dir = tempfile.mkdtemp()
         self.output = StringIO()
         self.protocol = PullerWorkerProtocol(self.output)
         self.branch_to_mirror = self.makePullerWorker()
-
-    def tearDown(self):
-        PullerWorkerMixin.tearDown(self)
 
     def assertSentNetstrings(self, expected_netstrings):
         """Assert that the protocol sent the given netstrings (in order)."""

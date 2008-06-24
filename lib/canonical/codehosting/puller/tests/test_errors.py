@@ -376,13 +376,8 @@ class TestErrorHandling(ErrorHandlingTestCase):
 class TestPullerWorker_SourceProblems(TestCaseWithTransport,
                                       PullerWorkerMixin):
 
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        PullerWorkerMixin.setUp(self)
-
     def tearDown(self):
-        PullerWorkerMixin.tearDown(self)
-        TestCaseWithTransport.tearDown(self)
+        super(TestPullerWorker_SourceProblems, self).tearDown()
         reset_logging()
 
     def assertMirrorFailed(self, puller_worker, message_substring):
