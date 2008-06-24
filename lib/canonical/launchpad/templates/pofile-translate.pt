@@ -192,10 +192,6 @@
           </form>
           <!-- Paging doodads. -->
           <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
-          <p tal:condition="not: view/user_is_official_translator">
-            Your translations will be held for review by
-            the official translators for this file.
-          </p>
         </tal:block>
         <tal:status replace="structure context/@@+access" />
         <tal:contributors replace="structure context/@@+contributors" />

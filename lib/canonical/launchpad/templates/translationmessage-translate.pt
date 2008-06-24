@@ -90,17 +90,10 @@
             </tbody>
             <tfoot>
               <tr tal:condition="view/form_is_writeable">
-                <th colspan="5">
-                  <tal:review
-                    condition="not: view/user_is_official_translator"
-                  >
-                    Your translations will be held for review by the official
-                    translators for this file.
-                  </tal:review>
+                <th colspan="5" style="text-align: right;">
                   <input type="submit"
                          name="submit_translations"
-                         value="Save &amp; Continue"
-                         style="text-align: right;" />
+                         value="Save &amp; Continue" />
                 </th>
               </tr>
             </tfoot>
@@ -111,6 +104,7 @@
         <tal:navigation
           replace="structure view/batchnav/@@+navigation-links-lower" />
       </tal:havepluralforms>
+      <tal:status replace="structure context/pofile/@@+access" />
     </div>
 
   </body>
