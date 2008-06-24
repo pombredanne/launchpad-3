@@ -9,9 +9,9 @@ A widget used when setting the geographic location of a given person.
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> field = LocationField(__name__='location', title=u'Location')
 
-It uses the javascript for Google maps API, so it'll set that
-information in the request for our main-template to include the
-javascript.
+JavaScript and JSON are used in the Google Maps API.  By setting the
+needs_gmap2 and needs_json attributes of the request, the main template
+will include the necessary code to enable these features.
 
     >>> bound_field = field.bind(salgado)
     >>> request = LaunchpadTestRequest(
@@ -93,8 +93,8 @@ which stored the geographic coordinates and the timezone.
     >>> location = widget.getInputValue()
     >>> location
     <canonical.widgets.location.LocationValue...
-    >>> location.latitude
-    51.29...
+    >>> location.latitude # Only the integral part due to rounding errors.
+    51...
     >>> location.longitude
     0.32...
     >>> location.time_zone
@@ -140,3 +140,21 @@ latitude/longitude have non-realistic values.
     ...
     WidgetInputError:...Please provide a more realistic latitude and
     longitude...
+
+
+== The widget's HTML ==
+
+The widget's HTML will include <input> elements for the latitude,
+longitude and time zone fields.  The values of these elements will be
+set from within Javascript whenever the user changes the location on
+the map.
+
+    >>> bound_field = field.bind(kamion)
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REMOTE_ADDR': '201.13.165.145'})
+    >>> login(kamion.preferredemail.email)
+    >>> widget = LocationWidget(bound_field, request)
+    >>> print widget()
+    <input...name="field.location.latitude"...type="hidden"...
+    <input...name="field.location.longitude"...type="hidden"...
+    <select...name="field.location.time_zone"...

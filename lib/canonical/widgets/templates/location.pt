@@ -42,25 +42,9 @@ function setLocation(lat, lng, field_name, latname, lngname) {
 
 
 if (GBrowserIsCompatible()) {
-    var myWidth = 0, myHeight = 0;
-    if (typeof(window.innerWidth) == 'number') {
-      // Non-IE
-      myWidth = window.innerWidth;
-      myHeight = window.innerHeight;
-    }
-    else if (document.documentElement && (
-      document.documentElement.clientWidth ||
-      document.documentElement.clientHeight)) {
-      // IE 6+ in 'standards compliant mode'
-      myWidth = document.documentElement.clientWidth;
-      myHeight = document.documentElement.clientHeight;
-    } else if (document.body && (
-          document.body.clientWidth ||
-          document.body.clientHeight)) {
-      // IE 4 compatible
-      myWidth = document.body.clientWidth;
-      myHeight = document.body.clientHeight;
-    }
+    var width_and_height = getWindowWidthAndHeight();
+    var myWidth = width_and_height[0];
+    var myHeight = width_and_height[1];
     var mapdiv = document.getElementById("%(div)s");
     var mapheight = (parseInt(mapdiv.offsetWidth) / 16 * 9);
     mapheight = Math.min(mapheight, myHeight - 180);
