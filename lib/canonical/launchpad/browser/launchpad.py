@@ -162,19 +162,26 @@ class MenuBox(LaunchpadView):
     def initialize(self):
         menuapi = MenuAPI(self.context)
         # We are only interested on enabled links in non development mode.
-        context_menu_links = menuapi.context
         self.contextmenuitems = sorted([
-            link for link in context_menu_links.values() if (link.enabled or
-                                                             config.devmode)],
+            link for link in menuapi.context.values()
+            if link.enabled or config.devmode],
             key=operator.attrgetter('sort_key'))
+        facet = menuapi.selectedfacetname()
+        if facet not in ('unknown', 'bounties'):
+            # XXX sinzui 2008-06-23 bug=242453:
+            # Why are we getting unknown? Bouties are borked. We need
+            # to end the facet hacks to get a clear state for the menus.
+            application_links = getattr(menuapi, facet).values()
+        else:
+            application_links = []
         self.applicationmenuitems = sorted([
-            link for link in menuapi.application() if (link.enabled or
-                                                       config.devmode)],
+            link for link in application_links
+            if link.enabled or config.devmode],
             key=operator.attrgetter('sort_key'))
 
     def render(self):
         if (not self.contextmenuitems and not self.applicationmenuitems):
-            return ''
+            return u''
         else:
             return self.template()
 
