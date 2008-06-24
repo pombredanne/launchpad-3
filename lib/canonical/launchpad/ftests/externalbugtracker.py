@@ -424,12 +424,6 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
     expired_cookie = None
 
-    def __init__(self):
-        # Can't use super() here because xmlrpclib.Transport is an
-        # old-style class.
-        BugzillaXMLRPCTransport.__init__(self)
-        self.last_response_headers = HTTPMessage(StringIO())
-
     def expireCookie(self, cookie):
         """Mark the cookie as expired."""
         self.expired_cookie = cookie
