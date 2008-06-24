@@ -8,7 +8,8 @@ class PullerWorkerMixin:
     """Mixin for tests that want to make PullerWorker objects.
 
     Assumes that it is mixed into a class that runs in a temporary directory,
-    such as `TestCaseInTempDir`.
+    such as `TestCaseInTempDir` and that `get_transport` is provided as a
+    method.
     """
 
     def makePullerWorker(self, src_dir=None, dest_dir=None, branch_type=None,

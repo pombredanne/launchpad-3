@@ -5,12 +5,11 @@
 __metaclass__ = type
 
 from StringIO import StringIO
-import tempfile
 import unittest
 
 import bzrlib.branch
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.codehosting.puller.worker import (
@@ -48,7 +47,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
 
-class TestCanTraverseReferences(unittest.TestCase, PullerWorkerMixin):
+class TestCanTraverseReferences(TestCaseInTempDir, PullerWorkerMixin):
     """Unit tests for PullerWorker._canTraverseReferences."""
 
     def makeBranch(self, branch_type):
@@ -210,13 +209,13 @@ class TestCheckBranchReference(unittest.TestCase):
             'http://example.com/reference-2'])
 
 
-class TestWorkerProtocol(unittest.TestCase, PullerWorkerMixin):
+class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
     """Tests for the client-side implementation of the protocol used to
     communicate to the master process.
     """
 
     def setUp(self):
-        self.test_dir = tempfile.mkdtemp()
+        TestCaseInTempDir.setUp(self)
         self.output = StringIO()
         self.protocol = PullerWorkerProtocol(self.output)
         self.branch_to_mirror = self.makePullerWorker()
