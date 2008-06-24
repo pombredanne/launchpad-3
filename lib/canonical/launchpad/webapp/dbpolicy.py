@@ -11,6 +11,9 @@ __all__ = [
         'LaunchpadDatabasePolicy',
         ]
 
+from storm.zope.interfaces import IZStorm
+
+from zope.component import getUtility
 from zope.interface import implements
 
 import canonical.launchpad.webapp.adapter as da
@@ -33,10 +36,17 @@ class LaunchpadDatabasePolicy:
         databases based on the type of request or if read only mode is in
         operation.
         """
+        self.read_only = self.request.method in ['GET', 'HEAD']
+
         # Tell our custom database adapter that the request has started.
         da.set_request_started()
 
-        readonly = self.request.method in ['GET', 'HEAD']
+        # And if we need write access or not.
+        main_store = getUtility(IZStorm).get('main')
+        if self.read_only:
+            main_store.execute("SET transaction_read_only TO TRUE")
+        else:
+            main_store.execute("SET transaction_read_only TO FALSE")
         
     def endRequest(self):
         """Cleanup.
@@ -44,4 +54,8 @@ class LaunchpadDatabasePolicy:
         This method is invoked by LaunchpadBrowserPublication.endRequest.
         """
         da.clear_request_started()
+
+        if self.read_only:
+            main_store = getUtility(IZStorm).get('main')
+            main_store.execute("SET transaction_read_only TO FALSE")
 

@@ -144,12 +144,12 @@ class LaunchpadBrowserPublication(
         threadrequestfile.write(request_txt)
         threadrequestfile.close()
 
-        self.db_policy = IDatabasePolicy(request)
-        self.db_policy.beforeTraversal()
-
         newInteraction(request)
 
         transaction.begin()
+
+        self.db_policy = IDatabasePolicy(request)
+        self.db_policy.beforeTraversal()
 
         getUtility(IOpenLaunchBag).clear()
 
