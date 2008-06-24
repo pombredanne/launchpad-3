@@ -50,3 +50,5 @@ issue the DB query and render the page, showing the OOPS id to the user.
     <...OOPS_ID_MARKER...
 
     >>> test_config_data = config.pop('test_data')
+    >>> from canonical.launchpad.webapp.adapter import clear_request_started
+    >>> clear_request_started()
