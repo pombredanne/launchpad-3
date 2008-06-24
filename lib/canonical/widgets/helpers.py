@@ -9,4 +9,8 @@ def get_widget_template(filename):
     """Return the content of lib/canonical/widgets/templates/<filename>."""
     here = os.path.dirname(__file__)
     template_path = os.path.join(here, 'templates', filename)
-    return open(template_path).read()
+    file = open(template_path)
+    try:
+        return file.read()
+    finally:
+        file.close()
