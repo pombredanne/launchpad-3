@@ -2636,19 +2636,18 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
             //<![CDATA[
 
             if (GBrowserIsCompatible()) {
-              var width_and_height = getWindowWidthAndHeight();
-              var myWidth = width_and_height[0];
-              var myHeight = width_and_height[1];
-              var mapdiv = document.getElementById("person_map_div");
-
-              var map = new GMap2(mapdiv);
-              center = new GLatLng(%(center_lat)s, %(center_lng)s);
-              map.setCenter(center, 1);
-              map.setMapType(G_NORMAL_MAP);
-              map.addControl(new GSmallZoomControl());
-              map.enableScrollWheelZoom();
-              var marker = new GMarker(center);
-              map.addOverlay(marker);
+                var dims = getViewportDimensions();
+                var myWidth = dims.w;
+                var myHeight = dims.h;
+                var mapdiv = document.getElementById("person_map_div");
+                var map = new GMap2(mapdiv);
+                center = new GLatLng(%(center_lat)s, %(center_lng)s);
+                map.setCenter(center, 1);
+                map.setMapType(G_NORMAL_MAP);
+                map.addControl(new GSmallZoomControl());
+                map.enableScrollWheelZoom();
+                var marker = new GMarker(center);
+                map.addOverlay(marker);
             }
 
             //]]>
