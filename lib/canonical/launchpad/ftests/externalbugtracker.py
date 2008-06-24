@@ -521,7 +521,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         random_cookie_1 = str(random.random())
         random_cookie_2 = str(random.random())
 
-        # Reset the headers to that we don't end up with long strings of
+        # Reset the headers so that we don't end up with long strings of
         # repeating cookies.
         self.last_response_headers = HTTPMessage(StringIO())
 
@@ -531,7 +531,8 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
             'set-cookie', 'Bugzilla_logincookie=%s;' % random_cookie_2)
 
         # We always return the same user ID.
-        # And yes, we have to listify this. Because of xmlrpclib.py:1387.
+        # This has to be listified because xmlrpclib tries to expand
+        # sequences of length 1.
         return [{'user_id': 42}]
 
     def get_bugs(self, arguments):
