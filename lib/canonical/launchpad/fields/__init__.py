@@ -132,7 +132,7 @@ class ILocationField(IField):
 
     latitude = Float(title=_('Latitude'))
     longitude = Float(title=_('Longitude'))
-    time_zone = Text(title=_('Time zone'))
+    time_zone = Choice(title=_('Time zone'), vocabulary='TimezoneName')
 
 
 class IShipItRecipientDisplayname(ITextLine):

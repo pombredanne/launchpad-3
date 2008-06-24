@@ -1,7 +1,7 @@
 = GeoNames.net / GeoNames.org =
 
 We use a commercial account for GeoNames web services, to do reverse
-time zone lookups. The account details were setup by mark Shuttleworth, and
+time zone lookups. The account details were setup by Mark Shuttleworth, and
 are:
 
    username:  launchpad
