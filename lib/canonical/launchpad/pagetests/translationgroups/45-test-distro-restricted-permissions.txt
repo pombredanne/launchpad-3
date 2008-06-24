@@ -23,22 +23,41 @@ Sotho. We expect them to be told they can only make contributions:
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open(
-    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/st/+translate')
-    >>> print find_tag_by_id(browser.contents, 'translation-managers').renderContents()
-    This translation is managed by <a ...>Spanish testing team</a>,
-    appointed by <a ...>Just a testing team</a>.
-    >>> print find_tag_by_id(browser.contents, 'translation-access').renderContents()
+
+    >>> def get_detail_tag(browser, tag_class):
+    ...     """Find tag of given class in translation page."""
+    ...     tag = find_tag_by_id(browser.contents, tag_class)
+    ...     if not tag:
+    ...         return None
+    ...     else:
+    ...         return tag.renderContents()
+
+    >>> print get_detail_tag(browser, 'translation-managers')
+    This translation is managed by <...> translation group
+    <...>polyglot<...>.
+
+    >>> print get_detail_tag(browser, 'translation-access')
     Your suggestions will be held for review...
 
 However, in Welsh, No Privileges Person DOES have the ability to edit
 directly.
 
-First, we show that the message 137 is not translated.
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     '+pots/evolution-2.2/cy/8/+translate')
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...     '+pots/evolution-2.2/cy/8/+translate')
+    >>> print get_detail_tag(browser, 'translation-managers')
+    This translation is managed by <...No Privileges Person<...>, assigned by
+    <...>polyglot<...>.
+
+    >>> print get_detail_tag(browser, 'translation-access')
+    You have full access to this translation.
+
+Message number 137 is not yet translated.
+
   >>> '(no translation yet)' in browser.contents
   True
 
