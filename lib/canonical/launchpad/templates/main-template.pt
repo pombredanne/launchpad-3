@@ -19,6 +19,7 @@
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       revno modules/canonical.launchpad.versioninfo/revno;
       icingroot string:${rooturl}+icing/rev${revno};
+      icingroot_contrib string:${rooturl}+icing-contrib/rev${revno};
       site_message modules/canonical.config/config/launchpad/site_message;
       devmode modules/canonical.config/config/devmode;
       is_demo modules/canonical.config/config/launchpad/is_demo;
@@ -104,9 +105,9 @@
     </script>
     <tal:needs_json tal:condition="request/needs_json">
       <script type="text/javascript"
-        tal:attributes="src string:${icingroot}/json2.js"></script>
+        tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
       <script type="text/javascript"
-        tal:attributes="src string:${icingroot}/JSONScriptRequest.js"></script>
+        tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
     </tal:needs_json>
     <script tal:condition="request/needs_gmap2"
             type="text/javascript"
