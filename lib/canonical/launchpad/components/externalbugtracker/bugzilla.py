@@ -510,7 +510,7 @@ class BugzillaXMLRPCTransport(xmlrpclib.Transport):
         xmlrpclib.Transport.send_host(self, connection, host)
 
         if self.auth_cookie is not None:
-            connection.putheader('Cookie', cookie)
+            connection.putheader('Cookie', self.auth_cookie)
 
     # Yes, this is really, really, really nasty. This is basically an
     # exact copy of the request() method in xmlrpclib. The trouble is
