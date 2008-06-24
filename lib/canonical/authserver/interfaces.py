@@ -26,6 +26,7 @@ __all__ = [
 
 
 from zope.interface import Interface
+from canonical.launchpad.validators.name import valid_name
 
 
 # When this is provided as a login ID to getBranchInformation, the method
@@ -33,6 +34,8 @@ from zope.interface import Interface
 # READ_ONLY permission bit. This allows Launchpad services like the puller and
 # branch scanner to access private branches.
 LAUNCHPAD_SERVICES = '+launchpad-services'
+assert not valid_name(LAUNCHPAD_SERVICES), (
+    "%r should *not* be a valid name." % (LAUNCHPAD_SERVICES,))
 
 
 READ_ONLY = 'r'
@@ -182,8 +185,8 @@ class IHostedBranchStorage(Interface):
         :param login_id: The login ID for the person asking for the branch
             information. This is used for branch privacy checks.
         :param product_name: The name of a `Product`.
-        :return: A URL to a branch on Launchpad. If there is no default
-            stacked-on branch configured, return the empty string.
+        :return: An absolute path to a branch on Launchpad. If there is no
+            default stacked-on branch configured, return the empty string.
         """
 
     def fetchProductID(productName):

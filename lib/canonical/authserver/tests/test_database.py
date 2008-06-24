@@ -22,20 +22,17 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
-from canonical.launchpad.interfaces import (
-    BranchType,
-    BRANCH_NAME_VALIDATION_ERROR_MESSAGE,
-    EmailAddressStatus,
-    IBranchSet,
-    IEmailAddressSet,
-    ILaunchBag,
-    IPersonSet,
-    IProductSet,
-    IWikiNameSet,
-    )
+from canonical.launchpad.interfaces.branch import (
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, IBranchSet)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.wikiname import IWikiNameSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
