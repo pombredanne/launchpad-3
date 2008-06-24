@@ -511,8 +511,10 @@ class BugzillaLPPlugin(Bugzilla):
 
         See `ISupportsCommentPushing`.
         """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
         request_params = {
-            'id': remote_bug,
+            'id': actual_bug_id,
             'comment': comment_body,
             }
         return_dict = self.server.Bug.add_comment(request_params)
