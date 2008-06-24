@@ -13,6 +13,8 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.database.branchmergequeue import (
     BranchMergeQueueSet, MultiBranchMergeQueue, SingleBranchMergeQueue)
+from canonical.launchpad.interfaces.branch import (
+    BranchMergeControlStatus)
 from canonical.launchpad.interfaces.branchmergequeue import (
     IBranchMergeQueue, IBranchMergeQueueSet, IMultiBranchMergeQueue)
 from canonical.launchpad.interfaces.branchmergeproposal import (
@@ -134,7 +136,8 @@ class TestMultiBranchMergeQueue(TestCaseWithFactory):
 
     def _make_branch_and_associate_with_queue(self, queue):
         # Small helper to make a branch and set the merge queue.
-        branch = self.factory.makeBranch()
+        branch = self.factory.makeBranch(
+            merge_control_status=BranchMergeControlStatus.ROBOT)
         # Login the branch owner to allow launchpad.Edit on merge_queue.
         login(branch.owner.preferredemail.email)
         branch.merge_queue = queue
