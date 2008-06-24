@@ -1215,6 +1215,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'license_reviewed',
         'license_info_is_empty',
         'licenses',
+        'has_zero_licenses',
         ]
 
     side_by_side_field_names = [
