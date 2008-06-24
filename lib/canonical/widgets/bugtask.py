@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import os
 from xml.sax.saxutils import escape
 
 from zope.component import getUtility
@@ -26,6 +25,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.widgets.helpers import get_widget_template
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
@@ -299,10 +299,7 @@ class BugTaskBugWatchWidget(RadioWidget):
 
     def _joinButtonToMessage(self, option_tag, label, input_id):
         """Join the input tag with the label."""
-        here = os.path.dirname(__file__)
-        template_path = os.path.join(
-            here, 'templates', 'bugtask-bugwatch-widget.txt')
-        row_template = open(template_path).read()
+        row_template = get_widget_template('bugtask-bugwatch-widget.txt')
         return row_template % {
             'input_tag': option_tag,
             'input_id': input_id,
