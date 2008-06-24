@@ -103,7 +103,7 @@ class LocationWidget(BrowserWidget, InputWidget):
 
     def __call__(self):
         """Render the map and the widgets in their hidden form.
-        
+
         The values of the widgets will be set by Javascript once the location
         in the map is changed.
         """
