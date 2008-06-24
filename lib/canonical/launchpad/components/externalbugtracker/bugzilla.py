@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'Bugzilla',
     'BugzillaLPPlugin',
+    'needs_authentication',
     ]
 
 import pytz
@@ -21,6 +22,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical import encoding
+from canonical.config import config
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
     LookupTree, UnknownRemoteStatusError, UnparseableBugData,
@@ -292,17 +294,47 @@ class BugzillaLPPlugin(Bugzilla):
 
     implements(ISupportsCommentImport)
 
-    def __init__(self, baseurl, xmlrpc_transport=None):
+    def __init__(self, baseurl, xmlrpc_transport=None,
+                 internal_xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
+        self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
-            xmlrpc_transport = BugzillaXMLRPCTransport()
+            self.xmlrpc_transport = BugzillaXMLRPCTransport()
         else:
             self.xmlrpc_transport = xmlrpc_transport
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
         self.server = xmlrpclib.ServerProxy(
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+    def _authenticate(self):
+        """Authenticate with the remote Bugzilla instance."""
+        internal_xmlrpc_server = xmlrpclib.ServerProxy(
+            config.checkwatches.xmlrpc_url,
+            transport=self.internal_xmlrpc_transport)
+
+        token_text = internal_xmlrpc_server.newBugTrackerToken()
+
+        transport = self.xmlrpc_transport
+        user_id = self.server.Launchpad.login({'token': token_text})
+
+        auth_cookie = self._extractAuthCookie(
+            transport.last_response_headers['Set-Cookie'])
+
+        self.xmlrpc_transport.auth_cookie = auth_cookie
+
+    def _extractAuthCookie(self, cookie_header):
+        """Extract the Bugzilla authentication cookies from the header."""
+        cookies = []
+        for cookie_header_part in cookie_header.split(','):
+            cookie = cookie_header_part.split(';')[0]
+            cookie = cookie.strip()
+
+            if cookie.startswith('Bugzilla_login'):
+                cookies.append(cookie)
+
+        return '; '.join(cookies)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
@@ -445,16 +477,73 @@ class BugzillaLPPlugin(Bugzilla):
         return message
 
 
+def needs_authentication(func):
+    """Decorator for automatically authenticating if needed.
+
+    If an `xmlrpclib.Fault` with error code 410 is raised by the
+    function, we'll try to authenticate and call the function again.
+    """
+    def decorator(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except xmlrpclib.Fault, fault:
+            # Catch authentication errors only.
+            if fault.faultCode != 410:
+                raise
+            self._authenticate()
+            return func(self, *args, **kwargs)
+    return decorator
+
+
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):
     """XML-RPC Transport for Bugzilla bug trackers.
 
     Sends a cookie header for authentication.
     """
 
-    auth_cookie = None
+    def __init__(self):
+        self.last_response_headers = None
+        self.auth_cookie = None
 
     def send_host(self, connection, host):
         """Send the host and cookie headers."""
         xmlrpclib.Transport.send_host(self, connection, host)
+
         if self.auth_cookie is not None:
-            connection.putheader('Cookie', self.auth_cookie)
+            connection.putheader('Cookie', cookie)
+
+    # Yes, this is really, really, really nasty. This is basically an
+    # exact copy of the request() method in xmlrpclib. The trouble is
+    # that the original just discards the response headers, with which
+    # we actually want to do something.
+    def request(self, host, handler, request_body, verbose=0):
+        """Issue an XML-RPC request.
+
+        This method overrides the original request() method of Transport in
+        order to allow us to handle cookies correctly.
+        """
+        connection = self.make_connection(host)
+        if verbose:
+            connection.set_debuglevel(1)
+
+        self.send_request(connection, handler, request_body)
+        self.send_host(connection, host)
+        self.send_user_agent(connection)
+        self.send_content(connection, request_body)
+
+        errcode, errmsg, headers = connection.getreply()
+        self.last_response_headers = headers
+
+        if errcode != 200:
+            raise ProtocolError(
+                host + handler, errcode, errmsg, headers)
+
+        self.verbose = verbose
+
+        try:
+            sock = connection._conn.sock
+        except AttributeError:
+            sock = None
+
+        return self._parse_response(connection.getfile(), sock)
+
