@@ -62,7 +62,7 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions
     ...Sample Person does not have any unredeemed vouchers available.
-    Please visit the Canonical Store to purchase one...
+    Here are the steps to obtain a commercial subscription:...
 
 
 == Redeeming a voucher ==
