@@ -72,12 +72,10 @@ class TestStartRebuildScript(unittest.TestCase):
 
         for archive in getUtility(IArchiveSet):
             purpose = removeSecurityProxy(archive.purpose).name
-            print "'%s': %s" % (archive.name, purpose)
             if (archive.purpose == ArchivePurpose.REBUILD and
                 archive.name == name):
                 archives.append(archive)
 
-        print ">>> name: '%s', #archives: %s" % (name, len(archives))
         # Return the archive if found, None otherwise.
         if len(archives) == 1:
             [result] = archives
