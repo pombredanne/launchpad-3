@@ -70,6 +70,7 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     return getUtility(IBugTrackerSet).getByName(name)
 
+
 def read_test_file(name):
     """Return the contents of the test file named :name:
 
@@ -79,6 +80,23 @@ def read_test_file(name):
 
     test_file = open(file_path, 'r')
     return test_file.read()
+
+
+def ordered_dict_as_string(dict):
+    """Return the contents of a dict as an ordered string.
+
+    The output will be ordered by key, so {'z': 1, 'a': 2, 'c': 3} will
+    be printed as {'a': 2, 'c': 3, 'z': 1}.
+
+    We do this because dict ordering is not guaranteed.
+    """
+    item_string = '%r: %r'
+    item_strings = []
+    for key, value in sorted(dict.items()):
+        item_strings.append(item_string % (key, value))
+
+    return '{%s}' % ', '.join(
+        "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
 def print_bugwatches(bug_watches, convert_remote_status=None):
@@ -105,6 +123,7 @@ def print_bugwatches(bug_watches, convert_remote_status=None):
             status = convert_remote_status(status)
 
         print 'Remote bug %d: %s' % (remote_bug_id, status)
+
 
 def convert_python_status(status, resolution):
     """Convert a human readable status and resolution into a Python
@@ -466,7 +485,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
         if self.print_method_calls:
             if len(args) > 0:
-                arguments = args[0]
+                arguments = ordered_dict_as_string(args[0])
             else:
                 arguments = ''
 

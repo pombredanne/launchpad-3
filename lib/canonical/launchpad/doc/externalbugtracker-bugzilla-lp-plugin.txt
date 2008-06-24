@@ -264,7 +264,8 @@ means that we can use it to import comments from the remote Bugzilla
 instance.
 
     >>> from canonical.launchpad.interfaces import ISupportsCommentImport
-    >>> ISupportsCommentImport.providedBy(bugzilla)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 
 To test the comment importing methods we need to add an example bug,
@@ -391,3 +392,37 @@ field on the imported comment.
 
     >>> print message.datecreated
     2008-06-16 13:08:08+00:00
+
+
+== Pushing comments to remote systems ==
+
+BugzillaLPPlugin implements the ISupportsCommentPushing interface, which
+defines the necessary methods for pushing comments to remote servers.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     ISupportsCommentPushing)
+    >>> verifyObject(ISupportsCommentPushing, bugzilla)
+    True
+
+ISupportsCommentPushing defines a method, addRemoteComment(), which can
+be used to push a comment to the remote system. It takes three
+parameters: the remote bug ID, the body of the comment to push and the
+rfc822msgid of the comment being pushed. For the BugzillaLPPlugin
+bugtracker we can pass None as the rfc822msgid, since Bugzilla won't use
+it. addRemoteComment() returns the ID of the new comment on the remote
+server.
+
+addRemoteComment() calls Bug.add_comment() on the remote server, which
+requires authentication. To demonstrate this, we'll expire the
+authorization cookie so that it gets regenerated.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> comment_id  = bugzilla.addRemoteComment(
+    ...     1, "This is a new remote comment.", None)
+    Using XML-RPC to generate token.
+    CALLED Launchpad.login({'token': '...'})
+    Successfully validated the token.
+    CALLED Bug.add_comment({'comment': 'This is a new remote comment.', 'id': 1})
