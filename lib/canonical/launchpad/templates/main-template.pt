@@ -241,6 +241,8 @@
                           id="maincontent"
                           tal:condition="view/macro:pagehas/portlets"
                         >
+                          <div id="nonportlets">
+
                           <div id="big-badges" style="float: right">
                             <tal:big-badges replace="structure context/badges:large"/>
                           </div>
@@ -258,6 +260,8 @@
                               use-macro="context/@@+main-template-macros/notifications" />
                           </tal:notifications>
                           <metal:block define-slot="main" />
+
+                          </div>
                         </div>
                         <div
                           id="portlets" xml:lang="en" lang="en" dir="ltr"
