@@ -21,7 +21,7 @@ so that we can avoid network traffic in tests.
 
 XML-RPC methods that modify data on the remote server require
 authentication. To authenticate, we create a LoginToken of type
-BUGTRACKER and pass it to the remote service's Launchapd.login() method.
+BUGTRACKER and pass it to the remote service's Launchpad.login() method.
 The remote service then checks that this token is valid and returns an
 appropriate response.
 
@@ -73,7 +73,7 @@ the XML-RPC transport.
 The externalbugtracker.bugzilla module contains a decorator,
 needs_authentication, which can be used to ensure that a
 BugzillaLPPlugin instance will attempt to authenticate with the remote
-server if it encounters an method which requires it to be logged in.
+server if it encounters a method which requires it to be logged in.
 
 We can demonstrate this by subclassing BugzillaLPPlugin and adding a
 method which requires authentication.

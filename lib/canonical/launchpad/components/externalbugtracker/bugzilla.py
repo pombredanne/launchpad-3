@@ -308,7 +308,7 @@ def needs_authentication(func):
 
 
 class BugzillaLPPlugin(Bugzilla):
-    """An `ExternalBugTracker` to handle BugZillas using the LP Plugin."""
+    """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
 
     implements(ISupportsCommentImport)
 
@@ -327,18 +327,29 @@ class BugzillaLPPlugin(Bugzilla):
             self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
     def _authenticate(self):
-        """Authenticate with the remote Bugzilla instance."""
+        """Authenticate with the remote Bugzilla instance.
+
+        Authentication works by means of using a LoginToken of type
+        BUGTRACKER. We send the token text to the remote server as a
+        parameter to Launchpad.login(), which verifies it using the
+        standard launchpad.net/token/$token/+bugtracker-handshake URL.
+
+        If the token is valid, Bugzilla will send us a user ID as a
+        return value for the call to Launchpad.login() and will set two
+        cookies in the response header, Bugzilla_login and
+        Bugzilla_logincookie, which we can then use to re-authenticate
+        ourselves for each subsequent method call.
+        """
         internal_xmlrpc_server = xmlrpclib.ServerProxy(
             config.checkwatches.xmlrpc_url,
             transport=self.internal_xmlrpc_transport)
 
         token_text = internal_xmlrpc_server.newBugTrackerToken()
 
-        transport = self.xmlrpc_transport
         user_id = self.server.Launchpad.login({'token': token_text})
 
         auth_cookie = self._extractAuthCookie(
-            transport.last_response_headers['Set-Cookie'])
+            self.xmlrpc_transport.last_response_headers['Set-Cookie'])
 
         self.xmlrpc_transport.auth_cookie = auth_cookie
 
