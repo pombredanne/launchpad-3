@@ -964,6 +964,9 @@ person_translations_relicensing = "Translations licensing"
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
+person_vouchers = ContextDisplayName(
+    'Commercial subscription vouchers for %s')
+
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
@@ -1066,6 +1069,8 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
+
+products_review_licenses = 'Review licenses of projects'
 
 productseries_export = ContextTitle('Download translations for "%s"')
 
