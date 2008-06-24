@@ -506,6 +506,10 @@ class IPackageUploadSet(Interface):
         distroseries, same for pocket.
         """
 
+    def getBuildByBuildIDs(build_ids):
+        """Return `PackageUploadBuilds`s for the supplied build IDs."""
+
+
 class IHasQueueItems(Interface):
     """An Object that has queue items"""
 

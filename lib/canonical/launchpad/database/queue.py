@@ -1370,3 +1370,9 @@ class PackageUploadSet:
 
         query = " AND ".join(clauses)
         return PackageUpload.select(query).count()
+
+    def getBuildByBuildIDs(self, build_ids):
+        """See `IPackageUploadSet`."""
+        return PackageUploadBuild.select("""
+            PackageUploadBuild.build IN %s
+            """ % sqlvalues(build_ids))

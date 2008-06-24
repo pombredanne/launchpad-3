@@ -100,13 +100,27 @@ class QueueItemsView(LaunchpadView):
             return None
 
         # Build a dictionary keyed by upload ID where the values are
-        # lists of binary files.
+        # lists of binary files.  To do this efficiently we need to get
+        # all the PacakgeUploadBuild records at once, otherwise the
+        # Ibuild.package_upload property causes one query per iteration of
+        # the loop.
         upload_ids = [upload.id for upload in uploads]
         binary_file_set = getUtility(IBinaryPackageFileSet)
+        package_upload_set = getUtility(IPackageUploadSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        build_ids = [binary_file.binarypackagerelease.build.id
+                     for binary_file in binary_files]
+        package_upload_builds = package_upload_set.getBuildByBuildIDs(build_ids) 
+        # Make a dictionary of PacakgeUploadBuild keyed by build ID.
+        package_upload_builds_dict = {}
+        for package_upload_build in package_upload_builds:
+            package_upload_builds_dict[
+                package_upload_build.build.id] = package_upload_build
+
         build_upload_files = {}
         for binary_file in binary_files:
-            id = binary_file.binarypackagerelease.build.package_upload.id
+            build_id = binary_file.binarypackagerelease.build.id
+            id = package_upload_builds_dict[build_id].packageupload.id
             if id not in build_upload_files:
                 build_upload_files[id] = []
             build_upload_files[id].append(binary_file)
@@ -301,7 +315,6 @@ class CompletePackageUpload:
     # These need to be predeclared to avoid decorates taking them over.
     # Would be nice if there was a way of allowing writes to just work
     # (i.e. no proxying of __set__).
-    id = None
     pocket = None
     datecreated = None
     sources = None
@@ -314,7 +327,6 @@ class CompletePackageUpload:
     decorates(IPackageUpload)
 
     def __init__(self, packageupload, build_upload_files):
-        self.id = packageupload.id
         self.pocket = packageupload.pocket
         self.datecreated = packageupload.datecreated
         self.context = packageupload

@@ -15,6 +15,7 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
     BinaryPackageFileType, IBinaryPackageFile, IBinaryPackageFileSet,
     ISourcePackageReleaseFile, SourcePackageFileType)
@@ -50,7 +51,8 @@ class BinaryPackageFileSet:
             clauseTables=["PackageUpload", "PackageUploadBuild", "Build",
                           "BinaryPackageRelease"],
             prejoins=["binarypackagerelease", "binarypackagerelease.build",
-                      "libraryfile", "libraryfile.content"])
+                      "libraryfile", "libraryfile.content",
+                      "binarypackagerelease.binarypackagename"])
 
 
 class SourcePackageReleaseFile(SQLBase):
