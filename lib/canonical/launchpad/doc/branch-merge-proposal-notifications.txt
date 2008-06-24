@@ -65,11 +65,14 @@ Now we will unsubscribe the branch owners to simplify the rest of the test.
     >>> recipients = bmp.getNotificationRecipients(
     ...     CodeReviewNotificationLevel.FULL)
 
-The value assigned to the recipient is a machine-readable explanation why they
-were chosen, and their subscription
+The value assigned to the recipient is a utility class to generate useful
+values for the email headers and footers.
 
-    >>> [(target_subscription, 'Subscriber')] == recipients.values()
-    True
+    >>> [reason] = recipients.values()
+    >>> print reason.mail_header
+    Subscriber
+    >>> print reason.getReason()
+    You are subscribed to branch ...
 
 
 == E-mail ==
@@ -88,7 +91,7 @@ proposal.
     >>> print notification['From']
     Sample Person <test@canonical.com>
     >>> print notification['Subject']
-    Merge of ~person-name... into ~person-name... proposed
+    Proposed merge of ~person-name... into ~person-name...
     >>> print notification['X-Launchpad-Branch']
     ~person-name...
     >>> print notification['X-Launchpad-Message-Rationale']

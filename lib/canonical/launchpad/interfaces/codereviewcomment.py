@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211
 
 """CodeReviewComment interfaces."""
 
@@ -6,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CodeReviewVote',
     'ICodeReviewComment',
+    'ICodeReviewCommentDeletion',
     ]
 
 from zope.interface import Interface
@@ -63,3 +65,13 @@ class ICodeReviewComment(Interface):
         title=_('Vote tag'), required=False)
 
     title = TextLine()
+
+
+class ICodeReviewCommentDeletion(Interface):
+    """This interface provides deletion of CodeReviewComments.
+
+    This is the only mutation of CodeReviewCommentss that is permitted.
+    """
+
+    def destroySelf():
+        """Delete this message."""

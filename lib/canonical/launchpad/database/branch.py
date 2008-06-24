@@ -410,7 +410,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the source branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
@@ -418,7 +418,7 @@ class Branch(SQLBase):
             deletion_operations.append(
                 DeletionCallable(merge_proposal,
                     _('This branch is the target branch of this merge'
-                    ' proposal.'), merge_proposal.destroySelf))
+                    ' proposal.'), merge_proposal.deleteProposal))
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alteration_operations.append(ClearDependentBranch(merge_proposal))

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd
+# Copyright 2004-2008 Canonical Ltd
 
 """Person-related wiew classes."""
 
@@ -63,6 +63,7 @@ __all__ = [
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
     'PersonView',
+    'PersonVouchersView',
     'RedirectToEditLanguagesView',
     'ReportedBugTaskSearchListingView',
     'RestrictedMembershipsPersonView',
@@ -93,6 +94,7 @@ import pytz
 import subprocess
 import urllib
 
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import SelectWidget, TextAreaWidget, TextWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib.form import FormFields
@@ -110,36 +112,35 @@ from canonical.lazr.interface import copy_field, use_template
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import (
-    LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription,
-    PasswordChangeWidget)
+    LaunchpadDropdownWidget, LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription, PasswordChangeWidget)
+from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort,
-    BranchPersonSearchContext, BranchPersonSearchRestriction,
-    BugTaskSearchParams, BugTaskStatus, CannotUnsubscribe,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
-    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet,
-    IMailingListSet, INewPerson, IOAuthConsumerSet, IOpenLaunchBag,
-    IPOTemplateSet, IPasswordEncryptor, IPerson,
-    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet,
-    IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
-    ISignedCodeOfConductSet, ITeam, ITeamMembership,
-    ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, MailingListAutoSubscribePolicy,
-    NotFoundError, PersonCreationRationale,
-    PersonVisibility, QuestionParticipation, SSHKeyType,
-    SpecificationFilter, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
-    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
+    AccountStatus, BranchListingSort, BranchPersonSearchContext,
+    BranchPersonSearchRestriction, BugTaskSearchParams, BugTaskStatus,
+    CannotUnsubscribe, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry,
+    IEmailAddress, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet,
+    INewPerson, IOAuthConsumerSet, IOpenLaunchBag, IPOTemplateSet,
+    IPasswordEncryptor, IPerson, IPersonChangePassword, IPersonClaim,
+    IPersonSet, IPollSet, IPollSubset, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType,
+    MailingListAutoSubscribePolicy, NotFoundError, PersonCreationRationale,
+    PersonVisibility, QuestionParticipation, SSHKeyType, SpecificationFilter,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
+from canonical.launchpad.interfaces.salesforce import (
+    ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
@@ -2098,6 +2099,100 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+commentedbugs"
+
+
+class PersonVouchersView(LaunchpadFormView):
+    """Form for displaying and redeeming commercial subscription vouchers."""
+
+    custom_widget('voucher', LaunchpadDropdownWidget)
+    custom_widget('project', SinglePopupWidget)
+
+    def setUpFields(self):
+        self.form_fields = (self.createProjectField() +
+                            self.createVoucherField())
+
+    def createProjectField(self):
+        """Create the project field for selection commercial projects.
+
+        The vocabulary shows commercial projects owned by the current user.
+        """
+        field = FormFields(
+            Choice(__name__='project',
+                   title=_('Select the project you wish to subscribe'),
+                   description=_('Commercial projects you administer'),
+                   vocabulary='CommercialProjects',
+                   required=True),
+            custom_widget=self.custom_widgets['project'],
+            render_context=self.render_context)
+        return field
+
+    def createVoucherField(self):
+        """Create voucher field.
+
+        Only unredeemed vouchers owned by the user are shown.
+        """
+        unredeemed, redeemed = (
+            self.context.getCommercialSubscriptionVouchers())
+        terms = []
+        for voucher in unredeemed:
+            text = "%s (%d months)" % (
+                voucher.voucher_id, voucher.term_months)
+            terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
+        voucher_vocabulary = SimpleVocabulary(terms)
+        field = FormFields(
+            Choice(__name__='voucher',
+                   title=_('Select a voucher'),
+                   description=_('Choose one of these unredeemed vouchers'),
+                   vocabulary=voucher_vocabulary,
+                   required=False),
+            custom_widget=self.custom_widgets['voucher'],
+            render_context=self.render_context)
+        return field
+
+    @cachedproperty
+    def owned_commercial_projects(self):
+        commercial_projects = []
+        for project in self.context.getOwnedProjects():
+            if not project.qualifies_for_free_hosting:
+                commercial_projects.append(project)
+        return commercial_projects
+
+    @action(_("Cancel"), name="cancel",
+            validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Simply redirect to the user's page."""
+        self.next_url = canonical_url(self.context)
+
+    @action(_("Redeem"), name="redeem")
+    def redeem_action(self, action, data):
+        error_msg = None
+        salesforce_proxy = getUtility(ISalesforceVoucherProxy)
+        project = data['project']
+        voucher = data['voucher']
+        try:
+            # The call to redeemVoucher returns True if it succeeds or it
+            # raises an exception.  Therefore the return value does not need
+            # to be checked.
+            result = salesforce_proxy.redeemVoucher(voucher.voucher_id,
+                                                    self.context,
+                                                    project)
+            project.redeemSubscriptionVoucher(
+                voucher=voucher.voucher_id,
+                registrant=self.context,
+                purchaser=self.context,
+                subscription_months=voucher.term_months)
+            self.request.response.addInfoNotification(
+                _("Voucher redeemed successfully"))
+            # Force the page to reload so the just consumed voucher is not
+            # displayed again (since the field has already been created.)
+            self.next_url = self.request.URL
+        except SalesforceVoucherProxyException, error:
+            self.error_message = (
+                "The voucher could not be redeemed at this time.")
+            # Log an oops report with raising an error.
+            info = (error.__class__, error, None)
+            globalErrorUtility = getUtility(IErrorReportingUtility)
+            globalErrorUtility.raising(info, self.context.request)
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
@@ -4252,7 +4347,6 @@ class PersonSubscribedBranchesView(BranchListingView, PersonBranchCountMixin):
     """View for branch listing for a person's subscribed branches."""
 
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
-    no_sort_by = (BranchListingSort.DEFAULT,)
 
     @property
     def branch_search_context(self):

@@ -1,4 +1,19 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.
+
+# This file is part of launchpadlib.
+#
+# launchpadlib is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the Free
+# Software Foundation, either version 3 of the License, or (at your option)
+# any later version.
+#
+# launchpadlib is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# launchpadlib.  If not, see <http://www.gnu.org/licenses/>.
 
 """Person/team and people/teams sets."""
 
@@ -33,7 +48,7 @@ class People(Collection):
             if error.response.status == 404:
                 return default
             raise
-        return Entry(data)
+        return Entry(data, self._browser)
 
     def newTeam(self, name, display_name):
         """Create a new team.
@@ -55,5 +70,5 @@ class People(Collection):
             # We know this has to be a person, so create and return the
             # appropriate instance.
             data = self._browser.get(URI(response['location']))
-            return Entry(data)
+            return Entry(data, self._browser)
         raise UnexpectedResponseError(response, content)

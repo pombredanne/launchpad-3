@@ -18,10 +18,10 @@ lists all the links or associations the branch has.
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
     >>> anon_browser.getLink('View branch associations').click()
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Mozilla Firefox 0.9.2 for the Mozilla Firefox project
+    Mozilla Firefox 0.9.2 for the Mozilla Firefox (Unreviewed) project
     Branch associations
     Project
-      Mozilla Firefox
+      Mozilla Firefox (Unreviewed)
     Bugs
       Reflow problems with complex page layouts
     Blueprints
@@ -61,7 +61,7 @@ The project link, if the branch is not junk, links back to the branch listing
 for the project.
 
     >>> import re
-    >>> browser.getLink(re.compile('^Mozilla Firefox$')).click()
+    >>> browser.getLink(re.compile('Mozilla Firefox$')).click()
     >>> browser.url
     'http://code.launchpad.dev/firefox'
     >>> # goBack() and reload() seems to not work with PQM

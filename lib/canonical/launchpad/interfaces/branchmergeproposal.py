@@ -192,6 +192,11 @@ class IBranchMergeProposal(Interface):
         description=_("The date that the source branch was merged into the "
                       "target branch"))
 
+    title = Attribute(
+        "A nice human readable name to describe the merge proposal. "
+        "This is generated from the source and target branch, and used "
+        "as the tal fmt:link text and for email subjects.")
+
     merge_reporter = Attribute(
         "The user that marked the branch as merged.")
 
@@ -356,7 +361,11 @@ class IBranchMergeProposal(Interface):
         """
 
     def nominateReviewer(reviewer, registrant, review_type=None):
-        """Create a vote for the specified person."""
+        """Set the specified person as a reviewer.
+
+        If they are not already a reviewer, a vote is created.  Otherwise,
+        the details are updated.
+        """
 
     def createComment(owner, subject, content=None, vote=None, vote_tag=None,
                       parent=None, _date_created=None):
