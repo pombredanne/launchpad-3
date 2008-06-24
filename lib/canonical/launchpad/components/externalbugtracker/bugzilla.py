@@ -546,7 +546,7 @@ class BugzillaXMLRPCTransport(xmlrpclib.Transport):
         self.last_response_headers = headers
 
         if errcode != 200:
-            raise ProtocolError(
+            raise xmlrpclib.ProtocolError(
                 host + handler, errcode, errmsg, headers)
 
         self.verbose = verbose
