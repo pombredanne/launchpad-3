@@ -74,4 +74,31 @@
 
 </metal:selectable_sources>
 
+
+<metal:package_counters define-macro="package-counters">
+
+  <tal:comment replace="nothing">
+    Presents package counters for a defined IArchive.
+    :archive: targetted IArchive.
+  </tal:comment>
+
+  <div>
+    <ul id="package_counters">
+      <li id="source_counter">
+         <tal:source_count_text replace="archive/@@+index/source_count_text" />
+         (<tal:sources_size
+            replace="archive/sources_size/fmt:bytes" />)</li>
+      <li id="binary_counter">
+         <tal:binary_count_text replace="archive/@@+index/binary_count_text" />
+         (<tal:binaries_size
+            replace="archive/binaries_size/fmt:bytes" />)</li>
+      <li id="total_size">
+         Estimated archive size:
+         <tal:estimated_size
+           replace="archive/estimated_size/fmt:bytes" /></li>
+    </ul>
+  </div>
+
+</metal:package_counters>
+
 </tal:root>
