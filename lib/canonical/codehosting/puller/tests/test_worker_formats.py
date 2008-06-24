@@ -1,14 +1,14 @@
-import os
-import shutil
 import unittest
 
-import bzrlib
-from bzrlib import bzrdir
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
+from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
+from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
+
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 
 
-from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.testing import reset_logging
 
@@ -17,86 +17,84 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
 
     def setUp(self):
         TestCaseWithRepository.setUp(self)
+        # XXX: make_bzrdir relies on this being a relative filesystem path.
+        self._source_branch_path = 'source-branch'
+        self.worker = self.makePullerWorker(
+            self.get_transport(self._source_branch_path).base)
 
     def tearDown(self):
         TestCaseWithRepository.tearDown(self)
         reset_logging()
 
-    def testMirrorKnitAsKnit(self):
-        # Create a source branch in knit format, and check that the mirror is
-        # in knit format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = \
-            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
-        self._testMirrorFormat()
+    def _createSourceBranch(self, repository_format, bzrdir_format):
+        """Make a source branch with the given formats."""
+        bd = self.make_bzrdir(self._source_branch_path, format=bzrdir_format)
+        repository_format.initialize(bd)
+        branch = bd.create_branch()
+        tree = branch.create_checkout('source-checkout')
+        tree.commit('Commit message')
+        self.get_transport().delete_tree('source-checkout')
+        return branch
 
-    def testMirrorMetaweaveAsMetaweave(self):
-        # Create a source branch in metaweave format, and check that the
-        # mirror is in metaweave format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
-        self._testMirrorFormat()
-
-    def testMirrorWeaveAsWeave(self):
-        # Create a source branch in weave format, and check that the mirror is
-        # in weave format.
-        self.bzrdir_format = bzrdir.BzrDirFormat6()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
-        self._testMirrorFormat()
-
-    def testSourceFormatChange(self):
-        # Create and mirror a branch in weave format.
-        self.bzrdir_format = bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
-        self._createSourceBranch()
-        self._mirror()
-
-        # Change the branch to knit format.
-        shutil.rmtree('src-branch')
-        self.repository_format = \
-            bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
-        self._createSourceBranch()
-
-        # Mirror again.  The mirrored branch should now be in knit format.
-        mirrored_branch = self._mirror()
+    def assertMirrored(self, source_branch, dest_branch):
+        """Assert that `dest_branch` is a mirror of `src_branch`."""
         self.assertEqual(
-            self.repository_format.get_format_description(),
-            mirrored_branch.repository._format.get_format_description())
-
-    def _createSourceBranch(self):
-        ensure_base(self.get_transport('src-branch'))
-        tree = self.make_branch_and_tree('src-branch')
-        self.local_branch = tree.branch
-        self.build_tree(['foo'], transport=self.get_transport('./src-branch'))
-        tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
-        return tree
-
-    def _mirror(self):
-        # Mirror src-branch to dest-branch
-        source_url = os.path.abspath('src-branch')
-        to_mirror = self.makePullerWorker(src_dir=source_url)
-        to_mirror.mirror()
-        mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
-        return mirrored_branch
-
-    def _testMirrorFormat(self):
-        tree = self._createSourceBranch()
-
-        mirrored_branch = self._mirror()
-        self.assertEqual(tree.last_revision(),
-                         mirrored_branch.last_revision())
-
+            source_branch.last_revision(), dest_branch.last_revision())
         # Assert that the mirrored branch is in source's format
         # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
         # See bug 45277.
         self.assertEqual(
-            self.repository_format.get_format_description(),
-            mirrored_branch.repository._format.get_format_description())
+            source_branch.repository._format.get_format_description(),
+            dest_branch.repository._format.get_format_description())
         self.assertEqual(
-            self.bzrdir_format.get_format_description(),
-            mirrored_branch.bzrdir._format.get_format_description())
+            source_branch.bzrdir._format.get_format_description(),
+            dest_branch.bzrdir._format.get_format_description())
 
+    def _testMirrorFormat(self, repository_format, bzrdir_format):
+        """Mirror a branch and assert that its got the right format."""
+        src_branch = self._createSourceBranch(
+            repository_format, bzrdir_format)
+        self.worker.mirror()
+        dest_branch = Branch.open(self.worker.dest)
+        self.assertMirrored(src_branch, dest_branch)
+
+    # XXX: These next three tests should be implemented against all supported
+    # repository formats using bzrlib's test adaptation APIs. Unfortunately,
+    # this API changes between 1.5 and 1.6, so it'd be a bit silly to do the
+    # work now.
+    def testMirrorKnitAsKnit(self):
+        # Create a source branch in knit format, and check that the mirror is
+        # in knit format.
+        self._testMirrorFormat(RepositoryFormatKnit1(), BzrDirMetaFormat1())
+
+    def testMirrorMetaweaveAsMetaweave(self):
+        # Create a source branch in metaweave format, and check that the
+        # mirror is in metaweave format.
+        self._testMirrorFormat(RepositoryFormat7(), BzrDirMetaFormat1())
+
+    def testMirrorWeaveAsWeave(self):
+        # Create a source branch in weave format, and check that the mirror is
+        # in weave format.
+        self._testMirrorFormat(RepositoryFormat6(), BzrDirFormat6())
+
+    def testSourceFormatChange(self):
+        # If a branch that has already been mirrored changes format, then we
+        # when we re-mirror the branch, the mirror will acquire the new
+        # format.
+
+        # Create and mirror a branch in weave format.
+        self._createSourceBranch(RepositoryFormat7(), BzrDirMetaFormat1())
+        self.worker.mirror()
+
+        # Change the branch to knit format and mirror again.
+        self.get_transport().delete_tree(self._source_branch_path)
+        self._createSourceBranch(RepositoryFormatKnit1(), BzrDirMetaFormat1())
+        self.worker.mirror()
+
+        # The mirrored branch should now be in knit format.
+        self.assertMirrored(
+            Branch.open(self.worker.source),
+            Branch.open(self.worker.dest))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
