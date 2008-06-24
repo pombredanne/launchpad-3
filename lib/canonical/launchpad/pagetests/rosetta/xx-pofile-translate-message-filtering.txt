@@ -157,22 +157,24 @@ suggestions, not translations. His changes do not change the total
 number of untranslated messages; they do not affect the batch
 navigation.
 
-    >>> from canonical.launchpad.database.language import Language
-    >>> from canonical.launchpad.database.person import Person
-    >>> from canonical.launchpad.database.product import Product
-    >>> from canonical.launchpad.database.translator import Translator
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPersonSet, IProductSet, ITranslatorSet)
 
     # Evolution uses Restricted mode, so a translation without reviewer
     # is closed.  Assign an en_AU reviewer to active the translation.
-    >>> evolution = Product.selectOneBy(name='evolution')
+    >>> login('foo.bar@canonical.com')
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution_translation_group = evolution.translationgroup
-    >>> ozzie_english = Language.selectOneBy(code='en_AU')
-    >>> foobar = Person.selectOneBy(name='name16')
-    >>> ozzie_translation_reviewer = Translator(
+    >>> ozzie_english =  getUtility(ILanguageSet)['en_AU']
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> translator_set = getUtility(ITranslatorSet)
+    >>> foo_bar_translator = translator_set.new(
     ...     translationgroup=evolution_translation_group,
     ...     language=ozzie_english, translator=foobar)
-    >>> ozzie_translation_reviewer.syncUpdate()
-
+    >>> logout()
+    
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/en_AU/+translate')

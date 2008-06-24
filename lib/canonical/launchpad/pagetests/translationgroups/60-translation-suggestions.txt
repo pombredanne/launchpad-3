@@ -11,18 +11,19 @@ Polyglot has someone assigned for Spanish translations, and though No
 Privileges is not that person, this does make it possible to enter
 suggestions in Spanish.
 
-  >>> from canonical.launchpad.database.distribution import Distribution
-  >>> from canonical.launchpad.database.person import Person
-  >>> from canonical.launchpad.database.language import Language
-  >>> from canonical.launchpad.database.translator import Translator
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> from canonical.launchpad.interfaces import (
+  ...     ILanguageSet, IPersonSet, IDistributionSet, ITranslatorSet)
 
-  >>> ubuntu = Distribution.selectOneBy(name='ubuntu')
-  >>> spanish = Language.selectOneBy(code='es')
-  >>> carlos = Person.selectOneBy(name='carlos')
-  >>> ubuntu_spanish_reviewer = Translator(
+  >>> login('foo.bar@canonical.com')
+  >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> spanish = getUtility(ILanguageSet)['es']
+  >>> carlos = getUtility(IPersonSet).getByName('carlos')
+  >>> ubuntu_spanish_reviewer = getUtility(ITranslatorSet).new(
   ...     translationgroup=ubuntu.translationgroup, language=spanish,
   ...     translator=carlos)
-  >>> ubuntu_spanish_reviewer.syncUpdate()
+  >>> logout()
 
 Let's add a new suggestion as a person without privileges.
 
