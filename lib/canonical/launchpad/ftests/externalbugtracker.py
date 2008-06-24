@@ -481,7 +481,7 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         if (method_name in self.auth_required_methods and
             (self.auth_cookie is None or
              self.auth_cookie == self.expired_cookie)):
-             raise xmlrpclib.Fault(410, 'Login Required')
+            raise xmlrpclib.Fault(410, 'Login Required')
 
         if self.print_method_calls:
             if len(args) > 0:
