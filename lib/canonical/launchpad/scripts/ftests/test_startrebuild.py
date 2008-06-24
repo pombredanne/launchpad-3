@@ -64,20 +64,22 @@ class TestStartRebuildScript(unittest.TestCase):
 
     def getRebuildArchive(self, suite, name):
         """Return rebuild archive with given suite/name or None."""
-        archives = []
         series = suite.split('-')[0]
         # Rebuild archive names are prefixed with the DistroSeries name
         # upon creation.
         name = "%s-%s" % (series, name)
 
+        archives = []
         for archive in getUtility(IArchiveSet):
-            purpose = removeSecurityProxy(archive.purpose).name
             if (archive.purpose == ArchivePurpose.REBUILD and
                 archive.name == name):
                 archives.append(archive)
 
+        archives_found = len(archives)
+        assert archives_found <= 1, "Too many rebuild archives"
+
         # Return the archive if found, None otherwise.
-        if len(archives) == 1:
+        if archives_found == 1:
             [result] = archives
         else:
             result = None
