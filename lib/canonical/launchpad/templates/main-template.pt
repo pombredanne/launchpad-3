@@ -303,7 +303,7 @@
           <input type="search" id="search-text" name="field.text" />
         </label>
       </form>
-     <div id="globalfooter" xml:lang="en" lang="en" dir="ltr">
+     <div id="globalfooter" class="clearfix" xml:lang="en" lang="en" dir="ltr">
         <div id="applications-footer"
           tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
           tal:replace="nothing">

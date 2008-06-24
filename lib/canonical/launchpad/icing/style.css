@@ -73,7 +73,7 @@ html {
   background-color: #fff;
 }
 body {
-  margin: 0; padding: 10pt; /* pt to be independent of font size/resolution */
+  margin: 0; padding: 10px 20px;
   /* Minimal width to display the application tabs and rounded corners. */
   min-width: 529px;
 }
@@ -818,9 +818,8 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   font-size: 24px;
 }
 
-/* mainarea and five other divs supply the bottom (mainarea), bottom left
-(v), bottom right (w), top (x), top left (y), and top right (z) of the rounded
-border. */
+/* mainarea and three other divs supply the bottom (mainarea), top (x)
+ top left (y), and top right (z) of the rounded border. */
 #mainarea {
   clear: both;
   background-image: url(mainarea_bottom.gif);
@@ -847,7 +846,7 @@ border. */
 /* Inside those is a container for the main content, and the portlets if any. */
 #container {
   margin-top: 30px;
-  padding: 48px 20px 40px 240px;
+  padding: 48px 0 40px;
   position: relative;
 }
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
@@ -859,8 +858,7 @@ body.onecolumn #container {padding-left: 20px;}
 
 body.applicationhome #container {padding-left: 20px;}
 #maincontent {
-  width: 100%;
-  padding: 0 0 20px 0;
+  margin: 0 220px 0 0;
   display: inline;
   float: left;
   position: relative;
@@ -952,10 +950,9 @@ ul#applicationchooser li#applicationchooser_selected {
   float: left;
   width: 200px;
   overflow: hidden;
-  margin: 0 0 20px -100%;
-  padding: 0 20px;
+  margin: 0 0 0 -220px;
+  padding: 0 0 0 20px;
   list-style: none;
-  right: 240px;
 }
 /* IE6 and  lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
