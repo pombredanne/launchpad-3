@@ -16,7 +16,6 @@ from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
-
 class TranslationUnavailable(Exception):
     """Translation objects are unavailable."""
 
@@ -809,3 +808,19 @@ class IBreadcrumbProvider(Interface):
 
     def breadcrumb():
         """Breadcrumb text."""
+
+
+#
+# Database policies
+#
+class IDatabasePolicy(Interface):
+    """Implement database policy based on the request.
+
+    The publisher adapts the request to `IDatabasePolicy` to
+    instantiate the policy for the current request.
+    """
+    def startRequest():
+        """Install the database policy into the current thread."""
+
+    def endRequest():
+        """Perform any necessary cleanup of the database policy."""

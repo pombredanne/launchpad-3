@@ -40,8 +40,9 @@ from canonical.mem import (
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
+from canonical.launchpad.webapp.interfaces import (
+        IDatabasePolicy, IPlacelessAuthUtility)
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -83,6 +84,8 @@ class LaunchpadBrowserPublication(
     # pylint: disable-msg=W0231,W0702
 
     root_object_interface = ILaunchpadRoot
+
+    db_policy = None
 
     def __init__(self, db):
         self.db = db
@@ -141,10 +144,11 @@ class LaunchpadBrowserPublication(
         threadrequestfile.write(request_txt)
         threadrequestfile.close()
 
-        # Tell our custom database adapter that the request has started.
-        da.set_request_started()
+        self.db_policy = IDatabasePolicy(request)
+        self.db_policy.beforeTraversal()
 
         newInteraction(request)
+
         transaction.begin()
 
         getUtility(IOpenLaunchBag).clear()
@@ -377,23 +381,6 @@ class LaunchpadBrowserPublication(
             request._traversalticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
 
-        # Debugging code. Please leave. -- StuartBishop 20050622
-        # Set 'threads 1' in launchpad.conf if you are using this.
-        # from canonical.mem import printCounts, mostRefs, memory
-        # from datetime import datetime
-        # mem = memory()
-        # try:
-        #     delta = mem - self._debug_mem
-        # except AttributeError:
-        #     print '= Startup memory %d bytes' % mem
-        #     delta = 0
-        # self._debug_mem = mem
-        # now = datetime.now().strftime('%H:%M:%S')
-        # print '== %s (%.1f MB/%+d bytes) %s' % (
-        #         now, mem/(1024*1024), delta, str(request.URL))
-        # print str(request.URL)
-        # printCounts(mostRefs(4))
-
     def _maybePlacefullyAuthenticate(self, request, ob):
         """ This should never be called because we've excised it in
         favor of dealing with auth in events; if it is called for any
@@ -424,8 +411,6 @@ class LaunchpadBrowserPublication(
             pass
 
         # Reraise Retry exceptions rather than log.
-        # XXX stub 20070317: Remove this when the standard
-        # handleException method we call does this (bug to be fixed upstream)
         if retry_allowed and isinstance(
             exc_info[1], (Retry, DisconnectionError, IntegrityError,
                           TransactionRollbackError)):
@@ -454,7 +439,9 @@ class LaunchpadBrowserPublication(
 
         self.endProfilingHook(request)
 
-        da.clear_request_started()
+        if self.db_policy is not None:
+            self.db_policy.endRequest()
+            self.db_policy = None
 
         if config.debug.references:
             self.debugReferencesLeak(request)
@@ -479,7 +466,6 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
-
 
     def startProfilingHook(self):
         """If profiling is turned on, start a profiler for this request."""

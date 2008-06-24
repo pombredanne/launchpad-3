@@ -24,6 +24,12 @@
       <allow attributes="browserDefault __call__" />
     </content>
 
+    <adapter
+        for="zope.publisher.interfaces.http.IHTTPRequest"
+        provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.LaunchpadDatabasePolicy"
+        />
+
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.LinkData">
         <allow interface="canonical.launchpad.webapp.interfaces.ILinkData" />
