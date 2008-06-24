@@ -18,7 +18,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
-from canonical.launchpad.interfaces.bugtarget import IHasBugTasks
+from canonical.launchpad.interfaces.bugtarget import IHasBugs
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot,
@@ -45,7 +45,7 @@ class ProjectNameField(PillarNameField):
 
 
 class IProject(IHasAppointedDriver, IHasDrivers, IHasBranchVisibilityPolicy,
-               IHasBugTasks, IHasIcon, IHasLogo, IHasMentoringOffers,
+               IHasBugs, IHasIcon, IHasLogo, IHasMentoringOffers,
                IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
                IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
                IKarmaContext, IPillar):

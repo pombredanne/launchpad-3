@@ -18,13 +18,13 @@ from canonical.launchpad.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES)
 
 
-class HasBugTasksBase:
-    """Standard functionality for IHasBugTasks.
+class HasBugsBase:
+    """Standard functionality for IHasBugs.
 
-    All IHasBugTasks implementations should inherit from this class
+    All IHasBugs implementations should inherit from this class
     or from `BugTargetBase`.
     """
-    def searchTasks(self, query):
+    def searchTasks(self, search_params, *args):
         """See canonical.launchpad.interfaces.IBugTarget."""
         raise NotImplementedError
 
@@ -132,7 +132,7 @@ class HasBugTasksBase:
 
 
 
-class BugTargetBase(HasBugTasksBase):
+class BugTargetBase(HasBugsBase):
     """Standard functionality for IBugTargets.
 
     All IBugTargets should inherit from this class.

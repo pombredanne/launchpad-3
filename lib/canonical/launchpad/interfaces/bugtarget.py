@@ -9,14 +9,14 @@ __metaclass__ = type
 __all__ = [
     'BugDistroSeriesTargetDetails',
     'IBugTarget',
-    'IHasBugTasks',
+    'IHasBugs',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import Text
 
 
-class IHasBugTasks(Interface):
+class IHasBugs(Interface):
     """An entity which has a collection of bug tasks."""
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
@@ -27,10 +27,11 @@ class IHasBugTasks(Interface):
     unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, *args):
         """Search the IBugTasks reported on this entity.
 
         :search_params: a BugTaskSearchParams object
+        :args: additional BugTaskSearchParams objects
 
         Return an iterable of matching results.
 
@@ -60,7 +61,7 @@ class IHasBugTasks(Interface):
         """
 
 
-class IBugTarget(IHasBugTasks):
+class IBugTarget(IHasBugs):
     """An entity on which a bug can be reported.
 
     Examples include an IDistribution, an IDistroSeries and an
