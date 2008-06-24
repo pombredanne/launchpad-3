@@ -29,6 +29,7 @@ from canonical.launchpad.database.branchmergeproposal import (
     )
 from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
+from canonical.launchpad.database.codereviewcomment import CodeReviewComment
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.specificationbranch import (
@@ -305,6 +306,24 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal1.dependent_branch.destroySelf(break_references=True)
         self.assertEqual(None, merge_proposal1.dependent_branch)
 
+    def test_deleteSourceCodeReviewComment(self):
+        """Deletion of branches that have CodeReviewComments works."""
+        comment = self.factory.makeCodeReviewComment()
+        comment_id = comment.id
+        branch = comment.branch_merge_proposal.source_branch
+        branch.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
+    def test_deleteTargetCodeReviewComment(self):
+        """Deletion of branches that have CodeReviewComments works."""
+        comment = self.factory.makeCodeReviewComment()
+        comment_id = comment.id
+        branch = comment.branch_merge_proposal.target_branch
+        branch.destroySelf(break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeReviewComment.get, comment_id)
+
     def test_branchWithSubscriptionReqirements(self):
         """Deletion requirements for a branch with subscription are right."""
         branch = self.factory.makeBranch()
@@ -411,6 +430,20 @@ class TestBranchDeletionConsequences(TestCase):
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
+
+    def test_sourceBranchWithCodeReviewVoteReference(self):
+        """Break_references handles CodeReviewVoteReference source branch."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.nominateReviewer(self.factory.makePerson(),
+                                        self.factory.makePerson())
+        merge_proposal.source_branch.destroySelf(break_references=True)
+
+    def test_targetBranchWithCodeReviewVoteReference(self):
+        """Break_references handles CodeReviewVoteReference target branch."""
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal.nominateReviewer(self.factory.makePerson(),
+                                        self.factory.makePerson())
+        merge_proposal.target_branch.destroySelf(break_references=True)
 
     def test_ClearDependentBranch(self):
         """ClearDependent.__call__ must clear the dependent branch."""

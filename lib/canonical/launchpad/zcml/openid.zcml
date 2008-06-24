@@ -213,6 +213,20 @@
         name="+index"
         />
 
+    <!-- IOpenIDRPSummary -->
+    <class
+        class="canonical.launchpad.database.OpenIDRPSummary">
+        <allow interface="canonical.launchpad.interfaces.IOpenIDRPSummary" />
+    </class>
+
+    <!-- IOpenIDRPSummarySet -->
+    <securedutility
+        class="canonical.launchpad.database.OpenIDRPSummarySet"
+        provides="canonical.launchpad.interfaces.IOpenIDRPSummarySet">
+        <allow
+            interface="canonical.launchpad.interfaces.IOpenIDRPSummarySet" />
+    </securedutility>
+
     <!-- A simple view used by the page tests. -->
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"

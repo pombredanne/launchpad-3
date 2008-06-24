@@ -290,13 +290,7 @@
 
         <ul class="product-bug-options" tal:repeat="product context/products">
           <li condition="product/official_malone">
-            <img src="/@@product" tal:replace="structure product/image:icon" />
-            <strong>
-              <a tal:attributes="href product/fmt:url"
-                  tal:content="product/displayname"
-              >
-                Sample Product
-              </a></strong>
+            <tal:link replace="structure product/fmt:link" />
 
             <ul>
               <tal:external-tracker
