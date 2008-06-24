@@ -22,15 +22,21 @@ The translation group does not assign anyone to tend to the Southern
 Sotho translation, so for that language, No Privileges can't even make
 suggestions.
 
+  >>> def find_translation_input_label(contents):
+  ...     """Find first "New suggestion:" or "New translation:" label."""
+  ...     labels = find_tags_by_class(contents, 'translation-input-label')
+  ...     if not labels:
+  ...         return None
+  ...     else:
+  ...         return labels[0].renderContents()
+
   >>> browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/st/+translate')
-  >>> main_content = find_main_content(browser.contents).p.renderContents()
-  >>> 'New translation:' in main_content
-  False
-  >>> 'New suggestion:' in main_content
-  False
-  >>> 'Your translations will be held for review' in main_content
+  >>> print find_translation_input_label(browser.contents)
+  None
+  >>> 'Your suggestions will be held for review' in find_main_content(
+  ...     browser.contents).renderContents()
   False
 
 The Polyglot translation group now assigns a Southern Sotho translation
@@ -49,23 +55,29 @@ will only accept suggestions.
   >>> browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/st/+translate')
-  >>> main_content = find_main_content(browser.contents).renderContents()
-  >>> 'New translation:' in main_content
-  False
-  >>> print main_content
-  <...New suggestion:...
-  Your translations will be held for review...
+  >>> print find_translation_input_label(browser.contents)
+  New suggestion:
+  >>> print find_main_content(browser.contents).renderContents()
+  <...Your suggestions will be held for review...
 
 However, in Welsh, No Privileges Person DOES have the ability to edit
 directly.
 
 First, we show that the message 137 is not translated.
 
+  >>> def find_no_translation_marker(contents):
+  ...     """Find first "no translation yet" marker in contents."""
+  ...     markers = find_tags_by_class(contents, 'no-translation')
+  ...     if not markers:
+  ...         return None
+  ...     else:
+  ...         return markers[0].renderContents()
+
   >>> browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/cy/8/+translate')
-  >>> '(no translation yet)' in browser.contents
-  True
+  >>> print find_no_translation_marker(browser.contents)
+  (no translation yet)
 
 Now, we need to show that it is translated after a post. Let's go ahead and
 POST and see that all goes well:
@@ -82,7 +94,8 @@ POST and see that all goes well:
 And finally, let's take a look again, and we should have a translation added.
 
   >>> browser.getLink('Previous').click()
-  >>> '(no translation yet)' in browser.contents
-  False
-  >>> 'evolution minikaart' in browser.contents
-  True
+  >>> print find_no_translation_marker(browser.contents)
+  None
+  >>> print find_main_content(browser.contents).renderContents()
+  <...evolution minikaart...
+
