@@ -4,21 +4,23 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-map">
+<div class="portlet" id="portlet-map"
+     tal:define="link context/menu:overview/editlocation">
 
-<tal:map condition="context/latitude">
-  <p class="error message" tal:condition="not: request/needs_gmap2">
-    This browser view needs to set request.needs_gmap2
-    <tal:oops_on_purpose condition="request/foooooobar" />
-  </p>
-  <div id="person_map_div" style="height: 200px; border: 1px;"></div>
-  <tal:mapscript replace="structure view/map_portlet_html" />
-  <p tal:define="link context/menu:overview/editlocation"
-     tal:condition="link/enabled"
-     tal:content="structure link/render" />
-</tal:map>
+  <tal:map condition="context/latitude">
+    <div id="person_map_div" style="height: 200px; border: 1px;"></div>
+    <tal:mapscript replace="structure view/map_portlet_html" />
+    <p tal:condition="link/enabled" tal:content="structure link/render" />
+  </tal:map>
 
-<a tal:condition="not: context/latitude"
-   href="+editlocation"><img src="/+icing/portlet-map-unknown.png" /></a>
+  <tal:comment condition="nothing">
+    When a person's location is unset we can be sure any user will have
+    permission to set it, so we don't need to check that the link is enabled.
+  </tal:comment>
+  <a tal:condition="not: context/latitude"
+     tal:attributes="href link/target"
+    ><img src="/+icing/portlet-map-unknown.png" />
+  </a>
+
 </div>
 </tal:root>

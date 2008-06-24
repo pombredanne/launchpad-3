@@ -23,6 +23,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
+from canonical.widgets.helpers import get_widget_template
 
 
 class ILocationWidget(IInputWidget, IBrowserWidget, IMultiLineWidgetLayout):
@@ -102,7 +103,7 @@ class LocationWidget(BrowserWidget, InputWidget):
 
     def __call__(self):
         """Render the map and the widgets in their hidden form.
-        
+
         The values of the widgets will be set by Javascript once the location
         in the map is changed.
         """
@@ -119,14 +120,21 @@ class LocationWidget(BrowserWidget, InputWidget):
         replacements = dict(
             latitude_widget=self.latitude_widget.hidden(),
             longitude_widget=self.longitude_widget.hidden(),
-            center_lat=self.center_lat, center_long=self.center_long,
-            latname=latname, lngname=longname, name=person_name,
-            displayname=person_displayname, logo_html=logo_html, div=divname,
-            map=mapname, tz_name=self.time_zone_widget.name,
+            center_lat=self.center_lat,
+            center_long=self.center_long,
+            latname=latname,
+            lngname=longname,
+            name=person_name,
+            displayname=person_displayname,
+            logo_html=logo_html,
+            div=divname,
+            map=mapname,
+            tz_name=self.time_zone_widget.name,
             tz_widget=self.time_zone_widget(),
             tz_ws_url='http://ba-ws.geonames.net/timezoneJSON',
-            zoom=self.zoom, show_marker=self.show_marker)
-        template = open('templates/location.pt').read()
+            zoom=self.zoom,
+            show_marker=self.show_marker)
+        template = get_widget_template('location.pt')
         return template % replacements
 
     def hasInput(self):
