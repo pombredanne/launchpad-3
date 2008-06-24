@@ -333,6 +333,12 @@ class TestOldBugzilla(TestBugzilla):
                 123543: ('ASSIGNED', '')}
 
 
+class FakeHTTPConnection:
+    """A fake HTTP connection."""
+    def putheader(self, header, value):
+        print "%s: %s" % (header, value)
+
+
 class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 

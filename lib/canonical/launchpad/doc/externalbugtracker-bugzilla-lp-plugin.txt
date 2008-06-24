@@ -57,13 +57,18 @@ work with the right database user.
     CALLED Launchpad.login({'token': '...'})
     Successfully validated the token.
 
-
 The authorisation cookie will be stored in the auth_cookie property of
 the XML-RPC transport.
 
     >>> print test_transport.auth_cookie
     Bugzilla_login=...
     Bugzilla_logincookie=...
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     FakeHTTPConnection)
+    >>> test_transport.send_host(FakeHTTPConnection(), 'example.com')
+    Host: example.com
+    Cookie: Bugzilla_login=...; Bugzilla_logincookie=...
 
 The externalbugtracker.bugzilla module contains a decorator,
 needs_authentication, which can be used to ensure that a
