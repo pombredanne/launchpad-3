@@ -35,7 +35,8 @@ Sotho. We expect them to be told they can only make contributions:
     ...     else:
     ...         return tag.renderContents()
 
-    >>> print get_detail_tag(browser, 'translation-managers')
+    >>> managers = get_detail_tag(browser, 'translation-managers')
+    >>> print managers
     This translation is managed by <...> translation group
     <...>polyglot<...>.
 
