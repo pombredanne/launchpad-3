@@ -47,7 +47,7 @@ class RebuildArchiveCreator(SoyuzScript):
 
     def createRebuildArchive(
         self, component, rebuild_archive_name, suite, distro, rebuild_reason,
-        user_name, rbld_archtags=None):
+        user_name, arch_tags=None):
         """Create rebuild archive, populate with packages and builds.
 
         :type component: `str`
@@ -65,8 +65,8 @@ class RebuildArchiveCreator(SoyuzScript):
         :type user_name: `str`
         :param user_name: the name of the user who is creating the rebuild
             archive.
-        :type rbld_archtags: list of strings
-        :param rbld_archtags: the list of architecture tags for which to
+        :type arch_tags: list of strings
+        :param arch_tags: the list of architecture tags for which to
             create builds (optional).
         """
 
@@ -102,7 +102,7 @@ class RebuildArchiveCreator(SoyuzScript):
 
         # Create builds for the cloned packages.
         self._createMissingBuilds(
-            destination.distroseries, destination.archive, rbld_archtags)
+            destination.distroseries, destination.archive, arch_tags)
 
     def mainTask(self):
         """Main function entry point.
@@ -131,7 +131,7 @@ class RebuildArchiveCreator(SoyuzScript):
             self.options.component, self.options.rebuildarchivename,
             self.options.suite, self.options.distribution_name,
             self.options.rebuildreason, self.options.username,
-            self.options.rbld_archtags)
+            self.options.arch_tags)
 
     def add_my_options(self):
         """Parse command line arguments and trigger rebuild archive creation.
@@ -142,43 +142,42 @@ class RebuildArchiveCreator(SoyuzScript):
         # to be redefined.
         self.parser.remove_option('-a')
         self.parser.add_option(
-            "-a", "--architecture", dest="rbld_archtags", action="append",
-            help="This are the architecture tags for which to create builds.")
+            "-a", "--architecture", dest="arch_tags", action="append",
+            help="The architecture tag for which to create rebuilds, "
+                 "repeat for each architecture required.")
 
         self.parser.add_option(
             "-r", "--rebuildarchive", dest="rebuildarchivename",
-            help="This is the rebuild archive name.")
+            help="The rebuild archive name.")
         self.parser.add_option(
             "-t", "--text", dest="rebuildreason",
-            help="This is the rebuild reason text.")
+            help="The rebuild reason text.")
         self.parser.add_option(
             "-u", "--user", dest="username",
-            help="This is the user creating the rebuild archive.")
+            help="The user creating the rebuild archive.")
 
     def _createMissingBuilds(
-        self, distroseries, archive, rbld_archtags=None):
+        self, distroseries, archive, arch_tags=None):
         """Create builds for all source packages in 'location'.
 
         :type distroseries: `DistroSeries`
         :param distroseries: the distro series for which to create builds.
         :type archive: `Archive`
         :param archive: the archive for which to create builds.
-        :type rbld_archtags: list of strings
-        :param rbld_archtags: the list of architecture tags for
+        :type arch_tags: list of strings
+        :param arch_tags: the list of architecture tags for
             which to create builds (optional).
         """
-        def filter_arch_series(arch_series):
-            return arch_series.architecturetag in rbld_archtags
-
         self.logger.info("Processing %s." % distroseries.name)
 
         # Listify the architectures to avoid hitting this MultipleJoin
         # multiple times.
         architectures = list(distroseries.architectures)
-        if len(architectures) > 0 and rbld_archtags is not None:
+        if arch_tags is not None:
             # Filter the list of DistroArchSeries so that only the ones
             # specified on the command line remain.
-            architectures = filter(filter_arch_series, architectures)
+            architectures = [architecture for architecture in architectures
+                 if architecture.architecturetag in arch_tags]
 
         if len(architectures) == 0:
             self.logger.info(
@@ -186,7 +185,7 @@ class RebuildArchiveCreator(SoyuzScript):
             return
 
         self.logger.info(
-            "Supported DistroArchSeries: %s." %
+            "Supported architectures: %s." %
             " ".join(arch_series.architecturetag
                      for arch_series in architectures))
 
