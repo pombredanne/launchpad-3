@@ -8,6 +8,7 @@ SOURCEDEPS=$(eval echo ${SOURCEDEPS})
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
 RSYNCOPTIONS="-avp --partial --progress --delete"
+# Note, we also add a filter when rsync is evoked.
 
 # Make sure we have an ssh key primed
 ssh-add -l
@@ -26,7 +27,10 @@ if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
 # Update the source dependencies
 if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
 
-rsync $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
+# Several (*) have tried, and failed, to get the --filter to fit neatly
+# into RSYNCOPTIONS, so we put it here. Bash arrays do not count.
+#   * elmo, sabdfl
+rsync --filter=". utilities/sourcedeps.filter" $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
 
 cd ~/canonical/lp-branches
 for branch in *; do
