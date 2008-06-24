@@ -68,7 +68,7 @@ account. We check that we get the warning that we are not members of the team.
     ...Translating into Spanish...
     ...Your suggestions will be held for review...
 
-And finally, we test that a language without a team lets to anyone (in this
+And finally, we test that a language without a team lets anyone (in this
 case, the 'No Privileges' account) to translate directly.
 
     >>> no_priv_browser.open(
