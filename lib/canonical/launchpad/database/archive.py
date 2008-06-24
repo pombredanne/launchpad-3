@@ -32,11 +32,17 @@ from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from canonical.launchpad.interfaces import (
-    ArchiveDependencyError, ArchivePermissionType, ArchivePurpose, IArchive,
-    IArchivePermissionSet, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
+from canonical.launchpad.interfaces.archive import (
+    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet)
+from canonical.launchpad.interfaces.archivepermission import (
+    ArchivePermissionType, IArchivePermissionSet)
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IHasBuildRecords, IBuildSet)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces.publishing import PackagePublishingStatus
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.person import validate_public_person
 
 
@@ -49,15 +55,27 @@ class Archive(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    def _validate_archive_name(self, attr, value):
+        """Only allow rename of REBUILD archive.
+
+        Also assert the name is valid when set via unproxied object.
+        """
+        if not self._SO_creating:
+            assert self.purpose == ArchivePurpose.REBUILD, (
+                "Only REBUILD archive can be renamed.")
+        assert valid_name(value), "Invalid name given to unproxied object."
+        return value
+
+    name = StringCol(
+        dbName='name', notNull=True, storm_validator=_validate_archive_name)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 
     distribution = ForeignKey(
         foreignKey='Distribution', dbName='distribution', notNull=False)
 
-    purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
-        schema=ArchivePurpose)
+    purpose = EnumCol(
+        dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
     enabled = BoolCol(dbName='enabled', notNull=True, default=True)
 
@@ -818,3 +836,36 @@ class ArchiveSet:
 
         return most_active
 
+    def getBuildCountersForArchitecture(self, archive, distroarchseries):
+        """See `IArchiveSet`."""
+        cur = cursor()
+        q = """
+            SELECT buildstate, count(id) FROM Build
+            WHERE archive = %s AND distroarchseries = %s
+            GROUP BY buildstate ORDER BY buildstate;
+        """ % sqlvalues(archive, distroarchseries)
+        cur.execute(q)
+        result = cur.fetchall()
+
+        status_map = {
+            'pending': (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING),
+            'failed': (BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
+                       BuildStatus.CHROOTWAIT, BuildStatus.FAILEDTOUPLOAD),
+            'succeeded': (BuildStatus.FULLYBUILT,),
+            }
+
+        status_and_counters = {}
+
+        # Set 'total' counter
+        status_and_counters['total'] = sum(
+            [counter for status, counter in result])
+
+        # Set each counter according 'status_map'
+        for key, status in status_map.iteritems():
+            status_and_counters[key] = 0
+            for status_value, status_counter in result:
+                status_values = [item.value for item in status]
+                if status_value in status_values:
+                    status_and_counters[key] += status_counter
+
+        return status_and_counters

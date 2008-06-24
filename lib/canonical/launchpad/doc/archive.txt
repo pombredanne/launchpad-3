@@ -60,21 +60,55 @@ Inquire what Distribution Series this archive has published sources to:
     >>> [s.name for s in cprov_archive.series_with_sources]
     [u'breezy-autotest', u'warty']
 
-'name' and 'purpose' are read-only attributes, they can't and
-shouldn't be modified once a IArchive is created. Changing those values
-would affect the way archives are published on disk.
-
-    >>> login("foo.bar@canonical.com")
-
-    >>> cprov_archive.name = 'no-it-will-not-change'
-    Traceback (most recent call last):
-    ...
-    ForbiddenAttribute: ('name', <Archive at ...>)
+'purpose' is read-only attributes, it can't and shouldn't be modified
+once a IArchive is created. Changing those values would affect the way
+archives are published on disk.
 
     >>> cprov_archive.purpose = ArchivePurpose.REBUILD
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
+
+'name' is only editable by LP administrator and only exposed via the
+ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still using
+default names.
+
+    >>> login("celso.providelo@canonical.com")
+
+    >>> cprov_archive.name = 'no-it-will-not-change-yet'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'name', 'launchpad.Admin')
+
+When editable, the 'name' field is protected by a constraint that
+asserts the archive is indeed a REBUILD and if the name is valid.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> cprov_archive.name = 'there-we-go'
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only REBUILD archive can be renamed.
+
+We will create a REBUILD archive and modify its name.
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> rebuild_archive = getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     distribution=ubuntu, name='editable-rebuild')
+
+Only 'valid' (traversable) names can be set.
+
+    >>> rebuild_archive.name = 'ThereWeGo'
+    Traceback (most recent call last):
+    ...
+    AssertionError: Invalid name given to unproxied object.
+
+Valid names work as expected.
+
+    >>> rebuild_archive.name = 'there-we-go'
+    >>> print rebuild_archive.name
+    there-we-go
 
     >>> login(ANONYMOUS)
 
@@ -1071,17 +1105,14 @@ distribution and a person name. This method is used in
     True
 
 Iteration over the own utility is performed against all archives,
-including the *main_archives*:
+including PPA, PRIMARY, PARTNER and REBUILDS:
 
-    >>> main_archives = 0
-    >>> ppas = 0
-    >>> for archive in archive_set:
-    ...     if not archive.is_ppa:
-    ...         main_archives += 1
-    ...     else:
-    ...         ppas += 1
-    >>> main_archives, ppas
-    (9, 4)
+    >>> archive_purposes = [archive.purpose.name for archive in archive_set]
+    >>> len(archive_purposes)
+    14
+
+    >>> print sorted(set(archive_purposes))
+    ['PARTNER', 'PPA', 'PRIMARY', 'REBUILD']
 
 ArchiveSet utility also offers counters for:
 
@@ -1330,6 +1361,57 @@ Celso's PPA.
     PPA for No Privileges Person 4
     PPA for Sample Person 4
 
+'getBuildCountersForArchitecture' allows callsites to quickly present
+the number of builds in pre-defined status for a given `IArchive` and
+`IDistroArchSeries` context.
+
+    >>> def printBuildCountersFor(archive, distroarchseries):
+    ...     build_counters = archive_set.getBuildCountersForArchitecture(
+    ...         archive, distroarchseries)
+    ...     sorted_keys = sorted(build_counters.keys())
+    ...     for key in sorted_keys:
+    ...         print key, build_counters[key]
+
+
+Build counters for hoary/i386 in Celso's PPA.
+
+    >>> hoary_i386 = hoary['i386']
+    >>> printBuildCountersFor(cprov_archive, hoary_i386)
+    failed     0
+    pending    0
+    succeeded  0
+    total      0
+
+Build counters for hoary/i386 in ubuntu primary archive.
+
+    >>> printBuildCountersFor(ubuntu.main_archive, hoary_i386)
+    failed     1
+    pending    2
+    succeeded  1
+    total      4
+
+warty/i386 which has 3 SUPERSEDED builds computed in 'total', but not
+in any other predefined counter.
+
+    >>> warty_i386 = warty['i386']
+    >>> printBuildCountersFor(ubuntu.main_archive, warty_i386)
+    failed     3
+    pending    0
+    succeeded  3
+    total      9
+
+Finally, build counters for breezy-autotest/i386 in ubuntu partner
+archive.
+
+    >>> ubuntu_partner = archive_set.getByDistroPurpose(
+    ...      ubuntu, ArchivePurpose.PARTNER)
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> printBuildCountersFor(ubuntu_partner, breezy_autotest_i386)
+    failed     0
+    pending    0
+    succeeded  1
+    total      1
+
 
 == Archive Permission Checking ==
 
@@ -1398,6 +1480,16 @@ distribution, does the trick.
     >>> rebuild_archive = getUtility(IArchiveSet).new(
     ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
     ...     distribution=ubuntutest, name='test-rebuild-one')
+
+As mentioned before, the rebuild archive name should be traversable
+otherwise an error is raised.
+
+    >>> getUtility(IArchiveSet).new(
+    ...     owner=cprov, purpose=ArchivePurpose.REBUILD,
+    ...     distribution=ubuntutest, name='Very@Wrong!Name')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Invalid name given to unproxied object.
 
 The name is used as provided, so callsites should validate it when
 necessary.
