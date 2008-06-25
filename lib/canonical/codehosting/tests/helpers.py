@@ -32,9 +32,7 @@ from bzrlib.errors import SmartProtocolError
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 
 from canonical.authserver.interfaces import (
-    LAUNCHPAD_SERVICES,
-    PERMISSION_DENIED_FAULT_CODE,
-    )
+    LAUNCHPAD_SERVICES, PERMISSION_DENIED_FAULT_CODE)
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -96,6 +94,23 @@ def exception_names(exceptions):
 
 class LoomTestMixin:
     """Mixin to provide Bazaar test classes with limited loom support."""
+
+    def loomify(self, branch):
+        tree = branch.create_checkout('checkout')
+        tree.lock_write()
+        try:
+            tree.branch.nick = 'bottom-thread'
+            loom_branch.loomify(tree.branch)
+        finally:
+            tree.unlock()
+        loom_tree = tree.bzrdir.open_workingtree()
+        loom_tree.lock_write()
+        loom_tree.branch.new_thread('bottom-thread')
+        loom_tree.commit('this is a commit', rev_id='commit-1')
+        loom_tree.unlock()
+        loom_tree.branch.record_loom('sample loom')
+        self.get_transport().delete_tree('checkout')
+        return loom_tree
 
     def makeLoomBranchAndTree(self, tree_directory):
         """Make a looms-enabled branch and working tree."""
