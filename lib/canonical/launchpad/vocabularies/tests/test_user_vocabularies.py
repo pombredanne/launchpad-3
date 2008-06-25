@@ -9,7 +9,7 @@ from unittest import TestLoader
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.launchpad.interfaces.person import PersonVisibility
-from canonical.launchpad.ftests import login, loginPerson
+from canonical.launchpad.ftests import login, login_person
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -28,7 +28,7 @@ class TestUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
 
     def test_user_no_team(self):
         user = self.factory.makePerson()
-        loginPerson(user)
+        login_person(user)
         self.assertEqual([user], self._vocabTermValues())
 
     def test_user_teams(self):
@@ -36,38 +36,38 @@ class TestUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
         # name.
         user = self.factory.makePerson()
         team_owner = self.factory.makePerson()
-        loginPerson(team_owner)
+        login_person(team_owner)
         bravo = self.factory.makeTeam(owner=team_owner, displayname="Bravo")
         bravo.addMember(person=user, reviewer=team_owner)
         alpha = self.factory.makeTeam(owner=team_owner, displayname="Alpha")
         alpha.addMember(person=user, reviewer=team_owner)
-        loginPerson(user)
+        login_person(user)
         self.assertEqual([user, alpha, bravo], self._vocabTermValues())
 
     def test_user_no_private_teams(self):
         # Private teams are not shown in the vocabulary.
         user = self.factory.makePerson()
         team_owner = self.factory.makePerson()
-        loginPerson(team_owner)
+        login_person(team_owner)
         team = self.factory.makeTeam(owner=team_owner)
         team.addMember(person=user, reviewer=team_owner)
         # Launchpad admin rights are needed to set private membership.
         login('foo.bar@canonical.com')
         team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-        loginPerson(user)
+        login_person(user)
         self.assertEqual([user], self._vocabTermValues())
 
     def test_indirect_team_membership(self):
         # Indirect team membership is shown.
         user = self.factory.makePerson()
         team_owner = self.factory.makePerson()
-        loginPerson(team_owner)
+        login_person(team_owner)
         bravo = self.factory.makeTeam(owner=team_owner, displayname="Bravo")
         bravo.addMember(person=user, reviewer=team_owner)
         alpha = self.factory.makeTeam(owner=team_owner, displayname="Alpha")
         alpha.addMember(
             person=bravo, reviewer=team_owner, force_team_add=True)
-        loginPerson(user)
+        login_person(user)
         self.assertEqual([user, alpha, bravo], self._vocabTermValues())
 
 

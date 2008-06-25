@@ -11,7 +11,7 @@ from canonical.launchpad.webapp.interaction import setupInteraction
 
 __all__ = [
     'login',
-    'loginPerson',
+    'login_person',
     'logout',
     'ANONYMOUS',
     'is_logged_in']
@@ -54,8 +54,8 @@ def login(email, participation=None):
     setupInteraction(principal, login=email, participation=participation)
 
 
-def loginPerson(person, participation=None):
-    """A helper to login the person with their preferred email."""
+def login_person(person, participation=None):
+    """Login the person with their preferred email."""
     return login(person.preferredemail.email, participation)
 
 
