@@ -21,6 +21,12 @@ user clicks on "Announcements" he will see the the announcements page.
     >>> print anon_browser.url
     http://launchpad.dev/ubuntu/+announcements
 
+XXX Julian 2008-06-25
+The navigation to the details page should not use '+index' here but
+if the menu code in browser/distribution.py is changed to use ''
+instead then the tab highlighting/disabling breaks.
+See bug 242860.
+
     >>> print_navigation_links(anon_browser.contents)
     Details: http://launchpad.dev/ubuntu/+index
     Announcements
