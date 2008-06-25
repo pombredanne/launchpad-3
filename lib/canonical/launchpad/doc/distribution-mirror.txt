@@ -683,7 +683,7 @@ First, let's check the source and arch series of one archive mirror.
     >>> for mirror_arch_series in mirror_arch_serieses:
     ...     print (mirror_arch_series.distro_arch_series.displayname,
     ...            mirror_arch_series.freshness.title)
-    (u'warty i386', 'Up to date')
+    (u'Ubuntu Warty i386', 'Up to date')
 
     >>> mirror_source_serieses = (
     ...     archive_mirror.getSummarizedMirroredSourceSerieses())
