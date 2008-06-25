@@ -30,22 +30,17 @@ from canonical.testing import reset_logging
 
 
 class StubbedPullerWorkerProtocol(PullerWorkerProtocol):
+    """A `PullerWorkerProtocol` that logs events without acting on them."""
 
     def __init__(self):
         # We are deliberately not calling PullerWorkerProtocol.__init__:
         # pylint: disable-msg=W0231
         self.calls = []
 
-    def startMirroring(self, branch_to_mirror):
-        self.calls.append(('startMirroring', branch_to_mirror))
-
-    def mirrorSucceeded(self, branch_to_mirror, last_revision):
-        self.calls.append(
-            ('mirrorSucceeded', branch_to_mirror, last_revision))
-
-    def mirrorFailed(self, branch_to_mirror, message, oops_id):
-        self.calls.append(
-            ('mirrorFailed', branch_to_mirror, message, oops_id))
+    def sendEvent(self, command, *args):
+        """Capture and log events."""
+        log_event = tuple([command] + list(args))
+        self.calls.append(log_event)
 
 
 class StubbedPullerWorker(PullerWorker):
@@ -103,11 +98,11 @@ class ErrorHandlingTestCase(unittest.TestCase):
             "Expected startMirroring and mirrorFailed, got: %r"
             % (self.protocol.calls,))
         startMirroring, mirrorFailed = self.protocol.calls
-        self.assertEqual(('startMirroring', self.branch), startMirroring)
-        self.assertEqual(('mirrorFailed', self.branch), mirrorFailed[:2])
-        self.assert_('TOKEN' in mirrorFailed[3])
+        self.assertEqual(('startMirroring',), startMirroring)
+        self.assertEqual('mirrorFailed', mirrorFailed[0])
+        self.assert_('TOKEN' in mirrorFailed[2])
         self.protocol.calls = []
-        return str(mirrorFailed[2])
+        return str(mirrorFailed[1])
 
     def runMirrorAndAssertErrorStartsWith(self, expected_msg):
         """Mirror the branch and assert the error starts with `expected_msg`.
@@ -415,10 +410,10 @@ class TestPullerWorker_SourceProblems(TestCaseWithTransport,
             "Expected startMirroring and mirrorFailed, got: %r"
             % (protocol.calls,))
         startMirroring, mirrorFailed = protocol.calls
-        self.assertEqual(('startMirroring', puller_worker), startMirroring)
-        self.assertEqual(('mirrorFailed', puller_worker), mirrorFailed[:2])
+        self.assertEqual(('startMirroring',), startMirroring)
+        self.assertEqual('mirrorFailed', mirrorFailed[0])
         self.assertContainsRe(
-            str(mirrorFailed[2]), re.escape(message_substring))
+            str(mirrorFailed[1]), re.escape(message_substring))
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         # The destination branch is not created if we cannot open the source
