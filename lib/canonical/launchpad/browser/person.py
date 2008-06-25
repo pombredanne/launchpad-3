@@ -4501,6 +4501,9 @@ class PersonEditLocationView(LaunchpadFormView):
         self._next_url = canonical_url(self.context)
         self.for_team_name = self.request.form.get('for_team')
         if self.for_team_name is not None:
+            # XXX: salgado, 2008-06-25: This is tested in another branch which
+            # adds the +map view for a person, and this branch is not going to
+            # land without the other one.
             for_team = getUtility(IPersonSet).getByName(self.for_team_name)
             if for_team is not None:
                 self._next_url = canonical_url(for_team) + '/+map'
