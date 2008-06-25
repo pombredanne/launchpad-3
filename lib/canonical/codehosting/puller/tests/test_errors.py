@@ -274,12 +274,15 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
 
 
 class TestErrorHandling(ErrorHandlingTestCase):
+    """Test our error messages for when the source branch has problems."""
 
     def setUp(self):
         ErrorHandlingTestCase.setUp(self)
         self.branch.enable_checkSourceUrl = False
 
     def testHTTPError(self):
+        # If the source branch requires HTTP authentication, say so in the
+        # error message.
         def stubOpenSourceBranch():
             raise urllib2.HTTPError(
                 'http://something', httplib.UNAUTHORIZED,
@@ -289,6 +292,8 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals("Authentication required.")
 
     def testSocketErrorHandling(self):
+        # If a socket error occurs accessing the source branch, say so in the
+        # error message.
         def stubOpenSourceBranch():
             raise socket.error('foo')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -296,6 +301,8 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorStartsWith(expected_msg)
 
     def testUnsupportedFormatErrorHandling(self):
+        # If we don't support the format that the source branch is in, say so
+        # in the error message.
         def stubOpenSourceBranch():
             raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -303,22 +310,29 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorStartsWith(expected_msg)
 
     def testUnknownFormatError(self):
+        # If the format is completely unknown to us, say so in the error
+        # message.
         def stubOpenSourceBranch():
             raise UnknownFormatError(format='Bad format')
         self.branch._openSourceBranch = stubOpenSourceBranch
         self.runMirrorAndAssertErrorStartsWith('Unknown branch format: ')
 
     def testParamikoNotPresent(self):
+        # If, somehow, we try to mirror a branch that requires SSH, we tell
+        # the user we cannot do so.
         def stubOpenSourceBranch():
+            # XXX: JonathanLange 2008-06-25: It's bogus to assume that this is
+            # the error we'll get if we try to mirror over SSH.
             raise ParamikoNotPresent('No module named paramiko')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'Launchpad cannot mirror branches from SFTP '
-        self.runMirrorAndAssertErrorStartsWith(expected_msg)
+        expected_msg = ('Launchpad cannot mirror branches from SFTP and SSH '
+                        'URLs. Please register a HTTP location for this '
+                        'branch.')
+        self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorMirrored(self):
-        """Should receive a user-friendly message we are asked to mirror a
-        non-branch.
-        """
+        # Log a user-friendly message when we are asked to mirror a
+        # non-branch.
         def stubOpenSourceBranch():
             raise NotBranchError('http://example.com/not-branch')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -327,10 +341,9 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorHosted(self):
-        """The not-a-branch error message should *not* include the Branch id
-        from the database. Instead, the path should be translated to a
-        user-visible location.
-        """
+        # The not-a-branch error message does *not* include the Branch id from
+        # the database. Instead, the path is translated to a user-visible
+        # location.
         split_id = branch_id_to_path(self.branch.branch_id)
         def stubOpenSourceBranch():
             raise NotBranchError('/srv/sm-ng/push-branches/%s/.bzr/branch/'
@@ -342,10 +355,9 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
     def testNotBranchErrorImported(self):
-        """The not-a-branch error message for import branch should not
-        disclose the internal URL. Since there is no user-visible URL to
-        blame, we do not display any URL at all.
-        """
+        # The not-a-branch error message for import branch does not disclose
+        # the internal URL. Since there is no user-visible URL to blame, we do
+        # not display any URL at all.
         def stubOpenSourceBranch():
             raise NotBranchError('http://canonical.example.com/internal/url')
         self.branch._openSourceBranch = stubOpenSourceBranch
@@ -376,18 +388,26 @@ class TestErrorHandling(ErrorHandlingTestCase):
         self.runMirrorAndAssertErrorEquals(expected_msg)
 
 
+# XXX: JonathanLange 2008-06-25: This test case checks source problems, just
+# like the test case above. They should be combined.
 class TestPullerWorker_SourceProblems(TestCaseWithTransport,
                                       PullerWorkerMixin):
+    """Tests for robustness in the face of source branch problems."""
 
     def tearDown(self):
         super(TestPullerWorker_SourceProblems, self).tearDown()
         reset_logging()
 
-    def assertMirrorFailed(self, puller_worker, message_substring):
-        """Assert that puller_worker failed, and that message_substring is in
-        the message.
+    def makePullerWorker(self, *args, **kwargs):
+        """Make a puller worker with a stub protocol."""
+        return PullerWorkerMixin.makePullerWorker(
+            self, protocol=StubbedPullerWorkerProtocol(), *args, **kwargs)
 
-        'puller_worker' must use a StubbedPullerWorkerProtocol.
+    def assertMirrorFailed(self, puller_worker, message_substring):
+        """Assert that puller_worker failed with a particular message.
+
+        Asserts that `message_substring` is in the message. Note that
+        `puller_worker` must use a `StubbedPullerWorkerProtocol`.
         """
         protocol = puller_worker.protocol
         self.assertEqual(
@@ -401,6 +421,8 @@ class TestPullerWorker_SourceProblems(TestCaseWithTransport,
             str(mirrorFailed[2]), re.escape(message_substring))
 
     def testUnopenableSourceDoesNotCreateMirror(self):
+        # The destination branch is not created if we cannot open the source
+        # branch.
         non_existent_source = os.path.abspath('nonsensedir')
         dest_dir = 'dest-dir'
         my_branch = self.makePullerWorker(
@@ -409,14 +431,17 @@ class TestPullerWorker_SourceProblems(TestCaseWithTransport,
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
+        # If we can't open the source branch, we get an error message
+        # complaining of the problem.
         non_existent_source = os.path.abspath('nonsensedir')
         my_branch = self.makePullerWorker(
-            src_dir=non_existent_source, dest_dir="non-existent-destination",
-            protocol=StubbedPullerWorkerProtocol())
+            src_dir=non_existent_source, dest_dir="non-existent-destination")
         my_branch.mirror()
         self.assertMirrorFailed(my_branch, 'Not a branch')
 
     def testMissingFileRevisionData(self):
+        # In the face of a particular kind of source branch corruption, we
+        # don't mirror the branch and log an error gracefully.
         self.build_tree(['missingrevision/',
                          'missingrevision/afile'])
         tree = self.make_branch_and_tree('missingrevision', format='dirstate')
@@ -431,14 +456,15 @@ class TestPullerWorker_SourceProblems(TestCaseWithTransport,
         # to better explain which particular repository corruption we are
         # trying to reproduce here.
         tree.lock_write()
-        self.addCleanup(tree.unlock)
-        tree.branch.repository.weave_store._put_weave(
-            "myid", Weave(weave_name="myid"),
-            tree.branch.repository.get_transaction())
+        try:
+            tree.branch.repository.weave_store._put_weave(
+                "myid", Weave(weave_name="myid"),
+                tree.branch.repository.get_transaction())
+        finally:
+            tree.unlock()
         source_url = os.path.abspath('missingrevision')
         my_branch = self.makePullerWorker(
-            src_dir=source_url, dest_dir="non-existent-destination",
-            protocol=StubbedPullerWorkerProtocol())
+            src_dir=source_url, dest_dir="non-existent-destination")
         my_branch.mirror()
         self.assertMirrorFailed(my_branch, 'No such file')
 
