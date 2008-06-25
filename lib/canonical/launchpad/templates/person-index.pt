@@ -248,6 +248,9 @@
            tal:content="structure context/@@+portlet-contact-details" />
 
       <tal:not-team condition="not:context/isTeam">
+      <div class="section"
+           tal:content="structure context/@@+portlet-map" />
+
       <div id="working-on"
            tal:define="bugtasks view/getBugsInProgress;
                        specs context/assigned_specs_in_progress"

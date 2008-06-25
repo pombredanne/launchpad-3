@@ -117,7 +117,7 @@
           </td>
         </tr>
         <tal:can-view-openid-login
-             condition="context/required:launchpad.Edit">
+          condition="context/required:launchpad.Edit">
         <tr tal:condition="context/is_openid_enabled">
           <th>OpenID login:<br/>
             <span class="help">
@@ -127,9 +127,6 @@
           <td title="This URL is not disclosed to others.">
             <img src="/@@/private" alt="" />
             <tal:openid-login content="view/openid_identity_url" /><br/>
-            <span style="font-weight:normal">
-              (<a href="https://help.launchpad.net/OpenID"
-                  >What's&nbsp;this?</a>)</span>
           </td>
         </tr>
         </tal:can-view-openid-login>
