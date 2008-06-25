@@ -1,12 +1,12 @@
 <tal:can_view condition="context/required:launchpad.View"
               define="link context/menu:overview/map">
-  <tal:map condition="view/mapped_participant_count">
+  <tal:map condition="view/mapped_participants">
     <div id="team_map_div" style="height: 200px; border: 1px;"></div>
     <tal:mapscript replace="structure view/map_portlet_html" />
     <p tal:condition="link/enabled" tal:content="structure link/render" />
   </tal:map>
 
-  <a tal:condition="not: view/mapped_participant_count"
+  <a tal:condition="not: view/mapped_participants"
      tal:attributes="href link/target"
     ><img src="/+icing/portlet-map-unknown.png" /></a>
 </tal:can_view>

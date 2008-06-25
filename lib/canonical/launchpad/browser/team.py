@@ -810,6 +810,8 @@ class TeamMapView(LaunchpadView):
     """
 
     def initialize(self):
+        # Tell our main-template to include Google's gmap2 javascript so that
+        # we can render the map.
         self.request.needs_gmap2 = True
 
     @cachedproperty
@@ -818,19 +820,10 @@ class TeamMapView(LaunchpadView):
         return self.context.mapped_participants
 
     @cachedproperty
-    def mapped_participant_count(self):
-        return len(self.mapped_participants)
-
-    @cachedproperty
     def unmapped_participants(self):
         """Participants (ordered by name) with no recorded locations."""
         return sorted(list(self.context.unmapped_participants),
                       key=lambda p: p.browsername)
-
-    @cachedproperty
-    def unmapped_participant_count(self):
-        """Number of participants with no recorded location."""
-        return len(self.unmapped_participants)
 
     @cachedproperty
     def times(self):
@@ -872,7 +865,7 @@ class TeamMapView(LaunchpadView):
 
     @property
     def map_html(self):
-        """The HTML which shows the map."""
+        """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
 
@@ -915,7 +908,7 @@ class TeamMapView(LaunchpadView):
 
     @property
     def map_portlet_html(self):
-        """The HTML which shows the map portlet."""
+        """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
 
