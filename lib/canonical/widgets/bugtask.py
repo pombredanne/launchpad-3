@@ -74,7 +74,8 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form_ng.getOne(self.name + ".option") == self.assign_to:
+        option = self.request.form_ng.getOne(self.name + ".option")
+        if option == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
@@ -328,8 +329,8 @@ class BugTaskBugWatchWidget(RadioWidget):
             and getattr(self, 'firstItem', False)
             and len(self.vocabulary) > 0
             and self.context.required):
-                # Grab the first item from the iterator:
-                values = [iter(self.vocabulary).next().value]
+            # Grab the first item from the iterator:
+            values = [iter(self.vocabulary).next().value]
         elif value != self.context.missing_value:
             values = [value]
         else:
