@@ -36,7 +36,7 @@ class TextDirection(DBEnumeratedType):
 
 class ILanguage(Interface):
     """A Language."""
-    export_as_webservice_entry()
+    export_as_webservice_entry('language')
 
     id = Attribute("This Language ID.")
 

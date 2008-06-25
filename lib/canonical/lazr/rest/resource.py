@@ -780,8 +780,8 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
             # Top-level collection.
             base_url = canonical_url(
                 self.request.publication.getApplication(self.request))
-            class_name = self.collection.__class__.__name__
-            return "%s#%s" % (base_url, class_name)
+            return "%s#%s" % (base_url,
+                              self.collection.entry_schema._plural)
 
 
 
@@ -898,7 +898,7 @@ class ServiceRootResource(HTTPResource):
                         # It's not a top-level resource.
                         continue
                     link_name = ("%s_collection_link"
-                                 % registration.value.__name__)
+                                 % registration.value.entry_schema._plural)
                     top_level_resources[link_name] = utility
         return top_level_resources
 

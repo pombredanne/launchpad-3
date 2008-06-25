@@ -272,7 +272,7 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     @property
     def collection_type(self):
         """The name of this kind of resource."""
-        return self.adapter.__name__
+        return self.entry_schema._plural
 
     @property
     def type_link(self):

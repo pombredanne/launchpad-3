@@ -23,7 +23,7 @@ UBUNTU_WIKI_URL = 'https://wiki.ubuntu.com/'
 
 class IWikiName(IHasOwner):
     """Wiki for Users"""
-    export_as_webservice_entry()
+    export_as_webservice_entry('wiki_name')
     id = Int(title=_("Database ID"), required=True, readonly=True)
     # schema=Interface will be overriden in person.py because of circular
     # dependencies.

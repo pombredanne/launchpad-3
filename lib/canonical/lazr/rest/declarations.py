@@ -98,15 +98,21 @@ def _get_interface_tags():
     return f_locals.setdefault(TAGGED_DATA, {})
 
 
-def export_as_webservice_entry():
+def export_as_webservice_entry(singular_name, plural_name=None):
     """Mark the content interface as exported on the web service as an entry.
     """
     _check_called_from_interface_def('export_as_webservice_entry()')
+    if plural_name is None:
+        # Apply default pluralization rule.
+        plural_name = singular_name + 's'
+
     def mark_entry(interface):
         """Class advisor that tags the interface once it is created."""
         _check_interface('export_as_webservice_entry()', interface)
         interface.setTaggedValue(
-            LAZR_WEBSERVICE_EXPORTED, dict(type=ENTRY_TYPE))
+            LAZR_WEBSERVICE_EXPORTED, dict(
+                type=ENTRY_TYPE, singular_name=singular_name,
+                plural_name=plural_name))
 
         # Set the name of the fields that didn't specify it using the
         # 'export_as' parameter in exported(). This must be done here,
@@ -548,7 +554,10 @@ def generate_entry_adapter(content_interface, webservice_interface):
     if not isinstance(webservice_interface, InterfaceClass):
         raise TypeError('webservice_interface is not an interface.')
 
-    class_dict = {'schema': webservice_interface}
+    tag = content_interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    class_dict = dict(schema=webservice_interface,
+                      _singular=tag['singular_name'],
+                      _plural=tag['plural_name'])
     for name, field in getFields(content_interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
