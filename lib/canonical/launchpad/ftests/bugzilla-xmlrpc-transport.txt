@@ -318,9 +318,8 @@ returned for each comment.
 == Bug.add_comment() ==
 
 The standard Bugzilla API offers a method, Bug.add_comment(), which can
-(unsurprisingly) be used to add comments to a remote bug. It takes two
-arguments: the ID of the remote comment and the body of the comment to
-be added to it.
+be used to add comments to a remote bug. It takes two arguments: the ID
+of the remote comment and the body of the comment to be added to it.
 
 add_comment() requires authentication.
 

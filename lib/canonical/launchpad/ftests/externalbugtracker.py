@@ -37,6 +37,7 @@ from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -80,23 +81,6 @@ def read_test_file(name):
 
     test_file = open(file_path, 'r')
     return test_file.read()
-
-
-def ordered_dict_as_string(dict):
-    """Return the contents of a dict as an ordered string.
-
-    The output will be ordered by key, so {'z': 1, 'a': 2, 'c': 3} will
-    be printed as {'a': 2, 'c': 3, 'z': 1}.
-
-    We do this because dict ordering is not guaranteed.
-    """
-    item_string = '%r: %r'
-    item_strings = []
-    for key, value in sorted(dict.items()):
-        item_strings.append(item_string % (key, value))
-
-    return '{%s}' % ', '.join(
-        "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
 def print_bugwatches(bug_watches, convert_remote_status=None):
@@ -668,7 +652,9 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
         self.comment_id_index = comment_id
 
-        # Once again, we bow to xmlrpclib:1387's whim.
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
         return [{'comment_id': comment_id}]
 
 
