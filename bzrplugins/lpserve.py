@@ -18,7 +18,7 @@ from bzrlib.option import Option
 from bzrlib import lockdir, urlutils, ui
 
 from bzrlib.smart import medium, server
-from bzrlib.transport import chroot, get_transport, remote
+from bzrlib.transport import get_transport, remote
 
 from canonical.config import config
 
@@ -54,11 +54,6 @@ class cmd_launchpad_server(Command):
 
     takes_args = ['user_id']
 
-    def _get_chrooted_transport(self, url):
-        chroot_server = chroot.ChrootServer(get_transport(url))
-        chroot_server.setUp()
-        return get_transport(chroot_server.get_url())
-
     def get_lp_server(self, authserver, user_id, hosted_url, mirror_url):
         """Create a Launchpad smart server.
 
@@ -72,8 +67,8 @@ class cmd_launchpad_server(Command):
         """
         # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
         from canonical.codehosting import transport
-        hosted_transport = self._get_chrooted_transport(hosted_url)
-        mirror_transport = self._get_chrooted_transport(mirror_url)
+        hosted_transport = transport.get_chrooted_transport(hosted_url)
+        mirror_transport = transport.get_chrooted_transport(mirror_url)
         # Translate the given 'id' into an actual database id.
         user_id = authserver.getUser(user_id)['id']
         lp_server = transport.LaunchpadServer(
