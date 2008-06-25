@@ -15,7 +15,7 @@ team.
 The +projects page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
-    >>> anon_browser.getLink('List related projects').click()
+    >>> anon_browser.getLink('Show all projects in which').click()
 
     >>> print anon_browser.title
     Projects Ubuntu Team is involved with

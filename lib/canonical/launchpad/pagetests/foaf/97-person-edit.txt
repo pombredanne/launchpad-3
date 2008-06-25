@@ -11,8 +11,6 @@ Launchpad.
     'Foo Bar'
     >>> browser.getControl('Name', index=1).value
     'name16'
-    >>> browser.getControl('Time zone').value
-    ['Africa/Johannesburg']
     >>> browser.getControl(
     ...     'Hide my email addresses from other Launchpad users').selected
     False
@@ -65,16 +63,3 @@ changed:
     >>> browser.getControl("Include bug descriptions when sending me "
     ...     "bug notifications").selected
     True
-
-He will also change his timezone:
-
-    >>> browser.getControl('Time zone').value = ['Africa/Dakar']
-    >>> browser.getControl('Save').click()
-
-    >>> browser.url
-    'http://launchpad.dev/~foobar'
-
-    >>> browser.getLink('Change details').click()
-    >>> browser.getControl('Time zone').value
-    ['Africa/Dakar']
-

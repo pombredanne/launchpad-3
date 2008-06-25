@@ -3297,16 +3297,6 @@ class PersonEditView(BasePersonEditView):
     field_names = ['displayname', 'name', 'hide_email_addresses',
                    'verbose_bugnotifications']
 
-    # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
-    # for setting a person's location/time_zone lands.
-    def updateContextFromData(self, data):
-        """Overwrite it here because the time_zone can't be set directly."""
-        time_zone = data.pop('time_zone')
-        self.context.setLocation(
-            self.context.latitude, self.context.longitude,
-            time_zone, self.user)
-        super(PersonEditView, self).updateContextFromData(data)
-
 
 class PersonBrandingView(BrandingChangeView):
 
@@ -4506,6 +4496,9 @@ class PersonEditLocationView(LaunchpadFormView):
         self._next_url = canonical_url(self.context)
         self.for_team_name = self.request.form.get('for_team')
         if self.for_team_name is not None:
+            # XXX: salgado, 2008-06-25: This is tested in another branch which
+            # adds the +map view for a person, and this branch is not going to
+            # land without the other one.
             for_team = getUtility(IPersonSet).getByName(self.for_team_name)
             if for_team is not None:
                 self._next_url = canonical_url(for_team) + '/+map'
