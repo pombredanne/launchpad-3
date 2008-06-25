@@ -400,7 +400,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = exported(
-        Int(title=_('Karma'), readonly=False,
+        Int(title=_('Karma'), readonly=True,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,
@@ -1549,6 +1549,22 @@ class IPersonSet(Interface):
             use.
         :raises NicknameGenerationError: When no name is provided and we can't
             generate a nickname from the given email address.
+        """
+
+    def createPersonWithoutEmail(
+        name, rationale, comment=None, displayname=None, registrant=None):
+        """Create and return an `IPerson` without using an email address.
+
+        :param name: The person's name.
+        :param comment: A comment explaining why the person record was
+            created (usually used by scripts which create them automatically).
+            Must be of the following form: "when %(action_details)s"
+            (e.g. "when the foo package was imported into Ubuntu Breezy").
+        :param displayname: The person's displayname.
+        :param registrant: The user who created this person, if any.
+        :raises InvalidName: When the passed name isn't valid.
+        :raises NameAlreadyTaken: When the passed name has already been
+            used.
         """
 
     def ensurePerson(email, displayname, rationale, comment=None,
