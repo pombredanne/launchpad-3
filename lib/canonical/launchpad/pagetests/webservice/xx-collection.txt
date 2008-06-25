@@ -11,8 +11,6 @@ examples.
 A collection responds to GET by serving one page of the objects in the
 collection.
 
-  >>> import pdb; pdb.set_trace()
-
   >>> people_collection = webservice.get("/beta/people").jsonBody()
   >>> people_collection['resource_type_link']
   u'http://api.launchpad.dev/beta/#people'
@@ -176,7 +174,7 @@ A collection may be scoped to an element:
 
   >>> result = webservice.get("/beta/~admins/members").jsonBody()
   >>> result['resource_type_link']
-  u'http://api.launchpad.dev/beta/#people-page-resource'
+  u'http://api.launchpad.dev/beta/#person-page-resource'
   >>> team_members = sorted(
   ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)

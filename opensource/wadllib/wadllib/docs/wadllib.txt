@@ -47,9 +47,8 @@ available for that resource. In this case, the server root resource
 has a a JSON representation, and it defines parameters like
 'people_collection_link', a link to a list of people in Launchpad. We
 should be able to use the get_param() method to get the WADL
-definition of the 'PersonSetCollectionAdapter_collection_link'
-parameter and find out more about it--for instance, is it a link to
-another resource?
+definition of the 'people_collection_link' parameter and find out more
+about it--for instance, is it a link to another resource?
 
    >>> link_name = 'people_collection_link'
    >>> link_param = service_root.get_param(link_name)
@@ -191,7 +190,7 @@ by following links.
 
    >>> from wadllib.application import Resource
    >>> limi_person = Resource(wadl, "http://api.launchpad.dev/beta/~limi",
-   ...     "http://api.launchpad.dev/beta/#PersonEntryAdapter")
+   ...     "http://api.launchpad.dev/beta/#person")
 
    >>> bound_limi = bind_to_testdata(limi_person, 'person-limi')
    >>> languages_link = bound_limi.get_param("languages_collection_link")

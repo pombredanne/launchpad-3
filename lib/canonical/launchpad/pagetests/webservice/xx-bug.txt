@@ -34,7 +34,7 @@ At the top level we provide a collection of bugs.
    (u'owner_link', u'http://api.launchpad.dev/beta/~name16'),
    (u'permits_expiration', False),
    (u'private', False),
-   (u'resource_type_link', u'http://api.launchpad.dev/beta/#BugEntryAdapter'),
+   (u'resource_type_link', u'http://api.launchpad.dev/beta/#bug'),
    (u'security_related', False),
    (u'self_link', u'http://api.launchpad.dev/beta/bugs/11'),
    (u'tags', []),
@@ -75,7 +75,7 @@ Each bug has a collection of messages.
    (u'owner_link', u'http://api.launchpad.dev/beta/~name12'),
    (u'parent_link', None),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#MessageEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#message'),
    (u'self_link', u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/0'),
    (u'subject', u'Firefox install instructions should be complete')]
 
@@ -130,7 +130,7 @@ data in a bug task is derived from the bug.
    (u'related_tasks_collection_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1/related_tasks'),
    (u'resource_type_link',
-    u'http://api.launchpad.dev/beta/#BugTaskEntryAdapter'),
+    u'http://api.launchpad.dev/beta/#bug_task'),
    (u'self_link',
     u'http://api.../debian/+source/mozilla-firefox/+bug/1'),
    (u'status', u'Confirmed'),
