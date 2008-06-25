@@ -930,9 +930,9 @@ class PersonActiveMembershipVocabulary:
 
     def _get_teams(self):
         """The teams that the vocabulary is built from."""
-        return [team for team
-                in self.context.teams_participated_in
-                if team.visibility == PersonVisibility.PUBLIC]
+        return [membership.team for membership
+                in self.context.myactivememberships
+                if membership.team.visibility == PersonVisibility.PUBLIC]
 
     def __len__(self):
         """See `IVocabularyTokenized`."""
