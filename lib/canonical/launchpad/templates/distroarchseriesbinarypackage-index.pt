@@ -10,9 +10,6 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1 tal:content="context/summary">Summary goes here</h1>
-    </metal:heading>
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
@@ -24,6 +21,14 @@
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <a
+          tal:attributes="href context/distroarchseries/fmt:url"
+          tal:content="context/distroarchseries/displayname"
+        />
+      </div>
+      <h1 tal:content="context/title">pmount in Ubuntu Hoary i386</h1>
 
   <tal:description replace="structure context/description/fmt:text-to-html">
     Package description

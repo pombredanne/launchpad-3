@@ -164,8 +164,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         control_file = transport.get_bytes(
             '~testuser/evolution/.bzr/control.conf')
         self.assertEqual(
-            'default_stack_on=%s~vcs-imports/evolution/main'
-            % config.codehosting.supermirror_root.replace('http', 'sftp'),
+            'default_stack_on=/~vcs-imports/evolution/main',
             control_file.strip())
 
     @defer_to_thread
