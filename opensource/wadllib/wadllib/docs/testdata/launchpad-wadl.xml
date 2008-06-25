@@ -27,16 +27,16 @@
   <wadl:representation mediaType="application/json" id="service-root-json">
     
       <wadl:param style="plain"
-                  path="$['MaloneApplicationCollectionAdapter_collection_link']"
-                  name="MaloneApplicationCollectionAdapter_collection_link">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#MaloneApplicationCollectionAdapter"/>
+                  path="$['people_collection_link']"
+                  name="people_collection_link">
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#people"/>
       </wadl:param>
     
     
       <wadl:param style="plain"
-                  path="$['PersonSetCollectionAdapter_collection_link']"
-                  name="PersonSetCollectionAdapter_collection_link">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonSetCollectionAdapter"/>
+                  path="$['bugs_collection_link']"
+                  name="bugs_collection_link">
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bugs"/>
       </wadl:param>
     
   </wadl:representation>
@@ -47,21 +47,18 @@
 
   <!--Begin resource_type definitions for collection resources.-->
   
-    <wadl:resource_type id="PersonSetCollectionAdapter">
+    <wadl:resource_type id="people">
       
-      <wadl:method name="GET"
-                   id="PersonSetCollectionAdapter-get">
+      <wadl:method name="GET" id="people-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#PersonEntryAdapter-page"/>
+    href="http://api.launchpad.dev/beta/#person-page"/>
           <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="PersonSetCollectionAdapter-wadl"/>
+    mediaType="application/vd.sun.wadl+xml" id="people-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method id="PersonSetCollectionAdapter-getByEmail"
-                   name="GET">
+      <wadl:method id="people-getByEmail" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -74,9 +71,9 @@
             
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="PersonSetCollectionAdapter-findPerson"
-                   name="GET">
+      <wadl:method id="people-findPerson" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -89,9 +86,9 @@
             
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="PersonSetCollectionAdapter-newTeam"
-                   name="POST">
+      <wadl:method id="people-newTeam" name="POST">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -132,9 +129,14 @@
             <wadl:option value="Restricted Team"/>
           </wadl:param>
         </wadl:request>
+        <wadl:response>
+          <wadl:param name="Location" style="header">
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#team"/>
+          </wadl:param>
+          
+        </wadl:response>
       </wadl:method>
-      <wadl:method id="PersonSetCollectionAdapter-getAllTeams"
-                   name="GET">
+      <wadl:method id="people-getAllTeams" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -142,9 +144,9 @@
             <wadl:doc>The name of the operation being invoked.</wadl:doc>
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="PersonSetCollectionAdapter-getAllPersons"
-                   name="GET">
+      <wadl:method id="people-getAllPersons" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -152,9 +154,9 @@
             <wadl:doc>The name of the operation being invoked.</wadl:doc>
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="PersonSetCollectionAdapter-find"
-                   name="GET">
+      <wadl:method id="people-find" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -167,9 +169,13 @@
             
           </wadl:param>
         </wadl:request>
+        <wadl:response>
+          
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#person-page"/>
+        </wadl:response>
       </wadl:method>
-      <wadl:method id="PersonSetCollectionAdapter-findTeam"
-                   name="GET">
+      <wadl:method id="people-findTeam" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -182,35 +188,23 @@
             
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
     </wadl:resource_type>
 
   
   
-    <wadl:resource_type id="MaloneApplicationCollectionAdapter">
+    <wadl:resource_type id="bugs">
       
-      <wadl:method name="GET"
-                   id="MaloneApplicationCollectionAdapter-get">
+      <wadl:method name="GET" id="bugs-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#BugEntryAdapter-page"/>
+    href="http://api.launchpad.dev/beta/#bug-page"/>
           <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="MaloneApplicationCollectionAdapter-wadl"/>
+    mediaType="application/vd.sun.wadl+xml" id="bugs-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method id="MaloneApplicationCollectionAdapter-default_bug_list"
-                   name="GET">
-        
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true"
-                      fixed="default_bug_list">
-            <wadl:doc>The name of the operation being invoked.</wadl:doc>
-          </wadl:param>
-        </wadl:request>
-      </wadl:method>
     </wadl:resource_type>
 
   
@@ -219,30 +213,29 @@
   <!--Begin representation and resource_type definitions for entry
       resources and the collections that contain them. -->
   
-    <wadl:resource_type id="JabberIDEntryAdapter">
+    <wadl:resource_type id="email_address">
       
-      <wadl:method name="GET" id="JabberIDEntryAdapter-get">
+      <wadl:method name="GET" id="email_address-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#JabberIDEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#email_address-full"/>
           <wadl:representation
     mediaType="application/vd.sun.wadl+xml"
-    id="JabberIDEntryAdapter-wadl"/>
+    id="email_address-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method name="PUT" id="JabberIDEntryAdapter-put">
+      <wadl:method name="PUT" id="email_address-put">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#JabberIDEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#email_address-full"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method name="PATCH"
-                   id="JabberIDEntryAdapter-patch">
+      <wadl:method name="PATCH" id="email_address-patch">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#JabberIDEntryAdapter-diff"/>
+    href="http://api.launchpad.dev/beta/#email_address-diff"/>
         </wadl:request>
       </wadl:method>
 
@@ -250,11 +243,91 @@
 
 
     <wadl:representation mediaType="application/json"
-                         id="JabberIDEntryAdapter-full">
+                         id="email_address-full">
+      <wadl:param style="plain" required="true"
+                  path="$['person_link']" name="person_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Person&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['email']" name="email">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Email Address&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+    </wadl:representation>
+
+    <wadl:representation mediaType="application/json"
+                         id="email_address-diff">
+    </wadl:representation>
+
+    <!--Collection page for this type of entry-->
+    <wadl:resource_type id="email_address-page-resource">
+      <wadl:method name="GET"
+                   id="email_address-page-resource-get">
+        <wadl:response>
+          <wadl:representation href="#email_address-page"/>
+        </wadl:response>
+      </wadl:method>
+    </wadl:resource_type>
+
+    <wadl:representation mediaType="application/json"
+                         id="email_address-page">
+      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+
+      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
+
+      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
+        <wadl:link resource_type="#email_address-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
+        <wadl:link resource_type="#email_address-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
+
+      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#email_address"/>
+      </wadl:param>
+  </wadl:representation>
+
+  
+  
+    <wadl:resource_type id="jabber_id">
+      
+      <wadl:method name="GET" id="jabber_id-get">
+        <wadl:response>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#jabber_id-full"/>
+          <wadl:representation
+    mediaType="application/vd.sun.wadl+xml"
+    id="jabber_id-wadl"/>
+        </wadl:response>
+      </wadl:method>
+
+      <wadl:method name="PUT" id="jabber_id-put">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#jabber_id-full"/>
+        </wadl:request>
+      </wadl:method>
+
+      <wadl:method name="PATCH" id="jabber_id-patch">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#jabber_id-diff"/>
+        </wadl:request>
+      </wadl:method>
+
+    </wadl:resource_type>
+
+
+    <wadl:representation mediaType="application/json"
+                         id="jabber_id-full">
       <wadl:param style="plain" required="true"
                   path="$['person_link']" name="person_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Owner&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['jabberid']" name="jabberid">
@@ -264,7 +337,7 @@
     </wadl:representation>
 
     <wadl:representation mediaType="application/json"
-                         id="JabberIDEntryAdapter-diff">
+                         id="jabber_id-diff">
       <wadl:param style="plain" required="false"
                   path="$['jabberid']" name="jabberid">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Jabber user ID&lt;/strong&gt;</wadl:doc>
@@ -273,248 +346,74 @@
     </wadl:representation>
 
     <!--Collection page for this type of entry-->
-    <wadl:resource_type id="JabberIDEntryAdapter-page-resource">
+    <wadl:resource_type id="jabber_id-page-resource">
       <wadl:method name="GET"
-                   id="JabberIDEntryAdapter-page-resource-get">
+                   id="jabber_id-page-resource-get">
         <wadl:response>
-          <wadl:representation
-    href="#JabberIDEntryAdapter-page"/>
+          <wadl:representation href="#jabber_id-page"/>
         </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
     <wadl:representation mediaType="application/json"
-                         id="JabberIDEntryAdapter-page">
+                         id="jabber_id-page">
       <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
       <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#JabberIDEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#jabber_id-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#JabberIDEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#jabber_id-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
 
       <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#JabberIDEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#jabber_id"/>
       </wadl:param>
   </wadl:representation>
 
   
   
-    <wadl:resource_type id="LanguageEntryAdapter">
+    <wadl:resource_type id="bug_task">
       
-      <wadl:method name="GET" id="LanguageEntryAdapter-get">
+      <wadl:method name="GET" id="bug_task-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#LanguageEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#bug_task-full"/>
           <wadl:representation
     mediaType="application/vd.sun.wadl+xml"
-    id="LanguageEntryAdapter-wadl"/>
+    id="bug_task-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method name="PUT" id="LanguageEntryAdapter-put">
+      <wadl:method name="PUT" id="bug_task-put">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#LanguageEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#bug_task-full"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method name="PATCH"
-                   id="LanguageEntryAdapter-patch">
+      <wadl:method name="PATCH" id="bug_task-patch">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#LanguageEntryAdapter-diff"/>
+    href="http://api.launchpad.dev/beta/#bug_task-diff"/>
         </wadl:request>
       </wadl:method>
 
-    </wadl:resource_type>
-
-
-    <wadl:representation mediaType="application/json"
-                         id="LanguageEntryAdapter-full">
-    </wadl:representation>
-
-    <wadl:representation mediaType="application/json"
-                         id="LanguageEntryAdapter-diff">
-    </wadl:representation>
-
-    <!--Collection page for this type of entry-->
-    <wadl:resource_type id="LanguageEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="LanguageEntryAdapter-page-resource-get">
-        <wadl:response>
-          <wadl:representation
-    href="#LanguageEntryAdapter-page"/>
-        </wadl:response>
-      </wadl:method>
-    </wadl:resource_type>
-
-    <wadl:representation mediaType="application/json"
-                         id="LanguageEntryAdapter-page">
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
-
-      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
-
-      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#LanguageEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#LanguageEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
-
-      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#LanguageEntryAdapter"/>
-      </wadl:param>
-  </wadl:representation>
-
-  
-  
-    <wadl:resource_type id="IrcIDEntryAdapter">
-      
-      <wadl:method name="GET" id="IrcIDEntryAdapter-get">
-        <wadl:response>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#IrcIDEntryAdapter-full"/>
-          <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="IrcIDEntryAdapter-wadl"/>
-        </wadl:response>
-      </wadl:method>
-
-      <wadl:method name="PUT" id="IrcIDEntryAdapter-put">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#IrcIDEntryAdapter-full"/>
-        </wadl:request>
-      </wadl:method>
-
-      <wadl:method name="PATCH" id="IrcIDEntryAdapter-patch">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#IrcIDEntryAdapter-diff"/>
-        </wadl:request>
-      </wadl:method>
-
-    </wadl:resource_type>
-
-
-    <wadl:representation mediaType="application/json"
-                         id="IrcIDEntryAdapter-full">
-      <wadl:param style="plain" required="true"
-                  path="$['person_link']" name="person_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Owner&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['nickname']" name="nickname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Nickname&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['network']" name="network">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;IRC network&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-    </wadl:representation>
-
-    <wadl:representation mediaType="application/json"
-                         id="IrcIDEntryAdapter-diff">
-      <wadl:param style="plain" required="false"
-                  path="$['nickname']" name="nickname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Nickname&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['network']" name="network">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;IRC network&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-    </wadl:representation>
-
-    <!--Collection page for this type of entry-->
-    <wadl:resource_type id="IrcIDEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="IrcIDEntryAdapter-page-resource-get">
-        <wadl:response>
-          <wadl:representation
-    href="#IrcIDEntryAdapter-page"/>
-        </wadl:response>
-      </wadl:method>
-    </wadl:resource_type>
-
-    <wadl:representation mediaType="application/json"
-                         id="IrcIDEntryAdapter-page">
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
-
-      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
-
-      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#IrcIDEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#IrcIDEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
-
-      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#IrcIDEntryAdapter"/>
-      </wadl:param>
-  </wadl:representation>
-
-  
-  
-    <wadl:resource_type id="BugTaskEntry">
-      <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">A bugtask.</wadl:doc>
-      <wadl:method name="GET" id="BugTaskEntry-get">
-        <wadl:response>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#BugTaskEntry-full"/>
-          <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="BugTaskEntry-wadl"/>
-        </wadl:response>
-      </wadl:method>
-
-      <wadl:method name="PUT" id="BugTaskEntry-put">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#BugTaskEntry-full"/>
-        </wadl:request>
-      </wadl:method>
-
-      <wadl:method name="PATCH" id="BugTaskEntry-patch">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#BugTaskEntry-diff"/>
-        </wadl:request>
-      </wadl:method>
-
-      <wadl:method id="BugTaskEntry-change_status"
+      <wadl:method id="bug_task-transitionToStatus"
                    name="POST">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;p&gt;An operation that modifies a bug task's status.&lt;/p&gt;
-&lt;blockquote&gt;
-XXX leonardr 2008-04-01 bug=210265:
-To implement this without creating a custom operation, call
-transitionToStatus() when the client writes to the bug task's
-'status' attribute.&lt;/blockquote&gt;
-</wadl:doc>
+        
         <wadl:request>
           <wadl:param style="query" name="ws.op"
-                      required="true" fixed="change_status"/>
-          <wadl:param style="query" required="true"
+                      required="true"
+                      fixed="transitionToStatus"/>
+          <wadl:param style="query" required="false"
                       name="status">
-            
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Status&lt;/strong&gt;</wadl:doc>
             
             <wadl:option value="New"/>
             <wadl:option value="Incomplete"/>
@@ -528,12 +427,33 @@ transitionToStatus() when the client writes to the bug task's
             <wadl:option value="Unknown"/>
           </wadl:param>
         </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="bug_task-transitionToAssignee"
+                   name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true"
+                      fixed="transitionToAssignee"/>
+          <wadl:param style="query" required="false"
+                      name="assignee">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Assigned to&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
       </wadl:method>
     </wadl:resource_type>
 
 
     <wadl:representation mediaType="application/json"
-                         id="BugTaskEntry-full">
+                         id="bug_task-full">
+      <wadl:param style="plain" required="true"
+                  path="$['date_closed']" name="date_closed">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Closed: The date on which this task was marked either Fix Committed or Fix Released.</wadl:doc>
+        
+      </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['status']" name="status">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Status&lt;/strong&gt;</wadl:doc>
@@ -548,11 +468,6 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Fix Committed"/>
         <wadl:option value="Fix Released"/>
         <wadl:option value="Unknown"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['date_closed']" name="date_closed">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Closed: The date on which this task was marked either Fix Committed or Fix Released.</wadl:doc>
-        
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['bug_target_name']"
@@ -569,8 +484,8 @@ transitionToStatus() when the client writes to the bug task's
       <wadl:param style="plain" required="true"
                   path="$['related_tasks_collection_link']"
                   name="related_tasks_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Other tasks on the same bug.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugTaskEntry-page-resource"/>
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">IBugTasks related to this one, namely other IBugTasks on the same IBug.</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug_task-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['importance']" name="importance">
@@ -585,32 +500,37 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Undecided"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
+                  path="$['date_left_new']"
+                  name="date_left_new">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date left new: The date on which this task was marked with a status higher than New.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
                   path="$['title']" name="title">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The title of the bug related to this bugtask&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['status_explanation']"
-                  name="status_explanation">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Status notes (optional)&lt;/strong&gt;</wadl:doc>
+                  path="$['date_triaged']"
+                  name="date_triaged">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Triaged: The date on which this task was marked Triaged.</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['is_complete']" name="is_complete">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Is all the work required on this bug task complete?&lt;/strong&gt;</wadl:doc>
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">True or False depending on whether or not there is more  work required on this bug task.</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['assignee_link']"
-                  name="assignee_link">
-        
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+                  path="$['assignee']" name="assignee">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Assigned to&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['conjoined_slave_link']"
-                  name="conjoined_slave_link">
+                  path="$['date_fix_committed']"
+                  name="date_fix_committed">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Fix Committed: The date on which this task was marked Fix Committed.</wadl:doc>
         
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugTaskEntry"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['bug_target_display_name']"
@@ -619,9 +539,15 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['owner_link']" name="owner_link">
+                  path="$['date_fix_released']"
+                  name="date_fix_released">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Fix Relesaed: The date on which this task was marked Fix Released.</wadl:doc>
         
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['owner_link']" name="owner_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The owner&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['date_created']"
@@ -630,15 +556,15 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['conjoined_master_link']"
-                  name="conjoined_master_link">
+                  path="$['date_in_progress']"
+                  name="date_in_progress">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date In Progress: The date on which this task was marked In Progress.</wadl:doc>
         
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugTaskEntry"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['bug_link']" name="bug_link">
-        
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugEntryAdapter"/>
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Bug&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['date_assigned']"
@@ -646,42 +572,10 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Assigned: The date on which this task was assigned to someone.</wadl:doc>
         
       </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['date_inprogress']"
-                  name="date_inprogress">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date In Progress: The date on which this task was marked In Progress.</wadl:doc>
-        
-      </wadl:param>
     </wadl:representation>
 
     <wadl:representation mediaType="application/json"
-                         id="BugTaskEntry-diff">
-      <wadl:param style="plain" required="false"
-                  path="$['status']" name="status">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Status&lt;/strong&gt;</wadl:doc>
-        
-        <wadl:option value="New"/>
-        <wadl:option value="Incomplete"/>
-        <wadl:option value="Invalid"/>
-        <wadl:option value="Won't Fix"/>
-        <wadl:option value="Confirmed"/>
-        <wadl:option value="Triaged"/>
-        <wadl:option value="In Progress"/>
-        <wadl:option value="Fix Committed"/>
-        <wadl:option value="Fix Released"/>
-        <wadl:option value="Unknown"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['date_closed']" name="date_closed">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Closed: The date on which this task was marked either Fix Committed or Fix Released.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['date_confirmed']"
-                  name="date_confirmed">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Confirmed: The date on which this task was marked Confirmed.</wadl:doc>
-        
-      </wadl:param>
+                         id="bug_task-diff">
       <wadl:param style="plain" required="false"
                   path="$['importance']" name="importance">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Importance&lt;/strong&gt;</wadl:doc>
@@ -695,123 +589,67 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Undecided"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['status_explanation']"
-                  name="status_explanation">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Status notes (optional)&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['is_complete']" name="is_complete">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Is all the work required on this bug task complete?&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['assignee_link']"
-                  name="assignee_link">
-        
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['conjoined_slave_link']"
-                  name="conjoined_slave_link">
-        
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugTaskEntry"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
                   path="$['owner_link']" name="owner_link">
-        
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['date_created']"
-                  name="date_created">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Created: The date on which this task was created.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['conjoined_master_link']"
-                  name="conjoined_master_link">
-        
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugTaskEntry"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['bug_link']" name="bug_link">
-        
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['date_assigned']"
-                  name="date_assigned">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date Assigned: The date on which this task was assigned to someone.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['date_inprogress']"
-                  name="date_inprogress">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date In Progress: The date on which this task was marked In Progress.</wadl:doc>
-        
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The owner&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
     </wadl:representation>
 
     <!--Collection page for this type of entry-->
-    <wadl:resource_type id="BugTaskEntry-page-resource">
+    <wadl:resource_type id="bug_task-page-resource">
       <wadl:method name="GET"
-                   id="BugTaskEntry-page-resource-get">
+                   id="bug_task-page-resource-get">
         <wadl:response>
-          <wadl:representation href="#BugTaskEntry-page"/>
+          <wadl:representation href="#bug_task-page"/>
         </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
     <wadl:representation mediaType="application/json"
-                         id="BugTaskEntry-page">
+                         id="bug_task-page">
       <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
       <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#BugTaskEntry-page-resource"/>
+        <wadl:link resource_type="#bug_task-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#BugTaskEntry-page-resource"/>
+        <wadl:link resource_type="#bug_task-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
 
       <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugTaskEntry"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug_task"/>
       </wadl:param>
   </wadl:representation>
 
   
   
-    <wadl:resource_type id="TeamMembershipEntryAdapter">
+    <wadl:resource_type id="irc_id">
       
-      <wadl:method name="GET"
-                   id="TeamMembershipEntryAdapter-get">
+      <wadl:method name="GET" id="irc_id-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#irc_id-full"/>
           <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="TeamMembershipEntryAdapter-wadl"/>
+    mediaType="application/vd.sun.wadl+xml" id="irc_id-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method name="PUT"
-                   id="TeamMembershipEntryAdapter-put">
+      <wadl:method name="PUT" id="irc_id-put">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#irc_id-full"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method name="PATCH"
-                   id="TeamMembershipEntryAdapter-patch">
+      <wadl:method name="PATCH" id="irc_id-patch">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-diff"/>
+    href="http://api.launchpad.dev/beta/#irc_id-diff"/>
         </wadl:request>
       </wadl:method>
 
@@ -819,7 +657,370 @@ transitionToStatus() when the client writes to the bug task's
 
 
     <wadl:representation mediaType="application/json"
-                         id="TeamMembershipEntryAdapter-full">
+                         id="irc_id-full">
+      <wadl:param style="plain" required="true"
+                  path="$['person_link']" name="person_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Owner&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['nickname']" name="nickname">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Nickname&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['network']" name="network">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;IRC network&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+    </wadl:representation>
+
+    <wadl:representation mediaType="application/json"
+                         id="irc_id-diff">
+      <wadl:param style="plain" required="false"
+                  path="$['nickname']" name="nickname">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Nickname&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['network']" name="network">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;IRC network&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+    </wadl:representation>
+
+    <!--Collection page for this type of entry-->
+    <wadl:resource_type id="irc_id-page-resource">
+      <wadl:method name="GET" id="irc_id-page-resource-get">
+        <wadl:response>
+          <wadl:representation href="#irc_id-page"/>
+        </wadl:response>
+      </wadl:method>
+    </wadl:resource_type>
+
+    <wadl:representation mediaType="application/json"
+                         id="irc_id-page">
+      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+
+      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
+
+      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
+        <wadl:link resource_type="#irc_id-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
+        <wadl:link resource_type="#irc_id-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
+
+      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#irc_id"/>
+      </wadl:param>
+  </wadl:representation>
+
+  
+  
+    <wadl:resource_type id="language">
+      
+      <wadl:method name="GET" id="language-get">
+        <wadl:response>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#language-full"/>
+          <wadl:representation
+    mediaType="application/vd.sun.wadl+xml"
+    id="language-wadl"/>
+        </wadl:response>
+      </wadl:method>
+
+      <wadl:method name="PUT" id="language-put">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#language-full"/>
+        </wadl:request>
+      </wadl:method>
+
+      <wadl:method name="PATCH" id="language-patch">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#language-diff"/>
+        </wadl:request>
+      </wadl:method>
+
+    </wadl:resource_type>
+
+
+    <wadl:representation mediaType="application/json"
+                         id="language-full">
+    </wadl:representation>
+
+    <wadl:representation mediaType="application/json"
+                         id="language-diff">
+    </wadl:representation>
+
+    <!--Collection page for this type of entry-->
+    <wadl:resource_type id="language-page-resource">
+      <wadl:method name="GET"
+                   id="language-page-resource-get">
+        <wadl:response>
+          <wadl:representation href="#language-page"/>
+        </wadl:response>
+      </wadl:method>
+    </wadl:resource_type>
+
+    <wadl:representation mediaType="application/json"
+                         id="language-page">
+      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+
+      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
+
+      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
+        <wadl:link resource_type="#language-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
+        <wadl:link resource_type="#language-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
+
+      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#language"/>
+      </wadl:param>
+  </wadl:representation>
+
+  
+  
+    <wadl:resource_type id="message">
+      
+      <wadl:method name="GET" id="message-get">
+        <wadl:response>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#message-full"/>
+          <wadl:representation
+    mediaType="application/vd.sun.wadl+xml"
+    id="message-wadl"/>
+        </wadl:response>
+      </wadl:method>
+
+      <wadl:method name="PUT" id="message-put">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#message-full"/>
+        </wadl:request>
+      </wadl:method>
+
+      <wadl:method name="PATCH" id="message-patch">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#message-diff"/>
+        </wadl:request>
+      </wadl:method>
+
+    </wadl:resource_type>
+
+
+    <wadl:representation mediaType="application/json"
+                         id="message-full">
+      <wadl:param style="plain" required="true"
+                  path="$['content']" name="content">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All the text/plain chunks joined together as a unicode string.&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['owner_link']" name="owner_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Person&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['datecreated']" name="datecreated">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Created&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['parent_link']" name="parent_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Parent&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#message"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['subject']" name="subject">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Subject&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+    </wadl:representation>
+
+    <wadl:representation mediaType="application/json"
+                         id="message-diff">
+      <wadl:param style="plain" required="false"
+                  path="$['content']" name="content">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All the text/plain chunks joined together as a unicode string.&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+    </wadl:representation>
+
+    <!--Collection page for this type of entry-->
+    <wadl:resource_type id="message-page-resource">
+      <wadl:method name="GET" id="message-page-resource-get">
+        <wadl:response>
+          <wadl:representation href="#message-page"/>
+        </wadl:response>
+      </wadl:method>
+    </wadl:resource_type>
+
+    <wadl:representation mediaType="application/json"
+                         id="message-page">
+      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+
+      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
+
+      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
+        <wadl:link resource_type="#message-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
+        <wadl:link resource_type="#message-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
+
+      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#message"/>
+      </wadl:param>
+  </wadl:representation>
+
+  
+  
+    <wadl:resource_type id="wiki_name">
+      
+      <wadl:method name="GET" id="wiki_name-get">
+        <wadl:response>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#wiki_name-full"/>
+          <wadl:representation
+    mediaType="application/vd.sun.wadl+xml"
+    id="wiki_name-wadl"/>
+        </wadl:response>
+      </wadl:method>
+
+      <wadl:method name="PUT" id="wiki_name-put">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#wiki_name-full"/>
+        </wadl:request>
+      </wadl:method>
+
+      <wadl:method name="PATCH" id="wiki_name-patch">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#wiki_name-diff"/>
+        </wadl:request>
+      </wadl:method>
+
+    </wadl:resource_type>
+
+
+    <wadl:representation mediaType="application/json"
+                         id="wiki_name-full">
+      <wadl:param style="plain" required="true"
+                  path="$['wiki']" name="wiki">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wiki host&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['person_link']" name="person_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Owner&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['url']" name="url">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The URL for this wiki home page.&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['wikiname']" name="wikiname">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wikiname&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+    </wadl:representation>
+
+    <wadl:representation mediaType="application/json"
+                         id="wiki_name-diff">
+      <wadl:param style="plain" required="false"
+                  path="$['wiki']" name="wiki">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wiki host&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['wikiname']" name="wikiname">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wikiname&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+    </wadl:representation>
+
+    <!--Collection page for this type of entry-->
+    <wadl:resource_type id="wiki_name-page-resource">
+      <wadl:method name="GET"
+                   id="wiki_name-page-resource-get">
+        <wadl:response>
+          <wadl:representation href="#wiki_name-page"/>
+        </wadl:response>
+      </wadl:method>
+    </wadl:resource_type>
+
+    <wadl:representation mediaType="application/json"
+                         id="wiki_name-page">
+      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
+
+      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
+
+      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
+        <wadl:link resource_type="#wiki_name-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
+        <wadl:link resource_type="#wiki_name-page-resource"/>
+      </wadl:param>
+
+      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
+
+      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#wiki_name"/>
+      </wadl:param>
+  </wadl:representation>
+
+  
+  
+    <wadl:resource_type id="team_membership">
+      
+      <wadl:method name="GET" id="team_membership-get">
+        <wadl:response>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#team_membership-full"/>
+          <wadl:representation
+    mediaType="application/vd.sun.wadl+xml"
+    id="team_membership-wadl"/>
+        </wadl:response>
+      </wadl:method>
+
+      <wadl:method name="PUT" id="team_membership-put">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#team_membership-full"/>
+        </wadl:request>
+      </wadl:method>
+
+      <wadl:method name="PATCH" id="team_membership-patch">
+        <wadl:request>
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#team_membership-diff"/>
+        </wadl:request>
+      </wadl:method>
+
+    </wadl:resource_type>
+
+
+    <wadl:representation mediaType="application/json"
+                         id="team_membership-full">
       <wadl:param style="plain" required="true"
                   path="$['status']" name="status">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The state of this membership&lt;/strong&gt;</wadl:doc>
@@ -840,12 +1041,13 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['person_link']" name="person_link">
+                  path="$['member_link']" name="member_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Member&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['dateexpires']" name="dateexpires">
+                  path="$['date_expires']"
+                  name="date_expires">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date expires&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
@@ -853,29 +1055,30 @@ transitionToStatus() when the client writes to the bug task's
                   path="$['last_changed_by_link']"
                   name="last_changed_by_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Last person who change this&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['team_link']" name="team_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['datejoined']" name="datejoined">
+                  path="$['date_joined']" name="date_joined">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Date joined: The date in which this membership was made active for the first time.</wadl:doc>
         
       </wadl:param>
     </wadl:representation>
 
     <wadl:representation mediaType="application/json"
-                         id="TeamMembershipEntryAdapter-diff">
+                         id="team_membership-diff">
       <wadl:param style="plain" required="false"
-                  path="$['person_link']" name="person_link">
+                  path="$['member_link']" name="member_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Member&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['dateexpires']" name="dateexpires">
+                  path="$['date_expires']"
+                  name="date_expires">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date expires&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
@@ -883,78 +1086,74 @@ transitionToStatus() when the client writes to the bug task's
                   path="$['last_changed_by_link']"
                   name="last_changed_by_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Last person who change this&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
                   path="$['team_link']" name="team_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
     </wadl:representation>
 
     <!--Collection page for this type of entry-->
-    <wadl:resource_type id="TeamMembershipEntryAdapter-page-resource">
+    <wadl:resource_type id="team_membership-page-resource">
       <wadl:method name="GET"
-                   id="TeamMembershipEntryAdapter-page-resource-get">
+                   id="team_membership-page-resource-get">
         <wadl:response>
-          <wadl:representation
-    href="#TeamMembershipEntryAdapter-page"/>
+          <wadl:representation href="#team_membership-page"/>
         </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
     <wadl:representation mediaType="application/json"
-                         id="TeamMembershipEntryAdapter-page">
+                         id="team_membership-page">
       <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
       <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#TeamMembershipEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#team_membership-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#TeamMembershipEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#team_membership-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
 
       <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team_membership"/>
       </wadl:param>
   </wadl:representation>
 
   
   
-    <wadl:resource_type id="PersonEntryAdapter">
+    <wadl:resource_type id="team">
       
-      <wadl:method name="GET" id="PersonEntryAdapter-get">
+      <wadl:method name="GET" id="team-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#PersonEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#team-full"/>
           <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="PersonEntryAdapter-wadl"/>
+    mediaType="application/vd.sun.wadl+xml" id="team-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method name="PUT" id="PersonEntryAdapter-put">
+      <wadl:method name="PUT" id="team-put">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#PersonEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#team-full"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method name="PATCH"
-                   id="PersonEntryAdapter-patch">
+      <wadl:method name="PATCH" id="team-patch">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#PersonEntryAdapter-diff"/>
+    href="http://api.launchpad.dev/beta/#team-diff"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method id="PersonEntryAdapter-addMember"
-                   name="POST">
+      <wadl:method id="team-addMember" name="POST">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -980,11 +1179,12 @@ transitionToStatus() when the client writes to the bug task's
           <wadl:param style="query" required="true"
                       name="person">
             <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Member&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="PersonEntryAdapter-join" name="POST">
+      <wadl:method id="team-join" name="POST">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -992,74 +1192,12 @@ transitionToStatus() when the client writes to the bug task's
           <wadl:param style="query" required="true"
                       name="team">
             <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
           </wadl:param>
         </wadl:request>
-      </wadl:method>
-      <wadl:method id="PersonEntryAdapter-inTeam" name="GET">
         
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true" fixed="inTeam"/>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
       </wadl:method>
-      <wadl:method id="PersonEntryAdapter-leave" name="POST">
-        
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true" fixed="leave"/>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
-      </wadl:method>
-      <wadl:method id="PersonEntryAdapter-declineInvitationToBeMemberOf"
-                   name="POST">
-        
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true"
-                      fixed="declineInvitationToBeMemberOf"/>
-          <wadl:param style="query" required="true"
-                      name="comment">
-            
-            
-          </wadl:param>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
-      </wadl:method>
-      <wadl:method id="PersonEntryAdapter-acceptInvitationToBeMemberOf"
-                   name="POST">
-        
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true"
-                      fixed="acceptInvitationToBeMemberOf"/>
-          <wadl:param style="query" required="true"
-                      name="comment">
-            
-            
-          </wadl:param>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
-      </wadl:method>
-      <wadl:method id="PersonEntryAdapter-getMembersByStatus"
-                   name="GET">
+      <wadl:method id="team-getMembersByStatus" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -1079,9 +1217,98 @@ transitionToStatus() when the client writes to the bug task's
             <wadl:option value="Invitation declined"/>
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="PersonEntryAdapter-findPathToTeam"
-                   name="GET">
+      <wadl:method id="team-inTeam" name="GET">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true" fixed="inTeam"/>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="team-leave" name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true" fixed="leave"/>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="team-declineInvitationToBeMemberOf"
+                   name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true"
+                      fixed="declineInvitationToBeMemberOf"/>
+          <wadl:param style="query" required="true"
+                      name="comment">
+            
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="team-acceptInvitationToBeMemberOf"
+                   name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true"
+                      fixed="acceptInvitationToBeMemberOf"/>
+          <wadl:param style="query" required="true"
+                      name="comment">
+            
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="team-setLocation" name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true" fixed="setLocation"/>
+          <wadl:param style="query" required="true"
+                      name="latitude">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</wadl:doc>
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="time_zone">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The time zone of this object.&lt;/strong&gt;</wadl:doc>
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="longitude">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</wadl:doc>
+            
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="team-findPathToTeam" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -1089,32 +1316,37 @@ transitionToStatus() when the client writes to the bug task's
           <wadl:param style="query" required="true"
                       name="team">
             <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
           </wadl:param>
         </wadl:request>
+        <wadl:response>
+          
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#person-page"/>
+        </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
 
     <wadl:representation mediaType="application/json"
-                         id="PersonEntryAdapter-full">
+                         id="team-full">
       <wadl:param style="plain" required="true"
                   path="$['mugshot_link']"
                   name="mugshot_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size. </wadl:doc>
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on the team page in Launchpad. It should be no bigger than 100kb in size. </wadl:doc>
         <wadl:link resource_type="http://api.launchpad.dev/beta/#HostedFile"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['jabberids_collection_link']"
-                  name="jabberids_collection_link">
+                  path="$['jabber_ids_collection_link']"
+                  name="jabber_ids_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of Jabber IDs of this Person.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#JabberIDEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#jabber_id-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['allwikis_collection_link']"
-                  name="allwikis_collection_link">
+                  path="$['wiki_names_collection_link']"
+                  name="wiki_names_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All WikiNames of this Person.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#WikiNameEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#wiki_name-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['sub_teams_collection_link']"
@@ -1133,23 +1365,42 @@ transitionToStatus() when the client writes to the bug task's
                 and all members of both subteams are considered members of
                 "Rosetta Translators".
                 </wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['teams_participated_in_collection_link']"
-                  name="teams_participated_in_collection_link">
+                  path="$['renewal_policy']"
+                  name="renewal_policy">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;When someone's membership is about to expire, notify them and&lt;/strong&gt;</wadl:doc>
+        
+        <wadl:option value="invite them to apply for renewal"/>
+        <wadl:option value="invite them to renew their own membership"/>
+        <wadl:option value="renew their membership automatically, also notifying the admins"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['indirect_participations_collection_link']"
+                  name="indirect_participations_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All teams in which this person is an indirect member.&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['longitude']" name="longitude">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['subscription_policy']"
+                  name="subscription_policy">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription policy: 'Moderated' means all subscriptions must be approved. 'Open' means any user can join without approval. 'Restricted' means new members can be added only by a team administrator.</wadl:doc>
+        
+        <wadl:option value="Moderated Team"/>
+        <wadl:option value="Open Team"/>
+        <wadl:option value="Restricted Team"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['participations_collection_link']"
+                  name="participations_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All teams in which this person is a participant.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['timezone']" name="timezone">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Timezone: The timezone of where you live.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['displayname']" name="displayname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</wadl:doc>
-        
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['is_team']" name="is_team">
@@ -1157,57 +1408,45 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['preferredemail_link']"
-                  name="preferredemail_link">
+                  path="$['preferred_email_address_link']"
+                  name="preferred_email_address_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Preferred email address: The preferred email address for this person. The one we'll use to communicate with them.</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#email_address"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['teams_indirectly_participated_in_collection_link']"
-                  name="teams_indirectly_participated_in_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All teams in which this person is an indirect member.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
+                  path="$['open_membership_invitations_collection_link']"
+                  name="open_membership_invitations_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Open membership invitations.: All TeamMemberships which represent an invitation (to join a team) sent to this person.</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team_membership-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['validatedemails_collection_link']"
-                  name="validatedemails_collection_link">
+                  path="$['confirmed_email_addresses_collection_link']"
+                  name="confirmed_email_addresses_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Confirmed e-mails of this person.: Confirmed e-mails are the ones in the VALIDATED state</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#email_address-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['languages_collection_link']"
                   name="languages_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of languages known by this person&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#LanguageEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#language-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['expiredmembers_collection_link']"
-                  name="expiredmembers_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the EXPIRED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+                  path="$['hide_email_addresses']"
+                  name="hide_email_addresses">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Hide my email addresses from other Launchpad users&lt;/strong&gt;</wadl:doc>
+        
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['allmembers_collection_link']"
-                  name="allmembers_collection_link">
+                  path="$['participants_collection_link']"
+                  name="participants_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">All participants of this team.: List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['is_valid_person_or_team']"
-                  name="is_valid_person_or_team">
+                  path="$['is_valid']" name="is_valid">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;This is an active user or a team.&lt;/strong&gt;</wadl:doc>
         
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['teamowner']" name="teamowner">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team Owner&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['member_memberships_collection_link']"
-                  name="member_memberships_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Active `ITeamMembership`s for this object's members.: Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['super_teams_collection_link']"
@@ -1224,7 +1463,23 @@ transitionToStatus() when the client writes to the bug task's
                 In this case, we will return both 'Rosetta pt Translators' and
                 'Rosetta Translators', because we are member of both of them.
                 </wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['latitude']" name="latitude">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['memberships_details_collection_link']"
+                  name="memberships_details_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All `ITeamMembership`s for Teams this Person is an active member of.&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team_membership-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['team_owner']" name="team_owner">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team Owner&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['mailing_list_auto_subscribe_policy']"
@@ -1236,16 +1491,22 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Always subscribe me to mailing lists"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['myactivememberships_collection_link']"
-                  name="myactivememberships_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All `ITeamMembership`s for Teams this Person is an active member of.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
+                  path="$['default_membership_period']"
+                  name="default_membership_period">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription period: Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</wadl:doc>
+        
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['hide_email_addresses']"
-                  name="hide_email_addresses">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Hide my email addresses from other Launchpad users&lt;/strong&gt;</wadl:doc>
-        
+                  path="$['expired_members_collection_link']"
+                  name="expired_members_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the EXPIRED state&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['members_details_collection_link']"
+                  name="members_details_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Active `ITeamMembership`s for this object's members.: Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team_membership-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['visibility']" name="visibility">
@@ -1255,14 +1516,39 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Private Membership"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
+                  path="$['default_renewal_period']"
+                  name="default_renewal_period">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Renewal period: Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['members_collection_link']"
+                  name="members_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of members with ADMIN or APPROVED status&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['date_created']"
+                  name="date_created">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Created&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
                   path="$['invited_members_collection_link']"
                   name="invited_members_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the INVITED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['datecreated']" name="datecreated">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Created&lt;/strong&gt;</wadl:doc>
+                  path="$['display_name']"
+                  name="display_name">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: This team's name as you would like it displayed throughout Launchpad.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['team_description']"
+                  name="team_description">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Team Description: Use plain text; URLs will be linkified</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
@@ -1271,22 +1557,27 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['proposedmembers_collection_link']"
-                  name="proposedmembers_collection_link">
+                  path="$['time_zone']" name="time_zone">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Time zone: The time zone of where you live.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['proposed_members_collection_link']"
+                  name="proposed_members_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the PROPOSED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['adminmembers_collection_link']"
-                  name="adminmembers_collection_link">
+                  path="$['admins_collection_link']"
+                  name="admins_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of this team's admins.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['ircnicknames_collection_link']"
-                  name="ircnicknames_collection_link">
+                  path="$['irc_nicknames_collection_link']"
+                  name="irc_nicknames_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of IRC nicknames of this Person.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#IrcIDEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#irc_id-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['karma']" name="karma">
@@ -1294,16 +1585,10 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['open_membership_invitations_collection_link']"
-                  name="open_membership_invitations_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Open membership invitations.: All TeamMemberships which represent an invitation (to join a team) sent to this person.</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['deactivatedmembers_collection_link']"
-                  name="deactivatedmembers_collection_link">
+                  path="$['deactivated_members_collection_link']"
+                  name="deactivated_members_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the DEACTIVATED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['homepage_content']"
@@ -1311,36 +1596,44 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Homepage Content: The content of your home page. Edit this and it will be displayed for all the world to see.</wadl:doc>
         
       </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['activemembers_collection_link']"
-                  name="activemembers_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of members with ADMIN or APPROVED status&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
-      </wadl:param>
     </wadl:representation>
 
     <wadl:representation mediaType="application/json"
-                         id="PersonEntryAdapter-diff">
+                         id="team-diff">
       <wadl:param style="plain" required="false"
                   path="$['mugshot_link']"
                   name="mugshot_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size. </wadl:doc>
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on the team page in Launchpad. It should be no bigger than 100kb in size. </wadl:doc>
         <wadl:link resource_type="http://api.launchpad.dev/beta/#HostedFile"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['timezone']" name="timezone">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Timezone: The timezone of where you live.</wadl:doc>
+                  path="$['renewal_policy']"
+                  name="renewal_policy">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;When someone's membership is about to expire, notify them and&lt;/strong&gt;</wadl:doc>
+        
+        <wadl:option value="invite them to apply for renewal"/>
+        <wadl:option value="invite them to renew their own membership"/>
+        <wadl:option value="renew their membership automatically, also notifying the admins"/>
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['subscription_policy']"
+                  name="subscription_policy">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription policy: 'Moderated' means all subscriptions must be approved. 'Open' means any user can join without approval. 'Restricted' means new members can be added only by a team administrator.</wadl:doc>
+        
+        <wadl:option value="Moderated Team"/>
+        <wadl:option value="Open Team"/>
+        <wadl:option value="Restricted Team"/>
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['hide_email_addresses']"
+                  name="hide_email_addresses">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Hide my email addresses from other Launchpad users&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['displayname']" name="displayname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['teamowner']" name="teamowner">
+                  path="$['team_owner']" name="team_owner">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team Owner&lt;/strong&gt;</wadl:doc>
-        
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
                   path="$['mailing_list_auto_subscribe_policy']"
@@ -1352,9 +1645,9 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Always subscribe me to mailing lists"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['hide_email_addresses']"
-                  name="hide_email_addresses">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Hide my email addresses from other Launchpad users&lt;/strong&gt;</wadl:doc>
+                  path="$['default_membership_period']"
+                  name="default_membership_period">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription period: Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="false"
@@ -1365,8 +1658,31 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Private Membership"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
+                  path="$['default_renewal_period']"
+                  name="default_renewal_period">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Renewal period: Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['display_name']"
+                  name="display_name">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: This team's name as you would like it displayed throughout Launchpad.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['team_description']"
+                  name="team_description">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Team Description: Use plain text; URLs will be linkified</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
                   path="$['name']" name="name">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Name: A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['time_zone']" name="time_zone">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Time zone: The time zone of where you live.</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="false"
@@ -1383,67 +1699,63 @@ transitionToStatus() when the client writes to the bug task's
     </wadl:representation>
 
     <!--Collection page for this type of entry-->
-    <wadl:resource_type id="PersonEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="PersonEntryAdapter-page-resource-get">
+    <wadl:resource_type id="team-page-resource">
+      <wadl:method name="GET" id="team-page-resource-get">
         <wadl:response>
-          <wadl:representation
-    href="#PersonEntryAdapter-page"/>
+          <wadl:representation href="#team-page"/>
         </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
     <wadl:representation mediaType="application/json"
-                         id="PersonEntryAdapter-page">
+                         id="team-page">
       <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
       <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#team-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#team-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
 
       <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team"/>
       </wadl:param>
   </wadl:representation>
 
   
   
-    <wadl:resource_type id="TeamEntryAdapter">
+    <wadl:resource_type id="person">
       
-      <wadl:method name="GET" id="TeamEntryAdapter-get">
+      <wadl:method name="GET" id="person-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#TeamEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#person-full"/>
           <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="TeamEntryAdapter-wadl"/>
+    mediaType="application/vd.sun.wadl+xml" id="person-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method name="PUT" id="TeamEntryAdapter-put">
+      <wadl:method name="PUT" id="person-put">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#TeamEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#person-full"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method name="PATCH" id="TeamEntryAdapter-patch">
+      <wadl:method name="PATCH" id="person-patch">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#TeamEntryAdapter-diff"/>
+    href="http://api.launchpad.dev/beta/#person-diff"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method id="TeamEntryAdapter-addMember"
-                   name="POST">
+      <wadl:method id="person-addMember" name="POST">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -1469,11 +1781,12 @@ transitionToStatus() when the client writes to the bug task's
           <wadl:param style="query" required="true"
                       name="person">
             <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Member&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="TeamEntryAdapter-join" name="POST">
+      <wadl:method id="person-join" name="POST">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -1481,74 +1794,12 @@ transitionToStatus() when the client writes to the bug task's
           <wadl:param style="query" required="true"
                       name="team">
             <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
           </wadl:param>
         </wadl:request>
-      </wadl:method>
-      <wadl:method id="TeamEntryAdapter-inTeam" name="GET">
         
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true" fixed="inTeam"/>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
       </wadl:method>
-      <wadl:method id="TeamEntryAdapter-leave" name="POST">
-        
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true" fixed="leave"/>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
-      </wadl:method>
-      <wadl:method id="TeamEntryAdapter-declineInvitationToBeMemberOf"
-                   name="POST">
-        
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true"
-                      fixed="declineInvitationToBeMemberOf"/>
-          <wadl:param style="query" required="true"
-                      name="comment">
-            
-            
-          </wadl:param>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
-      </wadl:method>
-      <wadl:method id="TeamEntryAdapter-acceptInvitationToBeMemberOf"
-                   name="POST">
-        
-        <wadl:request>
-          <wadl:param style="query" name="ws.op"
-                      required="true"
-                      fixed="acceptInvitationToBeMemberOf"/>
-          <wadl:param style="query" required="true"
-                      name="comment">
-            
-            
-          </wadl:param>
-          <wadl:param style="query" required="true"
-                      name="team">
-            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-          </wadl:param>
-        </wadl:request>
-      </wadl:method>
-      <wadl:method id="TeamEntryAdapter-getMembersByStatus"
-                   name="GET">
+      <wadl:method id="person-getMembersByStatus" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -1568,9 +1819,98 @@ transitionToStatus() when the client writes to the bug task's
             <wadl:option value="Invitation declined"/>
           </wadl:param>
         </wadl:request>
+        
       </wadl:method>
-      <wadl:method id="TeamEntryAdapter-findPathToTeam"
-                   name="GET">
+      <wadl:method id="person-inTeam" name="GET">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true" fixed="inTeam"/>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="person-leave" name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true" fixed="leave"/>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="person-declineInvitationToBeMemberOf"
+                   name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true"
+                      fixed="declineInvitationToBeMemberOf"/>
+          <wadl:param style="query" required="true"
+                      name="comment">
+            
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="person-acceptInvitationToBeMemberOf"
+                   name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true"
+                      fixed="acceptInvitationToBeMemberOf"/>
+          <wadl:param style="query" required="true"
+                      name="comment">
+            
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="team">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="person-setLocation" name="POST">
+        
+        <wadl:request>
+          <wadl:param style="query" name="ws.op"
+                      required="true" fixed="setLocation"/>
+          <wadl:param style="query" required="true"
+                      name="latitude">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</wadl:doc>
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="time_zone">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The time zone of this object.&lt;/strong&gt;</wadl:doc>
+            
+          </wadl:param>
+          <wadl:param style="query" required="true"
+                      name="longitude">
+            <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</wadl:doc>
+            
+          </wadl:param>
+        </wadl:request>
+        
+      </wadl:method>
+      <wadl:method id="person-findPathToTeam" name="GET">
         
         <wadl:request>
           <wadl:param style="query" name="ws.op"
@@ -1578,32 +1918,37 @@ transitionToStatus() when the client writes to the bug task's
           <wadl:param style="query" required="true"
                       name="team">
             <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team&lt;/strong&gt;</wadl:doc>
-            <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+            <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
           </wadl:param>
         </wadl:request>
+        <wadl:response>
+          
+          <wadl:representation
+    href="http://api.launchpad.dev/beta/#person-page"/>
+        </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
 
     <wadl:representation mediaType="application/json"
-                         id="TeamEntryAdapter-full">
+                         id="person-full">
       <wadl:param style="plain" required="true"
                   path="$['mugshot_link']"
                   name="mugshot_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on the team page in Launchpad. It should be no bigger than 100kb in size. </wadl:doc>
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size. </wadl:doc>
         <wadl:link resource_type="http://api.launchpad.dev/beta/#HostedFile"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['jabberids_collection_link']"
-                  name="jabberids_collection_link">
+                  path="$['jabber_ids_collection_link']"
+                  name="jabber_ids_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of Jabber IDs of this Person.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#JabberIDEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#jabber_id-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['allwikis_collection_link']"
-                  name="allwikis_collection_link">
+                  path="$['wiki_names_collection_link']"
+                  name="wiki_names_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All WikiNames of this Person.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#WikiNameEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#wiki_name-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['sub_teams_collection_link']"
@@ -1622,41 +1967,24 @@ transitionToStatus() when the client writes to the bug task's
                 and all members of both subteams are considered members of
                 "Rosetta Translators".
                 </wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['renewal_policy']"
-                  name="renewal_policy">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;When someone's membership is about to expire, notify them and&lt;/strong&gt;</wadl:doc>
+                  path="$['indirect_participations_collection_link']"
+                  name="indirect_participations_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All teams in which this person is an indirect member.&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['longitude']" name="longitude">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The longitude of this object.&lt;/strong&gt;</wadl:doc>
         
-        <wadl:option value="invite them to apply for renewal"/>
-        <wadl:option value="invite them to renew their own membership"/>
-        <wadl:option value="renew their membership automatically, also notifying the admins"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['teams_participated_in_collection_link']"
-                  name="teams_participated_in_collection_link">
+                  path="$['participations_collection_link']"
+                  name="participations_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All teams in which this person is a participant.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['timezone']" name="timezone">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Timezone: The timezone of where you live.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['subscriptionpolicy']"
-                  name="subscriptionpolicy">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription policy: 'Moderated' means all subscriptions must be approved. 'Open' means any user can join without approval. 'Restricted' means new members can be added only by a team administrator.</wadl:doc>
-        
-        <wadl:option value="Moderated Team"/>
-        <wadl:option value="Open Team"/>
-        <wadl:option value="Restricted Team"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['displayname']" name="displayname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: This team's name as you would like it displayed throughout Launchpad.</wadl:doc>
-        
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['is_team']" name="is_team">
@@ -1664,28 +1992,28 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['preferredemail_link']"
-                  name="preferredemail_link">
+                  path="$['preferred_email_address_link']"
+                  name="preferred_email_address_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Preferred email address: The preferred email address for this person. The one we'll use to communicate with them.</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#email_address"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['teams_indirectly_participated_in_collection_link']"
-                  name="teams_indirectly_participated_in_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All teams in which this person is an indirect member.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
+                  path="$['open_membership_invitations_collection_link']"
+                  name="open_membership_invitations_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Open membership invitations.: All TeamMemberships which represent an invitation (to join a team) sent to this person.</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team_membership-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['validatedemails_collection_link']"
-                  name="validatedemails_collection_link">
+                  path="$['confirmed_email_addresses_collection_link']"
+                  name="confirmed_email_addresses_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Confirmed e-mails of this person.: Confirmed e-mails are the ones in the VALIDATED state</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#email_address-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['languages_collection_link']"
                   name="languages_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of languages known by this person&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#LanguageEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#language-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['hide_email_addresses']"
@@ -1694,27 +2022,15 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['allmembers_collection_link']"
-                  name="allmembers_collection_link">
+                  path="$['participants_collection_link']"
+                  name="participants_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">All participants of this team.: List of all direct and indirect people and teams who, one way or another, are a part of this team. If you want a method to check if a given person is a member of a team, you should probably look at IPerson.inTeam().</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['is_valid_person_or_team']"
-                  name="is_valid_person_or_team">
+                  path="$['is_valid']" name="is_valid">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;This is an active user or a team.&lt;/strong&gt;</wadl:doc>
         
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['teamowner']" name="teamowner">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team Owner&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['member_memberships_collection_link']"
-                  name="member_memberships_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Active `ITeamMembership`s for this object's members.: Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['super_teams_collection_link']"
@@ -1731,7 +2047,23 @@ transitionToStatus() when the client writes to the bug task's
                 In this case, we will return both 'Rosetta pt Translators' and
                 'Rosetta Translators', because we are member of both of them.
                 </wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['latitude']" name="latitude">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The latitude of this object.&lt;/strong&gt;</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['memberships_details_collection_link']"
+                  name="memberships_details_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All `ITeamMembership`s for Teams this Person is an active member of.&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team_membership-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['team_owner']" name="team_owner">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team Owner&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['mailing_list_auto_subscribe_policy']"
@@ -1743,22 +2075,16 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Always subscribe me to mailing lists"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['defaultmembershipperiod']"
-                  name="defaultmembershipperiod">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription period: Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['myactivememberships_collection_link']"
-                  name="myactivememberships_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All `ITeamMembership`s for Teams this Person is an active member of.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['expiredmembers_collection_link']"
-                  name="expiredmembers_collection_link">
+                  path="$['expired_members_collection_link']"
+                  name="expired_members_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the EXPIRED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['members_details_collection_link']"
+                  name="members_details_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Active `ITeamMembership`s for this object's members.: Active TeamMemberships are the ones with the ADMIN or APPROVED status.  The results are ordered using Person.sortingColumns.</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#team_membership-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['visibility']" name="visibility">
@@ -1768,26 +2094,27 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Private Membership"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['defaultrenewalperiod']"
-                  name="defaultrenewalperiod">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Renewal period: Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</wadl:doc>
+                  path="$['members_collection_link']"
+                  name="members_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of members with ADMIN or APPROVED status&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['date_created']"
+                  name="date_created">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Created&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['invited_members_collection_link']"
                   name="invited_members_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the INVITED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['datecreated']" name="datecreated">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Created&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['teamdescription']"
-                  name="teamdescription">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Team Description: Use plain text; URLs will be linkified</wadl:doc>
+                  path="$['display_name']"
+                  name="display_name">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
@@ -1796,22 +2123,27 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['proposedmembers_collection_link']"
-                  name="proposedmembers_collection_link">
+                  path="$['time_zone']" name="time_zone">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Time zone: The time zone of where you live.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['proposed_members_collection_link']"
+                  name="proposed_members_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the PROPOSED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['adminmembers_collection_link']"
-                  name="adminmembers_collection_link">
+                  path="$['admins_collection_link']"
+                  name="admins_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of this team's admins.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['ircnicknames_collection_link']"
-                  name="ircnicknames_collection_link">
+                  path="$['irc_nicknames_collection_link']"
+                  name="irc_nicknames_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of IRC nicknames of this Person.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#IrcIDEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#irc_id-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['karma']" name="karma">
@@ -1819,16 +2151,10 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['open_membership_invitations_collection_link']"
-                  name="open_membership_invitations_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Open membership invitations.: All TeamMemberships which represent an invitation (to join a team) sent to this person.</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamMembershipEntryAdapter-page-resource"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['deactivatedmembers_collection_link']"
-                  name="deactivatedmembers_collection_link">
+                  path="$['deactivated_members_collection_link']"
+                  name="deactivated_members_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All members whose membership is in the DEACTIVATED state&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['homepage_content']"
@@ -1836,49 +2162,15 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Homepage Content: The content of your home page. Edit this and it will be displayed for all the world to see.</wadl:doc>
         
       </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['activemembers_collection_link']"
-                  name="activemembers_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;List of members with ADMIN or APPROVED status&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource"/>
-      </wadl:param>
     </wadl:representation>
 
     <wadl:representation mediaType="application/json"
-                         id="TeamEntryAdapter-diff">
+                         id="person-diff">
       <wadl:param style="plain" required="false"
                   path="$['mugshot_link']"
                   name="mugshot_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on the team page in Launchpad. It should be no bigger than 100kb in size. </wadl:doc>
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Mugshot: A large image of exactly 192x192 pixels, that will be displayed on your home page in Launchpad. Traditionally this is a great big picture of your grinning face. Make the most of it! It should be no bigger than 100kb in size. </wadl:doc>
         <wadl:link resource_type="http://api.launchpad.dev/beta/#HostedFile"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['renewal_policy']"
-                  name="renewal_policy">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;When someone's membership is about to expire, notify them and&lt;/strong&gt;</wadl:doc>
-        
-        <wadl:option value="invite them to apply for renewal"/>
-        <wadl:option value="invite them to renew their own membership"/>
-        <wadl:option value="renew their membership automatically, also notifying the admins"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['timezone']" name="timezone">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Timezone: The timezone of where you live.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['subscriptionpolicy']"
-                  name="subscriptionpolicy">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription policy: 'Moderated' means all subscriptions must be approved. 'Open' means any user can join without approval. 'Restricted' means new members can be added only by a team administrator.</wadl:doc>
-        
-        <wadl:option value="Moderated Team"/>
-        <wadl:option value="Open Team"/>
-        <wadl:option value="Restricted Team"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['displayname']" name="displayname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: This team's name as you would like it displayed throughout Launchpad.</wadl:doc>
-        
       </wadl:param>
       <wadl:param style="plain" required="false"
                   path="$['hide_email_addresses']"
@@ -1887,9 +2179,9 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['teamowner']" name="teamowner">
+                  path="$['team_owner']" name="team_owner">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Team Owner&lt;/strong&gt;</wadl:doc>
-        
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
                   path="$['mailing_list_auto_subscribe_policy']"
@@ -1901,12 +2193,6 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Always subscribe me to mailing lists"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['defaultmembershipperiod']"
-                  name="defaultmembershipperiod">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Subscription period: Number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. Leave this empty or set to 0 for subscriptions to never expire.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
                   path="$['visibility']" name="visibility">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Visibility: Public visibility is standard, and Private Membership means that a team's members are hidden.</wadl:doc>
         
@@ -1914,20 +2200,19 @@ transitionToStatus() when the client writes to the bug task's
         <wadl:option value="Private Membership"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['defaultrenewalperiod']"
-                  name="defaultrenewalperiod">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Renewal period: Number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals, but this is what's used for auto-renewed and user-renewed memberships.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['teamdescription']"
-                  name="teamdescription">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Team Description: Use plain text; URLs will be linkified</wadl:doc>
+                  path="$['display_name']"
+                  name="display_name">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Display Name: Your name as you would like it displayed throughout Launchpad. Most people use their full name here.</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="false"
                   path="$['name']" name="name">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Name: A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['time_zone']" name="time_zone">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Time zone: The time zone of where you live.</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="false"
@@ -1944,62 +2229,59 @@ transitionToStatus() when the client writes to the bug task's
     </wadl:representation>
 
     <!--Collection page for this type of entry-->
-    <wadl:resource_type id="TeamEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="TeamEntryAdapter-page-resource-get">
+    <wadl:resource_type id="person-page-resource">
+      <wadl:method name="GET" id="person-page-resource-get">
         <wadl:response>
-          <wadl:representation href="#TeamEntryAdapter-page"/>
+          <wadl:representation href="#person-page"/>
         </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
     <wadl:representation mediaType="application/json"
-                         id="TeamEntryAdapter-page">
+                         id="person-page">
       <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
       <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#TeamEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#person-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#TeamEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#person-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
 
       <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#TeamEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
   </wadl:representation>
 
   
   
-    <wadl:resource_type id="WikiNameEntryAdapter">
+    <wadl:resource_type id="bug">
       
-      <wadl:method name="GET" id="WikiNameEntryAdapter-get">
+      <wadl:method name="GET" id="bug-get">
         <wadl:response>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#WikiNameEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#bug-full"/>
           <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="WikiNameEntryAdapter-wadl"/>
+    mediaType="application/vd.sun.wadl+xml" id="bug-wadl"/>
         </wadl:response>
       </wadl:method>
 
-      <wadl:method name="PUT" id="WikiNameEntryAdapter-put">
+      <wadl:method name="PUT" id="bug-put">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#WikiNameEntryAdapter-full"/>
+    href="http://api.launchpad.dev/beta/#bug-full"/>
         </wadl:request>
       </wadl:method>
 
-      <wadl:method name="PATCH"
-                   id="WikiNameEntryAdapter-patch">
+      <wadl:method name="PATCH" id="bug-patch">
         <wadl:request>
           <wadl:representation
-    href="http://api.launchpad.dev/beta/#WikiNameEntryAdapter-diff"/>
+    href="http://api.launchpad.dev/beta/#bug-diff"/>
         </wadl:request>
       </wadl:method>
 
@@ -2007,216 +2289,11 @@ transitionToStatus() when the client writes to the bug task's
 
 
     <wadl:representation mediaType="application/json"
-                         id="WikiNameEntryAdapter-full">
+                         id="bug-full">
       <wadl:param style="plain" required="true"
-                  path="$['wiki']" name="wiki">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wiki host&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['person_link']" name="person_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Owner&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['url']" name="url">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The URL for this wiki home page.&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['wikiname']" name="wikiname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wikiname&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-    </wadl:representation>
-
-    <wadl:representation mediaType="application/json"
-                         id="WikiNameEntryAdapter-diff">
-      <wadl:param style="plain" required="false"
-                  path="$['wiki']" name="wiki">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wiki host&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['wikiname']" name="wikiname">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Wikiname&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-    </wadl:representation>
-
-    <!--Collection page for this type of entry-->
-    <wadl:resource_type id="WikiNameEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="WikiNameEntryAdapter-page-resource-get">
-        <wadl:response>
-          <wadl:representation
-    href="#WikiNameEntryAdapter-page"/>
-        </wadl:response>
-      </wadl:method>
-    </wadl:resource_type>
-
-    <wadl:representation mediaType="application/json"
-                         id="WikiNameEntryAdapter-page">
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
-
-      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
-
-      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#WikiNameEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#WikiNameEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
-
-      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#WikiNameEntryAdapter"/>
-      </wadl:param>
-  </wadl:representation>
-
-  
-  
-    <wadl:resource_type id="MessageEntryAdapter">
-      
-      <wadl:method name="GET" id="MessageEntryAdapter-get">
-        <wadl:response>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#MessageEntryAdapter-full"/>
-          <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="MessageEntryAdapter-wadl"/>
-        </wadl:response>
-      </wadl:method>
-
-      <wadl:method name="PUT" id="MessageEntryAdapter-put">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#MessageEntryAdapter-full"/>
-        </wadl:request>
-      </wadl:method>
-
-      <wadl:method name="PATCH"
-                   id="MessageEntryAdapter-patch">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#MessageEntryAdapter-diff"/>
-        </wadl:request>
-      </wadl:method>
-
-    </wadl:resource_type>
-
-
-    <wadl:representation mediaType="application/json"
-                         id="MessageEntryAdapter-full">
-      <wadl:param style="plain" required="true"
-                  path="$['text_contents']"
-                  name="text_contents">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All the text/plain chunks joined together as a unicode string.&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['owner_link']" name="owner_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Person&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['datecreated']" name="datecreated">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Created&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['parent_link']" name="parent_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Parent&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#MessageEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['subject']" name="subject">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Subject&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-    </wadl:representation>
-
-    <wadl:representation mediaType="application/json"
-                         id="MessageEntryAdapter-diff">
-      <wadl:param style="plain" required="false"
-                  path="$['text_contents']"
-                  name="text_contents">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;All the text/plain chunks joined together as a unicode string.&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-    </wadl:representation>
-
-    <!--Collection page for this type of entry-->
-    <wadl:resource_type id="MessageEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="MessageEntryAdapter-page-resource-get">
-        <wadl:response>
-          <wadl:representation
-    href="#MessageEntryAdapter-page"/>
-        </wadl:response>
-      </wadl:method>
-    </wadl:resource_type>
-
-    <wadl:representation mediaType="application/json"
-                         id="MessageEntryAdapter-page">
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
-
-      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
-
-      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#MessageEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#MessageEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
-
-      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#MessageEntryAdapter"/>
-      </wadl:param>
-  </wadl:representation>
-
-  
-  
-    <wadl:resource_type id="BugEntryAdapter">
-      
-      <wadl:method name="GET" id="BugEntryAdapter-get">
-        <wadl:response>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#BugEntryAdapter-full"/>
-          <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="BugEntryAdapter-wadl"/>
-        </wadl:response>
-      </wadl:method>
-
-      <wadl:method name="PUT" id="BugEntryAdapter-put">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#BugEntryAdapter-full"/>
-        </wadl:request>
-      </wadl:method>
-
-      <wadl:method name="PATCH" id="BugEntryAdapter-patch">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#BugEntryAdapter-diff"/>
-        </wadl:request>
-      </wadl:method>
-
-    </wadl:resource_type>
-
-
-    <wadl:representation mediaType="application/json"
-                         id="BugEntryAdapter-full">
-      <wadl:param style="plain" required="true"
-                  path="$['security_related']"
-                  name="security_related">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;This bug is a security vulnerability&lt;/strong&gt;</wadl:doc>
+                  path="$['date_last_updated']"
+                  name="date_last_updated">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Last Updated&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
@@ -2225,10 +2302,10 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['duplicateof_link']"
-                  name="duplicateof_link">
+                  path="$['duplicate_of_link']"
+                  name="duplicate_of_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Duplicate Of&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['tags']" name="tags">
@@ -2239,13 +2316,7 @@ transitionToStatus() when the client writes to the bug task's
                   path="$['duplicates_collection_link']"
                   name="duplicates_collection_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;MultiJoin of the bugs which are dups of this one&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugEntryAdapter-page-resource"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['messages_collection_link']"
-                  name="messages_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The messages related to this object, in reverse order of creation (so newest first).&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#MessageEntryAdapter-page-resource"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['title']" name="title">
@@ -2253,15 +2324,15 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['bugtasks_collection_link']"
-                  name="bugtasks_collection_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;BugTasks on this bug, sorted upstream, then ubuntu, then other distroseriess.&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugTaskEntry-page-resource"/>
+                  path="$['messages_collection_link']"
+                  name="messages_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The messages related to this object, in reverse order of creation (so newest first).&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#message-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['date_last_updated']"
-                  name="date_last_updated">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Last Updated&lt;/strong&gt;</wadl:doc>
+                  path="$['security_related']"
+                  name="security_related">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;This bug is a security vulnerability&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="true"
@@ -2292,15 +2363,16 @@ transitionToStatus() when the client writes to the bug task's
                   path="$['who_made_private']"
                   name="who_made_private">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Who Made Private: The person who set this bug private.</wadl:doc>
-        
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['owner_link']" name="owner_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The owner's IPerson&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
-                  path="$['datecreated']" name="datecreated">
+                  path="$['date_created']"
+                  name="date_created">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Created&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
@@ -2308,6 +2380,12 @@ transitionToStatus() when the client writes to the bug task's
                   path="$['can_expire']" name="can_expire">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Can the Incomplete bug expire if it becomes inactive? Expiration may happen when the bug permits expiration, and a bugtask cannot be confirmed.&lt;/strong&gt;</wadl:doc>
         
+      </wadl:param>
+      <wadl:param style="plain" required="true"
+                  path="$['bug_tasks_collection_link']"
+                  name="bug_tasks_collection_link">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;BugTasks on this bug, sorted upstream, then ubuntu, then other distroseriess.&lt;/strong&gt;</wadl:doc>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug_task-page-resource"/>
       </wadl:param>
       <wadl:param style="plain" required="true"
                   path="$['id']" name="id">
@@ -2329,23 +2407,12 @@ transitionToStatus() when the client writes to the bug task's
     </wadl:representation>
 
     <wadl:representation mediaType="application/json"
-                         id="BugEntryAdapter-diff">
+                         id="bug-diff">
       <wadl:param style="plain" required="false"
-                  path="$['security_related']"
-                  name="security_related">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;This bug is a security vulnerability&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['is_complete']" name="is_complete">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">True or False depending on whether this bug is considered completely addressed. A bug is Launchpad is completely addressed when there are no tasks that are still open for the bug.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['duplicateof_link']"
-                  name="duplicateof_link">
+                  path="$['duplicate_of_link']"
+                  name="duplicate_of_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Duplicate Of&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
                   path="$['tags']" name="tags">
@@ -2355,6 +2422,12 @@ transitionToStatus() when the client writes to the bug task's
       <wadl:param style="plain" required="false"
                   path="$['title']" name="title">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Summary: A one-line summary of the problem.</wadl:doc>
+        
+      </wadl:param>
+      <wadl:param style="plain" required="false"
+                  path="$['security_related']"
+                  name="security_related">
+        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;This bug is a security vulnerability&lt;/strong&gt;</wadl:doc>
         
       </wadl:param>
       <wadl:param style="plain" required="false"
@@ -2370,32 +2443,9 @@ transitionToStatus() when the client writes to the bug task's
         
       </wadl:param>
       <wadl:param style="plain" required="false"
-                  path="$['date_made_private']"
-                  name="date_made_private">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Date Made Private&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['permits_expiration']"
-                  name="permits_expiration">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Does the bug's state permit expiration?: Expiration is permitted when the bug is not valid anywhere, a message was sent to the bug reporter, and the bug is associated with pillars that have enabled bug expiration.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['who_made_private']"
-                  name="who_made_private">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">Who Made Private: The person who set this bug private.</wadl:doc>
-        
-      </wadl:param>
-      <wadl:param style="plain" required="false"
                   path="$['owner_link']" name="owner_link">
         <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;The owner's IPerson&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="false"
-                  path="$['can_expire']" name="can_expire">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Can the Incomplete bug expire if it becomes inactive? Expiration may happen when the bug permits expiration, and a bugtask cannot be confirmed.&lt;/strong&gt;</wadl:doc>
-        
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#person"/>
       </wadl:param>
       <wadl:param style="plain" required="false"
                   path="$['description']" name="description">
@@ -2406,117 +2456,32 @@ transitionToStatus() when the client writes to the bug task's
     </wadl:representation>
 
     <!--Collection page for this type of entry-->
-    <wadl:resource_type id="BugEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="BugEntryAdapter-page-resource-get">
+    <wadl:resource_type id="bug-page-resource">
+      <wadl:method name="GET" id="bug-page-resource-get">
         <wadl:response>
-          <wadl:representation href="#BugEntryAdapter-page"/>
+          <wadl:representation href="#bug-page"/>
         </wadl:response>
       </wadl:method>
     </wadl:resource_type>
 
     <wadl:representation mediaType="application/json"
-                         id="BugEntryAdapter-page">
+                         id="bug-page">
       <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
 
       <wadl:param style="plain" name="start" path="$['start']" required="true"/>
 
       <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#BugEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#bug-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#BugEntryAdapter-page-resource"/>
+        <wadl:link resource_type="#bug-page-resource"/>
       </wadl:param>
 
       <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
 
       <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#BugEntryAdapter"/>
-      </wadl:param>
-  </wadl:representation>
-
-  
-  
-    <wadl:resource_type id="EmailAddressEntryAdapter">
-      
-      <wadl:method name="GET"
-                   id="EmailAddressEntryAdapter-get">
-        <wadl:response>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter-full"/>
-          <wadl:representation
-    mediaType="application/vd.sun.wadl+xml"
-    id="EmailAddressEntryAdapter-wadl"/>
-        </wadl:response>
-      </wadl:method>
-
-      <wadl:method name="PUT"
-                   id="EmailAddressEntryAdapter-put">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter-full"/>
-        </wadl:request>
-      </wadl:method>
-
-      <wadl:method name="PATCH"
-                   id="EmailAddressEntryAdapter-patch">
-        <wadl:request>
-          <wadl:representation
-    href="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter-diff"/>
-        </wadl:request>
-      </wadl:method>
-
-    </wadl:resource_type>
-
-
-    <wadl:representation mediaType="application/json"
-                         id="EmailAddressEntryAdapter-full">
-      <wadl:param style="plain" required="true"
-                  path="$['person_link']" name="person_link">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Person&lt;/strong&gt;</wadl:doc>
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#PersonEntryAdapter"/>
-      </wadl:param>
-      <wadl:param style="plain" required="true"
-                  path="$['email']" name="email">
-        <wadl:doc xmlns="http://www.w3.org/1999/xhtml/">&lt;strong&gt;Email Address&lt;/strong&gt;</wadl:doc>
-        
-      </wadl:param>
-    </wadl:representation>
-
-    <wadl:representation mediaType="application/json"
-                         id="EmailAddressEntryAdapter-diff">
-    </wadl:representation>
-
-    <!--Collection page for this type of entry-->
-    <wadl:resource_type id="EmailAddressEntryAdapter-page-resource">
-      <wadl:method name="GET"
-                   id="EmailAddressEntryAdapter-page-resource-get">
-        <wadl:response>
-          <wadl:representation
-    href="#EmailAddressEntryAdapter-page"/>
-        </wadl:response>
-      </wadl:method>
-    </wadl:resource_type>
-
-    <wadl:representation mediaType="application/json"
-                         id="EmailAddressEntryAdapter-page">
-      <wadl:param style="plain" name="total_size" path="$['total_size']" required="true"/>
-
-      <wadl:param style="plain" name="start" path="$['start']" required="true"/>
-
-      <wadl:param style="plain" name="next_collection_link" path="$['next_collection_link']">
-        <wadl:link resource_type="#EmailAddressEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="prev_collection_link" path="$['prev_collection_link']">
-        <wadl:link resource_type="#EmailAddressEntryAdapter-page-resource"/>
-      </wadl:param>
-
-      <wadl:param style="plain" name="entries" path="$['entries']" required="true"/>
-
-      <wadl:param style="plain" name="entry_links" path="$['entries'][*]['self_link']">
-        <wadl:link resource_type="http://api.launchpad.dev/beta/#EmailAddressEntryAdapter"/>
+        <wadl:link resource_type="http://api.launchpad.dev/beta/#bug"/>
       </wadl:param>
   </wadl:representation>
 

@@ -11,9 +11,11 @@ examples.
 A collection responds to GET by serving one page of the objects in the
 collection.
 
+  >>> import pdb; pdb.set_trace()
+
   >>> people_collection = webservice.get("/beta/people").jsonBody()
   >>> people_collection['resource_type_link']
-  u'http://api.launchpad.dev/beta/#PersonSetCollectionAdapter'
+  u'http://api.launchpad.dev/beta/#people'
   >>> people_collection['total_size']
   63
   >>> people_collection['next_collection_link']
@@ -159,7 +161,7 @@ The elements of a collection can be looked up by unique identifier:
   preferred_email_address_link: None
   proposed_members_collection_link: http://.../~admins/proposed_members
   renewal_policy: invite them to apply for renewal
-  resource_type_link: http://api.launchpad.dev/beta/#TeamEntryAdapter
+  resource_type_link: http://api.launchpad.dev/beta/#team
   self_link: http://.../~admins
   sub_teams_collection_link: http://.../~admins/sub_teams
   subscription_policy: Moderated Team
@@ -174,7 +176,7 @@ A collection may be scoped to an element:
 
   >>> result = webservice.get("/beta/~admins/members").jsonBody()
   >>> result['resource_type_link']
-  u'http://api.launchpad.dev/beta/#PersonEntryAdapter-page-resource'
+  u'http://api.launchpad.dev/beta/#people-page-resource'
   >>> team_members = sorted(
   ...     result['entries'], key=itemgetter('name'))
   >>> len(team_members)
