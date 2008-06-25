@@ -54,6 +54,18 @@
       tal:content="structure context/homepage_content/fmt:text-to-html"
     />
 
+    <div
+      style="float:right; clear:both;"
+      tal:define="link context/menu:overview/edit"
+      tal:condition="link/enabled"
+      tal:content="structure link/render" />
+
+    <div
+      style="float:right; clear:both;"
+      tal:define="link context/menu:overview/administer"
+      tal:condition="link/enabled"
+      tal:content="structure link/render" />
+
     <div tal:replace="structure context/@@+portlet-contact-details"/>
     <div tal:replace="structure context/@@+portlet-contributions"/>
     <div tal:replace="structure context/@@+portlet-currentfocus"/>
