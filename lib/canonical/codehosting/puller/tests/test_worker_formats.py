@@ -22,7 +22,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
 
     def setUp(self):
         TestCaseWithRepository.setUp(self)
-        # XXX: make_bzrdir relies on this being a relative filesystem path.
+        # make_bzrdir relies on this being a relative filesystem path.
         self._source_branch_path = 'source-branch'
         self.worker = self.makePullerWorker(
             self.get_transport(self._source_branch_path).base)
@@ -101,10 +101,10 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         mirrored_branch = Branch.open(self.worker.dest)
         self.assertMirrored(branch, mirrored_branch)
 
-    # XXX: These next three tests should be implemented against all supported
-    # repository formats using bzrlib's test adaptation APIs. Unfortunately,
-    # this API changes between 1.5 and 1.6, so it'd be a bit silly to do the
-    # work now.
+    # XXX: JonathanLange 2008-06-25: These next three tests should be
+    # implemented against all supported repository formats using bzrlib's test
+    # adaptation APIs. Unfortunately, this API changes between 1.5 and 1.6, so
+    # it'd be a bit silly to do the work now.
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is
         # in knit format.
