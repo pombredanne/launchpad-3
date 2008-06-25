@@ -1,13 +1,17 @@
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+
+"""Tests for the puller's support for various Bazaar formats."""
+
+__metaclass__ = type
+
 import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
-
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
-
 
 from canonical.codehosting.puller.tests import PullerWorkerMixin
 from canonical.testing import reset_logging
@@ -50,8 +54,12 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
             source_branch.bzrdir._format.get_format_description(),
             dest_branch.bzrdir._format.get_format_description())
 
-    def _testMirrorFormat(self, repository_format, bzrdir_format):
-        """Mirror a branch and assert that its got the right format."""
+    def _testMirrorWithFormats(self, repository_format, bzrdir_format):
+        """Make a branch with certain formats, mirror it and check the mirror.
+
+        :param repository_format: The repository format.
+        :param bzrdir_format: The bzrdir format.
+        """
         src_branch = self._createSourceBranch(
             repository_format, bzrdir_format)
         self.worker.mirror()
@@ -65,17 +73,17 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is
         # in knit format.
-        self._testMirrorFormat(RepositoryFormatKnit1(), BzrDirMetaFormat1())
+        self._testMirrorWithFormats(RepositoryFormatKnit1(), BzrDirMetaFormat1())
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the
         # mirror is in metaweave format.
-        self._testMirrorFormat(RepositoryFormat7(), BzrDirMetaFormat1())
+        self._testMirrorWithFormats(RepositoryFormat7(), BzrDirMetaFormat1())
 
     def testMirrorWeaveAsWeave(self):
         # Create a source branch in weave format, and check that the mirror is
         # in weave format.
-        self._testMirrorFormat(RepositoryFormat6(), BzrDirFormat6())
+        self._testMirrorWithFormats(RepositoryFormat6(), BzrDirFormat6())
 
     def testSourceFormatChange(self):
         # If a branch that has already been mirrored changes format, then we
