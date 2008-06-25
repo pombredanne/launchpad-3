@@ -89,7 +89,8 @@
           <tbody>
             <tal:contributions repeat="contribution contributions">
             <tr tal:define="project contribution/project;
-                            project_categories contribution/categories">
+                            project_categories contribution/categories"
+                tal:attributes="class view/striped_class/next">
               <th>
                 <img tal:replace="structure project/image:icon"
                      src="/@@/product" />
