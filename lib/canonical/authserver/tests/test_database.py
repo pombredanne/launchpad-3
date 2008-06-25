@@ -22,20 +22,17 @@ from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
-from canonical.launchpad.interfaces import (
-    BranchType,
-    BRANCH_NAME_VALIDATION_ERROR_MESSAGE,
-    EmailAddressStatus,
-    IBranchSet,
-    IEmailAddressSet,
-    ILaunchBag,
-    IPersonSet,
-    IProductSet,
-    IWikiNameSet,
-    )
+from canonical.launchpad.interfaces.branch import (
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, IBranchSet)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.wikiname import IWikiNameSet
 from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -53,62 +50,71 @@ from canonical.testing.layers import (
 UTC = pytz.timezone('UTC')
 
 
+def get_logged_in_username():
+    """Return the username of the logged in person.
+
+    Used by `TestRunAsRequester`.
+    """
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return None
+    return user.name
+
+
 class TestRunAsRequester(TestCaseWithFactory):
     """Tests for the `run_as_requester` decorator."""
 
     layer = LaunchpadFunctionalLayer
 
+    class UsesLogin:
+        """Example class used for testing `run_as_requester`."""
+
+        def _getPerson(self, login_id):
+            return getUtility(IPersonSet).getByName(login_id)
+
+        @run_as_requester
+        def getLoggedInUsername(self, requester):
+            return get_logged_in_username()
+
+        @run_as_requester
+        def getRequestingUser(self, requester):
+            """Return the requester."""
+            return requester
+
+        @run_as_requester
+        def raiseException(self, requester):
+            raise RuntimeError("Deliberately raised error.")
+
     def setUp(self):
         super(TestRunAsRequester, self).setUp()
         self.person = self.factory.makePerson()
         transaction.commit()
-
-    def _getPerson(self, login_id):
-        return getUtility(IPersonSet).getByName(login_id)
-
-    def getLoggedInUsername(self, requester=None):
-        """Return the username of the logged in person."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return None
-        return user.name
-
-    def getRequestingUser(self, requester):
-        """Return the requester."""
-        return requester
-
-    def runAsRequester(self, method_name, *args, **kwargs):
-        """Run a method of this test case using `run_as_requester`."""
-        method = getattr(self.__class__, method_name)
-        return run_as_requester(method)(self, *args, **kwargs)
+        self.example = self.UsesLogin()
 
     def test_loginAsRequester(self):
         # run_as_requester logs in as user given as the first argument to the
         # method being decorated.
-        username = self.runAsRequester(
-            'getLoggedInUsername', self.person.name)
+        username = self.example.getLoggedInUsername(self.person.name)
         self.assertEqual(self.person.name, username)
 
     def test_logoutAtEnd(self):
         # run_as_requester logs out once the decorated method is finished.
-        self.runAsRequester(
-            'getLoggedInUsername', self.person.name)
-        self.assertEqual(None, self.getLoggedInUsername())
+        self.example.getLoggedInUsername(self.person.name)
+        self.assertEqual(None, get_logged_in_username())
 
     def test_logoutAfterException(self):
         # run_as_requester logs out even if the decorated method raises an
         # exception.
         try:
-            self.runAsRequester('fail', self.person.name)
-        except AssertionError:
+            self.example.raiseException(self.person.name)
+        except RuntimeError:
             pass
-        self.assertEqual(None, self.getLoggedInUsername())
+        self.assertEqual(None, get_logged_in_username())
 
     def test_passesRequesterInAsPerson(self):
         # run_as_requester passes in the Launchpad Person object of the
         # requesting user.
-        user = self.runAsRequester(
-            'getRequestingUser', self.person.name)
+        user = self.example.getRequestingUser(self.person.name)
         self.assertEqual(self.person.name, user.name)
 
     def test_cheatsForLaunchpadServices(self):
@@ -117,11 +123,9 @@ class TestRunAsRequester(TestCaseWithFactory):
         # ownership or privacy. `run_as_requester` detects the special
         # username `LAUNCHPAD_SERVICES` and passes that through to the
         # decorated function without logging in.
-        username = self.runAsRequester(
-            'getRequestingUser', LAUNCHPAD_SERVICES)
+        username = self.example.getRequestingUser(LAUNCHPAD_SERVICES)
         self.assertEqual(LAUNCHPAD_SERVICES, username)
-        login_id = self.runAsRequester(
-            'getLoggedInUsername', LAUNCHPAD_SERVICES)
+        login_id = self.example.getLoggedInUsername(LAUNCHPAD_SERVICES)
         self.assertEqual(None, login_id)
 
 
@@ -728,6 +732,14 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         branch_id = store._createBranchInteraction(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
+        login(ANONYMOUS)
+        try:
+            branch = getUtility(IBranchSet).get(branch_id)
+            self.assertTrue(
+                removeSecurityProxy(branch).private,
+                "%r not private" % (branch,))
+        finally:
+            logout()
         branch_info = store._getBranchInformationInteraction(
             LAUNCHPAD_SERVICES, 'landscape-developers', 'landscape',
             'some-branch')
@@ -744,9 +756,6 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         series = removeSecurityProxy(product.development_focus)
         series.user_branch = branch
         removeSecurityProxy(branch).private = True
-        syncUpdate(branch)
-        syncUpdate(product.development_focus)
-        syncUpdate(product)
         return product, branch
 
     def test_getDefaultStackedOnBranch_invisible(self):
