@@ -172,10 +172,6 @@
     <!-- project-specific icons -->
     <resource name="ubuntu-icon" file="../images/ubuntu-icon.png" />
 
-    <!-- Shipit images (from www.ubuntu.com) -->
-    <resource name="ubuntu-header-bg4.png" file="../images/ubuntu-header-bg4.png" />
-    <resource name="ubuntu-header-image4.png" file="../images/ubuntu-header-image4.png" />
-
     <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
     <resource name="kubuntu-header-bg"
         file="../images/kubuntu-header-bg.png" />
