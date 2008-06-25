@@ -6,10 +6,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildstateTransitionError',
     'BuildStatus',
     'IBuild',
     'IBuildSet',
-    'IHasBuildRecords'
+    'IHasBuildRecords',
+    'incomplete_building_status',
     ]
 
 from zope.interface import Interface, Attribute
@@ -17,6 +19,97 @@ from zope.schema import Timedelta
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class BuildstateTransitionError(Exception):
+    """Error raised when an invalid buildstate transition occurs."""
+
+
+class BuildStatus(DBEnumeratedType):
+    """Build status type
+
+    Builds exist in the database in a number of states such as 'complete',
+    'needs build' and 'dependency wait'. We need to track these states in
+    order to correctly manage the autobuilder queues in the BuildQueue table.
+    """
+
+    NEEDSBUILD = DBItem(0, """
+        Needs building
+
+        Build record is fresh and needs building. Nothing is yet known to
+        block this build and it is a candidate for building on any free
+        builder of the relevant architecture
+        """)
+
+    FULLYBUILT = DBItem(1, """
+        Successfully built
+
+        Build record is an historic account of the build. The build is complete
+        and needs no further work to complete it. The build log etc are all
+        in place if available.
+        """)
+
+    FAILEDTOBUILD = DBItem(2, """
+        Failed to build
+
+        Build record is an historic account of the build. The build failed and
+        cannot be automatically retried. Either a new upload will be needed
+        or the build will have to be manually reset into 'NEEDSBUILD' when
+        the issue is corrected
+        """)
+
+    MANUALDEPWAIT = DBItem(3, """
+        Dependency wait
+
+        Build record represents a package whose build dependencies cannot
+        currently be satisfied within the relevant DistroArchSeries. This
+        build will have to be manually given back (put into 'NEEDSBUILD') when
+        the dependency issue is resolved.
+        """)
+
+    CHROOTWAIT = DBItem(4, """
+        Chroot problem
+
+        Build record represents a build which needs a chroot currently known
+        to be damaged or bad in some way. The buildd maintainer will have to
+        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
+        has been fixed.
+        """)
+
+    SUPERSEDED = DBItem(5, """
+        Build for superseded Source
+
+        Build record represents a build which never got to happen because the
+        source package release for the build was superseded before the job
+        was scheduled to be run on a builder. Builds which reach this state
+        will rarely if ever be reset to any other state.
+        """)
+
+    BUILDING = DBItem(6, """
+        Currently building
+
+        Build record represents a build which is being build by one of the
+        available builders.
+        """)
+
+    FAILEDTOUPLOAD = DBItem(7, """
+        Failed to upload
+
+        Build record is an historic account of a build that could not be
+        uploaded correctly. It's mainly genereated by failures in
+        process-upload which quietly rejects the binary upload resulted
+        by the build procedure.
+        In those cases all the build historic information will be stored (
+        buildlog, datebuilt, duration, builder, etc) and the buildd admins
+        will be notified via process-upload about the reason of the rejection.
+        """)
+
+
+incomplete_building_status = (
+    BuildStatus.NEEDSBUILD,
+    BuildStatus.BUILDING,
+    )
+
 
 class IBuild(Interface):
     """A Build interface"""
@@ -141,6 +234,10 @@ class IBuild(Interface):
             `BuildStatus.NEEDSBUILD` state.
         """
 
+    def forceState(value):
+        """Set the build state to the value passed no matter what."""
+
+
 class IBuildSet(Interface):
     """Interface for BuildSet"""
 
@@ -194,6 +291,13 @@ class IBuildSet(Interface):
     def getCurrentPublication():
         """Return the publishing record for this build."""
 
+    def newBuild(
+        sourcepackagerelease, distroarchseries, pocket, processor, archive,
+        buildstate=BuildStatus.NEEDSBUILD, buildduration=None,
+        datecreated=None, datebuilt=None, estimated_build_duration=None,
+        builder=None, buildlog=None):
+        """Creates a new build object using the parameter values passed."""
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
@@ -214,83 +318,3 @@ class IHasBuildRecords(Interface):
         "user" is the requesting user and if specified can be used in
         permission checks to see if he is allowed to view the build.
         """
-
-
-class BuildStatus(DBEnumeratedType):
-    """Build status type
-
-    Builds exist in the database in a number of states such as 'complete',
-    'needs build' and 'dependency wait'. We need to track these states in
-    order to correctly manage the autobuilder queues in the BuildQueue table.
-    """
-
-    NEEDSBUILD = DBItem(0, """
-        Needs building
-
-        Build record is fresh and needs building. Nothing is yet known to
-        block this build and it is a candidate for building on any free
-        builder of the relevant architecture
-        """)
-
-    FULLYBUILT = DBItem(1, """
-        Successfully built
-
-        Build record is an historic account of the build. The build is complete
-        and needs no further work to complete it. The build log etc are all
-        in place if available.
-        """)
-
-    FAILEDTOBUILD = DBItem(2, """
-        Failed to build
-
-        Build record is an historic account of the build. The build failed and
-        cannot be automatically retried. Either a new upload will be needed
-        or the build will have to be manually reset into 'NEEDSBUILD' when
-        the issue is corrected
-        """)
-
-    MANUALDEPWAIT = DBItem(3, """
-        Dependency wait
-
-        Build record represents a package whose build dependencies cannot
-        currently be satisfied within the relevant DistroArchSeries. This
-        build will have to be manually given back (put into 'NEEDSBUILD') when
-        the dependency issue is resolved.
-        """)
-
-    CHROOTWAIT = DBItem(4, """
-        Chroot problem
-
-        Build record represents a build which needs a chroot currently known
-        to be damaged or bad in some way. The buildd maintainer will have to
-        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
-        has been fixed.
-        """)
-
-    SUPERSEDED = DBItem(5, """
-        Build for superseded Source
-
-        Build record represents a build which never got to happen because the
-        source package release for the build was superseded before the job
-        was scheduled to be run on a builder. Builds which reach this state
-        will rarely if ever be reset to any other state.
-        """)
-
-    BUILDING = DBItem(6, """
-        Currently building
-
-        Build record represents a build which is being build by one of the
-        available builders.
-        """)
-
-    FAILEDTOUPLOAD = DBItem(7, """
-        Failed to upload
-
-        Build record is an historic account of a build that could not be
-        uploaded correctly. It's mainly genereated by failures in
-        process-upload which quietly rejects the binary upload resulted
-        by the build procedure.
-        In those cases all the build historic information will be stored (
-        buildlog, datebuilt, duration, builder, etc) and the buildd admins
-        will be notified via process-upload about the reason of the rejection.
-        """)
