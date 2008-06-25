@@ -56,31 +56,7 @@
 
     <div tal:replace="structure context/@@+portlet-contact-details"/>
 
-    <div
-      class="portlet"
-      tal:define="contributions view/contributions"
-      tal:condition="contributions">
-      <h2>Most active in</h2>
-      <table class="contributions" id="contributions">
-        <tbody>
-          <tal:contributions repeat="contribution contributions">
-          <tr tal:define="project contribution/project;
-                          project_categories contribution/categories">
-            <th>
-              <img tal:replace="structure project/image:icon"
-                   src="/@@/product" />
-              <a tal:attributes="href project/fmt:url"
-                 tal:content="project/title/fmt:shorten/28">Project</a>
-            </th>
-            <td tal:repeat="category view/contributed_categories">
-              <tal:icon condition="python: category in project_categories"
-                        replace="structure category/image:icon" />
-            </td>
-          </tr>
-          </tal:contributions>
-        </tbody>
-      </table>
-    </div>
+    <div tal:replace="structure context/@@+portlet-contributions"/>
 
     <div id="working-on"
          tal:define="bugtasks view/getBugsInProgress;
