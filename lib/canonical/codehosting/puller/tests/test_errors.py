@@ -202,15 +202,14 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         # createBranchReference creates a branch reference and returns a URL
         # that points to that branch reference.
 
-        # First create a bzrdir with a branch and repository.
-        t = get_transport(self.get_url('.'))
-        t.mkdir('repo')
-        dir = bzrdir.BzrDir.create(self.get_url('repo'))
-        dir.create_repository()
-        target_branch = dir.create_branch()
+        # First create a branch and a reference to that branch.
+        target_branch = self.make_branch('repo')
+        reference_url = self.createBranchReference(target_branch.base)
 
-        # Then create a pure branch reference using our custom helper.
-        reference_url = self.createBranchReference(self.get_url('repo'))
+        # References are transparent, so we can't test much about them. The
+        # least we can do is confirm that the reference URL isn't the branch
+        # URL.
+        self.assertNotEqual(reference_url, target_branch.base)
 
         # Open the branch reference and check that the result is indeed the
         # branch we wanted it to point at.
