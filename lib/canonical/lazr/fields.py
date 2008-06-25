@@ -57,6 +57,16 @@ class ReferenceChoice(Choice):
     implements(IReferenceChoice)
 
     def __init__(self, *args, **kwargs):
+        """Initialize a choice among a certain kind of object.
+        This field can provide more information in a WADL description
+        than a standard Choice field.
+
+        This constructor takes the same parameters as the Choice
+        constructor, plus a 'schema' keyword parameter.
+
+        :param schema: What kind of object makes up the Choice's vocabulary.
+                       The default is IObject.
+        """
         schema = kwargs.pop('schema', IObject)
         self.schema = schema
         super(ReferenceChoice, self).__init__(*args, **kwargs)
