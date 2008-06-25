@@ -239,6 +239,10 @@
       name="+portlet-contributions"
       template="../templates/person-portlet-contributions.pt"
       />
+    <browser:page
+      name="+portlet-currentfocus"
+      template="../templates/person-portlet-currentfocus.pt"
+      />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
     <browser:page
