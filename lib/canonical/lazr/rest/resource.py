@@ -529,7 +529,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return "%s#%s" % (
             canonical_url(self.request.publication.getApplication(
                     self.request)),
-            self.entry.__class__.__name__)
+            self.entry._singular)
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
@@ -983,7 +983,7 @@ class EntryAdapterUtility(RESTUtilityBase):
     @property
     def singular_type(self):
         """Return the singular name for this object type."""
-        return self.entry_class.__name__
+        return self.entry_class._singular
 
     @property
     def type_link(self):
