@@ -1376,3 +1376,9 @@ class PackageUploadSet:
         return PackageUploadBuild.select("""
             PackageUploadBuild.build IN %s
             """ % sqlvalues(build_ids))
+
+    def getSourceBySourcePackageReleaseIDs(self, spr_ids):
+        """See `IPackageUploadSet`."""
+        return PackageUploadSource.select("""
+            PackageUploadSource.sourcepackagerelease IN %s
+            """ % sqlvalues(spr_ids))

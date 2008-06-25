@@ -509,6 +509,9 @@ class IPackageUploadSet(Interface):
     def getBuildByBuildIDs(build_ids):
         """Return `PackageUploadBuilds`s for the supplied build IDs."""
 
+    def getSourceBySourcePackageReleaseIDs(spr_ids):
+        """Return `PackageUploadSource`s for the sourcepackagerelease IDs."""
+
 
 class IHasQueueItems(Interface):
     """An Object that has queue items"""

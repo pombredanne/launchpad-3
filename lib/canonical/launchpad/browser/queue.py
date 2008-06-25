@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     PackagePublishingPriority, QueueInconsistentStateError,
     UnexpectedFormData, PackageUploadStatus)
 from canonical.launchpad.interfaces.files import (
-    IBinaryPackageFileSet)
+    IBinaryPackageFileSet, ISourcePackageReleaseFileSet)
 from canonical.launchpad.scripts.queue import name_priority_map
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -106,12 +106,13 @@ class QueueItemsView(LaunchpadView):
         # the loop.
         upload_ids = [upload.id for upload in uploads]
         binary_file_set = getUtility(IBinaryPackageFileSet)
-        package_upload_set = getUtility(IPackageUploadSet)
+        upload_set = getUtility(IPackageUploadSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
         build_ids = [binary_file.binarypackagerelease.build.id
                      for binary_file in binary_files]
-        package_upload_builds = package_upload_set.getBuildByBuildIDs(build_ids) 
-        # Make a dictionary of PacakgeUploadBuild keyed by build ID.
+        package_upload_builds = upload_set.getBuildByBuildIDs(
+            build_ids) 
+        # Make a dictionary of PackageUploadBuild keyed by build ID.
         package_upload_builds_dict = {}
         for package_upload_build in package_upload_builds:
             package_upload_builds_dict[
@@ -125,7 +126,34 @@ class QueueItemsView(LaunchpadView):
                 build_upload_files[id] = []
             build_upload_files[id].append(binary_file)
 
-        return [CompletePackageUpload(item, build_upload_files)
+        # Now do a similar thing for the source files.
+        source_file_set = getUtility(ISourcePackageReleaseFileSet)
+        source_files = source_file_set.getByPackageUploadIDs(upload_ids)
+        sourcepackagerelease_ids = [
+            source_file.sourcepackagerelease.id
+            for source_file in source_files]
+
+        # Build a dictionary of PackageUploadSource keyed by
+        # sourcepackagerelease ID using a single query.
+        pkg_upload_sources = upload_set.getSourceBySourcePackageReleaseIDs(
+            sourcepackagerelease_ids)
+        package_upload_source_dict = {}
+        for pkg_upload_source in pkg_upload_sources:
+            package_upload_source_dict[
+                pkg_upload_source.sourcepackagerelease.id] = pkg_upload_source
+
+        # Finally we can make the dictionary of source files keyed on
+        # the PackageUpload ID.
+        source_upload_files = {}
+        for source_file in source_files:
+            id = package_upload_source_dict[
+                source_file.sourcepackagerelease.id].packageupload.id
+            if id not in source_upload_files:
+                source_upload_files[id] = []
+            source_upload_files[id].append(source_file)
+
+        return [CompletePackageUpload(item, build_upload_files,
+                                      source_upload_files)
                 for item in uploads]
 
     def availableActions(self):
@@ -326,7 +354,8 @@ class CompletePackageUpload:
 
     decorates(IPackageUpload)
 
-    def __init__(self, packageupload, build_upload_files):
+    def __init__(self, packageupload, build_upload_files,
+                 source_upload_files):
         self.pocket = packageupload.pocket
         self.datecreated = packageupload.datecreated
         self.context = packageupload
@@ -346,6 +375,9 @@ class CompletePackageUpload:
                 if package not in self.binary_packages:
                     self.binary_packages[package] = []
                 self.binary_packages[package].append(binary)
+
+        # Create a list of source files if this is a source upload.
+        self.source_files = source_upload_files.get(self.id, None)
 
         # Pre-fetch the sourcepackagerelease if it exists.
         if self.contains_source:
