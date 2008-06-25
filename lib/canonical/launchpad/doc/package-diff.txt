@@ -86,6 +86,12 @@ request.
     >>> print package_diff.title
     0.1-1 to 0.1-2
 
+IPackageDiff has a property which indicates whether a diff content
+should be private or not. See section 'PackageDiff privacy' below.
+
+    >>> print package_diff.private
+    False
+
 An attempt to record an already recorded DiffRequest will result in an
 error:
 
@@ -250,6 +256,7 @@ the version found in its context.
     >>> print diff.title
     1.0-2 to 1.0-3
 
+
 == Performing a Diff ==
 
 Now we will actually perform a package diff and look at the results.
@@ -324,6 +331,9 @@ with a proper mimetype.
 
     >>> print diff.diff_content.mimetype
     application/gzipped-patch
+
+    >>> print diff.diff_content.restricted
+    False
 
 Since it stores the diff results in the librarian we need to commit the
 transaction before we can access the file.
@@ -426,3 +436,186 @@ if necessary.
     >>> candidate_diff == diff
     True
 
+
+== Special circumstances ==
+
+There is only one way a PackageDiff request will result in an empty
+diff, when the same source package is re-uploaded.
+
+To emulate this situation we will upload a new package called
+'staging' first to the ubuntu primary archive, which will result in no
+diff since the package is NEW, and then we will upload the same
+version to the Foo Bar's PPA.
+
+Note that this is a legitimate use-case, let's say Foo Bar user
+suspects 'staging' will be affected by his new toolchain, already
+hosted in the PPA. Since he cannot copy the primary archive sources,
+he simply re-upload the source as it is in ubuntu to his PPA and check
+if it builds correctly.
+
+    >>> packager = FakePackager(
+    ...     'staging', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+
+    >>> packager.buildUpstream(suite='breezy-autotest')
+    >>> packager.buildSource()
+    >>> staging_ubuntu_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', policy='sync')
+    >>> staging_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    0
+
+    >>> staging_ppa_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', archive=foobar.archive)
+    >>> [diff] = staging_ppa_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    1.0-1 (in Ubuntu) to 1.0-1
+
+Commit the transaction for make the uploaded files available in
+librarian:
+
+    >>> transaction.commit()
+
+Perform the pending diff request and commit the transaction again, so
+the diff file can be retrieved.
+
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+The PackageDiff request was correctly performed and the result is a
+empty library file, which is what the user expects.
+
+    >>> diff.date_fulfilled is not None
+    True
+
+    >>> print diff.diff_content.filename
+    staging_1.0-1_1.0-1.diff.gz
+
+    >>> get_diff_results(diff)
+    ''
+
+Now we will simulate a version collision when generating the diff.
+
+First we upload a version of 'collision' source package to the ubuntu
+primary archive.
+
+    >>> packager = FakePackager(
+    ...     'collision', '1.0', 'foo.bar@canonical.com-passwordless.sec')
+
+    >>> packager.buildUpstream(suite='breezy-autotest')
+    >>> packager.buildSource()
+    >>> collision_ubuntu_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', policy='sync')
+    >>> collision_ubuntu_pub.sourcepackagerelease.package_diffs.count()
+    0
+
+Then we taint the package content and rebuild the same source package
+version before uploading it again to Foo Bar's PPA.
+
+    >>> packager._appendContents('I am evil.')
+    >>> packager.buildSource()
+
+    >>> collision_ppa_pub = packager.uploadSourceVersion(
+    ...     '1.0-1', archive=foobar.archive)
+    >>> [diff] = collision_ppa_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+    1.0-1 (in Ubuntu) to 1.0-1
+
+Note that, despite of having the same name and version, the diff.gz
+and dsc files have different contents.
+
+    >>> file_set = set()
+
+    >>> for file in diff.from_source.files:
+    ...     lfa = file.libraryfile
+    ...     file_set.add((lfa.filename, lfa.content.md5))
+
+    >>> for file in diff.to_source.files:
+    ...     lfa = file.libraryfile
+    ...     file_set.add((lfa.filename, lfa.content.md5))
+
+    >>> distinct_files = [filename for filename, md5 in file_set]
+    >>> for filename in sorted(distinct_files):
+    ...     print filename
+    collision_1.0-1.diff.gz
+    collision_1.0-1.diff.gz
+    collision_1.0-1.dsc
+    collision_1.0-1.dsc
+    collision_1.0.orig.tar.gz
+
+Such situation can happen due to the lack of consistency checks
+between versions in ubuntu primary archive and versions in PPAs. From
+the Soyuz code point of view the packages are consistent in their own
+context and the fact that 'apt' might get in trouble when installing
+packages from the PPA is considered an PPA maintainer issue, at
+moment.
+
+Let's do the commit dance again and generate the diff.
+
+    >>> transaction.commit()
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+The package-diff subsystem has dealt with the filename conflicts and
+the diff was properly generated.
+
+    >>> diff.date_fulfilled is not None
+    True
+
+    >>> print diff.diff_content.filename
+    collision_1.0-1_1.0-1.diff.gz
+
+    >>> print get_diff_results(diff)
+    --- collision-1.0/contents
+    +++ collision-1.0/contents
+    @@ -2,0 +3 @@
+    +I am evil.
+    <BLANKLINE>
+
+
+== PackageDiff privacy ==
+
+Packagediff decides whether the 'diff_content' file should be
+in the restricted librarian or not according to the privacy of the
+archive where the targeted SourcePackageRelease ('to_source') were
+originally uploaded to.
+
+Let's use one of the diffs already requested in this test setup to
+explain how this mechanism works.
+
+    >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
+    >>> print diff.title
+     1.0-8 (in Ubuntu) to 1.0-2
+
+The chosen diff is for a source uploaded to a public PPA.
+
+    >>> print diff.to_source.upload_archive.title
+    PPA for Foo Bar
+
+    >>> print diff.to_source.upload_archive.private
+    False
+
+Thus it's also considered public and the generated 'diff_content' is
+stored in the public librarian.
+
+    >>> print diff.private
+    False
+
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+    >>> print diff.diff_content.restricted
+    False
+
+When we make FooBar's PPA private, the diff becomes 'private' and the
+new 'diff_content' is stored in the restricted librarian instance.
+
+    >>> diff.to_source.upload_archive.buildd_secret = 'nhack!'
+    >>> diff.to_source.upload_archive.private = True
+
+    >>> print diff.private
+    True
+
+    >>> diff.performDiff()
+    >>> transaction.commit()
+
+    >>> print diff.diff_content.restricted
+    True

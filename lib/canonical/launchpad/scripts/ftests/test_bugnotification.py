@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+from textwrap import dedent
 import unittest
 
 import pytz
@@ -138,6 +139,17 @@ class TestGetEmailNotificattions(unittest.TestCase):
         # We need to commit the transaction, since the error handling
         # will abort the current transaction.
         commit()
+
+        # Disable limiting bug watch notifications to a team, so that
+        # the testing gets easier.
+        config.push(
+            'no-comment-syncing-team', dedent("""
+                [malone]
+                comment_syncing_team:
+                """))
+
+    def tearDown(self):
+        config.pop('no-comment-syncing-team')
 
     def _getAndCheckSentNotifications(self, notifications_to_send):
         """Return the notifications that were successfully sent.
