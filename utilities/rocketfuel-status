@@ -1,17 +1,22 @@
 #! /bin/bash
 
-# This script checks each of your branches in ~/canonical/lp-branches/ to
-# see which ones have revisions that have not yet landed in trunk.
+# This script checks each of your branches in your Launchpad repo to see which
+# ones have revisions that have not yet landed in trunk.
 
-cd ~/canonical/lp-branches
+LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
+LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
+LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
+LP_TRUNK_NAME=trunk
+LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
+
+cd $LP_PROJECT_PATH
 for branch in *; do
-  if [ ${branch} != "trunk" ] && test -d ${branch} ; then
+  if [ ${branch} != "$LP_TRUNK_NAME" ] && test -d ${branch} ; then
     echo "Examining ${branch}"
     cd ${branch}
     bzr status --short
-    cd ../trunk
+    cd $LP_TRUNK_PATH
     bzr missing --theirs-only --line ../${branch} | grep -v "^You are missing"
     cd ..
   fi;
 done;
-
