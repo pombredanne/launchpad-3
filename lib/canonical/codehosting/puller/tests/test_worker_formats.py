@@ -73,7 +73,8 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin):
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is
         # in knit format.
-        self._testMirrorWithFormats(RepositoryFormatKnit1(), BzrDirMetaFormat1())
+        self._testMirrorWithFormats(
+            RepositoryFormatKnit1(), BzrDirMetaFormat1())
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the
