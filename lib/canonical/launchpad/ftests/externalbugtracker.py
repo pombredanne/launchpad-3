@@ -70,6 +70,7 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     return getUtility(IBugTrackerSet).getByName(name)
 
+
 def read_test_file(name):
     """Return the contents of the test file named :name:
 
@@ -79,6 +80,23 @@ def read_test_file(name):
 
     test_file = open(file_path, 'r')
     return test_file.read()
+
+
+def ordered_dict_as_string(dict):
+    """Return the contents of a dict as an ordered string.
+
+    The output will be ordered by key, so {'z': 1, 'a': 2, 'c': 3} will
+    be printed as {'a': 2, 'c': 3, 'z': 1}.
+
+    We do this because dict ordering is not guaranteed.
+    """
+    item_string = '%r: %r'
+    item_strings = []
+    for key, value in sorted(dict.items()):
+        item_strings.append(item_string % (key, value))
+
+    return '{%s}' % ', '.join(
+        "%r: %r" % (key, value) for key, value in sorted(dict.items()))
 
 
 def print_bugwatches(bug_watches, convert_remote_status=None):
@@ -105,6 +123,7 @@ def print_bugwatches(bug_watches, convert_remote_status=None):
             status = convert_remote_status(status)
 
         print 'Remote bug %d: %s' % (remote_bug_id, status)
+
 
 def convert_python_status(status, resolution):
     """Convert a human readable status and resolution into a Python
@@ -390,6 +409,8 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         }
 
     # Comments are mapped to bug IDs.
+    comment_id_index = 4
+    new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
     bug_comments = {
         1: {
             1: {'author': 'trillian',
@@ -424,13 +445,16 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['comments', 'get_bugs'],
+        'Bug': ['add_comment', 'comments', 'get_bugs'],
         'Launchpad': ['login', 'time'],
         'Test': ['login_required']
         }
 
     # Methods that require authentication.
-    auth_required_methods = ['login_required']
+    auth_required_methods = [
+        'add_comment',
+        'login_required',
+        ]
 
     expired_cookie = None
 
@@ -461,11 +485,11 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         if (method_name in self.auth_required_methods and
             (self.auth_cookie is None or
              self.auth_cookie == self.expired_cookie)):
-             raise xmlrpclib.Fault(410, 'Login Required')
+            raise xmlrpclib.Fault(410, 'Login Required')
 
         if self.print_method_calls:
             if len(args) > 0:
-                arguments = args[0]
+                arguments = ordered_dict_as_string(args[0])
             else:
                 arguments = ''
 
@@ -606,6 +630,50 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
         # More xmlrpclib:1387 odd-knobbery avoidance.
         return [{'bugs': comments_by_bug_id}]
+
+    def add_comment(self, arguments):
+        """Add a comment to a bug."""
+        assert 'id' in arguments, (
+            "Bug.add_comment() must always be called with an id parameter.")
+        assert 'comment' in arguments, (
+            "Bug.add_comment() must always be called with an comment "
+            "parameter.")
+
+        bug_id = arguments['id']
+        comment = arguments['comment']
+
+        # If the bug doesn't exist, raise a fault.
+        if int(bug_id) not in self.bugs:
+            raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+        # If we don't have comments for the bug already, create an empty
+        # comment dict.
+        if bug_id not in self.bug_comments:
+            self.bug_comments[bug_id] = {}
+
+        # Work out the number for the new comment on that bug.
+        if len(self.bug_comments[bug_id]) == 0:
+            comment_number = 1
+        else:
+            comment_numbers = sorted(self.bug_comments[bug_id].keys())
+            latest_comment_number = comment_numbers[-1]
+            comment_number = latest_comment_number + 1
+
+        # Add the comment to the bug.
+        comment_id = self.comment_id_index + 1
+        comment_dict = {
+            'author': 'launchpad',
+            'id': comment_id,
+            'number': comment_number,
+            'time': self.new_comment_time,
+            'text': comment,
+            }
+        self.bug_comments[bug_id][comment_number] = comment_dict
+
+        self.comment_id_index = comment_id
+
+        # Once again, we bow to xmlrpclib:1387's whim.
+        return [{'comment_id': comment_id}]
 
 
 class TestMantis(Mantis):

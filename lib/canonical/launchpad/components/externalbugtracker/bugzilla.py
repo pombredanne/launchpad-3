@@ -30,7 +30,7 @@ from canonical.launchpad.components.externalbugtracker import (
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.interfaces.externalbugtracker import (
-    ISupportsCommentImport)
+    ISupportsCommentImport, ISupportsCommentPushing)
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 
@@ -342,7 +342,7 @@ def needs_authentication(func):
 class BugzillaLPPlugin(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas using the LP Plugin."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -532,6 +532,22 @@ class BugzillaLPPlugin(Bugzilla):
             datecreated=comment_datetime)
 
         return message
+
+    @needs_authentication
+    def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
+        """Add a comment to the remote bugtracker.
+
+        See `ISupportsCommentPushing`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        request_params = {
+            'id': actual_bug_id,
+            'comment': comment_body,
+            }
+        return_dict = self.xmlrpc_proxy.Bug.add_comment(request_params)
+
+        return return_dict['comment_id']
 
 
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):
