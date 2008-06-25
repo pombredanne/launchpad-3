@@ -31,7 +31,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         source_tree = self.make_branch_and_tree('source-branch')
         to_mirror = self.makePullerWorker(source_tree.branch.base)
         source_tree.commit('commit message')
-        to_mirror.mirror()
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(
             source_tree.last_revision(), mirrored_branch.last_revision())
@@ -40,7 +40,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         # We can mirror an empty branch.
         source_branch = self.make_branch('source-branch')
         to_mirror = self.makePullerWorker(source_branch.base)
-        to_mirror.mirror()
+        to_mirror.mirrorWithoutChecks()
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         self.assertEqual(NULL_REVISION, mirrored_branch.last_revision())
 
