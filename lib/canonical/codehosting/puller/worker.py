@@ -312,16 +312,24 @@ class PullerWorker:
         oops_id = self._record_oops(error)
         self.protocol.mirrorFailed(self, error, oops_id)
 
+    def mirrorWithoutChecks(self):
+        """Mirror the source branch to the destination branch.
+
+        This method doesn't do any error handling or send any messages via the
+        reporting protocol -- a "naked mirror", if you will.
+        """
+        self._checkSourceUrl()
+        self._checkBranchReference()
+        self._openSourceBranch()
+        self._mirrorToDestBranch()
+
     def mirror(self):
         """Open source and destination branches and pull source into
         destination.
         """
         self.protocol.startMirroring(self)
         try:
-            self._checkSourceUrl()
-            self._checkBranchReference()
-            self._openSourceBranch()
-            self._mirrorToDestBranch()
+            self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
