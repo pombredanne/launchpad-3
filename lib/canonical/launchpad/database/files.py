@@ -15,10 +15,11 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
-    BinaryPackageFileType, IBinaryPackageFile, IBinaryPackageFileSet,
-    ISourcePackageReleaseFile, SourcePackageFileType)
+    BinaryPackageFileType, SourcePackageFileType)
+from canonical.launchpad.interfaces.files import (
+    IBinaryPackageFile, IBinaryPackageFileSet, ISourcePackageReleaseFile,
+    ISourcePackageReleaseFileSet)
 
 
 class BinaryPackageFile(SQLBase):
@@ -65,3 +66,22 @@ class SourcePackageReleaseFile(SQLBase):
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
                              dbName='libraryfile')
     filetype = EnumCol(schema=SourcePackageFileType)
+
+
+class SourcePackageReleaseFileSet:
+    """See `ISourcePackageReleaseFileSet`."""
+    implements(ISourcePackageReleaseFileSet)
+
+    def getByPackageUploadIDs(self, package_upload_ids):
+        """See `ISourcePackageReleaseFileSet`."""
+        return SourcePackageReleaseFile.select("""
+            PackageUploadSource.packageupload = PackageUpload.id AND
+            PackageUpload.id IN %s AND
+            SourcePackageReleaseFile.sourcepackagerelease =
+                PackageUploadSource.sourcepackagerelease
+            """ % sqlvalues(package_upload_ids),
+            clauseTables=["PackageUpload", "PackageUploadSource"],
+            prejoins=["libraryfile", "libraryfile.content",
+                      "sourcepackagerelease",
+                      "sourcepackagerelease.sourcepackagename"])
+
