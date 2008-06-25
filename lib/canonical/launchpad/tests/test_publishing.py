@@ -26,7 +26,6 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
     PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
-from canonical.librarian.client import LibrarianClient
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -58,16 +57,15 @@ class SoyuzTestPublisher:
         self.breezy_autotest_i386 = self.breezy_autotest['i386']
         self.breezy_autotest_hppa = self.breezy_autotest['hppa']
 
-    def addMockFile(self, filename, filecontent='nothing'):
+    def addMockFile(self, filename, filecontent='nothing', restricted=False):
         """Add a mock file in Librarian.
 
         Returns a ILibraryFileAlias corresponding to the file uploaded.
         """
-        library = LibrarianClient()
-        alias_id = library.addFile(
+        library_file = getUtility(ILibraryFileAliasSet).create(
             filename, len(filecontent), StringIO(filecontent),
-            'application/text')
-        return getUtility(ILibraryFileAliasSet)[alias_id]
+            'application/text', restricted=restricted)
+        return library_file
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
                      filename=None, section='base',
@@ -118,7 +116,8 @@ class SoyuzTestPublisher:
 
         if filename is None:
             filename = "%s.dsc" % sourcename
-        alias = self.addMockFile(filename, filecontent)
+        alias = self.addMockFile(
+            filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
@@ -213,14 +212,17 @@ class SoyuzTestPublisher:
             binpackageformat=BinaryPackageFormat.DEB,
             priority=PackagePublishingPriority.STANDARD)
 
-        build.buildstate = BuildStatus.FULLYBUILT
+        # Going from pending to succeeded is an invalid build state
+        # transition. That's why we are forcing it here.
+        build.forceState(BuildStatus.FULLYBUILT)
         # Create the corresponding DEB file.
         if architecturespecific:
             filearchtag = distroarchseries.architecturetag
         else:
             filearchtag = 'all'
         filename = '%s_%s.deb' % (binaryname, filearchtag)
-        alias = self.addMockFile(filename, filecontent=filecontent)
+        alias = self.addMockFile(
+            filename, filecontent=filecontent, restricted=archive.private)
         bpr.addFile(alias)
 
         # Publish the binary.

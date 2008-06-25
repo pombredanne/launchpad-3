@@ -225,7 +225,7 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder = builder
         self.buildstart = UTC_NOW
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.forceState(BuildStatus.BUILDING)
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
@@ -235,7 +235,7 @@ class BuildQueue(SQLBase):
             % (self.builder.url, self.build.title))
         self.builder = None
         self.buildstart = None
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.build.forceState(BuildStatus.NEEDSBUILD)
 
     def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):
@@ -253,7 +253,7 @@ class BuildQueue(SQLBase):
         self.builder.cleanSlave()
         self.builder = None
         self.buildstart = None
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.forceState(BuildStatus.BUILDING)
 
 
 class BuildQueueSet(object):

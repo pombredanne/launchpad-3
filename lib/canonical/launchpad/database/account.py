@@ -14,9 +14,11 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.account import (
         AccountCreationRationale, AccountStatus,
-        IAccount, IAccountSet, IPasswordEncryptor)
+        IAccount, IAccountSet)
+from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class Account(SQLBase):
@@ -69,6 +71,12 @@ class Account(SQLBase):
             assert False, "This should not be reachable."
 
     password = property(_get_password, _set_password)
+
+    @property
+    def openid_identity_url(self):
+        """see `IAccount`."""
+        identity_url_prefix = (allvhosts.configs['openid'].rooturl + '+id/')
+        return identity_url_prefix + self.openid_identifier.encode('ascii')
 
 
 class AccountSet:

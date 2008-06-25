@@ -382,15 +382,6 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     new_style_import = Attribute(_("The new-style import that was created "
         "from this import, if any."))
 
-    def syncCertified():
-        """is the series source sync enabled?"""
-
-    def autoSyncEnabled():
-        """is the series source enabled for automatic syncronisation?"""
-
-    def autoTestFailed():
-        """has the series source failed automatic testing by roomba?"""
-
 
 class IProductSeriesSourceAdmin(Interface):
     """Administrative interface to approve syncing on a Product Series
@@ -398,20 +389,9 @@ class IProductSeriesSourceAdmin(Interface):
 
     def certifyForSync():
         """enable this to sync"""
-
-    def markTestFailed():
-        """Mark this import as TESTFAILED.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
-
-    def markDontSync():
-        """Mark this import as DONTSYNC.
-
-        See `ImportStatus` for what this means.  This method also clears
-        timestamps and other ancillary data.
-        """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
     def markStopped():
         """Mark this import as STOPPED.
@@ -419,6 +399,9 @@ class IProductSeriesSourceAdmin(Interface):
         See `ImportStatus` for what this means.  This method also clears
         timestamps and other ancillary data.
         """
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
     def deleteImport():
         """Do our best to forget that this series ever had an import
@@ -426,9 +409,9 @@ class IProductSeriesSourceAdmin(Interface):
 
         Use with care!
         """
-
-    def enableAutoSync():
-        """Enable this series RCS for automatic synchronisation."""
+        # XXX: MichaelHudson 2008-05-20, bug=232076: This method is only
+        # necessary for the transition from the old to the new code import
+        # system, and should be deleted after that process is done.
 
 
 class IProductSeriesSet(Interface):

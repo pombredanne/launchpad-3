@@ -907,7 +907,8 @@ class ISpecificationSet(IHasSpecifications):
     def getDependencyDict(specifications):
         """Return a dictionary mapping specifications to their dependencies.
 
-        The results are ordered by descending priority.
+        The results are ordered by descending priority, ascending dependency
+        name, and id.
 
         :param specifications: a sequence of the `ISpecification` to look up.
         """

@@ -260,7 +260,11 @@ class MaloneHandler:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
                             notify(bug_event)
-                            bug_event = None
+                        if (bugtask_event is not None and
+                            not ISQLObjectCreatedEvent.providedBy(bug_event)):
+                            notify(bugtask_event)
+                        bugtask = None
+                        bugtask_event = None
 
                         bug, bug_event = command.execute(
                             signed_msg, filealias)

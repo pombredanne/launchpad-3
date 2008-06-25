@@ -282,7 +282,10 @@ class DistributionSourcePackage(BugTargetBase,
 
     def __hash__(self):
         """Return the combined hash of distribution and package name."""
-        return hash(self.distribution) + hash(self.sourcepackagename)
+        # Combine two hashes, in order to try to get the hash somewhat
+        # unique (it doesn't have to be unique). Use ^ instead of +, to
+        # avoid the hash from being larger than sys.maxint.
+        return hash(self.distribution) ^ hash(self.sourcepackagename)
 
     def __ne__(self, other):
         """See `IDistributionSourcePackage`."""
