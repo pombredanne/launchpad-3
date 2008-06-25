@@ -203,11 +203,8 @@ Project also have the 'Latest questions' portlet and the
 
 == Persons ==
 
-On the page about a person, there is a porlet showing the latest
-questions opened by that person.
-
 The 'Answers' facet link will display a page listing all the questions
-involving that person.
+involving a person.
 
     >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Answers').url
