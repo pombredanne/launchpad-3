@@ -216,6 +216,10 @@ class TestBugzilla(Bugzilla):
         Bugzilla.__init__(self, baseurl, version=version)
         self.bugzilla_bugs = self._getBugsToTest()
 
+    def getExternalBugTrackerToUse(self):
+        # Always return self here since we test this separately.
+        return self
+
     def _getBugsToTest(self):
         """Return a dict with bugs in the form bug_id: (status, resolution)"""
         return {3224: ('RESOLVED', 'FIXED'),

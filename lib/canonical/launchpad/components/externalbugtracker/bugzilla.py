@@ -44,6 +44,38 @@ class Bugzilla(ExternalBugTracker):
         self.is_issuezilla = False
         self.remote_bug_status = {}
 
+        # The XML-RPC endpoint used by getExternalBugTrackerToUse()
+        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+        self.xmlrpc_transport = None
+
+    @property
+    def xmlrpc_proxy(self):
+        """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
+        return xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+    def getExternalBugTrackerToUse(self):
+        """Return the correct `Bugzilla` subclass for the current bugtracker.
+
+        See `IExternalBugTracker`.
+        """
+        try:
+            # We try calling Launchpad.plugin_version() on the remote
+            # server because it's the most lightweight method there is.
+            self.xmlrpc_proxy.Launchpad.plugin_version()
+        except xmlrpclib.Fault, fault:
+            if fault.faultCode == 'Client':
+                return self
+            else:
+                raise
+        except xmlrpclib.ProtocolError, error:
+            if error.errcode == 404:
+                return self
+            else:
+                raise
+        else:
+            return BugzillaLPPlugin(self.baseurl)
+
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
         # Some Bugzilla sites will return pages with content that has
@@ -299,10 +331,6 @@ class BugzillaLPPlugin(Bugzilla):
             xmlrpc_transport = BugzillaXMLRPCTransport()
         else:
             self.xmlrpc_transport = xmlrpc_transport
-
-        self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
-        self.server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""

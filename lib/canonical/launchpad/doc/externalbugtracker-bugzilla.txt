@@ -32,6 +32,80 @@ slightly modified implementation.
     >>> version
     (2, 20)
 
+
+== Launchpad plugin ==
+
+Some Bugzillas have a Launchpad plugin installed. For these bugtrackers,
+we use the BugzillaLPPlugin ExternalBugTracker class. The Bugzilla
+ExternalBugTracker class has a getExternalBugTrackerToUse() class which
+will return a BugzillaLPPlugin instance if the remote Bugzilla has the
+plugin installed or a standard Bugzilla ExternalBugTracker if not.
+
+The Bugzilla ExternalBugTracker has an xmlrpc_proxy property which we're
+override for the purpose of this test.
+
+    >>> import xmlrpclib
+    >>> class FailingXMLRPCTransport(xmlrpclib.Transport):
+    ...
+    ...     error = xmlrpclib.Fault('Client', "Method doesn't exist")
+    ...
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         if self.error is not None:
+    ...             raise self.error
+    ...         else:
+    ...             # We need to return something here, otherwise
+    ...             # xmlrpclib will explode.
+    ...             return '0.42-test'
+    ...
+    >>> test_transport = FailingXMLRPCTransport()
+
+    >>> class BugzillaWithFakeProxy(Bugzilla):
+    ...
+    ...     @property
+    ...     def xmlrpc_proxy(self):
+    ...         return xmlrpclib.ServerProxy(
+    ...             'http://example.com/xmlrpc.cgi',
+    ...             transport=test_transport)
+
+    >>> bugzilla = BugzillaWithFakeProxy('http://example.com')
+
+When getExternalBugTrackerToUse() receives a Fault of type 'Client' from
+the remote server in response to its check, it will return a standard
+Bugzilla instance.
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     BugzillaLPPlugin)
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+
+The returned bugtracker will be a Bugzilla instance bug not a
+BugzillaLPPlugin instance.
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+The same is true if getExternalBugTrackerToUse() receives a 404 error
+from the remote server.
+
+    >>> test_transport.error = xmlrpclib.ProtocolError(
+    ...     'http://example.com/xmlrpc.cgi', 404, 'Not Found', None)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+
+    >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+If getExternalBugTrackerToUse() doesn't encounter an error when checking
+for the Bugzilla LP Plugin it assumes that the plugin is installed and
+returns an instance of BugzillaLPPlugin.
+
+    >>> test_transport.error = None
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
+    True
+
+
 Status Conversion
 -----------------
 
