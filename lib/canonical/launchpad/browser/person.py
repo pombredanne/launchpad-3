@@ -2442,10 +2442,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         mailing_list = self.context.mailing_list
         return mailing_list is not None and mailing_list.is_usable
 
-    @property
-    def time_zone(self):
-        return self.context.time_zone
-
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.

@@ -5,15 +5,15 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-details">
-  <tal:icon replace="structure context/image:mugshot" />
+  <h2>Summary</h2>
 
   <div class="portletBody portletContent">
 
     <tal:valid_person condition="context/is_valid_person">
 
-      <tal:tz condition="view/time_zone">
+      <tal:tz condition="context/time_zone">
         <b>Time zone:</b>
-        <tal:timezone replace="view/time_zone">UTC</tal:timezone>
+        <tal:timezone replace="context/time_zone">UTC</tal:timezone>
         <br />
       </tal:tz>
 
