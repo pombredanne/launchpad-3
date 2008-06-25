@@ -106,10 +106,8 @@
 
       <tal:logged-in condition="request/lp:person">
         <tal:person condition="not: view/context_is_probably_a_team">
-          <ul>
-            <li
-              class="mail"
-              tal:condition="context/preferredemail">
+          <ul tal:condition="context/preferredemail">
+            <li class="mail">
               <span tal:replace="context/preferredemail/email">foo@bar.com</span>
               <a
                 tal:condition="context/required:launchpad.Edit"
@@ -118,6 +116,14 @@
               ><img tal:attributes="alt link/text" src="/@@/edit" /></a>
             </li>
           </ul>
+          <tal:editable tal:condition="context/required:launchpad.Edit">
+            <p tal:condition="not: context/preferredemail">
+              <a
+                tal:define="link context/menu:overview/editemailaddresses"
+                tal:condition="link/enabled"
+                tal:replace="structure link/render">Change email settings</a>
+            </p>
+          </tal:editable>
           <a tal:attributes="
             href string:/people/+requestmerge?field.dupeaccount=${context/name}"
           >Are you <span tal:replace="context/browsername" />?</a>
