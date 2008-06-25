@@ -7,7 +7,7 @@
 LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
 LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
 LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
-LP_TRUNK_NAME=trunk
+LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
 LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
 
 # force tilde (~) expansion
@@ -29,7 +29,7 @@ if [ ! -d "${LP_PROJECT_PATH}" ]; then
   exit 1
 fi
 cd ${LP_PROJECT_PATH}
-if [ ! -d trunk ]; then
+if [ ! -d $LP_TRUNK_NAME ]; then
   echo "Error: no trunk found, please run rocketfuel-setup"
   exit 1
 fi

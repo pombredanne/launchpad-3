@@ -3,7 +3,7 @@
 LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
 LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
 LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
-LP_TRUNK_NAME=trunk
+LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
 LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
 
 # This script pushes each of your branches in your Launchpad repository to

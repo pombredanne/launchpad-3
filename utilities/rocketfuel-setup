@@ -9,7 +9,7 @@
 LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
 LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
 LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
-LP_TRUNK_NAME=trunk
+LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
 LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
 
 # load up Ubuntu release details so we know which repos to enable
@@ -230,8 +230,8 @@ if [ ! -d $LP_BRANCHES_DIR/.bzr -a -d $LP_BRANCHES_DIR/.bzr/repository ]; then
 fi
 
 cd $LP_BRANCHES_DIR
-if [ ! -d trunk ]; then
-  echo "Making local branch of Launchpad trunk, this will take a while..."
+if [ ! -d $LP_TRUNK_NAME ]; then
+  echo "Making local branch of Launchpad trunk, this may take a while..."
   # bzr up to 1.6b2 has a bug that causes this to oom.
   #bzr branch bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel $LP_TRUNK_NAME
   bzr branch sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel $LP_TRUNK_NAME
@@ -241,7 +241,7 @@ if [ ! -d trunk ]; then
   fi
 fi
 
-cd trunk
+cd $LP_TRUNK_NAME
 if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
   "//devpad.canonical.com/code/rocketfuel/launchpad/devel/" ]; then
   echo "ERROR: Your trunk branch in $LP_TRUNK_PATH has an
@@ -363,7 +363,6 @@ You should use the following commands to manage your Rocketfuel:
     Update your copy of trunk and the necessary source dependencies, and
     make sure all source dependencies are properly linked in to all the
     branches you are working on.
-    *** DO THIS NEXT! ***
 
  rocketfuel-branch foo
     Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo,
