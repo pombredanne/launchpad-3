@@ -18,8 +18,8 @@
     </content>
 
     <securedutility
-        provides="canonical.launchpad.interfaces.IBugMessageSet"
-        class="canonical.launchpad.database.BugMessageSet">
+        class="canonical.launchpad.database.BugMessageSet"
+        provides="canonical.launchpad.interfaces.IBugMessageSet">
         <allow interface="canonical.launchpad.interfaces.IBugMessageSet" />
     </securedutility>
 

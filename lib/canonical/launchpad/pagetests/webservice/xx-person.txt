@@ -16,6 +16,7 @@ for teams (as they're defined in the ITeam interface).
     expired_members_collection_link: http://.../~salgado/expired_members
     hide_email_addresses: False
     homepage_content: None
+    indirect_participations_collection_link: http://.../~salgado/indirect_participations
     invited_members_collection_link: http://.../~salgado/invited_members
     irc_nicknames_collection_link: http://.../~salgado/irc_nicknames
     is_team: False
@@ -23,21 +24,25 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~salgado/jabber_ids
     karma: 0
     languages_collection_link: http://.../~salgado/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
-    member_memberships_collection_link: http://.../~salgado/member_memberships
     members_collection_link: http://.../~salgado/members
+    members_details_collection_link: http://.../~salgado/members_details
+    memberships_details_collection_link: http://.../~salgado/memberships_details
     mugshot_link: http://.../~salgado/mugshot
     name: salgado
     open_membership_invitations_collection_link: http://.../~salgado/open_membership_invitations
     participants_collection_link: http://.../~salgado/participants
+    participations_collection_link: http://.../~salgado/participations
     preferred_email_address_link: http://.../~salgado/+email/guilherme.salgado@canonical.com
     proposed_members_collection_link: http://.../~salgado/proposed_members
+    resource_type_link: http://api.launchpad.dev/beta/#PersonEntryAdapter
     self_link: http://.../~salgado
-    team_memberships_collection_link: http://.../~salgado/team_memberships
+    sub_teams_collection_link: http://.../~salgado/sub_teams
+    super_teams_collection_link: http://.../~salgado/super_teams
     team_owner_link: None
-    teams_indirectly_participated_in_collection_link: http://.../~salgado/teams_indirectly_participated_in
-    teams_participated_in_collection_link: http://.../~salgado/teams_participated_in
-    timezone: None
+    time_zone: None
     visibility: Public
     wiki_names_collection_link: http://.../~salgado/wiki_names
 
@@ -54,6 +59,7 @@ for teams (as they're defined in the ITeam interface).
     expired_members_collection_link: http://.../~ubuntu-team/expired_members
     hide_email_addresses: False
     homepage_content: None
+    indirect_participations_collection_link: http://.../~ubuntu-team/indirect_participations
     invited_members_collection_link: http://.../~ubuntu-team/invited_members
     irc_nicknames_collection_link: http://.../~ubuntu-team/irc_nicknames
     is_team: True
@@ -61,24 +67,28 @@ for teams (as they're defined in the ITeam interface).
     jabber_ids_collection_link: http://.../~ubuntu-team/jabber_ids
     karma: 0
     languages_collection_link: http://.../~ubuntu-team/languages
+    latitude: None
+    longitude: None
     mailing_list_auto_subscribe_policy: Ask me when I join a team
-    member_memberships_collection_link: http://.../~ubuntu-team/member_memberships
     members_collection_link: http://.../~ubuntu-team/members
+    members_details_collection_link: http://.../~ubuntu-team/members_details
+    memberships_details_collection_link: http://.../~ubuntu-team/memberships_details
     mugshot_link: http://.../~ubuntu-team/mugshot
     name: ubuntu-team
     open_membership_invitations_collection_link: http://.../~ubuntu-team/open_membership_invitations
     participants_collection_link: http://.../~ubuntu-team/participants
+    participations_collection_link: http://.../~ubuntu-team/participations
     preferred_email_address_link: http://.../~ubuntu-team/+email/support@ubuntu.com
     proposed_members_collection_link: http://.../~ubuntu-team/proposed_members
     renewal_policy: invite them to apply for renewal
+    resource_type_link: http://api.launchpad.dev/beta/#TeamEntryAdapter
     self_link: http://.../~ubuntu-team
+    sub_teams_collection_link: http://.../~ubuntu-team/sub_teams
     subscription_policy: Moderated Team
+    super_teams_collection_link: http://.../~ubuntu-team/super_teams
     team_description: This Team is responsible for the Ubuntu Distribution
-    team_memberships_collection_link: http://.../~ubuntu-team/team_memberships
     team_owner_link: http://.../~sabdfl
-    teams_indirectly_participated_in_collection_link: http://.../~ubuntu-team/teams_indirectly_participated_in
-    teams_participated_in_collection_link: http://.../~ubuntu-team/teams_participated_in
-    timezone: None
+    time_zone: None
     visibility: Public
     wiki_names_collection_link: http://.../~ubuntu-team/wiki_names
 
@@ -116,11 +126,13 @@ representations too.
     >>> email = webservice.get(
     ...     sample_person['preferred_email_address_link']).jsonBody()
     >>> sorted(email)
-    [u'email', u'person_link', u'self_link']
+    [u'email', u'person_link', u'resource_type_link', u'self_link']
     >>> for key, value in sorted(email.items()):
     ...     print "%s: %s" % (key, value)
     email: test@canonical.com
     person_link: http://.../~name12
+    resource_type_link:
+      http://api.launchpad.dev/beta/#EmailAddressEntryAdapter
     self_link: http://.../~name12/+email/test@canonical.com
 
 One can only traverse to the email addresses of the person already
@@ -135,16 +147,16 @@ traversed to, obviously.
 
 A person is linked to their team memberships.
 
-    >>> salgado_memberships = salgado['team_memberships_collection_link']
+    >>> salgado_memberships = salgado['memberships_details_collection_link']
     >>> salgado_memberships
-    u'http://.../~salgado/team_memberships'
+    u'http://.../~salgado/memberships_details'
 
 Similarly, a team is linked to the team memberships of its members.
 
     >>> landscape_developers = webservice.get(
     ...     "/beta/~landscape-developers").jsonBody()
-    >>> landscape_developers['member_memberships_collection_link']
-    u'http://.../~landscape-developers/member_memberships'
+    >>> landscape_developers['members_details_collection_link']
+    u'http://.../~landscape-developers/members_details'
 
 And to all membership invitations sent to it.
 
@@ -170,7 +182,7 @@ Team memberships also have data fields.
     >>> sorted(salgado_landscape)
     [u'date_expires', u'date_joined',
      u'last_change_comment', u'last_changed_by_link', u'member_link',
-     u'self_link', u'status', u'team_link']
+     u'resource_type_link', u'self_link', u'status', u'team_link']
 
 Each team membership links to the person who approved the link.
 
@@ -194,7 +206,7 @@ possible to navigate from a team, to the collection of peoples'
 memberships in the team.
 
     >>> print_self_link_of_entries(webservice.get(
-    ...     "/beta/~landscape-developers/member_memberships").jsonBody())
+    ...     "/beta/~landscape-developers/members_details").jsonBody())
     http://.../~landscape-developers/+member/name12
     http://.../~landscape-developers/+member/salgado
 
@@ -226,19 +238,19 @@ All participants (direct or indirect members):
 
 A person/team is also linked to all teams in which they participate.
 
-    >>> salgado['teams_participated_in_collection_link']
-    u'http://.../~salgado/teams_participated_in'
+    >>> salgado['participations_collection_link']
+    u'http://.../~salgado/participations'
     >>> print_self_link_of_entries(webservice.get(
-    ...     salgado['teams_participated_in_collection_link']).jsonBody())
+    ...     salgado['participations_collection_link']).jsonBody())
     http://.../~admins
     http://.../~landscape-developers
     http://.../~mailing-list-experts
 
 And to the teams in which they're indirect members.
 
-    >>> link = salgado['teams_indirectly_participated_in_collection_link']
+    >>> link = salgado['indirect_participations_collection_link']
     >>> link
-    u'http://.../~salgado/teams_indirectly_participated_in'
+    u'http://.../~salgado/indirect_participations'
 
     >>> print_self_link_of_entries(webservice.get(link).jsonBody())
     http://.../~mailing-list-experts
@@ -265,6 +277,21 @@ members.
     http://.../~karl
 
 
+=== Sub-teams and super-teams ===
+
+Teams can be members of other teams, and sometimes it's useful to know
+which teams are members of any given team as well as the ones it is a
+member of.
+
+    >>> print_self_link_of_entries(webservice.get(
+    ...     ubuntu_team['sub_teams_collection_link']).jsonBody())
+    http://api.launchpad.dev/beta/~warty-gnome
+
+    >>> print_self_link_of_entries(webservice.get(
+    ...     ubuntu_team['super_teams_collection_link']).jsonBody())
+    http://api.launchpad.dev/beta/~guadamen
+
+
 === Wiki names ===
 
 All wiki names associated to a person/team are also linked to that
@@ -281,10 +308,12 @@ representations too.
 
     >>> wiki_name = sorted(webservice.get(wikis_link).jsonBody()['entries'])[0]
     >>> sorted(wiki_name)
-    [u'person_link', u'self_link', u'url', u'wiki', u'wikiname']
+    [u'person_link', u'resource_type_link', u'self_link', u'url',
+     u'wiki', u'wikiname']
     >>> for key, value in sorted(wiki_name.items()):
     ...     print "%s: %s" % (key, value)
     person_link: http://.../~name12
+    resource_type_link: http://api.launchpad.dev/beta/#WikiNameEntryAdapter
     self_link: http://.../~name12/+wikiname/12
     url: https://wiki.ubuntu.com/SamplePerson
     wiki: https://wiki.ubuntu.com/
@@ -315,11 +344,12 @@ representations too.
     >>> jabber_id = sorted(
     ...     webservice.get(jabber_ids_link).jsonBody()['entries'])[0]
     >>> sorted(jabber_id)
-    [u'jabberid', u'person_link', u'self_link']
+    [u'jabberid', u'person_link', u'resource_type_link', u'self_link']
     >>> for key, value in sorted(jabber_id.items()):
     ...     print "%s: %s" % (key, value)
     jabberid: markshuttleworth@jabber.org
     person_link: http://.../~sabdfl
+    resource_type_link: http://api.launchpad.dev/beta/#JabberIDEntryAdapter
     self_link: http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
 
 One can only traverse to the Jabber IDs of the person already traversed
@@ -346,12 +376,14 @@ too.
 
     >>> irc_id = sorted(webservice.get(irc_ids_link).jsonBody()['entries'])[0]
     >>> sorted(irc_id)
-    [u'network', u'nickname', u'person_link', u'self_link']
+    [u'network', u'nickname', u'person_link', u'resource_type_link',
+     u'self_link']
     >>> for key, value in sorted(irc_id.items()):
     ...     print "%s: %s" % (key, value)
     network: irc.freenode.net
     nickname: mark
     person_link: http://.../~sabdfl
+    resource_type_link: http://api.launchpad.dev/beta/#IrcIDEntryAdapter
     self_link: http://.../~sabdfl/+ircnick/1
 
 One can only traverse to the IRC IDs of the person already traversed
@@ -363,6 +395,11 @@ to, obviously.
 
 
 == Custom operations ==
+
+IPerson supports a bunch of operations.
+
+
+=== Team membership operations ===
 
 Joining and leaving teams:
 
@@ -415,3 +452,28 @@ Accepting or declining a membership invitation:
     ...
     >>> webservice.get("/beta/~ubuntu-team/+member/name20").jsonBody()['status']
     u'Invitation declined'
+
+To check whether or not a given person is a participant in a team, use the
+'inTeam' custom operation.
+
+    >>> print webservice.named_get(
+    ...     '/beta/~salgado', 'inTeam', team=ubuntu_team['self_link']
+    ...     ).jsonBody()
+    False
+
+    >>> print webservice.named_get(
+    ...     '/beta/~cprov', 'inTeam', team=ubuntu_team['self_link']
+    ...     ).jsonBody()
+    True
+
+To find the path from a given person to a team that person is a
+participant, use the 'findPathToTeam' custom operation.
+
+    >>> ml_experts = webservice.get("/beta/~mailing-list-experts").jsonBody()
+    >>> json = webservice.named_get(
+    ...     '/beta/~salgado', 'findPathToTeam', team=ml_experts['self_link']
+    ...     ).jsonBody()
+    >>> for entry in json:
+    ...     print entry['self_link']
+    http://api.launchpad.dev/beta/~admins
+    http://api.launchpad.dev/beta/~mailing-list-experts

@@ -4,7 +4,9 @@ contributors.
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/es')
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print extract_text(find_main_content(anon_browser.contents)).encode(
+    ...     'ascii', 'backslashreplace')
+    Description / Translate / Upload a file / Download
     Template "evolution-2.2" in Evolution trunk
     Overview for Spanish translation
     Contributors to this translation
@@ -13,11 +15,10 @@ contributors.
     Carlos... (filter)
     Mark Shuttleworth (filter)
     No Privileges Person (filter)
+    ...
 
-
-
-This page was converted to the 2.0 inline navigation. It has tabs
-to navigate to other pages.
+This page has a navigation menu for translating, importing translations
+into, or exporting translations from the template.
 
     >>> navigation_tabs = find_tag_by_id(
     ...     anon_browser.contents, 'context-navigation-tabs')

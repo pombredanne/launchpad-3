@@ -53,6 +53,7 @@ The user is also subscribed to the branch to get notifications.
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
     Subscribers
     No Privileges Person
+    VCS imports
 
 
 == Requesting a CVS import ==

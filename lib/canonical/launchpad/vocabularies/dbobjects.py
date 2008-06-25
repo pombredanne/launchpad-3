@@ -71,6 +71,7 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
+from storm.expr import SQL
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -701,7 +702,7 @@ class PersonAccountToMergeVocabulary(
 
     def _select(self, text=""):
         return getUtility(IPersonSet).findPerson(
-            text, exclude_inactive_accounts=False)
+            text, exclude_inactive_accounts=False, must_have_email=True)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
@@ -822,6 +823,47 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         if not text:
             text = ''
         return self._doSearch(text=text)
+
+    def _doSearch(self, text=""):
+        """Return the teams whose fti or email address match :text:"""
+        if self.extra_clause:
+            extra_clause = " AND %s" % self.extra_clause
+        else:
+            extra_clause = ""
+
+        if not text:
+            query = """
+                teamowner IS NOT NULL AND Person.visibility = %s
+                """ % quote(PersonVisibility.PUBLIC)
+            query += extra_clause
+            return Person.select(query)
+
+        name_match_query = """
+            Person.fti @@ ftq(%s)
+            AND Person.visibility = %s
+            AND teamowner IS NOT NULL
+            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+        name_match_query += extra_clause
+        name_matches = Person.select(name_match_query)
+
+        # Note that we must use lower(email) LIKE rather than ILIKE
+        # as ILIKE no longer appears to be hitting the index under PG8.0
+
+        email_match_query = """
+            EmailAddress.person = Person.id
+            AND lower(email) LIKE %s || '%%'
+            AND Person.visibility = %s
+            AND teamowner IS NOT NULL
+            """ % (quote_like(text), quote(PersonVisibility.PUBLIC))
+        email_match_query += extra_clause
+        email_matches = Person.select(
+            email_match_query, clauseTables=['EmailAddress'])
+
+        # XXX Guilherme Salgado 2006-01-30 bug=30053:
+        # We have to explicitly provide an orderBy here as a workaround
+        return name_matches.union(
+            email_matches, orderBy=['displayname', 'name'])
+
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
@@ -1353,7 +1395,11 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     _table = Product
     _orderBy = 'displayname'
-    displayname = 'Select one of the commercial projects you administer'
+
+    @property
+    def displayname(self):
+        return 'Select one of the commercial projects administered by %s' % (
+            self.context.displayname)
 
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""
@@ -1578,9 +1624,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        clause = """
-        %s AND Person.name = %s
-        """ % (self._filter, quote(token))
+        clause = AND(self._filter, Person.name == token)
 
         obj = self._table.selectOne(
             clause, clauseTables=self._clauseTables)
@@ -1599,9 +1643,9 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = query.lower()
-        clause = """
-            %s AND (Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))
-        """ % (self._filter, quote(query), quote(query))
+        clause = AND(self._filter,
+                     SQL("(Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))"
+                         % (quote(query), quote(query))))
 
         return self._table.select(
             clause, orderBy=self._orderBy, clauseTables=self._clauseTables)

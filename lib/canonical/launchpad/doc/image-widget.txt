@@ -20,12 +20,17 @@ incarnation, by passing an extra argument to the widget's constructor
 Our policy is not to ask people to upload images when creating a record, but
 instead to expose this as an edit form after the object is created.
 
-Let's use Salgado as an example here, since he hasn't uploaded a custom logo
-yet.
+Let's use Salgado and the Launchpad Administrators team as an examples
+here, since they haven't uploaded custom logos yet.
 
     >>> from canonical.launchpad.interfaces import IPerson, IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> salgado.logo is None
+    True
+    >>> admins_team = getUtility(IPersonSet).getByName('admins')
+    >>> admins_team.logo is None
+    True
+    >>> admins_team.icon is None
     True
 
 == The ADD_STYLE/EDIT_STYLE incarnations ==
@@ -260,9 +265,9 @@ specific to each image, so you must subclass it before using.
 
 Note: the .bind method here is fetching the field from the IPerson schema
 (which should be an IconImageUpload, a subclass of BaseImageUpload) and
-binding it to Salgado.
+binding it to Launchpad Administrators.
 
-    >>> person_icon = IPerson['icon'].bind(salgado)
+    >>> person_icon = IPerson['icon'].bind(admins_team)
     >>> isinstance(person_icon, BaseImageUpload)
     True
     >>> isinstance(person_icon, IconImageUpload)
@@ -275,28 +280,28 @@ binding it to Salgado.
 If we pass that special object (KEEP_SAME_IMAGE) to IconImageUpload's set()
 method, the current image will be kept.
 
-    >>> salgado.icon = getUtility(ILibraryFileAliasSet)[53]
-    >>> existing_img = salgado.icon
+    >>> admins_team.icon = getUtility(ILibraryFileAliasSet)[53]
+    >>> existing_img = admins_team.icon
     >>> existing_img is None
     False
 
-    >>> person_icon.set(salgado, KEEP_SAME_IMAGE)
-    >>> salgado.icon == existing_img
+    >>> person_icon.set(admins_team, KEEP_SAME_IMAGE)
+    >>> admins_team.icon == existing_img
     True
 
 On the other hand, if we pass None, the current image will be removed.
 
-    >>> person_icon.set(salgado, None)
-    >>> salgado.icon is None
+    >>> person_icon.set(admins_team, None)
+    >>> admins_team.icon is None
     True
 
 Similarly, passing any file of the type expected (FileUpload) will
 change the current image to the given file.
 
-    >>> person_icon.set(salgado, fileupload)
-    >>> salgado.icon is None
+    >>> person_icon.set(admins_team, fileupload)
+    >>> admins_team.icon is None
     False
-    >>> salgado.icon == existing_img
+    >>> admins_team.icon == existing_img
     False
 
 

@@ -24,7 +24,7 @@ def nl_term_candidates(phrase):
     :phrase: a search phrase
     """
     cur = cursor()
-    cur.execute("SELECT ftq(%(phrase)s)" % sqlvalues(phrase=phrase))
+    cur.execute("SELECT ftq(%(phrase)s)::text" % sqlvalues(phrase=phrase))
     rs = cur.fetchall()
     assert len(rs) == 1, "ftq() returned more than one row"
     terms = rs[0][0]
@@ -83,10 +83,10 @@ def nl_phrase_search(phrase, table, constraints='',
         'COUNT(CASE WHEN %(table)s.fti @@ ftq(%(term)s)'
         ' THEN TRUE ELSE null END)')
     select_counts = [
-        count_template % {'table': table._table, 'term': quote(term)}
+        count_template % {'table': table.__storm_table__, 'term': quote(term)}
         for term in term_candidates
         ]
-    select_tables = [table._table]
+    select_tables = [table.__storm_table__]
     if extra_constraints_tables is not None:
         select_tables.extend(extra_constraints_tables)
     count_query = "SELECT %s FROM %s" % (

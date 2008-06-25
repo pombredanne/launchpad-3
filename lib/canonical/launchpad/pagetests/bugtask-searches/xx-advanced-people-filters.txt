@@ -204,7 +204,7 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
 Next we'll subscribe our user to the first bug we've just registered:
 
     >>> browser.open(bug_1_url)
-    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getLink('Someone else').click()
     >>> print extract_text(find_main_content(browser.contents))
     Bug...Subscribe someone else to the bug report...
 
@@ -227,7 +227,7 @@ find our first bug within the results:
 Next we'll subscribe our user to the second bug we've just registered:
 
     >>> browser.open(bug_2_url)
-    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getLink('Someone else').click()
     >>> print extract_text(find_main_content(browser.contents))
     Bug...Subscribe someone else to the bug report...
 

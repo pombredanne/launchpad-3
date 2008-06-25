@@ -25,7 +25,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -34,30 +34,13 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces import (
     IHasTranslationTemplates, ImportStatus, IProductSeries, IProductSeriesSet,
     IProductSeriesSourceAdmin, IStructuralSubscriptionTarget, NotFoundError,
     PackagingType, RevisionControlSystems, SpecificationDefinitionStatus,
     SpecificationFilter, SpecificationGoalStatus,
     SpecificationImplementationStatus, SpecificationSort)
-
-
-class NoImportBranchError(Exception):
-    """Raised when ProductSeries.importUpdated finds not import branch.
-
-    This exception should never be caught. It exists only for unit testing.
-    """
-
-
-class DatePublishedSyncError(Exception):
-    """Raised by ProductSeries.importUpdated if datepublishedsync
-    should not be set.
-
-    If import_branch.date_last_mirrored is NULL, datepublishedsync should not
-    have been set because the import has not been published yet.
-
-    This exception should never be caught. It exists only for unit testing.
-    """
 
 
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -71,15 +54,18 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     _table = 'ProductSeries'
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
+    status = EnumCol(
+        notNull=True, schema=DistroSeriesStatus,
+        default=DistroSeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        validator=public_person_validator, notNull=False, default=None)
+        storm_validator=validate_public_person, notNull=False, default=None)
     import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
                                default=None)
     user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',
@@ -450,28 +436,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
-    def markTestFailed(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.TESTFAILED
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.syncinterval = None
-
-    def markDontSync(self):
-        """See `IProductSeriesSourceAdmin`."""
-        self.importstatus = ImportStatus.DONTSYNC
-        self.import_branch = None
-        self.dateautotested = None
-        self.dateprocessapproved = None
-        self.datesyncapproved = None
-        self.datelastsynced = None
-        self.datestarted = None
-        self.datefinished = None
-        self.syncinterval = None
-
     def markStopped(self):
         """See `IProductSeriesSourceAdmin`."""
         self.importstatus = ImportStatus.STOPPED
@@ -501,74 +465,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.cvsbranch = None
         self.cvstarfileurl = None
         self.svnrepository = None
-
-    def syncCertified(self):
-        """Return true or false indicating if the sync is enabled"""
-        return self.dateprocessapproved is not None
-
-    def autoSyncEnabled(self):
-        """Is the sync automatically scheduling?"""
-        return self.importstatus == ImportStatus.SYNCING
-
-    def enableAutoSync(self):
-        """Enable autosyncing."""
-        self.datesyncapproved = UTC_NOW
-        self.importstatus = ImportStatus.SYNCING
-
-    def autoTestFailed(self):
-        """Has the series source failed automatic testing by roomba?"""
-        return self.importstatus == ImportStatus.TESTFAILED
-
-    def importUpdated(self):
-        """See IProductSeries."""
-        # Update the timestamps after an import has successfully completed, so
-        # we can always know at what time the currently published branch was
-        # last imported.
-        #
-        # Importd updates branches to match the foreign VCS, then uploads them
-        # to an internal server. Then the branch-puller copies the branches
-        # from the internal server to the public server.
-        #
-        # * datelastsynced: time when importd last updated the internal branch
-        #   to match the foreign VCS.
-        # * import_branch.last_mirrored: time when branch-puller last updated
-        #   the published branch to match the internal branch.
-        # * datepublishedsync: time when the /published/ branch was last
-        #   updated from the foreign VCS, at the time when the /internal/
-        #   branch was last updated from the foreign VCS.
-        #
-        # Sorry if that breaks your brain.
-        if self.import_branch is None:
-            raise NoImportBranchError(
-                "importUpdated called for series %d,"
-                " but import_branch is NULL." % (self.id,))
-        if (self.import_branch.last_mirrored is None
-                and self.datepublishedsync is not None):
-            raise DatePublishedSyncError(
-                "importUpdated called for series %d,"
-                " where datepublishedsync is set,"
-                " but import_branch.last_mirror is NULL."
-                % (self.id,))
-        if self.datelastsynced is None:
-            # datepublishedsync SHOULD be None, but we reset it just in case.
-            self.datepublishedsync = None
-        if (self.datelastsynced is not None
-                and self.import_branch.last_mirrored is not None
-                and self.datelastsynced < self.import_branch.last_mirrored):
-            self.datepublishedsync = self.datelastsynced
-        self.datelastsynced = UTC_NOW
-        self.import_branch.requestMirror()
-
-    def getImportDetailsForDisplay(self):
-        assert self.rcstype is not None, (
-            "Only makes sense for series with import details set.")
-        if self.rcstype == RevisionControlSystems.CVS:
-            return '%s %s' % (self.cvsroot, self.cvsmodule)
-        elif self.rcstype == RevisionControlSystems.SVN:
-            return self.svnrepository
-        else:
-            raise AssertionError(
-                'Unknown rcs type: %s'% self.rcstype.title)
 
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""

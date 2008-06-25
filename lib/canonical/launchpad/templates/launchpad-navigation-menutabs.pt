@@ -1,17 +1,32 @@
-<div
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:lpm="http://ns.launchpad.net/lpm"
+<tal:root
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  >
-  <label tal:condition="view/title|nothing"
-         tal:content="string:${view/title}:">Menu title</label>
-  <ul>
-    <li tal:repeat="link view/links">
-      <tal:link-content replace="structure link/@@+link">
-        Link text
-      </tal:link-content>
-    </li>
-  </ul>
-</div>
+>
+  <h2
+    tal:condition="view/title|nothing"
+    tal:content="string:${view/title}:"
+  >Subtitle:</h2>
+  <div class="navigation menu">
+
+  <tal:XXX replace="nothing">
+    # XXX mpt 20080513: The HTML comment works around bug 229931.
+  </tal:XXX>
+  <!-- :-) --><tal:item repeat="link view/links"
+    ><a
+      tal:condition="link/linked"
+      tal:attributes="
+        href link/url;
+        title link/summary;
+        class string:menu-link-${link/name};
+      "
+      ><span tal:content="structure link/escapedtext"
+    >link text></span></a><strong
+      tal:condition="not: link/linked"
+      tal:attributes="class string:menu-link-${link/name};"
+      ><span tal:content="structure link/escapedtext"
+    >Unlinked text</span></strong><small
+      tal:condition="not:repeat/link/end"> /
+    </small></tal:item>
+  </div>
+</tal:root>

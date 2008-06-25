@@ -14,15 +14,22 @@ import xml.parsers.expat
 import xmlrpclib
 
 from datetime import datetime
+from email.Utils import parseaddr
 from xml.dom import minidom
+
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical import encoding
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker,
-    InvalidBugId, UnknownRemoteStatusError, UnparseableBugData,
+    BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
+    LookupTree, UnknownRemoteStatusError, UnparseableBugData,
     UnparseableBugTrackerVersion)
 from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.interfaces.externalbugtracker import (
+    ISupportsCommentImport)
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -113,63 +120,36 @@ class Bugzilla(ExternalBugTracker):
         """
         return BugTaskImportance.UNKNOWN
 
+    _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
+    _status_lookup = LookupTree(
+        ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
+         BugTaskStatus.INPROGRESS),
+        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+         BugTaskStatus.INCOMPLETE),
+        ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
+         BugTaskStatus.FIXCOMMITTED),
+        ('REJECTED', BugTaskStatus.INVALID),
+        ('RESOLVED', 'VERIFIED', 'CLOSED',
+            LookupTree(
+                ('CODE_FIX', 'CURRENTRELEASE', 'ERRATA', 'NEXTRELEASE',
+                 'PATCH_ALREADY_AVAILABLE', 'FIXED', 'RAWHIDE',
+                 BugTaskStatus.FIXRELEASED),
+                ('WONTFIX', BugTaskStatus.WONTFIX),
+                (BugTaskStatus.INVALID,))),
+        ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED', BugTaskStatus.CONFIRMED),
+        ('UNCONFIRMED', BugTaskStatus.NEW),
+        )
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
-        if ' ' in remote_status:
-            remote_status, resolution = remote_status.split(' ', 1)
-        else:
-            resolution = ''
-
-        if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
-            # FAILS_QA, ON_DEV: bugzilla.redhat.com
-            # STARTED: OOO Issuezilla
-            malone_status = BugTaskStatus.INPROGRESS
-        elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
-                               'WAITING', 'SUSPENDED']:
-            # NEEDINFO_REPORTER: bugzilla.redhat.com
-            # SUSPENDED, WAITING: http://gcc.gnu.org/bugzilla
-            #   though SUSPENDED applies to something pending discussion
-            #   in a larger/separate context.
-            malone_status = BugTaskStatus.INCOMPLETE
-        elif (remote_status in
-            ['PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA']):
-            # RELEASE_PENDING, MODIFIED, ON_QA: bugzilla.redhat.com
-            malone_status = BugTaskStatus.FIXCOMMITTED
-        elif remote_status in ['REJECTED']:
-            # REJECTED: bugzilla.kernel.org
-            malone_status = BugTaskStatus.INVALID
-        elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
-            # depends on the resolution:
-            if resolution in ['CODE_FIX', 'CURRENTRELEASE', 'ERRATA',
-                              'FIXED', 'NEXTRELEASE',
-                              'PATCH_ALREADY_AVAILABLE', 'RAWHIDE']:
-
-                # The following resolutions come from bugzilla.redhat.com.
-                # All of them map to Malone's FIXRELEASED status:
-                #     CODE_FIX, CURRENTRELEASE, ERRATA, NEXTRELEASE,
-                #     PATCH_ALREADY_AVAILABLE, RAWHIDE
-                malone_status = BugTaskStatus.FIXRELEASED
-            elif resolution == 'WONTFIX':
-                # VERIFIED WONTFIX maps directly to WONTFIX
-                malone_status = BugTaskStatus.WONTFIX
-            else:
-                #XXX: Bjorn Tillenius 2005-02-03 Bug=31745:
-                #     Which are the valid resolutions? We should fail
-                #     if we don't know of the resolution.
-                malone_status = BugTaskStatus.INVALID
-        elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED']:
-            # DEFERRED: bugzilla.redhat.com
-            malone_status = BugTaskStatus.CONFIRMED
-        elif remote_status in ['UNCONFIRMED']:
-            malone_status = BugTaskStatus.NEW
-        else:
+        try:
+            return self._status_lookup.find(*remote_status.split())
+        except KeyError:
             raise UnknownRemoteStatusError(remote_status)
-
-        return malone_status
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -310,6 +290,8 @@ class Bugzilla(ExternalBugTracker):
 class BugzillaLPPlugin(Bugzilla):
     """An `ExternalBugTracker` to handle BugZillas using the LP Plugin."""
 
+    implements(ISupportsCommentImport)
+
     def __init__(self, baseurl, xmlrpc_transport=None):
         super(BugzillaLPPlugin, self).__init__(baseurl)
 
@@ -319,13 +301,36 @@ class BugzillaLPPlugin(Bugzilla):
             self.xmlrpc_transport = xmlrpc_transport
 
         self.xmlrpc_endpoint = urlappend(self.baseurl, 'xmlrpc.cgi')
+        self.server = xmlrpclib.ServerProxy(
+            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `IExternalBugTracker`."""
+        self.bugs = {}
+        self.bug_aliases = {}
+
+        # First, grab the bugs from the remote server.
+        request_args = {
+            'ids': bug_ids,
+            'permissive': True,
+            }
+        response_dict = self.server.Bug.get_bugs(request_args)
+        remote_bugs = response_dict['bugs']
+
+        # Now copy them into the local bugs dict.
+        for remote_bug in remote_bugs:
+            self.bugs[remote_bug['id']] = remote_bug
+
+            # The bug_aliases dict is a mapping between aliases and bug
+            # IDs. We use the aliases dict to look up the correct ID for
+            # a bug. This allows us to reference a bug by either ID or
+            # alias.
+            if remote_bug['alias'] and remote_bug['alias'] in bug_ids:
+                self.bug_aliases[remote_bug['alias']] = remote_bug['id']
 
     def getCurrentDBTime(self):
         """See `IExternalBugTracker`."""
-        server = xmlrpclib.ServerProxy(
-            self.xmlrpc_endpoint, transport=self.xmlrpc_transport)
-
-        time_dict = server.Launchpad.time()
+        time_dict = self.server.Launchpad.time()
 
         # Return the UTC time sent by the server so that we don't have
         # to care about timezones.
@@ -335,6 +340,109 @@ class BugzillaLPPlugin(Bugzilla):
 
         server_utc_time = datetime.utcfromtimestamp(server_timestamp)
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
+
+    def _getActualBugId(self, bug_id):
+        """Return the actual bug id for an alias or id."""
+        # See if bug_id is actually an alias.
+        actual_bug_id = self.bug_aliases.get(bug_id)
+
+        # bug_id isn't an alias, so try turning it into an int and
+        # looking the bug up by ID.
+        if actual_bug_id is not None:
+            return actual_bug_id
+        else:
+            try:
+                return int(bug_id)
+            except ValueError:
+                # If bug_id can't be int()'d then it's likely an alias
+                # that doesn't exist, so raise BugNotFound.
+                raise BugNotFound(bug_id)
+
+    def getRemoteStatus(self, bug_id):
+        """See `IExternalBugTracker`."""
+        actual_bug_id = self._getActualBugId(bug_id)
+
+        try:
+            status = self.bugs[actual_bug_id]['status']
+            resolution = self.bugs[actual_bug_id]['resolution']
+
+            if resolution != '' and resolution is not None:
+                return "%s %s" % (status, resolution)
+            else:
+                return status
+
+        except KeyError:
+            raise BugNotFound(bug_id)
+
+    def getCommentIds(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Check that the bug exists, first.
+        if actual_bug_id not in self.bugs:
+            raise BugNotFound(bug_watch.remotebug)
+
+        # Get only the remote comment IDs and store them in the
+        # 'comments' field of the bug.
+        request_params = {
+            'bug_ids': [actual_bug_id],
+            'include': ['id'],
+            }
+        bug_comments_dict = self.server.Bug.comments(request_params)
+
+        bug_comments = bug_comments_dict['bugs'][actual_bug_id]
+        return [comment['id'] for comment in bug_comments]
+
+    def fetchComments(self, bug_watch, comment_ids):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        # Fetch the comments we want.
+        request_params = {
+            'bug_ids': [actual_bug_id],
+            'ids': comment_ids,
+            }
+        bug_comments_dict = self.server.Bug.comments(request_params)
+        comment_list = bug_comments_dict['bugs'][actual_bug_id]
+
+        # Transfer the comment list into a dict.
+        bug_comments = dict(
+            (comment['id'], comment) for comment in comment_list)
+
+        self.bugs[actual_bug_id]['comments'] = bug_comments
+
+    def getPosterForComment(self, bug_watch, comment_id):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+
+        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+        display_name, email = parseaddr(comment['author'])
+
+        # If the name is empty then we return None so that
+        # IPersonSet.ensurePerson() can actually do something with it.
+        if not display_name:
+            display_name = None
+
+        return (display_name, email)
+
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """See `ISupportsCommentImport`."""
+        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        comment = self.bugs[actual_bug_id]['comments'][comment_id]
+
+        # Turn the time in the comment, which is an XML-RPC datetime
+        # into something more useful to us.
+        comment_timestamp = time.mktime(
+            time.strptime(str(comment['time']), '%Y%m%dT%H:%M:%S'))
+        comment_datetime = datetime.fromtimestamp(comment_timestamp)
+        comment_datetime = comment_datetime.replace(
+            tzinfo=pytz.timezone('UTC'))
+
+        message = getUtility(IMessageSet).fromText(
+            owner=poster, subject='', content=comment['text'],
+            datecreated=comment_datetime)
+
+        return message
 
 
 class BugzillaXMLRPCTransport(xmlrpclib.Transport):

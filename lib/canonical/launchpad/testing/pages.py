@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Testing infrastructure for page tests."""
 # Stop lint warning about not initializing TestCase parent on
 # PageStoryTestCase, see the comment bellow.
@@ -10,6 +10,7 @@ import os
 import re
 import simplejson
 import unittest
+import urllib
 
 from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
@@ -47,13 +48,14 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        HTTPCaller.__init__(self, *args, **kw)
+        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+
     def __call__(self, *args, **kw):
         if self._debug:
             import pdb
             pdb.set_trace()
         try:
-            return HTTPCaller.__call__(self, *args, **kw)
+            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
         finally:
             self.resetCookies()
 
@@ -121,7 +123,7 @@ class WebServiceCaller:
 
     def get(self, path, media_type='application/json', headers=None):
         """Make a GET request."""
-        full_headers = {'Accept' : media_type}
+        full_headers = {'Accept': media_type}
         if headers is not None:
             full_headers.update(headers)
         return self(path, 'GET', headers=full_headers)
@@ -144,7 +146,13 @@ class WebServiceCaller:
         return self._make_request_with_entity_body(
             path, 'POST', media_type, data, headers)
 
-    def named_post(self, path, operation_name, headers, **kwargs):
+    def named_get(self, path_or_url, operation_name, headers=None, **kwargs):
+        kwargs['ws.op'] = operation_name
+        data = '&'.join(['%s=%s' % (key, urllib.quote(value))
+                         for key, value in kwargs.items()])
+        return self.get("%s?%s" % (path_or_url, data), data, headers)
+
+    def named_post(self, path, operation_name, headers=None, **kwargs):
         kwargs['ws.op'] = operation_name
         data = '&'.join(['%s=%s' % (key, value)
                          for key, value in kwargs.items()])
@@ -183,6 +191,22 @@ class WebServiceResponseWrapper(ProxyBase):
             # string, instead of one that just says the string wasn't
             # JSON.
             raise ValueError(self.getBody())
+
+
+def extract_url_parameter(url, parameter):
+    """Extract parameter and its value from a URL.
+
+    Use this if your test needs to inspect a parameter value embedded in
+    a URL, but doesn't really care what the rest of the URL looks like
+    or how the parameters are ordered.
+    """
+    scheme, host, path, query, fragment = urlsplit(url)
+    args = query.split('&')
+    for arg in args:
+        key, value = arg.split('=')
+        if key == parameter:
+            return arg
+    return None
 
 
 class DuplicateIdError(Exception):
@@ -247,6 +271,10 @@ def find_main_content(content):
         # One-column pages don't use a <div id="maincontent">, so we
         # use the next best thing: <div id="container">.
         main_content = find_tag_by_id(content, 'container')
+    if main_content is None:
+        # Simple pages have neither of these, so as a last resort, we get
+        # the page <body>.
+        main_content = BeautifulSoup(content).body
     return main_content
 
 
@@ -414,12 +442,13 @@ def print_navigation_links(content):
     title = navigation_links.find('label')
     if title is not None:
         print '= %s =' % title.string
-    entries = navigation_links.findAll('li')
+    entries = navigation_links.findAll(['strong', 'a'])
     for entry in entries:
-        if entry.a:
-            print '%s: %s' % (entry.a.string, entry.a['href'])
-        elif entry.strong:
-            print entry.strong.string
+        try:
+            print '%s: %s' % (entry.span.string, entry['href'])
+        except KeyError:
+            print entry.span.string
+
 
 def print_portlet_links(content, name, base=None):
     """Print portlet urls.
@@ -521,6 +550,12 @@ def print_navigation(contents):
     print "Main heading: %s" % main_heading
 
 
+def print_tag_with_id(contents, id):
+    """A simple helper to print the extracted text of the tag."""
+    tag = find_tag_by_id(contents, id)
+    print extract_text(tag)
+
+
 def setupBrowser(auth=None):
     """Create a testbrowser object for use in pagetests.
 
@@ -528,9 +563,9 @@ def setupBrowser(auth=None):
         string of the form 'Basic email:password' for an authenticated user.
     :return: A `Browser` object.
     """
+    browser = Browser()
     # Set up our Browser objects with handleErrors set to False, since
     # that gives a tracebacks instead of unhelpful error messages.
-    browser = Browser()
     browser.handleErrors = False
     if auth is not None:
         browser.addHeader("Authorization", auth)
@@ -546,11 +581,11 @@ def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
     test.globs['webservice'] = WebServiceCaller(
-        'launchpad-library', 'hgm2VK35vXD6rLg5pxWw', port=9000)
+        'launchpad-library', 'salgado-change-anything', port=9000)
     test.globs['public_webservice'] = WebServiceCaller(
-        'foobar123451432', 'qQ7dw1fXCR5hhJRN7ztj', port=9000)
+        'foobar123451432', 'salgado-read-nonprivate', port=9000)
     test.globs['user_webservice'] = WebServiceCaller(
-        'launchpad-library', '3SdVlTlVKcgXSJHbsSSk', port=9000)
+        'launchpad-library', 'nopriv-read-nonprivate', port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -586,6 +621,7 @@ def setUpGlobs(test):
     test.globs['print_batch_header'] = print_batch_header
     test.globs['print_ppa_packages'] = print_ppa_packages
     test.globs['print_self_link_of_entries'] = print_self_link_of_entries
+    test.globs['print_tag_with_id'] = print_tag_with_id
 
 
 class PageStoryTestCase(unittest.TestCase):

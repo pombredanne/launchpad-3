@@ -37,8 +37,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lazr.interfaces import (
-    IByteStorage, ICollection, ICollectionField, IEntry, IFeed,
-    IHTTPResource)
+    IByteStorage, ICollection, IEntry, IFeed, IHTTPResource)
+from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.lazr.rest.resource import (
     CollectionResource, EntryResource, ScopedCollection)
 
@@ -429,10 +429,6 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     implements(ILaunchpadBrowserApplicationRequest)
 
     retry_max_count = 5    # How many times we're willing to retry
-
-    def __init__(self, body_instream, environ, response=None):
-        super(LaunchpadBrowserRequest, self).__init__(
-            body_instream, environ, response)
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
@@ -1106,7 +1102,7 @@ class WebServiceTestRequest(WebServiceRequestTraversal, LaunchpadTestRequest):
 
     def __init__(self, body_instream=None, environ=None, **kw):
         test_environ = {
-            'SERVERL_URL': 'http://api.launchpad.dev',
+            'SERVER_URL': 'http://api.launchpad.dev',
             'HTTP_HOST': 'api.launchpad.dev',
             }
         if environ is not None:

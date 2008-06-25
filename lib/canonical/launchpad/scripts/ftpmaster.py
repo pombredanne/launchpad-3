@@ -32,6 +32,8 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archiveuploader.utils import re_extract_src_version
+from canonical.launchpad.components.packagelocation import (
+    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IBinaryPackageNameSet,
@@ -41,12 +43,11 @@ from canonical.launchpad.interfaces import (
     PackagePublishingPriority, PackagePublishingStatus, pocketsuffix)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
+from canonical.launchpad.scripts.ftpmasterbase import (
+    SoyuzScript, SoyuzScriptError)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.scripts.ftpmasterbase import (
-    build_package_location, PackageLocationError, SoyuzScript,
-    SoyuzScriptError)
 
 
 class ArchiveOverriderError(Exception):
@@ -257,6 +258,10 @@ class ArchiveCruftCheckerError(Exception):
     Mostly used to describe errors in the initialisation of this object.
     """
 
+class TagFileNotFound(Exception):
+    """Raised when an archive tag file could not be found."""
+
+
 class ArchiveCruftChecker:
     """Perform overall checks to identify and remove obsolete records.
 
@@ -318,8 +323,9 @@ class ArchiveCruftChecker:
 
     @property
     def dist_archive(self):
-        return os.path.join(self.archive_path, self.distro.name,
-                            'dists', self.distroseries.name)
+        return os.path.join(
+            self.archive_path, self.distro.name, 'dists',
+            self.distroseries.name + pocketsuffix[self.pocket])
 
     def gunzipTagFileContent(self, filename):
         """Gunzip the contents of passed filename.
@@ -339,8 +345,8 @@ class ArchiveCruftChecker:
          * the contents parsed by apt_pkg.ParseTagFile()
         """
         if not os.path.exists(filename):
-            raise ArchiveCruftCheckerError(
-                "File does not exist: %s" % filename)
+            raise TagFileNotFound("File does not exist: %s" % filename)
+
         unused_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
@@ -367,8 +373,12 @@ class ArchiveCruftChecker:
                 self.dist_archive, "%s/source/Sources.gz" % component)
 
             self.logger.debug("Processing %s" % filename)
-            temp_fd, temp_filename, parsed_sources = (
-                self.gunzipTagFileContent(filename))
+            try:
+                temp_fd, temp_filename, parsed_sources = (
+                    self.gunzipTagFileContent(filename))
+            except TagFileNotFound, warning:
+                self.logger.warn(warning)
+                return
             try:
                 while parsed_sources.Step():
                     source = parsed_sources.Section.Find("Package")
@@ -408,8 +418,13 @@ class ArchiveCruftChecker:
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
         self.logger.debug("Processing %s" % filename)
-        temp_fd, temp_filename, parsed_packages = (
-            self.gunzipTagFileContent(filename))
+        try:
+            temp_fd, temp_filename, parsed_packages = (
+                self.gunzipTagFileContent(filename))
+        except TagFileNotFound, warning:
+            self.logger.warn(warning)
+            return
+
         try:
             while parsed_packages.Step():
                 package = parsed_packages.Section.Find('Package')
@@ -460,8 +475,12 @@ class ArchiveCruftChecker:
             self.dist_archive,
             "%s/binary-%s/Packages.gz" % (component, architecture))
 
-        temp_fd, temp_filename, parsed_packages = (
-            self.gunzipTagFileContent(filename))
+        try:
+            temp_fd, temp_filename, parsed_packages = (
+                self.gunzipTagFileContent(filename))
+        except TagFileNotFound, warning:
+            self.logger.warn(warning)
+            return
 
         try:
             while parsed_packages.Step():
@@ -602,9 +621,9 @@ class ArchiveCruftChecker:
                 raise ArchiveCruftCheckerError(
                     "Invalid suite: '%s'" % self.suite)
 
-        if not os.path.exists(self.archive_path):
+        if not os.path.exists(self.dist_archive):
             raise ArchiveCruftCheckerError(
-                "Invalid archive path: '%s'" % self.archive_path)
+                "Invalid archive path: '%s'" % self.dist_archive)
 
         apt_pkg.init()
         self.processSources()
@@ -1479,7 +1498,8 @@ class LpQueryDistro(LaunchpadScript):
         pending_binaries = self.location.archive.getAllPublishedBinaries(
             status=PackagePublishingStatus.PENDING)
         for pub in pending_binaries:
-            pending_suites.add((pub.distroarchseries.distroseries, pub.pocket))
+            pending_suites.add((
+                pub.distroarchseries.distroseries, pub.pocket))
 
         return " ".join([distroseries.name + pocketsuffix[pocket]
                          for distroseries, pocket in pending_suites])

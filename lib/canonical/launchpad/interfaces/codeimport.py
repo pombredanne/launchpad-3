@@ -50,6 +50,11 @@ class CodeImportReviewStatus(DBEnumeratedType):
         This code import has been approved, but it has been suspended
         and is not processed.""")
 
+    FAILING = DBItem(40, """Failing
+
+        The code import is failing for some reason and is no longer being
+        attempted.""")
+
 
 class ICodeImport(Interface):
     """A code import to a Bazaar Branch."""
@@ -137,6 +142,9 @@ class ICodeImport(Interface):
         "If the user did not specify an update interval, this is a default "
         "value selected by Launchpad administrators."))
 
+    def getImportDetailsForDisplay():
+        """Get a one-line summary of the location this import is from."""
+
     import_job = Choice(
         title=_("Current job"),
         readonly=True, vocabulary='CodeImportJob',
@@ -220,6 +228,16 @@ class ICodeImportSet(Interface):
 
     def getAll():
         """Return an iterable of all CodeImport objects."""
+
+    def getActiveImports(text=None):
+        """Return an iterable of all 'active' CodeImport objects.
+
+        Active is defined, somewhat arbitrarily, as having
+        review_status==REVIEWED and having completed at least once.
+
+        :param text: If specifed, limit to the results to those that contain
+            ``text`` in the product or project titles and descriptions.
+        """
 
     def get(id):
         """Get a CodeImport by its id.

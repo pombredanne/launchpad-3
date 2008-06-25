@@ -34,6 +34,8 @@ from canonical.launchpad.database.sourcepackage import (
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 
+from canonical.lazr.utils import smartquote
+
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
@@ -77,8 +79,8 @@ class DistributionSourcePackage(BugTargetBase,
     @property
     def title(self):
         """See `IDistributionSourcePackage`."""
-        return 'Source Package "%s" in %s' % (
-            self.sourcepackagename.name, self.distribution.title)
+        return smartquote('"%s" source package in %s') % (
+            self.sourcepackagename.name, self.distribution.displayname)
 
     @property
     def bug_reporting_guidelines(self):
@@ -277,6 +279,10 @@ class DistributionSourcePackage(BugTargetBase,
             (IDistributionSourcePackage.providedBy(other)) and
             (self.distribution.id == other.distribution.id) and
             (self.sourcepackagename.id == other.sourcepackagename.id))
+
+    def __hash__(self):
+        """Return the combined hash of distribution and package name."""
+        return hash(self.distribution) + hash(self.sourcepackagename)
 
     def __ne__(self, other):
         """See `IDistributionSourcePackage`."""

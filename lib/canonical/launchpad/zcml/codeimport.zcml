@@ -15,10 +15,10 @@
                   rcs_type cvs_root cvs_module svn_branch_url
                   date_last_successful source_product_series
                   update_interval effective_update_interval
-                  import_job results" />
+                  import_job results getImportDetailsForDisplay" />
     <require
       permission="launchpad.Edit"
-      attributes="approve invalidate suspend updateFromData" />
+      attributes="approve invalidate suspend markFailing updateFromData" />
 
     <!-- ICodeImport has no set_schema, because all modifications should be
       done through methods that create CodeImportEvent objects when
@@ -36,26 +36,6 @@
       handler="canonical.launchpad.mailout.codeimport.new_import" />
 
   <facet facet="branches">
-
-    <browser:url
-        for="canonical.launchpad.interfaces.ICodeImport"
-        path_expression="string:+code-import"
-        attribute_to_parent="branch"
-        rootsite="code" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ICodeImport"
-        name="+index"
-        layer="canonical.launchpad.layers.CodeLayer"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ICodeImport"
-        class="canonical.launchpad.browser.CodeImportView"
-        name="+index"
-        template="../templates/codeimport.pt"
-        permission="zope.Public"
-        />
 
     <browser:page
         for="canonical.launchpad.interfaces.ICodeImport"
@@ -92,7 +72,7 @@
         class="canonical.launchpad.browser.CodeImportSetView"
         name="+index"
         template="../templates/codeimport-list.pt"
-        permission="launchpad.View"
+        permission="zope.Public"
         />
 
     <browser:page

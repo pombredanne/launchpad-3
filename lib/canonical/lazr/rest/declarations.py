@@ -25,13 +25,13 @@ __all__ = [
     'generate_entry_interface',
     'generate_operation_adapter',
     'operation_parameters',
+    'operation_returns_entry',
+    'operation_returns_collection_of',
     'rename_parameters_as',
     'webservice_error',
     ]
 
-import simplejson
 import sys
-import types
 
 from zope.app.zapi import getGlobalSiteManager
 from zope.component import getUtility
@@ -50,11 +50,12 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
 from canonical.lazr.decorates import Passthrough
-from canonical.lazr.interface import copy_attribute
+from canonical.lazr.fields import CollectionField, Reference
+from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
 from canonical.lazr.rest.resource import Collection, Entry
-from canonical.lazr.rest.operation import ResourceOperation
+from canonical.lazr.rest.operation import ResourceOperation, ObjectLink
 from canonical.lazr.security import protect_schema
 
 LAZR_WEBSERVICE_NS = 'lazr.webservice'
@@ -277,9 +278,11 @@ def annotate_exported_methods(interface):
         if 'as' not in annotations:
             annotations['as'] = method.__name__
 
-        # It's possible that call_with or operation_parameters weren't used.
+        # It's possible that call_with, operation_parameters, and/or
+        # operation_returns_* weren't used.
         annotations.setdefault('call_with', {})
         annotations.setdefault('params', {})
+        annotations.setdefault('return_type', None)
 
         # Make sure that all parameters exists and that we miss none.
         info = method.getSignatureInfo()
@@ -408,6 +411,43 @@ class operation_parameters(_method_annotator):
             params[name] = param
 
 
+class operation_returns_entry(_method_annotator):
+    """Specify that the exported operation returns an entry.
+
+    The decorator takes a single argument: an interface that's been
+    exported as an entry.
+    """
+
+    def __init__(self, schema):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        if not IInterface.providedBy(schema):
+            raise TypeError('Entry type %s does not provide IInterface.'
+                            % schema)
+        self.return_type = Reference(schema=schema)
+
+    def annotate_method(self, method, annotations):
+        annotations['return_type'] = self.return_type
+
+
+class operation_returns_collection_of(_method_annotator):
+    """Specify that the exported operation returns a collection.
+
+    The decorator takes a single argument: an interface that's been
+    exported as an entry.
+    """
+
+    def __init__(self, schema):
+        _check_called_from_interface_def('%s()' % self.__class__.__name__)
+        if not IInterface.providedBy(schema):
+            raise TypeError('Collection value type %s does not provide '
+                            'IInterface.' % schema)
+        self.return_type = CollectionField(
+            value_type=Reference(schema=schema))
+
+    def annotate_method(self, method, annotations):
+        annotations['return_type'] = self.return_type
+
+
 class _export_operation(_method_annotator):
     """Basic implementation for the webservice operation method decorators."""
 
@@ -446,7 +486,7 @@ class export_factory_operation(_export_operation):
             if not IField.providedBy(field):
                 raise TypeError("%s.%s doesn't provide IField." % (
                                 interface.__name__, name))
-            self.params[name] = copy_attribute(field)
+            self.params[name] = copy_field(field)
 
     def annotate_method(self, method, annotations):
         """See `_method_annotator`."""
@@ -454,6 +494,7 @@ class export_factory_operation(_export_operation):
             method, annotations)
         annotations['creates'] = self.interface
         annotations['params'] = self.params
+        annotations['return_type'] = ObjectLink(schema=self.interface)
 
 
 class export_read_operation(_export_operation):
@@ -492,7 +533,7 @@ def generate_entry_interface(interface):
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
             continue
-        attrs[tag['as']] = copy_attribute(field)
+        attrs[tag['as']] = copy_field(field, __name__=tag['as'])
 
     return InterfaceClass(
         "%sEntry" % interface.__name__, bases=(IEntry, ), attrs=attrs,
@@ -612,18 +653,7 @@ class BaseResourceOperationAdapter(ResourceOperation):
         """See `ResourceOperation`."""
         params = self._getMethodParameters(kwargs)
         result = getattr(self.context, self._method_name)(**params)
-
-        # The webservice passes string results straight to the client.
-        # Otherwise, it will try to convert iterable to collection, and other
-        # objects to entries. We want to marshall simple values using json.
-        basic_types = (basestring, bool, int, float, types.NoneType)
-        if isinstance(result, basic_types):
-            response = self.request.response
-            response.setHeader('Content-Type', 'application/json')
-            return simplejson.dumps(result)
-        else:
-            # Use the default webservice encoding.
-            return result
+        return self.encodeResult(result)
 
 
 class BaseFactoryResourceOperationAdapter(BaseResourceOperationAdapter):
@@ -665,8 +695,13 @@ def generate_operation_adapter(method):
     else:
         raise AssertionError('Unknown method export type: %s' % tag['type'])
 
+    return_type = tag['return_type']
+    if return_type is None:
+        return_type = None
+
     name = '%s_%s_%s' % (prefix, method.interface.__name__, tag['as'])
     class_dict = {'params' : tuple(tag['params'].values()),
+             'return_type' : return_type,
              '_export_info': tag,
              '_method_name': method.__name__}
     factory = type(name, bases, class_dict)

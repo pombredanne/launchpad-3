@@ -37,18 +37,7 @@ results in an error notification.  (This is probably the result of
 mangled form data.)
 
     >>> sample_person = personset.getByName('name12')
-
-    # XXX mars 2008-02-21:
-    # Remove this when the mailing list beta is over.  See bug #190974.
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> beta_testers = getUtility(
-    ...     ILaunchpadCelebrities).launchpad_beta_testers
-    >>> salgado = personset.getByName('salgado')
-    >>> login(salgado.preferredemail.email)
-    >>> beta_testers.addMember(sample_person, reviewer=salgado)
-
     >>> login(sample_person.preferredemail.email)
-
     >>> no_list_team = make_team(
     ...     'open-team-no-list', TeamSubscriptionPolicy.OPEN)
 

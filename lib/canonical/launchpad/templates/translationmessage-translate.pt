@@ -13,7 +13,6 @@
   <body>
 
     <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/pofile/@@+portlet-about" />
       <div tal:replace="structure context/pofile/@@+portlet-details" />
       <div tal:replace="structure context/pofile/@@+portlet-stats" />
     </metal:leftportlets>

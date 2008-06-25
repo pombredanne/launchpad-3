@@ -8,6 +8,8 @@ __all__ = [
     'SpecificationSet',
     ]
 
+from storm.store import Store
+
 from zope.interface import implements
 from zope.event import notify
 
@@ -29,7 +31,8 @@ from canonical.launchpad.interfaces import (
     SpecificationSort,
     )
 
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    block_implicit_flushes, quote, SQLBase, sqlvalues)
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -42,7 +45,7 @@ from canonical.launchpad.event.sqlobjectevent import (
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbranch import (
@@ -79,16 +82,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
         default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     drafter = ForeignKey(dbName='drafter', notNull=False,
         foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     approver = ForeignKey(dbName='approver', notNull=False,
         foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',
         notNull=False, default=None)
@@ -102,11 +105,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
         default=SpecificationGoalStatus.PROPOSED)
     goal_proposer = ForeignKey(dbName='goal_proposer', notNull=False,
         foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     date_goal_proposed = UtcDateTimeCol(notNull=False, default=None)
     goal_decider = ForeignKey(dbName='goal_decider', notNull=False,
         foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     date_goal_decided = UtcDateTimeCol(notNull=False, default=None)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
@@ -121,11 +124,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
         foreignKey='Specification', notNull=False, default=None)
     completer = ForeignKey(dbName='completer', notNull=False,
         foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     date_completed = UtcDateTimeCol(notNull=False, default=None)
     starter = ForeignKey(dbName='starter', notNull=False,
         foreignKey='Person',
-        validator=public_person_validator, default=None)
+        storm_validator=validate_public_person, default=None)
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
@@ -267,10 +270,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def canMentor(self, user):
         """See ICanBeMentored."""
-        return not (not user or
-                    self.isMentor(user) or
-                    self.is_complete or
-                    not user.teams_participated_in)
+        if user is None:
+            return False
+        if self.is_complete:
+            return False
+        if bool(self.isMentor(user)):
+            return False
+        if not user.teams_participated_in:
+            return False
+        return True
 
     def isMentor(self, user):
         """See ICanBeMentored."""
@@ -395,27 +403,26 @@ class Specification(SQLBase, BugLinkTargetMixin):
                     (self.definition_status ==
                      SpecificationDefinitionStatus.APPROVED)))
 
-
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
         newstatus = None
         if self.is_started:
-            if self.starter is None:
+            if self.starterID is None:
                 newstatus = SpecificationLifecycleStatus.STARTED
                 self.date_started = UTC_NOW
                 self.starter = user
         else:
-            if self.starter is not None:
+            if self.starterID is not None:
                 newstatus = SpecificationLifecycleStatus.NOTSTARTED
                 self.date_started = None
                 self.starter = None
         if self.is_complete:
-            if self.completer is None:
+            if self.completerID is None:
                 newstatus = SpecificationLifecycleStatus.COMPLETE
                 self.date_completed = UTC_NOW
                 self.completer = user
         else:
-            if self.completer is not None:
+            if self.completerID is not None:
                 self.date_completed = None
                 self.completer = None
                 if self.is_started:
@@ -823,18 +830,19 @@ class SpecificationSet(HasSpecificationsMixin):
 
     def getDependencyDict(self, specifications):
         """See `ISpecificationSet`."""
+        specification_ids = [spec.id for spec in specifications]
 
-        cur = cursor()
-        cur.execute("""
+        if len(specification_ids) == 0:
+            return {}
+
+        results = Store.of(specifications[0]).execute("""
             SELECT SpecificationDependency.specification,
                    SpecificationDependency.dependency
             FROM SpecificationDependency, Specification
             WHERE SpecificationDependency.specification IN %s
             AND SpecificationDependency.dependency = Specification.id
-            ORDER BY Specification.priority DESC
-        """ % sqlvalues([spec.id for spec in specifications]))
-        results = cur.fetchall()
-        cur.close()
+            ORDER BY Specification.priority DESC, Specification.name, Specification.id
+        """ % sqlvalues(specification_ids)).get_all()
 
         dependencies = {}
         for spec_id, dep_id in results:

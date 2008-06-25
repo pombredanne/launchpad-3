@@ -73,6 +73,7 @@ branch, they are shown an option.
     >>> sample_browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> print extract_text(get_summary(sample_browser))
     10 branches ... commits in the last month
+    0 active reviews, 0 approved merges
     A branch has not yet been specified as the primary development focus
     for GNOME Terminal (set).
 
@@ -81,6 +82,7 @@ This text is not shown if the user cannot set the branch.
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> print extract_text(get_summary(browser))
     10 branches ... commits in the last month
+    0 active reviews, 0 approved merges
 
 If a development focus branch is set, the user is shown with a link to
 browse the code, and shown a simple command line to get the branch.
@@ -89,11 +91,17 @@ browse the code, and shown a simple command line to get the branch.
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
     3 branches ...
+    0 active reviews, 0 approved merges
     You can browse the source code for development focus branch,
     or get a copy of the branch using the command:
        bzr branch lp://dev/evolution
 
-    >>> print summary.a['href']
+    >>> links = summary.findAll('a')
+
+Both active reviews and approved merges allow the user to go to listing
+views.  The third link is the browse code link.
+
+    >>> print links[2]['href']
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 
 
@@ -154,8 +162,6 @@ be shown.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    lp://dev/firefox
-      Series: trunk                          Abandoned ...
     lp://dev/~sabdfl/firefox/release-0.8     New ...
 
 
@@ -198,6 +204,7 @@ shows correct singular and plural forms.
 
     >>> print_summary('gnome-terminal')
     10 branches owned by 1 person and 2 teams, 0 commits in the last month
+    ...
     >>> print_summary('firefox')
     5 branches owned by 2 people, 0 commits in the last month
     ...
@@ -206,6 +213,7 @@ shows correct singular and plural forms.
     ...
     >>> print_summary('iso-codes')
     1 branch owned by 1 person, 0 commits in the last month
+    ...
 
 # XXX: thumper 2008-04-24
 # There is no easy way to change the database user in the pagetests
@@ -226,6 +234,7 @@ branch, then they will not appear on the initial branch listing.
     >>> browser.open('http://code.launchpad.dev/iso-codes')
     >>> print extract_text(get_summary(browser))
     1 branch owned by 1 person, 0 commits in the last month
+    0 active reviews, 0 approved merges
 
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print extract_text(message)

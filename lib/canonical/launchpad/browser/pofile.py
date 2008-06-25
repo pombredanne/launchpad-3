@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """Browser code for Translation files."""
 
 __metaclass__ = type
@@ -18,6 +18,8 @@ __all__ = [
 
 import re
 import os.path
+import urllib
+
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -104,7 +106,7 @@ class POFileMenuMixin:
 
     def description(self):
         text = 'Description'
-        return Link('', text)
+        return Link('+index', text)
 
     def translate(self):
         text = 'Translate'
@@ -139,6 +141,60 @@ class POFileView(LaunchpadView):
     @cachedproperty
     def contributors(self):
         return list(self.context.contributors)
+
+    @property
+    def user_can_edit(self):
+        """Does the user have full edit rights for this translation?"""
+        return self.context.canEditTranslations(self.user)
+
+    @property
+    def user_can_suggest(self):
+        """Is the user allowed to make suggestions here?"""
+        return self.context.canAddSuggestions(self.user)
+
+    @property
+    def has_translationgroup(self):
+        """Is there a translation group for this translation?"""
+        return self.context.potemplate.translationgroups
+
+    @property
+    def is_managed(self):
+        """Is a translation group member assigned to this translation?"""
+        for group in self.context.potemplate.translationgroups:
+            if group.query_translator(self.context.language):
+                return True
+        return False
+
+    @property
+    def managers(self):
+        """List translation groups and translation teams for this translation.
+
+        Returns a list of descriptions of who may manage this
+        translation.  Each entry contains a "group" (the
+        `TranslationGroup`) and a "team" (the translation team, or
+        possibly a single person).  The team is None for groups that
+        haven't assigned a translation team for this translation's
+        language.
+
+        Duplicates are eliminated; every translation group will occur
+        at most once.
+        """
+        language = self.context.language
+        managers = []
+        groups = set()
+        for group in self.context.potemplate.translationgroups:
+            if group not in groups:
+                translator = group.query_translator(language)
+                if translator is None:
+                    team = None
+                else:
+                    team = translator.translator
+                managers.append({
+                    'group': group,
+                    'team': team,
+                })
+            groups.add(group)
+        return managers
 
 
 class TranslationMessageContainer:
@@ -300,15 +356,15 @@ class POFileUploadView(POFileView):
 
 
 class POFileTranslateView(BaseTranslationView):
-    """The View class for a POFile or a DummyPOFile.
+    """The View class for a `POFile` or a `DummyPOFile`.
 
-    This view is based on BaseTranslationView and implements the API
+    This view is based on `BaseTranslationView` and implements the API
     defined by that class.
 
-    Note that DummyPOFiles are presented if there is no POFile in the
-    database but the user wants to translate it. See how POTemplate
-    traversal is done for details about how we decide between a POFile
-    or a DummyPOFile.
+    `DummyPOFile`s are presented where there is no `POFile` in the
+    database but the user may want to translate.  See how `POTemplate`
+    traversal is done for details about how we decide between a `POFile`
+    or a `DummyPOFile`.
     """
 
     DEFAULT_SHOW = 'all'
@@ -316,6 +372,15 @@ class POFileTranslateView(BaseTranslationView):
 
     def initialize(self):
         self.pofile = self.context
+        if (self.user is not None and
+            self.user.translations_relicensing_agreement is None):
+            url = str(self.request.URL).decode('US-ASCII', 'replace')
+            if self.request.get('QUERY_STRING', None):
+                url = url + '?' + self.request['QUERY_STRING']
+
+            return self.request.response.redirect(
+                canonical_url(self.user, view_name='+licensing') +
+                '?' + urllib.urlencode({'back_to': url}))
 
         # The handling of errors is slightly tricky here. Because this
         # form displays multiple POMsgSetViews, we need to track the
@@ -339,7 +404,8 @@ class POFileTranslateView(BaseTranslationView):
     def _buildBatchNavigator(self):
         """See BaseTranslationView._buildBatchNavigator."""
         return BatchNavigator(self._getSelectedPOTMsgSets(),
-                              self.request, size=self.DEFAULT_SIZE)
+                              self.request, size=self.DEFAULT_SIZE,
+                              transient_parameters=["old_show"])
 
     def _initializeTranslationMessageViews(self):
         """See BaseTranslationView._initializeTranslationMessageViews."""
@@ -472,6 +538,13 @@ class POFileTranslateView(BaseTranslationView):
             self.shown_count = self.context.updatesCount()
         else:
             raise AssertionError("Bug in _initializeShowOption")
+
+        # Changing the "show" option resets batching.
+        old_show_option = self.request.form.get('old_show')
+        show_option_changed = (
+            old_show_option is not None and old_show_option != self.show)
+        if show_option_changed and 'start' in self.request:
+            del self.request.form['start']
 
     def _getSelectedPOTMsgSets(self):
         """Return a list of the POTMsgSets that will be rendered."""
