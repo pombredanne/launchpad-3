@@ -927,8 +927,8 @@ afterCall().  For example, this publication subclass will simply print
 some string in its finishReadOnlyRequest().
 
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...	      def finishReadOnlyRequest(self, txn):
-    ...	      	  print "booo!"
+    ...     def finishReadOnlyRequest(self, txn):
+    ...         print "booo!"
 
     >>> publication = MyPublication(None)
     >>> publication.afterCall(request, None)
@@ -1074,8 +1074,8 @@ will get associated with the request after the beforeTraversal() hook.
 
     >>> marker = object()
     >>> class MyPublication(LaunchpadBrowserPublication):
-    ...	      def getPrincipal(self, request):
-    ...	      	  return marker
+    ...     def getPrincipal(self, request):
+    ...         return marker
 
     >>> publication = MyPublication(None)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -1094,10 +1094,11 @@ will get associated with the request after the beforeTraversal() hook.
 The default implementation will use the IPlacelessAuthentication
 utility to setup the request.
 
+    >>> login(ANONYMOUS) # Get rid of the marker object in the interaction.
     >>> foo_bar_auth = 'Basic %s' % (
-    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+    ...     'foo.bar@canonical.com:test'.encode('base64'))
     >>> request, publication = get_request_and_publication(
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
     >>> print principal.title
     Foo Bar
@@ -1105,8 +1106,8 @@ utility to setup the request.
 The feeds implementation always returns the anonymous user.
 
     >>> request, publication = get_request_and_publication(
-    ...	    'feeds.launchpad.dev',
-    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    ...     'feeds.launchpad.dev',
+    ...     extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
     >>> principal = publication.getPrincipal(request)
 
     >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
