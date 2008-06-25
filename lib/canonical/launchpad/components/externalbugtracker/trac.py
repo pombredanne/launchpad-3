@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskImportance, IMessageSet,
     ISupportsCommentImport, ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE)
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -394,12 +395,18 @@ class TracLPPlugin(Trac):
 
         display_name, email = parseaddr(comment['user'])
 
-        # If the name is empty then we return None so that
-        # IPersonSet.ensurePerson() can actually do something with it.
-        if not display_name:
-            display_name = None
-
-        return (display_name, email)
+        # If the email isn't valid, return the email address as the
+        # display name (a Launchpad Person will be created with this
+        # name).
+        if not valid_email(email):
+            return email, None
+        # If the display name is empty, set it to None so that it's
+        # useable by IPersonSet.ensurePerson().
+        elif display_name == '':
+            return None, email
+        # Both displayname and email are valid, return both.
+        else:
+            return display_name, email
 
     def getMessageForComment(self, bug_watch, comment_id, poster):
         """See `ISupportsCommentImport`."""

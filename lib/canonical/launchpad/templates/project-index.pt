@@ -102,11 +102,7 @@
             tal:repeat="product context/products"
             class="project"
             >
-            <img src="/@@product" tal:replace="structure product/image:icon" />
-            <strong><a
-                tal:attributes="href product/fmt:url"
-                tal:content="product/title"
-              >Project title</a></strong>
+            <tal:link replace="structure product/fmt:link" />
             <div tal:condition="product/releases">
               Releases:
               <tal:release repeat="release product/releases">
