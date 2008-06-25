@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.create_rebuild import RebuildArchiveCreator
+from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -204,6 +205,8 @@ class TestStartRebuildScript(unittest.TestCase):
         script = RebuildArchiveCreator(
             'start-rebuild', dbuser=config.uploader.dbuser,
             test_args=script_args)
+
+        script.logger = QuietFakeLogger()
 
         if exception_type is not None:
             self.assertRaisesWithContent(
