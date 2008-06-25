@@ -810,8 +810,8 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   font-size: 24px;
 }
 
-/* mainarea and three other divs supply the bottom (mainarea), top (x)
- top left (y), and top right (z) of the rounded border. */
+/* mainarea and three other divs supply the bottom (mainarea), top (x),
+top left (y), and top right (z) of the rounded border. */
 #mainarea {
   clear: both;
   background-image: url(mainarea_bottom.gif);
