@@ -82,6 +82,7 @@ each individual in Launchpad.
     >>> browser.open('http://launchpad.dev/~sabdfl')
     >>> browser.url
     'http://launchpad.dev/~sabdfl'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
     >>> browser.url
     'http://launchpad.dev/~sabdfl/+branding'
@@ -104,6 +105,7 @@ Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/~sabdfl'
+    >>> browser.getLink('Change details').click()
     >>> browser.getLink('Change branding').click()
 
     >>> browser.getControl(name='field.logo.action').value
