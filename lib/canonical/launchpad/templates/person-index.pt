@@ -43,10 +43,16 @@
 
 <div metal:fill-slot="main">
 
-  <tal:icon replace="structure context/image:mugshot" />
+  <tal:icon condition="not: context/is_team"
+            replace="structure context/image:mugshot" />
   <h1 tal:condition="not:context/isTeam"
   >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
-  <h1 tal:condition="context/isTeam" tal:content="context/browsername" />
+  <tal:is-team condition="context/is_team">
+    <h1 tal:content="context/browsername" />
+    <div class="right">
+      <div class="section" tal:content="structure context/@@+portlet-map" />
+    </div>
+  </tal:is-team>
 
   <div
     class="description"

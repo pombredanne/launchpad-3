@@ -3,6 +3,7 @@
 If a team has members that have locations, then you should see a portlet
 with their locations displayed.
 
+    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> nopriv_browser.open('http://launchpad.dev/~guadamen')
     >>> body = find_main_content(nopriv_browser.contents)
     >>> mapdiv = find_tag_by_id(str(body), 'team_map_div')
