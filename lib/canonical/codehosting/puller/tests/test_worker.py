@@ -37,9 +37,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
             source_tree.last_revision(), mirrored_branch.last_revision())
 
     def testMirrorEmptyBranch(self):
-        # Check that we can mirror an empty branch, and that the
-        # last_mirrored_id for an empty branch can be distinguished from an
-        # unmirrored branch.
+        # We can mirror an empty branch.
         source_branch = self.make_branch('source-branch')
         to_mirror = self.makePullerWorker(source_branch.base)
         to_mirror.mirror()
@@ -50,39 +48,35 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
 class TestCanTraverseReferences(TestCaseInTempDir, PullerWorkerMixin):
     """Unit tests for PullerWorker._canTraverseReferences."""
 
-    def makeBranch(self, branch_type):
-        """Helper to create a PullerWorker with a specified branch_type."""
-        return self.makePullerWorker(branch_type=branch_type)
-
     def testTrueForMirrored(self):
         """We can traverse branch references when pulling mirror branches."""
-        mirror_branch = self.makeBranch(BranchType.MIRRORED)
+        mirror_branch = self.makePullerWorker(branch_type=BranchType.MIRRORED)
         self.assertEqual(mirror_branch._canTraverseReferences(), True)
 
     def testFalseForImported(self):
         """We cannot traverse branch references when pulling import branches.
         """
-        import_branch = self.makeBranch(BranchType.IMPORTED)
+        import_branch = self.makePullerWorker(branch_type=BranchType.IMPORTED)
         self.assertEqual(import_branch._canTraverseReferences(), False)
 
     def testFalseForHosted(self):
         """We cannot traverse branch references when pulling hosted branches.
         """
-        hosted_branch = self.makeBranch(BranchType.HOSTED)
+        hosted_branch = self.makePullerWorker(branch_type=BranchType.HOSTED)
         self.assertEqual(hosted_branch._canTraverseReferences(), False)
 
     def testErrorForOtherRemote(self):
         """We do not pull REMOTE branches. If the branch type is REMOTE, an
         AssertionError is raised.
         """
-        remote_branch = self.makeBranch(BranchType.REMOTE)
+        remote_branch = self.makePullerWorker(branch_type=BranchType.REMOTE)
         self.assertRaises(
             AssertionError, remote_branch._canTraverseReferences)
 
     def testErrorForBogusType(self):
         """If the branch type is a bogus value, AssertionError is raised.
         """
-        bogus_branch = self.makeBranch(None)
+        bogus_branch = self.makePullerWorker(branch_type=None)
         self.assertRaises(
             AssertionError, bogus_branch._canTraverseReferences)
 
@@ -226,8 +220,9 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.assertEqual(expected_netstrings, observed_netstrings)
 
     def getNetstrings(self, line):
-        """Return the sequence of strings that are the netstrings that make up
-        'line'.
+        """Parse `line` as a sequence of netstrings.
+
+        :return: A list of strings.
         """
         strings = []
         while len(line) > 0:
