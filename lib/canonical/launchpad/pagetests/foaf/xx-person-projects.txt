@@ -37,32 +37,20 @@ unimplemented specs and open questions.
     >>> print anon_browser.getLink('8').url
     http://launchpad.dev/ubuntu/+questions
 
+A person's projects are listed on the 'Related Software' page, accessible
+through the main navigation menu.
 
-If the person owns/drives more than 5 projects, the overview page
-displays only the first five.
-
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> related_projects = find_tag_by_id(
-    ...     anon_browser.contents, 'portlet-related-projects')
-    >>> for tr in related_projects.findAll('tr'):
-    ...     print extract_text(tr)
-    Ubuntu Linux
-    Redhat Advanced Server
-    Debian GNU/Linux
-    The Gentoo Linux
-    Kubuntu - Free KDE-based Linux
-
-    >>> anon_browser.getLink(
-    ...     'See all projects Mark Shuttleworth is involved with').click()
-    >>> print anon_browser.url
-    http://launchpad.dev/%7Esabdfl/+projects
-
-    >>> print anon_browser.title
-    Projects Mark Shuttleworth is involved with
+   >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+   >>> anon_browser.getLink(
+   ...     'Related Software').click()
+   >>> print anon_browser.url
+   http://launchpad.dev/~sabdfl/+projects
+   >>> print anon_browser.title
+   Projects Mark Shuttleworth is involved with
 
 In the case of a person that owns/drives more than
-config.launchpad.default_batch_size, a message is displayed and the 
-table contains only that many projects. This is done to handle the 
+config.launchpad.default_batch_size, a message is displayed and the
+table contains only that many projects. This is done to handle the
 Registry Admins case which owns lots of projects and the page would
 become a performance nightmare. In 99% of the cases, people won't reach
 the config.launchpad.default_batch_size threshold.
