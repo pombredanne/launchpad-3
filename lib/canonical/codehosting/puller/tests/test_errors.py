@@ -80,8 +80,8 @@ class ErrorHandlingTestCase(unittest.TestCase):
         """Setup code that is specific to ErrorHandlingTestCase.
 
         This is needed because TestReferenceMirroring uses a diamond-shaped
-        class hierarchy and we do not want to end up calling unittest.TestCase
-        twice.
+        class hierarchy and we do not want to end up calling
+        unittest.TestCase.setUp twice.
         """
         self.protocol = StubbedPullerWorkerProtocol()
         self.branch = StubbedPullerWorker(
@@ -92,8 +92,10 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self.branch.testcase = self
 
     def runMirrorAndGetError(self):
-        """Run mirror, check that we receive exactly one error, and return its
-        str().
+        """Mirror the branch and return the error message.
+
+        Runs mirror, checks that we receive exactly one error, and returns the
+        str() of the error.
         """
         self.branch.mirror()
         self.assertEqual(
@@ -107,17 +109,21 @@ class ErrorHandlingTestCase(unittest.TestCase):
         self.protocol.calls = []
         return str(mirrorFailed[2])
 
-    def runMirrorAndAssertErrorStartsWith(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str()
-        of which starts with `expected_error`.
+    def runMirrorAndAssertErrorStartsWith(self, expected_msg):
+        """Mirror the branch and assert the error starts with `expected_msg`.
+
+        Runs mirror and checks that we receive exactly one error, the str()
+        of which starts with `expected_msg`.
         """
         error = self.runMirrorAndGetError()
-        if not error.startswith(expected_error):
-            self.fail('Expected "%s" but got "%s"' % (expected_error, error))
+        if not error.startswith(expected_msg):
+            self.fail('Expected "%s" but got "%s"' % (expected_msg, error))
 
     def runMirrorAndAssertErrorEquals(self, expected_error):
-        """Run mirror and check that we receive exactly one error, the str()
-        of which is equal to `expected_error`.
+        """Mirror the branch and assert the error message is `expected_error`.
+
+        Runs mirror and checks that we receive exactly one error, the str() of
+        which is equal to `expected_error`.
         """
         error = self.runMirrorAndGetError()
         self.assertEqual(error, expected_error)
@@ -129,7 +135,7 @@ class TestBadUrl(ErrorHandlingTestCase):
     Bad URLs use schemes like sftp or bzr+ssh that usually require
     authentication, and hostnames in the launchpad.net domains.
 
-    That prevents errorspam produced by ssh when it cannot connect and saves
+    This prevents errorspam produced by ssh when it cannot connect and saves
     timing out when trying to connect to chinstrap, sodium (always using a
     ssh-based scheme) or launchpad.net.
 
@@ -193,7 +199,9 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         reset_logging()
 
     def testCreateBranchReference(self):
-        """Test that our createBranchReference helper works correctly."""
+        # createBranchReference creates a branch reference and returns a URL
+        # that points to that branch reference.
+
         # First create a bzrdir with a branch and repository.
         t = get_transport(self.get_url('.'))
         t.mkdir('repo')
@@ -212,7 +220,6 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
 
-        :param path: relative path to the branch reference.
         :param url: target of the branch reference.
         :return: file url to the created pure branch reference.
         """
@@ -231,9 +238,8 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         return a_bzrdir.root_transport.base
 
     def testGetBranchReferenceValue(self):
-        """PullerWorker._getBranchReference gives the reference value for
-        a branch reference.
-        """
+        # PullerWorker._getBranchReference gives the reference value for
+        # a branch reference.
         reference_value = 'http://example.com/branch'
         reference_url = self.createBranchReference(reference_value)
         self.branch.source = reference_url
@@ -241,15 +247,14 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
             self.branch._getBranchReference(reference_url), reference_value)
 
     def testGetBranchReferenceNone(self):
-        """PullerWorker._getBranchReference gives None for a normal branch.
-        """
+        # PullerWorker._getBranchReference gives None for a normal branch.
         self.make_branch('repo')
         branch_url = self.get_url('repo')
         self.assertIs(
             self.branch._getBranchReference(branch_url), None)
 
     def testHostedBranchReference(self):
-        """A branch reference for a hosted branch must cause an error."""
+        # A branch reference for a hosted branch must cause an error.
         reference_url = self.createBranchReference(
             'http://example.com/branch')
         self.branch.branch_type = BranchType.HOSTED
@@ -260,8 +265,7 @@ class TestReferenceMirroring(TestCaseWithTransport, ErrorHandlingTestCase):
         self.assertEqual(self.open_call_count, 0)
 
     def testMirrorLocalBranchReference(self):
-        """A file:// branch reference for a mirror branch must cause an error.
-        """
+        # A file:// branch reference for a mirror branch must cause an error.
         reference_url = self.createBranchReference('file:///sauces/sikrit')
         self.branch.branch_type = BranchType.MIRRORED
         self.branch.source = reference_url
