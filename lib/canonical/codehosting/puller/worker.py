@@ -7,6 +7,7 @@ import os
 import shutil
 import socket
 import sys
+from xmlrpclib import ServerProxy
 import urllib2
 
 from bzrlib.branch import Branch
@@ -20,6 +21,8 @@ import bzrlib.ui
 from canonical.config import config
 from canonical.codehosting import ProgressUIFactory
 from canonical.codehosting.puller import get_lock_id_for_branch_id
+from canonical.codehosting.transport import (
+    BlockingProxy, get_chrooted_transport, LaunchpadInternalServer)
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
@@ -155,6 +158,14 @@ class PullerWorker:
             self.protocol.branch_id = branch_id
         if oops_prefix is not None:
             errorlog.globalErrorUtility.setOopsToken(oops_prefix)
+        self._registerLaunchpadServer()
+
+    def _registerLaunchpadServer(self):
+        authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
+        branch_transport = get_chrooted_transport(
+            config.codehosting.branches_root)
+        server = LaunchpadInternalServer(authserver, branch_transport)
+        server.setUp()
 
     def _checkSourceUrl(self):
         """Check the validity of the source URL.

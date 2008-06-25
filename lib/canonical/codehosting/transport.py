@@ -46,6 +46,8 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
+    'BlockingProxy',
+    'get_chrooted_transport',
     'LaunchpadInternalServer',
     'LaunchpadServer',
     'LaunchpadTransport',
@@ -62,6 +64,7 @@ from bzrlib.errors import (
     TransportNotPossible)
 from bzrlib import trace, urlutils
 from bzrlib.transport import (
+    chroot,
     get_transport,
     register_transport,
     Server,
@@ -98,6 +101,12 @@ FORBIDDEN_DIRECTORY_ERROR = (
 def is_lock_directory(absolute_path):
     """Is 'absolute_path' a Bazaar branch lock directory?"""
     return os.path.basename(absolute_path) == 'held'
+
+
+def get_chrooted_transport(url):
+    chroot_server = chroot.ChrootServer(get_transport(url))
+    chroot_server.setUp()
+    return get_transport(chroot_server.get_url())
 
 
 def get_path_segments(path, maximum_segments=-1):
