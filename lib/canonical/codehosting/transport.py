@@ -46,7 +46,6 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
-    'LaunchpadInternalServer',
     'LaunchpadServer',
     'LaunchpadTransport',
     'set_up_logging',
@@ -75,11 +74,7 @@ from twisted.python import failure
 from twisted.web.xmlrpc import Fault
 
 from canonical.authserver.interfaces import (
-    LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY,
-    )
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
@@ -709,18 +704,6 @@ class LaunchpadServer(Server):
             return
         self._is_set_up = False
         unregister_transport(self.get_url(), self._factory)
-
-
-class LaunchpadInternalServer(LaunchpadServer):
-
-    def __init__(self, authserver, branch_transport):
-        super(LaunchpadInternalServer, self).__init__(
-            authserver, LAUNCHPAD_SERVICES, branch_transport,
-            branch_transport)
-        self._backing_transport = self._mirror_transport
-
-    def get_url(self):
-        return 'lp-internal:///'
 
 
 class VirtualTransport(Transport):

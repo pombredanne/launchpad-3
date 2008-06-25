@@ -31,14 +31,8 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport,
-    BlockingProxy,
-    InvalidControlDirectory,
-    LaunchpadInternalServer,
-    LaunchpadServer,
-    set_up_logging,
-    VirtualTransport,
-    )
+    AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
+    LaunchpadServer, set_up_logging, VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
@@ -253,37 +247,6 @@ class TestLaunchpadServer(TrialTestCase, BzrTestCase):
             InvalidControlDirectory,
             self.server._parseProductControlDirectory,
             'user/product/.bzr/foo')
-
-
-class TestLaunchpadInternalServer(TestLaunchpadServer):
-    """Tests for the LaunchpadInternalServer, used by the puller and scanner.
-    """
-
-    def setUp(self):
-        self.authserver = FakeLaunchpad()
-        self.branch_transport = MemoryTransport()
-        self.server = LaunchpadInternalServer(
-            BlockingProxy(self.authserver), self.branch_transport)
-
-    def test_get_url(self):
-        # Rather than the magic per-instance URL of the standard
-        # LaunchpadServer, the LaunchpadInternalServer returns a fixed
-        # 'lp-internal://' URL.
-        self.assertEqual('lp-internal:///', self.server.get_url())
-
-    def test_backing_transport_is_mirror_transport(self):
-        # The internal server provides read-only access to exactly one branch
-        # area. This means that the 'backing transport' (for regular servers,
-        # the hosted area) is the same as the 'mirror transport' (which
-        # normally refers to the mirrored area in regular servers).
-        self.assertIdentical(
-            self.server._backing_transport, self.server._mirror_transport)
-
-    def test_backing_transport_read_only(self):
-        # The backing transport is read only. This acts as a safeguard
-        # preventing the puller and the scanner from accidentally doing
-        # anything.
-        self.assertEqual(True, self.server._backing_transport.is_readonly())
 
 
 class TestVirtualTransport(TrialTestCase, TestCaseInTempDir):
