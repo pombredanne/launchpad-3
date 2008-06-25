@@ -29,11 +29,11 @@ class IPackageDiff(Interface):
     """
     id = Attribute("The PackageDiff unique number.")
 
-    from_source = Attribute(_(u"The base ISourcePackageRelease."))
-    to_source = Attribute(_(u"The target ISourcePackageRelease."))
+    from_source = Attribute(_("The base ISourcePackageRelease."))
+    to_source = Attribute(_("The target ISourcePackageRelease."))
 
     date_requested = Datetime(
-        title=_(u'Date Requested'), required=True)
+        title=_('Date Requested'), required=True)
 
     requester = Choice(
         title=_('User'),
@@ -42,14 +42,19 @@ class IPackageDiff(Interface):
         description=_("The person requesting the diff."))
 
     date_fulfilled = Datetime(
-        title=_(u'Date Fulfilled'), required=False)
+        title=_('Date Fulfilled'), required=False)
 
     diff_content = Object(
         schema=ILibraryFileAlias,
-        title=_(u"The ILibraryFileAlias containing the diff."),
+        title=_("The ILibraryFileAlias containing the diff."),
         required=False)
 
-    title = Attribute(_(u"The Package diff title."))
+    title = Attribute("The Package diff title.")
+
+    private = Attribute(
+        "Whether or not the package diff content is private. "
+        "A package diff is considered private when 'to_source' was "
+        "originally uploaded to a private archive.")
 
     def performDiff():
         """Performs a diff between two packages."""
