@@ -35,7 +35,7 @@
           does not own any commercial projects. Only project owners can redeem
           vouchers for a project.
         </tal:not_commercial>
-        <tal:commercial condition="commercial_projects">
+        <tal:commercial condition="not:commercial_projects">
           <div metal:use-macro="context/@@launchpad_form/form">
             <metal:widgets fill-slot="widgets">
               <table class="form">

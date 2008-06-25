@@ -2108,8 +2108,11 @@ class PersonVouchersView(LaunchpadFormView):
     custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
-        self.form_fields = (self.createProjectField() +
-                            self.createVoucherField())
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        project_field = self.createProjectField()
+        voucher_field = self.createVoucherField()
+        self.form_fields = (project_field +
+                            voucher_field)
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -2141,7 +2144,7 @@ class PersonVouchersView(LaunchpadFormView):
         voucher_vocabulary = SimpleVocabulary(terms)
         field = FormFields(
             Choice(__name__='voucher',
-                   title=_('Select a voucher'),
+                   title=_('Select a v1oucher'),
                    description=_('Choose one of these unredeemed vouchers'),
                    vocabulary=voucher_vocabulary,
                    required=False),

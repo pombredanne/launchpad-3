@@ -109,6 +109,7 @@ class SalesforceVoucherProxy:
     @fault_mapper
     def getAllVouchers(self, user):
         """See `ISalesforceVoucherProxy`."""
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         vouchers = self.server.getAllVouchers(user.openid_identifier)
         return [Voucher(voucher) for voucher in vouchers]
 
