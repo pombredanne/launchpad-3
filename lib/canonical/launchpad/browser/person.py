@@ -2108,8 +2108,18 @@ class PersonVouchersView(LaunchpadFormView):
     custom_widget('project', SinglePopupWidget)
 
     def setUpFields(self):
-        self.form_fields = (self.createProjectField() +
-                            self.createVoucherField())
+        """Set up the fields for this view.
+
+        If there are no commercial project or vouchers then the form isn't
+        created as there is nothing to redeem.
+        """
+        self.form_fields = []
+        # Make the less expense test for commercial projects first to avoid
+        # the more expensive fetching of unredeemed vouchers.
+        if (len(self.owned_commercial_projects) > 0 and
+            len(self.unredeemed_vouchers) > 0):
+            self.form_fields = (self.createProjectField() +
+                                self.createVoucherField())
 
     def createProjectField(self):
         """Create the project field for selection commercial projects.
@@ -2149,12 +2159,16 @@ class PersonVouchersView(LaunchpadFormView):
 
     @cachedproperty
     def unredeemed_vouchers(self):
+        """Get the unredeemed vouchers owned by the user."""
+        # If this user has no commercial project then don't bother looking for
+        # vouchers since it is pointless and expensive.
         unredeemed, redeemed = (
             self.context.getCommercialSubscriptionVouchers())
         return unredeemed
 
     @cachedproperty
     def owned_commercial_projects(self):
+        """Get the commercial projects owned by the user."""
         commercial_projects = []
         for project in self.context.getOwnedProjects():
             if not project.qualifies_for_free_hosting:

@@ -233,7 +233,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
-   
+
     # XXX StuartBishop 2008-05-13 bug=237280: The openid_identifier, password,
     # account_status and account_status_comment properties should go. Note
     # that they override # the current strict controls on Account, allowing
@@ -424,7 +424,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def setLocation(self, latitude, longitude, time_zone, user):
         """See `ISetLocation`."""
         assert not self.is_team, 'Cannot edit team location.'
-        assert ((latitude is None and longitude is None) or 
+        assert ((latitude is None and longitude is None) or
                 (latitude is not None and longitude is not None)), (
             "Cannot set a latitude without longitude (and vice-versa).")
 
@@ -3266,7 +3266,7 @@ class PersonSet:
                 AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
                 )
             ''' % vars())
-        # And delete the rest 
+        # And delete the rest
         cur.execute('''
             DELETE FROM WebServiceBan WHERE person=%(from_id)d
             ''' % vars())
