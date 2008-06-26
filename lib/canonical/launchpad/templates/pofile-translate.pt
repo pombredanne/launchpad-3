@@ -130,7 +130,8 @@
                 useful to show the second language as a source of suggestions
                 when translating into the first.
               </tal:comment>
-              <tal:language-widget content="structure view/alternative_language_widget" />
+              <tal:language-widget
+                content="structure view/alternative_language_widget" />
             as a guide</label>
           </p>
           <input type="hidden" name="old_show" value=""
