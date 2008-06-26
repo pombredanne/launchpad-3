@@ -117,7 +117,11 @@ class ExportedFolder:
 
 
 class ExportedImageFolder(ExportedFolder):
-    """Folder that can serve image file names without their extension."""
+    """ExportedFolder subclass for directory of images.
+
+    It supports serving image files without their extension (e.g. "image1.gif"
+    can be served as "image1".
+    """
 
 
     # The extensions we consider.
