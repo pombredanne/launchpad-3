@@ -170,16 +170,18 @@ class DistroArchSeriesBinaryPackage:
                     self.distroarchseries,
                     self.distribution.all_distro_archive_ids,
                     PackagePublishingStatus.PUBLISHED),
-            orderBy='datecreated',
+            orderBy='-datecreated',
+            limit=1,
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',])
 
-        # sort by version
-        if releases.count() == 0:
+        # Listify to limit the SQL queries to one only.
+        results = list(releases)
+        if len(results) == 0:
             return None
         return DistroArchSeriesBinaryPackageRelease(
             distroarchseries=self.distroarchseries,
-            binarypackagerelease=releases[-1])
+            binarypackagerelease=results[0])
 
     @property
     def publishing_history(self):
