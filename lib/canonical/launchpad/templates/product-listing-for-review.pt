@@ -36,9 +36,9 @@
       (<a tal:attributes="href string:${context/fmt:url}/+review-license"
         >Review</a>)
     </td>
-    <td tal:content="structure context/license_info/fmt:text-to-html">
+    <td tal:content="structure context/license_info/fmt:shorten/80/fmt:text-to-html">
         License info goes here
     </td>
-    <td tal:content="structure context/reviewer_whiteboard" />
+    <td tal:content="context/reviewer_whiteboard/fmt:shorten/80" />
   </tr>
 </tal:root>
