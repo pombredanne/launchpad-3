@@ -84,7 +84,7 @@ method which requires authentication.
     ...
     ...     @needs_authentication
     ...     def testAuthentication(self):
-    ...         return self.server.Test.login_required()
+    ...         return self.xmlrpc_proxy.Test.login_required()
 
     >>> test_bugzilla = AuthenticatingBugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport,
@@ -95,7 +95,7 @@ authenticated. We'll expire the current auth_cookie so that
 login_required() raises a fault.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> test_bugzilla.server.Test.login_required()
+    >>> test_bugzilla.xmlrpc_proxy.Test.login_required()
     Traceback (most recent call last):
       ...
     Fault: <Fault 410: 'Login Required'>
