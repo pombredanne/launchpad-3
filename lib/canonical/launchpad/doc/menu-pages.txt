@@ -9,7 +9,7 @@ objects, and a view that knows what facet it belongs to. This work
 is normally done by the publisher and publication modules in webapp.
 For this test, a helper function will simulate the request process.
 
-    >>> from zope.component import getMultiAdapter, getUtility
+    >>> from zope.component import getMultiAdapter
     >>> from zope.security.management import endInteraction, newInteraction
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
