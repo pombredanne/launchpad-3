@@ -5,6 +5,7 @@ __metaclass__ = type
 import transaction
 import unittest
 
+from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
@@ -19,6 +20,7 @@ from canonical.launchpad.mail.handlers import (
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
@@ -67,6 +69,10 @@ class TestCodeHandler(TestCaseWithFactory):
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
         self.code_handler = CodeHandler()
+        self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+
+    def tearDown(self):
+        setSecurityPolicy(self._old_policy)
 
     def switchDbUser(self, user):
         """Commit the transactionand switch to the new user."""
