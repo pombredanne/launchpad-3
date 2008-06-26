@@ -17,13 +17,10 @@
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
     <resource name="arrowLeft" file="../images/arrowLeft.png" />
-    <resource name="batch-previous-inactive" file="../images/arrowLeft-inactive.png" />
     <resource name="arrowRight" file="../images/arrowRight.png" />
-    <resource name="batch-next-inactive" file="../images/arrowRight-inactive.png" />
+    <resource name="arrowRight-inactive" file="../images/arrowRight-inactive.png" />
     <resource name="arrowStart" file="../images/arrowStart.png" />
-    <resource name="batch-start-inactive" file="../images/arrowStart-inactive.png" />
     <resource name="arrowEnd" file="../images/arrowEnd.png" />
-    <resource name="batch-end-inactive" file="../images/arrowEnd-inactive.png" />
     <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
@@ -82,13 +79,11 @@
     <resource name="expand" file="../images/bug-status-expand.png" />
     <resource name="expiration-large" file="../images/expiration-large.png" />
     <resource name="faq" file="../images/faq.png" />
-    <resource name="favourite-yes" file="../images/fav-yes.png" />
-    <resource name="favourite-no" file="../images/fav-no.png" />
+    <resource name="favourite-yes" file="../images/favourite-yes.png" />
+    <resource name="favourite-no" file="../images/favourite-no.png" />
     <resource name="green-bar" file="../images/green-bar.png" />
     <resource name="info" file="../images/info.png" />
     <resource name="info-large" file="../images/info-large.png" />
-    <resource name="involved-no" file="../images/involved-no-badge.png" />
-    <resource name="involved-yes" file="../images/involved-yes-badge.png" />
     <resource name="launchpad" file="../images/launchpad.png" />
     <resource name="launchpad-large" file="../images/launchpad-large.png" />
     <resource name="launchpad-logo" file="../images/launchpad-logo.png" />
@@ -112,9 +107,9 @@
     <resource name="person-inactive-badge" file="../images/person-inactive-badge.png" />
     <resource name="person-inactive-logo" file="../images/person-inactive-logo.png" />
     <resource name="person-inactive-mugshot" file="../images/person-inactive-mugshot.png" />
-    <resource name="private" file="../images/padlock.png" />
+    <resource name="private" file="../images/private.png" />
     <resource name="private-bg" file="../images/private-bg.png" />
-    <resource name="private-large" file="../images/padlock-large.png" />
+    <resource name="private-large" file="../images/private-large.png" />
     <resource name="product" file="../images/product.png" />
     <resource name="product-badge" file="../images/product-badge.png" />
     <resource name="product-logo" file="../images/product-logo.png" />
@@ -125,15 +120,15 @@
     <resource name="project-mugshot" file="../images/project-mugshot.png" />
     <resource name="purple-bar" file="../images/purple-bar.png" />
     <resource name="question" file="../images/question.png" />
-    <resource name="read-only" file="../images/pencil-crossed.png" />
+    <resource name="read-only" file="../images/read-only.png" />
     <resource name="red-bar" file="../images/red-bar.png" />
     <resource name="remove" file="../images/remove.png" />
     <resource name="required" file="../images/required.gif" />
     <!-- XXX mpt 2006-08-22: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search.png" />
-    <resource name="security" file="../images/warning.png" />
-    <resource name="security-large" file="../images/warning-large.png" />
+    <resource name="security" file="../images/security.png" />
+    <resource name="security-large" file="../images/security-large.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="meeting" file="../images/meeting.png" />
@@ -142,7 +137,7 @@
     <resource name="rss" file="../images/rss.png" />
     <resource name="rss-large" file="../images/rss-large.png" />
     <resource name="subscriber-essential" file="../images/subscriber-essential.png" />
-    <resource name="subscriber-inessential" file="../images/person.png" />
+    <resource name="subscriber-inessential" file="../images/subscriber-inessential.png" />
     <resource name="team" file="../images/team.png" />
     <resource name="team-badge" file="../images/team-badge.png" />
     <resource name="team-logo" file="../images/team-logo.png" />
@@ -154,7 +149,7 @@
     <resource name="translation" file="../images/translation.png" />
     <resource name="treeCollapsed" file="../images/treeCollapsed.png" />
     <resource name="treeExpanded" file="../images/treeExpanded.png" />
-    <resource name="user" file="../images/person.png" />
+    <resource name="user" file="../images/user.png" />
     <resource name="warning" file="../images/warning.png" />
     <resource name="helpwanted" file="../images/helpwanted.gif" />
     <resource name="warning-badge" file="../images/warning-badge.png" />
