@@ -4,6 +4,7 @@ First, we test that the link to add distro series is not there
 when we are not logged in.
 
   >>> anon_browser.open("http://localhost/ubuntu")
+  >>> anon_browser.getLink("All series").click()
   >>> anon_browser.getLink("Add series")
   Traceback (most recent call last):
   ...
@@ -21,6 +22,7 @@ This time we expect to be able to see the link and the page.
 
   >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
   >>> browser.open("http://localhost/debian")
+  >>> browser.getLink("All series").click()
   >>> browser.getLink("Add series").click()
   >>> browser.url
   'http://localhost/debian/+addseries'  
@@ -28,6 +30,7 @@ This time we expect to be able to see the link and the page.
 OK, let's test as Foo Bar, who is an administrator.
 
   >>> admin_browser.open("http://localhost/ubuntu")
+  >>> admin_browser.getLink("All series").click()
   >>> admin_browser.getLink("Add series").click()
   >>> admin_browser.url
   'http://localhost/ubuntu/+addseries'  
