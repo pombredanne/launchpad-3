@@ -104,6 +104,10 @@ class POFileSOP(POTemplateSOP):
 class POFileMenuMixin:
     """Mixin class to share code between navigation and action menus."""
 
+    # XXX Julian 2008-06-25
+    # The navigation to the description page should not use '+index' here
+    # but if the code is changed to use '' instead then the tab
+    # highlighting/disabling breaks.  See bug 242860.
     def description(self):
         text = 'Description'
         return Link('+index', text)

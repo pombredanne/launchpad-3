@@ -704,7 +704,7 @@ class MailHandlers:
             # XXX flacoste 2007-04-23 Backward compatibility for old domain.
             # We probably want to remove it in the future.
             'support.launchpad.net': AnswerTrackerHandler(),
-            config.vhost.code.hostname: CodeHandler(),
+            config.launchpad.code_domain: CodeHandler(),
             }
 
     def get(self, domain):
