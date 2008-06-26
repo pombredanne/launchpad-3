@@ -29,8 +29,13 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
     title = Attribute("Title for this package.")
     distribution = Attribute("The distribution.")
     distroseries = Attribute("The distro series.")
+
     distributionsourcepackagerelease = Attribute("The source package in "
         "this distribution from which this package was built.")
+
+    distroarchseriesbinarypackage = Attribute(
+        "The object representing all binary package versions with the "
+        "same name in the same DistroArchSeries, its parent object.")
 
     pocket = Attribute("The pocket in which this release is published, "
         "or None if it is not currently published.")

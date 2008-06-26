@@ -233,6 +233,11 @@ class LaunchpadView(UserAttributeCache):
 
     @cachedproperty
     def striped_class(self):
+        """Return a generator which yields alternating CSS classes.
+
+        This is to be used for HTML tables in which the row colors should be
+        alternated.
+        """
         def bg_stripe_generator():
             while True:
                 yield 'white'

@@ -16,6 +16,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -24,7 +25,7 @@ from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.testing.systemdocs import (
@@ -154,8 +155,7 @@ class WebServiceCaller:
 
     def named_post(self, path, operation_name, headers=None, **kwargs):
         kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, value)
-                         for key, value in kwargs.items()])
+        data = urlencode(kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers)
 
@@ -608,6 +608,7 @@ def setUpGlobs(test):
     test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['login'] = login
+    test.globs['login_person'] = login
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links

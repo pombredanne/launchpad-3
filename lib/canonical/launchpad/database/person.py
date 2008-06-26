@@ -2530,7 +2530,7 @@ class PersonSet:
             Person.teamowner IS NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
+            AND lower(EmailAddress.email) LIKE %s || '%%%%'
             AND Person.account = Account.id
             AND Account.status NOT IN %s
             """ % args
@@ -2551,7 +2551,7 @@ class PersonSet:
             Person.teamowner IS NOT NULL
             AND Person.merged IS NULL
             AND EmailAddress.person = Person.id
-            AND lower(EmailAddress.email) LIKE %s || '%%'
+            AND lower(EmailAddress.email) LIKE %s || '%%%%'
             """ % (quote_like(text),)
         results = results.union(Person.select(
             team_email_query, clauseTables=['EmailAddress']))

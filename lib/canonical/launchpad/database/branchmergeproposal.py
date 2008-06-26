@@ -127,7 +127,7 @@ class BranchMergeProposal(SQLBase):
 
     @property
     def address(self):
-        return 'mp+%d@%s' % (self.id, config.vhost.code.hostname)
+        return 'mp+%d@%s' % (self.id, config.launchpad.code_domain)
 
     superseded_by = ForeignKey(
         dbName='superseded_by', foreignKey='BranchMergeProposal',

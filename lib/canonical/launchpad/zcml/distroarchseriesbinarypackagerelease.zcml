@@ -11,6 +11,12 @@
       interface="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease" />
   </content>
 
+  <adapter
+    for="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease"
+    provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+    factory="canonical.launchpad.browser.distroarchseriesbinarypackagerelease_to_structuralheading"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroArchSeriesBinaryPackageRelease"
     name="+index" />
@@ -24,11 +30,6 @@
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroArchSeriesBinaryPackageReleaseNavigation"
-    />
-
-  <browser:menus
-    module="canonical.launchpad.browser.distroarchseriesbinarypackagerelease"
-    classes="DistroArchSeriesBinaryPackageReleaseFacets"
     />
 
   <browser:pages

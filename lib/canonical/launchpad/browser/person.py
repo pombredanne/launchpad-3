@@ -1004,11 +1004,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage',
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
-             'editsshkeys', 'editpgpkeys',
-             'editlocation',
-             'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'administer',
-             'related_projects', 'activate_ppa', 'show_ppa']
+             'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
+             'mentoringoffers', 'codesofconduct', 'karma', 'common_packages',
+             'administer', 'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1058,13 +1056,11 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Change your password'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.EditLocation')
     def editlocation(self):
         target = '+editlocation'
-        enabled = False
-        if check_permission('launchpad.EditLocation', self.context):
-            enabled = True
         text = 'Set location and time zone'
-        return Link(target, text, enabled=enabled, icon='edit')
+        return Link(target, text, icon='edit')
 
     def karma(self):
         target = '+karma'
@@ -2147,10 +2143,8 @@ class PersonVouchersView(LaunchpadFormView):
 
         Only unredeemed vouchers owned by the user are shown.
         """
-        unredeemed, redeemed = (
-            self.context.getCommercialSubscriptionVouchers())
         terms = []
-        for voucher in unredeemed:
+        for voucher in self.unredeemed_vouchers:
             text = "%s (%d months)" % (
                 voucher.voucher_id, voucher.term_months)
             terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
@@ -2160,10 +2154,16 @@ class PersonVouchersView(LaunchpadFormView):
                    title=_('Select a voucher'),
                    description=_('Choose one of these unredeemed vouchers'),
                    vocabulary=voucher_vocabulary,
-                   required=False),
+                   required=True),
             custom_widget=self.custom_widgets['voucher'],
             render_context=self.render_context)
         return field
+
+    @cachedproperty
+    def unredeemed_vouchers(self):
+        unredeemed, redeemed = (
+            self.context.getCommercialSubscriptionVouchers())
+        return unredeemed
 
     @cachedproperty
     def owned_commercial_projects(self):
@@ -2185,6 +2185,7 @@ class PersonVouchersView(LaunchpadFormView):
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
         voucher = data['voucher']
+
         try:
             # The call to redeemVoucher returns True if it succeeds or it
             # raises an exception.  Therefore the return value does not need
@@ -4493,29 +4494,22 @@ class PersonEditLocationView(LaunchpadFormView):
     custom_widget('location', LocationWidget)
 
     def initialize(self):
-        self._next_url = canonical_url(self.context)
+        self.next_url = canonical_url(self.context)
         self.for_team_name = self.request.form.get('for_team')
         if self.for_team_name is not None:
             for_team = getUtility(IPersonSet).getByName(self.for_team_name)
             if for_team is not None:
-                self._next_url = canonical_url(for_team) + '/+map'
+                self.next_url = canonical_url(for_team) + '/+map'
         super(PersonEditLocationView, self).initialize()
-
-    @property
-    def next_url(self):
-        return self._next_url
+        self.cancel_url = self.next_url
 
     @action(_("Update"), name="update")
     def action_update(self, action, data):
         """Set the coordinates and time zone for the person."""
-        new_location = data.get('location', None)
-        assert new_location is not None, 'No location received.'
+        new_location = data.get('location')
+        if new_location is None:
+            raise UnexpectedFormData('No location received.')
         latitude = new_location.latitude
         longitude = new_location.longitude
         time_zone = new_location.time_zone
         self.context.setLocation(latitude, longitude, time_zone, self.user)
-
-    @action(_("Cancel"), name="cancel", validator='validate_cancel')
-    def action_cancel(self, action, data):
-        # Just redirect to next_url.
-        pass

@@ -13,8 +13,108 @@ so that we can avoid network traffic in tests.
     >>> test_transport = TestBugzillaXMLRPCTransport()
     >>> bugzilla = BugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
-    >>> bugzilla.xmlrpc_transport is test_transport
+    >>> bugzilla.xmlrpc_transport == test_transport
     True
+
+
+== Authentication ==
+
+XML-RPC methods that modify data on the remote server require
+authentication. To authenticate, we create a LoginToken of type
+BUGTRACKER and pass it to the remote service's Launchpad.login() method.
+The remote service then checks that this token is valid and returns an
+appropriate response.
+
+We use the internal XML-RPC service to generate the token, which allows
+us to sidestep the issue of committing the new token to the database in
+order to make it visible to the remote Bugzilla.
+
+BugzillaLPPlugin has an _authenticate() method, which is responsible for
+doing the authentication work with the remote server. We'll override the
+_handleLoginToken() method of TestBugzillaXMLRPCTransport so that it can
+work with the right database user.
+
+    >>> from canonical.config import config
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestInternalXMLRPCTransport)
+
+    >>> class ZopelessBugzillaXMLRPCTransport(TestBugzillaXMLRPCTransport):
+    ...     def _handleLoginToken(self, token_text):
+    ...         LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...         self._consumeLoginToken(token_text)
+    ...         LaunchpadZopelessLayer.switchDbUser(
+    ...             config.checkwatches.dbuser)
+
+    >>> test_transport = ZopelessBugzillaXMLRPCTransport()
+    >>> test_transport.print_method_calls = True
+    >>> bugzilla = BugzillaLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport())
+
+    >>> bugzilla._authenticate()
+    Using XML-RPC to generate token.
+    CALLED Launchpad.login({'token': '...'})
+    Successfully validated the token.
+
+The authorisation cookie will be stored in the auth_cookie property of
+the XML-RPC transport.
+
+    >>> print test_transport.auth_cookie
+    Bugzilla_login=...
+    Bugzilla_logincookie=...
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     FakeHTTPConnection)
+    >>> test_transport.send_host(FakeHTTPConnection(), 'example.com')
+    Host: example.com
+    Cookie: Bugzilla_login=...; Bugzilla_logincookie=...
+
+The externalbugtracker.bugzilla module contains a decorator,
+needs_authentication, which can be used to ensure that a
+BugzillaLPPlugin instance will attempt to authenticate with the remote
+server if it encounters a method which requires it to be logged in.
+
+We can demonstrate this by subclassing BugzillaLPPlugin and adding a
+method which requires authentication.
+
+    >>> from canonical.launchpad.components.externalbugtracker.bugzilla import (
+    ...     needs_authentication)
+    >>> class AuthenticatingBugzillaLPPlugin(BugzillaLPPlugin):
+    ...
+    ...     @needs_authentication
+    ...     def testAuthentication(self):
+    ...         return self.server.Test.login_required()
+
+    >>> test_bugzilla = AuthenticatingBugzillaLPPlugin(
+    ...     'http://example.com/', xmlrpc_transport=test_transport,
+    ...     internal_xmlrpc_transport=TestInternalXMLRPCTransport())
+
+The Test.login_required() method on the server requires the user to be
+authenticated. We'll expire the current auth_cookie so that
+login_required() raises a fault.
+
+    >>> test_transport.expireCookie(test_transport.auth_cookie)
+    >>> test_bugzilla.server.Test.login_required()
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 410: 'Login Required'>
+
+Because the testAuthentication() method of
+AuthenticatingBugzillaLPPlugin is decorated with needs_authentication,
+it will automatically try authenticating when it receives the Fault from
+login_required() and will retry the method call.
+
+    >>> return_value = test_bugzilla.testAuthentication()
+    Using XML-RPC to generate token.
+    CALLED Launchpad.login({'token': '...'})
+    Successfully validated the token.
+    CALLED Test.login_required()
+
+    >>> print return_value
+    Wonderful, you've logged in! Aren't you a clever biped?
+
+    >>> test_transport.print_method_calls = False
 
 
 == Getting the current time ==
@@ -164,13 +264,13 @@ means that we can use it to import comments from the remote Bugzilla
 instance.
 
     >>> from canonical.launchpad.interfaces import ISupportsCommentImport
-    >>> ISupportsCommentImport.providedBy(bugzilla)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 
 To test the comment importing methods we need to add an example bug,
 bugtracker and a couple of bugwatches.
 
-    >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces.bug import CreateBugParams
     >>> from canonical.launchpad.interfaces.bugtracker import BugTrackerType
@@ -178,7 +278,6 @@ bugtracker and a couple of bugwatches.
     >>> from canonical.launchpad.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
 
@@ -293,3 +392,53 @@ field on the imported comment.
 
     >>> print message.datecreated
     2008-06-16 13:08:08+00:00
+
+
+== Pushing comments to remote systems ==
+
+BugzillaLPPlugin implements the ISupportsCommentPushing interface, which
+defines the necessary methods for pushing comments to remote servers.
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     ISupportsCommentPushing)
+    >>> verifyObject(ISupportsCommentPushing, bugzilla)
+    True
+
+ISupportsCommentPushing defines a method, addRemoteComment(), which can
+be used to push a comment to the remote system. It takes three
+parameters: the remote bug ID, the body of the comment to push and the
+rfc822msgid of the comment being pushed. For the BugzillaLPPlugin
+bugtracker we can pass None as the rfc822msgid, since Bugzilla won't use
+it. addRemoteComment() returns the ID of the new comment on the remote
+server.
+
+addRemoteComment() calls Bug.add_comment() on the remote server, which
+requires authentication. To demonstrate this, we'll expire the
+authorization cookie so that it gets regenerated.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> comment_id  = bugzilla.addRemoteComment(
+    ...     1, "This is a new remote comment.", None)
+    Using XML-RPC to generate token.
+    CALLED Launchpad.login({'token': '...'})
+    Successfully validated the token.
+    CALLED Bug.add_comment({'comment': 'This is a new remote comment.',
+        'id': 1})
+
+    >>> print comment_id
+    5
+
+The comment will be stored on the remote server with the other comments.
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = False
+    >>> print sorted(bugzilla.getCommentIds(bug_watch))
+    [1, 3, 5]
+
+    >>> bugzilla.fetchComments(bug_watch, [5])
+    >>> message = bugzilla.getMessageForComment(bug_watch, 5, sample_person)
+    >>> print message.text_contents
+    This is a new remote comment.
+    <BLANKLINE>

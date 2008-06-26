@@ -585,7 +585,8 @@ class EditPersonLocation(AuthorizationBase):
             # The person himself and LP admins can always change that person's
             # location.
             return True
-        elif location is None or location.last_modified_by != self.obj:
+        elif (location is None or location.latitude is None
+              or location.last_modified_by != self.obj):
             # No location has been specified yet or it has been specified by a
             # non-authoritative source (not the person himself).
             return True

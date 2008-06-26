@@ -20,10 +20,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.packagediff import (
     IPackageDiff, IPackageDiffSet)
 
 
@@ -129,6 +129,11 @@ class PackageDiff(SQLBase):
                 ancestry_archive.distribution.name.capitalize())
         return '%s to %s' % (ancestry_identifier, self.to_source.version)
 
+    @property
+    def private(self):
+        """See `IPackageDiff`."""
+        return self.to_source.upload_archive.private
+
     def performDiff(self):
         """See `IPackageDiff`.
 
@@ -189,9 +194,9 @@ class PackageDiff(SQLBase):
             result_file = None
             try:
                 result_file = open(result_path)
-                self.diff_content = getUtility(ILibrarianClient).addFile(
+                self.diff_content = getUtility(ILibraryFileAliasSet).create(
                     result_filename, compressed_bytes, result_file,
-                    'application/gzipped-patch')
+                    'application/gzipped-patch', restricted=self.private)
             finally:
                 if result_file is not None:
                     result_file.close()
