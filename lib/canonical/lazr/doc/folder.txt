@@ -1,0 +1,125 @@
+= Serving directories of files =
+
+LAZR adds special views that can be used to serve all the files under a
+particular directory.
+
+== ExportedFolder ==
+
+This is the base implementation. To export a directory, you need to
+subclass that view and provide a folder property returning the path of
+the directory to expose.
+
+    >>> import os
+    >>> import tempfile
+    >>> resource_dir = tempfile.mkdtemp(prefix='resources')
+    >>> file(os.path.join(resource_dir, 'test.txt'), 'w').write('Text file')
+    >>> file(os.path.join(resource_dir, 'image1.gif'), 'w').write(
+    ...     'GIF file')
+    >>> file(os.path.join(resource_dir, 'image2.png'), 'w').write(
+    ...     'PNG file')
+
+    >>> from canonical.lazr.folder import ExportedFolder
+    >>> class MyFolder(ExportedFolder):
+    ...     folder = resource_dir
+
+That view provides the IBrowserPublisher interface necessary to handle
+all the traversal logic.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> from canonical.lazr.testing.webservice import FakeRequest
+
+    >>> view = MyFolder(object(), FakeRequest())
+    >>> verifyObject(IBrowserPublisher, view)
+    True
+
+The view will serve the file that it traverse to.
+
+    >>> view = view.publishTraverse(view.request, 'test.txt')
+    >>> print view()
+    Text file
+
+It also set the header on the response and the cache control header.
+
+    >>> for name in sorted(view.request.response.headers):
+    ...     print "%s: %s" % (name, view.request.response.getHeader(name))
+    Cache-Control: public...
+    Content-Type: text/plain
+    Expires: ...
+    Last-Modified: ...
+
+It accepts traversing to the file through an arbitrary revision
+identifier.
+
+    >>> view = MyFolder(object(), FakeRequest())
+    >>> view = view.publishTraverse(view.request, 'rev6510')
+    >>> view = view.publishTraverse(view.request, 'image1.gif')
+    >>> print view()
+    GIF file
+
+But traversing through other directories, not providing a file name, or
+a non-existent files, all raises a NotFound.
+
+    >>> view = MyFolder(object(), FakeRequest())
+    >>> view = view.publishTraverse(view.request, 'a_dir')
+    >>> view()
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+
+    >>> view = MyFolder(object(), FakeRequest())
+    >>> view()
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+
+    >>> view = MyFolder(object(), FakeRequest())
+    >>> view = view.publishTraverse(view.request, 'image2')
+    >>> view()
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+
+
+== ExportedImageFolder ==
+
+For images, it's often convenient not to export the extension. There is
+an ExportedImageFolder subclass, that will accept serving an image file
+without extension.  For example, requesting 'image1' or 'image2' will
+serve the correct file. The supported extensions is defined in the
+image_extensions property.
+
+    >>> from canonical.lazr.folder import ExportedImageFolder
+
+    >>> class MyImageFolder(ExportedImageFolder):
+    ...     folder = resource_dir
+
+    >>> view = MyImageFolder(object(), FakeRequest())
+    >>> view.image_extensions
+    ('.gif', '.png')
+
+    >>> view = view.publishTraverse(view.request, 'image2')
+    >>> print view()
+    PNG file
+    >>> print view.request.response.getHeader('Content-Type')
+    image/png
+
+If a file without extension exists, that one will be served.
+
+    >>> file(os.path.join(resource_dir, 'image3'), 'w').write(
+    ...     'Image without extension')
+    >>> file(os.path.join(resource_dir, 'image3.gif'), 'w').write(
+    ...     'Image with extension')
+
+    >>> view = MyImageFolder(object(), FakeRequest())
+    >>> view = view.publishTraverse(view.request, 'image3')
+    >>> print view()
+    Image without extension
+
+    >>> view = MyImageFolder(object(), FakeRequest())
+    >>> view = view.publishTraverse(view.request, 'image3.gif')
+    >>> print view()
+    Image with extension
+
+    >>> import shutil
+    >>> shutil.rmtree(resource_dir)

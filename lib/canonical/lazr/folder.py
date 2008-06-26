@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'ExportedFolder',
+    'ExportedImageFolder',
     ]
 
 import errno
@@ -114,3 +115,25 @@ class ExportedFolder:
             NotImplementedError,
             'Your subclass of ExportedFolder should have its own folder.')
 
+
+class ExportedImageFolder(ExportedFolder):
+    """Folder that can serve image file names without their extension."""
+
+
+    # The extensions we consider.
+    image_extensions = ('.gif', '.png')
+
+    def prepareDataForServing(self, name):
+        """Serve files without their extension.
+
+        If the requested name doesn't exist but a file exists which has
+        the same base name and has an image extension, it will be served.
+        """
+        root, ext = os.path.splitext(name)
+        basename = os.path.join(self.folder, name)
+        if ext == '' and not os.path.exists(basename):
+            for image_ext in self.image_extensions:
+                if os.path.exists(basename + image_ext):
+                    name = name + image_ext
+                    break
+        return super(ExportedImageFolder, self).prepareDataForServing(name)
