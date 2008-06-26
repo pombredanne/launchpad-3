@@ -1,6 +1,6 @@
 = Menu pages =
 
-Launchpad often uses news to render menus instead of working with
+Launchpad often uses views to render menus instead of working with
 them directly in the template. The views ensure that the menus
 are rendered in a consistent manner.
 
