@@ -313,3 +313,48 @@ returned for each comment.
     <BLANKLINE>
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
+
+
+== Bug.add_comment() ==
+
+The standard Bugzilla API offers a method, Bug.add_comment(), which can
+be used to add comments to a remote bug. It takes two arguments: the ID
+of the remote comment and the body of the comment to be added to it.
+
+add_comment() requires authentication.
+
+    >>> bugzilla_transport.expireCookie(bugzilla_transport.auth_cookie)
+    >>> server.Bug.add_comment({'id': 1, 'comment': "This won't work"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 410: 'Login Required'>
+
+Bug.add_comment() will return the integer comment ID of the new comment
+on the remote server.
+
+    >>> comment = "Didn't we have a lovely time the day we went to Bangor?"
+    >>> bugzilla_transport.auth_cookie = 'open sesame'
+    >>> return_dict = server.Bug.add_comment({'id': 1, 'comment': comment})
+    >>> print return_dict['comment_id']
+    5
+
+The comment will be stored with the other comments on the remote server.
+
+    >>> return_dict = server.Bug.comments({'bug_ids': [1], 'ids': [5]})
+    >>> bugs_dict = return_dict['bugs']
+
+    >>> print_bug_comments(bugs_dict, sort_key='id')
+    Bug 1:
+        author: launchpad
+        id: 5
+        number: 3
+        text: Didn't we have a lovely time the day we went to Bangor?
+        time: ...
+
+If add_comment is called on a bug that doesn't exist a fault will be
+raised.
+
+    >>> server.Bug.add_comment({'id': 42, 'comment': "This won't work"})
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 101: 'Bug #42 does not exist.'>
