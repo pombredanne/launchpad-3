@@ -36,11 +36,11 @@ slightly modified implementation.
 
 Some Bugzillas have a Launchpad plugin installed. For these bugtrackers,
 we use the BugzillaLPPlugin ExternalBugTracker class. The Bugzilla
-ExternalBugTracker class has a getExternalBugTrackerToUse() class which
+ExternalBugTracker class has a getExternalBugTrackerToUse() method which
 will return a BugzillaLPPlugin instance if the remote Bugzilla has the
 plugin installed or a standard Bugzilla ExternalBugTracker if not.
 
-The Bugzilla ExternalBugTracker has an xmlrpc_proxy property which we're
+The Bugzilla ExternalBugTracker has an xmlrpc_proxy property which we
 override for the purpose of this test.
 
     >>> import xmlrpclib
