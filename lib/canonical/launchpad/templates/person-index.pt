@@ -43,7 +43,10 @@
 
 <div metal:fill-slot="main" class="pillar">
 
-  <tal:icon replace="structure context/image:mugshot" />
+  <div
+    style="width: 200px; height: 200px; float: right;"
+    tal:content="structure context/image:mugshot"
+  />
 
   <h1 tal:content="context/browsername">Some Person or Team</h1>
 
