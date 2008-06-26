@@ -594,6 +594,8 @@ class ILaunchpadPrincipal(IPrincipal):
         title=_("The level of access this principal has."),
         vocabulary=AccessLevel, default=AccessLevel.WRITE_PRIVATE)
 
+    person = Attribute("The IPerson the principal represents.")
+
 
 class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     """The Launchpad customized database adapter"""
