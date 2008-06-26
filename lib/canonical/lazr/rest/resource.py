@@ -12,6 +12,7 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'JSONItem',
+    'LAZR_WEBSERVICE_NS',
     'ReadOnlyResource',
     'ResourceJSONEncoder',
     'RESTUtilityBase',
@@ -30,7 +31,7 @@ from zope.app.pagetemplate.engine import TrustedAppPT
 from zope.component import (
     adapts, getAdapters, getMultiAdapter, getUtility, queryAdapter)
 from zope.component.interfaces import ComponentLookupError
-from zope.interface import implements
+from zope.interface import implements, implementedBy
 from zope.interface.interfaces import IInterface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.proxy import isProxy
@@ -56,6 +57,8 @@ from canonical.lazr.interfaces import (
 from canonical.lazr.interfaces.fields import ICollectionField
 from canonical.launchpad.webapp.vocabulary import SQLObjectVocabularyBase
 
+# The namespace for LAZR web service-related tags.
+LAZR_WEBSERVICE_NS = 'lazr.webservice'
 
 # The path to the WADL XML Schema definition.
 WADL_SCHEMA_FILE = os.path.join(os.path.dirname(__file__),
@@ -529,7 +532,7 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
         return "%s#%s" % (
             canonical_url(self.request.publication.getApplication(
                     self.request)),
-            self.entry._singular)
+            self.entry.singular)
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
@@ -780,8 +783,7 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
             # Top-level collection.
             base_url = canonical_url(
                 self.request.publication.getApplication(self.request))
-            return "%s#%s" % (base_url,
-                              self.collection.entry_schema._plural)
+            return "%s#%s" % (base_url, self.collection.entry_schema.plural)
 
 
 
@@ -897,8 +899,9 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
-                    link_name = ("%s_collection_link"
-                                 % registration.value.entry_schema._plural)
+                    utility = EntryAdapterUtility.forSchemaInterface(
+                        registration.value.entry_schema)
+                    link_name = ("%s_collection_link" % utility.plural_name)
                     top_level_resources[link_name] = utility
         return top_level_resources
 
@@ -981,9 +984,28 @@ class EntryAdapterUtility(RESTUtilityBase):
         self.entry_class = entry_class
 
     @property
+    def schema_interface(self):
+        interfaces = implementedBy(self.entry_class)
+        entry_ifaces = [interface for interface in interfaces
+                        if interface.extends(IEntry)]
+        # Won't this fail if you subclass IEntry and then subclass the
+        # subclass?
+        assert len(entry_ifaces) == 1, ("More than one IEntry implementation "
+                                        "for %s" % entry_class)
+        return entry_ifaces[0]
+
+    @property
     def singular_type(self):
         """Return the singular name for this object type."""
-        return self.entry_class._singular
+        import pdb; pdb.set_trace()
+        tag = self.schema_interface.queryTaggedValue(LAZR_WEBSERVICE_NS)
+        return tag['singular']
+
+    @property
+    def plural_type(self):
+        """Return the plural name for this object type."""
+        tag = self.schema_interface.queryTaggedValue(LAZR_WEBSERVICE_NS)
+        return tag['plural']
 
     @property
     def type_link(self):

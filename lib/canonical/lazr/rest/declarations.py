@@ -8,7 +8,6 @@ __all__ = [
     'ENTRY_TYPE',
     'FIELD_TYPE',
     'LAZR_WEBSERVICE_EXPORTED',
-    'LAZR_WEBSERVICE_NS',
     'OPERATION_TYPES',
     'REQUEST_USER',
     'call_with',
@@ -54,11 +53,11 @@ from canonical.lazr.fields import CollectionField, Reference
 from canonical.lazr.interface import copy_field
 from canonical.lazr.interfaces.rest import (
     ICollection, IEntry, IResourceGETOperation, IResourcePOSTOperation)
-from canonical.lazr.rest.resource import Collection, Entry
+from canonical.lazr.rest.resource import (
+    Collection, Entry, EntryAdapterUtility, LAZR_WEBSERVICE_NS)
 from canonical.lazr.rest.operation import ResourceOperation, ObjectLink
 from canonical.lazr.security import protect_schema
 
-LAZR_WEBSERVICE_NS = 'lazr.webservice'
 LAZR_WEBSERVICE_EXPORTED = '%s.exported' % LAZR_WEBSERVICE_NS
 COLLECTION_TYPE = 'collection'
 ENTRY_TYPE = 'entry'
@@ -98,21 +97,28 @@ def _get_interface_tags():
     return f_locals.setdefault(TAGGED_DATA, {})
 
 
-def export_as_webservice_entry(singular_name, plural_name=None):
+def export_as_webservice_entry(singular_name=None, plural_name=None):
     """Mark the content interface as exported on the web service as an entry.
     """
     _check_called_from_interface_def('export_as_webservice_entry()')
-    if plural_name is None:
-        # Apply default pluralization rule.
-        plural_name = singular_name + 's'
-
     def mark_entry(interface):
         """Class advisor that tags the interface once it is created."""
         _check_interface('export_as_webservice_entry()', interface)
+        if singular_name is None:
+            # Default to the lowercased class name.
+            my_singular_name = interface.__class__.__name__
+        else:
+            my_singular_name = singular_name
+        if plural_name is None:
+            # Apply default pluralization rule.
+            my_plural_name = singular_name + 's'
+        else:
+            my_plural_name = plural_name
+
         interface.setTaggedValue(
             LAZR_WEBSERVICE_EXPORTED, dict(
-                type=ENTRY_TYPE, singular_name=singular_name,
-                plural_name=plural_name))
+                type=ENTRY_TYPE, singular_name=my_singular_name,
+                plural_name=my_plural_name))
 
         # Set the name of the fields that didn't specify it using the
         # 'export_as' parameter in exported(). This must be done here,
@@ -541,10 +547,15 @@ def generate_entry_interface(interface):
             continue
         attrs[tag['as']] = copy_field(field, __name__=tag['as'])
 
-    return InterfaceClass(
+    entry_interface = InterfaceClass(
         "%sEntry" % interface.__name__, bases=(IEntry, ), attrs=attrs,
         __doc__=interface.__doc__, __module__=interface.__module__)
 
+    tag = interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    entry_interface.setTaggedValue(LAZR_WEBSERVICE_NS, dict(
+            singular=tag['singular_name'],
+            plural=tag['plural_name']))
+    return entry_interface
 
 def generate_entry_adapter(content_interface, webservice_interface):
     """Create a class adapting from content_interface to webservice_interface.
@@ -554,10 +565,7 @@ def generate_entry_adapter(content_interface, webservice_interface):
     if not isinstance(webservice_interface, InterfaceClass):
         raise TypeError('webservice_interface is not an interface.')
 
-    tag = content_interface.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-    class_dict = dict(schema=webservice_interface,
-                      _singular=tag['singular_name'],
-                      _plural=tag['plural_name'])
+    class_dict = dict(schema=webservice_interface)
     for name, field in getFields(content_interface).items():
         tag = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tag is None:
@@ -589,9 +597,9 @@ class CollectionEntrySchema:
 
     def __get__(self, instance, owner):
         """Look up the entry schema that adapts the model schema."""
-        return getGlobalSiteManager().adapters.lookup1(
+        entry_class = getGlobalSiteManager().adapters.lookup1(
             self.model_schema, IEntry)
-
+        return EntryAdapterUtility(entry_class).schema_interface
 
 class BaseCollectionAdapter(Collection):
     """Base for generated ICollection adapter."""

@@ -548,6 +548,8 @@ decorates().)
     ...     adapts(IAuthor)
     ...     decorates(IAuthorEntry)
     ...     schema = IAuthorEntry
+    ...     singular = 'author'
+    ...     plural = 'authors'
 
     >>> verifyObject(IAuthorEntry, AuthorEntry(A1))
     True
@@ -569,6 +571,8 @@ But the invariant will complain if that doesn't isn't true.
     ...     adapts(IAuthor)
     ...     decorates(IAuthorEntry)
     ...     schema = ICookbookEntry
+    ...     singular = 'author'
+    ...     plural = 'authors'
 
     >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
     True
@@ -588,24 +592,54 @@ Other entries are defined similarly.
     ...     adapts(ICookbook)
     ...     decorates(ICookbookEntry)
     ...     schema = ICookbookEntry
+    ...     singular = 'cookbook'
+    ...     plural = 'cookbooks'
 
     >>> class DishEntry(Entry):
     ...     """A dish, as exposed through the web service."""
     ...     adapts(IDish)
     ...     decorates(IDishEntry)
     ...     schema = IDishEntry
+    ...     singular = 'dish'
+    ...     plural = 'dishes'
 
     >>> class CommentEntry(Entry):
     ...     """A comment, as exposed through the web service."""
     ...     adapts(IComment)
     ...     decorates(ICommentEntry)
     ...     schema = ICommentEntry
+    ...     singular = 'comment'
+    ...     plural = 'comments'
 
     >>> class RecipeEntry(Entry):
     ...     adapts(IRecipe)
     ...     decorates(IRecipeEntry)
     ...     schema = IRecipeEntry
+    ...     singular = 'recipe'
+    ...     plural = 'recipes'
 
+The 'singular' and 'plural' attributes are human-readable names for
+the type of entry. Both must be present.
+
+    >>> class InvalidAuthorEntry(Entry):
+    ...     adapts(IAuthor)
+    ...     decorates(IAuthorEntry)
+    ...     schema = IAuthorEntry
+    ...     singular = 'author'
+    >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
+    Traceback (most recent call last):
+    ...
+    ...The plural attribute was not provided.
+
+    >>> class InvalidAuthorEntry(Entry):
+    ...     adapts(IAuthor)
+    ...     decorates(IAuthorEntry)
+    ...     schema = IAuthorEntry
+    ...     plural = 'authors'
+    >>> verifyObject(IAuthorEntry, InvalidAuthorEntry(A1))
+    Traceback (most recent call last):
+    ...
+    ...The singular attribute was not provided.
 
 We need to register these entries as an adapter from (eg.) IAuthor to
 (eg.) IAuthorEntry. In ZCML a registration would look like this.
@@ -637,7 +671,7 @@ collection.
     >>> class AuthorCollection(Collection):
     ...     """A collection of authors, as exposed through the web service."""
     ...
-    ...     entry_schema = IAuthorEntry
+    ...     entry_schema = AuthorEntry
     ...
     ...     def find(self):
     ...        """Find all the authors."""
@@ -652,7 +686,7 @@ collection.
     ...     """A collection of cookbooks, as exposed through the web service.
     ...     """
     ...
-    ...     entry_schema = ICookbookEntry
+    ...     entry_schema = CookbookEntry
     ...
     ...     def find(self):
     ...        """Find all the cookbooks."""
@@ -662,7 +696,7 @@ collection.
     >>> class DishCollection(Collection):
     ...     """A collection of dishes, as exposed through the web service."""
     ...
-    ...     entry_schema = IDishEntry
+    ...     entry_schema = DishEntry
     ...
     ...     def find(self):
     ...        """Find all the dishes."""
@@ -674,7 +708,7 @@ constructor. The 'entry_schema' attribute gives a Collection class
 knowledge about what kind of entry it's supposed to contain.
 
     >>> DishCollection.entry_schema
-    <InterfaceClass __builtin__.IDishEntry>
+    <InterfaceClass __builtin__.DishEntry>
 
 We also need to define a collection of the recipes associated with a
 cookbook. We say that the collection of recipes is scoped to a
@@ -708,7 +742,7 @@ cookbook was defined as one that contains Objects with a schema of
 IRecipe. This information is available to the ScopedCollection object.
 
     >>> scoped_collection.entry_schema
-    <InterfaceClass __builtin__.IRecipeEntry>
+    <InterfaceClass __builtin__.RecipeEntry>
 
 
 == Custom operations ==
