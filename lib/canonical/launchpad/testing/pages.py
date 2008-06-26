@@ -16,6 +16,7 @@ from BeautifulSoup import (
     BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from urllib import urlencode
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -154,8 +155,7 @@ class WebServiceCaller:
 
     def named_post(self, path, operation_name, headers=None, **kwargs):
         kwargs['ws.op'] = operation_name
-        data = '&'.join(['%s=%s' % (key, value)
-                         for key, value in kwargs.items()])
+        data = urlencode(kwargs)
         return self.post(path, 'application/x-www-form-urlencoded', data,
                          headers)
 

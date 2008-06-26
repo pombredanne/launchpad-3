@@ -68,7 +68,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler = CodeHandler()
 
     def test_get(self):
-        handler = mail_handlers.get(config.vhost.code.hostname)
+        handler = mail_handlers.get(config.launchpad.code_domain)
         self.assertIsInstance(handler, CodeHandler)
 
     def test_process(self):

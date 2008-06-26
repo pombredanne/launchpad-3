@@ -36,7 +36,8 @@ from canonical.launchpad.validators.bugattachment import (
     bug_attachment_size_constraint)
 
 from canonical.lazr.rest.declarations import (
-    export_as_webservice_entry, exported)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_write_operation, exported, operation_parameters)
 from canonical.lazr.fields import CollectionField, Reference
 
 
@@ -169,12 +170,13 @@ class IBug(IMessageTarget, ICanBeMentored):
                            "their subscribers."),
              default=False))
     date_made_private = exported(
-        Datetime(title=_('Date Made Private'), required=False))
+        Datetime(title=_('Date Made Private'), required=False, readonly=True))
     who_made_private = exported(
         PublicPersonChoice(
             title=_('Who Made Private'), required=False,
             vocabulary='ValidPersonOrTeam',
-            description=_("The person who set this bug private.")))
+            description=_("The person who set this bug private."),
+            readonly=True))
     security_related = exported(
         Bool(title=_("This bug is a security vulnerability"),
              required=False, default=False))
@@ -188,7 +190,8 @@ class IBug(IMessageTarget, ICanBeMentored):
             title=_('BugTasks on this bug, sorted upstream, then '
                     'ubuntu, then other distroseriess.'),
             value_type=Reference(schema=IBugTask),
-            readonly=True))
+            readonly=True),
+        exported_as='bug_tasks')
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
@@ -196,11 +199,14 @@ class IBug(IMessageTarget, ICanBeMentored):
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     cves = Attribute('CVE entries related to this bug.')
     cve_links = Attribute('LInks between this bug and CVE entries.')
-    subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
+    subscriptions = exported(CollectionField(
+        title=_('Subscriptions.'),
+        value_type=Reference(schema=Interface),
+        readonly=True))
     duplicates = exported(
         CollectionField(
             title=_('MultiJoin of the bugs which are dups of this one'),
-            value_type=BugField()))
+            value_type=BugField(), readonly=True))
     attachments = Attribute("List of bug attachments.")
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
@@ -216,17 +222,20 @@ class IBug(IMessageTarget, ICanBeMentored):
                 "True or False depending on whether this bug is considered "
                 "completely addressed. A bug is Launchpad is completely "
                 "addressed when there are no tasks that are still open for "
-                "the bug.")))
+                "the bug."),
+             readonly=True))
     permits_expiration = exported(
         Bool(title=_("Does the bug's state permit expiration?"),
              description=_(
                 "Expiration is permitted when the bug is not valid anywhere, "
                 "a message was sent to the bug reporter, and the bug is "
-                "associated with pillars that have enabled bug expiration.")))
+                "associated with pillars that have enabled bug expiration."),
+             readonly=True))
     can_expire = exported(
         Bool(title=_("Can the Incomplete bug expire if it becomes inactive? "
                      "Expiration may happen when the bug permits expiration, "
-                     "and a bugtask cannot be confirmed.")))
+                     "and a bugtask cannot be confirmed."),
+             readonly=True))
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))
@@ -241,6 +250,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         """Return a candidate subject for a followup message."""
 
     # subscription-related methods
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
     def subscribe(person, subscribed_by):
         """Subscribe `person` to the bug.
 
@@ -249,6 +263,8 @@ class IBug(IMessageTarget, ICanBeMentored):
         :return: an `IBugSubscription`.
         """
 
+    @call_with(person=REQUEST_USER)
+    @export_write_operation()
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
 
@@ -498,6 +514,12 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         Return None if no such bugtask is found.
         """
+
+# In order to avoid circular dependencies, we only import
+# IBugSubscription (which itself imports IBug) here, and assign it as
+# the value type for the `subscriptions` collection.
+from canonical.launchpad.interfaces.bugsubscription import IBugSubscription
+IBug['subscriptions'].value_type.schema = IBugSubscription
 
 
 class IBugDelta(Interface):
