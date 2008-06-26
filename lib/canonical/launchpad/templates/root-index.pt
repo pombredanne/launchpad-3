@@ -74,6 +74,18 @@
           <h2>What&#8217;s new here?</h2>
           <ul>
            <li class="news">
+              <a href="http://news.launchpad.net/?p=91">
+                <strong>Code review by email</strong><br />
+                Use email to vote and add your comments to code reviews in Launchpad.
+              </a>
+           </li>
+           <li class="news">
+              <a href="http://news.launchpad.net/?p=92">
+                <strong>New bug, translations and distro pages</strong><br />
+                We're making Launchpad easier to use - find out how.
+              </a>
+           </li>
+           <li class="news">
               <a href="http://news.launchpad.net/cool-new-stuff/review-branch-merge-proposals-in-launchpad">
                 <strong>Code merger reviews</strong><br />
                 Review proposed branch mergers, using comments and voting, direct in Launchpad.
@@ -105,14 +117,6 @@
                 <strong>Search translations</strong><br />
                 Find words and phrases within translation files. Ideal for
                 locating and correcting errors.
-              </a>
-            </li>
-            <li class="news">
-              <a href="https://help.launchpad.net/PPAQuickStart#copy">
-                <strong>Copy PPA packages</strong><br />
-                Now you can copy source and binary packages between distro
-                releases within a PPA or to any other PPA for which you
-                have upload permission.
               </a>
             </li>
           </ul>
