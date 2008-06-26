@@ -49,11 +49,11 @@ class LicenseStatus(DBEnumeratedType):
     """The status of a project's license review."""
 
     OPEN_SOURCE = DBItem(10, "Open Source",
-                        u"This project\u2018s license is open source.")
+                        u"This project&lsquo;s license is open source.")
     PROPRIETARY = DBItem(20, "Proprietary",
-                         u"This project\u2018s license is proprietary.")
+                         u"This project&lsquo;s license is proprietary.")
     UNREVIEWED = DBItem(30, "Unreviewed",
-                        u"This project\u2018s license has not been reviewed.")
+                        u"This project&lsquo;s license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
