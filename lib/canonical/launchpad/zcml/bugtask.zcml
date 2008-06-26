@@ -30,7 +30,8 @@
                            date_left_new date_triaged date_fix_committed
                            date_fix_released date_closed bug_subscribers
                            is_complete canTransitionToStatus isMentor
-                           canMentor isSubscribed getPackageComponent" />
+                           canMentor isSubscribed getPackageComponent
+                           userCanEditImportance userCanEditMilestone" />
         <require
             permission="launchpad.View"
             attributes="bugtargetname bugtargetdisplayname

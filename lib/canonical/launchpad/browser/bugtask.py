@@ -1060,26 +1060,14 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         If yes, return True, otherwise return False.
         """
-        product_or_distro = self._getProductOrDistro()
-
-        return (
-            ((product_or_distro.bug_supervisor and
-                 self.user and
-                 self.user.inTeam(product_or_distro.bug_supervisor)) or
-                check_permission("launchpad.Edit", product_or_distro)))
+        return self.context.userCanEditMilestone(self.user)
 
     def userCanEditImportance(self):
         """Can the user edit the Importance field?
 
         If yes, return True, otherwise return False.
         """
-        product_or_distro = self._getProductOrDistro()
-
-        return (
-            ((product_or_distro.bug_supervisor and
-                 self.user and
-                 self.user.inTeam(product_or_distro.bug_supervisor)) or
-                check_permission("launchpad.Edit", product_or_distro)))
+        return self.context.userCanEditImportance(self.user)
 
     def _getProductOrDistro(self):
         """Return the product or distribution relevant to the context."""
