@@ -4,26 +4,28 @@
 __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
+    'ApplicationButtons',
     'Breadcrumbs',
+    'BrowserWindowDimensions',
+    'ContribIcingFolder',
+    'DefaultShortLink',
+    'EdubuntuIcingFolder',
+    'IcingFolder',
+    'KubuntuIcingFolder',
+    'LaunchpadRootNavigation',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
-    'MenuBox',
-    'MaloneContextMenu',
-    'NavigationMenuTabs',
-    'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
-    'SoftTimeoutView',
+    'MaloneContextMenu',
+    'MenuBox',
+    'NavigationMenuTabs',
     'OneZeroTemplateStatus',
-    'IcingFolder',
-    'ContribIcingFolder',
-    'UbuntuIcingFolder',
-    'StructuralHeaderPresentationView',
+    'SoftTimeoutView',
     'StructuralHeaderPresentation',
+    'StructuralHeaderPresentationView',
     'StructuralObjectPresentation',
-    'ApplicationButtons',
-    'DefaultShortLink',
-    'BrowserWindowDimensions',
+    'UbuntuIcingFolder',
     ]
 
 import cgi
@@ -754,6 +756,20 @@ class UbuntuIcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing-ubuntu/')
+
+
+class KubuntuIcingFolder(ExportedFolder):
+    """Export the Kubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-kubuntu/')
+
+
+class EdubuntuIcingFolder(ExportedFolder):
+    """Export the Edubuntu icing."""
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing-edubuntu/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):

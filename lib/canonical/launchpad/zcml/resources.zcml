@@ -1,10 +1,4 @@
 <configure xmlns="http://namespaces.zope.org/browser">
-    <!-- Style sheets -->
-    <resource name="kubuntu-masthead2.css" file="../templates/kubuntu-masthead2.css" />
-    <resource name="edubuntu.css" file="../templates/edubuntu.css" />
-    <resource name="edubuntu-screen.css" file="../templates/edubuntu-screen.css" />
-    <resource name="edubuntu-common.css" file="../templates/edubuntu-common.css" />
-
     <!-- Missing images -->
     <resource name="nyet-badge" file="../images/nyet-badge.png" />
     <resource name="nyet-icon" file="../images/nyet-icon.png" />
@@ -171,22 +165,5 @@
 
     <!-- project-specific icons -->
     <resource name="ubuntu-icon" file="../images/ubuntu-icon.png" />
-
-    <!-- Shipit KUbuntu images (from www.kubuntu.org) -->
-    <resource name="kubuntu-header-bg"
-        file="../images/kubuntu-header-bg.png" />
-    <resource name="kubuntu-footer-bg"
-        file="../images/kubuntu-footer-bg.png" />
-    <resource name="kubuntu-header" file="../images/kubuntu-header.png" />
-    <resource name="kubuntu-tab_off_ns1.gif" file="../images/kubuntu-tab_off_ns1.gif" />
-    <resource name="kubuntu-tab_off_ns2.gif" file="../images/kubuntu-tab_off_ns2.gif" />
-    <resource name="kubuntu-tab_on_ns2.gif" file="../images/kubuntu-tab_on_ns2.gif" />
-    <resource name="kubuntu-tab_on_ns1.gif" file="../images/kubuntu-tab_on_ns1.gif" />
-    <resource name="kubuntu-favicon.png" file="../images/kubuntu-favicon.png" />
-
-    <!-- Shipit EdUbuntu images (from www.edubuntu.org) -->
-    <resource name="edubuntu-header.png" file="../images/edubuntu-header.png" />
-    <resource name="edubuntu-headerlogo.png" file="../images/edubuntu-headerlogo.png" />
-    <resource name="edubuntu-icon" file="../images/edubuntu-icon.png" />
 
 </configure>
