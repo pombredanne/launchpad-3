@@ -5,9 +5,7 @@ zone of a person.  It also remembers who provided that information, and
 when. This is designed to make it possible to have people provide
 location / time zone info for other people in a wiki style.
 
-    >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     ILocationRecord, IObjectWithLocation, IPersonSet)
     >>> personset = getUtility(IPersonSet)
@@ -100,6 +98,20 @@ And admins can, too.
     >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', admin)
     >>> abs(cprov.longitude + 62.1) < 0.001
     True
+
+If a user had provided only his time zone but not his location, other
+people would still be able to set his location.  That's the case of
+most our existing users, who set their time zone but hadn't set their
+locations (since there was no UI for that).
+
+    >>> salgado = personset.getByName('salgado')
+    >>> login(salgado.preferredemail.email)
+    >>> salgado.setLocation(None, None, 'America/Sao_Paulo', salgado)
+
+    >>> login(jdub.preferredemail.email)
+    >>> salgado.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
+    >>> print salgado.latitude
+    -43.0
 
 We cannot store a location for a team, though.
 

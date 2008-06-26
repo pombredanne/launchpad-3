@@ -24,7 +24,7 @@ from zope.testing.loggingsupport import Handler
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -188,6 +188,7 @@ def setGlobs(test):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
+    test.globs['login_person'] = login
     test.globs['logout'] = logout
     test.globs['ILaunchBag'] = ILaunchBag
     test.globs['getUtility'] = getUtility

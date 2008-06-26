@@ -1,49 +1,45 @@
 = Person Locations =
 
-People can have a location and time zone in Launchpad. This test primarily
-makes sure that pages display given the relevant sample data.
-
-    >>> from canonical.launchpad.ftests import login
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> personset = getUtility(IPersonSet)
-
-In some cases, a person has a time zone, but no location. We test that their
-home page renders without problems.
+People can have a location and time zone in Launchpad.  In some cases, a
+person has a time zone, but no location. We test that their home page renders
+without problems.
 
     >>> login('test@canonical.com')
-    >>> marilize = personset.getByName('marilize')
+    >>> zzz = factory.makePerson(name='zzz', time_zone='Africa/Maseru',
+    ...                          latitude=None, longitude=None)
     >>> logout()
-    >>> print marilize.time_zone
-    Africa/Maseru
-    >>> print marilize.latitude
-    None
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> nopriv_browser.open('http://launchpad.dev/~marilize')
+    >>> nopriv_browser.open('http://launchpad.dev/~zzz')
 
-They should see a link to the +editlocation page which includes an image.
+They should see a link to the +editlocation page which includes an image (the
+map) and the person's time zone.
 
     >>> editlink = nopriv_browser.getLink(url='+editlocation')
     >>> editlink.text
     '[IMG]'
+    >>> print extract_text(find_tag_by_id(
+    ...     nopriv_browser.contents, 'portlet-details'))
+    Summary...
+    Time zone: Africa/Maseru
+    ...
 
 If a person has a location, they should have a little map portlet in their
 home page. We can't test all the google javascript, but we can make sure
 there's a map, and the scripts are loaded.
 
     >>> login('test@canonical.com')
-    >>> kamion = personset.getByName('kamion')
+    >>> login('test@canonical.com')
+    >>> yyy = factory.makePerson(name='yyy', time_zone='Europe/London',
+    ...                          latitude=52.2, longitude=0.3)
     >>> logout()
-    >>> print kamion.time_zone
-    Europe/London
-    >>> print kamion.latitude
-    52.2
     >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> nopriv_browser.open('http://launchpad.dev/~kamion')
-    >>> body = find_main_content(nopriv_browser.contents)
-    >>> 'Europe/London' in str(body)
-    True
-    >>> mapdiv = find_tag_by_id(str(body), 'portlet-map')
+    >>> nopriv_browser.open('http://launchpad.dev/~yyy')
+    >>> print extract_text(find_tag_by_id(
+    ...     nopriv_browser.contents, 'portlet-details'))
+    Summary...
+    Time zone: Europe/London
+    ...
+    >>> mapdiv = find_tag_by_id(nopriv_browser.contents, 'portlet-map')
     >>> 'GBrowserIsCompatible' in str(mapdiv)
     True
     >>> 'src="http://maps.google.com/maps' in str(nopriv_browser.contents)
