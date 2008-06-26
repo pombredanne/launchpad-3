@@ -65,8 +65,10 @@ class cmd_launchpad_server(Command):
         :param mirror_url: Where all Launchpad branches are mirrored.
         :return: A `LaunchpadTransport`.
         """
-        # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
+        # Importing here to avoid circular import when lpserve is loaded as a
+        # bzr plugin.
         from canonical.codehosting import transport
+        # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
         hosted_transport = transport.get_chrooted_transport(hosted_url)
         mirror_transport = transport.get_chrooted_transport(mirror_url)
         # Translate the given 'id' into an actual database id.
