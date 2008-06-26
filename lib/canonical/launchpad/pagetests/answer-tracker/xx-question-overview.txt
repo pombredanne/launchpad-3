@@ -72,20 +72,9 @@ question page.
 
 == Distributions ==
 
-Distributions also have the 'Latest questions' porlet and
-'Ask a question' button on the front page:
+Distributions have an 'Ask a question' link on the front page:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
-
-    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
-    >>> print extract_text(
-    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
-    [Open] Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
-    [Open] Continue playing after shutdown
-    [Answered] Play DVDs in Totem
-    [Solved] mailto: problem in webpage
-    [Answered] Installation of Java Runtime Environment for Mozilla
-
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about Ubuntu

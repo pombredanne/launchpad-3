@@ -122,7 +122,7 @@ Distribution branding
 =====================
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/kubuntu/+branding')
+    >>> browser.open('http://launchpad.dev/kubuntu/+edit')
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -131,9 +131,9 @@ Distribution branding
     >>> browser.open('http://launchpad.dev/kubuntu')
     >>> browser.url
     'http://launchpad.dev/kubuntu'
-    >>> browser.getLink('Change branding').click()
+    >>> browser.getLink('Change distribution details').click()
     >>> browser.url
-    'http://launchpad.dev/kubuntu/+branding'
+    'http://launchpad.dev/kubuntu/+edit'
 
     >>> browser.getControl(name='field.icon.action').value
     ['keep']
@@ -151,13 +151,13 @@ Distribution branding
     >>> from canonical.launchpad.ftests import set_branding
     >>> set_branding(browser)
 
-    >>> browser.getControl('Change Branding').click()
+    >>> browser.getControl('Change', index=3).click()
 
 Here we see the updated values.
 
     >>> browser.url
     'http://launchpad.dev/kubuntu'
-    >>> browser.getLink('Change branding').click()
+    >>> browser.getLink('Change distribution details').click()
 
     >>> browser.getControl(name='field.icon.action').value
     ['keep']

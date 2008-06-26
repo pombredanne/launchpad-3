@@ -7,11 +7,14 @@ __metaclass__ = type
 
 import os
 import re
+import random
 import time
 import urlparse
 import xmlrpclib
 
+from cStringIO import StringIO
 from datetime import datetime
+from httplib import HTTPMessage
 
 from zope.component import getUtility
 
@@ -21,6 +24,8 @@ from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, Bugzilla, DebBugs,
     ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
     Trac, TracXMLRPCTransport)
+from canonical.launchpad.components.externalbugtracker.bugzilla import (
+    BugzillaXMLRPCTransport)
 from canonical.launchpad.components.externalbugtracker.trac import (
     LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
     LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
@@ -30,7 +35,9 @@ from canonical.launchpad.interfaces import (
     UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
 from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
 
@@ -63,6 +70,7 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     commit()
     LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
     return getUtility(IBugTrackerSet).getByName(name)
+
 
 def read_test_file(name):
     """Return the contents of the test file named :name:
@@ -99,6 +107,7 @@ def print_bugwatches(bug_watches, convert_remote_status=None):
             status = convert_remote_status(status)
 
         print 'Remote bug %d: %s' % (remote_bug_id, status)
+
 
 def convert_python_status(status, resolution):
     """Convert a human readable status and resolution into a Python
@@ -327,7 +336,13 @@ class TestOldBugzilla(TestBugzilla):
                 123543: ('ASSIGNED', '')}
 
 
-class TestBugzillaXMLRPCTransport:
+class FakeHTTPConnection:
+    """A fake HTTP connection."""
+    def putheader(self, header, value):
+        print "%s: %s" % (header, value)
+
+
+class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 
     seconds_since_epoch = None
@@ -374,6 +389,8 @@ class TestBugzillaXMLRPCTransport:
         }
 
     # Comments are mapped to bug IDs.
+    comment_id_index = 4
+    new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
     bug_comments = {
         1: {
             1: {'author': 'trillian',
@@ -408,9 +425,22 @@ class TestBugzillaXMLRPCTransport:
 
     # Map namespaces onto method names.
     methods = {
-        'Bug': ['comments', 'get_bugs'],
-        'Launchpad': ['time'],
+        'Bug': ['add_comment', 'comments', 'get_bugs'],
+        'Launchpad': ['login', 'time'],
+        'Test': ['login_required']
         }
+
+    # Methods that require authentication.
+    auth_required_methods = [
+        'add_comment',
+        'login_required',
+        ]
+
+    expired_cookie = None
+
+    def expireCookie(self, cookie):
+        """Mark the cookie as expired."""
+        self.expired_cookie = cookie
 
     def request(self, host, handler, request, verbose=None):
         """Call the corresponding XML-RPC method.
@@ -430,8 +460,20 @@ class TestBugzillaXMLRPCTransport:
             "No method '%s' in namespace '%s'." %
             (method_name, method_prefix))
 
+        # If the method requires authentication and we have no auth
+        # cookie, throw a Fault.
+        if (method_name in self.auth_required_methods and
+            (self.auth_cookie is None or
+             self.auth_cookie == self.expired_cookie)):
+            raise xmlrpclib.Fault(410, 'Login Required')
+
         if self.print_method_calls:
-            print "CALLED %s.%s(%s)" % (method_prefix, method_name, args[0])
+            if len(args) > 0:
+                arguments = ordered_dict_as_string(args[0])
+            else:
+                arguments = ''
+
+            print "CALLED %s.%s(%s)" % (method_prefix, method_name, arguments)
 
         method = getattr(self, method_name)
         return method(*args)
@@ -452,6 +494,54 @@ class TestBugzillaXMLRPCTransport:
             'utc_time': utc_time,
             'tz_name': self.timezone,
             }
+
+    def login_required(self):
+        # This method only exists to demonstrate login required methods.
+        return "Wonderful, you've logged in! Aren't you a clever biped?"
+
+    def _consumeLoginToken(self, token_text):
+        """Try to consume a login token."""
+        token = getUtility(ILoginTokenSet)[token_text]
+
+        if token.tokentype.name != 'BUGTRACKER':
+            raise AssertionError(
+                'Invalid token type: %s' % token.tokentype.name)
+        if token.date_consumed is not None:
+            raise AssertionError("Token has already been consumed.")
+        token.consume()
+
+        if self.print_method_calls:
+            print "Successfully validated the token."
+
+    def _handleLoginToken(self, token_text):
+        """A wrapper around _consumeLoginToken().
+
+        We can override this method when we need to do things Zopelessly.
+        """
+        self._consumeLoginToken(token_text)
+
+    def login(self, arguments):
+        token_text = arguments['token']
+
+        self._handleLoginToken(token_text)
+
+        # Generate some random cookies to use.
+        random_cookie_1 = str(random.random())
+        random_cookie_2 = str(random.random())
+
+        # Reset the headers so that we don't end up with long strings of
+        # repeating cookies.
+        self.last_response_headers = HTTPMessage(StringIO())
+
+        self.last_response_headers.addheader(
+            'set-cookie', 'Bugzilla_login=%s;' % random_cookie_1)
+        self.last_response_headers.addheader(
+            'set-cookie', 'Bugzilla_logincookie=%s;' % random_cookie_2)
+
+        # We always return the same user ID.
+        # This has to be listified because xmlrpclib tries to expand
+        # sequences of length 1.
+        return [{'user_id': 42}]
 
     def get_bugs(self, arguments):
         """Return a list of bug dicts for a given set of bug IDs."""
@@ -520,6 +610,52 @@ class TestBugzillaXMLRPCTransport:
 
         # More xmlrpclib:1387 odd-knobbery avoidance.
         return [{'bugs': comments_by_bug_id}]
+
+    def add_comment(self, arguments):
+        """Add a comment to a bug."""
+        assert 'id' in arguments, (
+            "Bug.add_comment() must always be called with an id parameter.")
+        assert 'comment' in arguments, (
+            "Bug.add_comment() must always be called with an comment "
+            "parameter.")
+
+        bug_id = arguments['id']
+        comment = arguments['comment']
+
+        # If the bug doesn't exist, raise a fault.
+        if int(bug_id) not in self.bugs:
+            raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+        # If we don't have comments for the bug already, create an empty
+        # comment dict.
+        if bug_id not in self.bug_comments:
+            self.bug_comments[bug_id] = {}
+
+        # Work out the number for the new comment on that bug.
+        if len(self.bug_comments[bug_id]) == 0:
+            comment_number = 1
+        else:
+            comment_numbers = sorted(self.bug_comments[bug_id].keys())
+            latest_comment_number = comment_numbers[-1]
+            comment_number = latest_comment_number + 1
+
+        # Add the comment to the bug.
+        comment_id = self.comment_id_index + 1
+        comment_dict = {
+            'author': 'launchpad',
+            'id': comment_id,
+            'number': comment_number,
+            'time': self.new_comment_time,
+            'text': comment,
+            }
+        self.bug_comments[bug_id][comment_number] = comment_dict
+
+        self.comment_id_index = comment_id
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'comment_id': comment_id}]
 
 
 class TestMantis(Mantis):
@@ -619,7 +755,7 @@ class MockTracRemoteBug:
             'resolution': self.resolution,}
 
 
-class TestTracInternalXMLRPCTransport:
+class TestInternalXMLRPCTransport:
     """Test XML-RPC Transport for the internal XML-RPC server.
 
     This transport executes all methods as the 'launchpad' db user, and
