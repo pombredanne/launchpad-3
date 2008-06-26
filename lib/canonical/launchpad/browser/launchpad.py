@@ -13,6 +13,7 @@ __all__ = [
     'IcingFolder',
     'KubuntuIcingFolder',
     'LaunchpadRootNavigation',
+    'LaunchpadImageFolder',
     'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
@@ -47,7 +48,7 @@ from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
-from canonical.lazr import ExportedFolder
+from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
     IAnnouncementSet,
@@ -742,6 +743,14 @@ class IcingFolder(ExportedFolder):
 
     folder = os.path.join(
         os.path.dirname(os.path.realpath(__file__)), '../icing/')
+
+
+class LaunchpadImageFolder(ExportedImageFolder):
+    """Export the Launchpad images - supporting retrieval without extension.
+    """
+
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../images/')
 
 
 class ContribIcingFolder(ExportedFolder):

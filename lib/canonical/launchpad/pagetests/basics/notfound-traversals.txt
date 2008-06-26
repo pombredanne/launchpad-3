@@ -447,10 +447,10 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/sprints")
 >>> check("/sprints/ubz")
 
->>> check("/++resource++error")
+>>> check_not_found("/++resource++error")
 
->>> check("/@@")
->>> check("//@@")
+>>> check_not_found("/@@")
+>>> check_not_found("//@@")
 >>> check_redirect("/translations/groups/", status=301)
 >>> check_redirect("/translations/imports/", status=301)
 
@@ -483,4 +483,12 @@ Icing resources.
 ...       host="shipit.kubuntu.dev")
 >>> check("/+icing-edubuntu/rev%s/edubuntu.css" % revno,
 ...       host="shipit.edubuntu.dev")
+
+
+Image resoureces are available from all the virtual hosts.
+
+>>> check('/@@/add', host='launchpad.dev')
+>>> check('/@@/add', host='bugs.launchpad.dev')
+>>> check('/@@/add', host='answers.launchpad.dev')
+>>> check('/@@/add', host='code.launchpad.dev')
 
