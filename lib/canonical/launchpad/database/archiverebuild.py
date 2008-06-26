@@ -132,20 +132,15 @@ class ArchiveRebuildSet:
 
     def new(self, name, distroseries, registrant, reason):
         """See `IArchiveRebuildSet`."""
-        # Implicitly prepending the distroseries name to the archive
-        # name is quite evil. However it allows us to publish rebuild
-        # archives for a given distribution in a single disk location.
-        archive_name = '%s-%s' % (distroseries.name, name)
         candidate = self.getByDistributionAndArchiveName(
-            distroseries.distribution, archive_name)
+            distroseries.distribution, name)
         if candidate is not None:
             raise ArchiveRebuildAlreadyExists(
-                "An archive rebuild named '%s' for '%s' in '%s' "
-                "already exists." % (name, distroseries.name,
-                                     distroseries.distribution.name))
+                "An archive rebuild named '%s' for '%s' already "
+                "exists." % (name, candidate.distroseries.distribution.name))
 
         archive = getUtility(IArchiveSet).new(
-            name=archive_name, distribution=distroseries.distribution,
+            name=name, distribution=distroseries.distribution,
             owner=registrant, purpose=ArchivePurpose.REBUILD)
 
         return ArchiveRebuild(

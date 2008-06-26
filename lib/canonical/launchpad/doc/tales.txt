@@ -43,11 +43,10 @@ they all implement IHasLogo,.IHasMugshot and IHasIcon.
     >>> test_tales("person/image:logo", person=person)
     '<img ... src="/@@/person-logo" />'
 
-The Mugshot is presented in a div, floating right, with the mugshot inside
-it:
+The Mugshot is presented in an <img> tag.
 
     >>> test_tales("person/image:mugshot", person=person)
-    '<div...<img...src="/@@/person-mugshot" />.../div>'
+    '<img...src="/@@/person-mugshot" />'
 
 For people we even have different images in case the person in question is not
 an actual launchpad user.

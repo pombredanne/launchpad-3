@@ -43,7 +43,11 @@
 
 <div metal:fill-slot="main">
 
-  <tal:icon replace="structure context/image:mugshot" />
+  <div
+    style="width: 200px; height: 200px; float: right;"
+    tal:content="structure context/image:mugshot"
+  />
+
   <h1 tal:condition="not:context/isTeam"
   >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
   <h1 tal:condition="context/isTeam" tal:content="context/browsername" />

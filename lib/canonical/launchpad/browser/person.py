@@ -2142,10 +2142,8 @@ class PersonVouchersView(LaunchpadFormView):
 
         Only unredeemed vouchers owned by the user are shown.
         """
-        unredeemed, redeemed = (
-            self.context.getCommercialSubscriptionVouchers())
         terms = []
-        for voucher in unredeemed:
+        for voucher in self.unredeemed_vouchers:
             text = "%s (%d months)" % (
                 voucher.voucher_id, voucher.term_months)
             terms.append(SimpleTerm(voucher, voucher.voucher_id, text))
@@ -2155,10 +2153,16 @@ class PersonVouchersView(LaunchpadFormView):
                    title=_('Select a voucher'),
                    description=_('Choose one of these unredeemed vouchers'),
                    vocabulary=voucher_vocabulary,
-                   required=False),
+                   required=True),
             custom_widget=self.custom_widgets['voucher'],
             render_context=self.render_context)
         return field
+
+    @cachedproperty
+    def unredeemed_vouchers(self):
+        unredeemed, redeemed = (
+            self.context.getCommercialSubscriptionVouchers())
+        return unredeemed
 
     @cachedproperty
     def owned_commercial_projects(self):
@@ -2180,6 +2184,7 @@ class PersonVouchersView(LaunchpadFormView):
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
         voucher = data['voucher']
+
         try:
             # The call to redeemVoucher returns True if it succeeds or it
             # raises an exception.  Therefore the return value does not need
