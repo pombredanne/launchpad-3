@@ -1033,7 +1033,7 @@ class ProductSet:
             # Don't restrict results if has_zero_licenses is None.
             pass
         else:
-            raise AssertionError('has_zero_licenses invalid: %r'
+            raise AssertionError('has_zero_licenses is invalid: %r'
                                  % has_zero_licenses)
 
         if licenses is not None and len(licenses) > 0:

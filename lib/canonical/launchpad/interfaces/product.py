@@ -573,7 +573,8 @@ class IProductReviewSearch(Interface):
             [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
 
     has_zero_licenses = Choice(
-        title=_('Or has zero licenses'), values=[True, False], required=False)
+        title=_('Or has no license specified'),
+        values=[True, False], required=False)
 
     created_after = Date(title=_("Created between"), required=False)
 
