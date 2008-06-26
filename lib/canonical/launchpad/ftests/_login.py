@@ -9,7 +9,12 @@ from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 
 
-__all__ = ['login', 'logout', 'ANONYMOUS', 'is_logged_in']
+__all__ = [
+    'login',
+    'login_person',
+    'logout',
+    'ANONYMOUS',
+    'is_logged_in']
 
 
 ANONYMOUS = 'launchpad.anonymous'
@@ -47,6 +52,11 @@ def login(email, participation=None):
         principal = authutil.unauthenticatedPrincipal()
 
     setupInteraction(principal, login=email, participation=participation)
+
+
+def login_person(person, participation=None):
+    """Login the person with their preferred email."""
+    return login(person.preferredemail.email, participation)
 
 
 def logout():
