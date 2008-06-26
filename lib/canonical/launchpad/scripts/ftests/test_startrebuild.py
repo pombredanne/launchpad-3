@@ -15,24 +15,43 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BuildStatus, IArchiveSet, IBuildSet, IDistroSeriesSet,
+    ArchivePurpose, BuildStatus, IArchiveSet, IBuildSet, IDistributionSet,
     PackagePublishingStatus)
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, SoyuzScriptError)
 from canonical.launchpad.scripts.create_rebuild import RebuildArchiveCreator
+from canonical.launchpad.scripts import QuietFakeLogger
 from canonical.testing import LaunchpadZopelessLayer
+
+
+def get_spn(binary_package):
+    """Return the SourcePackageName of the binary."""
+    pub = binary_package.getCurrentPublication()
+    return pub.sourcepackagerelease.sourcepackagename
 
 
 class TestStartRebuildScript(unittest.TestCase):
     """Test the copy-package.py script."""
     layer = LaunchpadZopelessLayer
     rebld_archive_name = "ra%s" % int(time.time())
+    expected_build_spns = [
+        u'alsa-utils', u'cnews', u'evolution', u'libstdc++',
+        u'linux-source-2.6.15', u'netapplet']
+    expected_src_names = [
+        u'alsa-utils 1.0.9a-4ubuntu1 in hoary',
+        u'cnews cr.g7-37 in hoary', u'evolution 1.0 in hoary',
+        u'libstdc++ b8p in hoary',
+        u'linux-source-2.6.15 2.6.15.3 in hoary', 
+        u'netapplet 1.0-1 in hoary', u'pmount 0.1-2 in hoary']
+    pending_statuses = (
+        PackagePublishingStatus.PENDING,
+        PackagePublishingStatus.PUBLISHED)
 
-    def runScript(self, extra_args=None):
+    def runWrapperScript(self, extra_args=None):
         """Run start-rebuild.py, returning the result and output.
 
-        Returns a tuple of the process's return code, stdout output and
-        stderr output."""
+        Runs the wrapper script using Popen(), returns a tuple of the
+        process's return code, stdout output and stderr output."""
         if extra_args is None:
             extra_args = []
         script = os.path.join(
@@ -44,19 +63,6 @@ class TestStartRebuildScript(unittest.TestCase):
         stdout, stderr = process.communicate()
         return (process.returncode, stdout, stderr)
 
-    def isNameVacant(self, name):
-        """Make sure the rebuild archive name to be used is vacant."""
-        archives = [archive for archive in getUtility(IArchiveSet)
-                    if archive.purpose == ArchivePurpose.REBUILD]
-
-        # Return the archive if found, None otherwise.
-        if len(archives) == 1:
-            [result] = archives
-        else:
-            result = None
-
-        return result
-
     def testRebuildArchiveCreation(self):
         """Start rebuild, check data before and after.
 
@@ -64,57 +70,50 @@ class TestStartRebuildScript(unittest.TestCase):
         """
         # Make sure a rebuild archive with the desired name does
         # not exist yet.
-        self.assertTrue(self.isNameVacant(self.rebld_archive_name) is None)
+        distro_name = 'ubuntu'
+        name = self.rebld_archive_name
+        distro = getUtility(IDistributionSet).getByName(distro_name)
 
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, name)
+        self.assertTrue(rebuild_archive is None)
 
-        pending_statuses = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED)
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
         # These source packages will be copied to the rebuild archive.
         hoary_sources = hoary.distribution.main_archive.getPublishedSources(
-            distroseries=hoary, status=pending_statuses)
+            distroseries=hoary, status=self.pending_statuses)
 
         src_names = sorted(source.displayname for source in hoary_sources)
-        expected_src_names = [u'alsa-utils 1.0.9a-4ubuntu1 in hoary',
-            u'cnews cr.g7-37 in hoary', u'evolution 1.0 in hoary',
-            u'libstdc++ b8p in hoary',
-            u'linux-source-2.6.15 2.6.15.3 in hoary', 
-            u'netapplet 1.0-1 in hoary', u'pmount 0.1-2 in hoary']
-        self.assertEqual(src_names, expected_src_names)
+        self.assertEqual(src_names, self.expected_src_names)
 
         # Command line arguments required for the invocation of the
         # 'start-rebuild.py' script.
         extra_args = [
-            '-d', 'ubuntu', '-s', 'hoary', '-c', 'main', '-t',
+            '-d', distro_name, '-s', 'hoary', '-c', 'main', '-t',
             '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '-r', self.rebld_archive_name, '-u', 'salgado']
+            '-r', name, '-u', 'salgado']
 
         # Start rebuild now!
-        (return_code, out, err) = self.runScript(extra_args)
+        (return_code, out, err) = self.runWrapperScript(extra_args)
 
         # Check for zero exit code.
         self.assertEqual(return_code, 0)
 
         # Make sure the rebuild archive with the desired name was
         # created
-        rebuild_archive = self.isNameVacant(self.rebld_archive_name)
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, name)
         self.assertTrue(rebuild_archive is not None)
 
         # Make sure the source packages were cloned.
         rebuild_sources = rebuild_archive.getPublishedSources(
-            distroseries=hoary, status=pending_statuses)
+            distroseries=hoary, status=self.pending_statuses)
 
         rebuild_src_names = sorted(
             source.displayname for source in rebuild_sources)
 
-        self.assertEqual(rebuild_src_names, expected_src_names)
-
-        def get_spn(binary_package):
-            """Return the SourcePackageName of the binary."""
-            pub = binary_package.getCurrentPublication()
-            return pub.sourcepackagerelease.sourcepackagename
+        self.assertEqual(rebuild_src_names, self.expected_src_names)
 
         # Now check that we have build records for the sources cloned.
         builds = list(getUtility(IBuildSet).getBuildsForArchive(
@@ -124,13 +123,10 @@ class TestStartRebuildScript(unittest.TestCase):
         # since it is architecture independent and the 'hoary'
         # DistroSeries in the sample data has no DistroArchSeries
         # with chroots set up.
-        expected_build_spns = [
-            u'alsa-utils', u'cnews', u'evolution', u'libstdc++',
-            u'linux-source-2.6.15', u'netapplet']
         build_spns = [
             get_spn(removeSecurityProxy(build)).name for build in builds]
 
-        self.assertEqual(build_spns, expected_build_spns)
+        self.assertEqual(build_spns, self.expected_build_spns)
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
@@ -151,6 +147,83 @@ class TestStartRebuildScript(unittest.TestCase):
             raise AssertionError(
                 "'%s' was not raised" % exception_name)
 
+    def runScript(
+        self, archive_name=None, component='main', suite='hoary',
+        user='salgado', exists_before=False, exists_after=False,
+        exception_type=None, exception_text=None, extra_args=None):
+        """Run the script to test.
+
+        :type archive_name: `str`
+        :param archive_name: the name of the rebuild archive to create.
+        :type component: `str`
+        :param component: the name of the rebuild archive component.
+        :type suite: `str`
+        :param suite: the name of the rebuild archive suite.
+        :type user: `str`
+        :param user: the name of the user creating the archive.
+        :type exists_before: `bool`
+        :param exists_before: rebuild archive with given name should
+            already exist if True.
+        :type exists_after: `True`
+        :param exists_after: the rebuild archive is expected to exist
+            after script invocation if True.
+        :type exception_type: type
+        :param exception_type: the type of exception expected in case
+            of failure.
+        :type exception_text: `str`
+        :param exception_text: expected exception text prefix in case
+            of failure.
+        :type extra_args: list of strings
+        :param extra_args: additional arguments to be passed to the
+            script (if any).
+        """
+        now = int(time.time())
+        if archive_name is None:
+            archive_name = "ra%s" % now
+
+        distro_name = 'ubuntu'
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, archive_name)
+
+        if exists_before:
+            self.assertTrue(rebuild_archive is not None)
+        else:
+            self.assertTrue(rebuild_archive is None)
+
+        # Command line arguments required for the invocation of the
+        # 'start-rebuild.py' script.
+        script_args = [
+            '-d', distro_name, '-s', suite, '-c', component, '-t',
+            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
+            '-r', archive_name, '-u', user]
+
+        if extra_args is not None:
+            script_args.extend(extra_args)
+
+        script = RebuildArchiveCreator(
+            'start-rebuild', dbuser=config.uploader.dbuser,
+            test_args=script_args)
+
+        script.logger = QuietFakeLogger()
+
+        if exception_type is not None:
+            self.assertRaisesWithContent(
+                exception_type, exception_text, script.mainTask)
+        else:
+            script.mainTask()
+
+        rebuild_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distro, ArchivePurpose.REBUILD, archive_name)
+
+        if exists_after:
+            self.assertTrue(rebuild_archive is not None)
+        else:
+            self.assertTrue(rebuild_archive is None)
+
+        return rebuild_archive
+
     def testInvalidRebuildArchiveName(self):
         """Try rebuild with invalid archive name.
 
@@ -160,158 +233,122 @@ class TestStartRebuildScript(unittest.TestCase):
         # The colons in the name make it invalid.
         invalid_archive_name = "ra::%s" % now
 
-        # Make sure a rebuild archive with the desired name does
-        # not exist yet.
-        self.assertTrue(self.isNameVacant(invalid_archive_name) is None)
-
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
-        # Command line arguments required for the invocation of the
-        # 'start-rebuild.py' script.
-        extra_args = [
-            '-d', 'ubuntu', '-s', 'hoary', '-c', 'main', '-t',
-            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '-r', invalid_archive_name, '-u', 'salgado']
-
-        script = RebuildArchiveCreator(
-            'start-rebuild', dbuser=config.uploader.dbuser,
-            test_args=extra_args)
-        self.assertRaisesWithContent(
-            SoyuzScriptError, "Invalid rebuild archive name",
-            script.mainTask)
-
-        # Make sure the rebuild archive with the desired name was
-        # not created
-        rebuild_archive = self.isNameVacant(invalid_archive_name)
-        self.assertTrue(rebuild_archive is None)
+        self.runScript(
+            archive_name=invalid_archive_name,
+            exception_type=SoyuzScriptError,
+            exception_text="Invalid rebuild archive name")
 
     def testInvalidComponentName(self):
-        """Try rebuild with invalid component name.
-
-        The rebuild archive creation will fail with exit code 3.
-        """
+        """Try rebuild with invalid component name."""
         now = int(time.time())
-        archive_name = "ra%s" % now
-
-        # Make sure a rebuild archive with the desired name does
-        # not exist yet.
-        self.assertTrue(self.isNameVacant(archive_name) is None)
-
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
         invalid_component = "component/:/%s" % now
-        # Command line arguments required for the invocation of the
-        # 'start-rebuild.py' script.
-        extra_args = [
-            '-d', 'ubuntu', '-s', 'hoary', '-c', invalid_component, '-t',
-            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '-r', archive_name, '-u', 'salgado']
-
-        script = RebuildArchiveCreator(
-            'start-rebuild', dbuser=config.uploader.dbuser,
-            test_args=extra_args)
-        self.assertRaisesWithContent(
-            SoyuzScriptError, "Invalid component name",
-            script.mainTask)
-
-        # Make sure the rebuild archive with the desired name was
-        # not created
-        rebuild_archive = self.isNameVacant(archive_name)
-        self.assertTrue(rebuild_archive is None)
+        self.runScript(
+            component=invalid_component,
+            exception_type=SoyuzScriptError,
+            exception_text="Invalid component name")
 
     def testInvalidSuite(self):
-        """Try rebuild with invalid suite.
-
-        The rebuild archive creation will fail with exit code 1.
-        """
+        """Try rebuild with invalid suite."""
         now = int(time.time())
-        archive_name = "ra%s" % now
-
-        # Make sure a rebuild archive with the desired name does
-        # not exist yet.
-        self.assertTrue(self.isNameVacant(archive_name) is None)
-
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
         invalid_suite = "suite/:/%s" % now
-        # Command line arguments required for the invocation of the
-        # 'start-rebuild.py' script.
-        extra_args = [
-            '-d', 'ubuntu', '-s', invalid_suite, '-c', 'main', '-t',
-            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '-r', archive_name, '-u', 'salgado']
-
-        script = RebuildArchiveCreator(
-            'start-rebuild', dbuser=config.uploader.dbuser,
-            test_args=extra_args)
-        self.assertRaisesWithContent(
-            PackageLocationError, "Could not find suite", 
-            script.mainTask)
-
-        # Make sure the rebuild archive with the desired name was
-        # not created
-        rebuild_archive = self.isNameVacant(archive_name)
-        self.assertTrue(rebuild_archive is None)
+        self.runScript(
+            suite=invalid_suite,
+            exception_type=PackageLocationError,
+            exception_text="Could not find suite")
 
     def testInvalidUserName(self):
-        """Try rebuild with invalid user name.
-
-        The rebuild archive creation will fail with exit code 4.
-        """
+        """Try rebuild with invalid user name."""
         now = int(time.time())
-        archive_name = "ra%s" % now
-
-        # Make sure a rebuild archive with the desired name does
-        # not exist yet.
-        self.assertTrue(self.isNameVacant(archive_name) is None)
-
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
-
         invalid_user = "user/:/%s" % now
-        # Command line arguments required for the invocation of the
-        # 'start-rebuild.py' script.
-        extra_args = [
-            '-d', 'ubuntu', '-s', 'hoary', '-c', 'main', '-t',
-            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '-r', archive_name, '-u', invalid_user]
-
-        script = RebuildArchiveCreator(
-            'start-rebuild', dbuser=config.uploader.dbuser,
-            test_args=extra_args)
-        self.assertRaisesWithContent(
-            SoyuzScriptError, "Invalid user name",
-            script.mainTask)
-
-        # Make sure the rebuild archive with the desired name was
-        # not created
-        rebuild_archive = self.isNameVacant(archive_name)
-        self.assertTrue(rebuild_archive is None)
+        self.runScript(
+            user=invalid_user,
+            exception_type=SoyuzScriptError,
+            exception_text="Invalid user name")
 
     def testXistingArchive(self):
         """Try rebuild with existing rebuild archive name.
 
         The rebuild archive creation will fail with exit code 5.
         """
-        # Make sure a rebuild archive with the desired name does
-        # not exist yet.
-        self.assertFalse(self.isNameVacant(self.rebld_archive_name) is None)
+        self.runScript(
+            archive_name=self.rebld_archive_name, exists_before=True,
+            exists_after=True, exception_type=SoyuzScriptError,
+            exception_text="An archive rebuild named")
 
-        [hoary] = getUtility(IDistroSeriesSet).findByName('hoary')
+    def testArchWithoutBuilds(self):
+        """Start rebuild with zero build for given architecture tag.
 
-        # Command line arguments required for the invocation of the
-        # 'start-rebuild.py' script.
-        extra_args = [
-            '-d', 'ubuntu', '-s', 'hoary', '-c', 'main', '-t',
-            '"rebuild archive from %s"' % datetime.ctime(datetime.utcnow()),
-            '-r', self.rebld_archive_name, '-u', 'salgado']
+        Use the hoary-RELEASE suite along with the main component.
+        """
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
-        script = RebuildArchiveCreator(
-            'start-rebuild', dbuser=config.uploader.dbuser,
-            test_args=extra_args)
-        self.assertRaisesWithContent(
-            SoyuzScriptError, "An archive rebuild named",
-            script.mainTask)
+        # These source packages will be copied to the rebuild archive.
+        hoary_sources = hoary.distribution.main_archive.getPublishedSources(
+            distroseries=hoary, status=self.pending_statuses)
 
+        src_names = sorted(source.displayname for source in hoary_sources)
+        self.assertEqual(src_names, self.expected_src_names)
+
+        # Restrict the builds to be created to the 'hppa' architecture
+        # only. This should result in zero builds.
+        extra_args = ['-a', 'hppa']
+        rebuild_archive = self.runScript(
+            extra_args=extra_args, exists_after=True)
+
+        # Make sure the source packages were cloned.
+        rebuild_sources = rebuild_archive.getPublishedSources(
+            distroseries=hoary, status=self.pending_statuses)
+
+        rebuild_src_names = sorted(
+            source.displayname for source in rebuild_sources)
+
+        self.assertEqual(rebuild_src_names, self.expected_src_names)
+
+        # Now check that we have zero build records for the sources cloned.
+        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+            rebuild_archive, status=BuildStatus.NEEDSBUILD))
+        build_spns = [
+            get_spn(removeSecurityProxy(build)).name for build in builds]
+
+        self.assertTrue(len(build_spns) == 0)
+
+    def testMultipleDistroArchSeriesSpecified(self):
+        """Start rebuild with multiple architecture tags.
+
+        Use the hoary-RELEASE suite along with the main component.
+        """
+        hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
+
+        # These source packages will be copied to the rebuild archive.
+        hoary_sources = hoary.distribution.main_archive.getPublishedSources(
+            distroseries=hoary, status=self.pending_statuses)
+
+        src_names = sorted(source.displayname for source in hoary_sources)
+        self.assertEqual(src_names, self.expected_src_names)
+
+        # Please note:
+        #   * the 'hppa' DistroArchSeries has no resulting builds.
+        #   * the '-a' command line parameter is cumulative in nature
+        #     i.e. the 'hppa' architecture tag specfied after the 'i386'
+        #     tag does not overwrite the latter but is added to it.
+        extra_args = ['-a', 'i386', '-a', 'hppa']
+        rebuild_archive = self.runScript(
+            extra_args=extra_args, exists_after=True)
+
+        # Make sure the source packages were cloned.
+        rebuild_sources = rebuild_archive.getPublishedSources(
+            distroseries=hoary, status=self.pending_statuses)
+
+        rebuild_src_names = sorted(
+            source.displayname for source in rebuild_sources)
+        self.assertEqual(rebuild_src_names, self.expected_src_names)
+
+        # Now check that we have the build records expected.
+        builds = list(getUtility(IBuildSet).getBuildsForArchive(
+            rebuild_archive, status=BuildStatus.NEEDSBUILD))
+        build_spns = [
+            get_spn(removeSecurityProxy(build)).name for build in builds]
+        self.assertEqual(build_spns, self.expected_build_spns)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
