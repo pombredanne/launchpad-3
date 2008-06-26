@@ -60,7 +60,7 @@ Inquire what Distribution Series this archive has published sources to:
     >>> [s.name for s in cprov_archive.series_with_sources]
     [u'breezy-autotest', u'warty']
 
-'purpose' is read-only attributes, it can't and shouldn't be modified
+'purpose' is a read-only attribute, it can't and shouldn't be modified
 once a IArchive is created. Changing those values would affect the way
 archives are published on disk.
 
@@ -69,9 +69,9 @@ archives are published on disk.
     ...
     ForbiddenAttribute: ('purpose', <Archive at ...>)
 
-'name' is only editable by LP administrator and only exposed via the
-ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still using
-default names.
+'name' is only editable by an LP administrator and only exposed via
+the ArchiveRebuild user interface. PRIMARY, PARTNER and PPAs still
+using default names.
 
     >>> login("celso.providelo@canonical.com")
 
@@ -88,7 +88,7 @@ asserts the archive is indeed a REBUILD and if the name is valid.
     >>> cprov_archive.name = 'there-we-go'
     Traceback (most recent call last):
     ...
-    AssertionError: Only REBUILD archive can be renamed.
+    AssertionError: Only REBUILD archives can be renamed.
 
 We will create a REBUILD archive and modify its name.
 
@@ -1365,7 +1365,7 @@ Celso's PPA.
 the number of builds in pre-defined status for a given `IArchive` and
 `IDistroArchSeries` context.
 
-    >>> def printBuildCountersFor(archive, distroarchseries):
+    >>> def print_build_counters_for(archive, distroarchseries):
     ...     build_counters = archive_set.getBuildCountersForArchitecture(
     ...         archive, distroarchseries)
     ...     sorted_keys = sorted(build_counters.keys())
@@ -1376,7 +1376,7 @@ the number of builds in pre-defined status for a given `IArchive` and
 Build counters for hoary/i386 in Celso's PPA.
 
     >>> hoary_i386 = hoary['i386']
-    >>> printBuildCountersFor(cprov_archive, hoary_i386)
+    >>> print_build_counters_for(cprov_archive, hoary_i386)
     failed     0
     pending    0
     succeeded  0
@@ -1384,7 +1384,7 @@ Build counters for hoary/i386 in Celso's PPA.
 
 Build counters for hoary/i386 in ubuntu primary archive.
 
-    >>> printBuildCountersFor(ubuntu.main_archive, hoary_i386)
+    >>> print_build_counters_for(ubuntu.main_archive, hoary_i386)
     failed     1
     pending    2
     succeeded  1
@@ -1394,7 +1394,7 @@ warty/i386 which has 3 SUPERSEDED builds computed in 'total', but not
 in any other predefined counter.
 
     >>> warty_i386 = warty['i386']
-    >>> printBuildCountersFor(ubuntu.main_archive, warty_i386)
+    >>> print_build_counters_for(ubuntu.main_archive, warty_i386)
     failed     3
     pending    0
     succeeded  3
@@ -1406,7 +1406,7 @@ archive.
     >>> ubuntu_partner = archive_set.getByDistroPurpose(
     ...      ubuntu, ArchivePurpose.PARTNER)
     >>> breezy_autotest_i386 = breezy_autotest['i386']
-    >>> printBuildCountersFor(ubuntu_partner, breezy_autotest_i386)
+    >>> print_build_counters_for(ubuntu_partner, breezy_autotest_i386)
     failed     0
     pending    0
     succeeded  1

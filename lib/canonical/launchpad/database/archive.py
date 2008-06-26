@@ -56,13 +56,13 @@ class Archive(SQLBase):
         storm_validator=validate_public_person, notNull=True)
 
     def _validate_archive_name(self, attr, value):
-        """Only allow rename of REBUILD archive.
+        """Only allow renaming of REBUILD archives.
 
-        Also assert the name is valid when set via unproxied object.
+        Also assert the name is valid when set via an unproxied object.
         """
         if not self._SO_creating:
             assert self.purpose == ArchivePurpose.REBUILD, (
-                "Only REBUILD archive can be renamed.")
+                "Only REBUILD archives can be renamed.")
         assert valid_name(value), "Invalid name given to unproxied object."
         return value
 
@@ -131,10 +131,10 @@ class Archive(SQLBase):
     def series_with_sources(self):
         """See `IArchive`."""
         cur = cursor()
-        q = """SELECT DISTINCT distroseries FROM
+        query = """SELECT DISTINCT distroseries FROM
                       SourcePackagePublishingHistory WHERE
                       SourcePackagePublishingHistory.archive = %s"""
-        cur.execute(q % self.id)
+        cur.execute(query % self.id)
         published_series_ids = [int(row[0]) for row in cur.fetchall()]
         return [s for s in self.distribution.serieses if s.id in
                 published_series_ids]
@@ -757,11 +757,11 @@ class ArchiveSet:
     @property
     def number_of_ppa_sources(self):
         cur = cursor()
-        q = """
+        query = """
              SELECT SUM(sources_cached) FROM Archive
              WHERE purpose = %s AND private = FALSE
         """ % sqlvalues(ArchivePurpose.PPA)
-        cur.execute(q)
+        cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
             return 0
@@ -770,11 +770,11 @@ class ArchiveSet:
     @property
     def number_of_ppa_binaries(self):
         cur = cursor()
-        q = """
+        query = """
              SELECT SUM(binaries_cached) FROM Archive
              WHERE purpose = %s AND private = FALSE
         """ % sqlvalues(ArchivePurpose.PPA)
-        cur.execute(q)
+        cur.execute(query)
         size = cur.fetchall()[0][0]
         if size is None:
             return 0
@@ -839,19 +839,28 @@ class ArchiveSet:
     def getBuildCountersForArchitecture(self, archive, distroarchseries):
         """See `IArchiveSet`."""
         cur = cursor()
-        q = """
+        query = """
             SELECT buildstate, count(id) FROM Build
             WHERE archive = %s AND distroarchseries = %s
             GROUP BY buildstate ORDER BY buildstate;
         """ % sqlvalues(archive, distroarchseries)
-        cur.execute(q)
+        cur.execute(query)
         result = cur.fetchall()
 
         status_map = {
-            'pending': (BuildStatus.NEEDSBUILD, BuildStatus.BUILDING),
-            'failed': (BuildStatus.FAILEDTOBUILD, BuildStatus.MANUALDEPWAIT,
-                       BuildStatus.CHROOTWAIT, BuildStatus.FAILEDTOUPLOAD),
-            'succeeded': (BuildStatus.FULLYBUILT,),
+            'failed': (
+                BuildStatus.CHROOTWAIT,
+                BuildStatus.FAILEDTOBUILD,
+                BuildStatus.FAILEDTOUPLOAD,
+                BuildStatus.MANUALDEPWAIT,
+                ),
+            'pending': (
+                BuildStatus.BUILDING,
+                BuildStatus.NEEDSBUILD,
+                ),
+            'succeeded': (
+                BuildStatus.FULLYBUILT,
+                ),
             }
 
         status_and_counters = {}
