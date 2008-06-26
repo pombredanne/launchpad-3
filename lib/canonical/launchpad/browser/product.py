@@ -399,7 +399,12 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['bugsupervisor', 'securitycontact', 'cve']
+    links = (
+        'bugsupervisor',
+        'securitycontact',
+        'cve',
+        'subscribe'
+        )
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -413,6 +418,10 @@ class ProductBugsMenu(ApplicationMenu):
     def securitycontact(self):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text)
 
 
 class ProductReviewCountMixin:
