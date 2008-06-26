@@ -15,18 +15,13 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IDistroSeriesSourcePackageRelease"
-    path_expression="string:+source/${name}/${version}"
-    attribute_to_parent="distroseries"
+    path_expression="string:${version}"
+    attribute_to_parent="sourcepackage"
     />
 
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroSeriesSourcePackageReleaseNavigation"
-    />
-
-  <browser:menus
-    module="canonical.launchpad.browser.distroseriessourcepackagerelease"
-    classes="DistroSeriesSourcePackageReleaseFacets"
     />
 
   <browser:pages

@@ -42,6 +42,8 @@ class BinaryPackageFileSet:
 
     def getByPackageUploadIDs(self, package_upload_ids):
         """See `IBinaryPackageFileSet`."""
+        if package_upload_ids is None or len(package_upload_ids) == 0:
+            return []
         return BinaryPackageFile.select("""
             PackageUploadBuild.packageupload = PackageUpload.id AND
             PackageUpload.id IN %s AND
@@ -74,6 +76,8 @@ class SourcePackageReleaseFileSet:
 
     def getByPackageUploadIDs(self, package_upload_ids):
         """See `ISourcePackageReleaseFileSet`."""
+        if package_upload_ids is None or len(package_upload_ids) == 0:
+            return []
         return SourcePackageReleaseFile.select("""
             PackageUploadSource.packageupload = PackageUpload.id AND
             PackageUpload.id IN %s AND

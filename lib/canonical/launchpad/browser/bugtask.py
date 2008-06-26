@@ -66,13 +66,13 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
@@ -1026,6 +1026,16 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields.get('assignee', False)):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 AssigneeDisplayWidget)
+
+        if (self.context.bugwatch is None and
+            self.form_fields.get('assignee', False)):
+            # Make the assignee field editable
+            self.form_fields = self.form_fields.omit('assignee')
+            self.form_fields += formlib.form.Fields(PublicPersonChoice(
+                __name__='assignee', title=_('Assigned to'), required=False,
+                vocabulary='ValidAssignee', readonly=False))
+            self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
+                BugTaskAssigneeWidget)
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
