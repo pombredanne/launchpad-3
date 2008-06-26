@@ -33,13 +33,13 @@ all the traversal logic.
     >>> verifyObject(IBrowserPublisher, view)
     True
 
-The view will serve the file that it traverse to.
+The view will serve the file that it traverses to.
 
     >>> view = view.publishTraverse(view.request, 'test.txt')
     >>> print view()
     Text file
 
-It also set the header on the response and the cache control header.
+It also sets the appropriate headers for cache control on the response.
 
     >>> for name in sorted(view.request.response.headers):
     ...     print "%s: %s" % (name, view.request.response.getHeader(name))
@@ -58,7 +58,7 @@ identifier.
     GIF file
 
 But traversing through other directories, not providing a file name, or
-a non-existent files, all raises a NotFound.
+asking for a non-existent file, all raises a NotFound.
 
     >>> view = MyFolder(object(), FakeRequest())
     >>> view = view.publishTraverse(view.request, 'a_dir')
@@ -83,7 +83,7 @@ a non-existent files, all raises a NotFound.
 
 == ExportedImageFolder ==
 
-For images, it's often convenient not to export the extension. There is
+For images, it's often convenient not to request the extension. There is
 an ExportedImageFolder subclass, that will accept serving an image file
 without extension.  For example, requesting 'image1' or 'image2' will
 serve the correct file. The supported extensions is defined in the
@@ -120,6 +120,9 @@ If a file without extension exists, that one will be served.
     >>> view = view.publishTraverse(view.request, 'image3.gif')
     >>> print view()
     Image with extension
+
+
+== Clean-up ==
 
     >>> import shutil
     >>> shutil.rmtree(resource_dir)

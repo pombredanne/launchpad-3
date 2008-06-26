@@ -485,7 +485,7 @@ Icing resources.
 ...       host="shipit.edubuntu.dev")
 
 
-Image resoureces are available from all the virtual hosts.
+Image resources are available from all the virtual hosts.
 
 >>> check('/@@/add', host='launchpad.dev')
 >>> check('/@@/add', host='bugs.launchpad.dev')
