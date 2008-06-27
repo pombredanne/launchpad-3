@@ -4361,7 +4361,7 @@ class PersonPackagesView(LaunchpadView):
                 BuildStatus.MANUALDEPWAIT,
                 BuildStatus.CHROOTWAIT,
                 ]
-            needs_build_by_package[package] = needs_build
+            needs_build_by_package[build.sourcepackagerelease] = needs_build
 
         return (builds_by_package, needs_build_by_package)
 
