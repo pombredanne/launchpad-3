@@ -159,7 +159,10 @@ class Archive(SQLBase):
             self.distribution.name + postfix)
 
     def _init(self, *args, **kwargs):
-        """Called when the object is created or fetched from the database."""
+        """Mark PPA archives with the IHasPersonNavigationMenu interface.
+
+        Called when the object is created or fetched from the database.
+        """
         SQLBase._init(self, *args, **kwargs)
 
         if self.is_ppa:

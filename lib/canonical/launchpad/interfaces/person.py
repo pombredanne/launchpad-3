@@ -1378,7 +1378,7 @@ class IHasPersonNavigationMenu(Interface):
     """A marker interface for objects that use the Person navigation menus.
 
     An object providing this interface will use the Person navigation menu
-    for it's pages.
+    for its pages.
     """
 
 

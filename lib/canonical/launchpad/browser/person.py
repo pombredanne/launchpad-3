@@ -1064,7 +1064,7 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         """Show the link to a Personal Package Archive.
 
         The person's archive link changes depending on the status of the
-        archive and the priviledges of the viewer.
+        archive and the privileges of the viewer.
         """
         archive = self.context.archive
         has_archive = archive is not None
