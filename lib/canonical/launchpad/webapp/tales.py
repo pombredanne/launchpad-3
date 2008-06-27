@@ -570,16 +570,6 @@ class ObjectImageDisplayAPI:
             "Badge display not implemented for this item")
 
 
-class PillarSearchItemAPI(ObjectImageDisplayAPI):
-    """Provides image:icon for a PillarSearchItem."""
-
-    def mugshot(self):
-        raise NotImplementedError("A PillarSearchItem doesn't have a mugshot")
-
-    def logo(self):
-        raise NotImplementedError("A PillarSearchItem doesn't have a logo")
-
-
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
     from the generic ObjectImageDisplayAPI and overrides the icon

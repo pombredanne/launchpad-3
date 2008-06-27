@@ -41,7 +41,6 @@ __all__ = [
     'ProductSetView',
     'ProductBranchOverviewView',
     'ProductBranchesView',
-    'PillarSearchItem',
     ]
 
 from operator import attrgetter
@@ -1110,34 +1109,6 @@ class Icon:
         return self.library_alias.getURL()
 
 
-class PillarSearchItem:
-    """A search result item representing a Pillar."""
-
-    implements(IHasIcon)
-
-    icon = None
-
-    def __init__(self, pillar_type, name, displayname, summary, icon_id):
-        self.pillar_type = pillar_type
-        self.name = name
-        self.displayname = displayname
-        self.summary = summary
-        if icon_id is not None:
-            self.icon = Icon(icon_id)
-
-        # Even though the object doesn't implement the interface properly, we
-        # still say that it provides them so that the standard image:icon
-        # formatter works.
-        if pillar_type == 'project':
-            alsoProvides(self, IProduct)
-        elif pillar_type == 'distribution':
-            alsoProvides(self, IDistribution)
-        elif pillar_type == 'project group':
-            alsoProvides(self, IProject)
-        else:
-            raise AssertionError("Unknown pillar type: %s" % pillar_type)
-
-
 class ProductSetView(LaunchpadView):
 
     __used_for__ = IProductSet
@@ -1191,14 +1162,7 @@ class ProductSetView(LaunchpadView):
     def searchresults(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
-        return [
-            PillarSearchItem(
-                pillar_type=item['type'], name=item['name'],
-                displayname=item['title'], summary=item['description'],
-                icon_id=item['icon'])
-            for item in getUtility(IPillarNameSet).search(search_string,
-                                                          limit)
-        ]
+        return getUtility(IPillarNameSet).search(search_string, limit)
 
     def tooManyResultsFound(self):
         return self.matches > self.max_results_to_display

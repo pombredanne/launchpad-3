@@ -8,9 +8,13 @@ Pillars are currently Product, Project and Distribution.
 
 __metaclass__ = type
 
+import warnings
+
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import LeftJoin
+from storm.locals import SQL
 from storm.zope.interfaces import IZStorm
 from sqlobject import ForeignKey, StringCol, BoolCol
 
@@ -120,89 +124,66 @@ class PillarNameSet:
             return getUtility(IDistributionSet).get(distribution)
 
     def build_search_query(self, text):
-        return """
-            SELECT 'distribution' AS otype, id, name, title, description,
-                   icon,
-                   rank(fti, ftq(%(text)s)) AS rank
-            FROM distribution
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
-
-            UNION ALL
-
-            SELECT 'project' AS otype, id, name, title, description, icon,
-                rank(fti, ftq(%(text)s)) AS rank
-            FROM product
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
-                AND active IS TRUE
-
-            UNION ALL
-
-            SELECT 'project group' AS otype, id, name, title, description,
-                icon,
-                rank(fti, ftq(%(text)s)) AS rank
-            FROM project
-            WHERE fti @@ ftq(%(text)s)
-                AND name != lower(%(text)s)
-                AND lower(title) != lower(%(text)s)
-                AND active IS TRUE
-
-            UNION ALL
-
-            SELECT 'distribution' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM distribution
-            WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
-
-            UNION ALL
-
-            SELECT 'project group' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM project
-            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
-                AND active IS TRUE
-
-            UNION ALL
-
-            SELECT 'project' AS otype, id, name, title, description,
-                icon,
-                9999999 AS rank
-            FROM product
-            WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
-                AND active IS TRUE
-
-            """ % sqlvalues(text=text)
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.project import Project
+        from canonical.launchpad.database.distribution import Distribution
+        origin = [
+            PillarName,
+            LeftJoin(Product, PillarName.product == Product.id),
+            LeftJoin(Project, PillarName.project == Project.id),
+            LeftJoin(Distribution, PillarName.distribution == Distribution.id),
+            ]
+        conditions = SQL('''
+            (Product.fti @@ ftq(%(text)s)
+             OR Product.name = lower(%(text)s)
+             OR lower(Product.title) = lower(%(text)s))
+            OR
+            (Project.fti @@ ftq(%(text)s)
+             OR Project.name = lower(%(text)s)
+             OR lower(Project.title) = lower(%(text)s))
+            OR
+            (Distribution.fti @@ ftq(%(text)s)
+             OR Distribution.name = lower(%(text)s)
+             OR lower(Distribution.title) = lower(%(text)s))
+            ''' % sqlvalues(text=text))
+        store = getUtility(IZStorm).get('main')
+        return store.using(*origin).find(
+            (PillarName, Product, Project, Distribution),
+            conditions)
 
     def count_search_matches(self, text):
-        base_query = self.build_search_query(text)
-        count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
-        store = getUtility(IZStorm).get('main')
-        return store.execute(count_query).get_one()[0]
+        result = self.build_search_query(text)
+        return result.count()
 
     def search(self, text, limit):
         """See `IPillarSet`."""
         if limit is None:
             limit = config.launchpad.default_batch_size
-        query = self.build_search_query(text) + """
-            /* we order by rank AND name to break ties between pillars with
-               the same rank in a consistent fashion, and we add the hard
-               LIMIT */
-            ORDER BY rank DESC, name
-            LIMIT %d
-            """ % limit
-        store = getUtility(IZStorm).get('main')
-        result = store.execute(query)
-        keys = ['type', 'id', 'name', 'title', 'description', 'icon', 'rank']
+        result = self.build_search_query(text)
+        result.order_by(SQL('''
+            (CASE WHEN Product.name = lower(%(text)s)
+                      OR lower(Product.title) = lower(%(text)s)
+                      OR Project.name = lower(%(text)s)
+                      OR lower(Project.title) = lower(%(text)s)
+                      OR Distribution.name = lower(%(text)s)
+                      OR lower(Distribution.title) = lower(%(text)s)
+                THEN 9999999
+                ELSE coalesce(rank(Product.fti, ftq(%(text)s)),
+                              rank(Project.fti, ftq(%(text)s)),
+                              rank(Distribution.fti, ftq(%(text)s)))
+            END) DESC, PillarName.name
+            ''' % sqlvalues(text=text)))
         # People shouldn't be calling this method with too big limits
         longest_expected = 2 * config.launchpad.default_batch_size
-        return shortlist(
-            [dict(zip(keys, values)) for values in result.get_all()],
-            longest_expected=longest_expected)
+        if limit > longest_expected:
+            warnings.warn(
+                "The search limit (%s) was greater "
+                "than the longest expected size (%s)" % (limit, longest_expected),
+                stacklevel=2)
+        return [
+            pillar
+            for pillar, product, project, distribution in result[:limit]
+            ]
 
     def add_featured_project(self, project):
         """See `IPillarSet`."""

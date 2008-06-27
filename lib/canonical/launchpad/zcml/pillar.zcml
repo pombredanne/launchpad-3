@@ -15,7 +15,7 @@
     </securedutility>
 
     <browser:page
-        for="canonical.launchpad.browser.PillarSearchItem"
+        for="canonical.launchpad.database.PillarName"
         name="+listing-simple"
         permission="zope.Public"
         template="../templates/pillar-listing-simple.pt"

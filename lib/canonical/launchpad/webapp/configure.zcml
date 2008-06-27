@@ -174,13 +174,6 @@
         name="image"
         />
 
-    <adapter
-        for="canonical.launchpad.browser.PillarSearchItem"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
-        name="image"
-        />
-
     <!-- TALES badges: namespace -->
 
     <adapter

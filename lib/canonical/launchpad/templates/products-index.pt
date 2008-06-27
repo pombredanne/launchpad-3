@@ -66,7 +66,8 @@
         id="search-results"
         >
         <tbody>
-          <tr tal:repeat="pillar results" tal:replace="structure pillar/@@+listing-simple">
+          <tr tal:repeat="pillarname results"
+              tal:replace="structure pillarname/@@+listing-simple">
           </tr>
         </tbody>
       </table>
