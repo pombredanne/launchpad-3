@@ -234,6 +234,24 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   AssertionError: No source available.
 
 
+The method getBuildByBuildIDs() will return all the PackageUploadBuild
+records that match the supplied build IDs.
+
+  >>> ids = (18,19)
+  >>> for package_upload_build in qset.getBuildByBuildIDs(ids):
+  ...     print package_upload_build.packageupload.displayname
+  mozilla-firefox
+  pmount
+
+If the supplied IDs is empty or None, an empty list is returned:
+
+  >>> qset.getBuildByBuildIDs([])
+  []
+
+  >>> qset.getBuildByBuildIDs(None)
+  []
+
+
 == Upload Signing Key ==
 
 IPackageUpload.signing_key should store the IGPGKey reference to

@@ -33,6 +33,11 @@
           Translation setup needed
         </h1>
       </tal:not-uses-translations>
+      <p>
+        <strong tal:content="context/license_status/description">
+          This project's license is open source.
+        </strong>
+      </p>
       <tal:uses-translations condition="uses_translations">
         <tal:translatable define="target context/primary_translatable">
           <p>
