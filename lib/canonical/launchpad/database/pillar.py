@@ -13,7 +13,7 @@ import warnings
 from zope.component import getUtility
 from zope.interface import implements
 
-from storm.expr import LeftJoin
+from storm.expr import LeftJoin, NamedFunc, Select
 from storm.locals import SQL
 from storm.zope.interfaces import IZStorm
 from sqlobject import ForeignKey, StringCol, BoolCol
@@ -158,6 +158,8 @@ class PillarNameSet:
 
     def search(self, text, limit):
         """See `IPillarSet`."""
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.productlicense import ProductLicense
         if limit is None:
             limit = config.launchpad.default_batch_size
         class Array(NamedFunc):
@@ -193,8 +195,7 @@ class PillarNameSet:
                 stacklevel=2)
         pillars = []
         # Prefill pillar.product.licenses.
-        for (pillar, product, project, distribution, license_ids
-             in result[:limit]):
+        for pillar, product, project, distro, license_ids in result[:limit]:
             pillars.append(pillar)
             if (pillar.product is not None
                 and pillar.product._cached_licenses is None):
