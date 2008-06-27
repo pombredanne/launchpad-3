@@ -83,6 +83,18 @@ class Archive(SQLBase):
 
     buildd_secret = StringCol(dbName='buildd_secret', default=None)
 
+    total_count = IntCol(dbName='total_count', notNull=True, default=0)
+
+    pending_count = IntCol(dbName='pending_count', notNull=True, default=0)
+
+    succeeded_count = IntCol(
+        dbName='succeeded_count', notNull=True, default=0)
+
+    building_count = IntCol(
+        dbName='building_count', notNull=True, default=0)
+
+    failed_count = IntCol(dbName='failed_count', notNull=True, default=0)
+
     @property
     def is_ppa(self):
         """See `IArchive`."""

@@ -62,15 +62,8 @@ tracker option fully.
     usage: checkwatches.py [options]
     <BLANKLINE>
     options:
-      -h, --help            show this help message and exit
-      -v, --verbose         Increase verbosity. May be specified
-                            multiple times.
-      -q, --quiet           Decrease verbosity. May be specified
-                            multiple times.
-      --log-file=LOG_FILE   Send log to the given file, rather than
-                            stderr.
+      ...
       -t BUG_TRACKER, --bug-tracker=BUG_TRACKER
                             Only check a given bug tracker. Specifying
                             more than one bugtracker using this option
-                            will check all the bugtrackers specified.
-
+                            will check all the bugtrackers specified...

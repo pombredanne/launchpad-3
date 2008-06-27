@@ -17,6 +17,7 @@ from canonical.launchpad.mail.handlers import (
     mail_handlers, MaloneHandler, parse_commands)
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -67,7 +68,7 @@ class TestCodeHandler(TestCaseWithFactory):
         self.code_handler = CodeHandler()
 
     def test_get(self):
-        handler = mail_handlers.get(config.vhost.code.hostname)
+        handler = mail_handlers.get(config.launchpad.code_domain)
         self.assertIsInstance(handler, CodeHandler)
 
     def test_process(self):
@@ -159,8 +160,9 @@ class TestCodeHandler(TestCaseWithFactory):
         expected_body = ('Vote: Abstain EBAILIWICK\n'
                          ' vote Abstain EBAILIWICK\n'
                          '-- \n'
+                         '%s\n'
                          'You are subscribed to branch %s.' %
-                         bmp.source_branch.unique_name)
+                         (canonical_url(bmp), bmp.source_branch.unique_name))
         self.assertEqual(expected_body, notification.get_payload(decode=True))
 
     def test_getVoteNoCommand(self):

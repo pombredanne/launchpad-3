@@ -531,7 +531,7 @@ Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
     >>> from canonical.launchpad.interfaces import BuildStatus
-    >>> bqItem10.build.buildstate = BuildStatus.FULLYBUILT
+    >>> bqItem10.build.forceState(BuildStatus.FULLYBUILT)
 
 Now the updateBuild should recognize this build record as a
 Successfully built and uploaded procedure, not sending any
@@ -757,7 +757,7 @@ tests.
 
     >>> current_job = a_builder.currentjob
     >>> resurrect_build = current_job.build
-    >>> resurrect_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> resurrect_build.forceState(BuildStatus.NEEDSBUILD)
     >>> syncUpdate(resurrect_build)
     >>> current_job.builder = None
     >>> current_job.buildstart = None
@@ -1293,7 +1293,7 @@ A build in the security pocket:
     >>> a_builder.currentjob.destroySelf()
 
     >>> bqItem3 = a_build.createBuildQueueEntry()
-    >>> removeSecurityProxy(bqItem3.build).buildstate = (
+    >>> removeSecurityProxy(bqItem3.build).forceState(
     ...     BuildStatus.NEEDSBUILD)
     >>> removeSecurityProxy(bqItem3.build).pocket = (
     ...     PackagePublishingPocket.SECURITY)

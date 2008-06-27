@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistribution',
+    'IDistributionMirrorMenuMarker',
     'IDistributionSet',
     ]
 
@@ -33,6 +34,10 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+
+
+class IDistributionMirrorMenuMarker(Interface):
+    """Marker interface for Mirror navigation."""
 
 
 class DistributionNameField(PillarNameField):
@@ -347,6 +352,13 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
             - triaged bugs with an upstream task
             - triaged bugs with upstream tasks that are either linked to
               bug watches or to products that use_malone.
+        """
+
+    def getCustomLanguageCode(sourcepackagename, language_code):
+        """Look up `ICustomLanguageCode`.
+
+        A `SourcePackageName` in a Distribution may override some
+        language codes for translation import purposes.
         """
 
 

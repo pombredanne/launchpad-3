@@ -27,7 +27,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.archive import ArchivePurpose, IArchiveSet
-from canonical.launchpad.interfaces.build import BuildStatus
+from canonical.launchpad.interfaces.build import BuildStatus, IBuildSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.packagediff import (
     PackageDiffAlreadyRequested)
@@ -161,7 +161,10 @@ class SourcePackageRelease(SQLBase):
     def sourcepackage(self):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
-        # we avoid doing an extra query doing getSourcepackage
+        # we avoid doing an extra query doing getSourcepackage.
+        # XXX 20080616 mpt: cprov says this property "won't be as useful as it
+        # looks once we start supporting derivation ... [It] is dangerous and
+        # should be renamed (or removed)". <http://launchpad.net/bugs/241298>
         series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
@@ -356,14 +359,11 @@ class SourcePackageRelease(SQLBase):
                 estimate = 5
             estimated_build_duration = datetime.timedelta(minutes=estimate)
 
-        return Build(distroarchseries=distroarchseries,
-                     sourcepackagerelease=self,
-                     processor=processor,
-                     buildstate=status,
-                     datecreated=datecreated,
-                     pocket=pocket,
-                     estimated_build_duration=estimated_build_duration,
-                     archive=archive)
+        return getUtility(IBuildSet).newBuild(
+            distroarchseries=distroarchseries, sourcepackagerelease=self,
+            processor=processor, buildstate=status, datecreated=datecreated,
+            pocket=pocket, estimated_build_duration=estimated_build_duration,
+            archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
@@ -452,7 +452,8 @@ class SourcePackageRelease(SQLBase):
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
         # and so on
-        if archive.purpose != ArchivePurpose.PPA:
+        if archive.purpose in (ArchivePurpose.PARTNER,
+                               ArchivePurpose.PRIMARY):
             parent_archives = set()
             archive_set = getUtility(IArchiveSet)
             for series in parent_series:

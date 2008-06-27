@@ -85,16 +85,18 @@ class IHasTranslationGroup(Interface):
 
     translationpermission = Choice(
         title=_("Translation Permission System"),
-        description=_("The permissions this group requires for translators."
-            " If 'Open', then anybody can edit translations in any language."
-            " If 'Structured', only designated translators are able to edit"
-            " or confirm translations for those languages, other people can"
-            " only add suggestions for that languages and edit or confirm"
-            " translations for the other languages. If 'Restricted', then"
-            " anybody can make suggestions but only the designated"
-            " translators can edit or confirm translations. And if 'Closed'"
-            " then only the designated translation group will be able to"
-            " touch the translation files at all."),
+        description=_("The permissions this group requires for translators.  "
+            "If 'Open', anybody can edit translations in any language.  "
+            "If 'Structured', members of the translation group can edit "
+            "translations for their languages, and others can make "
+            "suggestions; translations for which the translation group "
+            "assigns no reviewer or translation team are completely open.  "
+            "If 'Restricted', translation group members can edit "
+            "translations and any user can make suggestions for those "
+            "translations, but translations to languages that aren't "
+            "covered by the translation group are closed and accept no "
+            "suggestions.  Finally, if 'Closed', only translation group "
+            "members can enter any translations at all."),
         required=True,
         vocabulary=TranslationPermission)
 

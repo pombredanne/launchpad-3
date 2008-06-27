@@ -33,7 +33,7 @@ Let's confirm what we just stated.
 
 Netapplet is in fact a product belonging to GNOME project.
 
-  >>> anon_browser.getLink('Network Applet').click()
+  >>> anon_browser.getLink('NetApplet').click()
   >>> print anon_browser.title
    Network Applet in Launchpad
 
