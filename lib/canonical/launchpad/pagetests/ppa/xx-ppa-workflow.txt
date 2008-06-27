@@ -7,7 +7,8 @@ Personal Package Archives have to be activated before they can be
 accessed, in this section we will cover the activation procedure for
 an user-PPA by its own user.
 
-A person's Personal Package Archive is accessible from the navigation menu.
+A person's Personal Package Archive is accessible from the navigation
+menu.
 
    >>> anon_browser.open("http://launchpad.dev/~cprov")
    >>> print_navigation_links(anon_browser.contents)
@@ -17,7 +18,8 @@ A person's Personal Package Archive is accessible from the navigation menu.
    Personal Package Archive: http://launchpad.dev/~cprov/+archive
 
 Since cprov's Personal Package Archive is already activated in
-sampledata, the 'Personal Package Archive' menu item takes you to his archive.
+sampledata, the 'Personal Package Archive' menu item takes you to his
+archive.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
@@ -51,8 +53,9 @@ URL results in NotFound error:
     ...
     NotFound: Object: <Person at ...>, name: u'+archive'
 
-The navigation menu item is present, but it does not link to the user's
-Archive page.  Instead, it takes the user to their 'Activate Personal Package
+Sample Person hasn't activated his PPA yet, but he has a 'Personal
+Package Archive' link in the navigation menu on his home page.  The
+navigation menu link takes him to the 'Activate Personal Package
 Archive' page.
 
     >>> sample_browser.open("http://launchpad.dev/~name12")
@@ -61,11 +64,6 @@ Archive' page.
     Related Software: ...
     Karma: ...
     Personal Package Archive: http://launchpad.dev/~name12/+activate-ppa
-
-    >>> sample_browser.getLink(url="+archive")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
 
     >>> sample_browser.getLink("Personal Package Archive").click()
     >>> sample_browser.title
@@ -132,7 +130,8 @@ Where we can check for the submitted description:
     Hoohay for PPA.
 
 ... and an empty 'whiteboard' section that when filled, includes
-administrator messages about operations done in this Personal Package Archive.
+administrator messages about operations done in this Personal Package
+Archive.
 
     >>> find_tag_by_id(sample_browser.contents, 'whiteboard') is None
     True
@@ -296,7 +295,8 @@ The administration procedure allows us to:
  * Set whether the archive should be built on a virtualized machine.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
- * Edit the whiteboard: to communicate & record administration decisions.
+ * Edit the whiteboard: to communicate & record administration
+ decisions.
 
 In this case, the administrator may wish to amend the PPA so that it is
 set up like the ubuntu security PPA, which is private but does not
