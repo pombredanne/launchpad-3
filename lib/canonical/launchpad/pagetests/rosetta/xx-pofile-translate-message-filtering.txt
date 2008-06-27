@@ -152,10 +152,28 @@ displayed.
     None
 
 Projects can restrict translation to privileged users. The messages that
-No Privileges Person adds to upstream Evolution are taken as
+No Privileges Person adds to upstream Evolution are then taken as
 suggestions, not translations. His changes do not change the total
 number of untranslated messages; they do not affect the batch
 navigation.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPersonSet, IProductSet, ITranslatorSet)
+
+    # Evolution uses Restricted mode, so a translation without reviewer
+    # is closed.  Assign an en_AU reviewer to active the translation.
+    >>> login('foo.bar@canonical.com')
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_translation_group = evolution.translationgroup
+    >>> ozzie_english =  getUtility(ILanguageSet)['en_AU']
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> translator_set = getUtility(ITranslatorSet)
+    >>> foo_bar_translator = translator_set.new(
+    ...     translationgroup=evolution_translation_group,
+    ...     language=ozzie_english, translator=foobar)
+    >>> logout()
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/'
