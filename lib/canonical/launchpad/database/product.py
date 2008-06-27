@@ -174,6 +174,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
     bug_reporting_guidelines = StringCol(default=None)
+    _cached_licenses = None
 
     def _validate_license_info(self, attr, value):
         if not self._SO_creating and value != self.license_info:
@@ -342,10 +343,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def _getLicenses(self):
         """Get the licenses as a tuple."""
-        return tuple(
-            product_license.license
-            for product_license
-                in ProductLicense.selectBy(product=self, orderBy='license'))
+        if self._cached_licenses is None:
+            self._cached_licenses = tuple(
+                product_license.license
+                for product_license
+                    in ProductLicense.selectBy(product=self, orderBy='license'))
+        return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_license_reviewed=True):
         """Set the licenses from a tuple of license enums.
@@ -379,6 +382,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
+        self._cached_licenses = tuple(sorted(licenses))
 
     licenses = property(_getLicenses, _setLicenses)
 
