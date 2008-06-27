@@ -258,6 +258,7 @@ class Build(SQLBase):
         self.builder = None
         self.buildlog = None
         self.dependencies = None
+        self.date_first_dispatched = None
         self.createBuildQueueEntry()
 
     @property
