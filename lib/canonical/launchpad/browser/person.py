@@ -144,7 +144,8 @@ from canonical.launchpad.interfaces.salesforce import (
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreementEdit)
+    ITranslationRelicensingAgreementEdit,
+    TranslationRelicensingAgreementOptions)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -2965,6 +2966,8 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
     schema = ITranslationRelicensingAgreementEdit
     field_names = ['allow_relicensing', 'back_to']
+    custom_widget(
+        'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
 
     @property
@@ -2999,15 +3002,17 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         which uses TranslationRelicensingAgreement table.
         """
         allow_relicensing = data['allow_relicensing']
-        self.context.translations_relicensing_agreement = allow_relicensing
-        if allow_relicensing:
+        if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
+            self.context.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
                 "Thank you for BSD-licensing your translations."))
-        else:
+        else: # == TranslationRelicensingAgreementOptions.REMOVE
+            self.context.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
                 "Your translations will be removed once we complete the "
-                "switch to the BSD license."))
+                "switch to the BSD licence. "
+                "Thanks for trying out Launchpad Translations."))
 
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
