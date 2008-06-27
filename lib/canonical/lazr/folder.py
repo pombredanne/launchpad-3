@@ -83,7 +83,8 @@ class ExportedFolder:
         try:
             fileobj = File(filename, name)
         except IOError, ioerror:
-            if ioerror.errno == errno.ENOENT: # No such file or directory
+            if ioerror.errno in (errno.ENOENT, errno.EISDIR):
+                # No such file or is a directory.
                 raise NotFound(self, name)
             else:
                 # Some other IOError that we're not expecting.
@@ -125,7 +126,7 @@ class ExportedImageFolder(ExportedFolder):
 
 
     # The extensions we consider.
-    image_extensions = ('.gif', '.png')
+    image_extensions = ('.png', '.gif')
 
     def prepareDataForServing(self, name):
         """Serve files without their extension.

@@ -17,6 +17,9 @@ the directory to expose.
     ...     'GIF file')
     >>> file(os.path.join(resource_dir, 'image2.png'), 'w').write(
     ...     'PNG file')
+    >>> os.mkdir(os.path.join(resource_dir, 'a_dir'))
+    >>> file(os.path.join(resource_dir, 'other.txt'), 'w').write(
+    ...     'Other file')
 
     >>> from canonical.lazr.folder import ExportedFolder
     >>> class MyFolder(ExportedFolder):
@@ -68,6 +71,14 @@ asking for a non-existent file, all raises a NotFound.
     NotFound:...
 
     >>> view = MyFolder(object(), FakeRequest())
+    >>> view = view.publishTraverse(view.request, 'a_dir')
+    >>> view = view.publishTraverse(view.request, 'other.txt')
+    >>> view()
+    Traceback (most recent call last):
+      ...
+    NotFound:...
+
+    >>> view = MyFolder(object(), FakeRequest())
     >>> view()
     Traceback (most recent call last):
       ...
@@ -86,7 +97,7 @@ asking for a non-existent file, all raises a NotFound.
 For images, it's often convenient not to request the extension. There is
 an ExportedImageFolder subclass, that will accept serving an image file
 without extension.  For example, requesting 'image1' or 'image2' will
-serve the correct file. The supported extensions is defined in the
+serve the correct file. The supported extensions are defined in the
 image_extensions property.
 
     >>> from canonical.lazr.folder import ExportedImageFolder
@@ -96,7 +107,7 @@ image_extensions property.
 
     >>> view = MyImageFolder(object(), FakeRequest())
     >>> view.image_extensions
-    ('.gif', '.png')
+    ('.png', '.gif')
 
     >>> view = view.publishTraverse(view.request, 'image2')
     >>> print view()
