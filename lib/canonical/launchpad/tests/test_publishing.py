@@ -152,15 +152,16 @@ class SoyuzTestPublisher:
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.breezy_autotest
-        sourcename = "%s" % binaryname.split('-')[0]
+
+        if archive is None:
+            archive = distroseries.main_archive
 
         if pub_source is None:
-            assert archive is not None
+            sourcename = "%s" % binaryname.split('-')[0]
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket,
                 archive=archive, distroseries=distroseries)
-
-        if archive is None:
+        else:
             archive = pub_source.archive
 
         builds = pub_source.createMissingBuilds()
