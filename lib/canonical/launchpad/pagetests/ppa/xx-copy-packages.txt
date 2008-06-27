@@ -1060,7 +1060,7 @@ foo-9.9 source from 'James-Friend's PPA.
 
 But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He
-gets told, in a very politely way, that he can't do such thing.
+is told that the source cannot be copied.
 
     >>> foo_pub_id = getPPAPubIDsFor('jblack-friends', 'foo')[0]
     >>> jblack_browser.getControl(

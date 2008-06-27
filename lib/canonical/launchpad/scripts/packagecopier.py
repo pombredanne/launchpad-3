@@ -74,7 +74,8 @@ def has_unpublished_binaries(source):
     if len(built_binaries) == 0:
         return False
 
-    # Binaries actually published in the same publishing context.
+    # Binaries have been published in the same publishing context,
+    # but are some not yet published?
     candidate_binaries = set(
         pub_binary.binarypackagerelease
         for pub_binary in source.getBuiltBinaries())
