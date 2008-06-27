@@ -342,8 +342,6 @@ class LaunchpadStatementTracer:
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
-        if not isinstance(connection._database, LaunchpadDatabase):
-            return
         if self._debug_sql_extra:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
@@ -356,8 +354,6 @@ class LaunchpadStatementTracer:
 
     def connection_raw_execute_success(self, connection, raw_cursor,
                                        statement, params):
-        if not isinstance(connection._database, LaunchpadDatabase):
-            return
         end = time()
         start = getattr(connection, '_lp_statement_start_time', end)
         _log_statement(start, end, connection, statement)
