@@ -51,11 +51,11 @@ def is_completely_built(source):
     return True
 
 def has_unpublished_binaries(source):
-    """Whether or not a source publication is has unpublished binaries.
+    """Whether or not a source publication has unpublished binaries.
 
-    Check if there are binaries built from the source in the publication
-    context. If there are none, return False since there is nothing to be
-    published.
+    Check if there are binaries built from the source in the same
+    publication context. If there are none, return False since there is
+    nothing to be published.
 
     If there are built binaries, check if they match the ones published
     for the source in its context.
