@@ -1114,10 +1114,14 @@ class BuildSet:
             return []
 
         query = """
-            sourcepackagerelease IN %s
-            """ % sqlvalues(sourcepackagerelease_ids)
+            sourcepackagerelease IN %s AND
+            archive.id = build.archive AND
+            archive.purpose != %s
+            """ % sqlvalues(sourcepackagerelease_ids, ArchivePurpose.PPA)
 
         if buildstate is not None:
             query += "AND buildstate = %s" % sqlvalues(buildstate)
 
-        return Build.select(query, orderBy=["-datecreated", "id"])
+        return Build.select(
+            query, orderBy=["-datecreated", "id"],
+            clauseTables=["Archive"])

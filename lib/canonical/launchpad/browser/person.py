@@ -4345,8 +4345,8 @@ class PersonPackagesView(LaunchpadView):
         build_set = getUtility(IBuildSet)
         package_release_ids = [
             package_release.id for package_release in package_releases]
-        all_failed_builds = build_set.getBuildsBySourcePackageRelease(
-            package_release_ids, buildstate=BuildStatus.FAILEDTOBUILD)
+        all_builds = build_set.getBuildsBySourcePackageRelease(
+            package_release_ids)
         # Make a dictionary of lists of builds keyed by SourcePackageRelease
         # and a dictionary of "needs build" state keyed by the same.
         builds_by_package = {}
@@ -4354,8 +4354,9 @@ class PersonPackagesView(LaunchpadView):
         for package in package_releases:
             builds_by_package[package] = []
             needs_build_by_package[package] = False
-        for build in all_failed_builds:
-            builds_by_package[build.sourcepackagerelease].append(build)
+        for build in all_builds:
+            if build.buildstate == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.sourcepackagerelease].append(build)
             needs_build = build.buildstate in [
                 BuildStatus.NEEDSBUILD,
                 BuildStatus.MANUALDEPWAIT,
