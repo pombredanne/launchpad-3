@@ -352,7 +352,7 @@ will be dominated and the archive won't be changed).
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already building in the destination archive)
+    (same version already building in the destination archive for Hoary)
 
 Without thinking much James erroneously selects 'hoary' series and
 pushes the copy button. The same error is raised.
@@ -369,7 +369,7 @@ pushes the copy button. The same error is raised.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already building in the destination archive)
+    (same version already building in the destination archive for Hoary)
 
 Darn, now James being more careful and re-selects the 'pmount' source
 and 'grumpy' as Destination Series.
@@ -399,7 +399,7 @@ contents). So, this copy is not allowed.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already building in the destination archive)
+    (same version already building in the destination archive for Hoary)
 
 Now, knowing that pmount can only be copied within the same PPA if the
 binaries go together, James executes the copy including the binaries.
@@ -426,22 +426,41 @@ described in bug #236407 when binaries were built but have to
 wait until the next publishing cycle to be published in the archive.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.build import BuildStatus
     >>> from canonical.launchpad.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> test_publisher = SoyuzTestPublisher()
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
-    >>> pmount_build.forceState(BuildStatus.FULLYBUILT)
+    >>> pmount_binary = test_publisher.uploadBinaryForBuild(
+    ...     pmount_build, 'pmount-bin')
     >>> flush_database_updates()
     >>> logout()
 
-In such situations the copy is also denied because build records would
-be created for the copied source records that have no published
-binaries. This then would cause problems where the previous binaries
-get published and the new ones (with the same version but different
-timestamps) show up. The new builds will stick in failed-to-upload
-state because the binaries can't be published in the PPA.
+In such situations the source-only copy is still denied because build
+records would be created for the copied source record and the binaries
+generated would certainly conflict with the ones already generated for
+the same source version published in hoary in the same archive.
+The new builds would stick in failed-to-upload state because the
+binaries could not be published in the PPA.
+
+    >>> jblack_browser.getControl(
+    ...    name='field.selected_sources').value = [pmount_pub_id]
+    >>> jblack_browser.getControl(
+    ...     'Destination series').value = ['grumpy']
+    >>> jblack_browser.getControl('Copy binaries').selected = False
+    >>> jblack_browser.getControl("Copy Packages").click()
+
+    >>> messages = get_feedback_messages(jblack_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    The following source cannot be copied: pmount 0.1-1 in hoary
+    (same version has unpublished binaries in the destination
+     archive for Hoary, please wait for them to be published before
+     copying)
+
+Including binaries doesn't help either, since the copied source itself
+has unpublished binaries.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -464,8 +483,8 @@ pmount ('pmount-bin') and publish it in hoary/i386 and hoary/hppa.
     >>> login('foo.bar@canonical.com')
     >>> jblack = person_set.getByName('jblack')
     >>> pmount_build = jblack.archive.getBuildRecords()[0]
-    >>> pmount_binaries = test_publisher.buildAndPublishBinaryForSource(
-    ...     pmount_build, binaryname="pmount-bin")
+    >>> pmount_binaries = test_publisher.publishBinaryInArchive(
+    ...     pmount_binary, jblack.archive)
     >>> flush_database_updates()
     >>> logout()
 
@@ -502,8 +521,6 @@ hppa support.
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Pending    Hoary            Editors
 
-Note that the builds for pmount in grumpy where also created.
-
 After some time, James realises that pmount in hoary doesn't make much
 sense and simply deletes it, so his users won't be bothered by this
 broken package.
@@ -537,9 +554,6 @@ still able to copy the deleted source to the warty series.
 
 By default the copy view presents only PUBLISHED or PENDING packages.
 
-James mistakenly requests the copy without including the binaries
-resulting from the hoary build, which are still published in grumpy.
-
     >>> jblack_browser.getLink('Copy packages').click()
     >>> print jblack_browser.getControl(name='field.status_filter').value
     ['published']
@@ -558,6 +572,12 @@ filter dropdown box.
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
 
+James mistakenly requests the copy without including the binaries
+resulting from the hoary build, which are still published in grumpy.
+The copy is not allowed, because as mentioned above, if built, the
+binaries produced by the copy will conflict with the ones already
+published in the archive.
+
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
     >>> jblack_browser.getControl(
@@ -568,13 +588,13 @@ filter dropdown box.
     ...     print msg
     There is 1 error.
     The following source cannot be copied: pmount 0.1-1 in hoary
-    (same version already has published binaries in the destination archive)
+    (same version already has published binaries in the destination
+     archive)
 
 Since pmount was built in his archive, the only alternative is to
-copy the binaries too, otherwise a source-only copy would trigger a
-rebuild.  This rebuild will generate binaries that will never be
-published because they will conflict with the ones already in its
-archive.
+copy the binaries too. The copied binaries will be checked against
+the ones already published in the archive and the copy will only be
+allowed if they are the same.
 
     >>> jblack_browser.getControl(
     ...    name='field.selected_sources').value = [pmount_pub_id]
@@ -897,12 +917,21 @@ in No Privileges' PPA.
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> no_priv = person_set.getByName('no-priv')
-    >>> name16_foo_src = test_publisher.getPubSource(
+    >>> nopriv_foo_src = test_publisher.getPubSource(
     ...     version="2.0", distroseries=hoary, archive=no_priv.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> unused = test_publisher.getPubBinaries(
-    ...     distroseries=hoary, pub_source=name16_foo_src,
+    ...     distroseries=hoary, pub_source=nopriv_foo_src,
     ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> jblack_friends = person_set.getByName('jblack-friends')
+    >>> jblack_friends_foo_src = test_publisher.getPubSource(
+    ...     version="9.9", distroseries=hoary,
+    ...     archive=jblack_friends.archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> [build] = jblack_friends_foo_src.createMissingBuilds()
+    >>> from canonical.launchpad.interfaces.build import BuildStatus
+    >>> build.forceState(BuildStatus.FAILEDTOBUILD)
 
     >>> flush_database_updates()
     >>> logout()
@@ -1015,6 +1044,39 @@ to copy the *same* version with different contents to grumpy in his PPA.
     There is 1 error.
     The following source cannot be copied: foo 1.1 in hoary
     (binaries conflicting with the existing ones)
+
+James thinks that his last chance will be copying the just-uploaded
+foo-9.9 source from 'James-Friend's PPA.
+
+    >>> jblack_browser.open('http://launchpad.dev/~jblack-friends/+archive')
+    >>> jblack_browser.getLink('Copy packages').click()
+
+    >>> jblack_browser.getControl(name='field.name_filter').value = 'foo'
+    >>> jblack_browser.getControl("Update").click()
+
+    >>> print_ppa_packages(jblack_browser.contents)
+    Source     Uploader  Published   Status     Series   Section  Built
+    foo - 9.9  name16                Published  Hoary    Base     i386
+
+But James doesn't think straight, he sees that foo-9.9 failed to build
+in i386, but even though, he tries to copy it including binaries. He
+gets told, in a very politely way, that he can't do such thing.
+
+    >>> foo_pub_id = getPPAPubIDsFor('jblack-friends', 'foo')[0]
+    >>> jblack_browser.getControl(
+    ...     name='field.selected_sources').value = [foo_pub_id]
+    >>> jblack_browser.getControl(
+    ...     'Destination PPA').value = ['jblack']
+    >>> jblack_browser.getControl(
+    ...     'Destination series').value = ['grumpy']
+    >>> jblack_browser.getControl('Copy binaries').selected = True
+    >>> jblack_browser.getControl("Copy Packages").click()
+    >>> messages = get_feedback_messages(jblack_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    The following source cannot be copied: foo 9.9 in hoary
+    (source has no binaries to be copied)
 
 No game, no matter what he tries, James can't break PPAs.
 
