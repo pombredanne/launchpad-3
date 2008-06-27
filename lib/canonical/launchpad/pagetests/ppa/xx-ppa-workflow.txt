@@ -7,21 +7,21 @@ Personal Package Archives have to be activated before they can be
 accessed, in this section we will cover the activation procedure for
 an user-PPA by its own user.
 
+A person's Personal Package Archive is accessible from the navigation menu.
+
+   >>> anon_browser.open("http://launchpad.dev/~cprov")
+   >>> print_navigation_links(anon_browser.contents)
+   Profile
+   Related Software: http://launchpad.dev/~cprov/+projects
+   Karma: http://launchpad.dev/~cprov/+karma
+   Personal Package Archive: http://launchpad.dev/~cprov/+archive
+
 Since cprov's Personal Package Archive is already activated in
-sampledata, 'Activate Personal Package Archive' action is not
-presented in cprov's page:
+sampledata, the 'Personal Package Archive' menu item takes you to his archive.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
     >>> cprov_browser.open("http://launchpad.dev/~cprov")
-    >>> cprov_browser.getLink("Activate Personal Package Archive")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-Instead, a 'Personal Package Archive' link is presented which
-drives the user to their Personal Package Archive page:
-
     >>> cprov_browser.getLink("Personal Package Archive").click()
     >>> cprov_browser.title
     'PPA for Celso Providelo'
@@ -42,10 +42,6 @@ a Personal Package Archive that doesn't exist yet, let's use the
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> sample_browser.open("http://launchpad.dev/~name12")
-    >>> sample_browser.getLink(url="+archive")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
 
 Accessing a nonexistent Personal Package Archive page with a hand-made
 URL results in NotFound error:
@@ -55,10 +51,23 @@ URL results in NotFound error:
     ...
     NotFound: Object: <Person at ...>, name: u'+archive'
 
-Person action-menu presents a link to 'Activate Personal Package Archive':
+The navigation menu item is present, but the menu item does not link to the
+Archive page.  Instead, it takes the user to the 'Activate Personal Package
+Archive' page.
 
     >>> sample_browser.open("http://launchpad.dev/~name12")
-    >>> sample_browser.getLink("Activate Personal Package Archive").click()
+    >>> print_navigation_links(sample_browser.contents)
+    Profile
+    Related Software: http://launchpad.dev/~name12/+projects
+    Karma: http://launchpad.dev/~name12/+karma
+    Personal Package Archive: http://launchpad.dev/~name12/+activate-ppa
+
+    >>> sample_browser.getLink(url="+archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> sample_browser.getLink("Personal Package Archive").click()
     >>> sample_browser.title
     'Activate Personal Package Archive'
     >>> sample_browser.url
@@ -238,7 +247,7 @@ name of other users or teams:
     ...
     LinkNotFoundError
 
-    >>> admin_browser.getLink("Activate Personal Package Archive").click()
+    >>> admin_browser.getLink("Personal Package Archive").click()
     >>> admin_browser.getControl(name="field.accepted").value = True
     >>> admin_browser.getControl(name="field.description").value = (
     ...    'Go for it, you lazy !')
