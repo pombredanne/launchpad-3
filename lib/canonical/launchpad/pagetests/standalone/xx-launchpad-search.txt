@@ -111,12 +111,12 @@ instead.
     ...     os.path.dirname(canonical.launchpad.__file__), 'images')
     >>> ubuntu_icon = open(os.path.join(image_dir, 'branch.png'))
 
-    >>> admin_browser.open('http://launchpad.dev/ubuntu/+branding')
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/+edit')
     >>> emblem_ctrl = admin_browser.getControl(name='field.icon.action')
     >>> emblem_ctrl.getControl('Change to').selected = True
     >>> admin_browser.getControl(name='field.icon.image').add_file(
     ...     ubuntu_icon, 'image/png', 'ubuntu-icon.png')
-    >>> admin_browser.getControl('Change Branding', index=-1).click()
+    >>> admin_browser.getControl('Change', index=-1).click()
     >>> admin_browser.url
     'http://launchpad.dev/ubuntu'
 

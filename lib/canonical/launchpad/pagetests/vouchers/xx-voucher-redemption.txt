@@ -13,12 +13,12 @@ is related to a person.
 
 == Accessing the voucher redemption page ==
 
-The test user is an adminstrator on many projects that do not have
-licensing information listed, therefore they appear to the system as
-commercial projects.
+Mark is an administrator for at least one project that does not have a
+valid open source license so he is displayed the voucher redemption
+page.
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name12/+vouchers')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions
@@ -53,6 +53,16 @@ the '+vouchers' page on any user.
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
+
+
+Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
+
+    >>> browser.open('http://launchpad.dev/~name12/+vouchers')
+    >>> main = find_main_content(browser.contents)
+    >>> print extract_text(main)
+    Redeem Vouchers for Commercial Subscriptions
+    ...Sample Person does not have any unredeemed vouchers available.
+    Here are the steps to obtain a commercial subscription:...
 
 
 == Redeeming a voucher ==

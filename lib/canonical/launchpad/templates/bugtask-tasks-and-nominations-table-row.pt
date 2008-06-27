@@ -40,34 +40,7 @@
         alt=""
         tal:attributes="src view/bugtask_icon"
       />
-      <tal:sourcepackage condition="context/sourcepackagename|nothing">
-        <tal:comment condition="nothing">
-          tal:attributes= contains odd indentation because title= is
-          whitespace-sensitive. The single leading spaces are important!
-        </tal:comment>
-        <a
-          tal:condition="not:context/target/currentrelease|nothing"
-          tal:attributes="
-            href context/target/fmt:url;
-            title string:No current release for this source package in
- ${context/target/distribution/displayname}"
-          tal:content="context/bugtargetdisplayname"
-          title="No current release "
-        />
-        <a
-          tal:condition="context/target/currentrelease|nothing"
-          tal:define="cr context/target/currentrelease"
-          tal:attributes="
-            href context/target/fmt:url;
-            title string:Latest release: ${cr/version}, uploaded to
- ${cr/component/name} on ${cr/dateuploaded} by ${cr/creator/displayname}
- (${cr/creator/name}), maintained by ${cr/maintainer/displayname}
- (${cr/maintainer/name})"
-          tal:content="context/bugtargetdisplayname"
-        />
-      </tal:sourcepackage>
       <a
-        tal:condition="not:context/sourcepackagename|nothing"
         tal:attributes="href context/target/fmt:url"
         tal:content="context/bugtargetdisplayname"
       />
