@@ -5,6 +5,7 @@ Package Maintenance Report.
 
 
     >>> anon_browser.open('http://launchpad.dev/~sabdfl')
+    >>> anon_browser.getLink('Related Software').click()
     >>> anon_browser.getLink('List assigned packages').click()
     >>> print anon_browser.title
     Packages maintained by Mark Shuttleworth

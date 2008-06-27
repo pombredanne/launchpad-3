@@ -67,11 +67,8 @@ this.
 
     (To see spiv's email we must be logged in, so we'll use user_browser)
     >>> user_browser.open('http://launchpad.dev/~spiv')
-    >>> print find_portlet(user_browser.contents, 'Confirmed e-mail addresses')
-    <...
-    ...Confirmed e-mail addresses...
-    ...andrew.bennetts@ubuntulinux.com...
-    ...
+    >>> 'andrew.bennetts@ubuntulinux.com' in user_browser.contents
+    True
 
     >>> anon_browser.open('http://launchpad.dev/')
     >>> anon_browser.getLink('Log In / Register').click()
