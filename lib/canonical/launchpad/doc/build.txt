@@ -7,9 +7,6 @@ The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
 launchpad build daemon.
 
-    >>> from datetime import datetime, timedelta
-    >>> import pytz
-    >>> UTC = pytz.timezone('UTC')
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...    BuildStatus, IArchiveSet, IBuildSet, IDistributionSet)
@@ -193,23 +190,9 @@ These are the archive build counters before the build is retried.
     >>> print_counts_for_archive(archive_id)
     total: 15, pending: 1, succeeded: 8, building: 1 failed: 5
 
-Before we actually retry the build on hand let's set its start time.
-This will allow us to observe the fact that a build retry resets the
-start time.
-
-    >>> unsecured_build = removeSecurityProxy(active_build)
-    >>> unsecured_build.date_first_dispatched = datetime.now(UTC)
-    >>> active_build.date_first_dispatched is not None
-    True
-
 Retry Build record in question:
 
     >>> active_build.retry()
-
-Since the build was retried its start times was reset.
-
-    >>> active_build.date_first_dispatched is None
-    True
 
 Build record has no history and is NEEDSBUILD and a corresponding
 BuildQueue record was created.
@@ -1046,6 +1029,9 @@ Create oldest SourcePackageRelease instance.
 
 Create oldest build instance.
 
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
     >>> oldest_build = oldest_spr.sourcepackagerelease.createBuild(
     ...         test_publisher.breezy_autotest_hppa,
     ...         PackagePublishingPocket.UPDATES,
