@@ -1,8 +1,8 @@
 <?xml version="1.0"?><!--*- mode: nxml -*-->
 <participants xmlns:tal="http://xml.zope.org/namespaces/tal">
   <!--
-    This team location data is (c) Canonical Ltd and contributors, and
-    the format may be changed at any time.
+    This collection of team location data is (c) Canonical Ltd and
+    contributors, and the format may be changed at any time.
   -->
   <participant tal:repeat="participant view/mapped_participants"
           tal:attributes="

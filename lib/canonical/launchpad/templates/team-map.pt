@@ -31,19 +31,18 @@
   <tal:unmapped condition="view/unmapped_participants">
     <p style="margin: 4px;">
       <strong>Complete the map!</strong><br />
-      Do you know a reasonable location and time zone for these team
-      members? Click on a person's name to update this map so we know
-      all the time zones covered by the team.
+      Do you know the current location for these team members?  Update
+      locations for:
     </p>
 
-    <p>
-      <tal:needs_map repeat="tomap view/unmapped_participants"><a
-        tal:attributes="
-        href string:${tomap/fmt:url}/+editlocation?for_team=${context/name}"
+    <ul>
+      <li tal:repeat="tomap view/unmapped_participants">
+        <a tal:attributes="
+          href string:${tomap/fmt:url}/+editlocation?for_team=${context/name}"
            tal:content="tomap/browsername"
-           style="white-space: nowrap;">Joe Bloggs</a>&nbsp;|
-           </tal:needs_map>
-    </p>
+           style="white-space: nowrap;">Joe Bloggs</a>
+      </li>
+    </ul>
   </tal:unmapped>
 
   <p tal:condition="view/mapped_participants">

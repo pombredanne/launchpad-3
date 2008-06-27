@@ -12,6 +12,7 @@ from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.widget import BrowserWidget
 from zope.app.form.interfaces import IInputWidget, WidgetInputError
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
@@ -24,7 +25,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
-from canonical.widgets.helpers import get_widget_template
 
 
 class ILocationWidget(IInputWidget, IBrowserWidget, IMultiLineWidgetLayout):
@@ -45,8 +45,9 @@ class LocationValue:
 
 class LocationWidget(BrowserWidget, InputWidget):
     """See `ILocationWidget`."""
-
     implements(ILocationWidget)
+
+    __call__ = ViewPageTemplateFile("templates/location.pt")
 
     def __init__(self, context, request):
         # This widget makes use of javascript for googlemaps and
@@ -63,7 +64,7 @@ class LocationWidget(BrowserWidget, InputWidget):
         # This will be the initial zoom level and center of the map.
         self.zoom = 2
         self.center_lat = 15.0
-        self.center_long = 0.0
+        self.center_lng = 0.0
         # By default, we will not show a marker initially, because we are
         # not absolutely certain of the location we are proposing.  The
         # variable is a number that will be passed to JavaScript and
@@ -80,7 +81,7 @@ class LocationWidget(BrowserWidget, InputWidget):
             geo_request = IGeoIPRecord(request)
             self.zoom = 7
             self.center_lat = geo_request.latitude
-            self.center_long = geo_request.longitude
+            self.center_lng = geo_request.longitude
             data['time_zone'] = geo_request.time_zone
         current_location = IObjectWithLocation(self.context.context)
         if current_location.latitude is not None:
@@ -88,7 +89,7 @@ class LocationWidget(BrowserWidget, InputWidget):
             data['latitude'] = current_location.latitude
             data['longitude'] = current_location.longitude
             self.center_lat = current_location.latitude
-            self.center_long = current_location.longitude
+            self.center_lng = current_location.longitude
             self.zoom = 9
             self.show_marker = 1
         if current_location.time_zone is not None:
@@ -102,41 +103,29 @@ class LocationWidget(BrowserWidget, InputWidget):
         self.latitude_widget = widgets['latitude']
         self.longitude_widget = widgets['longitude']
 
-    def __call__(self):
-        """Render the map and the widgets in their hidden form.
-
-        The values of the widgets will be set by Javascript once the location
-        in the map is changed.
-        """
+    @property
+    def map_javascript(self):
+        """The Javascript code necessary to render the map."""
         person = self.context.context
-        person_name = person.name
-        person_displayname = person.browsername
-        logo_html = ObjectImageDisplayAPI(person).logo()
-        divname = self.name.replace('.', '_') + '_div'
-        mapname = divname + '_map'
-        # Following are the names of our HTML input fields, which are going to
-        # be used by our Javascript code to change their values.
-        latname = self.name + '.latitude'
-        longname = self.name + '.longitude'
         replacements = dict(
-            latitude_widget=self.latitude_widget.hidden(),
-            longitude_widget=self.longitude_widget.hidden(),
             center_lat=self.center_lat,
-            center_long=self.center_long,
-            latname=latname,
-            lngname=longname,
-            name=person_name,
-            displayname=person_displayname,
-            logo_html=logo_html,
-            div=divname,
-            map=mapname,
+            center_lng=self.center_lng,
+            displayname=person.displayname,
+            name=person.name,
+            logo_html=ObjectImageDisplayAPI(person).logo(),
+            lat_name=self.latitude_widget.name,
+            lng_name=self.longitude_widget.name,
             tz_name=self.time_zone_widget.name,
-            tz_widget=self.time_zone_widget(),
-            tz_ws_url='http://ba-ws.geonames.net/timezoneJSON',
             zoom=self.zoom,
             show_marker=self.show_marker)
-        template = get_widget_template('location.pt')
-        return template % replacements
+        return """
+            <script type="text/javascript">
+                renderLargeMap(
+                    %(center_lat)s, %(center_lng)s, '%(displayname)s',
+                    '%(name)s', '%(logo_html)s', '%(lat_name)s',
+                    '%(lng_name)s', '%(tz_name)s', %(zoom)s, %(show_marker)s);
+            </script>
+            """ % replacements
 
     def hasInput(self):
         """See `IBrowserWidget`.

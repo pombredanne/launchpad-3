@@ -46,7 +46,6 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    IObjectWithLocation,
     IEmailAddressSet, ILaunchBag, ILoginTokenSet, IMailingList,
     IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, LoginTokenType, MailingListStatus, PersonVisibility,
@@ -848,15 +847,18 @@ class TeamMapView(LaunchpadView):
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        for participant in self.mapped_participants:
-            if IObjectWithLocation(participant).latitude < min_lat:
-                min_lat = IObjectWithLocation(participant).latitude
-            if IObjectWithLocation(participant).latitude > max_lat:
-                max_lat = IObjectWithLocation(participant).latitude
-            if IObjectWithLocation(participant).longitude < min_lng:
-                min_lng = IObjectWithLocation(participant).longitude
-            if IObjectWithLocation(participant).longitude > max_lng:
-                max_lng = IObjectWithLocation(participant).longitude
+        latitudes = sorted(
+            participant.latitude for participant in self.mapped_participants)
+        if latitudes[-1] > max_lat:
+            max_lat = latitudes[-1]
+        if latitudes[0] < min_lat:
+            min_lat = latitudes[0]
+        longitudes = sorted(
+            participant.longitude for participant in self.mapped_participants)
+        if longitudes[-1] > max_lng:
+            max_lng = longitudes[-1]
+        if longitudes[0] < min_lng:
+            min_lng = longitudes[0]
         center_lat = (max_lat + min_lat) / 2.0
         center_lng = (max_lng + min_lng) / 2.0
         return dict(
@@ -868,42 +870,8 @@ class TeamMapView(LaunchpadView):
         """HTML which shows the map with location of the team's members."""
         return """
             <script type="text/javascript">
-
-            //<![CDATA[
-
-            if (GBrowserIsCompatible()) {
-                var dims = getViewportDimensions();
-                var myWidth = dims.w;
-                var myHeight = dims.h;
-                var mapdiv = document.getElementById("team_map_div");
-                var mapheight = (parseInt(mapdiv.offsetWidth) / 16 * 9);
-                mapheight = Math.min(mapheight, myHeight - 180);
-                mapheight = Math.max(mapheight, 400);
-                mapdiv.style.height = mapheight + 'px';
-               
-                var team_map = new GMap2(mapdiv);
-                center = new GLatLng(%(center_lat)s, %(center_lng)s);
-                team_map.setCenter(center, 0);
-                team_map.setMapType(G_HYBRID_MAP);
-                sw = GLatLng(%(min_lat)s, %(min_lng)s);
-                ne = GLatLng(%(max_lat)s, %(max_lng)s);
-                required_bounds = new GLatLngBounds(sw, ne);
-                zoom_level = team_map.getBoundsZoomLevel(required_bounds);
-                zoom_level = Math.min(
-                    G_HYBRID_MAP.getMaximumResolution(), zoom_level);
-                team_map.setZoom(zoom_level);
-                team_map.addControl(new GLargeMapControl());
-                team_map.addControl(new GMapTypeControl());
-                team_map.addControl(new GOverviewMapControl());
-                team_map.addControl(new GScaleControl());
-                team_map.enableScrollWheelZoom();
-                GDownloadUrl("+mapdata", function(data) {
-                    var required_bounds = new GLatLngBounds();
-                    setMarkersInfoWindow(data, team_map, required_bounds);
-                  });
-            }
-
-            //]]>
+                renderTeamMap(%(min_lat)s, %(max_lat)s, %(min_lng)s,
+                              %(max_lng)s, %(center_lat)s, %(center_lng)s);
             </script>""" % self.bounds
 
     @property
@@ -911,30 +879,7 @@ class TeamMapView(LaunchpadView):
         """The HTML which shows a small version of the team's map."""
         return """
             <script type="text/javascript">
-
-            //<![CDATA[
-
-            if (GBrowserIsCompatible()) {
-                var dims = getViewportDimensions();
-                var myWidth = dims.w;
-                var myHeight = dims.h;
-                var mapdiv = document.getElementById("team_map_div");
-               
-                var team_map = new GMap2(mapdiv);
-                center = new GLatLng(%(center_lat)s, %(center_lng)s);
-                team_map.setCenter(center, 1);
-                team_map.setMapType(G_NORMAL_MAP);
-                team_map.enableScrollWheelZoom();
-                GDownloadUrl("+mapdata", function(data) {
-                    var required_bounds = new GLatLngBounds();
-                    setMarkersInfoWindow(data, team_map, required_bounds);
-                    zoom_level = team_map.getBoundsZoomLevel(required_bounds);
-                    zoom_level = Math.min(4, zoom_level - 1);
-                    team_map.setZoom(zoom_level);
-                    });
-            }
-
-            //]]>
+                renderTeamMapSmall(%(center_lat)s, %(center_lng)s);
             </script>""" % self.bounds
 
 

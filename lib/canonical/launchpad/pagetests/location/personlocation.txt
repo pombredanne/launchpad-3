@@ -40,7 +40,7 @@ there's a map, and the scripts are loaded.
     Time zone: Europe/London
     ...
     >>> mapdiv = find_tag_by_id(nopriv_browser.contents, 'portlet-map')
-    >>> 'GBrowserIsCompatible' in str(mapdiv)
+    >>> 'renderPersonMapSmall' in str(mapdiv)
     True
     >>> 'src="http://maps.google.com/maps' in str(nopriv_browser.contents)
     True

@@ -1259,7 +1259,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def map(self):
         target = '+map'
-        text = 'Show large map and time zones'
+        text = 'Show map and time zones'
         return Link(target, text)
 
     def add_my_teams(self):
@@ -2635,24 +2635,7 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                         'center_lng': self.context.longitude}
         return u"""
             <script type="text/javascript">
-            //<![CDATA[
-
-            if (GBrowserIsCompatible()) {
-                var dims = getViewportDimensions();
-                var myWidth = dims.w;
-                var myHeight = dims.h;
-                var mapdiv = document.getElementById("person_map_div");
-                var map = new GMap2(mapdiv);
-                center = new GLatLng(%(center_lat)s, %(center_lng)s);
-                map.setCenter(center, 1);
-                map.setMapType(G_NORMAL_MAP);
-                map.addControl(new GSmallZoomControl());
-                map.enableScrollWheelZoom();
-                var marker = new GMarker(center);
-                map.addOverlay(marker);
-            }
-
-            //]]>
+                renderPersonMapSmall(%(center_lat)s, %(center_lng)s);
             </script>""" % replacements
 
 
