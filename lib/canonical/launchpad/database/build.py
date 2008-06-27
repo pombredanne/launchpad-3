@@ -114,6 +114,7 @@ class Build(SQLBase):
 
     buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
                                   on_remote=True)
+    date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
 
     @property
     def current_component(self):
