@@ -123,7 +123,7 @@ class PillarNameSet:
         else:
             return getUtility(IDistributionSet).get(distribution)
 
-    def build_search_query(self, text):
+    def build_search_query(self, text, extra_columns=()):
         from canonical.launchpad.database.product import Product
         from canonical.launchpad.database.project import Project
         from canonical.launchpad.database.distribution import Distribution
@@ -147,9 +147,10 @@ class PillarNameSet:
              OR lower(Distribution.title) = lower(%(text)s))
             ''' % sqlvalues(text=text))
         store = getUtility(IZStorm).get('main')
-        return store.using(*origin).find(
-            (PillarName, Product, Project, Distribution),
-            conditions)
+        columns = [PillarName, Product, Project, Distribution]
+        for column in extra_columns:
+            columns.append(column)
+        return store.using(*origin).find(tuple(columns), conditions)
 
     def count_search_matches(self, text):
         result = self.build_search_query(text)
@@ -159,7 +160,16 @@ class PillarNameSet:
         """See `IPillarSet`."""
         if limit is None:
             limit = config.launchpad.default_batch_size
-        result = self.build_search_query(text)
+        class Array(NamedFunc):
+            name = 'array'
+        # Pull out the licenses as a subselect which is converted
+        # into an array since there may be multiple licenses per
+        # product.
+        extra_column = Array(
+            Select(columns=[ProductLicense.license],
+                   where=(ProductLicense.product == Product.id),
+                   tables=[ProductLicense]))
+        result = self.build_search_query(text, [extra_column])
         result.order_by(SQL('''
             (CASE WHEN Product.name = lower(%(text)s)
                       OR lower(Product.title) = lower(%(text)s)
@@ -178,12 +188,21 @@ class PillarNameSet:
         if limit > longest_expected:
             warnings.warn(
                 "The search limit (%s) was greater "
-                "than the longest expected size (%s)" % (limit, longest_expected),
+                "than the longest expected size (%s)"
+                % (limit, longest_expected),
                 stacklevel=2)
-        return [
-            pillar
-            for pillar, product, project, distribution in result[:limit]
-            ]
+        pillars = []
+        # Prefill pillar.product.licenses.
+        for (pillar, product, project, distribution, license_ids
+             in result[:limit]):
+            pillars.append(pillar)
+            if (pillar.product is not None
+                and pillar.product._cached_licenses is None):
+                licenses = [
+                    License.items[license_id]
+                    for license_id in license_ids]
+                pillar.product._cached_licenses = tuple(sorted(licenses))
+        return pillars
 
     def add_featured_project(self, project):
         """See `IPillarSet`."""
