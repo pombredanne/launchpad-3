@@ -258,6 +258,7 @@ class Build(SQLBase):
         self.builder = None
         self.buildlog = None
         self.dependencies = None
+        # This build is being retried, reset the build start time.
         self.date_first_dispatched = None
         self.createBuildQueueEntry()
 
