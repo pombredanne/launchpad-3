@@ -207,7 +207,7 @@ Retry Build record in question:
 
     >>> active_build.retry()
 
-Since the build was retried its start times was reset.
+The build was retried but its start time remains the same.
 
     >>> active_build.date_first_dispatched == time_now
     True
