@@ -8,10 +8,12 @@ __all__ = [
     'BuilderSet',
     ]
 
+from datetime import datetime
 import httplib
 import gzip
 import logging
 import os
+import pytz
 import socket
 import subprocess
 import tempfile
@@ -20,6 +22,7 @@ import xmlrpclib
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
@@ -471,6 +474,12 @@ class Builder(SQLBase):
         # Do it.
         build_queue_item.markAsBuilding(self)
         self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
+
+        # At this point we need to set the actual build start time.
+        # First obtain access to the build instance properties.
+        the_build = removeSecurityProxy(build_queue_item.build)
+        # Now set the build start time.
+        the_build.date_first_dispatched = datetime.now(pytz.timezone('UTC'))
 
     @property
     def status(self):
