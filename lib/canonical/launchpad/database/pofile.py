@@ -138,11 +138,34 @@ def _can_edit_translations(pofile, person):
 def _can_add_suggestions(pofile, person):
     """Whether a person is able to add suggestions.
 
-    Any user that can edit translations can add suggestions, the others will
-    be able to add suggestions only if the permission is not CLOSED.
+    Besides people who have permission to edit the translation, this
+    includes any logged-in user for translations in STRUCTURED mode, and
+    any logged-in user for translations in RESTRICTED mode that have a
+    translation team assigned.
     """
-    return (_can_edit_translations(pofile, person) or
-            pofile.translationpermission != TranslationPermission.CLOSED)
+    if person is None:
+        return False
+    if _can_edit_translations(pofile, person):
+        return True
+
+    if pofile.translationpermission == TranslationPermission.OPEN:
+        # We would return True here, except OPEN mode already allows
+        # anyone to edit (see above).
+        raise AssertionError(
+            "Translation is OPEN, but user is not allowed to edit.")
+    elif pofile.translationpermission == TranslationPermission.STRUCTURED:
+        return True
+    elif pofile.translationpermission == TranslationPermission.RESTRICTED:
+        # Only allow suggestions if there is someone to review them.
+        groups = pofile.potemplate.translationgroups
+        for group in groups:
+            if group.query_translator(pofile.language):
+                return True
+        return False
+    elif pofile.translationpermission == TranslationPermission.CLOSED:
+        return False
+
+    raise AssertionError("Unknown translation mode.")
 
 
 class POFileMixIn(RosettaStats):
