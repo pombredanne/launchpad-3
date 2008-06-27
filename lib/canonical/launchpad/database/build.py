@@ -19,11 +19,10 @@ from storm.references import Reference
 
 from canonical.config import config
 
-from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote_like
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -742,6 +741,8 @@ class Build(SQLBase):
                 self.buildstate, BuildStatus.BUILDING))
         self.archive.building_count += 1
         self.archive.pending_count -= 1
+        # The build started, set the start time.
+        self.date_first_dispatched = UTC_NOW
 
     def buildFailed(self, value):
         """Handle the transition of the build state to 'failed'."""
@@ -792,6 +793,8 @@ class Build(SQLBase):
         elif value == BuildStatus.BUILDING:
             # This is a currently active/building build now.
             self.archive.building_count += 1
+            # The build started, set the start time.
+            self.date_first_dispatched = UTC_NOW
         else:
             # This is a failed build now.
             self.archive.failed_count += 1
