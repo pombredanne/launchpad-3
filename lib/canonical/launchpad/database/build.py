@@ -1105,3 +1105,19 @@ class BuildSet:
         new_build.initialize()
 
         return new_build
+
+    def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
+                                        buildstate=None):
+        """See `IBuildSet`."""
+        if (sourcepackagerelease_ids is None or 
+            len(sourcepackagerelease_ids) == 0):
+            return []
+
+        query = """
+            sourcepackagerelease IN %s
+            """ % sqlvalues(sourcepackagerelease_ids)
+
+        if buildstate is not None:
+            query += "AND buildstate = %s" % sqlvalues(buildstate)
+
+        return Build.select(query, orderBy=["-datecreated", "id"])

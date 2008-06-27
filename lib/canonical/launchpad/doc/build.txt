@@ -1119,3 +1119,60 @@ the main archive.
 
     >>> ppa_build.estimated_build_duration
     datetime.timedelta(0, 3600)
+
+
+== IBuildSet.getBuildsBySourcePackageRelease() ==
+
+getBuildsBySourcePackageRelease() will return all the Build records for
+all the SourcePackageRelease IDs passed.
+
+Create some sources with builds:
+
+    >>> source_one = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='sourceone')
+    >>> source_two = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     sourcename='sourcetwo')
+    >>> build_one = source_one.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.RELEASE,
+    ...         test_publisher.breezy_autotest.main_archive,
+    ...         status=BuildStatus.FULLYBUILT)
+    >>> build_two = source_two.sourcepackagerelease.createBuild(
+    ...         test_publisher.breezy_autotest_hppa,
+    ...         PackagePublishingPocket.RELEASE,
+    ...         test_publisher.breezy_autotest.main_archive,
+    ...         status=BuildStatus.NEEDSBUILD)
+
+    >>> source_ids = (
+    ...     source_one.sourcepackagerelease.id,
+    ...     source_two.sourcepackagerelease.id,
+    ...     )
+    >>> builds = bs.getBuildsBySourcePackageRelease(source_ids)
+    >>> import operator
+    >>> for build in sorted(builds, key=operator.attrgetter("id")):
+    ...     print build.title, build.buildstate.name
+    hppa build of sourceone 666 in ubuntutest breezy-autotest RELEASE
+        FULLYBUILT
+    hppa build of sourcetwo 666 in ubuntutest breezy-autotest RELEASE
+        NEEDSBUILD
+
+The results can also be filtered on build state:
+
+    >>> builds = bs.getBuildsBySourcePackageRelease(
+    ...     source_ids, buildstate=BuildStatus.FULLYBUILT)
+    >>> for build in sorted(builds, key=operator.attrgetter("id")):
+    ...     print build.title, build.buildstate.name
+    hppa build of sourceone 666 in ubuntutest breezy-autotest RELEASE
+        FULLYBUILT
+
+Supplying an empty list or None for the IDs results in an empty list
+being returned.
+
+    >>> bs.getBuildsBySourcePackageRelease(None)
+    []
+
+    >>> bs.getBuildsBySourcePackageRelease([])
+    []
+
