@@ -2211,7 +2211,7 @@ class PersonVouchersView(LaunchpadFormView):
             # Log an oops report with raising an error.
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
-            globalErrorUtility.raising(info, self.context.request)
+            globalErrorUtility.raising(info, self.request)
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
