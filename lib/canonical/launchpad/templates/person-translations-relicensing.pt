@@ -9,41 +9,34 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-
   <body>
     <div metal:fill-slot="main">
-      <p>Hello. We plan to clarify the licence applied to translations
-        made in Launchpad. Soon, all translations in Launchpad will use
-        the BSD licence.</p>
-
-      <p>We would like your permission to apply the BSD licence to the
-        translations you've already made in Launchpad and also to any
-        future translations you make in Launchpad.</p>
-
-      <p>We've chosen the BSD licence because it is universally
-        compatible with projects that use other licences. That's ideal
-        because Launchpad shares your translations work with other
-        people and projects.</p>
-
-      <p>To see which translations are affected, visit your
-        <a tal:attributes="href string:${context/fmt:url}">translations</a>
-        page.</p>
-
-      <p>Please tell us if you're happy to use the BSD licence, using
-        the link below. If you change your mind, you can return here
-        by following the
-        "<a tal:attributes="href view/relicensing_url">Translations
-        licensing"</a> link on your translations page at any time
-        until July 31st.</p>
-
-      <p>If you choose not to use the BSD licence, we will remove your
-        translations from Launchpad shortly after July 31st.</p>
-
-      <p>For more about why we're clarifying translations licensing,
-        take a look at our
+      <h1>Sorry to interrupt&#8230;</h1>
+      <p>
+        Launchpad is all about sharing and collaborating between projects.
+      </p>
+      <p>
+        To help us share your translations,
+        we&#8217;d like your permission to
+        <strong>license all your translations</strong>,
+        <a tal:attributes="href string:${context/fmt:url}">past</a> and future,
+        <strong>under the BSD licence</strong>.
+        We&#8217;ve chosen the BSD licence because it&#8217;s universally
+        compatible with projects that use other licences.
+      </p>
+      <p>
+        If you change your mind later, you can return to this page
+        (look for &#8220;Translations licensing&#8221;)
+        any time until July 31st.
+        If you choose not to accept the BSD licence, we&#8217;ll remove your
+        translations from Launchpad shortly after then.
+      </p>
+      <p>
+        For more about why we&#8217;re clarifying translations licensing,
+        see our
         <a href="http://help.launchpad.net/Translations/LicensingFAQ">
-        translations licensing FAQ</a>.</p>
-
+        translations licensing FAQ</a>.
+      </p>
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>
   </body>

@@ -2963,7 +2963,6 @@ class PersonTranslationView(LaunchpadView):
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
-    label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreementEdit
     field_names = ['allow_relicensing', 'back_to']
     custom_widget('back_to', TextWidget, visible=False)
@@ -3003,14 +3002,12 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         self.context.translations_relicensing_agreement = allow_relicensing
         if allow_relicensing:
             self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Thank you for deciding to license your translations under "
-                "BSD license."))
+                "Thank you for BSD-licensing your translations."))
         else:
             self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Your translations will be removed once we completely "
-                "switch to BSD license for translations."))
+                "We respect your choice. "
+                "Your translations will be removed once we complete the "
+                "switch to the BSD license."))
 
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
