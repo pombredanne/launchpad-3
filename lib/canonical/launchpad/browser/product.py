@@ -1224,6 +1224,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         'license_reviewed',
         'license_info_is_empty',
         'licenses',
+        'has_zero_licenses',
         ]
 
     side_by_side_field_names = [
@@ -1238,6 +1239,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     custom_widget('active', LaunchpadRadioWidget)
     custom_widget('license_reviewed', LaunchpadRadioWidget)
     custom_widget('license_info_is_empty', LaunchpadRadioWidget)
+    custom_widget('has_zero_licenses', LaunchpadRadioWidget)
     custom_widget('created_after', DateWidget)
     custom_widget('created_before', DateWidget)
     custom_widget('subscription_expires_after', DateWidget)
