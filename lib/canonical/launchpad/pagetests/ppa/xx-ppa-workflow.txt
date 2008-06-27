@@ -12,8 +12,8 @@ A person's Personal Package Archive is accessible from the navigation menu.
    >>> anon_browser.open("http://launchpad.dev/~cprov")
    >>> print_navigation_links(anon_browser.contents)
    Profile
-   Related Software: http://launchpad.dev/~cprov/+projects
-   Karma: http://launchpad.dev/~cprov/+karma
+   Related Software: ...
+   Karma: ...
    Personal Package Archive: http://launchpad.dev/~cprov/+archive
 
 Since cprov's Personal Package Archive is already activated in
@@ -51,15 +51,15 @@ URL results in NotFound error:
     ...
     NotFound: Object: <Person at ...>, name: u'+archive'
 
-The navigation menu item is present, but the menu item does not link to the
-Archive page.  Instead, it takes the user to the 'Activate Personal Package
+The navigation menu item is present, but it does not link to the user's
+Archive page.  Instead, it takes the user to their 'Activate Personal Package
 Archive' page.
 
     >>> sample_browser.open("http://launchpad.dev/~name12")
     >>> print_navigation_links(sample_browser.contents)
     Profile
-    Related Software: http://launchpad.dev/~name12/+projects
-    Karma: http://launchpad.dev/~name12/+karma
+    Related Software: ...
+    Karma: ...
     Personal Package Archive: http://launchpad.dev/~name12/+activate-ppa
 
     >>> sample_browser.getLink(url="+archive")
@@ -93,7 +93,6 @@ architectures supported for PPA.
     - current
     i386
     (official)
-
 
 The 'accepted' checkbox is unchecked by default:
 
@@ -336,7 +335,6 @@ build on a virtualized builder.
     >>> admin_browser.getControl(name="field.require_virtualized").value
     False
 
-
 When the archive is private, the buildd secret must also be set, or an
 error is issued:
 
@@ -360,7 +358,6 @@ generates an error:
     ...     print extract_text(tag)
     There is 1 error.
     Do not specify for non-private archives
-
 
 There is a maximum size allowed for authorized_size is set in
 `IArchive`, it is currently 20 * 1024 and the unit used in code is
@@ -458,4 +455,3 @@ And the description matches the first submission's:
     >>> print extract_text(
     ...     find_tag_by_id(browser1.contents, 'description'))
     PPA rocks!
-
