@@ -211,6 +211,12 @@ an error.
     <div...class="error message"...
     This project does not require a commercial subscription to be purchased...
 
+Any user can see that the project's license is open source.
+
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> repr(find_tag_by_id(user_browser.contents, 'maincontent'))
+    '<...This project&lsquo;s license is open source...
+
 If the is_subscription_feature_active config variable is false,
 then the owner will not get a warning that the subscription is due.
 # XXX EdwinGrubbs 2008-05-22 bug=234070
