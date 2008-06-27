@@ -6,26 +6,56 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
   <body>
-  <metal:heading fill-slot="pageheading">
-    <h1 tal:condition="not: view/label">Change account details</h1>
-  </metal:heading>
-
-  <metal:leftportlets fill-slot="portlets_one">
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-  </metal:rightportlets>
 
   <div metal:fill-slot="main">
+    <h1 tal:condition="not: view/label">Change account details</h1>
 
     <div metal:use-macro="context/@@launchpad_form/form">
-      <p metal:fill-slot="extra_bottom">
+
+      <div metal:fill-slot="extra_bottom">
+        <table>
+          <tbody>
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editwikinames/render"
+                 >Edit your wiki names</span>
+            </p>
+
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editircnicknames/render"
+                 >Edit your IRC contact names</span>
+            </p>
+
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editjabberids/render"
+                 >Edit your Jabber contact names</span>
+            </p>
+
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editsshkeys/render"
+                 >Change your SSH keys</span>
+            </p>
+
+            <p><span
+                 tal:replace="
+                 structure context/menu:overview/editpgpkeys/render"
+                 >Change your OpenPGP keys</span>
+            </p>
+          </tbody>
+        </table>
+      </div>
+
+      <p metal:fill-slot="extra_buttons">
+        Never going to use launchpad again?
         <a tal:attributes="href string:${context/fmt:url}/+deactivate-account"
-          >Deactivate your account</a>
+          >Deactivate your account</a>.
       </p>
     </div>
 

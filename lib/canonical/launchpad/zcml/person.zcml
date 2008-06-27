@@ -177,6 +177,14 @@
   <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEditViewObsolete"
+    permission="launchpad.Edit"
+    template="../templates/person-edit-obsolete.pt"
+    />
+
+  <browser:page
+    name="+edit2.0"
+    for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonEditView"
     permission="launchpad.Edit"
     template="../templates/person-edit.pt"

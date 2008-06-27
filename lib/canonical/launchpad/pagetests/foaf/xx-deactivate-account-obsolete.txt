@@ -33,12 +33,9 @@ deactivate.
 There's a link to the +deactivate-account page in a person's +edit page.
 
     >>> browser.open('http://launchpad.dev/~name12')
-
-    # XXX mars 2008-06-11
-    # Use direct navigation for the LP 2.0 transition. See bug #239192.
-    >>> browser.open('http://launchpad.dev/~name12/+edit2.0')
+    >>> browser.getLink('Change details').click()
     >>> browser.url
-    'http://launchpad.dev/~name12/+edit2.0'
+    'http://launchpad.dev/~name12/+edit'
 
     >>> browser.getLink('Deactivate your account').click()
     >>> browser.url
@@ -47,7 +44,7 @@ There's a link to the +deactivate-account page in a person's +edit page.
 To deactivate a user's account we require the user to enter his password.
 
     >>> browser.getControl('Why are you deactivating your account?').value = (
-    ...     "I'm going to become a Budhist monk in Tibet")
+    ...     "I'm going to become a Budhist monk in Tibet") 
     >>> browser.getControl('Deactivate My Account').click()
 
     >>> browser.getControl('Password').value = 't'

@@ -33,6 +33,7 @@ __all__ = [
     'PersonEditJabberIDsView',
     'PersonEditSSHKeysView',
     'PersonEditView',
+    'PersonEditViewObsolete',
     'PersonEditWikiNamesView',
     'PersonFacets',
     'PersonGPGView',
@@ -116,6 +117,7 @@ from canonical.widgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription, PasswordChangeWidget)
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.image import ImageChangeWidget
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
@@ -1173,12 +1175,12 @@ class PersonEditNavigationMenu(NavigationMenu):
 
     usedfor = IPersonEditMenu
     facet = 'overview'
-    title = 'Personal'
+    title = 'Edit your profile'
     links = ('personal', 'contact_details', 'email_settings',
              'sshkeys', 'gpgkeys', 'passwords')
 
     def personal(self):
-        target = '+edit'
+        target = '+edit2.0'
         text = 'Personal'
         return Link(target, text)
 
@@ -3272,11 +3274,44 @@ class PersonEditHomePageView(BasePersonEditView):
 
 
 class PersonEditView(BasePersonEditView):
+    """The Launchpad 2.0 Person 'Edit' page."""
+
+    field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'time_zone']
+    custom_widget('time_zone', SelectWidget, size=15)
+    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+
+    implements(IPersonEditMenu)
+
+    @property
+    def cancel_url(self):
+        """The URL that the 'Cancel' link should return to."""
+        return canonical_url(self.context)
+
+    def htmlJabberIDs(self):
+        """Return the person's Jabber IDs somewhat obfuscated.
+
+        The IDs are encoded using HTML hexadecimal entities to hinder
+        email harvesting. (Jabber IDs are sometime valid email accounts,
+        gmail for example.)
+        """
+        return [convertToHtmlCode(jabber.jabberid)
+                for jabber in self.context.jabberids]
+
+    @action(_("Save Changes"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+
+class PersonEditViewObsolete(BasePersonEditView):
+    """The Launchpad 1.0 Person 'Edit' page."""
 
     implements(IPersonEditMenu)
 
     field_names = ['displayname', 'name', 'hide_email_addresses',
-        'verbose_bugnotifications', 'time_zone']
+                   'verbose_bugnotifications', 'time_zone']
     custom_widget('time_zone', SelectWidget, size=15)
 
     # XXX: salgado, 2008-06-19: This will be removed as soon as the new UI
