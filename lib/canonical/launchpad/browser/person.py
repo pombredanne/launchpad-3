@@ -2993,7 +2993,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         else:
             return canonical_url(self.context)
 
-    @action(_("Update my decision"), name="submit")
+    @action(_("Confirm"), name="submit")
     def submit_action(self, action, data):
         """Store person's decision about translations relicensing.
 
