@@ -529,10 +529,12 @@ class EntryResource(ReadWriteResource, CustomOperationResourceMixin):
     @property
     def type_url(self):
         "The URL to the resource type for this resource."
+        adapter = EntryAdapterUtility(self.entry.__class__)
+
         return "%s#%s" % (
             canonical_url(self.request.publication.getApplication(
                     self.request)),
-            self.entry.singular)
+            adapter.singular_type)
 
     def _applyChanges(self, changeset):
         """Apply a dictionary of key-value pairs as changes to an entry.
@@ -773,6 +775,7 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
     @property
     def type_url(self):
         "The URL to the resource type for the object."
+
         if IScopedCollection.providedBy(self.collection):
             # Scoped collection. The type URL depends on what type of
             # entry the collection holds.
@@ -783,7 +786,9 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
             # Top-level collection.
             base_url = canonical_url(
                 self.request.publication.getApplication(self.request))
-            return "%s#%s" % (base_url, self.collection.entry_schema.plural)
+            tag = self.collection.entry_schema.queryTaggedValue(
+                LAZR_WEBSERVICE_NS)
+            return "%s#%s" % (base_url, tag['plural'])
 
 
 
@@ -899,9 +904,9 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
-                    utility = EntryAdapterUtility.forSchemaInterface(
-                        registration.value.entry_schema)
-                    link_name = ("%s_collection_link" % utility.plural_name)
+                    tag = registration.value.entry_schema.queryTaggedValue(
+                        LAZR_WEBSERVICE_NS)
+                    link_name = ("%s_collection_link" % tag['plural'])
                     top_level_resources[link_name] = utility
         return top_level_resources
 
@@ -972,8 +977,11 @@ class EntryAdapterUtility(RESTUtilityBase):
     def forSchemaInterface(cls, model_schema):
         """Retrieve an entry adapter for a model interface.
 
-        This method locates the IEntry subclass corresponding to the
-        model interface, and creates an EntryAdapterUtility for it.
+        IBug -> BugEntry
+
+        This method locates the IEntry implementation corresponding to
+        the model interface, and creates an EntryAdapterUtility for
+        it.
         """
         entry_class = zapi.getGlobalSiteManager().adapters.lookup(
             (model_schema,), IEntry)
@@ -985,19 +993,22 @@ class EntryAdapterUtility(RESTUtilityBase):
 
     @property
     def schema_interface(self):
+        # BugEntry -> IBugEntry
         interfaces = implementedBy(self.entry_class)
         entry_ifaces = [interface for interface in interfaces
                         if interface.extends(IEntry)]
         # Won't this fail if you subclass IEntry and then subclass the
         # subclass?
-        assert len(entry_ifaces) == 1, ("More than one IEntry implementation "
-                                        "for %s" % entry_class)
+        if len(entry_ifaces) != 1:
+            import pdb; pdb.set_trace()
+        assert len(entry_ifaces) == 1, ("There must be one and only one "
+                                        "IEntry implementation "
+                                        "for %s" % self.entry_class)
         return entry_ifaces[0]
 
     @property
     def singular_type(self):
         """Return the singular name for this object type."""
-        import pdb; pdb.set_trace()
         tag = self.schema_interface.queryTaggedValue(LAZR_WEBSERVICE_NS)
         return tag['singular']
 

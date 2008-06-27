@@ -27,7 +27,8 @@ from canonical.lazr.interfaces.fields import (
     ICollectionField, IReferenceChoice)
 from canonical.lazr.interfaces.rest import WebServiceLayer
 from canonical.lazr.rest import (
-    CollectionResource, EntryAdapterUtility, IObjectLink, RESTUtilityBase)
+    CollectionResource, EntryAdapterUtility, IObjectLink, LAZR_WEBSERVICE_NS,
+    RESTUtilityBase)
 
 
 class WadlAPI(RESTUtilityBase):
@@ -205,6 +206,7 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
 
     def __init__(self, adapter):
         super(WadlEntryAdapterAPI, self).__init__(adapter, IEntry)
+        import pdb; pdb.set_trace()
         self.utility = EntryAdapterUtility(adapter)
 
     @property
@@ -272,7 +274,8 @@ class WadlCollectionAdapterAPI(WadlResourceAdapterAPI):
     @property
     def collection_type(self):
         """The name of this kind of resource."""
-        return self.entry_schema.plural
+        tag = self.entry_schema.queryTaggedValue(LAZR_WEBSERVICE_NS)
+        return tag['plural']
 
     @property
     def type_link(self):
