@@ -502,13 +502,19 @@ class LaunchpadBrowserPublication(
         timestamp = "%s.%d" % (
             now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
         pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
+        oopsid= getattr(request, 'oopsid', None)
 
         if config.profiling.profile_requests:
             profiler = self.thread_locals.profiler
             profiler.disable()
 
-            filename = '%s-%s-%s.prof' % (
-                timestamp, pageid, threading.currentThread().getName())
+            if oopsid:
+                oopsid_part = '-%s' % oopsid
+            else:
+                oopsid_part = ''
+            filename = '%s-%s%s-%s.prof' % (
+                timestamp, pageid, oopsid_part,
+                threading.currentThread().getName())
 
             profiler.dump_stats(
                 os.path.join(config.profiling.profile_dir, filename))
@@ -521,8 +527,10 @@ class LaunchpadBrowserPublication(
             log = file(config.profiling.memory_profile_log, 'a')
             vss_start, rss_start = self.thread_locals.memory_profile_start
             vss_end, rss_end = memory(), resident()
-            log.write('%s %s %f %d %d %d %d\n' % (
-                timestamp, pageid, da.get_request_duration(),
+            if oopsid is None:
+                oopsid = '-'
+            log.write('%s %s %s %f %d %d %d %d\n' % (
+                timestamp, pageid, oopsid, da.get_request_duration(),
                 vss_start, rss_start, vss_end, rss_end))
             log.close()
 
