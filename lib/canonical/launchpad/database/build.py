@@ -739,8 +739,6 @@ class Build(SQLBase):
                 self.buildstate, BuildStatus.BUILDING))
         self.archive.building_count += 1
         self.archive.pending_count -= 1
-        # The build started, set the start time.
-        self.date_first_dispatched = UTC_NOW
 
     def buildFailed(self, value):
         """Handle the transition of the build state to 'failed'."""
@@ -791,8 +789,6 @@ class Build(SQLBase):
         elif value == BuildStatus.BUILDING:
             # This is a currently active/building build now.
             self.archive.building_count += 1
-            # The build started, set the start time.
-            self.date_first_dispatched = UTC_NOW
         else:
             # This is a failed build now.
             self.archive.failed_count += 1
