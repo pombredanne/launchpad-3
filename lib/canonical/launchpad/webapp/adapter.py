@@ -32,7 +32,6 @@ from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
     'DisconnectionError',
-    'LaunchpadDatabaseAdapter',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
