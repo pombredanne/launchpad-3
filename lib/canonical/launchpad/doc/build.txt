@@ -1167,6 +1167,13 @@ The results can also be filtered on build state:
     hppa build of sourceone 666 in ubuntutest breezy-autotest RELEASE
         FULLYBUILT
 
+If there are no matching results then it returns an empty SelectResults.
+
+    >>> builds = bs.getBuildsBySourcePackageRelease(
+    ...     source_ids, buildstate=BuildStatus.CHROOTWAIT)
+    >>> print builds.count()
+    0
+
 Supplying an empty list or None for the IDs results in an empty list
 being returned.
 

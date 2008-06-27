@@ -1109,7 +1109,7 @@ class BuildSet:
     def getBuildsBySourcePackageRelease(self, sourcepackagerelease_ids,
                                         buildstate=None):
         """See `IBuildSet`."""
-        if (sourcepackagerelease_ids is None or 
+        if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
 
