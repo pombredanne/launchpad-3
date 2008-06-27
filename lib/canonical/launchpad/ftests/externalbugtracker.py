@@ -492,7 +492,10 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
         # We return xmlrpc dateTimes rather than doubles since that's
         # what BugZilla will return.
         local_time = xmlrpclib.DateTime(seconds_since_epoch)
-        utc_time = xmlrpclib.DateTime(seconds_since_epoch - self.utc_offset)
+
+        utc_date_time = datetime.utcfromtimestamp(
+            seconds_since_epoch - self.utc_offset)
+        utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
             'local_time': local_time,
             'utc_time': utc_time,
