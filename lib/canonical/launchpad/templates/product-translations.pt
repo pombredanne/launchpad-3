@@ -34,7 +34,7 @@
         </h1>
       </tal:not-uses-translations>
       <p>
-        <strong tal:content="context/license_status/description">
+        <strong tal:content="structure context/license_status/description">
           This project's license is open source.
         </strong>
       </p>
