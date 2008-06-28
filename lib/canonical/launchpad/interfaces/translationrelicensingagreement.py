@@ -12,6 +12,7 @@ __metaclass__ = type
 __all__ = [
     'ITranslationRelicensingAgreement',
     'ITranslationRelicensingAgreementEdit',
+    'TranslationRelicensingAgreementOptions'
     ]
 
 

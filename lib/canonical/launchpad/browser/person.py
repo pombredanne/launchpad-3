@@ -2982,6 +2982,17 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             }
 
     @property
+    def initial_values(self):
+        """Set the user's current relicensing preference or default to BSD."""
+        default = TranslationRelicensingAgreementOptions.BSD
+        if self.context.translations_relicensing_agreement is False:
+            default = TranslationRelicensingAgreementOptions.REMOVE
+        return {
+            "allow_relicensing" : default,
+            "back_to" : self.request.get('back_to'),
+            }
+
+    @property
     def relicensing_url(self):
         """Return an URL for this view."""
         return canonical_url(self.context, view_name='+licensing')
