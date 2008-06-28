@@ -5,9 +5,14 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
+from canonical.config import config
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
+from canonical.launchpad.interfaces.bugmessage import IBugMessageSet
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.mailnotification import (
     generate_bug_add_email, MailWrapper, construct_bug_notification,
     get_bugmail_from_address)
@@ -84,6 +89,19 @@ def construct_email_notifications(bug_notifications):
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
     from_address = get_bugmail_from_address(person, bug)
+    # comment_syncing_team can be either None or '' to indicate unset.
+    if comment is not None and config.malone.comment_syncing_team:
+        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+            bug, comment)
+        comment_syncing_team = getUtility(IPersonSet).getByName(
+            config.malone.comment_syncing_team)
+        # Only members of the comment syncing team should get comment
+        # notifications related to bug watches.
+        if bug_message is not None and bug_message.bugwatch is not None:
+            recipients = dict(
+                (address, recipient)
+                for address, recipient in recipients.items()
+                if recipient.person.inTeam(comment_syncing_team))
     for address, recipient in recipients.items():
         reason = recipient.reason_body
         rationale_header = recipient.reason_header

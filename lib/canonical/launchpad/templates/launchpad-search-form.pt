@@ -4,11 +4,14 @@
 
   <form
     action=""
-    name="sitesearch"
     method="get"
     accept-charset="UTF-8"
-    tal:attributes="action string:${view/rooturl}+search;
-                    id string:sitesearch${view/id_suffix}">
+    tal:attributes="
+      action string:${view/rooturl}+search;
+      id string:sitesearch${view/id_suffix};
+      name string:sitesearch${view/id_suffix};
+    "
+  >
 
     <p class="error message"
        tal:condition="view/errors"

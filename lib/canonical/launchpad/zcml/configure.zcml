@@ -36,6 +36,7 @@
     <include file="bugtask.zcml" />
     <include file="bugtarget.zcml" />
     <include file="bugtracker.zcml" />
+    <include file="bugtrackerperson.zcml" />
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
     <include file="build.zcml" />
@@ -85,6 +86,7 @@
     <include file="launchpad.zcml" />
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
+    <include file="location.zcml" />
     <include file="logintoken.zcml" />
     <include file="mailinglist.zcml" />
     <include file="marketing.zcml" />
@@ -99,6 +101,7 @@
     <include file="packaging.zcml" />
     <include file="pillar.zcml" />
     <include file="person.zcml" />
+    <include file="personnotification.zcml" />
     <include file="poexportrequest.zcml" />
     <include file="pofile.zcml" />
     <include file="poll.zcml" />
@@ -161,9 +164,9 @@
     <include file="archivepermission.zcml" />
     <include file="webservice.zcml" />
     <include file="packagediff.zcml" />
+    <include file="archiverebuild.zcml" />
 
     <include file="fields.zcml" />
-    <include file="resources.zcml" />
     <include file="widgets.zcml" />
 
     <!-- System homepages -->

@@ -16,8 +16,10 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BinaryPackageFileType, IBinaryPackageFile, IBinaryPackageFileSet,
-    ISourcePackageReleaseFile, SourcePackageFileType)
+    BinaryPackageFileType, SourcePackageFileType)
+from canonical.launchpad.interfaces.files import (
+    IBinaryPackageFile, IBinaryPackageFileSet, ISourcePackageReleaseFile,
+    ISourcePackageReleaseFileSet)
 
 
 class BinaryPackageFile(SQLBase):
@@ -40,6 +42,8 @@ class BinaryPackageFileSet:
 
     def getByPackageUploadIDs(self, package_upload_ids):
         """See `IBinaryPackageFileSet`."""
+        if package_upload_ids is None or len(package_upload_ids) == 0:
+            return []
         return BinaryPackageFile.select("""
             PackageUploadBuild.packageupload = PackageUpload.id AND
             PackageUpload.id IN %s AND
@@ -50,7 +54,8 @@ class BinaryPackageFileSet:
             clauseTables=["PackageUpload", "PackageUploadBuild", "Build",
                           "BinaryPackageRelease"],
             prejoins=["binarypackagerelease", "binarypackagerelease.build",
-                      "libraryfile", "libraryfile.content"])
+                      "libraryfile", "libraryfile.content",
+                      "binarypackagerelease.binarypackagename"])
 
 
 class SourcePackageReleaseFile(SQLBase):
@@ -63,3 +68,24 @@ class SourcePackageReleaseFile(SQLBase):
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
                              dbName='libraryfile')
     filetype = EnumCol(schema=SourcePackageFileType)
+
+
+class SourcePackageReleaseFileSet:
+    """See `ISourcePackageReleaseFileSet`."""
+    implements(ISourcePackageReleaseFileSet)
+
+    def getByPackageUploadIDs(self, package_upload_ids):
+        """See `ISourcePackageReleaseFileSet`."""
+        if package_upload_ids is None or len(package_upload_ids) == 0:
+            return []
+        return SourcePackageReleaseFile.select("""
+            PackageUploadSource.packageupload = PackageUpload.id AND
+            PackageUpload.id IN %s AND
+            SourcePackageReleaseFile.sourcepackagerelease =
+                PackageUploadSource.sourcepackagerelease
+            """ % sqlvalues(package_upload_ids),
+            clauseTables=["PackageUpload", "PackageUploadSource"],
+            prejoins=["libraryfile", "libraryfile.content",
+                      "sourcepackagerelease",
+                      "sourcepackagerelease.sourcepackagename"])
+

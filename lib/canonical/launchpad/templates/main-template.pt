@@ -295,7 +295,8 @@
           top margin for a cleared item is ignored.
         </tal:comment>
       </tal:noborder>
-       <form
+      <form
+        tal:condition="view/macro:pagehas/globalsearch"
         id="globalsearch"
         action=""
         method="get"

@@ -8,11 +8,17 @@ __metaclass__ = type
 __all__ = [
     'IProduct',
     'IProductSet',
+    'IProductReviewSearch',
     'License',
+    'LicenseStatus',
     ]
 
+import sets
+
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Set, Text, TextLine
+from zope.schema import Bool, Choice, Date, Int, Set, Text, TextLine
+from zope.schema.vocabulary import SimpleVocabulary
+
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -37,6 +43,17 @@ from canonical.launchpad.interfaces.translationgroup import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class LicenseStatus(DBEnumeratedType):
+    """The status of a project's license review."""
+
+    OPEN_SOURCE = DBItem(10, "Open Source",
+                        u"This project&lsquo;s license is open source.")
+    PROPRIETARY = DBItem(20, "Proprietary",
+                         u"This project&lsquo;s license is proprietary.")
+    UNREVIEWED = DBItem(30, "Unreviewed",
+                        u"This project&lsquo;s license has not been reviewed.")
 
 
 class License(DBEnumeratedType):
@@ -350,9 +367,13 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         Whether the project's licensing qualifies for free
         hosting or the project has an up-to-date subscription.""")
 
-    license_approved = Attribute("""
-        Whether a license is manually approved for free hosting
-        after automatic approval fails.""")
+    license_approved = Bool(
+        title=_("License approved"),
+        description=_("Whether a license is manually approved for free "
+                      "hosting after automatic approval fails."))
+
+    license_status = Attribute("""
+        Whether the license is OPENSOURCE, UNREVIEWED, or PROPRIETARY.""")
 
     def redeemSubscriptionVoucher(voucher, registrant, purchaser,
                                   subscription_months, whiteboard=None):
@@ -515,3 +536,58 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
+
+
+emptiness_vocabulary = SimpleVocabulary.fromItems(
+        [('Empty', True), ('Not Empty', False)])
+
+class IProductReviewSearch(Interface):
+    """A search form for products being reviewed."""
+
+    search_text = TextLine(
+      title=_('Search text'),
+      description=_("Search text in the product's name, displayname, title, "
+                    "summary, and description."),
+      required=False)
+
+    active = Choice(
+        title=_('Active'), values=[True, False],
+        required=False, default=True)
+
+    license_reviewed = Choice(
+        title=_('License Reviewed'), values=[True, False],
+        required=False, default=False)
+
+    license_info_is_empty = Choice(
+        title=_('Description of additional licenses'),
+        description=_('Either this field or any one of the selected licenses'
+                      ' must match.'),
+        vocabulary=emptiness_vocabulary, required=False, default=False)
+
+    licenses = Set(
+        title=_('Licenses'),
+        value_type=Choice(vocabulary=License),
+        required=False,
+        # Zope requires sets.Set() instead of the builtin set().
+        default=sets.Set(
+            [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+
+    has_zero_licenses = Choice(
+        title=_('Or has no license specified'),
+        values=[True, False], required=False)
+
+    created_after = Date(title=_("Created between"), required=False)
+
+    created_before = Date(title=_("and"), required=False)
+
+    subscription_expires_after = Date(
+        title=_("Subscription expires between"), required=False)
+
+    subscription_expires_before = Date(
+        title=_("and"), required=False)
+
+    subscription_modified_after = Date(
+        title=_("Subscription modified between"), required=False)
+
+    subscription_modified_before = Date(
+        title=_("and"), required=False)

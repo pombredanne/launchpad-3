@@ -41,7 +41,6 @@ __all__ = [
     'PPAVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
-    'PersonActiveMembershipPlusSelfVocabulary',
     'PersonActiveMembershipVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
@@ -65,6 +64,7 @@ __all__ = [
     'person_team_participations_vocabulary_factory',
     'project_products_using_malone_vocabulary_factory',
     'project_products_vocabulary_factory',
+    'user_public_team_participations_and_self_vocabulary_factory',
     ]
 
 import cgi
@@ -961,22 +961,6 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class PersonActiveMembershipPlusSelfVocabulary(
-    PersonActiveMembershipVocabulary):
-    """The logged in user, and all the teams they are a member of."""
-
-    def __init__(self, context):
-        # We are interested in the logged in user, not the actual context.
-        logged_in_user = getUtility(ILaunchBag).user
-        PersonActiveMembershipVocabulary.__init__(self, logged_in_user)
-
-    def _get_teams(self):
-        """See `PersonActiveMembershipVocabulary`."""
-        teams = PersonActiveMembershipVocabulary._get_teams(self)
-        # Add the logged in user as the first item.
-        return [self.context] + teams
-
-
 class ActiveMailingListVocabulary:
     """The set of all active mailing lists."""
 
@@ -1059,6 +1043,11 @@ class ActiveMailingListVocabulary:
         return CountableIterator(results.count(), results, self.toTerm)
 
 
+def person_term(person):
+    """Return a SimpleTerm for the `Person`."""
+    return SimpleTerm(person, person.name, title=person.displayname)
+
+
 def person_team_participations_vocabulary_factory(context):
     """Return a SimpleVocabulary containing the teams a person
     participate in.
@@ -1066,8 +1055,21 @@ def person_team_participations_vocabulary_factory(context):
     assert context is not None
     person = IPerson(context)
     return SimpleVocabulary([
-        SimpleTerm(team, team.name, title=team.displayname)
-        for team in person.teams_participated_in])
+        person_term(team) for team in person.teams_participated_in])
+
+
+def user_public_team_participations_and_self_vocabulary_factory(context):
+    """Return a SimpleVocabulary containing the public teams that the logged
+    in user participates in, along with the logged in user themselves.
+    """
+    logged_in_user = getUtility(ILaunchBag).user
+    assert logged_in_user is not None
+    terms = [person_term(logged_in_user)]
+    terms.extend([
+            person_term(team)
+            for team in logged_in_user.teams_participated_in
+            if team.visibility == PersonVisibility.PUBLIC])
+    return SimpleVocabulary(terms)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
@@ -1395,7 +1397,11 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
 
     _table = Product
     _orderBy = 'displayname'
-    displayname = 'Select one of the commercial projects you administer'
+
+    @property
+    def displayname(self):
+        return 'Select one of the commercial projects administered by %s' % (
+            self.context.displayname)
 
     def _filter_projs(self, projects):
         """Filter the list of all projects to just the commercial ones."""

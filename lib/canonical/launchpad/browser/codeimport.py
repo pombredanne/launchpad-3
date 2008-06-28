@@ -280,7 +280,7 @@ class CodeImportNewView(CodeImportBaseView):
         # Make sure fields for unselected revision control systems
         # are blanked out:
         if rcs_type == RevisionControlSystems.CVS:
-            data['svn_repository'] = None
+            data['svn_branch_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.SVN:
             data['cvs_root'] = None

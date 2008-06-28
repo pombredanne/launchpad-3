@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     IProject,
     ISprint,
     IStructuralHeaderPresentation,
+    LicenseStatus,
     NotFoundError,
     )
 from canonical.launchpad.webapp.interfaces import (
@@ -114,38 +115,37 @@ class MenuAPI:
             self.view = None
             self._selectedfacetname = None
 
-    def __getattr__(self, attribute_name):
-        """Return a dictionary for retrieval of individual Links.
+    def __getattr__(self, facet):
+        """Retrieve the links associated with a facet.
 
         It's used with expressions like context/menu:bugs/subscribe.
+
+        :return: A dictionary mapping the link name to the associated Link
+            object.
+        :raise AttributeError: when there is no application menu for the
+            facet.
         """
+        if not self._has_facet(facet):
+            raise AttributeError(facet)
+        menu = queryAdapter(self._context, IApplicationMenu, facet)
+        if menu is not None:
+            menu.request = self._request
+            links_map = dict(
+                (link.name, link)
+                for link in menu.iterlinks(request_url=self._request_url()))
+        else:
+            # The object has the facet, but does not have a menu, this
+            # is propbably the overview menu with is the default facet.
+            links_map = {}
+        object.__setattr__(self, facet, links_map)
+        return links_map
+
+    def _has_facet(self, facet):
+        """Does the object have the named facet?"""
         for facet_entry in self.facet():
-            if attribute_name == facet_entry.name:
-                menu = self._getFacetLinks(facet_entry.name)
-                object.__setattr__(self, facet_entry.name, menu)
-                return menu
-        raise AttributeError(attribute_name)
-
-    def _getFacetLinks(self, facet_name):
-        """Return a dictionary with all links available in the given facet.
-
-        If the facet name is not valid, we raise the TraversalError exception
-        that we get from queryAdapter.
-        """
-        menu = queryAdapter(self._context, IApplicationMenu, facet_name)
-        if menu is None:
-            # There aren't menu entries.
-            return {}
-
-        menu.request = self._request
-        links = list(menu.iterlinks(request_url=self._request_url()))
-        return dict((link.name, link) for link in links)
-
-    def _nearest_menu(self, menutype):
-        try:
-            return nearest_adapter(self._context, menutype)
-        except NoCanonicalUrl:
-            return None
+            if facet == facet_entry.name:
+                return True
+        return False
 
     def _request_url(self):
         request = self._request
@@ -163,33 +163,24 @@ class MenuAPI:
         return request_urlobj
 
     def facet(self):
-        menu = self._nearest_menu(IFacetMenu)
+        """Return the IFacetMenu related to the context."""
+        try:
+            menu = nearest_adapter(self._context, IFacetMenu)
+        except NoCanonicalUrl:
+            menu = None
+
         if menu is None:
             return []
-        else:
-            menu.request = self._request
-            return list(menu.iterlinks(
-                request_url=self._request_url(),
-                selectedfacetname=self._selectedfacetname))
+        menu.request = self._request
+        return list(menu.iterlinks(
+            request_url=self._request_url(),
+            selectedfacetname=self._selectedfacetname))
 
     def selectedfacetname(self):
         if self._selectedfacetname is None:
             return 'unknown'
         else:
             return self._selectedfacetname
-
-    def application(self):
-        selectedfacetname = self._selectedfacetname
-        if selectedfacetname is None:
-            # No facet menu is selected.  So, return empty list.
-            return []
-        menu = queryAdapter(
-            self._context, IApplicationMenu, selectedfacetname)
-        if menu is None:
-            return []
-        else:
-            menu.request = self._request
-            return list(menu.iterlinks(request_url=self._request_url()))
 
     @property
     def context(self):
@@ -569,9 +560,8 @@ class ObjectImageDisplayAPI:
             url = context.mugshot.getURL()
         else:
             url = self.default_mugshot_resource(context)
-        mugshot = """<div style="width: 200; height: 200; float: right">
-            <img alt="" width="192" height="192" src="%s" />
-            </div>"""
+        mugshot = """<img alt="" class="mugshot"
+            width="192" height="192" src="%s" />"""
         return mugshot % url
 
     def badges(self):
@@ -980,7 +970,17 @@ class PillarFormatterAPI(CustomizableFormatter):
     _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
-        return {'displayname': self._context.displayname}
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+    def link(self, extra_path):
+        html = super(PillarFormatterAPI, self).link(extra_path)
+        if IProduct.providedBy(self._context):
+            if self._context.license_status != LicenseStatus.OPEN_SOURCE:
+                html += ' <span title="%s">(%s)</span>' % (
+                    escape(self._context.license_status.description),
+                    escape(self._context.license_status.title))
+        return html
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
@@ -1057,12 +1057,11 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
 
 class BranchMergeProposalFormatterAPI(CustomizableFormatter):
 
-    _link_summary_template = _('Proposed merge of %(source)s into %(target)s')
+    _link_summary_template = _('%(title)s')
 
     def _link_summary_values(self):
         return {
-            'source': self._context.source_branch.title,
-            'target': self._context.target_branch.title,
+            'title': self._context.title,
             }
 
 
@@ -2412,6 +2411,7 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/applicationborder
         view/macro:pagehas/applicationbuttons
+        view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
         view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
@@ -2473,6 +2473,7 @@ class PageMacroDispatcher:
             applicationtabs=False,
             applicationborder=False,
             applicationbuttons=False,
+            globalsearch=False,
             heading=False,
             pageheading=True,
             portlets=False,
@@ -2490,18 +2491,21 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
+                globalsearch=True,
                 portlets=True,
                 pagetypewasset=False),
         'default':
             LayoutElements(
                 applicationborder=True,
                 applicationtabs=True,
+                globalsearch=True,
                 portlets=True),
         'default2.0':
             LayoutElements(
                 actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
+                globalsearch=True,
                 portlets=True,
                 navigationtabs=True),
         'onecolumn':
@@ -2510,18 +2514,21 @@ class PageMacroDispatcher:
                 actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
+                globalsearch=True,
                 navigationtabs=True,
                 portlets=False),
         'applicationhome':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=True,
                 pageheading=False,
                 heading=True),
         'pillarindex':
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                globalsearch=True,
                 heading=True,
                 pageheading=False,
                 portlets=True),
@@ -2530,6 +2537,7 @@ class PageMacroDispatcher:
                 actionsmenu=False,
                 applicationborder=True,
                 applicationtabs=True,
+                globalsearch=False,
                 heading=False,
                 pageheading=False,
                 portlets=False),
