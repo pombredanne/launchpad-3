@@ -42,7 +42,7 @@ sees a result for that exact match in Launchpad.
     Pages matching "firefox" in Launchpad
     >>> print_search_results()
     Exact matches
-    Mozilla Firefox
+    Mozilla Firefox (Unreviewed)
     The Mozilla Firefox web browser
     Registered by Sample Person
     on 2004-09-24
@@ -109,7 +109,7 @@ matching ...".
     Pages matching "launchpad" in Launchpad
     >>> print_search_results()
     Exact matches
-    Launchpad
+    Launchpad (Unreviewed)
     Launchpad is a catalogue of libre software projects and products.
     ...
     Registered by Sample Person  on 2006-11-24
@@ -131,7 +131,7 @@ as the most relevant match.
     >>> search_for('firefox')
     >>> print_search_results()
     Exact matches
-    Mozilla Firefox
+    Mozilla Firefox (Unreviewed)
     The Mozilla Firefox web browser
     Registered by Sample Person
     on 2004-09-24

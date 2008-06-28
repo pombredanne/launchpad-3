@@ -113,13 +113,12 @@ status is returned.
 >>> check_redirect("/products", status=301)
 >>> check("/projects")
 >>> check("/projects/+all")
->>> check("/projects/+review", auth=True)
+>>> check("/projects/+review-licenses", auth=True)
 >>> check("/firefox")
 >>> check("/firefox/+series")
 >>> check("/firefox/1.0")
 >>> check("/firefox/1.0/+addpackage", auth=True)
 >>> check("/firefox/1.0/+ubuntupkg", auth=True)
->>> check("/firefox/1.0/+source", auth=True)
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)
@@ -448,10 +447,10 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/sprints")
 >>> check("/sprints/ubz")
 
->>> check("/++resource++error")
+>>> check_not_found("/++resource++error")
 
->>> check("/@@")
->>> check("//@@")
+>>> check_not_found("/@@")
+>>> check_not_found("//@@")
 >>> check_redirect("/translations/groups/", status=301)
 >>> check_redirect("/translations/imports/", status=301)
 
@@ -473,4 +472,23 @@ Check legacy URL redirects
 Check redirects of Unicode URLs works
 
 >>> check_not_found("/ubuntu/foo%C3%A9")
+
+
+Icing resources.
+
+>>> from canonical.launchpad.versioninfo import revno
+>>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
+>>> check("/+icing-contrib/rev%s/json2.js" % revno)
+>>> check("/+icing-kubuntu/rev%s/kubuntu-masthead2.css" % revno,
+...       host="shipit.kubuntu.dev")
+>>> check("/+icing-edubuntu/rev%s/edubuntu.css" % revno,
+...       host="shipit.edubuntu.dev")
+
+
+Image resources are available from all the virtual hosts.
+
+>>> check('/@@/add', host='launchpad.dev')
+>>> check('/@@/add', host='bugs.launchpad.dev')
+>>> check('/@@/add', host='answers.launchpad.dev')
+>>> check('/@@/add', host='code.launchpad.dev')
 

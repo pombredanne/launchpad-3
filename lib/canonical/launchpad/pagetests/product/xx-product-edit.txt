@@ -216,7 +216,7 @@ The Admins and Commercial Admins can deactivate a project.
     >>> commercial_browser.getControl(name='field.active').value = False
     >>> commercial_browser.getControl(name='field.actions.change').click()
     >>> print commercial_browser.url
-    http://launchpad.dev/projects
+    http://launchpad.dev/firefox
 
 The product overview page should show a notice that a product is
 inactive with a link to a form to re-activate it. Admins and
@@ -246,7 +246,7 @@ The product can then be reactivated.
     >>> commercial_browser.getControl(name='field.active').value = True
     >>> commercial_browser.getControl(name='field.actions.change').click()
     >>> print commercial_browser.url
-    http://launchpad.dev/firefox
+    http://launchpad.dev/firefox/
     >>> contents = find_main_content(commercial_browser.contents)
     >>> print contents.find(id='project-inactive')
     None

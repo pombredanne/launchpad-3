@@ -32,7 +32,7 @@
                       enable_bug_expiration
                       releaseroot development_focus bugtracker
                       homepage_content icon logo mugshot
-                      license_approved license_info licenses
+                      license_info licenses
                       bug_reporting_guidelines
                       commercial_subscription redeemSubscriptionVoucher"
       />
@@ -52,7 +52,7 @@
     <require
       permission="launchpad.Commercial"
       set_attributes="active private_bugs license_reviewed
-                      reviewer_whiteboard"
+                      license_approved reviewer_whiteboard"
       />
     <!-- Changes to official_rosetta must be available to Launchpad
          Translations admins so we need its own permission. -->
@@ -271,6 +271,10 @@
       template="../templates/product-distros.pt"
       />
     <browser:page
+      name="+listing-for-review"
+      template="../templates/product-listing-for-review.pt"
+      />
+    <browser:page
       name="+listing-detailed"
       template="../templates/product-listing-detailed.pt"
       />
@@ -368,6 +372,24 @@
     permission="zope.Public"
     name="+code-index"
     template="../templates/product-branches.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.product.ProductActiveReviewsView"
+    permission="zope.Public"
+    facet="branches"
+    name="+activereviews"
+    template="../templates/product-mergeproposals.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.product.ProductApprovedMergesView"
+    permission="zope.Public"
+    facet="branches"
+    name="+approvedmerges"
+    template="../templates/product-mergeproposals.pt"
     />
 
   <browser:page
@@ -574,12 +596,12 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProductSet"
-    class="canonical.launchpad.browser.ProductSetView"
+    class="canonical.launchpad.browser.ProductSetReviewLicensesView"
     facet="overview"
-    permission="launchpad.Admin">
+    permission="launchpad.Commercial">
     <browser:page
-      name="+review"
-      template="../templates/registry-review.pt"
+      name="+review-licenses"
+      template="../templates/products-review-licenses.pt"
       />
   </browser:pages>
 
