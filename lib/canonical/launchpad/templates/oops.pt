@@ -1,5 +1,9 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xml:lang="en"
+  lang="en"
+>
   <head>
     <title>Oops!</title>
     <style type="text/css" media="screen, print">
