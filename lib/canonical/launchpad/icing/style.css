@@ -240,7 +240,7 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 }
 .batch-navigation-links .next {background-image: url(/@@/arrowRight);}
 .batch-navigation-links .next.inactive {
-  background-image: url(/@@/batch-next-inactive);
+  background-image: url(/@@/arrowRight-inactive);
 }
 /* And all the links have spacing between them: */
 .batch-navigation-links .previous, .batch-navigation-links .next,

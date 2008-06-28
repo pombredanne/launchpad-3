@@ -111,8 +111,7 @@ more useful.
     >>> from datetime import datetime
 
     >>> remote_datetime = datetime(2008, 5, 15, 16, 19, 53)
-    >>> bugzilla_transport.seconds_since_epoch = time.mktime(
-    ...     remote_datetime.timetuple())
+    >>> bugzilla_transport.local_datetime = remote_datetime
     >>> bugzilla_transport.timezone = "US/Central"
     >>> bugzilla_transport.utc_offset = -6*60*60
 
