@@ -425,6 +425,11 @@ special = {
             tearDown=uploadQueueTearDown,
             layer=LaunchpadZopelessLayer
             ),
+    'bugnotification-comment-syncing-team.txt': LayeredDocFileSuite(
+            '../doc/bugnotification-comment-syncing-team.txt',
+            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
+            tearDown=bugNotificationSendingTearDown
+            ),
     'bugnotificationrecipients.txt': LayeredDocFileSuite(
             '../doc/bugnotificationrecipients.txt',
             setUp=lobotomizeSteveASetUp, tearDown=tearDown,
@@ -554,6 +559,12 @@ special = {
             '../doc/bug-private-by-default.txt',
             setUp=setUp,
             tearDown=tearDown,
+            layer=LaunchpadZopelessLayer
+            ),
+    'bugtracker-person.txt': LayeredDocFileSuite(
+            '../doc/bugtracker-person.txt',
+            setUp=checkwatchesSetUp,
+            tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer
             ),
     'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(

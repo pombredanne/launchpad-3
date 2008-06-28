@@ -144,13 +144,10 @@
         <h2>Latest projects registered</h2>
         <table>
           <tr tal:repeat="product context/latest">
-            <td tal:content="structure product/image:icon" />
             <td>
-            <a
-              tal:attributes="href product/fmt:url"
-              tal:content="product/displayname"
-              /> registered
-            <tal:date replace="product/datecreated/fmt:displaydate" />
+              <tal:link replace="structure product/fmt:link" />
+              registered
+              <tal:date replace="product/datecreated/fmt:displaydate" />
             </td>
           </tr>
         </table>

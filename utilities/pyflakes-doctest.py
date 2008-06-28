@@ -56,6 +56,7 @@ GLOBAL_NAMES = set([
     'print_self_link_of_entries',
     'print_submit_buttons',
     'print_tab_links',
+    'print_tag_with_id',
     'setupBrowser',
     'user_browser',
     'webservice',
