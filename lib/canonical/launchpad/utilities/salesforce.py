@@ -132,14 +132,14 @@ class SalesforceVoucherProxy:
         status = self.server.redeemVoucher(voucher_id,
                                            user.openid_identifier,
                                            project.id,
-                                           project.displayname)
+                                           project.name)
         return status
 
     @fault_mapper
     def updateProjectName(self, project):
         """See `ISalesforceVoucherProxy`."""
         num_updated = self.server.updateProjectName(project.id,
-                                                    project.displayname)
+                                                    project.name)
         return num_updated
 
     @fault_mapper
