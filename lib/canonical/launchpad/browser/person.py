@@ -2160,8 +2160,6 @@ class PersonVouchersView(LaunchpadFormView):
     @cachedproperty
     def unredeemed_vouchers(self):
         """Get the unredeemed vouchers owned by the user."""
-        # If this user has no commercial project then don't bother looking for
-        # vouchers since it is pointless and expensive.
         unredeemed, redeemed = (
             self.context.getCommercialSubscriptionVouchers())
         return unredeemed
@@ -2183,7 +2181,6 @@ class PersonVouchersView(LaunchpadFormView):
 
     @action(_("Redeem"), name="redeem")
     def redeem_action(self, action, data):
-        error_msg = None
         salesforce_proxy = getUtility(ISalesforceVoucherProxy)
         project = data['project']
         voucher = data['voucher']
@@ -2204,10 +2201,15 @@ class PersonVouchersView(LaunchpadFormView):
                 _("Voucher redeemed successfully"))
             # Force the page to reload so the just consumed voucher is not
             # displayed again (since the field has already been created.)
+            # In the case of the error condition this allows the error message to
+            # be displayed.
             self.next_url = self.request.URL
+            from zope.security.proxy import removeSecurityProxy
+            person = removeSecurityProxy(self.context)
+            person.commercial_subscriptions = None
         except SalesforceVoucherProxyException, error:
-            self.error_message = (
-                "The voucher could not be redeemed at this time.")
+            self.addError(
+                _("The voucher could not be redeemed at this time."))
             # Log an oops report with raising an error.
             info = (error.__class__, error, None)
             globalErrorUtility = getUtility(IErrorReportingUtility)
