@@ -84,6 +84,16 @@ class SalesforceXMLRPCTestTransport(Transport):
                     'cprov_oid'),
             Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-000000000005',
                     'cprov_oid'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000001',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000002',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000003',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000004',
+                    'mTmeENb'),
+            Voucher('LPCBS12-f78df324-0cc2-11dd-8b6b-bac000000005',
+                    'mTmeENb'),
             ]
 
 
