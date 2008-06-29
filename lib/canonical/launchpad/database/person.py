@@ -360,8 +360,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
     personal_standing_reason = StringCol(default=None)
 
-    commercial_vouchers = None
-
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
         SQLBase._init(self, *args, **kw)
@@ -1086,10 +1084,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                                  orderBy=['displayname'])
         return results
 
+    commercial_vouchers = None
     def getCommercialSubscriptionVouchers(self):
         """See `IPerson`."""
+        voucher_proxy = getUtility(ISalesforceVoucherProxy)
         if self.commercial_vouchers is None:
-            voucher_proxy = getUtility(ISalesforceVoucherProxy)
             self.commercial_vouchers = voucher_proxy.getAllVouchers(self)
             self.unredeemed_commercial_vouchers = []
             self.redeemed_commercial_vouchers = []
