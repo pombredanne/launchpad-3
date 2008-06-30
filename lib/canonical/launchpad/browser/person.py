@@ -84,6 +84,7 @@ __all__ = [
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
+    'archive_to_person',
     ]
 
 import cgi
@@ -138,6 +139,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -1119,10 +1121,13 @@ class IPersonRelatedSoftwareMenu(Interface):
 class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
-    usedfor = IPerson
+    usedfor = IHasPersonNavigationMenu
     facet = 'overview'
-    title = 'Profile'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def __init__(self, context):
+        context = IPerson(context)
+        super(PersonOverviewNavigationMenu, self).__init__(context)
 
     def profile(self):
         target = '+index'
@@ -1140,9 +1145,30 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def show_ppa(self):
-        target = '+archive'
+        """Show the link to a Personal Package Archive.
+
+        The person's archive link changes depending on the status of the
+        archive and the privileges of the viewer.
+        """
+        archive = self.context.archive
+        has_archive = archive is not None
+        user_can_edit_archive = check_permission('launchpad.Edit',
+                                                 self.context)
+
         text = 'Personal Package Archive'
-        return Link(target, text)
+        summary = 'Browse Personal Package Archive packages.'
+        if has_archive:
+            target = '+archive'
+            enable_link = check_permission('launchpad.View', archive)
+        elif user_can_edit_archive:
+            summary = 'Activate Personal Package Archive'
+            target = '+activate-ppa'
+            enable_link = True
+        else:
+            target = '+archive'
+            enable_link = False
+
+        return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
 class PersonEditNavigationMenu(NavigationMenu):
@@ -4510,3 +4536,8 @@ class PersonApprovedMergesView(BranchMergeProposalListingView):
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no approved merges." % self.context.displayname
+
+
+def archive_to_person(archive):
+    """Adapts an `IArchive` to an `IPerson`."""
+    return IPerson(archive.owner)
