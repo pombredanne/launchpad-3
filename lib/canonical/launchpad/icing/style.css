@@ -240,7 +240,7 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 }
 .batch-navigation-links .next {background-image: url(/@@/arrowRight);}
 .batch-navigation-links .next.inactive {
-  background-image: url(/@@/batch-next-inactive);
+  background-image: url(/@@/arrowRight-inactive);
 }
 /* And all the links have spacing between them: */
 .batch-navigation-links .previous, .batch-navigation-links .next,
@@ -993,6 +993,23 @@ ul#applicationchooser a:hover {
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
+
+/* -- Pillar indexes -- */
+
+/* Distributions, projects, and people have two-column main pages. */
+/* Most of the information is in the second column: */
+.pillar {margin-left: 212px;}
+/* But the main heading, subheadings, and the logo are in the first column: */
+.pillar h2, .pillar .mugshot {
+  clear: left;
+  float: left;
+  margin-left: -212px;
+  text-align: right;
+  width: 200px;
+}
+/* There is a margin between each section and the previous one: */
+.pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
+.pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
 /* --- Portlets --- */
 #portlets {

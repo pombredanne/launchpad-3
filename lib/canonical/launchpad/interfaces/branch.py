@@ -491,7 +491,7 @@ class IBranch(IHasOwner):
     registrant = Attribute("The user that registered the branch.")
     owner = PublicPersonChoice(
         title=_('Owner'), required=True,
-        vocabulary='PersonActiveMembershipPlusSelf',
+        vocabulary='UserTeamsParticipationPlusSelf',
         description=_("Either yourself or a team you are a member of. "
                       "This controls who can modify the branch."))
     author = PublicPersonChoice(
