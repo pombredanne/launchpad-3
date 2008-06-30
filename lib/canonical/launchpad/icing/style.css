@@ -985,7 +985,7 @@ highlighting menu items, so padding is handled by the contents instead: */
 #actions ul {
   list-style-type: none;
   margin: 0;
-  padding: 4px;
+  padding: 0 4px;
   width: 191px; /* 200px column - 1px right border - 2*4px padding */
 }
 #portlets .portlet h2 {
