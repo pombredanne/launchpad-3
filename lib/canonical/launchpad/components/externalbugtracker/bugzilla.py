@@ -423,11 +423,10 @@ class BugzillaLPPlugin(Bugzilla):
 
         # Return the UTC time sent by the server so that we don't have
         # to care about timezones.
-        server_timestamp = time.mktime(
-            time.strptime(
-                str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S'))
+        server_timetuple = time.strptime(
+            str(time_dict['utc_time']), '%Y%m%dT%H:%M:%S')
 
-        server_utc_time = datetime.utcfromtimestamp(server_timestamp)
+        server_utc_time = datetime(*server_timetuple[:6])
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
     def _getActualBugId(self, bug_id):

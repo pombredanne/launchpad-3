@@ -87,6 +87,8 @@ class TestFraudDetection(unittest.TestCase):
                 'FORM_SUBMIT': 'Request',
                 }
         request = LaunchpadTestRequest(form=form)
+        # The request object on the ShipIt layers has that attribute.
+        request.icing_url = '/+icing-%s' % flavour.name
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
         view = getMultiAdapter(

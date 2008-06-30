@@ -2,8 +2,10 @@
 
 __metaclass__ = type
 
+import transaction
 import unittest
 
+from zope.security.management import setSecurityPolicy
 from zope.testing.doctest import DocTestSuite
 
 from canonical.config import config
@@ -18,7 +20,8 @@ from canonical.launchpad.mail.handlers import (
 from canonical.launchpad.testing import TestCase, TestCaseWithFactory
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
 class TestParseCommands(TestCase):
@@ -61,11 +64,20 @@ class TestParseCommands(TestCase):
 
 class TestCodeHandler(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, user='test@canonical.com')
         self.code_handler = CodeHandler()
+        self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
+
+    def tearDown(self):
+        setSecurityPolicy(self._old_policy)
+
+    def switchDbUser(self, user):
+        """Commit the transactionand switch to the new user."""
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(user)
 
     def test_get(self):
         handler = mail_handlers.get(config.launchpad.code_domain)
@@ -76,6 +88,7 @@ class TestCodeHandler(TestCaseWithFactory):
         mail = self.factory.makeSignedMessage('<my-id>')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
         self.assertTrue(self.code_handler.process(
             mail, email_addr, None), "Succeeded, but didn't return True")
         # if the message has not been created, this raises SQLObjectNotFound
@@ -84,12 +97,14 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_processBadAddress(self):
         """When a bad address is supplied, it returns False."""
         mail = self.factory.makeSignedMessage('<my-id>')
+        self.switchDbUser(config.processmail.dbuser)
         self.assertFalse(self.code_handler.process(mail,
             'foo@code.launchpad.dev', None))
 
     def test_processNonExistantAddress(self):
         """When a non-existant address is supplied, it returns False."""
         mail = self.factory.makeSignedMessage('<my-id>')
+        self.switchDbUser(config.processmail.dbuser)
         self.assertFalse(self.code_handler.process(mail,
             'mp+0@code.launchpad.dev', None))
 
@@ -103,6 +118,7 @@ class TestCodeHandler(TestCaseWithFactory):
         mail = self.factory.makeSignedMessage('<my-id>')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
         self.assertRaises(ValueError, code_handler.process, mail,
             email_addr, None)
 
@@ -113,6 +129,7 @@ class TestCodeHandler(TestCaseWithFactory):
         # Remove the notifications sent about the new proposal.
         pop_notifications()
         email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
         self.assertTrue(self.code_handler.process(
             mail, email_addr, None), "Didn't return True")
         notification = pop_notifications()[0]
@@ -127,6 +144,7 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_getReplyAddress(self):
         """getReplyAddress should return From or Reply-to address."""
         mail = self.factory.makeSignedMessage()
+        self.switchDbUser(config.processmail.dbuser)
         self.assertEqual(
             mail['From'], self.code_handler._getReplyAddress(mail))
         mail['Reply-to'] = self.factory.getUniqueEmailAddress()
@@ -138,6 +156,7 @@ class TestCodeHandler(TestCaseWithFactory):
         mail = self.factory.makeSignedMessage(body=' vote Abstain EBAILIWICK')
         bmp = self.factory.makeBranchMergeProposal()
         email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
         self.assertEqual(CodeReviewVote.ABSTAIN, bmp.all_comments[0].vote)
         self.assertEqual('EBAILIWICK', bmp.all_comments[0].vote_tag)
@@ -154,6 +173,7 @@ class TestCodeHandler(TestCaseWithFactory):
             subscriber, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
         email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
         notification = pop_notifications()[0]
         self.assertEqual('subject', notification['Subject'])
@@ -168,6 +188,7 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_getVoteNoCommand(self):
         """getVote returns None, None when no command is supplied."""
         mail = self.factory.makeSignedMessage(body='')
+        self.switchDbUser(config.processmail.dbuser)
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, None)
         self.assertEqual(vote_tag, None)
@@ -175,6 +196,7 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_getVoteNoArgs(self):
         """getVote returns None, None when no arguments are supplied."""
         mail = self.factory.makeSignedMessage(body=' vote')
+        self.switchDbUser(config.processmail.dbuser)
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, None)
         self.assertEqual(vote_tag, None)
@@ -182,6 +204,7 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_getVoteOneArg(self):
         """getVote returns vote, None when only a vote is supplied."""
         mail = self.factory.makeSignedMessage(body=' vote apPRoVe')
+        self.switchDbUser(config.processmail.dbuser)
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.APPROVE)
         self.assertEqual(vote_tag, None)
@@ -189,17 +212,20 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_getVoteDisapprove(self):
         """getVote returns disapprove when it is specified."""
         mail = self.factory.makeSignedMessage(body=' vote dIsAppRoVe')
+        self.switchDbUser(config.processmail.dbuser)
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.DISAPPROVE)
 
     def test_getVoteBadValue(self):
         """getVote returns vote, None when only a vote is supplied."""
         mail = self.factory.makeSignedMessage(body=' vote badvalue')
+        self.switchDbUser(config.processmail.dbuser)
         self.assertRaises(InvalidVoteString, self.code_handler._getVote, mail)
 
     def test_getVoteThreeArg(self):
         """getVote returns vote, vote_tag when both are supplied."""
         mail = self.factory.makeSignedMessage(body=' vote apPRoVe DB TAG')
+        self.switchDbUser(config.processmail.dbuser)
         vote, vote_tag = self.code_handler._getVote(mail)
         self.assertEqual(vote, CodeReviewVote.APPROVE)
         self.assertEqual(vote_tag, 'DB TAG')
@@ -207,11 +233,13 @@ class TestCodeHandler(TestCaseWithFactory):
     def test_getBranchMergeProposal(self):
         """The correct BranchMergeProposal is returned for the address."""
         bmp = self.factory.makeBranchMergeProposal()
+        self.switchDbUser(config.processmail.dbuser)
         bmp2 = self.code_handler.getBranchMergeProposal(bmp.address)
         self.assertEqual(bmp, bmp2)
 
     def test_getBranchMergeProposalInvalid(self):
         """InvalidBranchMergeProposalAddress is raised if appropriate."""
+        self.switchDbUser(config.processmail.dbuser)
         self.assertRaises(InvalidBranchMergeProposalAddress,
                           self.code_handler.getBranchMergeProposal, '')
         self.assertRaises(InvalidBranchMergeProposalAddress,
