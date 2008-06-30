@@ -4292,6 +4292,8 @@ class SourcePackageReleaseWithStats:
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
 
+    PACKAGE_LIMIT = 50
+
     def getLatestUploadedPPAPackagesWithStats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
@@ -4299,6 +4301,7 @@ class PersonPackagesView(LaunchpadView):
         user to see private archives.
         """
         packages = self.context.getLatestUploadedPPAPackages()
+        packages = packages[:self.PACKAGE_LIMIT]
 
         # For each package we find out which archives it was published in.
         # If the user has permission to see any of those archives then
@@ -4321,16 +4324,18 @@ class PersonPackagesView(LaunchpadView):
 
     def getLatestMaintainedPackagesWithStats(self):
         """Return the latest maintained packages, including stats."""
-        return self._addStatsToPackages(
-            self.context.getLatestMaintainedPackages())
+        packages = self.context.getLatestMaintainedPackages()
+        packages = packages[:self.PACKAGE_LIMIT]
+        return self._addStatsToPackages(packages)
 
     def getLatestUploadedButNotMaintainedPackagesWithStats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
         """
-        return self._addStatsToPackages(
-            self.context.getLatestUploadedButNotMaintainedPackages())
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
+        packages = packages[:self.PACKAGE_LIMIT]
+        return self._addStatsToPackages(packages)
 
     def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.
