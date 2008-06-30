@@ -904,8 +904,8 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
-                    tag = registration.value.entry_schema.queryTaggedValue(
-                        LAZR_WEBSERVICE_NS)
+                    interface = registration.value.entry_schema
+                    tag = interface.queryTaggedValue(LAZR_WEBSERVICE_NS)
                     link_name = ("%s_collection_link" % tag['plural'])
                     top_level_resources[link_name] = utility
         return top_level_resources
@@ -974,33 +974,41 @@ class EntryAdapterUtility(RESTUtilityBase):
     """
 
     @classmethod
-    def forSchemaInterface(cls, model_schema):
-        """Retrieve an entry adapter for a model interface.
+    def forSchemaInterface(cls, entry_interface):
+        """Create an entry adapter utility, given a schema interface.
 
-        IBug -> BugEntry
-
-        This method locates the IEntry implementation corresponding to
-        the model interface, and creates an EntryAdapterUtility for
-        it.
+        A schema interface is one that can be annotated to produce a
+        subclass of IEntry.
         """
         entry_class = zapi.getGlobalSiteManager().adapters.lookup(
-            (model_schema,), IEntry)
+            (entry_interface,), IEntry)
         return EntryAdapterUtility(entry_class)
+
+    @classmethod
+    def forEntryAdapterInterface(cls, entry_adapter_interface):
+        """Create an entry adapter utility, given a subclass of IEntry."""
+        registrations = zapi.getGlobalSiteManager().registrations()
+        entry_classes = [
+            r.value for r in registrations
+            if (IInterface.providedBy(r.provided)
+                and r.provided.isOrExtends(IEntry)
+                and entry_adapter_interface.implementedBy(r.value))]
+        assert len(entry_classes) == 1, (
+            "There must be one and only one implementation of %s." %
+            entry_adapter_interface.__name__)
+        return EntryAdapterUtility(entry_classes[0])
 
     def __init__(self, entry_class):
         """Initialize with a class that implements IEntry."""
         self.entry_class = entry_class
 
     @property
-    def schema_interface(self):
-        # BugEntry -> IBugEntry
+    def entry_adapter_interface(self):
         interfaces = implementedBy(self.entry_class)
         entry_ifaces = [interface for interface in interfaces
                         if interface.extends(IEntry)]
         # Won't this fail if you subclass IEntry and then subclass the
         # subclass?
-        if len(entry_ifaces) != 1:
-            import pdb; pdb.set_trace()
         assert len(entry_ifaces) == 1, ("There must be one and only one "
                                         "IEntry implementation "
                                         "for %s" % self.entry_class)
@@ -1009,14 +1017,14 @@ class EntryAdapterUtility(RESTUtilityBase):
     @property
     def singular_type(self):
         """Return the singular name for this object type."""
-        tag = self.schema_interface.queryTaggedValue(LAZR_WEBSERVICE_NS)
-        return tag['singular']
+        interface = self.entry_adapter_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NS)['singular']
 
     @property
     def plural_type(self):
         """Return the plural name for this object type."""
-        tag = self.schema_interface.queryTaggedValue(LAZR_WEBSERVICE_NS)
-        return tag['plural']
+        interface = self.entry_adapter_interface
+        return interface.queryTaggedValue(LAZR_WEBSERVICE_NS)['plural']
 
     @property
     def type_link(self):

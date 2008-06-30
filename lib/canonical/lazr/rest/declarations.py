@@ -599,7 +599,7 @@ class CollectionEntrySchema:
         """Look up the entry schema that adapts the model schema."""
         entry_class = getGlobalSiteManager().adapters.lookup1(
             self.model_schema, IEntry)
-        return EntryAdapterUtility(entry_class).schema_interface
+        return EntryAdapterUtility(entry_class).entry_adapter_interface
 
 class BaseCollectionAdapter(Collection):
     """Base for generated ICollection adapter."""

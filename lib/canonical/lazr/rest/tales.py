@@ -197,6 +197,21 @@ class WadlResourceAdapterAPI(WadlAPI):
         return ops
 
 
+class WadlEntryInterfaceAdapterAPI(WadlResourceAdapterAPI):
+    """Just like WadlEntryAdapterAPI, but it takes the adapter interface.
+
+    WadlEntryAdapterAPI takes the class that implements the interface.
+    """
+    def __init__(self, adapter):
+        super(WadlEntryInterfaceAdapterAPI, self).__init__(adapter, IEntry)
+        self.utility = EntryAdapterUtility.forEntryAdapterInterface(adapter)
+
+    @property
+    def entry_page_representation_link(self):
+        "The URL to the description of a collection of this kind of object."
+        return self.utility.entry_page_representation_link
+
+
 class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     """Namespace for WADL functions that operate on entry adapter classes.
 
@@ -206,7 +221,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
 
     def __init__(self, adapter):
         super(WadlEntryAdapterAPI, self).__init__(adapter, IEntry)
-        import pdb; pdb.set_trace()
         self.utility = EntryAdapterUtility(adapter)
 
     @property
@@ -244,11 +258,6 @@ class WadlEntryAdapterAPI(WadlResourceAdapterAPI):
     def entry_page_representation_id(self):
         "The name of the description of a colleciton of this kind of object."
         return self.utility.entry_page_representation_id
-
-    @property
-    def entry_page_representation_link(self):
-        "The URL to the description of a collection of this kind of object."
-        return self.utility.entry_page_representation_link
 
     @property
     def all_fields(self):

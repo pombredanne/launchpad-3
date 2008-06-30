@@ -57,6 +57,13 @@
     <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.lazr.rest.tales.WadlEntryInterfaceAdapterAPI"
+        name="wadl_entry_interface"
+        />
+
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.lazr.rest.tales.WadlCollectionAdapterAPI"
         name="wadl_collection"
         />
