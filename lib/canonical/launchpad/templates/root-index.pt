@@ -74,6 +74,14 @@
           <h2>What&#8217;s new here?</h2>
           <ul>
            <li class="news">
+              <a href="http://news.launchpad.net/?p=94">
+                <strong>More control over your code imports</strong><br />
+                Get more information on the status of code imports CVS and Subversion.
+                You can now also manually request imports outside the usual schedule.
+
+              </a>
+           </li>
+           <li class="news">
               <a href="http://news.launchpad.net/?p=91">
                 <strong>Code review by email</strong><br />
                 Use email to vote and add your comments to code reviews in Launchpad.
