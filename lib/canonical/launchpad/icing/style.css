@@ -853,10 +853,7 @@ top left (y), and top right (z) of the rounded border. */
 #maincontent {float: left; margin-right: -220px; width: 100%;}
 /* To avoid overlap, we need an extra container with positive right margin: */
 #nonportlets {margin-right: 220px;}
-
-#portlets .portlet {
-  width: 200px;
-}
+#portlets .portlet {width: 200px;}
 
 ul#applicationchooser {
   position: absolute;
@@ -967,20 +964,20 @@ ul#applicationchooser li#applicationchooser_selected {
 a conditional comment in main-template.pt to work around the above rule. */
 #portlets .portlet {
   background-color: #ebebeb;
+  border: 1px solid;
+  border-color: #fff #ccc #ccc #fff;
   clear: both;
   float: left;
   margin: 0 0 0.5em 0;
   color: #717171;
   padding: 4px 8px;
-  width: 183px; /* 200px column - 1px right border - 2*8px padding */
-  border: solid #ccc;
-  border-width: 0 1px 1px 0;
+  width: 182px; /* = 200px column - 2*1px vertical border - 2*8px padding */
   overflow: hidden;
 }
 /* In the Actions menu, part of the horizontal padding is used for
 highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
-  padding: 4px 0; width: 199px; /* 200px column - 1px right border */
+  padding: 4px 0; width: 198px; /* 200px column - 2*1px vertical border */
 }
 #portlets .portlet, #portlets .portlet h2 {font-size: 12px;}
 #portlets .portlet h2 {
