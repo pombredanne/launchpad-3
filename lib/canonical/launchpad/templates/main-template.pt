@@ -69,19 +69,17 @@
     <![endif]-->
 
     <tal:comment condition="nothing">
-      This CSS collapses portlets and the contents of collapsible fieldsets,
+      This CSS collapses the contents of collapsible fieldsets,
       without the flashing that would result from doing it in JavaScript.
       activateCollapsibles() removes the class="collapsed" from fieldsets, to
       re-show their divs, once the children themselves have been collapsed.
     </tal:comment>
     <style type="text/css">
-      #portlets .portletBody, fieldset.collapsed div,
-      fieldset div.collapsed {display: none;}
+      fieldset.collapsed div, fieldset div.collapsed {display: none;}
     </style>
     <noscript>
       <style type="text/css">
-        #portlets .portletBody, fieldset.collapsible div,
-        fieldset div.collapsed {display: block;}
+        fieldset.collapsible div, fieldset div.collapsed {display: block;}
       </style>
     </noscript>
 
@@ -98,7 +96,6 @@
                            [], '1.3em', 16, true);
         sortables_init();
         initInlineHelp();
-        PortletManager.initialize(cookie_scope);
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>

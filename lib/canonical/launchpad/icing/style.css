@@ -1008,12 +1008,6 @@ a conditional comment in main-template.pt to work around the above rule. */
   list-style: none;
   font-size: 11px;
 }
-#portlets .portlet.expanded .portletBody {
-  display: block;
-}
-#portlets .portlet.collapsed .portletBody {
-  display: none;
-}
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
