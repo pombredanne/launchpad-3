@@ -27,6 +27,7 @@ StandardShipItRequests.
     >>> myrequest_view = create_view(
     ...     shipit, 'myrequest', layer=ShipItUbuntuLayer)
     >>> myrequest_view.is_open = False
+    >>> myrequest_view.request.icing_url = '/+icing-ubuntu'
     >>> html = myrequest_view.renderStandardrequestForm()
     >>> from BeautifulSoup import BeautifulSoup
     >>> print BeautifulSoup(html).findAll('h1')[-1].renderContents()
