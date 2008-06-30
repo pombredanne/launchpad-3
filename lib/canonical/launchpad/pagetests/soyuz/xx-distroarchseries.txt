@@ -67,8 +67,7 @@ that was done, and explain that no matches were found.
 All users can browse to the builds page from the DistroArchSeries
 page. The builds page is described in 23-builds-page.txt.
 
-    >>> print extract_text(find_portlet(anon_browser.contents, 'Actions'))
-    Actions
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
     Administer (disabled)
     Show builds
 
@@ -76,8 +75,7 @@ Only administrators can edit ('administer', in fact) the
 distroarchseries details.
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/warty/i386/")
-    >>> print extract_text(find_portlet(admin_browser.contents, 'Actions'))
-    Actions
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'actions'))
     Administer
     Show builds
 

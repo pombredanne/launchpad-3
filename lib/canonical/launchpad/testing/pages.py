@@ -421,7 +421,7 @@ def print_tab_links(content):
 
 def print_action_links(content):
     """Print action menu urls."""
-    actions = find_portlet(content, 'Actions')
+    actions = find_tag_by_id(content, 'actions')
     if actions is None:
         print "No actions portlet"
         return

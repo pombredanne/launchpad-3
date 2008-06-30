@@ -209,9 +209,7 @@ The PPA page "Actions" portlet list all the related pages, only
 'View build records' and 'View PPA' is allowed for unprivileged
 access.
 
-    >>> print extract_text(
-    ...    find_portlet(anon_browser.contents, 'Actions'))
-    Actions
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
     View PPA
     Administer archive (disabled)
     Change details (disabled)
