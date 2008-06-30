@@ -119,8 +119,8 @@ The single BuildQueue found is a non-virtual pending build:
 
 The build start time is not set yet either.
 
-    >>> job.build.date_first_dispatched is None
-    True
+    >>> print job.build.date_first_dispatched
+    None
 
 Update the SourcePackageReleaseFile corresponding to this job:
 
@@ -141,6 +141,12 @@ Check the dispatching method itself:
 
 Verify if the job (BuildQueue) was updated appropriately:
 
+    >>> def checkTimes(expected, actual):
+    ...     if expected != actual:
+    ...         return "expected: %s, actual: %s" % (expected, actual)
+    ...     else:
+    ...         return "OK"
+
     >>> job.builder.id == bob_builder.id
     True
 
@@ -148,13 +154,14 @@ Verify if the job (BuildQueue) was updated appropriately:
     'BUILDING'
 
     >>> from canonical.database.sqlbase import get_transaction_timestamp
-    >>> job.buildstart == get_transaction_timestamp()
-    True
+    >>> checkTimes(get_transaction_timestamp(), job.buildstart)
+    'OK'
 
 The build start time will be set to the same value.
 
-    >>> job.build.date_first_dispatched == get_transaction_timestamp()
-    True
+    >>> checkTimes(get_transaction_timestamp(),
+    ...            job.build.date_first_dispatched)
+    'OK'
 
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
