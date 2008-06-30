@@ -4311,6 +4311,8 @@ class SourcePackageReleaseWithStats:
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
 
+    PACKAGE_LIMIT = 50
+
     def getLatestUploadedPPAPackagesWithStats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
@@ -4327,7 +4329,7 @@ class PersonPackagesView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for package in packages:
+        for package in packages[:self.PACKAGE_LIMIT]:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
@@ -4340,16 +4342,16 @@ class PersonPackagesView(LaunchpadView):
 
     def getLatestMaintainedPackagesWithStats(self):
         """Return the latest maintained packages, including stats."""
-        return self._addStatsToPackages(
-            self.context.getLatestMaintainedPackages())
+        packages = self.context.getLatestMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def getLatestUploadedButNotMaintainedPackagesWithStats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
         """
-        return self._addStatsToPackages(
-            self.context.getLatestUploadedButNotMaintainedPackages())
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.
