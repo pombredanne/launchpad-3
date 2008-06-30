@@ -64,13 +64,8 @@ from bzrlib.errors import (
     TransportNotPossible)
 from bzrlib import trace, urlutils
 from bzrlib.transport import (
-    chroot,
-    get_transport,
-    register_transport,
-    Server,
-    Transport,
-    unregister_transport,
-    )
+    chroot, get_transport, register_transport, Server, Transport,
+    unregister_transport)
 from bzrlib.transport.memory import MemoryServer
 
 from twisted.internet import defer
@@ -78,11 +73,8 @@ from twisted.python import failure
 from twisted.web.xmlrpc import Fault
 
 from canonical.authserver.interfaces import (
-    LAUNCHPAD_SERVICES,
-    NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE,
-    READ_ONLY,
-    )
+    LAUNCHPAD_SERVICES, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
+    READ_ONLY)
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.bzrutils import ensure_base
@@ -104,6 +96,7 @@ def is_lock_directory(absolute_path):
 
 
 def get_chrooted_transport(url):
+    """Return a chrooted transport serving `url`."""
     chroot_server = chroot.ChrootServer(get_transport(url))
     chroot_server.setUp()
     return get_transport(chroot_server.get_url())

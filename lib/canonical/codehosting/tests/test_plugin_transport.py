@@ -31,14 +31,9 @@ from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.sftp import FatLocalTransport
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
-    AsyncLaunchpadTransport,
-    BlockingProxy,
-    InvalidControlDirectory,
-    LaunchpadInternalServer,
-    LaunchpadServer,
-    set_up_logging,
-    VirtualTransport,
-    )
+    AsyncLaunchpadTransport, BlockingProxy, InvalidControlDirectory,
+    LaunchpadInternalServer, LaunchpadServer, set_up_logging,
+    VirtualTransport)
 from canonical.config import config
 from canonical.testing import BaseLayer, reset_logging
 
