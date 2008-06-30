@@ -4301,7 +4301,6 @@ class PersonPackagesView(LaunchpadView):
         user to see private archives.
         """
         packages = self.context.getLatestUploadedPPAPackages()
-        packages = packages[:self.PACKAGE_LIMIT]
 
         # For each package we find out which archives it was published in.
         # If the user has permission to see any of those archives then
@@ -4311,7 +4310,7 @@ class PersonPackagesView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for package in packages:
+        for package in packages[:self.PACKAGE_LIMIT]:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
@@ -4325,8 +4324,7 @@ class PersonPackagesView(LaunchpadView):
     def getLatestMaintainedPackagesWithStats(self):
         """Return the latest maintained packages, including stats."""
         packages = self.context.getLatestMaintainedPackages()
-        packages = packages[:self.PACKAGE_LIMIT]
-        return self._addStatsToPackages(packages)
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def getLatestUploadedButNotMaintainedPackagesWithStats(self):
         """Return the latest uploaded packages, including stats.
@@ -4334,8 +4332,7 @@ class PersonPackagesView(LaunchpadView):
         Don't include packages that are maintained by the user.
         """
         packages = self.context.getLatestUploadedButNotMaintainedPackages()
-        packages = packages[:self.PACKAGE_LIMIT]
-        return self._addStatsToPackages(packages)
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.

@@ -24,7 +24,7 @@
 
   <h2>Maintained packages</h2>
 
-  50 Most recently uploaded packages
+  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
   <table class="listing">
     <thead>
       <tr>
@@ -49,7 +49,7 @@
 
   <h2>Uploaded packages</h2>
 
-  50 Most recently uploaded packages
+  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
   <table class="listing">
     <thead>
       <tr>
@@ -73,7 +73,7 @@
 
   <h2>PPA packages</h2>
 
-  50 Most recently uploaded packages
+  <tal:size replace="view/PACKAGE_LIMIT"/> Most recently uploaded packages
   <table class="listing">
     <thead>
       <tr>
