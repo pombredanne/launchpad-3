@@ -239,31 +239,6 @@ class BugTaskMixin:
         # pass through to the bug
         return self.bug.retractMentoring(user)
 
-    def _getProductOrDistro(self):
-        """Return the product or distribution relevant to this bug task."""
-        if IUpstreamBugTask.providedBy(self):
-            return self.product
-        elif IProductSeriesBugTask.providedBy(self):
-            return self.productseries.product
-        elif IDistroBugTask.providedBy(self):
-            return self.distribution
-        else:
-            return self.distroseries.distribution
-
-    def userCanEditMilestone(self, user):
-        """See `IBugTask`."""
-        product_or_distro = self._getProductOrDistro()
-        return ((product_or_distro.bug_supervisor and
-                 user.inTeam(product_or_distro.bug_supervisor)) or
-                product_or_distro.userCanEdit(user))
-
-    def userCanEditImportance(self, user):
-        """See `IBugTask`."""
-        product_or_distro = self._getProductOrDistro()
-        return ((product_or_distro.bug_supervisor and
-                 user.inTeam(product_or_distro.bug_supervisor)) or
-                product_or_distro.userCanEdit(user))
-
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.
@@ -999,6 +974,31 @@ class BugTask(SQLBase, BugTaskMixin):
             return BugTaskDelta(**changes)
         else:
             return None
+
+    def _getProductOrDistro(self):
+        """Return the product or distribution relevant to this bug task."""
+        if IUpstreamBugTask.providedBy(self):
+            return self.product
+        elif IProductSeriesBugTask.providedBy(self):
+            return self.productseries.product
+        elif IDistroBugTask.providedBy(self):
+            return self.distribution
+        else:
+            return self.distroseries.distribution
+
+    def userCanEditMilestone(self, user):
+        """See `IBugTask`."""
+        product_or_distro = self._getProductOrDistro()
+        return ((product_or_distro.bug_supervisor and
+                 user.inTeam(product_or_distro.bug_supervisor)) or
+                product_or_distro.userCanEdit(user))
+
+    def userCanEditImportance(self, user):
+        """See `IBugTask`."""
+        product_or_distro = self._getProductOrDistro()
+        return ((product_or_distro.bug_supervisor and
+                 user.inTeam(product_or_distro.bug_supervisor)) or
+                product_or_distro.userCanEdit(user))
 
 
 def search_value_to_where_condition(search_value):
