@@ -40,7 +40,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
+    Bool, Choice, Datetime, Field, Int, List, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -61,7 +61,7 @@ from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.lazr.interface import copy_field
 from canonical.lazr.rest.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry, export_operation_as,
+    REQUEST_USER, call_with, export_as_webservice_entry,
     export_write_operation, exported, operation_parameters,
     rename_parameters_as, webservice_error)
 from canonical.lazr.fields import CollectionField, Reference

@@ -418,7 +418,8 @@ class BugTaskCreationStep(AlsoAffectsStep):
             # importance to be updated manually, so we do not reset
             # the status and importance here.
             task_added.transitionToStatus(BugTaskStatus.UNKNOWN, self.user)
-            task_added.transitionToImportance(BugTaskImportance.UNKNOWN, self.user)
+            task_added.transitionToImportance(
+                BugTaskImportance.UNKNOWN, self.user)
 
         notify(SQLObjectCreatedEvent(task_added))
         self.next_url = canonical_url(task_added)

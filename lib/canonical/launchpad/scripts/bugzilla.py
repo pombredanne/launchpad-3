@@ -161,11 +161,13 @@ class BugzillaBackend:
         joins = []
         conditions = []
         if product:
-            joins.append('INNER JOIN products ON bugs.product_id = products.id')
+            joins.append(
+                'INNER JOIN products ON bugs.product_id = products.id')
             conditions.append('products.name IN (%s)' %
                 ', '.join([self.conn.escape(p) for p in product]))
         if component:
-            joins.append('INNER JOIN components ON bugs.component_id = components.id')
+            joins.append(
+                'INNER JOIN components ON bugs.component_id = components.id')
             conditions.append('components.name IN (%s)' %
                 ', '.join([self.conn.escape(c) for c in component]))
         if status:
