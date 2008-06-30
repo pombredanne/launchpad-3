@@ -17,8 +17,8 @@ from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, enabled_with_permission,
-    LaunchpadFormView, LaunchpadView, Link)
+    action, canonical_url, ContextMenu, LaunchpadFormView, LaunchpadView,
+    Link)
 
 
 class CodeReviewCommentContextMenu(ContextMenu):
@@ -27,7 +27,6 @@ class CodeReviewCommentContextMenu(ContextMenu):
     usedfor = ICodeReviewComment
     links = ['reply']
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def reply(self):
         return Link('+reply', 'Reply', icon='add')
 
@@ -116,9 +115,10 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         comment = self.branch_merge_proposal.createComment(
             self.user, data['subject'], data['comment'], data['vote'],
             data['vote_tag'], self.reply_to)
-        # Always take the user back to the merge proposal itself.
-        self.next_url = canonical_url(self.branch_merge_proposal)
 
     @property
-    def cancel_url(self):
-        return canonical_url(self.context)
+    def next_url(self):
+        """Always take the user back to the merge proposal itself."""
+        return canonical_url(self.branch_merge_proposal)
+
+    cancel_url = next_url

@@ -33,7 +33,7 @@
 
   </div>
   <div class="clearfix">
-    <div style="float:right">
+    <div style="float:right" class="commentSuffix">
       <tal:author replace="structure context/message/owner/fmt:link:mainsite"/>
       <tal:date replace="context/message/datecreated/fmt:displaydate" />
       <tal:reply tal:define="link context/menu:context/reply"
