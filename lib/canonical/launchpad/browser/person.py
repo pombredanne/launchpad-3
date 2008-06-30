@@ -3964,9 +3964,9 @@ class PersonEditEmailsView(LaunchpadFormView):
 
 
 class TeamMugshotView(LaunchpadView):
-    """XXX"""
+    """A view for the team mugshot (team photo) page"""
     def initialize(self):
-        """XXX"""
+        """Cache images to avoid dying from a million cuts."""
         getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
 
     @cachedproperty

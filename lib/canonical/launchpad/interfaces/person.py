@@ -1821,7 +1821,7 @@ class IPersonSet(Interface):
         change to standing is made.
         """
 
-    def getBrandingForPeople(people):
+    def cacheBrandingForPeople(people):
         """Prefetch Librarian aliases and content for personal images."""
 
 
