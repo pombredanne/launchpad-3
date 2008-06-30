@@ -2977,19 +2977,22 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if default is None:
             default = True
         return {
-            "allow_relicensing" : default,
-            "back_to" : self.request.get('back_to'),
+            "allow_relicensing": default,
+            "back_to": self.request.get('back_to'),
             }
 
     @property
     def initial_values(self):
-        """Set the user's current relicensing preference or default to BSD."""
-        default = TranslationRelicensingAgreementOptions.BSD
-        if self.context.translations_relicensing_agreement is False:
+        """Set the default value for the relicensing radio buttons."""
+        # If the person has previously made a choice, we default to that.
+        # Otherwise, we default to BSD, because that's what we'd prefer.
+        if self.context.translations_relicensing_agreement == False:
             default = TranslationRelicensingAgreementOptions.REMOVE
+        else:
+            default = TranslationRelicensingAgreementOptions.BSD
         return {
-            "allow_relicensing" : default,
-            "back_to" : self.request.get('back_to'),
+            "allow_relicensing": default,
+            "back_to": self.request.get('back_to'),
             }
 
     @property
@@ -3017,17 +3020,17 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             self.context.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
                 "Thank you for BSD-licensing your translations."))
-        else:
-            assert ((allow_relicensing ==
-                TranslationRelicensingAgreementOptions.REMOVE),
-                "The person made an unrecognized licensing choice.")
+        elif (allow_relicensing ==
+            TranslationRelicensingAgreementOptions.REMOVE):
             self.context.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
                 "Your translations will be removed once we complete the "
                 "switch to the BSD license. "
                 "Thanks for trying out Launchpad Translations."))
-
+        else:
+            raise AssertionError(
+                "Unknown allow_relicensing value: %r" % allow_relicensing)
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
 
