@@ -58,6 +58,21 @@ PCI_SUBCLASS_BRIDGE_CARDBUS = 7
 PCI_CLASS_SERIALBUS_CONTROLLER = 12
 PCI_SUBCLASS_SERIALBUS_USB = 3
 
+WARNING_NO_HAL_KERNEL_VERSION = 1
+WARNING_NO_KERNEL_PACKAGE_DATA = 2
+
+DB_FORMAT_FOR_VENDOR_ID = {
+    'pci': '0x%04x',
+    'usb_device': '0x%04x',
+    'scsi': '%-8s',
+    }
+
+DB_FORMAT_FOR_PRODUCT_ID = {
+    'pci': '0x%04x',
+    'usb_device': '0x%04x',
+    'scsi': '%-16s',
+    }
+
 class SubmissionParser:
     """A Parser for the submissions to the hardware database."""
 
@@ -66,6 +81,7 @@ class SubmissionParser:
             logger = getLogger()
         self.logger = logger
         self.doc_parser = etree.XMLParser()
+        self._logged_warnings = set()
 
         self.validator = {}
         directory = os.path.join(config.root, 'lib', 'canonical',
@@ -82,10 +98,10 @@ class SubmissionParser:
         self.logger.error(
             'Parsing submission %s: %s' % (submission_key, message))
 
-    def _logWarning(self, message, submission_key):
+    def _logWarning(self, message):
         """Log `message` for a warning in submission submission_key`."""
         self.logger.warning(
-            'Parsing submission %s: %s' % (submission_key, message))
+            'Parsing submission %s: %s' % (self.submission_key, message))
 
     def _getValidatedEtree(self, submission, submission_key):
         """Create an etree doc from the XML string submission and validate it.
@@ -893,14 +909,29 @@ class SubmissionParser:
         """Return the kernel package name of the submission,"""
         root_hal_device = self.hal_devices[ROOT_UDI]
         kernel_version = root_hal_device.getProperty('system.kernel.version')
+        if kernel_version is None:
+            if not WARNING_NO_HAL_KERNEL_VERSION in self._logged_warnings:
+                # This method is called very often; one warning per
+                # submission is enough.
+                self._logged_warnings.add(WARNING_NO_HAL_KERNEL_VERSION)
+                self._logWarning(
+                    'Submission does not provide property '
+                    'system.kernel.version for '
+                    '/org/freedesktop/Hal/devices/computer.')
+            return None
         kernel_package_name = 'linux-image-' + kernel_version
-        if (not kernel_package_name in
-                self.parsed_data['software']['packages']):
-            self._logWarning(
-                'Inconsistent kernel version data: According to HAL the '
-                'kernel is %s, but the submission does not know about a '
-                'kernel package %s' %(kernel_version, kernel_package_name),
-                self.submission_key)
+        if not 'packages' in self.parsed_data['software']:
+            # The RelaxNG schema does not require package data.
+            return None
+        packages = self.parsed_data['software']['packages']
+        if kernel_package_name not in packages:
+            if not WARNING_NO_KERNEL_PACKAGE_DATA in self._logged_warnings:
+                self._logged_warnings.add(WARNING_NO_KERNEL_PACKAGE_DATA)
+                self._logWarning(
+                    'Inconsistent kernel version data: According to HAL the '
+                    'kernel is %s, but the submission does not know about a '
+                    'kernel package %s'
+                    % (kernel_version, kernel_package_name))
             return None
         return kernel_package_name
 
@@ -990,14 +1021,12 @@ class HALDevice:
         parent = self.parent
         if parent is None:
             self.parser._logWarning(
-                'Found SCSI device without a parent: %s.' % self.udi,
-                self.parser.submission_key)
+                'Found SCSI device without a parent: %s.' % self.udi)
             return None
         grandparent = parent.parent
         if grandparent is None:
             self.parser._logWarning(
-                'Found SCSI device without a grandparent: %s.' % self.udi,
-                self.parser.submission_key)
+                'Found SCSI device without a grandparent: %s.' % self.udi)
             return None
 
         grandparent_bus = grandparent.getProperty('info.bus')
@@ -1007,13 +1036,12 @@ class HALDevice:
                 # This is not a storage class PCI device? This
                 # indicates a bug somewhere in HAL or in the hwdb
                 # client, or a fake submission.
+                device_class = grandparent.getProperty('pci.device_class')
                 self.parser._logWarning(
                     'A (possibly fake) SCSI device %s is connected to '
                     'PCI device %s that has the PCI device class %s; '
-                    'expected class 1.'
-                    % (self.udi, grandparent.udi,
-                       grandparent.getProperty('pci.device_class')),
-                    self.parser.submission_key)
+                    'expected class 1 (storage).'
+                    % (self.udi, grandparent.udi, device_class))
                 return None
             pci_subclass = grandparent.getProperty('pci.device_subclass')
             return self.pci_storage_subclass_hwbus.get(pci_subclass)
@@ -1096,15 +1124,14 @@ class HALDevice:
         elif device_bus == 'pci':
             return self.translatePciBus()
         elif self.udi == ROOT_UDI:
-            # The computer itself. HAL provides noo info.bus property on
-            # from Hardy on and info.bus to 'unknown' on older Ubuntu
-            # version, hence it is better to rely on the machine's
-            # UDI for identification.
+            # The computer itself. In Hardy, HAL provides no info.bus
+            # for the machine itself; older versions set info.bus to
+            # 'unknown', hence it is better to use the machine's
+            # UDI.
             return HWBus.SYSTEM
         else:
             self.parser._logWarning(
-                'Unknown bus %r for device %s' % (device_bus, self.udi),
-                self.parser.submission_key)
+                'Unknown bus %r for device %s' % (device_bus, self.udi))
             return None
 
     @property
@@ -1203,12 +1230,9 @@ class HALDevice:
             # info.bus == 'usb' is used for end points of USB devices;
             # the root node of a USB device has info.bus == 'usb_device'.
             #
-            # The HAL version from Hardy does not provide an info.bus
-            # property for the computer itself.
-            if self.udi == ROOT_UDI:
-                return True
-            else:
-                return False
+            # The computer itself is the only HAL device without the
+            # info.bus property that we treat as a real device.
+            return self.udi == ROOT_UDI
         elif bus == 'usb_device':
             vendor_id = self.getProperty('usb_device.vendor_id')
             product_id = self.getProperty('usb_device.product_id')
@@ -1229,8 +1253,7 @@ class HALDevice:
                     self.parser._logWarning(
                         'USB device found with vendor ID==0, product ID==0, '
                         'where the parent device does not look like a USB '
-                        'host controller: %s' % self.udi,
-                        self.parser.submission_key)
+                        'host controller: %s' % self.udi)
                     return False
             return True
         elif bus == 'scsi':
@@ -1268,7 +1291,7 @@ class HALDevice:
         return result
 
     @property
-    def is_processible(self):
+    def has_reliable_data(self):
         """Can this device be stored in the HWDB?
 
         Devices are identifed by (bus, vendor_id, product_id).
@@ -1294,7 +1317,7 @@ class HALDevice:
         to find or generate something that could be used as the
         product ID, so IEEE1394 devices are at present simply
         not stored in the HWDB. Otherwise, we'd pollute the HWDB
-        with unreliable data.
+        with unreliable data. Bug #237044.
 
         While PCMCIA devices have a manufacturer ID, at least its
         value as provided by HAL in pcmcia.manf_id it is not very
@@ -1305,7 +1328,7 @@ class HALDevice:
         drivers/net/wireless/atmel_cs.c in the Linux kernel sources.
         """
         bus = self.getProperty('info.bus')
-        return not bus in ('pnp', 'platform', 'ieee1394', 'pcmcia')
+        return bus not in ('pnp', 'platform', 'ieee1394', 'pcmcia')
 
     def getVendorOrProduct(self, type_):
         """Return the vendor or product of this device.
@@ -1380,7 +1403,7 @@ class HALDevice:
         bus = self.getProperty('info.bus')
         if self.udi == ROOT_UDI:
             # HAL does not provide IDs for a system itself, we use the
-            #vendor resp. product name instead.
+            # vendor resp. product name instead.
             return self.getVendorOrProduct(type_)
         elif bus is None:
             return None
@@ -1409,13 +1432,6 @@ class HALDevice:
         """The product ID of this device."""
         return self.getVendorOrProductID('product')
 
-
-    db_format_for_vendor_id = {
-        'pci': '0x%04x',
-        'usb_device': '0x%04x',
-        'scsi': '%-8s',
-    }
-
     @property
     def vendor_id_for_db(self):
         """The vendor ID in the representation needed for the HWDB tables.
@@ -1426,17 +1442,11 @@ class HALDevice:
         The SCSI vendor name is right-padded with spaces to 8 bytes.
         """
         bus = self.getProperty('info.bus')
-        format = self.db_format_for_vendor_id.get(bus, None)
+        format = DB_FORMAT_FOR_VENDOR_ID.get(bus)
         if format is None:
             return self.vendor_id
         else:
             return format % self.vendor_id
-
-    db_format_for_product_id = {
-        'pci': '0x%04x',
-        'usb_device': '0x%04x',
-        'scsi': '%-16s',
-    }
 
     @property
     def product_id_for_db(self):
@@ -1448,7 +1458,7 @@ class HALDevice:
         The SCSI product name is right-padded with spaces to 16 bytes.
         """
         bus = self.getProperty('info.bus')
-        format = self.db_format_for_product_id.get(bus, None)
+        format = DB_FORMAT_FOR_PRODUCT_ID.get(bus)
         if format is None:
             return self.product_id
         else:

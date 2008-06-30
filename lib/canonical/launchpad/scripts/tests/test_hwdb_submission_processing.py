@@ -102,7 +102,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -152,7 +153,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parser.parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             'software': {
@@ -166,6 +168,10 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertEqual(kernel_package, 'linux-image-2.6.24-19-generic',
             'Unexpected result of SubmissionParser.getKernelPackageName. '
             'Expected linux-image-2.6.24-19-generic, got %r' % kernel_package)
+
+        self.assertEqual(len(self.handler.records), 0,
+            'One or more warning messages were logged by '
+            'getKernelPackageName, where none is expected.')
 
     def testKernelPackageNameInconsistent(self):
         """Test of SubmissionParser.getKernelPackageName.
@@ -184,7 +190,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parser.parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             'software': {
@@ -203,6 +210,55 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'Inconsistent kernel version data: According to HAL the '
             'kernel is 2.6.24-19-generic, but the submission does not '
             'know about a kernel package linux-image-2.6.24-19-generic')
+        # The warning appears only once per submission, even if the
+        # SubmissionParser.getKernelPackageName is called more than once.
+        num_warnings = len(self.handler.records)
+        parser.getKernelPackageName()
+        self.assertEqual(num_warnings, len(self.handler.records),
+            'Warning for missing HAL property system.kernel.version '
+            'repeated.')
+
+    def testKernelPackageNameNoHALData(self):
+        """Test of SubmissionParser.getKernelPackageName.
+
+        Test without HAL property system.kernel.version.
+        """
+        parser = SubmissionParser(self.log)
+        devices = [
+            {
+                'id': 1,
+                'udi': self.UDI_COMPUTER,
+                'properties': {},
+                },
+            ]
+        parser.parsed_data = {
+            'hardware': {
+                'hal': {
+                    'devices': devices,
+                    },
+                },
+            'software': {
+                'packages': {
+                    'linux-image-from-obscure-external-source': {},
+                    },
+                },
+            }
+        parser.submission_key = 'Test: missing property system.kernel.version'
+        parser.buildDeviceList(parser.parsed_data)
+        kernel_package = parser.getKernelPackageName()
+        self.assertEqual(kernel_package, None,
+            'Unexpected result of SubmissionParser.getKernelPackageName. '
+            'Expected None, got %r' % kernel_package)
+        self.assertWarningMessage(parser.submission_key,
+            'Submission does not provide property system.kernel.version '
+            'for /org/freedesktop/Hal/devices/computer.')
+        # The warning appears only once per submission, even if the
+        # SubmissionParser.getKernelPackageName is called more than once.
+        num_warnings = len(self.handler.records)
+        parser.getKernelPackageName()
+        self.assertEqual(num_warnings, len(self.handler.records),
+            'Warning for missing HAL property system.kernel.version '
+            'repeated.')
 
     def testHALDeviceConstructor(self):
         """Test of the HALDevice constructor."""
@@ -280,7 +336,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                 ]
             parsed_data = {
                 'hardware': {
-                    'hal': {'devices': devices,
+                    'hal': {
+                        'devices': devices,
                         },
                     },
                 }
@@ -306,7 +363,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -364,7 +422,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -416,7 +475,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -466,7 +526,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -495,7 +556,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -548,7 +610,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -563,7 +626,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             'without a parent. Expected None, got %r' % bus)
         self.assertWarningMessage(parser.submission_key,
             'A (possibly fake) SCSI device %s is connected to PCI device '
-            '%s that has the PCI device class -1; expected class 1.'
+            '%s that has the PCI device class -1; expected class 1 (storage).'
              % (self.UDI_SATA_DISK, self.UDI_SATA_CONTROLLER))
 
     def testHALDeviceGetBusPci(self):
@@ -654,7 +717,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -694,7 +758,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -717,7 +782,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -746,7 +812,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -798,7 +865,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -870,7 +938,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -894,7 +963,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -903,7 +973,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser.buildDeviceList(parsed_data)
         device = parser.hal_devices[self.UDI_COMPUTER]
         self.failUnless(device.is_real_device,
-                    'Root device not treated as a real device')
+                        'Root device not treated as a real device')
 
     def testHALDeviceRealChildren(self):
         """Test of HALDevice.getRealChildren."""
@@ -966,7 +1036,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
+                'hal': {
+                    'devices': devices,
                     },
                 },
             }
@@ -991,8 +1062,8 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                          'Unexpected list of real children of the PCI-> '
                          'USB bridge')
 
-    def testIsProcessibleRegularCase(self):
-        """Test of HALDevice.is_processible, regular case."""
+    def testHasReliableDataRegularCase(self):
+        """Test of HALDevice.has_reliable_data, regular case."""
         devices = [
             {
                 'id': 1,
@@ -1011,12 +1082,13 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
-        self.failUnless(parser.hal_devices[
-            self.UDI_SATA_CONTROLLER].is_processible,
-            'Regular device treated as not processible.')
+        has_reliable_data = parser.hal_devices[
+            self.UDI_SATA_CONTROLLER].has_reliable_data
+        self.failUnless(has_reliable_data,
+                        'Regular device treated as not having reliable data.')
 
-    def testIsProcessibleNotProcessible(self):
-        """Test of HALDevice.is_processible, non-processible devices."""
+    def testHasReliableDataNotProcessible(self):
+        """Test of HALDevice.has_reliable_data, no reliable data."""
         devices = [
             {
                 'id': 1,
@@ -1036,9 +1108,10 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         for bus in ('pnp', 'platform', 'ieee1394', 'pcmcia'):
             properties['info.bus'] = (bus, 'str')
             parser.buildDeviceList(parsed_data)
-            self.failIf(parser.hal_devices[
-                self.UDI_SATA_CONTROLLER].is_processible,
-                'Device with bus=%s treated as processible.' % bus)
+            has_reliable_data = parser.hal_devices[
+                self.UDI_SATA_CONTROLLER].has_reliable_data
+            self.failIf(has_reliable_data,
+                'Device with bus=%s treated as having reliable data.' % bus)
 
     def testHALDeviceVendorFromInfoVendor(self):
         """Test of HALDevice.vendor, regular case.
@@ -1517,9 +1590,10 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ]
         parsed_data = {
             'hardware': {
-                'hal': {'devices': devices,
-                    }
-                }
+                'hal': {
+                    'devices': devices,
+                    },
+                },
             }
         parser = SubmissionParser(self.log)
         parser.buildDeviceList(parsed_data)
@@ -1609,7 +1683,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         testdata = (('pci', (0x123, 'int'), '0x0123'),
                     ('usb_device', (0x234, 'int'), '0x0234'),
                     ('scsi', ('SEAGATE', 'str'), 'SEAGATE '),
-                   )
+                    )
         for bus, vendor_id, expected_vendor_id in testdata:
             properties['info.bus'] = (bus, 'str')
             if bus == 'scsi':
@@ -1670,7 +1744,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
         testdata = (('pci', (0x123, 'int'), '0x0123'),
                     ('usb_device', (0x234, 'int'), '0x0234'),
-                    ('scsi', ('ST1234567890    ', 'str'), 'ST1234567890    '),
+                    ('scsi', ('ST1234567890', 'str'), 'ST1234567890    '),
                    )
         for bus, product_id, expected_product_id in testdata:
             properties['info.bus'] = (bus, 'str')
