@@ -240,7 +240,7 @@ table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
 }
 .batch-navigation-links .next {background-image: url(/@@/arrowRight);}
 .batch-navigation-links .next.inactive {
-  background-image: url(/@@/batch-next-inactive);
+  background-image: url(/@@/arrowRight-inactive);
 }
 /* And all the links have spacing between them: */
 .batch-navigation-links .previous, .batch-navigation-links .next,
@@ -1884,4 +1884,11 @@ div.popupTitle {
 
 #no-results span.search_text {
   font-weight: bold;
+}
+
+/* From nice_pre in tales.py */
+pre.wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
 }

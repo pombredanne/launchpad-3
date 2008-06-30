@@ -13,7 +13,7 @@ import urlparse
 import xmlrpclib
 
 from cStringIO import StringIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from httplib import HTTPMessage
 
 from zope.component import getUtility
@@ -225,6 +225,10 @@ class TestBugzilla(Bugzilla):
         Bugzilla.__init__(self, baseurl, version=version)
         self.bugzilla_bugs = self._getBugsToTest()
 
+    def getExternalBugTrackerToUse(self):
+        # Always return self here since we test this separately.
+        return self
+
     def _getBugsToTest(self):
         """Return a dict with bugs in the form bug_id: (status, resolution)"""
         return {3224: ('RESOLVED', 'FIXED'),
@@ -345,7 +349,7 @@ class FakeHTTPConnection:
 class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 
-    seconds_since_epoch = None
+    local_datetime = None
     timezone = 'UTC'
     utc_offset = 0
     print_method_calls = False
@@ -480,15 +484,16 @@ class TestBugzillaXMLRPCTransport(BugzillaXMLRPCTransport):
 
     def time(self):
         """Return a dict of the local time, UTC time and the timezone."""
-        seconds_since_epoch = self.seconds_since_epoch
-        if seconds_since_epoch is None:
-            remote_datetime = datetime(2008, 5, 1, 1, 1, 1)
-            seconds_since_epoch = time.mktime(remote_datetime.timetuple())
+        local_datetime = self.local_datetime
+        if local_datetime is None:
+            local_datetime = datetime(2008, 5, 1, 1, 1, 1)
 
         # We return xmlrpc dateTimes rather than doubles since that's
         # what BugZilla will return.
-        local_time = xmlrpclib.DateTime(seconds_since_epoch)
-        utc_time = xmlrpclib.DateTime(seconds_since_epoch - self.utc_offset)
+        local_time = xmlrpclib.DateTime(local_datetime.timetuple())
+
+        utc_date_time = local_datetime - timedelta(seconds=self.utc_offset)
+        utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
             'local_time': local_time,
             'utc_time': utc_time,

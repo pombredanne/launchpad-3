@@ -12,7 +12,6 @@ import unittest
 
 import psycopg2
 
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig

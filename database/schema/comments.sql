@@ -1102,6 +1102,8 @@ COMMENT ON COLUMN PersonLocation.latitude IS 'The latitude this person has given
 COMMENT ON COLUMN PersonLocation.longitude IS 'The longitude this person has given for their default location.';
 COMMENT ON COLUMN PersonLocation.last_modified_by IS 'The person who last updated this record. We allow people to provide location and time zone information for other users, when those users have not specified their own location. This allows people to garden the location information for their teams, for example, like a wiki.';
 COMMENT ON COLUMN PersonLocation.date_last_modified IS 'The date this record was last modified.';
+COMMENT ON COLUMN PersonLocation.locked IS 'Whether or not this record can be modified by someone other than the person himself?';
+COMMENT ON COLUMN PersonLocation.visible IS 'Should this person\'s location and time zone be visible to others?';
 
 
 -- PersonNotification

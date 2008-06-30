@@ -84,7 +84,7 @@ method which requires authentication.
     ...
     ...     @needs_authentication
     ...     def testAuthentication(self):
-    ...         return self.server.Test.login_required()
+    ...         return self.xmlrpc_proxy.Test.login_required()
 
     >>> test_bugzilla = AuthenticatingBugzillaLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport,
@@ -95,7 +95,7 @@ authenticated. We'll expire the current auth_cookie so that
 login_required() raises a fault.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> test_bugzilla.server.Test.login_required()
+    >>> test_bugzilla.xmlrpc_proxy.Test.login_required()
     Traceback (most recent call last):
       ...
     Fault: <Fault 410: 'Login Required'>
@@ -126,13 +126,12 @@ current time on the remote server.
     >>> from datetime import datetime
     >>> # It seems there's no way to create a UTC timestamp without
     >>> # monkey-patching the TZ environment variable. Rather than do
-    >>> # that, we create our own timestamp and work with that.
-    >>> datetime.utcfromtimestamp(1210953200.0)
-    datetime.datetime(2008, 5, 16, 15, 53, 20)
+    >>> # that, we create our own datetime and work with that.
+    >>> remote_time = datetime(2008, 5, 16, 16, 53, 20)
 
     >>> test_transport.utc_offset = 60**2
     >>> test_transport.timezone = 'CET'
-    >>> test_transport.seconds_since_epoch = 1210956800.0
+    >>> test_transport.local_datetime = remote_time
     >>> bugzilla.getCurrentDBTime()
     datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
 

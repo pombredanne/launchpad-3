@@ -980,9 +980,10 @@ class PillarFormatterAPI(CustomizableFormatter):
         html = super(PillarFormatterAPI, self).link(extra_path)
         if IProduct.providedBy(self._context):
             if self._context.license_status != LicenseStatus.OPEN_SOURCE:
-                html += ' <span title="%s">(%s)</span>' % (
-                    escape(self._context.license_status.description),
-                    escape(self._context.license_status.title))
+                html = '<span title="%s">%s (%s)</span>' % (
+                    self._context.license_status.description,
+                    html,
+                    self._context.license_status.title)
         return html
 
 
