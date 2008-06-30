@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroSeriesSourcePackageReleaseFacets',
     'DistroSeriesSourcePackageReleaseNavigation',
     'DistroSeriesSourcePackageReleaseView',
     ]
@@ -13,16 +12,7 @@ from canonical.launchpad.interfaces import (
 
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Navigation, stepthrough)
-
-
-class DistroSeriesSourcePackageReleaseFacets(StandardLaunchpadFacets):
-    # XXX mpt 2006-10-04: A DistroSeriesSourcePackageRelease is not a
-    # structural object. It should inherit all navigation from its
-    # distro series.
-
-    usedfor = IDistroSeriesSourcePackageRelease
-    enable_only = ['overview', ]
+    ApplicationMenu, Navigation, stepthrough)
 
 
 class DistroSeriesSourcePackageReleaseOverviewMenu(ApplicationMenu):

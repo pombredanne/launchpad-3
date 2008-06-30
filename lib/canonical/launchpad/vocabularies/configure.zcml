@@ -146,11 +146,6 @@
     />
 
   <vocabulary
-    name="PersonActiveMembershipPlusSelf"
-    factory="canonical.launchpad.vocabularies.PersonActiveMembershipPlusSelfVocabulary"
-    />
-
-  <vocabulary
     name="PersonTeamParticipations"
     factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
     />
@@ -233,6 +228,11 @@
   <vocabulary
     name="UserTeamsParticipation"
     factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    />
+
+  <vocabulary
+    name="UserTeamsParticipationPlusSelf"
+    factory="canonical.launchpad.vocabularies.user_public_team_participations_and_self_vocabulary_factory"
     />
 
   <vocabulary

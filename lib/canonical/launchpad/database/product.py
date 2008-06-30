@@ -945,6 +945,7 @@ class ProductSet:
     def forReview(self, search_text=None, active=None,
                   license_reviewed=None, licenses=None,
                   license_info_is_empty=None,
+                  has_zero_licenses=None,
                   created_after=None, created_before=None,
                   subscription_expires_after=None,
                   subscription_expires_before=None,
@@ -1015,12 +1016,35 @@ class ProductSet:
             raise AssertionError('license_info_is_empty invalid: %r'
                                  % license_info_is_empty)
 
+        has_license_subquery = '''%s (
+            SELECT 1
+            FROM ProductLicense
+            WHERE ProductLicense.product = Product.id
+            LIMIT 1
+            )
+            '''
+        if has_zero_licenses is True:
+            # The subquery finds zero rows.
+            or_conditions.append(has_license_subquery % 'NOT EXISTS')
+        elif has_zero_licenses is False:
+            # The subquery finds at least one row.
+            or_conditions.append(has_license_subquery % 'EXISTS')
+        elif has_zero_licenses is None:
+            # Don't restrict results if has_zero_licenses is None.
+            pass
+        else:
+            raise AssertionError('has_zero_licenses is invalid: %r'
+                                 % has_zero_licenses)
+
         if licenses is not None and len(licenses) > 0:
-            for license in licenses:
-                or_conditions.append('ProductLicense.license = %s'
-                                     % sqlvalues(license))
-            conditions.append('ProductLicense.product = Product.id')
-            clause_tables.append('ProductLicense')
+            or_conditions.append('''EXISTS (
+                SELECT 1
+                FROM ProductLicense
+                WHERE ProductLicense.product = Product.id
+                    AND license IN %s
+                LIMIT 1
+                )
+                ''' % sqlvalues(tuple(licenses)))
 
         if len(or_conditions) != 0:
             conditions.append('(%s)' % '\nOR '.join(or_conditions))
