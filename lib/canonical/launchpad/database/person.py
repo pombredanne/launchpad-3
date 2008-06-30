@@ -3485,6 +3485,22 @@ class PersonSet:
                         PostedMessageStatus.APPROVED,
                         config.standingupdater.approvals_needed))
 
+    def cacheBrandingForPeople(self, people):
+        """See `IPersonSet`."""
+        from canonical.launchpad.database import LibraryFileAlias
+        aliases = []
+        aliases.extend(person.iconID for person in people
+                       if person.iconID is not None)
+        aliases.extend(person.logoID for person in people
+                       if person.logoID is not None)
+        aliases.extend(person.mugshotID for person in people
+                       if person.mugshotID is not None)
+        if not aliases:
+            return
+        # Listify, since this is a pure cache.
+        list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
+             % sqlvalues(aliases), prejoins=["content"]))
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
@@ -3627,3 +3643,4 @@ class IrcIDSet:
     def new(self, person, network, nickname):
         """See `IIrcIDSet`"""
         return IrcID(person=person, network=network, nickname=nickname)
+
