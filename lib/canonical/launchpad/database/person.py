@@ -3234,6 +3234,8 @@ class PersonSet:
                        if person.logoID is not None)
         aliases.extend(person.mugshotID for person in people
                        if person.mugshotID is not None)
+        if not aliases:
+            return
         # Listify, since this is a pure cache.
         list(LibraryFileAlias.select("LibraryFileAlias.id IN %s"
              % sqlvalues(aliases), prejoins=["content"]))

@@ -66,6 +66,9 @@ output:
     >>> set_branding(mark_browser, icon=False)
     >>> mark_browser.getControl('Change Branding').click()
 
+    >>> check("/~name16/+rdf")
+    >>> check("/~name18/+rdf")
+
 Now, generate the RDF itself:
 
     >>> from canonical.launchpad.helpers import backslashreplace
