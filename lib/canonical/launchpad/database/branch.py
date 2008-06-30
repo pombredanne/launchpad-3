@@ -10,7 +10,6 @@ __all__ = [
 
 from datetime import datetime
 import re
-import os
 
 import pytz
 
@@ -26,7 +25,6 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from canonical.codehosting import branch_id_to_path
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import (

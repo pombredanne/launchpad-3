@@ -322,7 +322,9 @@ class PullerWorker:
         """Mirror the source branch to the destination branch.
 
         This method doesn't do any error handling or send any messages via the
-        reporting protocol -- a "naked mirror", if you will.
+        reporting protocol -- a "naked mirror", if you will. This is
+        particularly useful for tests that want to mirror a branch and be
+        informed immediately of any errors.
         """
         self._checkSourceUrl()
         self._checkBranchReference()
