@@ -3017,7 +3017,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             self.context.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
                 "Thank you for BSD-licensing your translations."))
-        else: # == TranslationRelicensingAgreementOptions.REMOVE
+        else:
+            assert ((allow_relicensing ==
+                TranslationRelicensingAgreementOptions.REMOVE),
+                "The person made an unrecognized licensing choice.")
             self.context.translations_relicensing_agreement = False
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
