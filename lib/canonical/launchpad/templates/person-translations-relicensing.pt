@@ -19,7 +19,7 @@
         To help us with this, we&#8217;d like your permission to
         <strong>license all your translations</strong>,
         <a tal:attributes="href string:${context/fmt:url}">past</a> and future,
-        <strong>under the <a href="https://help.launchpad.net/BSDLicense"
+        <strong>under the <a href="https://help.launchpad.net/Legal/BSDLicense"
         >BSD&nbsp;license</a></strong>.
         We&#8217;ve chosen the BSD license because it&#8217;s universally
         compatible with projects that use other licenses.
