@@ -85,6 +85,7 @@ __all__ = [
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
+    'archive_to_person',
     ]
 
 import cgi
@@ -139,6 +140,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.build import (
     BuildStatus, IBuildSet)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
@@ -1120,10 +1122,13 @@ class IPersonRelatedSoftwareMenu(Interface):
 class PersonOverviewNavigationMenu(NavigationMenu):
     """The top-level menu of actions a Person may take."""
 
-    usedfor = IPerson
+    usedfor = IHasPersonNavigationMenu
     facet = 'overview'
-    title = 'Profile'
     links = ('profile', 'related_software', 'karma', 'show_ppa')
+
+    def __init__(self, context):
+        context = IPerson(context)
+        super(PersonOverviewNavigationMenu, self).__init__(context)
 
     def profile(self):
         target = '+index'
@@ -1141,9 +1146,30 @@ class PersonOverviewNavigationMenu(NavigationMenu):
         return Link(target, text)
 
     def show_ppa(self):
-        target = '+archive'
+        """Show the link to a Personal Package Archive.
+
+        The person's archive link changes depending on the status of the
+        archive and the privileges of the viewer.
+        """
+        archive = self.context.archive
+        has_archive = archive is not None
+        user_can_edit_archive = check_permission('launchpad.Edit',
+                                                 self.context)
+
         text = 'Personal Package Archive'
-        return Link(target, text)
+        summary = 'Browse Personal Package Archive packages.'
+        if has_archive:
+            target = '+archive'
+            enable_link = check_permission('launchpad.View', archive)
+        elif user_can_edit_archive:
+            summary = 'Activate Personal Package Archive'
+            target = '+activate-ppa'
+            enable_link = True
+        else:
+            target = '+archive'
+            enable_link = False
+
+        return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
 class PersonEditNavigationMenu(NavigationMenu):
@@ -4326,6 +4352,8 @@ class SourcePackageReleaseWithStats:
 class PersonPackagesView(LaunchpadView):
     """View for +packages."""
 
+    PACKAGE_LIMIT = 50
+
     def getLatestUploadedPPAPackagesWithStats(self):
         """Return the sourcepackagereleases uploaded to PPAs by this person.
 
@@ -4342,7 +4370,7 @@ class PersonPackagesView(LaunchpadView):
         # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
         # query is virtually impossible!
         results = []
-        for package in packages:
+        for package in packages[:self.PACKAGE_LIMIT]:
             # Make a shallow copy to remove the Zope security.
             archives = set(package.published_archives)
             # Ensure the SPR.upload_archive is also considered.
@@ -4355,16 +4383,16 @@ class PersonPackagesView(LaunchpadView):
 
     def getLatestMaintainedPackagesWithStats(self):
         """Return the latest maintained packages, including stats."""
-        return self._addStatsToPackages(
-            self.context.getLatestMaintainedPackages())
+        packages = self.context.getLatestMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def getLatestUploadedButNotMaintainedPackagesWithStats(self):
         """Return the latest uploaded packages, including stats.
 
         Don't include packages that are maintained by the user.
         """
-        return self._addStatsToPackages(
-            self.context.getLatestUploadedButNotMaintainedPackages())
+        packages = self.context.getLatestUploadedButNotMaintainedPackages()
+        return self._addStatsToPackages(packages[:self.PACKAGE_LIMIT])
 
     def _calculateBuildStats(self, package_releases):
         """Calculate failed builds and needs_build state.
@@ -4523,3 +4551,8 @@ class PersonApprovedMergesView(BranchMergeProposalListingView):
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no approved merges." % self.context.displayname
+
+
+def archive_to_person(archive):
+    """Adapts an `IArchive` to an `IPerson`."""
+    return IPerson(archive.owner)
