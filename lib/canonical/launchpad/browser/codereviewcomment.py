@@ -4,6 +4,7 @@ __all__ = [
     'CodeReviewCommentAddView',
     'CodeReviewCommentContextMenu',
     'CodeReviewCommentSummary',
+    'CodeReviewCommentView',
     ]
 
 from zope.interface import Interface
@@ -31,12 +32,31 @@ class CodeReviewCommentContextMenu(ContextMenu):
         return Link('+reply', 'Reply', icon='add')
 
 
-class CodeReviewCommentSummary(LaunchpadView):
+class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
+    # Should the comment be shown in full?
+    full_comment = True
+    # Show comment expanders?
+    show_expanders = False
+
+
+class CodeReviewCommentSummary(LaunchpadView):
+    """Summary view of a CodeReviewComment"""
+    __used_for__ = ICodeReviewComment
+
     # How many lines do we show in the main view?
-    SHORT_MESSAGE_LENGTH = 4
+    SHORT_MESSAGE_LENGTH = 3
+
+    # Show comment expanders?
+    show_expanders = True
+
+    # Should the comment be shown in full?
+    @property
+    def full_comment(self):
+        """Show the full comment if it is short."""
+        return not self.is_long_message
 
     @cachedproperty
     def _comment_lines(self):

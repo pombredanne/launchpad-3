@@ -2,32 +2,33 @@
    xmlns:tal="http://xml.zope.org/namespaces/tal"
    xmlns:metal="http://xml.zope.org/namespaces/metal"
    omit-tag="">
-  <div class="boardCommentSummary" tal:attributes="id string:comment${context/id}">
-    <div class="boardCommentDetails">
-      <tal:voted tal:condition="context/vote">
-        <strong tal:content="context/vote/title"
-                tal:condition="context/vote"
-                /><tal:colon condition="not: context/vote_tag"
-                >:</tal:colon>
-        <tal:has-tag condition="context/vote_tag">
-          &mdash;
-          <strong tal:content="context/vote_tag"
-                  tal:condition="context/vote_tag" />:
-        </tal:has-tag>
-      </tal:voted>
-      <tal:subject replace="context/message/subject" />
-    </div>
-    <div class="boardCommentBody">
-      <tal:short-message-view condition="view/message_summary|nothing">
-        <tal:message replace="structure view/message_summary/fmt:nice_pre" />
-        <tal:long-message condition="view/is_long_message">
-          (<a tal:attributes="href context/fmt:url" >full message</a>)
-        </tal:long-message>
-      </tal:short-message-view>
-      <tal:full-message-view condition="not: view/message_summary|nothing">
-        <tal:message replace="structure context/message/text_contents/fmt:nice_pre" />
-      </tal:full-message-view>
-    </div>
+  <div class="boardCommentSummary"
+       tal:attributes="id string:comment${context/id}"
+       tal:define="expanded_id string:comment-ex${context/id};
+                   contracted_id string:comment-ct${context/id};">
+    <tal:full-comment
+        define="comment context;
+                show_expander view/show_expanders;
+                expander_link string:/@@/treeExpanded;
+                long_message view/is_long_message|nothing;
+                display_style python: view.full_comment and 'display: block' or 'display: none';
+                id expanded_id;
+                message comment/message/text_contents;
+                ">
+      <div metal:use-macro="context/@@+macros/comment-display" />
+    </tal:full-comment>
+
+    <tal:short-comment condition="view/is_long_message|nothing"
+        define="comment context;
+                show_expander python: True;
+                expander_link string:/@@/treeCollapsed;
+                display_style python: 'display: block';
+                id contracted_id;
+                message view/message_summary|nothing;
+                ">
+      <div metal:use-macro="context/@@+macros/comment-display" />
+    </tal:short-comment>
+
   </div>
   <div class="clearfix">
     <div style="float:right">
@@ -41,4 +42,7 @@
     </div>
 
   </div>
+
+
+
 </tal:root>
