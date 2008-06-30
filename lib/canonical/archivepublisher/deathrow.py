@@ -260,12 +260,14 @@ class DeathRow:
         # Check source and binary publishing records.
         def check_source(pub_record):
             checkPubRecord(pub_record, SecureSourcePackagePublishingHistory)
+
         process_in_batches(
             condemned_source_files, check_source, self.logger,
             minimum_chunk_size=500)
 
         def check_binary(pub_record):
             checkPubRecord(pub_record, SecureBinaryPackagePublishingHistory)
+
         process_in_batches(
             condemned_binary_files, check_binary, self.logger,
             minimum_chunk_size=500)

@@ -13,14 +13,14 @@ __all__ = [
 import gc
 from operator import itemgetter
 
+from storm.zope.interfaces import IZStorm
+
 from zope.interface import implements
 from zope.component import getUtility
 
-from storm.zope.interfaces import IZStorm
-from canonical.mem import resident
-
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.mem import resident
 
 
 def count_alive(store, logger):
@@ -28,22 +28,29 @@ def count_alive(store, logger):
     counts = {}
     for obj_info in store._iter_alive():
         name = obj_info.cls_info.cls.__name__
-        try:
-            counts[name] += 1
-        except KeyError:
-            counts[name] = 1
+        counts[name] = counts.get(name, 0) + 1
 
     sorted_items = sorted(counts.items(), key=itemgetter(0), reverse=True)
     for (name, count) in sorted_items:
         logger.debug('%-20s %d' % (name, count))
 
 
-# XXX cprov 20080627: Here begins the hack. Storm + StupidCache are
-# not helping us iterating huge sets of records. The best result was
-# produced by performing the task in small batches with StupidCache
-# enabled and clearing caches with gc and clear_current_connection_cache.
-# All the other variations where tested and they are slow and consume
-# more memory.
+# Here begins the hack. Storm + StupidCache are not helping us iterating
+# huge sets of records. The best result was produced by performing the
+# task in small batches with StupidCache enabled and clearing caches with
+# gc and clear_current_connection_cache. All other tested variations were
+# slower and consumed more memory.
+#
+# 1 StupidCache + clear_current_connection_caches() [this];
+# 2 storm.Cache + clear_current_connection_caches() [no difference];
+# 3 StupidCache + store.invalidate(obj) [references left behind];
+# 4 stormCache + store.invlaidate(obj)  [references left behind];
+# 5 No batches [memory exhausted].
+
+# XXX cprov 20080630: If we decide to keep this code/functionality, which
+# I think we should, independently of the need to cleanup the cache after
+# processing each batch. We should generalize and test it as suggested in
+# bug #244328.
 
 class PublishingTunableLoop(object):
     """An `ITunableLoop` for dealing with huge publishing result sets."""
@@ -72,7 +79,7 @@ class PublishingTunableLoop(object):
         end = self.offset + chunk_size
 
         mem_size = resident() / (2 ** 20)
-        self.logger.debug("Batch (%d - %d) [%d MiB]" % (start, end, mem_size))
+        self.logger.debug("Batch (%d..%d) [%d MiB]" % (start, end, mem_size))
 
         batch = self.input[start:end]
         for pub in batch:
@@ -87,6 +94,7 @@ class PublishingTunableLoop(object):
         main_store.invalidate()
         gc.collect()
 
+        # Extra debug not necessary (unwanted, in fact) in production.
         # Print the number of 'alive' cache items.
         # count_alive(getUtility(IZStorm).get('main'), self.logger)
 
