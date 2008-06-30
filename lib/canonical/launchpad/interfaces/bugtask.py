@@ -608,6 +608,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         not a package task, returns None.
         """
 
+    def userCanEditMilestone(user):
+        """Can the user edit the Milestone field?"""
+
+    def userCanEditImportance(user):
+        """Can the user edit the Importance field?"""
+
 
 # Set Object schemas that were impossible to specify during the
 # definition of IBugTask itself.

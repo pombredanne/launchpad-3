@@ -837,6 +837,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return CustomLanguageCode.selectOneBy(
             product=self, language_code=language_code)
 
+    def userCanEdit(self, user):
+        """See `IProduct`."""
+        return (
+            user.inTeam(getUtility(ILaunchpadCelebrities).registry_experts) or
+            user.inTeam(getUtility(ILaunchpadCelebrities).admin) or
+            user.inTeam(self.owner))
 
 class ProductSet:
     implements(IProductSet)

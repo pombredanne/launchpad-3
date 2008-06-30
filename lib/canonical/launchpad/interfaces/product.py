@@ -420,6 +420,9 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         import purposes.
         """
 
+    def userCanEdit(user):
+        """Can the user edit this product?"""
+
 
 class IProductSet(Interface):
     """The collection of products."""
