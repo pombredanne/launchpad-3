@@ -2,47 +2,53 @@ __metaclass__ = type
 
 __all__ = [
     'CodeReviewCommentAddView',
-    'CodeReviewCommentView',
+    'CodeReviewCommentContextMenu',
     'CodeReviewCommentSummary',
     ]
 
 from zope.interface import Interface
 from zope.schema import Choice, Text, TextLine
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces import (
     CodeReviewVote, ICodeReviewComment)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, ContextMenu, enabled_with_permission,
+    LaunchpadFormView, LaunchpadView, Link)
+
+
+class CodeReviewCommentContextMenu(ContextMenu):
+    """Context menu for branches."""
+
+    usedfor = ICodeReviewComment
+    links = ['reply']
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def reply(self):
+        return Link('+reply', 'Reply', icon='add')
 
 
 class CodeReviewCommentSummary(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
-    @property
-    def first_line(self):
-        """Return the first line in the message.
+    # How many lines do we show in the main view?
+    SHORT_MESSAGE_LENGTH = 4
 
-        A trailing elipsis is added for messages with more than one line."""
-        lines = self.context.message.text_contents.splitlines()
-        if len(lines) == 0:
-            return ''
-        elif len(lines) == 1:
-            return lines[0]
-        else:
-            return lines[0].rstrip('.') + '...'
-
-
-class CodeReviewCommentView(LaunchpadView):
-    """Standard view of a CodeReviewComment"""
-    __used_for__ = ICodeReviewComment
+    @cachedproperty
+    def _comment_lines(self):
+        return self.context.message.text_contents.splitlines()
 
     @property
-    def reply_link(self):
-        """Location of the page for replying to this comment."""
-        return canonical_url(self.context, view_name='+reply')
+    def is_long_message(self):
+        return len(self._comment_lines) > self.SHORT_MESSAGE_LENGTH
+
+    @property
+    def message_summary(self):
+        return '\n'.join(self._comment_lines[:self.SHORT_MESSAGE_LENGTH])
 
 
 class IEditCodeReviewComment(Interface):
@@ -90,7 +96,8 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         comment = self.branch_merge_proposal.createComment(
             self.user, data['subject'], data['comment'], data['vote'],
             data['vote_tag'], self.reply_to)
-        self.next_url = canonical_url(comment)
+        # Always take the user back to the merge proposal itself.
+        self.next_url = canonical_url(self.branch_merge_proposal)
 
     @property
     def cancel_url(self):
