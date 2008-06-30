@@ -14,6 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.diskpool import DiskPool
+from canonical.archivepublisher.utils import process_in_batches
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
@@ -125,8 +126,7 @@ class DeathRow:
                   spph.status NOT IN %s)
         """ % sqlvalues(self.archive, UTC_NOW, self.archive,
                         ELIGIBLE_DOMINATION_STATES), orderBy="id")
-        sources = list(sources)
-        self.logger.debug("%d Sources" % len(sources))
+        self.logger.debug("%d Sources" % sources.count())
 
         binaries = BinaryPackagePublishingHistory.select("""
             BinaryPackagePublishingHistory.archive = %s AND
@@ -142,8 +142,7 @@ class DeathRow:
                   bpph.status NOT IN %s)
         """ % sqlvalues(self.archive, UTC_NOW, self.archive,
                         ELIGIBLE_DOMINATION_STATES), orderBy="id")
-        sources = list(sources)
-        self.logger.debug("%d Binaries" % len(sources))
+        self.logger.debug("%d Binaries" % binaries.count())
 
         return (sources, binaries)
 
@@ -259,13 +258,17 @@ class DeathRow:
                 condemned_records.add(pub_file.publishing_record)
 
         # Check source and binary publishing records.
-        content_files = (
-            (SecureSourcePackagePublishingHistory, condemned_source_files),
-            (SecureBinaryPackagePublishingHistory, condemned_binary_files))
+        def check_source(pub_record):
+            checkPubRecord(pub_record, SecureSourcePackagePublishingHistory)
+        process_in_batches(
+            condemned_source_files, check_source, self.logger,
+            minimum_chunk_size=500)
 
-        for publication_class, pub_records in content_files:
-            for pub_record in pub_records:
-                checkPubRecord(pub_record, publication_class)
+        def check_binary(pub_record):
+            checkPubRecord(pub_record, SecureBinaryPackagePublishingHistory)
+        process_in_batches(
+            condemned_binary_files, check_binary, self.logger,
+            minimum_chunk_size=500)
 
         self.logger.info(
             "Removing %s files marked for reaping" % len(condemned_files))
