@@ -36,19 +36,11 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-emails" />
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main" class="pillar">
 
-  <div
-    style="width: 200px; height: 200px; float: right;"
-    tal:content="structure context/image:mugshot"
-  />
+  <tal:mugshot replace="structure context/image:mugshot" />
 
-  <h1 tal:content="context/browsername">Some Person or Team</h1>
+  <h1 tal:content="context/browsername">Some Person</h1>
 
   <tal:is-valid-person tal:condition="context/is_valid_person">
     <div
@@ -111,7 +103,8 @@
         <tal:person condition="not: view/context_is_probably_a_team">
           <ul tal:condition="context/preferredemail">
             <li class="mail">
-              <span tal:replace="context/preferredemail/email">foo@bar.com</span>
+              <tal:email
+                replace="context/preferredemail/email">foo@bar.com</tal:email>
               <a
                 tal:condition="context/required:launchpad.Edit"
                 tal:define="link context/menu:overview/editemailaddresses"
