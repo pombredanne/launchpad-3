@@ -28,12 +28,12 @@ __all__ = [
     'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
-    'ISelectResultsSlicable',
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
 from zope.component import getUtility
@@ -41,23 +41,29 @@ from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, List, Object, Text, TextLine)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from sqlos.interfaces import ISelectResults
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ProductNameField, PublicPersonChoice,
-    StrippedTextLine, Summary, Tag)
+    BugField, ProductNameField, PublicPersonChoice, StrippedTextLine, Summary,
+    Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+from canonical.lazr.interface import copy_field
+from canonical.lazr.rest.declarations import (
+    REQUEST_USER, call_with, export_as_webservice_entry, export_operation_as,
+    export_write_operation, exported, operation_parameters,
+    rename_parameters_as, webservice_error)
+from canonical.lazr.fields import CollectionField, Reference
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -295,12 +301,24 @@ class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
 
 
+class UserCannotEditBugTaskStatus(Unauthorized):
+    """User not permitted to change status.
+
+    Raised when a user tries to transition to a new status who doesn't
+    have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
+    export_as_webservice_entry()
 
     id = Int(title=_("Bug Task #"))
-    bug = Int(title=_("Bug #"))
-    product = Choice(title=_('Project'), required=False, vocabulary='Product')
+    bug = exported(
+        BugField(title=_("Bug"), readonly=True))
+    product = Choice(
+        title=_('Project'), required=False, vocabulary='Product')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
@@ -319,21 +337,26 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
-    status = Choice(
-        title=_('Status'), vocabulary=BugTaskStatus,
-        default=BugTaskStatus.NEW)
-    importance = Choice(
-        title=_('Importance'), vocabulary=BugTaskImportance,
-        default=BugTaskImportance.UNDECIDED)
+    status = exported(
+        Choice(title=_('Status'), vocabulary=BugTaskStatus,
+               default=BugTaskStatus.NEW, readonly=True))
+    importance = exported(
+        Choice(title=_('Importance'), vocabulary=BugTaskImportance,
+               default=BugTaskImportance.UNDECIDED))
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
-    assignee = PublicPersonChoice(
-        title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
-    bugtargetdisplayname = Text(
-        title=_("The short, descriptive name of the target"), readonly=True)
-    bugtargetname = Text(
-        title=_(
-            "The target as presented in mail notifications"), readonly=True)
+    assignee = exported(
+        PublicPersonChoice(title=_('Assigned to'), required=False,
+                           vocabulary='ValidAssignee',
+                           readonly=True))
+    bugtargetdisplayname = exported(
+        Text(title=_("The short, descriptive name of the target"),
+             readonly=True),
+        exported_as='bug_target_display_name')
+    bugtargetname = exported(
+        Text(title=_("The target as presented in mail notifications"),
+             readonly=True),
+        exported_as='bug_target_name')
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -341,56 +364,81 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
         "the status of this bug task in Launchpad."))
-    date_assigned = Datetime(
-        title=_("Date Assigned"),
-        description=_("The date on which this task was assigned to someone."))
-    datecreated = Datetime(
-        title=_("Date Created"),
-        description=_("The date on which this task was created."))
-    date_confirmed = Datetime(
-        title=_("Date Confirmed"),
-        description=_("The date on which this task was marked Confirmed."))
-    date_inprogress = Datetime(
-        title=_("Date In Progress"),
-        description=_("The date on which this task was marked In Progress."))
-    date_closed = Datetime(
-        title=_("Date Closed"),
-        description=_(
-            "The date on which this task was marked either Fix Committed or "
-            "Fix Released."))
-    date_left_new = Datetime(
-        title=_("Date left new"),
-        description=_(
-            "The date on which this task was marked with a status "
-            "higher than New."))
-    date_triaged = Datetime(
-        title=_("Date Triaged"),
-        description=_(
-            "The date on which this task was marked Triaged."))
-    date_fix_committed = Datetime(
-        title=_("Date Fix Committed"),
-        description=_(
-            "The date on which this task was marked Fix Committed."))
-    date_fix_released = Datetime(
-        title=_("Date Fix Relesaed"),
-        description=_(
-            "The date on which this task was marked Fix Released."))
-    age = Datetime(
-        title=_("Age"),
-        description=_(
-            "The age of this task, expressed as the length of time between "
-            "datecreated and now."))
-    owner = Int()
-    target = Object(
-        title=_('Target'), required=False,
-        description=_("The software in which this bug should be fixed."),
-        schema=IBugTarget)
+    date_assigned = exported(
+        Datetime(title=_("Date Assigned"),
+                 description=_("The date on which this task was assigned "
+                               "to someone."),
+                 readonly=True,
+                 required=False))
+    datecreated = exported(
+        Datetime(title=_("Date Created"),
+                 description=_("The date on which this task was created."),
+                 readonly=True),
+        exported_as='date_created')
+    date_confirmed = exported(
+        Datetime(title=_("Date Confirmed"),
+                 description=_("The date on which this task was marked "
+                               "Confirmed."),
+                 readonly=True,
+                 required=False))
+    date_inprogress = exported(
+        Datetime(title=_("Date In Progress"),
+                 description=_("The date on which this task was marked "
+                               "In Progress."),
+                 readonly=True,
+                 required=False),
+        exported_as='date_in_progress')
+    date_closed = exported(
+        Datetime(title=_("Date Closed"),
+                 description=_("The date on which this task was marked "
+                               "either Fix Committed or Fix Released."),
+                 readonly=True,
+                 required=False))
+    date_left_new = exported(
+        Datetime(title=_("Date left new"),
+                 description=_("The date on which this task was marked "
+                               "with a status higher than New."),
+                 readonly=True,
+                 required=False))
+    date_triaged = exported(
+        Datetime(title=_("Date Triaged"),
+                 description=_("The date on which this task was marked "
+                               "Triaged."),
+                 readonly=True,
+                 required=False))
+    date_fix_committed = exported(
+        Datetime(title=_("Date Fix Committed"),
+                 description=_("The date on which this task was marked "
+                               "Fix Committed."),
+                 readonly=True,
+                 required=False))
+    date_fix_released = exported(
+        Datetime(title=_("Date Fix Relesaed"),
+                 description=_("The date on which this task was marked "
+                               "Fix Released."),
+                 readonly=True,
+                 required=False))
+    age = Datetime(title=_("Age"),
+                   description=_("The age of this task, expressed as the "
+                                 "length of time between the creation date "
+                                 "and now."))
+    owner = exported(
+        Reference(title=_("The owner"), schema=IPerson))
+    target = Reference(
+        title=_('Target'), required=True, schema=IBugTarget,
+        description=_("The software in which this bug should be fixed."))
     target_uses_malone = Bool(
         title=_("Whether the bugtask's target uses Launchpad officially"))
-    title = Text(title=_("The title of the bug related to this bugtask"),
-                         readonly=True)
-    related_tasks = Attribute("IBugTasks related to this one, namely other "
-                              "IBugTasks on the same IBug.")
+    title = exported(
+        Text(title=_("The title of the bug related to this bugtask"),
+             readonly=True))
+    related_tasks = exported(
+        CollectionField(
+            description=_(
+                "IBugTasks related to this one, namely other "
+                "IBugTasks on the same IBug."),
+            value_type=Reference(schema=Interface), # Will be specified later.
+            readonly=True))
     pillar = Choice(
         title=_('Pillar'),
         description=_("The LP pillar (product or distribution) "
@@ -416,9 +464,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     conjoined_slave = Attribute(
         "The generic bugtask in a conjoined relationship")
 
-    is_complete = Attribute(
-        "True or False depending on whether or not there is more work "
-        "required on this bug task.")
+    is_complete = exported(
+        Bool(description=_(
+                "True or False depending on whether or not there is more "
+                " work required on this bug task."),
+             readonly=True))
 
     def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
@@ -487,6 +537,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         be a bug supervisor or the owner of the project.
         """
 
+    @rename_parameters_as(new_status='status')
+    @operation_parameters(
+        new_status=copy_field(status))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
     def transitionToStatus(new_status, user):
         """Perform a workflow transition to the new_status.
 
@@ -501,6 +556,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         See `canTransitionToStatus` for more details.
         """
 
+    @operation_parameters(
+        assignee=copy_field(assignee))
+    @export_write_operation()
     def transitionToAssignee(assignee):
         """Perform a workflow transition to the given assignee.
 
@@ -549,6 +607,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         package in that distribution's current series. If the task is
         not a package task, returns None.
         """
+
+
+# Set Object schemas that were impossible to specify during the
+# definition of IBugTask itself.
+IBugTask['related_tasks'].value_type.schema = IBugTask
 
 
 class INullBugTask(IBugTask):
@@ -780,18 +843,6 @@ class IProductSeriesBugTask(IBugTask):
     productseries = Choice(
         title=_("Series"), required=True,
         vocabulary='ProductSeries')
-
-
-# XXX: Brad Bollenbach 2005-02-03 bugs=121:
-# This interface should be removed when spiv pushes a fix upstream for
-# the bug that makes this hackery necessary.
-class ISelectResultsSlicable(ISelectResults):
-    """ISelectResults (from SQLOS) should be specifying __getslice__.
-
-    This interface defines the missing __getslice__ method.
-    """
-    def __getslice__(i, j):
-        """Called to implement evaluation of self[i:j]."""
 
 
 class BugTaskSearchParams:
@@ -1044,6 +1095,21 @@ class IBugTaskSet(Interface):
         update-bugtask-targetnamecaches.
         """
 
+    def getBugCountsForPackages(user, packages):
+        """Return open bug counts for the list of packages.
+
+        :param user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the count.
+        :param packages: A list of `IDistributionSourcePackage`
+            instances.
+
+        :return: A list of dictionaries, where each dict contains:
+            'package': The package the bugs are open on.
+            'open': The number of open bugs.
+            'open_critical': The number of open critical bugs.
+            'open_unassigned': The number of open unassigned bugs.
+            'open_inprogress': The number of open bugs that are In Progress.
+        """
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""

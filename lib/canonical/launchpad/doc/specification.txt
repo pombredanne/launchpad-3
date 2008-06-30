@@ -15,7 +15,7 @@ IMilestoneSet can be accessed as a utility.
 To create a new Specification, use ISpecificationSet.new:
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, SpecificationDefinitionStatus, 
+    ...     IProductSet, SpecificationDefinitionStatus,
     ...     SpecificationImplementationStatus, SpecificationPriority)
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
@@ -288,12 +288,20 @@ mapping between them.
     <SpecificationDependency at ...>
     >>> deps_dict = specset.getDependencyDict(
     ...     [spec_a, spec_b, spec_c, spec_d])
-    >>> for spec_id in sorted(deps_dict.keys()):
+    >>> spec_deps = [(specset.get(key).name, value) for
+    ...              (key,value) in deps_dict.items()]
+    >>> for (spec_name, deps) in sorted(spec_deps):
     ...     print '%s --> %s' % (
-    ...         specset.get(spec_id).name,
-    ...         ', '.join(spec.name for spec in deps_dict[spec_id]))
+    ...         spec_name,
+    ...         ', '.join([dep.name for dep in deps]))
     spec-a --> spec-b, spec-c
     spec-c --> spec-d
+
+
+Passing in an empty sequences returns an empty dict:
+
+    >>> specset.getDependencyDict([])
+    {}
 
 
 == Specification Subscriptions ==

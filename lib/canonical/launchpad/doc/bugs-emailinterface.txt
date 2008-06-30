@@ -1483,6 +1483,62 @@ Invalid assignee:
 
     >>> stub.test_emails = []
 
+== Multiple Commands ==
+
+An email can contain multiple commands, even for different bugs.
+
+    >>> def print_bugtask_modified_event(bugtask, event):
+    ...     old_bugtask = event.object_before_modification
+    ...     print "event: bug %i %s => %s" % (bugtask.bug.id,
+    ...         old_bugtask.status.title, bugtask.status.title)
+    ...     print "event: bug %i %s => %s" % (bugtask.bug.id,
+    ...         old_bugtask.importance.title, bugtask.importance.title)
+    >>> def print_bugtask_created_event(bugtask, event):
+    ...     print "event: new bugtask, bug %i %s" % (bugtask.bug.id,
+    ...         bugtask.status.title)
+    ...     print "event: new bugtask, bug %i %s" % (bugtask.bug.id,
+    ...         bugtask.importance.title)
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.interfaces.bug import IBug
+    >>> from canonical.launchpad.interfaces.bugtask import IBugTask
+    >>> bugtask_modified_listener = TestEventListener(
+    ...     IBugTask, ISQLObjectModifiedEvent, print_bugtask_modified_event)
+    >>> bugtask_created_listener = TestEventListener(
+    ...     IBugTask, ISQLObjectCreatedEvent, print_bugtask_created_event)
+    >>> bug_four_upstream_task = bug_four.bugtasks[0]
+    >>> print bug_four_upstream_task.status.name
+    NEW
+    >>> print bug_four_upstream_task.importance.name
+    CRITICAL
+    >>> bug_five_upstream_task = bug_five.bugtasks[0]
+    >>> print bug_five_upstream_task.status.name
+    NEW
+    >>> print bug_five_upstream_task.importance.name
+    CRITICAL
+    >>> submit_commands(bug_four,
+    ...     'bug 4', 'status confirmed', 'importance medium',
+    ...     'bug new', 'affects firefox', 'summary blah', 'status new',
+    ...     'importance high',
+    ...     'bug 5', 'status fixreleased', 'importance high')
+    event: bug 4 New => Confirmed
+    event: bug 4 Critical => Medium
+    event: bug 5 New => Fix Released
+    event: bug 5 Critical => High
+    >>> print bug_four_upstream_task.status.name
+    CONFIRMED
+    >>> print bug_four_upstream_task.importance.name
+    MEDIUM
+    >>> print bug_five_upstream_task.status.name
+    FIXRELEASED
+    >>> print bug_five_upstream_task.importance.name
+    HIGH
+
+    >>> bugtask_modified_listener.unregister()
+    >>> bugtask_created_listener.unregister()
+
+
 == Default 'affects' target ==
 
 Most of the time it's not necessary to give the 'affects' command. If
@@ -2168,8 +2224,39 @@ A bugnotification is sent for each attached file.
     ** Attachment added: "firefox1.log"
        http://.../firefox1.log
 
-If the content-disposition header of a message part begins with 
-"attachment" it is stored as a bug attachment, even if the 
+If a text/html attachment does not have a filename, it is not stored.
+This is the HTML representation of the main text, it is not an
+attachment.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... This is an absolutely terrible bug.
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-type: text/html
+    ...
+    ... <html>
+    ...   <BLOCKQUOTE><FONT COLOR="#FF0000">
+    ...     This is an absolutely terrible bug.
+    ...   </FONT></BLOCKQUOTE>
+    ... </html>
+    ... --BOUNDARY"""
+    >>>
+    >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    No attachments
+
+If the content-disposition header of a message part begins with
+"attachment" it is stored as a bug attachment, even if the
 content-disposition header does not provide a filename.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>

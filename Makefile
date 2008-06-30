@@ -12,8 +12,6 @@ TESTOPTS=
 
 SHHH=${PYTHON} utilities/shhh.py
 STARTSCRIPT=runlaunchpad.py
-Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
-TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
 LPCONFIG=development
@@ -22,6 +20,11 @@ CONFFILE=configs/${LPCONFIG}/launchpad.conf
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
+
+APPSERVER_ENV = \
+  LPCONFIG=${LPCONFIG} \
+  PYTHONPATH=$(PYTHONPATH) \
+  STORM_CEXTENSIONS=1
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -35,6 +38,8 @@ newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
 check_launchpad_on_merge: build dbfreeze_check check check_sourcecode_dependencies
+
+check_launchpad_storm_on_merge: check_launchpad_on_merge
 
 check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
@@ -78,7 +83,7 @@ check_merge_edge: dbfreeze_check check_merge
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
 
-check: build
+check: build bzr_version_info
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
@@ -130,20 +135,17 @@ ftest_inplace: inplace
 
 run: inplace stop bzr_version_info
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) \
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,google-webservice -C $(CONFFILE)
 
 run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) \
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse,google-webservice \
 		 -C $(CONFFILE)
 
 run_all_quickly_and_quietly: stop_quickly_and_quietly
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) \
+	$(APPSERVER_ENV) $(PYTHON) -t $(STARTSCRIPT) \
 		 -r librarian,restricted-librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
 		 -C $(CONFFILE) > /tmp/${LPCONFIG}-quiet.log 2>&1
 
@@ -175,18 +177,17 @@ bzr_version_info:
 # exiting, as running 'make stop' too soon after running 'make start'
 # will not work as expected.
 start: inplace stop bzr_version_info
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
-		 nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
+	$(APPSERVER_ENV) nohup $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE) \
 		 > ${LPCONFIG}-nohup.out 2>&1 &
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
 stop: build
-	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
+	@ $(APPSERVER_ENV) ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
 stop_quickly_and_quietly:
-	LPCONFIG=${LPCONFIG} ${PYTHON} \
+	@ $(APPSERVER_ENV) ${PYTHON} \
 	  utilities/killservice.py librarian buildsequencer launchpad mailman \
 	  > /dev/null 2>&1
 
@@ -200,17 +201,17 @@ scheduleoutage:
 	sleep ${MINS_TO_SHUTDOWN}m
 
 harness:
-	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
+	$(APPSERVER_ENV) $(PYTHON) -i lib/canonical/database/harness.py
 
 iharness:
-	PYTHONPATH=lib $(IPYTHON) -i lib/canonical/database/harness.py
+	$(APPSERVER_ENV) $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PYTHON) database/schema/fti.py -d launchpad_dev --force
 
 debug:
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
+	$(APPSERVER_ENV) \
 		 $(PYTHON) -i -c \ "from zope.app import Application;\
 		    app = Application('Data.fs', 'site.zcml')()"
 
@@ -274,5 +275,6 @@ tags:
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches check_loggerhead_on_merge reload-apache
+		sync_branches check_loggerhead_on_merge reload-apache \
+		check_launchpad_storm_on_merge
 

@@ -662,8 +662,8 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     ...     bug = bugtask.bug
     ...     print '%s %s [%s comments]' % (
     ...     bug.id, bug.title, bug.message_count)
-    2 Blackhole Trash folder [3 comments]
-    1 Firefox does not support SVG [2 comments]
+    2 Blackhole Trash folder [5 comments]
+    1 Firefox does not support SVG [3 comments]
     10 another test bug [2 comments]
     9 Thunderbird crashes [1 comments]
     19 Bug to be fixed in trunk [0 comments]

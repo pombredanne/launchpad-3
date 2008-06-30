@@ -21,25 +21,112 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.sqlbase import cursor, sqlvalues
 
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import (
-    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, EmailAddressStatus,
-    IBranchSet, IEmailAddressSet, IPersonSet, IProductSet, IWikiNameSet)
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
+from canonical.launchpad.interfaces.branch import (
+    BranchType, BRANCH_NAME_VALIDATION_ERROR_MESSAGE, IBranchSet)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.person import IPersonSet
+from canonical.launchpad.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.wikiname import IWikiNameSet
+from canonical.launchpad.testing import TestCaseWithFactory
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+    IUserDetailsStorageV2, LAUNCHPAD_SERVICES, READ_ONLY, WRITABLE)
 from canonical.authserver.database import (
     DatabaseBranchDetailsStorage, DatabaseUserDetailsStorage,
     DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
-    PERMISSION_DENIED_FAULT_CODE)
+    PERMISSION_DENIED_FAULT_CODE, run_as_requester, writing_transaction)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 
-from canonical.testing.layers import LaunchpadScriptLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 
 
 UTC = pytz.timezone('UTC')
+
+
+def get_logged_in_username():
+    """Return the username of the logged in person.
+
+    Used by `TestRunAsRequester`.
+    """
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return None
+    return user.name
+
+
+class TestRunAsRequester(TestCaseWithFactory):
+    """Tests for the `run_as_requester` decorator."""
+
+    layer = LaunchpadFunctionalLayer
+
+    class UsesLogin:
+        """Example class used for testing `run_as_requester`."""
+
+        def _getPerson(self, login_id):
+            return getUtility(IPersonSet).getByName(login_id)
+
+        @run_as_requester
+        def getLoggedInUsername(self, requester):
+            return get_logged_in_username()
+
+        @run_as_requester
+        def getRequestingUser(self, requester):
+            """Return the requester."""
+            return requester
+
+        @run_as_requester
+        def raiseException(self, requester):
+            raise RuntimeError("Deliberately raised error.")
+
+    def setUp(self):
+        super(TestRunAsRequester, self).setUp()
+        self.person = self.factory.makePerson()
+        transaction.commit()
+        self.example = self.UsesLogin()
+
+    def test_loginAsRequester(self):
+        # run_as_requester logs in as user given as the first argument to the
+        # method being decorated.
+        username = self.example.getLoggedInUsername(self.person.name)
+        self.assertEqual(self.person.name, username)
+
+    def test_logoutAtEnd(self):
+        # run_as_requester logs out once the decorated method is finished.
+        self.example.getLoggedInUsername(self.person.name)
+        self.assertEqual(None, get_logged_in_username())
+
+    def test_logoutAfterException(self):
+        # run_as_requester logs out even if the decorated method raises an
+        # exception.
+        try:
+            self.example.raiseException(self.person.name)
+        except RuntimeError:
+            pass
+        self.assertEqual(None, get_logged_in_username())
+
+    def test_passesRequesterInAsPerson(self):
+        # run_as_requester passes in the Launchpad Person object of the
+        # requesting user.
+        user = self.example.getRequestingUser(self.person.name)
+        self.assertEqual(self.person.name, user.name)
+
+    def test_cheatsForLaunchpadServices(self):
+        # Various Launchpad services need to use the authserver to get
+        # information about branches, unencumbered by petty restrictions of
+        # ownership or privacy. `run_as_requester` detects the special
+        # username `LAUNCHPAD_SERVICES` and passes that through to the
+        # decorated function without logging in.
+        username = self.example.getRequestingUser(LAUNCHPAD_SERVICES)
+        self.assertEqual(LAUNCHPAD_SERVICES, username)
+        login_id = self.example.getLoggedInUsername(LAUNCHPAD_SERVICES)
+        self.assertEqual(None, login_id)
 
 
 class DatabaseTest(unittest.TestCase):
@@ -69,10 +156,11 @@ class DatabaseTest(unittest.TestCase):
         :param branch_id: The id of a row in the Branch table. An int.
         :return: A timestamp or None.
         """
-        self.cursor.execute(
+        cur = cursor()
+        cur.execute(
             "SELECT next_mirror_time FROM branch WHERE id = %s"
             % sqlvalues(branch_id))
-        return self.cursor.fetchone()[0]
+        return cur.fetchone()[0]
 
     def setNextMirrorTime(self, branch_id, next_mirror_time):
         """Set next_mirror_time on the branch with the given id."""
@@ -247,11 +335,13 @@ class UserDetailsStorageTest(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
-            UPDATE Person SET password = '%s'
-            WHERE id = (SELECT person FROM EmailAddress WHERE email =
-                        'justdave@bugzilla.org')'''
-            % (ssha,))
+        self.cursor.execute("""
+            INSERT INTO AccountPassword (account, password)
+            VALUES (
+                (SELECT account FROM EmailAddress
+                WHERE email='justdave@bugzilla.org'), %s
+                )
+            """ % sqlvalues(ssha))
         userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
@@ -267,14 +357,12 @@ class UserDetailsStorageTest(DatabaseTest):
         self.assertEqual(goodDict, userDict)
 
         # Unicode email addresses are handled too.
-        self.cursor.execute(
+        cur = cursor()
+        cur.execute(
             "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  '%s', "
-            "  2)"  # 2 == Validated
-            % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
-        )
+            "VALUES (1, %s, 2)"  # 2 == Validated
+            % sqlvalues(u'm\xe3rk@hbd.com'))
+        transaction.commit()
         userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
         goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
         self.assertEqual(goodDict, userDict)
@@ -374,6 +462,12 @@ class XMLRPCTestHelper:
 class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
     """Tests for the implementation of `IHostedBranchStorage`."""
 
+    def setUp(self):
+        super(HostedBranchStorageTest, self).setUp()
+        self.factory = LaunchpadObjectFactory()
+        self.arbitrary_person = self.factory.makePerson()
+        transaction.commit()
+
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IBranchDetailsStorage,
                                      DatabaseBranchDetailsStorage(None)))
@@ -395,7 +489,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             """
             % branchID)
         self.assertEqual(
-            ['name12', 'firefox', 'foo', None, None, 12], cur.fetchone())
+            ('name12', 'firefox', 'foo', None, None, 12), cur.fetchone())
 
     def test_createBranch_junk(self):
         # Create a branch with NULL product too:
@@ -412,7 +506,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             """
             % branchID)
         self.assertEqual(
-            ['sabdfl', None, 'foo', None, None, 1], cur.fetchone())
+            ('sabdfl', None, 'foo', None, None, 1), cur.fetchone())
 
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
@@ -458,7 +552,6 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             NOT_FOUND_FAULT_CODE, message,
             storage._createBranchInteraction,
             12, 'no-one', 'no-such-product', 'branch')
-
 
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)
@@ -614,17 +707,92 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
 
+    def test_getBranchInformationAsLaunchpadServices(self):
+        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
+        # branches.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            LAUNCHPAD_SERVICES, 'name12', 'gnome-terminal', 'pushed')
+        self.assertEqual(25, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformationForPrivateAsLaunchpadServices(self):
+        # The LAUNCHPAD_SERVICES special "user" has read-only access to all
+        # branches, even private ones.
+        store = DatabaseUserDetailsStorageV2(None)
+
+        # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
+        branch_id = store._createBranchInteraction(
+            'salgado', 'landscape-developers', 'landscape',
+            'some-branch')
+        login(ANONYMOUS)
+        try:
+            branch = getUtility(IBranchSet).get(branch_id)
+            self.assertTrue(
+                removeSecurityProxy(branch).private,
+                "%r not private" % (branch,))
+        finally:
+            logout()
+        branch_info = store._getBranchInformationInteraction(
+            LAUNCHPAD_SERVICES, 'landscape-developers', 'landscape',
+            'some-branch')
+        self.assertEqual((branch_id, 'r'), branch_info)
+
+    @writing_transaction
+    def _makeProductWithPrivateDevFocus(self):
+        """Make a product with a private development focus.
+
+        :return: The new Product and the new Branch.
+        """
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        series = removeSecurityProxy(product.development_focus)
+        series.user_branch = branch
+        removeSecurityProxy(branch).private = True
+        return product, branch
+
+    def test_getDefaultStackedOnBranch_invisible(self):
+        # When the default stacked-on branch for a product is not visible to
+        # the requesting user, then we return the empty string.
+        product, branch = self._makeProductWithPrivateDevFocus()
+        store = DatabaseUserDetailsStorageV2(None)
+        stacked_on_url = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, product.name)
+        self.assertEqual('', stacked_on_url)
+
+    def test_getDefaultStackedOnBranch_private(self):
+        # When the default stacked-on branch for a product is private but
+        # visible to the requesting user, we return the URL to the branch
+        # relative to the host.
+        product, branch = self._makeProductWithPrivateDevFocus()
+        # We want to know who owns it and what its name is. We are a test and
+        # should be allowed to know such things.
+        branch = removeSecurityProxy(branch)
+        store = DatabaseUserDetailsStorageV2(None)
+        stacked_on_url = store._getDefaultStackedOnBranchInteraction(
+            branch.owner.id, product.name)
+        self.assertEqual('/' + branch.unique_name, stacked_on_url)
+
     def test_getDefaultStackedOnBranch_junk(self):
         # getDefaultStackedOnBranch returns the empty string for '+junk'.
         store = DatabaseUserDetailsStorageV2(None)
-        branch = store._getDefaultStackedOnBranchInteraction('+junk')
+        branch = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, '+junk')
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_none_set(self):
         # getDefaultStackedOnBranch returns the empty string when there is no
         # branch set.
         store = DatabaseUserDetailsStorageV2(None)
-        branch = store._getDefaultStackedOnBranchInteraction('firefox')
+        branch = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, 'firefox')
         self.assertEqual('', branch)
 
     def test_getDefaultStackedOnBranch_no_product(self):
@@ -635,14 +803,16 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         self.assertRaisesFault(
             NOT_FOUND_FAULT_CODE,
             'Project %r does not exist.' % (product,),
-            store._getDefaultStackedOnBranchInteraction, product)
+            store._getDefaultStackedOnBranchInteraction,
+            self.arbitrary_person.id, product)
 
     def test_getDefaultStackedOnBranch(self):
-        # getDefaultStackedOnBranch returns the empty string when there is no
-        # branch set.
+        # getDefaultStackedOnBranch returns the relative URL of the default
+        # stacked-on branch for the named product.
         store = DatabaseUserDetailsStorageV2(None)
-        branch = store._getDefaultStackedOnBranchInteraction('evolution')
-        self.assertEqual('~vcs-imports/evolution/main', branch)
+        branch = store._getDefaultStackedOnBranchInteraction(
+            self.arbitrary_person.id, 'evolution')
+        self.assertEqual('/~vcs-imports/evolution/main', branch)
 
     def test_initialMirrorRequest(self):
         # The default 'next_mirror_time' for a newly created hosted branch
@@ -662,6 +832,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
         [current_db_time] = cur.fetchone()
+        transaction.commit()
 
         storage = DatabaseUserDetailsStorageV2(None)
         storage._requestMirrorInteraction(1, hosted_branch_id)
@@ -689,6 +860,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
         [current_db_time] = cur.fetchone()
+        transaction.commit()
 
         store._requestMirrorInteraction(salgado.id, branch_id)
         self.assertTrue(
@@ -763,11 +935,13 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorageV2(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
-            UPDATE Person SET password = '%s'
-            WHERE id = (SELECT person FROM EmailAddress
-                        WHERE email = 'justdave@bugzilla.org')'''
-            % (ssha,))
+        self.cursor.execute("""
+            INSERT INTO AccountPassword (account, password)
+            VALUES (
+                (SELECT account FROM EmailAddress
+                WHERE email = 'justdave@bugzilla.org'), %s
+                )
+            """, (ssha,))
         userDict = storage._authUserInteraction(
             'justdave@bugzilla.org', 'supersecret!')
         self.assertEqual({}, userDict)
@@ -836,10 +1010,11 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(success, True)
 
         # verify that last_mirror_attempt is set
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[1], None)
 
@@ -868,11 +1043,12 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage._mirrorFailedInteraction(1, "failed")
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures,
                 mirror_status_message
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 1)
@@ -892,11 +1068,12 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures,
                    last_mirrored_id
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
@@ -911,10 +1088,11 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
@@ -929,10 +1107,11 @@ class BranchDetailsStorageTest(DatabaseTest):
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
         self.assertEqual(success, True, '_recordSuccessInteraction failed')
 
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT name, hostname, date_started, date_completed
                 FROM ScriptActivity where name = 'test-recordsuccess'""")
-        row = self.cursor.fetchone()
+        row = cur.fetchone()
         self.assertEqual(row[0], 'test-recordsuccess')
         self.assertEqual(row[1], 'vostok')
         self.assertEqual(row[2], started.replace(tzinfo=None))
@@ -942,7 +1121,7 @@ class BranchDetailsStorageTest(DatabaseTest):
 class BranchPullQueueTest(BranchTestCase):
     """Tests for the pull queue methods of `IBranchDetailsStorage`."""
 
-    layer = LaunchpadScriptLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         LaunchpadScriptLayer.switchDbConfig('authserver')
@@ -973,10 +1152,12 @@ class BranchPullQueueTest(BranchTestCase):
 
     def makeBranchAndRequestMirror(self, branch_type):
         """Make a branch of the given type and call requestMirror on it."""
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
         transaction.begin()
         branch = self.makeBranch(branch_type)
         branch.requestMirror()
         transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('authserver')
         return branch
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):

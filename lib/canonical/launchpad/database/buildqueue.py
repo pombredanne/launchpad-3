@@ -22,8 +22,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBuildQueue, IBuildQueueSet, NotFoundError,
-    PackagePublishingPocket, SourcePackageUrgency)
+    ArchivePurpose, BuildStatus, IBuildQueue, IBuildQueueSet,
+    NotFoundError, PackagePublishingPocket, SourcePackageUrgency)
 
 
 class BuildQueue(SQLBase):
@@ -145,6 +145,11 @@ class BuildQueue(SQLBase):
 
         private_archive_increment = 10000
 
+        # For build jobs in rebuild archives a score value of 4 was chosen
+        # because a minimum score of 5 is likely to be attained by any
+        # package with a "LOW" urgency or a waiting time of 5 minutes.
+        rebuild_archive_score = 4
+
         score = 0
         msg = "%s (%d) -> " % (self.build.title, self.lastscore)
 
@@ -153,6 +158,9 @@ class BuildQueue(SQLBase):
         # otherwise.
         if self.build.sourcepackagerelease.section.name == 'translations':
             msg += "LPack => score zero"
+        elif self.build.archive.purpose == ArchivePurpose.REBUILD:
+            score = rebuild_archive_score
+            msg += "Rebuild archive => low score"
         else:
             # Calculates the urgency-related part of the score.
             urgency = score_urgency[self.urgency]
@@ -217,7 +225,7 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder = builder
         self.buildstart = UTC_NOW
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.forceState(BuildStatus.BUILDING)
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
@@ -227,7 +235,7 @@ class BuildQueue(SQLBase):
             % (self.builder.url, self.build.title))
         self.builder = None
         self.buildstart = None
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        self.build.forceState(BuildStatus.NEEDSBUILD)
 
     def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):
@@ -245,7 +253,7 @@ class BuildQueue(SQLBase):
         self.builder.cleanSlave()
         self.builder = None
         self.buildstart = None
-        self.build.buildstate = BuildStatus.BUILDING
+        self.build.forceState(BuildStatus.BUILDING)
 
 
 class BuildQueueSet(object):

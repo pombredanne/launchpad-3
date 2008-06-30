@@ -82,6 +82,13 @@ class BugNavigation(Navigation):
             # in future this should look up by (bug.id, watch.seqnum)
             return getUtility(IBugWatchSet)[name]
 
+    @stepthrough('+subscription')
+    def traverse_subscriptions(self, person_name):
+        """Retrieve a BugSubscription by person name."""
+        for subscription in self.context.subscriptions:
+            if subscription.person.name == person_name:
+                return subscription
+
 
 class BugFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an `IBug`.
@@ -124,18 +131,18 @@ class BugContextMenu(ContextMenu):
 
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
-        text = 'Edit description/tags'
+        text = 'Update description / tags'
         return Link('+edit', text, icon='edit')
 
     def visibility(self):
         """Return the 'Set privacy/security' Link."""
         text = 'Set privacy/security'
-        return Link('+secrecy', text, icon='edit')
+        return Link('+secrecy', text)
 
     def markduplicate(self):
         """Return the 'Mark as duplicate' Link."""
         text = 'Mark as duplicate'
-        return Link('+duplicate', text, icon='edit')
+        return Link('+duplicate', text)
 
     def addupstream(self):
         """Return the 'lso affects project' Link."""
@@ -193,7 +200,10 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        text = 'Add branch'
+        if self.context.bug.bug_branches.count() > 0:
+            text = 'Link another branch'
+        else:
+            text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -232,20 +242,20 @@ class BugContextMenu(ContextMenu):
 
     def createquestion(self):
         """Create a question from this bug."""
-        text = 'Convert to question'
+        text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, icon='edit', enabled=enabled)
+        return Link('+create-question', text, enabled=enabled)
 
     def removequestion(self):
         """Remove the created question from this bug."""
-        text = 'Convert back to bug'
+        text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, icon='edit', enabled=enabled)
+        return Link('+remove-question', text, enabled=enabled)
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'View activity log'
-        return Link('+activity', text, icon='list')
+        text = 'Activity log'
+        return Link('+activity', text)
 
 
 class MaloneView(LaunchpadFormView):

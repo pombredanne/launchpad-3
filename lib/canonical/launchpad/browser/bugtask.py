@@ -10,7 +10,6 @@ __all__ = [
     'BugNominationsView',
     'BugTargetTraversalMixin',
     'BugTargetView',
-    'BugTaskBadges',
     'BugTaskContextMenu',
     'BugTaskCreateQuestionView',
     'BugTaskEditView',
@@ -35,6 +34,7 @@ __all__ = [
     'get_buglisting_search_filter_url',
     'get_comments_for_bugtask',
     'get_sortorder_from_request',
+    'get_visible_comments',
     ]
 
 from datetime import datetime, timedelta
@@ -66,29 +66,43 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.vocabularies.dbobjects import MilestoneVocabulary
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
     redirection, stepthrough)
-from canonical.launchpad.webapp.badge import HasBadgeBase
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
-from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
-    BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
-    BugTaskStatusSearchDisplay, BugTrackerType, IBug, IBugAttachmentSet,
-    IBugBranchSet, IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch,
-    IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
-    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
-    INominationsReviewTableBatchNavigator, INullBugTask, IPerson, IPersonSet,
-    IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
-    IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
-    IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.interfaces.bugattachment import (
+    BugAttachmentType, IBugAttachmentSet)
+from canonical.launchpad.interfaces.bugnomination import (
+    BugNominationStatus, IBugNominationSet)
+from canonical.launchpad.interfaces.bug import IBug, IBugSet
+from canonical.launchpad.interfaces.bugtask import (
+    BugTagsSearchCombinator, BugTaskImportance, BugTaskSearchParams,
+    BugTaskStatus, BugTaskStatusSearchDisplay, IBugTask, IBugTaskSearch,
+    IBugTaskSet, ICreateQuestionFromBugTaskForm, IDistroBugTask,
+    IDistroSeriesBugTask, IFrontPageBugTaskSearch,
+    INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
+    IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
+    IUpstreamProductBugTaskSearch, RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES)
+from canonical.launchpad.interfaces.bugtracker import BugTrackerType
+from canonical.launchpad.interfaces.cve import ICveSet
+from canonical.launchpad.interfaces.distribution import IDistribution
+from canonical.launchpad.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage)
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces.productseries import IProductSeries
+from canonical.launchpad.interfaces.project import IProject
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.validation import (
+    valid_upstreamtask, validate_distrotask)
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchBag, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.searchbuilder import all, any, NULL
 
@@ -1013,6 +1027,16 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 AssigneeDisplayWidget)
 
+        if (self.context.bugwatch is None and
+            self.form_fields.get('assignee', False)):
+            # Make the assignee field editable
+            self.form_fields = self.form_fields.omit('assignee')
+            self.form_fields += formlib.form.Fields(PublicPersonChoice(
+                __name__='assignee', title=_('Assigned to'), required=False,
+                vocabulary='ValidAssignee', readonly=False))
+            self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
+                BugTaskAssigneeWidget)
+
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
         if self.context.target_uses_malone:
@@ -1203,9 +1227,6 @@ class BugTaskEditView(LaunchpadEditFormView):
             bugtask.transitionToStatus(new_status, self.user)
 
         if new_assignee is not missing and bugtask.assignee != new_assignee:
-            changed = True
-            bugtask.transitionToAssignee(new_assignee)
-
             if new_assignee is not None and new_assignee != self.user:
                 is_contributor = new_assignee.isBugContributorInTarget(
                     user=self.user, target=bugtask.pillar)
@@ -1227,6 +1248,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
                         canonical_url(bugtask))))
+            changed = True
+            bugtask.transitionToAssignee(new_assignee)
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
@@ -2372,7 +2395,7 @@ class BugTargetView(LaunchpadView):
         """Return the most recently updated bugtasks for this target."""
         params = BugTaskSearchParams(
             orderby="-date_last_updated", omit_dupes=True, user=self.user)
-        return self.context.searchTasks(params)[:limit]
+        return list(self.context.searchTasks(params)[:limit])
 
 
 class TextualBugTaskSearchListingView(BugTaskSearchListingView):
@@ -2716,37 +2739,6 @@ class BugTaskPrivacyAdapter:
     def is_private(self):
         """Return True if the bug is private, otherwise False."""
         return self.context.bug.private
-
-
-class BugTaskBadges(HasBadgeBase):
-    """Provides `IHasBadges` for `IBugTask`."""
-
-    badges = ('security', 'private', 'mentoring', 'branch')
-
-    def isBranchBadgeVisible(self):
-        return self.context.bug.bug_branches.count() > 0
-
-    def isMentoringBadgeVisible(self):
-        return self.context.bug.mentoring_offers.count() > 0
-
-    def isSecurityBadgeVisible(self):
-        return self.context.bug.security_related
-
-    def getSecurityBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        return "This bug report is about a security vulnerability"
-
-    # HasBadgeBase supplies isPrivateBadgeVisible().
-    def getPrivateBadgeTitle(self):
-        """Return info useful for a tooltip."""
-        if self.context.bug.date_made_private is None:
-            return "This bug report is private"
-        else:
-            date_formatter = DateTimeFormatterAPI(
-                self.context.bug.date_made_private)
-            return "This bug report was made private by %s %s" % (
-                self.context.bug.who_made_private.displayname,
-                date_formatter.displaydate())
 
 
 class BugTaskSOP(StructuralObjectPresentation):

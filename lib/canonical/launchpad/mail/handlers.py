@@ -260,7 +260,11 @@ class MaloneHandler:
                     if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
                             notify(bug_event)
-                            bug_event = None
+                        if (bugtask_event is not None and
+                            not ISQLObjectCreatedEvent.providedBy(bug_event)):
+                            notify(bugtask_event)
+                        bugtask = None
+                        bugtask_event = None
 
                         bug, bug_event = command.execute(
                             signed_msg, filealias)
@@ -375,7 +379,7 @@ class MaloneHandler:
     # the entire MacOS file should be sent encapsulated for example in
     # MacBinary format.
     #
-    # application/ms-tnef attachment are created by Outlook; they 
+    # application/ms-tnef attachment are created by Outlook; they
     # seem to store no more than an RTF representation of an email.
 
     irrelevant_content_types = set((
@@ -401,6 +405,11 @@ class MaloneHandler:
             # content type.
             content_type = blob.mimetype.split(';', 1)[0]
             if content_type in self.irrelevant_content_types:
+                continue
+
+            if content_type == 'text/html' and blob.filename == 'unnamed':
+                # This is the HTML representation of the main part of
+                # an email.
                 continue
 
             if content_type in ('text/x-diff', 'text/x-patch'):
@@ -695,7 +704,7 @@ class MailHandlers:
             # XXX flacoste 2007-04-23 Backward compatibility for old domain.
             # We probably want to remove it in the future.
             'support.launchpad.net': AnswerTrackerHandler(),
-            config.vhost.code.hostname: CodeHandler(),
+            config.launchpad.code_domain: CodeHandler(),
             }
 
     def get(self, domain):

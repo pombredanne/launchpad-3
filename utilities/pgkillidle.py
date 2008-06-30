@@ -10,7 +10,7 @@ __all__ = []
 
 from optparse import OptionParser
 import os
-import psycopg
+import psycopg2
 import signal
 import sys
 
@@ -38,7 +38,7 @@ def main():
     if len(args) > 0:
         parser.error('Too many arguments')
 
-    con = psycopg.connect(options.connect_string)
+    con = psycopg2.connect(options.connect_string)
     cur = con.cursor()
     cur.execute("""
         SELECT procpid, backend_start, query_start

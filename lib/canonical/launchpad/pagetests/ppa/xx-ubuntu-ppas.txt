@@ -3,7 +3,7 @@
 The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
-    >>> anon_browser.getLink("Personal Package Archives").click()
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.title
     'Ubuntu Linux Personal Package Archives'
 
@@ -106,7 +106,7 @@ The information section will be only rendered if the page is reloaded
 with no 'name_filter' GET argument, in other words, when no search was
 request.
 
-    >>> anon_browser.getLink("Personal Package Archives").click()
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
 
     >>> find_tag_by_id(
     ...     anon_browser.contents, 'ppa_statistics') is not None
@@ -528,7 +528,7 @@ PPAs are targeted to a specific distribution and currently we only
 allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
-    >>> anon_browser.getLink("Personal Package Archives").click()
+    >>> anon_browser.getLink("PPAs").click()
     >>> anon_browser.title
     'Ubuntu Test Personal Package Archives'
 
@@ -643,7 +643,7 @@ of downloading the buildlog).
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
 This feature is also useful from the PPA owner perspective. When
 Celso's visualise there that there was a failure while building
@@ -669,7 +669,7 @@ corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
-    Build details for i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
 
 == Populating 'Most Active' section ==

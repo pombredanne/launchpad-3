@@ -366,8 +366,8 @@ Next, we return the link as HTML.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <span class="action"><img alt="" class="inlineLinkIcon"
-                              src="/@@/icon" /><a class="menu-link-None" title="summary">text--&gt;</a></span>
+    <a style="...background: url(/@@/icon)..."
+    ...class="menu-link-None" title="summary">text--&gt;</a>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
@@ -945,24 +945,6 @@ actually calculates a shortened URL for this case.
     http://launchpad.dev/sesamestreet False
 
 
-The result of `house/menu:application` will be empty at the moment, because
-we registered only one application menu for a house, against 'foo'.  The
-'bar' facet is the one selected, so we don't get any application menu.
-
-    >>> menu = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=request)
-    >>> list(menu)
-    []
-
-Now, if we change the view's __launchpad_facetname__ so that the 'foo' facet
-is selected, we get a couple of menus.
-
-    >>> view.__launchpad_facetname__ = 'foo'
-    >>> links = test_tales('CONTEXTS/menu:application',
-    ...     context=house, view=view, request=request)
-    >>> for link in links:
-    ...     print link.url
-    http://launchpad.dev/sesamestreet/number73/+first
 
 You can traverse to an individual menu item from the facet menu:
 
@@ -1012,10 +994,6 @@ When there is no menu for a thing, we get an empty iterator.
     ...     'CONTEXTS/menu:facet', context=root, view=view, request=request)
     >>> list(menu)
     []
-    >>> menu = test_tales('CONTEXTS/menu:application',
-    ...     context=root, view=view, request=request)
-    >>> list(menu)
-    []
     >>> menu = test_tales('CONTEXTS/menu:context',
     ...     context=root, view=view, request=request)
     >>> list(menu)
@@ -1042,8 +1020,8 @@ render() method.
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
     >>> print html #doctest: +NORMALIZE_WHITESPACE
-    <span class="action"><a href="http://127.0.0.1/sesamestreet/number73/+first"
-          class="menu-link-first">First menu</a></span>
+    <a...href="http://127.0.0.1/sesamestreet/number73/+first"
+    ...class="menu-link-first">First menu</a>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)

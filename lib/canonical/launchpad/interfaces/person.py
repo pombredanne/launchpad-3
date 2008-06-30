@@ -6,11 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'AccountStatus',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
     'IHasStanding',
-    'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
     'InvalidName',
@@ -48,20 +46,24 @@ from canonical.lazr.rest.declarations import (
    call_with, collection_default_content, export_as_webservice_collection,
    export_as_webservice_entry, export_factory_operation,
    export_read_operation, export_write_operation, exported,
-   operation_parameters, rename_parameters_as, REQUEST_USER, webservice_error)
-from canonical.lazr.rest.schema import CollectionField, Reference
+   operation_parameters, operation_returns_collection_of,
+   rename_parameters_as, REQUEST_USER, webservice_error)
+from canonical.lazr.fields import CollectionField, Reference
 
 from canonical.launchpad import _
 
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
+from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.irc import IIrcID
 from canonical.launchpad.interfaces.jabber import IJabberID
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
+from canonical.launchpad.interfaces.location import (
+    IHasLocation, IObjectWithLocation, ISetLocation)
 from canonical.launchpad.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -76,40 +78,6 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.launchpad.interfaces.wikiname import IWikiName
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.validators.name import name_validator
-
-
-class AccountStatus(DBEnumeratedType):
-    """The status of a Launchpad account."""
-
-    NOACCOUNT = DBItem(10, """
-        No Launchpad account
-
-        There's no Launchpad account for this Person record.
-        """)
-
-    ACTIVE = DBItem(20, """
-        Active Launchpad account
-
-        There's an active Launchpad account associated with this Person.
-        """)
-
-    DEACTIVATED = DBItem(30, """
-        Deactivated Launchpad account
-
-        The account associated with this Person has been deactivated by the
-        Person himself.
-        """)
-
-    SUSPENDED = DBItem(40, """
-        Suspended Launchpad account
-
-        The account associated with this Person has been suspended by a
-        Launchpad admin.
-        """)
-
-
-INACTIVE_ACCOUNT_STATUSES = [
-    AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -408,10 +376,12 @@ class IHasStanding(Interface):
 
 
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
-                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
+                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon,
+                    IHasLocation, IObjectWithLocation):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
+    account = Object(schema=IAccount)
     name = exported(
         PersonNameField(
             title=_('Name'), required=True, readonly=False,
@@ -430,7 +400,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     password = PasswordField(
         title=_('Password'), required=True, readonly=False)
     karma = exported(
-        Int(title=_('Karma'), readonly=False,
+        Int(title=_('Karma'), readonly=True,
             description=_('The cached total karma for this person.')))
     homepage_content = exported(
         Text(title=_("Homepage Content"), required=False,
@@ -510,7 +480,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_('List of languages known by this person'),
             readonly=True, required=False,
-            value_type=Object(schema=ILanguage)))
+            value_type=Reference(schema=ILanguage)))
     translatable_languages = Attribute(
         _('Languages this person knows, apart from English'))
 
@@ -551,9 +521,11 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    timezone = exported(
-        Choice(title=_('Timezone'), required=True, readonly=False,
-               description=_('The timezone of where you live.'),
+    # XXX: salgado, 2008-06-19: This should probably be removed from here as
+    # it's already defined in IHasLocation (from which IPerson extends).
+    time_zone = exported(
+        Choice(title=_('Time zone'), required=True, readonly=False,
+               description=_('The time zone of where you live.'),
                vocabulary='TimezoneName'))
 
     openid_identifier = TextLine(
@@ -595,17 +567,17 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     allwikis = exported(
         CollectionField(title=_("All WikiNames of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IWikiName)),
+                        value_type=Reference(schema=IWikiName)),
         exported_as='wiki_names')
     ircnicknames = exported(
         CollectionField(title=_("List of IRC nicknames of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IIrcID)),
+                        value_type=Reference(schema=IIrcID)),
         exported_as='irc_nicknames')
     jabberids = exported(
         CollectionField(title=_("List of Jabber IDs of this Person."),
                         readonly=True, required=False,
-                        value_type=Object(schema=IJabberID)),
+                        value_type=Reference(schema=IJabberID)),
         exported_as='jabber_ids')
     branches = Attribute(
         "All branches related to this person. They might be registered, "
@@ -620,26 +592,28 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         CollectionField(
             title=_("All `ITeamMembership`s for Teams this Person is an "
                     "active member of."),
-            value_type=Object(schema=ITeamMembership),
+            value_type=Reference(schema=ITeamMembership),
             readonly=True, required=False),
-        exported_as='team_memberships')
+        exported_as='memberships_details')
     open_membership_invitations = exported(
         CollectionField(
             title=_('Open membership invitations.'),
             description=_("All TeamMemberships which represent an invitation "
                           "(to join a team) sent to this person."),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=ITeamMembership)))
     teams_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is a participant.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=Interface)),
+        exported_as='participations')
     teams_indirectly_participated_in = exported(
         CollectionField(
             title=_('All teams in which this person is an indirect member.'),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=Interface)),
+        exported_as='indirect_participations')
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -652,7 +626,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             description=_(
                 "Confirmed e-mails are the ones in the VALIDATED state"),
             readonly=True, required=False,
-            value_type=Object(schema=IEmailAddress)),
+            value_type=Reference(schema=IEmailAddress)),
         exported_as='confirmed_email_addresses')
     unvalidatedemails = Attribute(
         "Emails this person added in Launchpad but are not yet validated.")
@@ -688,7 +662,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       readonly=True)
 
     preferredemail = exported(
-        Object(title=_("Preferred email address"),
+        Reference(title=_("Preferred email address"),
                description=_("The preferred email address for this person. "
                              "The one we'll use to communicate with them."),
                readonly=True, required=False, schema=IEmailAddress),
@@ -842,22 +816,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         (A to Z) by name.
         """
 
-    def getBugSubscriberOpenBugCounts(user):
-        """Return open bug counts for this bug subscriber's packages.
-
-            :user: The user doing the search. Private bugs that this
-                   user doesn't have access to won't be included in the
-                   count.
-
-        Returns a list of dictionaries, where each dict contains:
-
-            'package': The package the bugs are open on.
-            'open': The number of open bugs.
-            'open_critical': The number of open critical bugs.
-            'open_unassigned': The number of open unassigned bugs.
-            'open_inprogress': The number of open bugs that ar In Progress.
-        """
-
     def setContactAddress(email):
         """Set the given email address as this team's contact address.
 
@@ -882,6 +840,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
+    @operation_returns_collection_of(Interface) # Really IPerson
     @export_read_operation()
     def findPathToTeam(team):
         """Return the teams that cause this person to be a participant of the
@@ -930,6 +889,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """Projects owned by this person or teams to which she belongs.
 
         :param match_name: string optional project name to screen the results.
+        """
+
+    def getCommercialSubscriptionVouchers():
+        """Return all commercial subscription vouchers.
+
+        The vouchers are separated into two lists, unredeemed vouchers and
+        redeemed vouchers.
+        :return: tuple (unredeemed_vouchers, redeemed_vouchers)
         """
 
     def assignKarma(action_name, product=None, distribution=None,
@@ -1196,12 +1163,12 @@ class IPersonViewRestricted(Interface):
     activemembers = exported(
         CollectionField(
             title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='members')
     adminmembers = exported(
         CollectionField(
             title=_("List of this team's admins."),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
@@ -1214,7 +1181,7 @@ class IPersonViewRestricted(Interface):
                 "way or another, are a part of this team. If you want a "
                 "method to check if a given person is a member of a team, "
                 "you should probably look at IPerson.inTeam()."),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='participants')
     approvedmembers = Attribute("List of members with APPROVED status")
     deactivated_member_count = Attribute("Number of deactivated members")
@@ -1223,13 +1190,13 @@ class IPersonViewRestricted(Interface):
         CollectionField(
             title=_(
                 "All members whose membership is in the DEACTIVATED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
         CollectionField(
             title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='expired_members')
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
@@ -1237,7 +1204,7 @@ class IPersonViewRestricted(Interface):
     invited_members = exported(
         CollectionField(
             title=_("All members whose membership is in the INVITED state"),
-            value_type=Object(schema=Interface)))
+            value_type=Reference(schema=Interface)))
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
         CollectionField(
@@ -1247,15 +1214,23 @@ class IPersonViewRestricted(Interface):
                 "APPROVED status.  The results are ordered using "
                 "Person.sortingColumns."),
             readonly=True, required=False,
-            value_type=Object(schema=ITeamMembership)))
+            value_type=Reference(schema=ITeamMembership)),
+        exported_as='members_details')
     pendingmembers = Attribute(
         "List of members with INVITED or PROPOSED status")
     proposedmembers = exported(
         CollectionField(
             title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Object(schema=Interface)),
+            value_type=Reference(schema=Interface)),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
+
+    mapped_participants = CollectionField(
+        title=_("List of participants with coordinates."),
+        value_type=Reference(schema=Interface))
+    unmapped_participants = CollectionField(
+        title=_("List of participants with no coordinates recorded."),
+        value_type=Reference(schema=Interface))
 
     def getDirectAdministrators():
         """Return this team's administrators.
@@ -1411,7 +1386,7 @@ class IPersonAdminWriteRestricted(Interface):
 
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
-              IPersonAdminWriteRestricted, IHasStanding):
+              IPersonAdminWriteRestricted, IHasStanding, ISetLocation):
     """A Person."""
     export_as_webservice_entry()
 
@@ -1553,6 +1528,8 @@ class IPersonSet(Interface):
         The newly created EmailAddress will have a status of NEW and will be
         linked to the newly created Person.
 
+        An Account is also created, but this will change in the future!
+
         If the given name is None, we generate a unique nickname from the
         email address given.
 
@@ -1578,6 +1555,22 @@ class IPersonSet(Interface):
             use.
         :raises NicknameGenerationError: When no name is provided and we can't
             generate a nickname from the given email address.
+        """
+
+    def createPersonWithoutEmail(
+        name, rationale, comment=None, displayname=None, registrant=None):
+        """Create and return an `IPerson` without using an email address.
+
+        :param name: The person's name.
+        :param comment: A comment explaining why the person record was
+            created (usually used by scripts which create them automatically).
+            Must be of the following form: "when %(action_details)s"
+            (e.g. "when the foo package was imported into Ubuntu Breezy").
+        :param displayname: The person's displayname.
+        :param registrant: The user who created this person, if any.
+        :raises InvalidName: When the passed name isn't valid.
+        :raises NameAlreadyTaken: When the passed name has already been
+            used.
         """
 
     def ensurePerson(email, displayname, rationale, comment=None,
@@ -1683,6 +1676,7 @@ class IPersonSet(Interface):
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
+    @operation_returns_collection_of(IPerson)
     def find(text="", orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
@@ -1700,7 +1694,8 @@ class IPersonSet(Interface):
     @operation_parameters(
         text=TextLine(title=_("Search text"), default=u""))
     @export_read_operation()
-    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True):
+    def findPerson(text="", orderBy=None, exclude_inactive_accounts=True,
+                   must_have_email=False):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1715,6 +1710,9 @@ class IPersonSet(Interface):
         If exclude_inactive_accounts is True, any accounts whose
         account_status is any of INACTIVE_ACCOUNT_STATUSES will not be in the
         returned set.
+
+        If must_have_email is True, only people with one or more email
+        addresses are returned.
 
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
@@ -1823,7 +1821,7 @@ class IPersonSet(Interface):
         change to standing is made.
         """
 
-    def cacheBrandingForPeople(people):
+    def getBrandingForPeople(people):
         """Prefetch Librarian aliases and content for personal images."""
 
 
@@ -1944,11 +1942,14 @@ class NameAlreadyTaken(Exception):
 
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in ['allmembers', 'activemembers', 'adminmembers', 'proposedmembers',
-             'invited_members', 'deactivatedmembers', 'expiredmembers']:
+             'invited_members', 'deactivatedmembers', 'expiredmembers',
+             'mapped_participants', 'unmapped_participants']:
     IPersonViewRestricted[name].value_type.schema = IPerson
 
 IPersonPublic['sub_teams'].value_type.schema = ITeam
 IPersonPublic['super_teams'].value_type.schema = ITeam
+IPersonPublic['teams_participated_in'].value_type.schema = ITeam
+IPersonPublic['teams_indirectly_participated_in'].value_type.schema = ITeam
 
 # Fix schema of operation parameters. We need zope.deferredimport!
 params_to_fix = [
@@ -1963,6 +1964,10 @@ params_to_fix = [
 for method, name in params_to_fix:
     method.queryTaggedValue(
         'lazr.webservice.exported')['params'][name].schema = IPerson
+
+# Fix schema of operation return values.
+IPersonPublic['findPathToTeam'].queryTaggedValue(
+    'lazr.webservice.exported')['return_type'].value_type.schema = IPerson
 
 # Fix schema of ITeamMembership fields.  Has to be done here because of
 # circular dependencies.

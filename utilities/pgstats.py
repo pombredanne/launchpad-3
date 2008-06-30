@@ -8,7 +8,7 @@ emailing via cron
 __metaclass__ = type
 
 import sys
-import psycopg
+import psycopg2
 
 def percentage(num, total):
     """Return a percentage string of num/total"""
@@ -48,7 +48,7 @@ def pgstattuple(cur, table):
 
 
 def main(dbname):
-    con = psycopg.connect("dbname=%s" % dbname)
+    con = psycopg2.connect("dbname=%s" % dbname)
     cur = con.cursor()
 
     print 'Statistics for %s' % dbname

@@ -40,12 +40,7 @@
       <tal:not-junk-branch tal:condition="context/product">
         <tr>
           <th>Project:</th>
-          <td>
-            <img src="/@@/project"
-                 tal:replace="structure context/product/image:icon" />
-            <a tal:attributes="href context/product/fmt:url"
-               tal:content="context/product/displayname" />
-          </td>
+          <td><tal:link replace="structure context/product/fmt:link" /></td>
         </tr>
       </tal:not-junk-branch>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
@@ -140,10 +135,16 @@
             </tal:can-upload>
           </tal:logged-in>
       </tal:hosted-branch>
-
-    </tbody>
+      <tr id='branch-format'>
+        <th>Branch format:</th>
+        <td tal:content="view/branch_format_description" />
+      </tr>
+      <tr id='repository-format'>
+        <th>Repository format:</th>
+        <td tal:content="view/repository_format_description" />
+      </tr>
+      </tbody>
   </table>
-
   <tal:branch-errors tal:replace="structure context/@@+messages" />
 
   <div tal:condition="context/summary" id="branch-summary"
@@ -299,6 +300,38 @@
     </tal:show-link>
   </div>
 
+  <div id="related-bugs-and-blueprints">
+    <h2>Linked bug reports and blueprints</h2>
+    <div class="actions">
+      <tal:bugs tal:define="branch context;
+                            show_edit python:True;
+                            show_whiteboard python:True;">
+        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
+      </tal:bugs>
+      <div
+        tal:define="link context/menu:context/link_bug"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a bug
+      </div>
+    </div>
+    <div class="actions">
+      <tal:blueprints tal:define="branch context;
+                                  show_edit python:True;
+                                  show_whiteboard python:True;">
+        <metal:spec-branch-links
+            use-macro="context/@@+macros/spec-branch-links"/>
+      </tal:blueprints>
+      <div
+        tal:define="link context/menu:context/link_blueprint"
+        tal:condition="link/enabled"
+        tal:content="structure link/render">
+        Link to a blueprint
+      </div>
+    </div>
+  </div>
+
+
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>
 
@@ -314,30 +347,6 @@
   </tal:history-available>
 
   </div>
-
-  <tal:has-related-bugs condition="context/related_bugs">
-    <div id="related-bugs">
-      <h2>Related bugs</h2>
-      <tal:bugs tal:define="branch context;
-                            show_edit python:True;
-                            show_whiteboard python:True;">
-        <metal:bug-branch-links use-macro="context/@@+macros/bug-branch-links"/>
-      </tal:bugs>
-    </div>
-  </tal:has-related-bugs>
-
-  <tal:has-related-blueprints condition="context/spec_links">
-    <div id="related-blueprints">
-      <h2>Related blueprints</h2>
-      <tal:blueprints tal:define="branch context;
-                                  show_edit python:True;
-                                  show_whiteboard python:True;">
-        <metal:spec-branch-links
-            use-macro="context/@@+macros/spec-branch-links"/>
-      </tal:blueprints>
-    </div>
-  </tal:has-related-blueprints>
-
 
       <div class="related">
 

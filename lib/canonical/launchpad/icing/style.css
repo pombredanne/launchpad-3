@@ -78,6 +78,12 @@ body {
   /* Minimal width to display the application tabs and rounded corners. */
   min-width: 529px;
 }
+/*
+  The page has no margin/padding because of the navigation bar and tab border,
+  but the main content has 20px left and right margin:
+*/
+div.freeform {margin: 2em 20px;}
+/* (In other page types this margin is on an inner container element.) */
 
 :link                         {color: #039;    text-decoration: none;}
 :link:hover, :visited:hover   {                text-decoration: underline;}
@@ -104,8 +110,8 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
-.offline {text-align: center; width: 100%; margin: 2em auto !important;}
-/* That !important is necessary only while #nonhelp exists. */
+.offline {text-align: center; margin: 2em 20px;}
+/* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 .unavailable {color: #999; background: none;}
 
 /* --- Error, warning, and info messages --- */
@@ -186,12 +192,65 @@ right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
 /* This is currently overridden for Internet Explorer in main-template.pt. */
 
-table.form {margin-top: 1em; margin-bottom: 1em; width: 100%;}
+table.form {margin-top: 1em; width: 100%;}
+  /* http://launchpad.dev/firefox/+edit */
+
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
  * person-pagelet-details.pt. We should move to use tables everywhere
  * and then kill this class I guess. -- kiko, 2007-12-05 */
 table.slimpadding td, table.slimpadding th { padding: 0; padding-right: 3px }
+
+/* --- Action links and buttons --- */
+
+/*
+  Action links are those that begin the process of doing something.
+  For example, "Register a branch", "Edit profile", "Link to CVE".
+  When presented inline, they are rendered by launchpad-inline-link.pt.
+
+  Action buttons are those that submit a multi-row form.
+  Often an action button will have an "or _Cancel_" link next to it.
+
+  We want 0.5em horizontal gap between links and buttons in these sections.
+  Using margin-left would cause a bad gap to the left of a leftmost item.
+  Using margin-right would cause a bad gap to the right of a rightmost item.
+  We could fix these problems with :first-child/:last-child, but not in IE.
+  So we do something a little tricky.
+  We go ahead and give each child of the actions container a right margin:
+*/
+.actions * {margin-right: 0.5em;}
+.actions * * {margin-right: 0;} /* because ">" doesn't work in IE6 */
+/*
+  Then in addition to the top/bottom margins of the actions container, we
+  give it a *negative* right margin, cancelling out that of the last child.
+*/
+.actions {margin: 1em -0.5em 1em 0;}
+/*
+  Examples:
+  http://bugs.launchpad.dev/firefox/+bug/1 (after 'Affects' table)
+  http://bugs.launchpad.dev/firefox/+bug/1/+subscribe (bottom button)
+*/
+
+/* --- Batch navigation links --- */
+
+/* Next links have icons: */
+.batch-navigation-links .next {
+  background: center right no-repeat;
+  padding-right: 14px;
+}
+.batch-navigation-links .next {background-image: url(/@@/arrowRight);}
+.batch-navigation-links .next.inactive {
+  background-image: url(/@@/arrowRight-inactive);
+}
+/* And all the links have spacing between them: */
+.batch-navigation-links .previous, .batch-navigation-links .next,
+.batch-navigation-links .last {
+  margin-left: 0.25em;
+}
+.batch-navigation-links .first, .batch-navigation-links .previous,
+.batch-navigation-links .next {
+  margin-right: 0.25em;
+}
 
 /* --- Other --- */
 
@@ -254,9 +313,6 @@ h1 span, h2 span, h3 span, h4 span, h5 span {
 strong em {
   font-style: normal;
   color: #353535;
-}
-strong span {
-  color: #656565;
 }
 .link_img {border: 0;}
 .debug {
@@ -581,78 +637,102 @@ ul#menuroot li.selected a.breadcrumb {
     color: #000000;
 }
 
-/* Under the location bar is a Help widget that expands when clicked. */
-#help {
-  clear: both;
-  position: absolute;
-  top: 27px;
-  left: 0;
-  width: 300px;
-  z-index: 100;
-}
-/* The widget has two parts. First, the tab itself. */
-#help-tab {
-  background: url(help-tab.gif);
-  float: right;
-  /* The help-tab.gif dimensions are 32x62. We must set absolute width and
-     height and override any padding that could be applied by less specific
-     rules. */
-  width: 32px;
-  height: 62px;
-  padding: 0;
-  /* The help-tab element contains the "Help" text for rendering without CSS.
-     For reasonable minimum font sizes, this text should fit in the gray area
-     at the top of the image. We set the text color to the background color of
-     the image to make it invisible. */
-  color: #f7f7f7;
-  font-size: 1px;
-  /* For correct positioning, the help-tab must have zero margin. Reset
-     margins set by less specific rules (such as "h2"). */
-  margin: 0;
-}
-/* Second, the help panel, which takes up the rest of the 300px. */
-#help-panel {float: left; width: 268px;}
-/* The help panel needs to be longer than the tab -- 70px will do. */
-#help-content {
-  background: #fff url(help_bg.gif) top right repeat-y;
-  margin: 0;
-  padding: 0;
-  min-height: 70px;
-}
-/* IE6 and lower ignore "min-height", but treat "height" as min-height. */
-* html #help-content {height: 70px;}
-/* The "help-text" element exists only to provide padding. */
-/* The "1px" is because Gecko malfunctions if the top padding is 0. */
-#help-text {padding: 1px 14px 6px 10px;}
-/* The "help-bottom" element exists to provide the rounded bottom border. */
-#help-bottom {
-  clear: both;
-  font-size: 1px;
-  height: 6px;
-  background: url(help-bottom.gif) bottom right no-repeat;
-}
-/* When the tab is opened, the triangle in it swivels to show it's a toggle. */
-#help.open #help-tab {background: url(help-tab-open.gif);}
-/* When the tab is closed, the help panel is not displayed. */
-#help.closed {width: 32px;}
-#help.closed #help-panel {display: none;}
-
 /*
-Showing the help panel all the time would be in the way,
-and there shouldn't be a "Help" tab that does nothing.
-So it's hidden initially, and then revealed if JavaScript is available. 
+Inline help is contained in a <div> and dynamically positioned by JavaScript.
 */
-#help {visibility: hidden;}
+#help-pane {
+  position: absolute;
+  border: 5px solid black;
+  padding: 10px;
+  z-index: 3000;  /* This should appear above all other content. */
+  background-color: #fff;
+  width: 25em;
+}
+/* We want the hidden pane to have dimensions so that we can position the
+frame with them.  This works because the element an absolute position, taking
+it out of the page flow. */
+#help-pane.invisible {
+    position: absolute;
+    visibility: hidden;
+    display: block;
+    left: 0px;
+    top: 0px;
+}
 
-/* The rest of the page keeps clear of the collapsed help panel. */
-/* test: http://launchpad.dev/+logout */
-#nonhelp {
-  margin: 0 20px 0 38px;
-  padding-top: 10px;
+#help-body {
+    background: url(spinner.gif) no-repeat center center;
+}
+#help-pane iframe {
+    width: 100%;
+    height: 18em;
+}
+#help-pane iframe.invisible {
+    visibility: hidden;
+    display: block;
+}
+#help-footer {
+  padding: 3px;
+  border-top: 1px solid #ddd;
+  text-align: right;
+}
+#help-footer button {
+  margin-bottom: 10px;
+  margin-top: 3px;
+}
+
+span.help {font-weight: normal;}
+
+/* Navigation menus appear as a segmented pill overlaid on a groove: */
+.navigation.menu {
+  background: url(/+icing/navigation-menu-groove.png) repeat-x center left;
+  margin: 1em 0 2em;
+  text-align: center;
+}
+/* Segments have slight padding, and are normally mid-blue: */
+.navigation.menu * {background: #2064ef; padding: 0.25em 0;}
+/* But the selected element is slightly darker: */
+.navigation.menu strong * {background-color: #888;}
+/* The segments have a thin separator, and padding around their text: */
+.navigation.menu * * {border-right: 1px solid #fff; padding: 0.25em 0.5em;}
+/* For text browsers, there's a " / " separator, hidden from CSS browsers: */
+.navigation.menu small {display: none;}
+/* All text in the navigation menu is white, even the links: */
+.navigation.menu, .navigation.menu a {color: #fff;}
+/* The first segment has a rounded cap, matching its color: */
+.navigation.menu > :first-child {
+  background: url(/+icing/navigation-nw-w-normal.png) top left no-repeat;
+}
+.navigation.menu > strong:first-child {
+  background-image: url(/+icing/navigation-nw-w-selected.png);
+}
+.navigation.menu > :first-child::before {
+  content: '';
+  background: url(/+icing/navigation-sw-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+}
+.navigation.menu > strong:first-child::before {
+  background-image: url(/+icing/navigation-sw-selected.png);
+}
+/* The last segment has a rounded cap, matching its color: */
+.navigation.menu > :last-child {
+  background: url(/+icing/navigation-ne-e-normal.png) top right no-repeat;
+}
+.navigation.menu > strong:last-child {
+  background-image: url(/+icing/navigation-ne-e-selected.png);
+}
+.navigation.menu > :last-child * {border-right: none;}
+.navigation.menu > :last-child::after {
+  content: '';
+  background: url(/+icing/navigation-se-normal.png) no-repeat bottom left;
+  padding: 0.25em 2px;
+}
+.navigation.menu > strong:last-child::after {
+  background-image: url(/+icing/navigation-se-selected.png);
 }
 
 /* The last element on every page is a standard footer. */
-#globalfooter {clear: both; margin-left: -20px;}
+#globalfooter {clear: both; margin: 0.5em 20px;}
+/* XXX 20080617 mpt: That 20px will be obsolete in 2.0 (bug 240657). */
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
   border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
@@ -705,6 +785,9 @@ body.pillarindex table#applications th {padding-left: 0;}
         above the "#mainarea". This margin provides the needed visual
         separation. */
   margin-bottom: 8px;
+  /* The right margin for the search matches the left margin of the structural
+     object heading. */
+  margin-right: 20px;
 }
 #globalsearch #searchbutton {
   position: relative;
@@ -743,6 +826,8 @@ partly (but not visibly) overlaps the rounded border of the main area. */
   background: none;
   color: black;
   float: left;
+  margin: 10px 20px 0; /* XXX 20080617 mpt: remove 20px in 2.0 (bug 240657). */
+ */
   width: 70%;
 }
 /* Structural headings contain an icon, maybe an intro, and a main heading.
@@ -780,7 +865,6 @@ border. */
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
-  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
 }
 #mainarea div.v {
@@ -909,6 +993,23 @@ ul#applicationchooser a:hover {
 ul#applicationchooser li#applicationchooser_selected {
   background-position: -200px 0px;
 }
+
+/* -- Pillar indexes -- */
+
+/* Distributions, projects, and people have two-column main pages. */
+/* Most of the information is in the second column: */
+.pillar {margin-left: 212px;}
+/* But the main heading, subheadings, and the logo are in the first column: */
+.pillar h2, .pillar .mugshot {
+  clear: left;
+  float: left;
+  margin-left: -212px;
+  text-align: right;
+  width: 200px;
+}
+/* There is a margin between each section and the previous one: */
+.pillar div.portlet, .pillar div.section {clear: left; padding-top: 2em;}
+.pillar div.portlet h2, .pillar div.section h2 {margin-top: 0;}
 
 /* --- Portlets --- */
 #portlets {
@@ -1666,6 +1767,10 @@ table.duplicate.listing * {color: #999;}
 
 table.listing table.simple {margin-left: 2em;}
 table.listing table.simple td {padding: 0.25em;}
+
+table.compressed { width: auto }
+table.compressed td { padding: 0.25em 0.5em }
+
 /* --- Sortable tables --- */
 
 table.sortable a.sortheader {
@@ -1731,17 +1836,15 @@ div.popupTitle {
   display: none;
 }
 
-/* The icon next to inline action links */
-.inlineLinkIcon {margin-right: 0.5em; margin-left: 0.5em;}
-
 /* Search results*/
 
 #search-results {
-    margin-top: 1em;
+  margin-top: 1em;
 }
 
+
 #search-results ul {
-  margin: .5em 0 .5em 0;
+  margin: 0 0 .5em 0;
   padding: 0;
   list-style-type: none;
 }
@@ -1756,7 +1859,7 @@ div.popupTitle {
 }
 
 #search-results ul.exact-matches {
-  margin-top: 2em;
+  margin-top: 1em;
   margin-bottom: 1em;
 }
 
@@ -1767,7 +1870,7 @@ div.popupTitle {
 #search-results div.upper-batch-nav {
   border-top: 1px solid #d2d2d2;
   margin-top: 1.5em;
-  margin-bottom: 1.5em;
+  margin-bottom: 0.5em;
 }
 
 #search-results div.lower-batch-nav {
@@ -1781,4 +1884,11 @@ div.popupTitle {
 
 #no-results span.search_text {
   font-weight: bold;
+}
+
+/* From nice_pre in tales.py */
+pre.wrap {
+  white-space: -moz-pre-wrap;
+  white-space: -o-pre-wrap;
+  word-wrap: break-word;
 }

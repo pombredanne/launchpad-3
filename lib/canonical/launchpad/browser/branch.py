@@ -55,7 +55,6 @@ from canonical.launchpad.interfaces import (
     IBranchSubscription,
     IBugBranch,
     IBugSet,
-    ICodeImportSet,
     ICodeImportJobWorkflow,
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
@@ -158,11 +157,6 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
-    @stepto("+code-import")
-    def traverse_code_import(self):
-        """Traverses to an `ICodeImport`."""
-        return getUtility(ICodeImportSet).getByBranch(self.context)
-
 
 class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
@@ -242,8 +236,11 @@ class BranchContextMenu(ContextMenu):
         return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
     def link_bug(self):
-        text = 'Link to bug report'
-        return Link('+linkbug', text, icon='edit')
+        if self.context.related_bugs:
+            text = 'Link to another bug report'
+        else:
+            text = 'Link to a bug report'
+        return Link('+linkbug', text, icon='add')
 
     def merge_queue(self):
         text = 'View merge queue'
@@ -253,11 +250,14 @@ class BranchContextMenu(ContextMenu):
         return Link('+merge-queue', text, enabled=enabled)
 
     def link_blueprint(self):
-        text = 'Link to blueprint'
+        if self.context.spec_links:
+            text = 'Link to another blueprint'
+        else:
+            text = 'Link to a blueprint'
         # Since the blueprints are only related to products, there is no
         # point showing this link if the branch is junk.
         enabled = self.context.product is not None
-        return Link('+linkblueprint', text, icon='edit', enabled=enabled)
+        return Link('+linkblueprint', text, icon='add', enabled=enabled)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
@@ -395,6 +395,22 @@ class BranchView(LaunchpadView, FeedsMixin):
                 return '<private server>'
 
         return branch.url
+
+    @property
+    def branch_format_description(self):
+        """Return branch's format, or 'Not recorded' if None."""
+        if self.context.branch_format is None:
+            return "Not recorded"
+        else:
+            return self.context.branch_format.description
+
+    @property
+    def repository_format_description(self):
+        """Return repository's format, or 'Not recorded' if None."""
+        if self.context.repository_format is None:
+            return "Not recorded"
+        else:
+            return self.context.repository_format.description
 
 
 class DecoratedMergeProposal:

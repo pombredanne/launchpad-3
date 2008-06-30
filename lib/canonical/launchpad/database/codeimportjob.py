@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
     ICodeImportMachineSet, ICodeImportResultSet)
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 
 
 class CodeImportJob(SQLBase):
@@ -50,7 +50,7 @@ class CodeImportJob(SQLBase):
 
     requesting_user = ForeignKey(
         dbName='requesting_user', foreignKey='Person',
-        validator=public_person_validator,
+        storm_validator=validate_public_person,
         notNull=False, default=None)
 
     ordering = IntCol(notNull=False, default=None)
@@ -238,7 +238,7 @@ class CodeImportJobWorkflow:
         # interface to do this. So we must use removeSecurityProxy here.
         naked_job = removeSecurityProxy(import_job)
         naked_job.destroySelf()
-        # Only start a new one if not invalid or suspended.
+        # Only start a new one if the import is still in the REVIEWED state.
         if code_import.review_status == CodeImportReviewStatus.REVIEWED:
             self.newJob(code_import)
         # If the status was successful, update the date_last_successful and

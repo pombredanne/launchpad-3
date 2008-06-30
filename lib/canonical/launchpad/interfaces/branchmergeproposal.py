@@ -5,12 +5,14 @@
 
 __metaclass__ = type
 __all__ = [
+    'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchMergeProposalStatus',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
+    'IBranchMergeProposalListingBatchNavigator',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
@@ -20,6 +22,7 @@ from zope.schema import Choice, Datetime, Int, List
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -45,6 +48,10 @@ class BadStateTransition(Exception):
 
 class WrongBranchMergeProposal(Exception):
     """The comment requested is not associated with this merge proposal."""
+
+
+class BadBranchMergeProposalSearchContext(Exception):
+    """The context is not valid for a branch merge proposal search."""
 
 
 class BranchMergeProposalStatus(DBEnumeratedType):
@@ -184,6 +191,11 @@ class IBranchMergeProposal(Interface):
         title=_('Date Merged'), required=False,
         description=_("The date that the source branch was merged into the "
                       "target branch"))
+
+    title = Attribute(
+        "A nice human readable name to describe the merge proposal. "
+        "This is generated from the source and target branch, and used "
+        "as the tal fmt:link text and for email subjects.")
 
     merge_reporter = Attribute(
         "The user that marked the branch as merged.")
@@ -348,8 +360,12 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def nominateReviewer(reviewer, registrant):
-        """Create a vote for the specified person."""
+    def nominateReviewer(reviewer, registrant, review_type=None):
+        """Set the specified person as a reviewer.
+
+        If they are not already a reviewer, a vote is created.  Otherwise,
+        the details are updated.
+        """
 
     def createComment(owner, subject, content=None, vote=None, vote_tag=None,
                       parent=None, _date_created=None):
@@ -378,8 +394,38 @@ class IBranchMergeProposal(Interface):
         """Delete the proposal to merge."""
 
 
+class IBranchMergeProposalListingBatchNavigator(ITableBatchNavigator):
+    """A marker interface for registering the appropriate listings."""
+
+
 class IBranchMergeProposalGetter(Interface):
     """Utility for getting BranchMergeProposals."""
 
     def get(id):
         """Return the BranchMergeProposal with specified id."""
+
+    def getProposalsForContext(context, status=None, visible_by_user=None):
+        """Return BranchMergeProposals associated with the context.
+
+        :param context: Either a 'Person' or 'Product'.
+        :param status: An iterable of queue_status of the proposals to return.
+            If None is specified, all the proposals of all possible states
+            are returned.
+        :param visible_by_user: If a person is not supplied, only merge
+            proposals based on public branches are returned.  If a person is
+            supplied, merge proposals based on both public branches, and the
+            private branches that the person is entitled to see are returned.
+            Private branches are only visible to the owner and subscribers of
+            the branch, and to LP admins.
+        :raises BadBranchMergeProposalSearchContext: If the context is not
+            understood.
+        """
+
+    def getVoteSummariesForProposals(proposals):
+        """Return the vote summaries for the proposals.
+
+        A vote summary is a dict has a 'comment_count' and may also have
+        values for each of the CodeReviewVote enumerated values.
+
+        :return: A dict keyed on the proposals.
+        """

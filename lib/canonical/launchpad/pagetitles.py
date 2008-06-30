@@ -41,7 +41,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
-from canonical.launchpad.webapp import smartquote
+from canonical.lazr.utils import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -370,7 +370,7 @@ build_buildlog = ContextTitle('Build log for %s')
 
 build_changes = ContextTitle('Changes in %s')
 
-build_index = ContextTitle('Build details for %s')
+build_index = ContextTitle('%s')
 
 build_retry = ContextTitle('Retry %s')
 
@@ -832,7 +832,7 @@ object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 object_reassignment = ContextTitle('Reassign %s')
 
-object_translations = ContextTitle('Translation templates for %s')
+object_translations = ContextDisplayName('Translation templates for %s')
 
 oops = 'Oops!'
 
@@ -934,6 +934,10 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
+def person_mergeproposals(context, view):
+    """Return the view's heading."""
+    return view.heading
+
 person_oauth_tokens = "Applications you authorized to access Launchpad"
 
 person_packages = ContextDisplayName('Packages maintained by %s')
@@ -956,9 +960,12 @@ person_specworkload = ContextDisplayName('Blueprint workload for %s')
 
 person_translations = ContextDisplayName('Translations made by %s')
 
-person_translations_relicensing = "Relicense your translations"
+person_translations_relicensing = "Translations licensing"
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
+
+person_vouchers = ContextDisplayName(
+    'Commercial subscription vouchers for %s')
 
 pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
@@ -1028,6 +1035,10 @@ product_edit = 'Change project details'
 
 product_index = ContextTitle('%s in Launchpad')
 
+def product_mergeproposals(context, view):
+    """Return the view's heading."""
+    return view.heading
+
 product_new = 'Register a project in Launchpad'
 
 product_new_guided = 'Before you register your project...'
@@ -1058,6 +1069,8 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
+
+products_review_licenses = 'Review licenses of projects'
 
 productseries_export = ContextTitle('Download translations for "%s"')
 
@@ -1257,7 +1270,7 @@ sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_packaging = ContextTitle('%s upstream links')
 
-sourcepackage_export = ContextTitle('Download translations for "%s"')
+sourcepackage_export = ContextTitle('Download translations for %s')
 
 def sourcepackage_index(context, view):
     """Return the page title for a source package in a distroseries."""

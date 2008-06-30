@@ -12,7 +12,7 @@
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
-                      translationgroup translationpermission
+                      translation_focus translationgroup translationpermission
                       driver members owner
                       security_contact
                       mirror_admin homepage_content icon logo
@@ -69,7 +69,8 @@
       DistributionFacets DistributionOverviewMenu DistributionBugsMenu
       DistributionBountiesMenu DistributionSpecificationsMenu
       DistributionTranslationsMenu DistributionSetFacets
-      DistributionSetContextMenu
+      DistributionSetContextMenu DistributionNavigationMenu
+      DistributionMirrorsNavigationMenu
       "
     />
 
@@ -326,6 +327,11 @@
       template="../templates/object-milestones.pt"
       />
     <browser:page
+      name="+series-and-milestones"
+      facet="overview"
+      template="../templates/distribution-series-and-milestones.pt"
+      />
+    <browser:page
       name="+portlet-bounties"
       template="../templates/object-portlet-bounties.pt"
       />
@@ -372,15 +378,6 @@
     name="+edit"
     facet="overview"
     template="../templates/distribution-edit.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistribution"
-    permission="launchpad.Edit"
-    class="canonical.launchpad.browser.DistributionBrandingView"
-    name="+branding"
-    facet="overview"
-    template="../templates/object-branding.pt"
     />
 
   <browser:editform

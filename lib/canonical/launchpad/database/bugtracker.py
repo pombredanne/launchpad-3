@@ -14,6 +14,7 @@ from itertools import chain
 # to change or go away.
 from urllib import splittype
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
@@ -24,15 +25,20 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 
+from canonical.launchpad.database.bugtrackerperson import BugTrackerPerson
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.bugtrackerperson import (
+    BugTrackerPersonAlreadyExists)
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
-from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.validators.person import validate_public_person
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
     IBugTrackerSet, NotFoundError)
+from canonical.launchpad.interfaces.person import IPersonSet
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -143,7 +149,7 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=public_person_validator, notNull=True)
+        storm_validator=validate_public_person, notNull=True)
     contactdetails = StringCol(notNull=False)
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')
@@ -232,6 +238,59 @@ class BugTracker(SQLBase):
             AND((BugMessage.q.bugwatchID == BugWatch.q.id),
                 (BugWatch.q.bugtrackerID == self.id)),
             orderBy=BugMessage.q.id)
+
+    def getLinkedPersonByName(self, name):
+        """Return the Person with a given name on this bugtracker."""
+        return BugTrackerPerson.selectOneBy(name=name, bugtracker=self)
+
+    def linkPersonToSelf(self, name, person):
+        """See `IBugTrackerSet`."""
+        # Check that this name isn't already in use for this bugtracker.
+        if self.getLinkedPersonByName(name) is not None:
+            raise BugTrackerPersonAlreadyExists(
+                "Name '%s' is already in use for bugtracker '%s'." %
+                (name, self.name))
+
+        bugtracker_person = BugTrackerPerson(
+            name=name, bugtracker=self, person=person)
+
+        return bugtracker_person
+
+    def ensurePersonForSelf(
+        self, display_name, email, rationale, creation_comment):
+        """Return a Person that is linked to this bug tracker."""
+        # If we have an email address to work with we can use
+        # ensurePerson() to get the Person we need.
+        if email is not None:
+            return getUtility(IPersonSet).ensurePerson(
+                email, display_name, rationale, creation_comment)
+
+        # First, see if there's already a BugTrackerPerson for this
+        # display_name on this bugtracker. If there is, return it.
+        bugtracker_person = self.getLinkedPersonByName(display_name)
+
+        if bugtracker_person is not None:
+            return bugtracker_person.person
+
+        # Generate a valid Launchpad name for the Person.
+        base_canonical_name = (
+            "%s-%s" % (sanitize_name(display_name), self.name))
+        canonical_name = base_canonical_name
+
+        person_set = getUtility(IPersonSet)
+        index = 0
+        while person_set.getByName(canonical_name) is not None:
+            index += 1
+            canonical_name = "%s-%s" % (base_canonical_name, index)
+
+        person = person_set.createPersonWithoutEmail(
+            canonical_name, rationale, creation_comment,
+            displayname=display_name)
+
+        # Link the Person to the bugtracker for future reference.
+        bugtracker_person = self.linkPersonToSelf(display_name, person)
+
+        return person
 
 
 class BugTrackerSet:

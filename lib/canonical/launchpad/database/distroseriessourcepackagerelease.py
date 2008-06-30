@@ -44,6 +44,11 @@ class DistroSeriesSourcePackageRelease:
         return self.distroseries.distribution
 
     @property
+    def sourcepackage(self):
+        """See `IDistroSeriesSourcePackageRelease`."""
+        return self.distroseries.getSourcePackage(self.sourcepackagename)
+
+    @property
     def displayname(self):
         """See `IDistroSeriesSourcePackageRelease`."""
         return '%s %s' % (self.name, self.version)
@@ -127,7 +132,7 @@ class DistroSeriesSourcePackageRelease:
                         self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
-                query, prejoinClauseTables=['Build'],
+                query, prejoinClauseTables=['Build'], orderBy=['-id'],
                 clauseTables=clauseTables, distinct=True)
 
     @property
