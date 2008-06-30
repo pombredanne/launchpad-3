@@ -298,6 +298,13 @@ class IBuildSet(Interface):
         builder=None, buildlog=None):
         """Creates a new build object using the parameter values passed."""
 
+    def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
+                                        buildstate=None):
+        """Return all the Builds for the sourcepackagerelease_ids.
+
+        Optionally filter on buildstate.
+        """
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
