@@ -76,6 +76,7 @@ __all__ = [
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamMembershipView',
+    'TeamMugshotView',
     'TeamReassignmentView',
     'TeamSpecsMenu',
     'UbunteroListView',
@@ -3660,6 +3661,17 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             'Your auto-subscription policy has been updated.')
         self.next_url = self.action_url
+
+
+class TeamMugshotView(LaunchpadView):
+    """XXX"""
+    def initialize(self):
+        """XXX"""
+        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
+
+    @cachedproperty
+    def allmembers(self):
+        return list(self.context.allmembers)
 
 
 class TeamReassignmentView(ObjectReassignmentView):

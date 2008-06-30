@@ -586,6 +586,7 @@
     permission="zope.Public"
     name="+mugshots"
     template="../templates/team-mugshots.pt"
+    class="canonical.launchpad.browser.TeamMugshotView"
     />
 
   <browser:page
