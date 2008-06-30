@@ -19,22 +19,23 @@
         To help us with this, we&#8217;d like your permission to
         <strong>license all your translations</strong>,
         <a tal:attributes="href string:${context/fmt:url}">past</a> and future,
-        <strong>under the BSD licence</strong>.
-        We&#8217;ve chosen the BSD licence because it&#8217;s universally
-        compatible with projects that use other licences.
+        <strong>under the <a href="https://help.launchpad.net/BSDLicense"
+        >BSD&nbsp;license</a></strong>.
+        We&#8217;ve chosen the BSD license because it&#8217;s universally
+        compatible with projects that use other licenses.
       </p>
       <p>
         If you change your mind later, you can return to this page
         (&#8220;Translations licensing&#8221;)
         any time until July 31st.
-        If you choose not to accept the BSD licence, we&#8217;ll remove your
+        If you choose not to accept the BSD license, we&#8217;ll remove your
         translations from Launchpad shortly after then.
       </p>
       <p>
         For more about why we&#8217;re clarifying translations licensing,
         see our
         <a href="http://help.launchpad.net/Translations/LicensingFAQ"
-        >translations licensing FAQ</a>.
+        >translations&nbsp;licensing&nbsp;FAQ</a>.
       </p>
       <div metal:use-macro="context/@@launchpad_form/form" />
     </div>

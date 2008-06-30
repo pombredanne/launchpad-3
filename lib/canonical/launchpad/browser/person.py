@@ -3022,7 +3022,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
             self.request.response.addInfoNotification(_(
                 "We respect your choice. "
                 "Your translations will be removed once we complete the "
-                "switch to the BSD licence. "
+                "switch to the BSD license. "
                 "Thanks for trying out Launchpad Translations."))
 
         self.next_url = self.getSafeRedirectURL(data['back_to'])

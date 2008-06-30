@@ -28,7 +28,7 @@ class ITranslationRelicensingAgreement(Interface):
         readonly=False, required=True, schema=IPerson)
 
     allow_relicensing = Bool(
-        title=_("Whether the person agreed to the BSD licence"),
+        title=_("Whether the person agreed to the BSD license"),
         readonly=False, default=True, required=True)
 
     date_decided = Datetime(
