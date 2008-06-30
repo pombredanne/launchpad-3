@@ -965,42 +965,17 @@ ul#applicationchooser li#applicationchooser_selected {
 * html #portlets {left: 20px;}
 /* IE7 gets the padding right but overcalculates the left margin, so we use
 a conditional comment in main-template.pt to work around the above rule. */
-#portlets .portlet {clear: both; float: left;}
-#portlets .portlet h2 {
-  display: block;
-  width: 180px;
-  height: 17px;
-  background-color: #8F8F8F;
-  background-image: url(leftnav_bg.gif);
-  background-repeat: no-repeat;
-  background-position: left top;
-  overflow: hidden;
-  padding: 3px 10px 0px 10px;
-  margin: 0px 0px 1px 0px;
-  color: #FFFFFF;
-  font-weight: bold;
-}
-#portlets .portlet h2 a, #portlets .portlet h2 a:hover {
-  display: block;
-  color: inherit;
-  text-decoration: inherit;
-}
-#portlets .portlet.expanded h2 {
-  background-image: url(leftnav_bg_expanded.gif);
-}
-#portlets #actions h2 {
-  background-image: url(leftnav_bg_uncollapsible.gif);
-}
-#portlets .portlet h2:hover {
-  background-color: #A3A3A3;
-  text-decoration: none;
-}
-#portlets .portletBody {
+#portlets .portlet {
+  background-color: #ebebeb;
+  clear: both;
+  float: left;
   border-left: 2px solid #ebebeb;
   border-right: 2px solid #ebebeb;
-  background-color: #EBEBEB;
   padding: 3px 12px 3px 8px !important;
   color: #717171;
+  width: 178px; /* 200px column - 20px margin - 1px left and right border */
+  border: solid #ccc;
+  border-width: 1px;
 }
 #portlets .portlet {
   overflow: hidden;
@@ -1008,16 +983,11 @@ a conditional comment in main-template.pt to work around the above rule. */
   list-style: none;
   font-size: 11px;
 }
+#portlets .portlet h2 {color: #717171; font-weight: bold; margin: 0 0 1em;}
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
   font-size: 12px !important;
-}
-#portlets .portlet h2 {
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
 }
 #portlets .portlet ul li a:hover {
   background-color: #fff;
