@@ -1,16 +1,10 @@
 #! /bin/bash
 
-LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
-LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
-LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
-LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
-LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
+# Update your copy of trunk and the necessary source dependencies, and make
+# sure all source dependencies are properly linked in to all the branches you
+# are working on.
 
-LP_SOURCEDEPS_DIR=lp-sourcedeps
-LP_SOURCEDEPS_PATH=$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/sourcecode
-
-# Force tilde expansion
-LP_SOURCEDEPS_PATH=$(eval echo ${LP_SOURCEDEPS_PATH})
+source utilities/rocketfuel-env.sh
 
 DEVPAD="devpad.canonical.com"
 ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
@@ -26,10 +20,6 @@ cd $LP_TRUNK_PATH
 INITIAL_REV=$(bzr revno)
 bzr pull
 FINAL_REV=$(bzr revno)
-
-# Exit if there are no new revisions
-if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
-
 
 # Update the source dependencies
 if [ ! -d $LP_SOURCEDEPS_PATH ]; then mkdir -p $LP_SOURCEDEPS_PATH; fi
@@ -47,6 +37,9 @@ for branch in *; do
     $LP_TRUNK_NAME/utilities/link-external-sourcecode --target=$branch --parent=../$LP_SOURCEDEPS_DIR
   fi
 done
+
+# Exit if there are no new revisions
+if [ $FINAL_REV = $INITIAL_REV ]; then exit 0; fi
 
 cd $LP_TRUNK_NAME
 make

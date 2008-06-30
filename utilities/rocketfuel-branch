@@ -1,17 +1,9 @@
 #! /bin/bash
 
-#
-# Creates a new branch of RF trunk
-#
+# Create a new branch of LP called "foo" in $LP_PROJECT_PATH/foo, with all the
+# source dependencies properly linked in.
 
-LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
-LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
-LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
-LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
-LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
-
-# force tilde (~) expansion
-LP_PROJECT_PATH=$(eval echo ${LP_PROJECT_PATH})
+source utilities/rocketfuel-env.sh
 
 if [ "x$1" == "x" ]; then
     echo "Usage: $0 new-branch-name"

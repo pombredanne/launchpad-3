@@ -6,11 +6,7 @@
 # as utilities/rocketfuel-setup
 #
 
-LP_PROJECT_ROOT=${LP_PROJECT_ROOT:=~/canonical}
-LP_BRANCHES_DIR=${LP_BRANCHES_DIR:=lp-branches}
-LP_PROJECT_PATH=$LP_PROJECT_ROOT/$LP_BRANCHES_DIR
-LP_TRUNK_NAME=${LP_TRUNK_NAME:=trunk}
-LP_TRUNK_PATH=$LP_PROJECT_PATH/$LP_TRUNK_NAME
+source utilities/rocketfuel-env.sh
 
 # load up Ubuntu release details so we know which repos to enable
 source /etc/lsb-release
@@ -217,19 +213,19 @@ ssh devpad.canonical.com /code/rocketfuel-built/launchpad/utilities/devpad-setup
 # Create the local branch structure we will use for managing Launchpad code
 mkdir -p $LP_PROJECT_ROOT
 cd $LP_PROJECT_ROOT
-if [ ! -d $LP_BRANCHES_DIR ]; then
-  bzr init-repo --trees $LP_BRANCHES_DIR
+if [ ! -d $LP_SHARED_REPO ]; then
+  bzr init-repo --trees $LP_SHARED_REPO
   if [ $? -ne 0 ]; then
     echo "ERROR: Unable to setup local LP repository"
     exit 1
   fi
 fi
-if [ ! -d $LP_BRANCHES_DIR/.bzr -a -d $LP_BRANCHES_DIR/.bzr/repository ]; then
+if [ ! -d $LP_SHARED_REPO/.bzr -a -d $LP_SHARED_REPO/.bzr/repository ]; then
   echo "ERROR: LP repository not found in $LP_PROJECT_PATH"
   exit 1
 fi
 
-cd $LP_BRANCHES_DIR
+cd $LP_SHARED_REPO
 if [ ! -d $LP_TRUNK_NAME ]; then
   echo "Making local branch of Launchpad trunk, this may take a while..."
   # bzr up to 1.6b2 has a bug that causes this to oom.
@@ -274,7 +270,7 @@ if [ ! -e ~/.bazaar/locations.conf ]; then
   touch ~/.bazaar/locations.conf
 fi
 bn=$(basename $LP_PROJECT_ROOT)
-grep -q "$bn\/$LP_BRANCHES_DIR" ~/.bazaar/locations.conf
+grep -q "$bn\/$LP_SHARED_REPO" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
   branchloc=$(eval echo "$LP_PROJECT_PATH")
   echo "
