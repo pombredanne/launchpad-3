@@ -126,13 +126,12 @@ current time on the remote server.
     >>> from datetime import datetime
     >>> # It seems there's no way to create a UTC timestamp without
     >>> # monkey-patching the TZ environment variable. Rather than do
-    >>> # that, we create our own timestamp and work with that.
-    >>> datetime.utcfromtimestamp(1210953200.0)
-    datetime.datetime(2008, 5, 16, 15, 53, 20)
+    >>> # that, we create our own datetime and work with that.
+    >>> remote_time = datetime(2008, 5, 16, 16, 53, 20)
 
     >>> test_transport.utc_offset = 60**2
     >>> test_transport.timezone = 'CET'
-    >>> test_transport.seconds_since_epoch = 1210956800.0
+    >>> test_transport.local_datetime = remote_time
     >>> bugzilla.getCurrentDBTime()
     datetime.datetime(2008, 5, 16, 15, 53, 20, tzinfo=<UTC>)
 

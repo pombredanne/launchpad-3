@@ -139,16 +139,19 @@ from canonical.launchpad.interfaces import (
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData)
 from canonical.launchpad.interfaces.bugtask import IBugTaskSet
-from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
+from canonical.launchpad.interfaces.build import (
+    BuildStatus, IBuildSet)
 from canonical.launchpad.interfaces.branchmergeproposal import (
     BranchMergeProposalStatus, IBranchMergeProposalGetter)
+from canonical.launchpad.interfaces.person import IHasPersonNavigationMenu
 from canonical.launchpad.interfaces.questioncollection import IQuestionSet
 from canonical.launchpad.interfaces.salesforce import (
     ISalesforceVoucherProxy, SalesforceVoucherProxyException)
 from canonical.launchpad.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from canonical.launchpad.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreementEdit)
+    ITranslationRelicensingAgreementEdit,
+    TranslationRelicensingAgreementOptions)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -2991,9 +2994,10 @@ class PersonTranslationView(LaunchpadView):
 
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
-    label = "Use BSD licence for your translations?"
     schema = ITranslationRelicensingAgreementEdit
     field_names = ['allow_relicensing', 'back_to']
+    custom_widget(
+        'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
 
     @property
@@ -3003,8 +3007,22 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         if default is None:
             default = True
         return {
-            "allow_relicensing" : default,
-            "back_to" : self.request.get('back_to'),
+            "allow_relicensing": default,
+            "back_to": self.request.get('back_to'),
+            }
+
+    @property
+    def initial_values(self):
+        """Set the default value for the relicensing radio buttons."""
+        # If the person has previously made a choice, we default to that.
+        # Otherwise, we default to BSD, because that's what we'd prefer.
+        if self.context.translations_relicensing_agreement == False:
+            default = TranslationRelicensingAgreementOptions.REMOVE
+        else:
+            default = TranslationRelicensingAgreementOptions.BSD
+        return {
+            "allow_relicensing": default,
+            "back_to": self.request.get('back_to'),
             }
 
     @property
@@ -3019,7 +3037,7 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         else:
             return canonical_url(self.context)
 
-    @action(_("Update my decision"), name="submit")
+    @action(_("Confirm"), name="submit")
     def submit_action(self, action, data):
         """Store person's decision about translations relicensing.
 
@@ -3028,18 +3046,21 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         which uses TranslationRelicensingAgreement table.
         """
         allow_relicensing = data['allow_relicensing']
-        self.context.translations_relicensing_agreement = allow_relicensing
-        if allow_relicensing:
+        if allow_relicensing == TranslationRelicensingAgreementOptions.BSD:
+            self.context.translations_relicensing_agreement = True
             self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Thank you for deciding to license your translations under "
-                "BSD license."))
+                "Thank you for BSD-licensing your translations."))
+        elif (allow_relicensing ==
+            TranslationRelicensingAgreementOptions.REMOVE):
+            self.context.translations_relicensing_agreement = False
+            self.request.response.addInfoNotification(_(
+                "We respect your choice. "
+                "Your translations will be removed once we complete the "
+                "switch to the BSD license. "
+                "Thanks for trying out Launchpad Translations."))
         else:
-            self.request.response.addInfoNotification(_(
-                "Your choice has been saved. "
-                "Your translations will be removed once we completely "
-                "switch to BSD license for translations."))
-
+            raise AssertionError(
+                "Unknown allow_relicensing value: %r" % allow_relicensing)
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
 
@@ -4336,11 +4357,16 @@ class SourcePackageReleaseWithStats:
 
     implements(ISourcePackageRelease)
     decorates(ISourcePackageRelease)
+    failed_builds = None
+    needs_building = None
 
-    def __init__(self, sourcepackage_release, open_bugs, open_questions):
+    def __init__(self, sourcepackage_release, open_bugs, open_questions,
+                 failed_builds, needs_building):
         self.context = sourcepackage_release
         self.open_bugs = open_bugs
         self.open_questions = open_questions
+        self.failed_builds = failed_builds
+        self.needs_building = needs_building
 
 
 class PersonPackagesView(LaunchpadView):
@@ -4386,6 +4412,40 @@ class PersonPackagesView(LaunchpadView):
         return self._addStatsToPackages(
             self.context.getLatestUploadedButNotMaintainedPackages())
 
+    def _calculateBuildStats(self, package_releases):
+        """Calculate failed builds and needs_build state.
+
+        For each of the package_releases, calculate the failed builds
+        and the needs_build state, and return a tuple of two dictionaries,
+        one containing the failed builds and the other containing
+        True or False according to the needs_build state, both keyed by
+        the source package release.
+        """
+        # Calculate all the failed builds with one query.
+        build_set = getUtility(IBuildSet)
+        package_release_ids = [
+            package_release.id for package_release in package_releases]
+        all_builds = build_set.getBuildsBySourcePackageRelease(
+            package_release_ids)
+        # Make a dictionary of lists of builds keyed by SourcePackageRelease
+        # and a dictionary of "needs build" state keyed by the same.
+        builds_by_package = {}
+        needs_build_by_package = {}
+        for package in package_releases:
+            builds_by_package[package] = []
+            needs_build_by_package[package] = False
+        for build in all_builds:
+            if build.buildstate == BuildStatus.FAILEDTOBUILD:
+                builds_by_package[build.sourcepackagerelease].append(build)
+            needs_build = build.buildstate in [
+                BuildStatus.NEEDSBUILD,
+                BuildStatus.MANUALDEPWAIT,
+                BuildStatus.CHROOTWAIT,
+                ]
+            needs_build_by_package[build.sourcepackagerelease] = needs_build
+
+        return (builds_by_package, needs_build_by_package)
+
     def _addStatsToPackages(self, package_releases):
         """Add stats to the given package releases, and return them."""
         distro_packages = [
@@ -4402,10 +4462,15 @@ class PersonPackagesView(LaunchpadView):
         package_question_counts = question_set.getOpenQuestionCountByPackages(
             distro_packages)
 
+        builds_by_package, needs_build_by_package = self._calculateBuildStats(
+            package_releases)
+
         return [
             SourcePackageReleaseWithStats(
                 package, open_bugs[package.distrosourcepackage],
-                package_question_counts[package.distrosourcepackage])
+                package_question_counts[package.distrosourcepackage],
+                builds_by_package[package],
+                needs_build_by_package[package])
             for package in package_releases]
 
 

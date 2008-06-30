@@ -81,13 +81,11 @@
 
     <!-- The following directives set up root front pages for the different
          virtual host layers.  The directives come in pairs.
-         The Resources registration is needed because currently in Zope,
-         published browser views are looked up as no-name views.  View
-         look-up will use views on the same layer
-         before more general views on a different layer.  So we need to
-         re-register the resources container on the new layer.
-         This workaround will no longer be needed once published browser
-         pages are registered to provide a specific interface.
+         The separate registration for the resources namespace (@@) is needed
+         because otherwise the lookup for /@@/ will fail because the
+         layer-specifif defaultView directive also registers the 
+         default view name as an unnamed adapter.
+         -->
       -->
     <!-- virtual host: blueprints -->
     <browser:defaultView
@@ -98,9 +96,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.BlueprintsLayer"
         />
 
@@ -113,9 +110,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.CodeLayer"
         />
 
@@ -128,9 +124,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
@@ -143,9 +138,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.BugsLayer"
         />
 
@@ -158,9 +152,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.AnswersLayer"
         />
 
@@ -168,9 +161,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.IOpenIdApplication"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         layer="canonical.launchpad.layers.OpenIdLayer"
         />
 
@@ -180,9 +172,8 @@
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.IShipItApplication"
-        class="zope.app.publisher.browser.resources.Resources"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
         permission="zope.Public"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
     <browser:pages
