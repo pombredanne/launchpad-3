@@ -41,6 +41,13 @@
       </div>
       <div class="boardCommentBody">
         <tal:message replace="structure message/fmt:nice_pre" />
+        <tal:short-message-view condition="view/message_summary|nothing">
+          <tal:long-message condition="view/is_long_message">
+            (<a tal:attributes="href comment/fmt:url;
+            onclick string:return switchDisplay('${expanded_id}','${contracted_id}')"
+            tal:content="expander_text">full message</a>)
+          </tal:long-message>
+        </tal:short-message-view>
       </div>
     </div>
   </metal:macro>

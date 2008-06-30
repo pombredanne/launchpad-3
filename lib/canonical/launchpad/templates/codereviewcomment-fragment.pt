@@ -14,6 +14,7 @@
                 display_style python: view.full_comment and 'display: block' or 'display: none';
                 id expanded_id;
                 message comment/message/text_contents;
+                expander_text string:hide full message;
                 ">
       <div metal:use-macro="context/@@+macros/comment-display" />
     </tal:full-comment>
@@ -25,6 +26,7 @@
                 display_style python: 'display: block';
                 id contracted_id;
                 message view/message_summary|nothing;
+                expander_text string:show full message;
                 ">
       <div metal:use-macro="context/@@+macros/comment-display" />
     </tal:short-comment>
