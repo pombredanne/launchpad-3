@@ -11,12 +11,16 @@ __all__ = ['BranchScanner']
 
 
 import sys
+from xmlrpclib import ServerProxy
 
 from bzrlib.errors import NotBranchError, ConnectionError
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.codehosting.scanner.bzrsync import BzrSync
+from canonical.codehosting.transport import (
+    BlockingProxy, get_chrooted_transport, LaunchpadInternalServer)
 from canonical.launchpad.webapp import canonical_url, errorlog
 
 
@@ -30,9 +34,17 @@ class BranchScanner:
         self.ztm = ztm
         self.log = log
 
+    def _registerLaunchpadServer(self):
+        authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
+        branch_transport = get_chrooted_transport(
+            config.supermirror.branchesdest)
+        server = LaunchpadInternalServer(authserver, branch_transport)
+        server.setUp()
+
     def scanAllBranches(self):
         """Run Bzrsync on all branches, and intercept most exceptions."""
         self.log.info('Starting branch scanning')
+        self._registerLaunchpadServer()
         for branch in getUtility(IBranchSet).getBranchesToScan():
             try:
                 self.scanOneBranch(branch)
