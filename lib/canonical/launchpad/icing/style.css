@@ -982,12 +982,7 @@ highlighting menu items, so padding is handled by the contents instead: */
 #portlets #actions {
   padding: 4px 0; width: 199px; /* 200px column - 1px right border */
 }
-#actions ul {
-  list-style-type: none;
-  margin: 0;
-  padding: 0 4px;
-  width: 191px; /* 200px column - 1px right border - 2*4px padding */
-}
+#portlets .portlet, #portlets .portlet h2 {font-size: 12px;}
 #portlets .portlet h2 {
   border-bottom: 1px solid #ccc;
   color: inherit;
@@ -995,23 +990,11 @@ highlighting menu items, so padding is handled by the contents instead: */
   margin: 0 0 1em;
   padding: 0 0 1px;
 }
-#portlets .portlet, #portlets .portlet h2 {font-size: 12px;}
-#portlets .portlet.active h2 a {
-  background-color: #9BC11B;
-}
-#portlets .portlet.active h2 a:hover {
-  background-color: #AFDB1F;
-}
-#portlets .portlet.active div,
-#portlets .portlet.active ul,
-#portlets .portlet.active ul li a,
-#portlets .portlet.active ul li a:hover {
-  background-color: #EBF6C7;
-}
-#portlets li.active ul,
-#portlets li.active ul li a,
-#portlets li.active ul li a:hover {
-  background-color: #EBF6C7;
+#actions ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0 4px;
+  width: 191px; /* 200px column - 1px right border - 2*4px padding */
 }
 #actions li {
   margin: 0; /* neutralizes UA list item indenting */
