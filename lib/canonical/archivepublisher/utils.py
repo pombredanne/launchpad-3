@@ -49,7 +49,7 @@ def count_alive(store, logger):
 
 # XXX cprov 20080630: If we decide to keep this code/functionality, which
 # I think we should, independently of the need to cleanup the cache after
-# processing each batch. We should generalize and test it as suggested in
+# processing each batch, we should generalize and test it as suggested in
 # bug #244328.
 
 class PublishingTunableLoop(object):
@@ -79,7 +79,7 @@ class PublishingTunableLoop(object):
         end = self.offset + chunk_size
 
         mem_size = resident() / (2 ** 20)
-        self.logger.debug("Batch (%d..%d) [%d MiB]" % (start, end, mem_size))
+        self.logger.debug("Batch [%d..%d) [%d MiB]" % (start, end, mem_size))
 
         batch = self.input[start:end]
         for pub in batch:
