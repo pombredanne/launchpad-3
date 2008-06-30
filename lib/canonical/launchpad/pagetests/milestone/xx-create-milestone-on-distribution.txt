@@ -40,12 +40,6 @@ redirect to the Ubuntu Hoary page showing the milestone we added.
     >>> print milestones_in_portlet(name12_browser)
     sounder01
 
-The milestone must also appear on the Ubuntu distribution page.
-
-    >>> anon_browser.open('http://launchpad.dev/ubuntu')
-    >>> print milestones_in_portlet(anon_browser)
-    sounder01
-
 Try to target a distribution bug to this milestone.  The form uses the
 database ID for the milestone, so we find the ID:
 
