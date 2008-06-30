@@ -7,18 +7,22 @@ __metaclass__ = type
 
 
 import os
-from os.path import join, isdir, exists
-from shutil import rmtree, move
+import shutil
+from shutil import move
 from subprocess import Popen, PIPE
 from unittest import TestLoader
 
 import bzrlib.branch
+from bzrlib.transport import get_transport
 
 import transaction
 from zope.component import getUtility
 
+from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.bzrutils import ensure_base
 from canonical.codehosting.tests.helpers import (
     BranchTestCase, create_branch_with_one_revision)
+from canonical.codehosting.tests.servers import AuthserverOutOfProcess
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.testing import LaunchpadZopelessLayer
@@ -33,27 +37,18 @@ class BranchScannerTest(BranchTestCase):
 
     def setUp(self):
         BranchTestCase.setUp(self)
-        self.warehouse = self.makeWarehouse()
+        authserver = AuthserverOutOfProcess()
+        authserver.setUp()
+        self.addCleanup(authserver.tearDown)
         self.db_branch = getUtility(IBranchSet)[self.branch_id]
         assert self.db_branch.revision_history.count() == 0
 
-    def makeWarehouse(self):
-        """Create a sandbox branch warehouse for testing.
-
-        See doc/bazaar for more context on the branch warehouse concept.
-        """
-        warehouse_url = config.supermirror.warehouse_root_url
-        assert warehouse_url.startswith('file://')
-        warehouse = warehouse_url[len('file://'):]
-        if isdir(warehouse):
-            rmtree(warehouse)
-        os.mkdir(warehouse)
-        return warehouse
-
     def getWarehouseLocation(self, db_branch):
         """Get the warehouse location for a database branch."""
-        destination = join(self.warehouse, '%08x' % db_branch.id)
-        assert not exists(destination)
+        destination = os.path.join(
+            config.supermirror.branchesdest, branch_id_to_path(db_branch.id))
+        ensure_base(get_transport(destination))
+        self.addCleanup(lambda: shutil.rmtree(destination))
         return destination
 
     def installTestBranch(self, db_branch, bzr_branch):
@@ -67,7 +62,7 @@ class BranchScannerTest(BranchTestCase):
 
         The result can be checked using `assertScannerRanOK`.
         """
-        script = join(config.root, 'cronscripts', 'branch-scanner.py')
+        script = os.path.join(config.root, 'cronscripts', 'branch-scanner.py')
         process = Popen([script],
                         stdout=PIPE, stderr=PIPE, stdin=open('/dev/null'))
         output, error = process.communicate()
