@@ -167,10 +167,13 @@ Let's try modifying the importance of a task.
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
   u'Low'
-  >>> body = {'importance': 'High'}
-  >>> from simplejson import dumps
-  >>> response = webservice.patch(
-  ...     bugtask_path, 'application/json', dumps(body))
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'transitionToImportance', importance='High')
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  <BLANKLINE>
+  null
   >>> body = webservice.get(bugtask_path).jsonBody()
   >>> body['importance']
   u'High'

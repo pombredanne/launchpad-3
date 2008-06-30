@@ -33,6 +33,7 @@ __all__ = [
     'IUpstreamProductBugTaskSearch',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
+    'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url']
 
@@ -310,6 +311,15 @@ class UserCannotEditBugTaskStatus(Unauthorized):
     webservice_error(401) # HTTP Error: 'Unauthorised'
 
 
+class UserCannotEditBugTaskImportance(Unauthorized):
+    """User not permitted to change importance.
+
+    Raised when a user tries to transition to a new importance who
+    doesn't have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
+
+
 class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
     export_as_webservice_entry()
@@ -342,7 +352,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                default=BugTaskStatus.NEW, readonly=True))
     importance = exported(
         Choice(title=_('Importance'), vocabulary=BugTaskImportance,
-               default=BugTaskImportance.UNDECIDED))
+               default=BugTaskImportance.UNDECIDED, readonly=True))
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     assignee = exported(
@@ -516,6 +526,18 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         IBugTask. When we move to context-less bug presentation (where the
         bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
         no longer useful.
+        """
+
+    @rename_parameters_as(new_importance='importance')
+    @operation_parameters(
+        new_importance=copy_field(importance))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def transitionToImportance(new_importance, user):
+        """Set the BugTask importance.
+
+        Set the bugtask importance, making sure that the user is
+        authorised to do so.
         """
 
     def setImportanceFromDebbugs(severity):

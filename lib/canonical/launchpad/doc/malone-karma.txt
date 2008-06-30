@@ -99,10 +99,12 @@ Accept a bug task:
 Change a bug task's importance:
 
     >>> from canonical.launchpad.interfaces import BugTaskImportance
-    >>> bugtask.importance = BugTaskImportance.HIGH
+    >>> bugtask.transitionToImportance(
+    ...     BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
     >>> for importance in BugTaskImportance.items:
     ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    ...     bugtask.importance = importance
+    ...     bugtask.transitionToImportance(
+    ...         importance, getUtility(ILaunchBag).user)
     ...     print importance.name
     ...     notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
     UNKNOWN

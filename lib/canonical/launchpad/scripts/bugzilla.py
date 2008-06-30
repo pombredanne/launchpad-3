@@ -223,7 +223,8 @@ class Bug:
 
     def mapSeverity(self, bugtask):
         """Set a Launchpad bug task's importance based on this bug's severity."""
-        bugtask.importance = {
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        importance_map = {
             'blocker': BugTaskImportance.CRITICAL,
             'critical': BugTaskImportance.CRITICAL,
             'major': BugTaskImportance.HIGH,
@@ -231,7 +232,10 @@ class Bug:
             'minor': BugTaskImportance.LOW,
             'trivial': BugTaskImportance.LOW,
             'enhancement': BugTaskImportance.WISHLIST
-            }.get(self.bug_severity, BugTaskImportance.UNKNOWN)
+            }
+        importance = importance_map.get(
+            self.bug_severity, BugTaskImportance.UNKNOWN)
+        bugtask.transitionToImportance(importance, bug_importer)
 
     def mapStatus(self, bugtask):
         """Set a Launchpad bug task's status based on this bug's status.

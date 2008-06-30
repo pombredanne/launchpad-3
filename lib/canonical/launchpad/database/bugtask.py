@@ -59,9 +59,9 @@ from canonical.launchpad.interfaces import (
     IProjectMilestone, ISourcePackage, ISourcePackageNameSet,
     IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UserCannotEditBugTaskStatus)
+    UserCannotEditBugTaskImportance, UserCannotEditBugTaskStatus)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.webapp.authorization import check_permission
+
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
                       'wishlist':  BugTaskImportance.WISHLIST,
@@ -680,6 +680,16 @@ class BugTask(SQLBase, BugTaskMixin):
         # This property is not needed. Code should inline this implementation.
         return self.pillar.official_malone
 
+
+    def transitionToImportance(self, new_importance, user):
+        """See `IBugTask`."""
+        if not self.userCanEditImportance(user):
+            raise UserCannotEditBugTaskImportance(
+                "User does not have sufficient permissions "
+                "to edit the bug task importance.")
+        else:
+            self.importance = new_importance
+
     def setImportanceFromDebbugs(self, severity):
         """See `IBugTask`."""
         try:
@@ -998,7 +1008,8 @@ class BugTask(SQLBase, BugTaskMixin):
         product_or_distro = self._getProductOrDistro()
         return ((product_or_distro.bug_supervisor and
                  user.inTeam(product_or_distro.bug_supervisor)) or
-                product_or_distro.userCanEdit(user))
+                product_or_distro.userCanEdit(user) or
+                user == getUtility(ILaunchpadCelebrities).bug_watch_updater)
 
 
 def search_value_to_where_condition(search_value):

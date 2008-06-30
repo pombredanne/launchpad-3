@@ -1245,7 +1245,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                 # since Unknown isn't selectable in the UI.
                 bugtask.transitionToStatus(
                     IBugTask['status'].default, self.user)
-                bugtask.importance = IBugTask['importance'].default
+                bugtask.transitionToImportance(
+                    IBugTask['importance'].default, self.user)
             else:
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Reset the bug task's status information. The right
@@ -1254,7 +1255,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                 #     moment. I will fix this later.
                 bugtask.transitionToStatus(
                     BugTaskStatus.UNKNOWN, self.user)
-                bugtask.importance = BugTaskImportance.UNKNOWN
+                bugtask.transitionToImportance(
+                    BugTaskImportance.UNKNOWN, self.user)
                 bugtask.transitionToAssignee(None)
 
         if changed:

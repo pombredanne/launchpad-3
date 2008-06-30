@@ -46,8 +46,8 @@
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
-                        updateTargetNameCache transitionToStatus
-                        transitionToAssignee" />
+                        updateTargetNameCache transitionToImportance
+                        transitionToStatus transitionToAssignee" />
 
         <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
         The permission checking for milestone and importance is further
