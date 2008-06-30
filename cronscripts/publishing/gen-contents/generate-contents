@@ -31,8 +31,21 @@ APTCONF_DIST_TEMPLATE="apt_conf_dist.template"
 APTCONF="apt-contents.conf"
 CONTENTHEADER="Contents.top"
 
+# target pocket suffixes
+pocket_suffixes=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py pocket_suffixes`
+
 # target suites ()
 suites=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py supported`
+new_suites=
+for suite in $suites; do
+  new_suites="${new_suites:+$new_suites }$suite"
+  for pocket_suffix in $pocket_suffixes; do
+    if [ -d "$ARCHIVE/ubuntu/dists/$suite$pocket_suffix" ]; then
+      new_suites="$new_suites $suite$pocket_suffix"
+    fi
+  done
+done
+suites="$new_suites"
 
 # target architectures for the development series
 devel=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py development`

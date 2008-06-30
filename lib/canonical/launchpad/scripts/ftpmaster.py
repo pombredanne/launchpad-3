@@ -1141,7 +1141,7 @@ class LpQueryDistro(LaunchpadScript):
         """
         self.allowed_actions = [
             'current', 'development', 'supported', 'pending_suites', 'archs',
-            'official_archs', 'nominated_arch_indep']
+            'official_archs', 'nominated_arch_indep', 'pocket_suffixes']
         self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
         LaunchpadScript.__init__(self, *args, **kwargs)
 
@@ -1377,6 +1377,16 @@ class LpQueryDistro(LaunchpadScript):
         """
         series = self.location.distroseries
         return series.nominatedarchindep.architecturetag
+
+    @property
+    def get_pocket_suffixes(self):
+        """Return a space-separated list of pocket suffixes.
+
+        The RELEASE pocket (whose suffix is the empty string) is omitted.
+        """
+        return " ".join([suffix
+                         for pocket, suffix in pocketsuffix.iteritems()
+                         if suffix])
 
 
 class PackageRemover(SoyuzScript):

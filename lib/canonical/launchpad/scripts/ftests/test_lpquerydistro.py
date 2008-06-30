@@ -220,6 +220,8 @@ class TestLpQueryDistro(unittest.TestCase):
         self.assertEqual(helper.get_archs, 'hppa i386')
         self.assertEqual(helper.get_official_archs, 'i386')
         self.assertEqual(helper.get_nominated_arch_indep, 'i386')
+        self.assertEqual(helper.get_pocket_suffixes,
+                         '-backports -security -updates -proposed')
 
     def testActionsWithDefinedSuite(self):
         """Opposite of  testActionsWithUndefinedSuite.
