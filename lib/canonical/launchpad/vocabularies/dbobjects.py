@@ -71,7 +71,8 @@ import cgi
 from operator import attrgetter
 
 from sqlobject import AND, CONTAINSSTRING, OR, SQLObjectNotFound
-from storm.expr import SQL
+from storm.expr import LeftJoin, SQL, And, Or, Not
+from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -80,12 +81,12 @@ from zope.security.proxy import isinstance as zisinstance
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database import (
-    Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
-    Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
-    KarmaCategory, Language, LanguagePack, MailingList, Milestone, Person,
-    PillarName, Processor, ProcessorFamily, Product, ProductRelease,
-    ProductSeries, Project, SourcePackageRelease, Specification, Sprint,
-    TranslationGroup, TranslationMessage)
+    Account, Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch,
+    Component, Country, Distribution, DistroArchSeries, DistroSeries,
+    EmailAddress, FeaturedProject, KarmaCategory, Language, LanguagePack,
+    MailingList, Milestone, Person, PillarName, Processor, ProcessorFamily,
+    Product, ProductRelease, ProductSeries, Project, SourcePackageRelease,
+    Specification, Sprint, TranslationGroup, TranslationMessage)
 
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
@@ -97,6 +98,7 @@ from canonical.launchpad.interfaces import (
     IPerson, IPersonSet, IPillarName, IProduct, IProductSeries,
     IProductSeriesBugTask, IProject, ISourcePackage, ISpecification, ITeam,
     IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
+from canonical.launchpad.interfaces.account import AccountStatus
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
@@ -718,7 +720,7 @@ class ValidPersonOrTeamVocabulary(
     """The set of valid Persons/Teams in Launchpad.
 
     A Person is considered valid if he has a preferred email address,
-    a password set and Person.merged is None. Teams have no restrictions
+    and Person.merged is None. Teams have no restrictions
     at all, which means that all teams are considered valid.
 
     This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
@@ -738,12 +740,14 @@ class ValidPersonOrTeamVocabulary(
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
-        if self.extra_clause:
-            extra_clause = " AND %s" % self.extra_clause
-        else:
-            extra_clause = ""
 
+        # Short circuit if there is no search text - all valid people and
+        # teams have been requested.
         if not text:
+            if self.extra_clause:
+                extra_clause = " AND %s" % self.extra_clause
+            else:
+                extra_clause = ""
             query = """
                 Person.id = ValidPersonOrTeamCache.id
                 AND Person.visibility = %s
@@ -752,48 +756,60 @@ class ValidPersonOrTeamVocabulary(
             return Person.select(
                 query, clauseTables=['ValidPersonOrTeamCache'])
 
-        name_match_query = """
-            Person.id = ValidPersonOrTeamCache.id
-            AND Person.fti @@ ftq(%s)
-            AND Person.visibility = %s
-            """ % (quote(text), quote(PersonVisibility.PUBLIC))
-        name_match_query += extra_clause
-        name_matches = Person.select(
-            name_match_query, clauseTables=['ValidPersonOrTeamCache'])
+        store = getUtility(IZStorm).get('main')
 
-        # Note that we must use lower(email) LIKE rather than ILIKE
-        # as ILIKE no longer appears to be hitting the index under PG8.0
+        tables = [
+            Person,
+            LeftJoin(EmailAddress, EmailAddress.person == Person.id),
+            LeftJoin(Account, EmailAddress.account == Account.id),
+            ]
 
-        email_match_query = """
-            EmailAddress.person = Person.id
-            AND EmailAddress.person = ValidPersonOrTeamCache.id
-            AND EmailAddress.status IN %s
-            AND lower(email) LIKE %s || '%%'
-            AND Person.visibility = %s
-            """ % (sqlvalues(EmailAddressStatus.VALIDATED,
-                             EmailAddressStatus.PREFERRED),
-                   quote_like(text),
-                   quote(PersonVisibility.PUBLIC))
-        email_match_query += extra_clause
-        email_matches = Person.select(
-            email_match_query,
-            clauseTables=['ValidPersonOrTeamCache', 'EmailAddress'])
+        inner_select = SQL("""
+            SELECT Person.id
+            FROM Person
+            WHERE Person.fti @@ ftq(%s)
+            UNION ALL
+            SELECT Person.id
+            FROM Person, IRCId
+            WHERE IrcId.person = Person.id
+                AND lower(IrcId.nickname) = %s
+            UNION ALL
+            SELECT Person.id
+            FROM Person, EmailAddress
+            WHERE EmailAddress.person = Person.id
+                AND lower(email) LIKE %s || '%%%%'
+                AND EmailAddress.status IN %s
+            """ % (
+                quote(text), quote(text), quote_like(text),
+                sqlvalues(
+                    EmailAddressStatus.VALIDATED,
+                    EmailAddressStatus.PREFERRED)))
 
-        ircid_match_query = """
-            IRCId.person = Person.id
-            AND IRCId.person = ValidPersonOrTeamCache.id
-            AND lower(IRCId.nickname) = %s
-            AND Person.visibility = %s
-            """ % (quote(text), quote(PersonVisibility.PUBLIC))
-        ircid_match_query += extra_clause
-        ircid_matches = Person.select(
-            ircid_match_query,
-            clauseTables=['ValidPersonOrTeamCache', 'IRCId'])
-
-        # XXX Guilherme Salgado 2006-01-30 bug=30053:
-        # We have to explicitly provide an orderBy here as a workaround
-        return name_matches.union(ircid_matches).union(
-            email_matches, orderBy=['displayname', 'name'])
+        if self.extra_clause:
+            extra_clause = SQL(self.extra_clause)
+        else:
+            extra_clause = True
+        result = store.using(*tables).find(
+            Person,
+            AND(
+                Person.id.is_in(inner_select),
+                Person.visibility == PersonVisibility.PUBLIC,
+                Person.merged == None,
+                Or(
+                    Not(Person.teamowner == None),
+                    And(
+                        Account.status == AccountStatus.ACTIVE,
+                        EmailAddress.status.is_in((
+                            EmailAddressStatus.VALIDATED,
+                            EmailAddressStatus.PREFERRED
+                            ))
+                        )
+                    ),
+                extra_clause
+                )
+            )
+        result.config(distinct=True)
+        return result.order_by(Person.displayname, Person.name)
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text:."""

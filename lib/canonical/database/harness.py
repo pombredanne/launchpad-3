@@ -61,7 +61,12 @@ startup = os.environ.get('PYTHONSTARTUP')
 if startup:
     execfile(startup)
 
-
+# Bring in useful bits of Storm
+from storm.locals import *
+from storm.expr import *
+from storm.zope.interfaces import IZStorm
+store = getUtility(IZStorm).get('main')
+  
 #
 # Let's get a few handy objects going
 #
