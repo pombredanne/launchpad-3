@@ -845,7 +845,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
         self.form = request.form_ng
 
     def initialize(self):
-        self.product = self.context
         self.status_message = None
         self._constructProductData()
 
@@ -1526,8 +1525,8 @@ class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
         ProductBranchesFeedLink,
         )
 
-    def initialize(self, context):
-        self.product = context
+    def initialize(self):
+        self.product = self.context
 
     @cachedproperty
     def recent_revision_branches(self):
@@ -1592,8 +1591,9 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
                            ProductDownloadFileMixin, ProductReviewCountMixin):
     """Initial view for products on the code virtual host."""
 
-    def initialize(self, context):
-        self.product = context
+    def initialize(self):
+        ProductBranchListingView.initialize(self)
+        self.product = self.context
 
     @property
     def form_action(self):
@@ -1732,7 +1732,7 @@ class ProductCodeIndexView(ProductBranchListingView, SortSeriesMixin,
     @property
     def has_development_focus_branch(self):
         """Is there a branch assigned as development focus?"""
-        return self.context.development_focus.series_branch is not None
+        return self.product.development_focus.series_branch is not None
 
     def _getPluralText(self, count, singular, plural):
         if count == 1:
