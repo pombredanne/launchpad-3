@@ -65,7 +65,7 @@ class ReferenceChoice(Choice):
         constructor, plus a 'schema' keyword parameter.
 
         :param schema: What kind of object makes up the Choice's vocabulary.
-        The default is IObject.
+                       The default is IObject.
         """
         schema = kwargs.pop('schema', IObject)
         self.schema = schema

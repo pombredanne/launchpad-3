@@ -779,17 +779,14 @@ class CollectionResource(ReadOnlyResource, BatchingResourceMixin,
         if IScopedCollection.providedBy(self.collection):
             # Scoped collection. The type URL depends on what type of
             # entry the collection holds.
-            adapter = EntryAdapterUtility.forSchemaInterface(
-                self.context.relationship.value_type.schema)
+            schema = self.context.relationship.value_type.schema
+            adapter = EntryAdapterUtility.forSchemaInterface(schema)
             return adapter.entry_page_type_link
         else:
             # Top-level collection.
-            base_url = canonical_url(
-                self.request.publication.getApplication(self.request))
-            tag = self.collection.entry_schema.queryTaggedValue(
-                LAZR_WEBSERVICE_NS)
-            return "%s#%s" % (base_url, tag['plural'])
-
+            schema = self.collection.entry_schema
+            adapter = EntryAdapterUtility.forEntryAdapterInterface(schema)
+            return adapter.collection_type_link
 
 
 class ServiceRootResource(HTTPResource):
@@ -904,9 +901,9 @@ class ServiceRootResource(HTTPResource):
                     except ComponentLookupError:
                         # It's not a top-level resource.
                         continue
-                    interface = registration.value.entry_schema
-                    tag = interface.queryTaggedValue(LAZR_WEBSERVICE_NS)
-                    link_name = ("%s_collection_link" % tag['plural'])
+                    adapter = EntryAdapterUtility.forEntryAdapterInterface(
+                        registration.value.entry_schema)
+                    link_name = ("%s_collection_link" % adapter.plural_type)
                     top_level_resources[link_name] = utility
         return top_level_resources
 
@@ -1031,6 +1028,12 @@ class EntryAdapterUtility(RESTUtilityBase):
         """The URL to the type definition for this kind of entry."""
         return "%s#%s" % (
             self._service_root_url(), self.singular_type)
+
+    @property
+    def collection_type_link(self):
+        """The definition of a top-level collection of this kind of object."""
+        return "%s#%s" % (
+            self._service_root_url(), self.plural_type)
 
     @property
     def entry_page_type(self):

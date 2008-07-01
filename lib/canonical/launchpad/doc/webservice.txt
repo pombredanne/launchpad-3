@@ -560,8 +560,6 @@ decorates().)
     ...     adapts(IAuthor)
     ...     decorates(IAuthorEntry)
     ...     schema = IAuthorEntry
-    ...     singular = 'author'
-    ...     plural = 'authors'
 
     >>> verifyObject(IAuthorEntry, AuthorEntry(A1))
     True

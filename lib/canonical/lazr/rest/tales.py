@@ -198,9 +198,9 @@ class WadlResourceAdapterAPI(WadlAPI):
 
 
 class WadlEntryInterfaceAdapterAPI(WadlResourceAdapterAPI):
-    """Just like WadlEntryAdapterAPI, but it takes the adapter interface.
+    """Namespace for WADL functions that operate on entry interfaces.
 
-    WadlEntryAdapterAPI takes the class that implements the interface.
+    That is, IEntry subclasses.
     """
     def __init__(self, adapter):
         super(WadlEntryInterfaceAdapterAPI, self).__init__(adapter, IEntry)
