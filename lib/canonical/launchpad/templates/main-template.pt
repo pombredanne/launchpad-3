@@ -123,6 +123,7 @@
         </tr>
       </table>
     </div>
+    <tal:tabs replace="structure context/@@+apps" />
 
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table

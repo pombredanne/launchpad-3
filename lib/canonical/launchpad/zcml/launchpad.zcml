@@ -278,6 +278,14 @@
       permission="zope.Public"
       />
 
+  <!-- Application tabs -->
+  <browser:page
+      for="*"
+      name="+apps"
+      permission="zope.Public"
+      template="../templates/main-template-apps.pt"
+      />
+
   <!-- Common menus -->
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
