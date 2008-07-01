@@ -20,8 +20,7 @@ from zope.component import getUtility
 from canonical.launchpad.components.packagelocation import (
     build_package_location)
 from canonical.launchpad.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.build import (
-    BuildStatus, incomplete_building_status)
+from canonical.launchpad.interfaces.build import incomplete_building_status
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.publishing import (
@@ -50,6 +49,40 @@ def is_completely_built(source):
             return False
 
     return True
+
+def has_unpublished_binaries(source):
+    """Whether or not a source publication has unpublished binaries.
+
+    Check if there are binaries built from the source in the same
+    publication context. If there are none, return False since there is
+    nothing to be published.
+
+    If there are built binaries, check if they match the ones published
+    for the source in its context.
+
+    :param source: context `ISourcePackagePublishingHistory`.
+
+    :return: True if there are unpublished binaries, False otherwise.
+    """
+    # Binaries built from this source in the publishing context.
+    built_binaries = set()
+    for build in source.getBuilds():
+        for binarypackagerelease in build.binarypackages:
+            built_binaries.add(binarypackagerelease)
+
+    # No binaries built, thus none unpublished.
+    if len(built_binaries) == 0:
+        return False
+
+    # Binaries have been published in the same publishing context,
+    # but are some not yet published?
+    candidate_binaries = set(
+        pub_binary.binarypackagerelease
+        for pub_binary in source.getBuiltBinaries())
+    if candidate_binaries != built_binaries:
+        return True
+
+    return False
 
 
 def compare_sources(source, ancestry):
@@ -124,33 +157,42 @@ def check_archive_conflicts(source, archive, include_binaries):
     # more than once.
     destination_archive_conflicts = list(destination_archive_conflicts)
 
-    # Identify published binaries and incomplete builds from archive
-    # conflicts. Either will deny source-only copies, since a rebuild
-    # will result in binaries that cannot be published in the archive
-    # because they will conflict with the existent ones.
+    # Identify published binaries and incomplete builds or unpublished
+    # binaries from archive conflicts. Either will deny source-only copies,
+    # since a rebuild will result in binaries that cannot be published in
+    # the archive because they will conflict with the existent ones.
     published_binaries = set()
     for candidate in destination_archive_conflicts:
-        for pub_binary in candidate.getPublishedBinaries():
-            published_binaries.add(pub_binary.binarypackagerelease)
+        if not is_completely_built(candidate):
+            raise CannotCopy(
+                "same version already building in the destination archive "
+                "for %s" % candidate.distroseries.displayname)
 
+        # If the set of built binaries does not match the set of published
+        # ones the copy should be denied and the user should wait for the
+        # next publishing cycle to happen before copying the package.
+        # The copy is only allowed when all built binaries are published,
+        # this way there is no chance of a conflict.
+        if has_unpublished_binaries(candidate):
+            raise CannotCopy(
+                "same version has unpublished binaries in the destination "
+                "archive for %s, please wait for them to be published "
+                "before copying" % candidate.distroseries.displayname)
 
-    # We rely on previous check that ensure copies including binaries
-    # can only be performed in packages with quiesced builds.
+        # Update published binaries inventory for the conflicting candidates.
+        archive_binaries = set(
+            pub_binary.binarypackagerelease
+            for pub_binary in candidate.getPublishedBinaries())
+        published_binaries.update(archive_binaries)
+
     if not include_binaries:
+        # We rely on previous check that ensure copies including binaries
+        # can only be performed in packages with quiesced builds.
         if len(published_binaries) > 0:
             raise CannotCopy(
                 "same version already has published binaries in the "
                 "destination archive")
-        for candidate in destination_archive_conflicts:
-            if not is_completely_built(candidate):
-                raise CannotCopy(
-                    "same version already building in the "
-                    "destination archive")
-        return
-
-    # The copy includes binaries.
-
-    if len(published_binaries) > 0 :
+    else:
         # Since DEB files are compressed with 'ar' (encoding the creation
         # timestamp) and serially built by our infrastructure, it's correct
         # to assume that the set of BinaryPackageReleases being copied can
@@ -161,22 +203,6 @@ def check_archive_conflicts(source, archive, include_binaries):
         if not copied_binaries.issuperset(published_binaries):
             raise CannotCopy(
                 "binaries conflicting with the existing ones")
-    else:
-        # If no binaries are published in the archive, but there is
-        # at least one FULLYBUILT build record, it means that the binaries
-        # were built but will be only published in the next publishing cycle.
-        # The copy should be denied and the user should wait for the next
-        # publishing cycle to happen before copying the package.
-        # The copy is only allowed when the binaries are published, or if not
-        # published there must be no FULLYBUILT builds. This way there is no
-        # chance of a conflict.
-        for candidate in destination_archive_conflicts:
-            for build in candidate.getBuilds():
-                if build.buildstate == BuildStatus.FULLYBUILT:
-                    raise CannotCopy(
-                        "source has unpublished binaries, please wait for "
-                        "them to be published before copying")
-
 
 def check_copy(source, archive, series, pocket, include_binaries):
     """Check if the source can be copied to the given location.
@@ -206,6 +232,12 @@ def check_copy(source, archive, series, pocket, include_binaries):
         if not is_completely_built(source):
             raise CannotCopy(
                 "source not completely built while copying binaries")
+        if has_unpublished_binaries(source):
+            raise CannotCopy(
+                "source has unpublished binaries, please wait for them "
+                "to be published before copying")
+        if len(source.getBuiltBinaries()) == 0:
+            raise CannotCopy("source has no binaries to be copied")
 
     # Check if there is already a source with the same name and version
     # published in the destination archive.
