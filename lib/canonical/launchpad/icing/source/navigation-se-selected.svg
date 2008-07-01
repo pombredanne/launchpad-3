@@ -15,9 +15,9 @@
    sodipodi:version="0.32"
    inkscape:version="0.46"
    version="1.0"
-   sodipodi:docname="navigation-se-normal.svg"
+   sodipodi:docname="navigation-se-selected.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-launchpad-2.0/lib/canonical/launchpad/images/navigation-se-normal.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-2.0-5-nav-menu/lib/canonical/launchpad/icing/navigation-se-selected.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -25,7 +25,7 @@
     <linearGradient
        id="linearGradient3716">
       <stop
-         style="stop-color:#eeeeee;stop-opacity:1;"
+         style="stop-color:#dddddd;stop-opacity:1;"
          offset="0"
          id="stop3718" />
       <stop
@@ -95,15 +95,15 @@
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
      inkscape:zoom="63.75"
-     inkscape:cx="1.93832"
+     inkscape:cx="-0.74403294"
      inkscape:cy="2.9829748"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
-     inkscape:window-width="688"
-     inkscape:window-height="690"
-     inkscape:window-x="300"
-     inkscape:window-y="25">
+     inkscape:window-width="1024"
+     inkscape:window-height="693"
+     inkscape:window-x="0"
+     inkscape:window-y="49">
     <inkscape:grid
        type="xygrid"
        id="grid3201"

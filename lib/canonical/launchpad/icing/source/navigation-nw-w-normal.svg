@@ -15,9 +15,9 @@
    sodipodi:version="0.32"
    inkscape:version="0.46"
    version="1.0"
-   sodipodi:docname="navigation-nw-w.svg"
+   sodipodi:docname="navigation-nw-w-normal.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-launchpad-2.0/lib/canonical/launchpad/images/navigation-top-left-border-and-gradient.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-2.0-5-nav-menu/lib/canonical/launchpad/icing/navigation-nw-w-normal.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -25,7 +25,7 @@
     <linearGradient
        id="linearGradient3716">
       <stop
-         style="stop-color:#ffffff;stop-opacity:0;"
+         style="stop-color:#eeeeee;stop-opacity:1;"
          offset="0"
          id="stop3718" />
       <stop
@@ -84,7 +84,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="63.75"
-     inkscape:cx="3.4585707"
+     inkscape:cx="0.77621776"
      inkscape:cy="296.10879"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -92,7 +92,7 @@
      inkscape:window-width="1024"
      inkscape:window-height="693"
      inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:window-y="49"
      inkscape:snap-bbox="true">
     <inkscape:grid
        type="xygrid"
@@ -151,7 +151,10 @@
        d="M 7,4 A 3,3 0 0 1 4.0000001,7 L 4,4 z"
        sodipodi:start="0"
        sodipodi:end="1.5707963"
-       transform="matrix(-1,0,0,-1,8.0000001,8)" />
+       transform="matrix(-1,0,0,-1,8.0000001,8)"
+       inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-2.0-5-nav-menu/lib/canonical/launchpad/icing/navigation-nw-w-normal.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <rect
        style="fill:#dddddd;fill-opacity:1;stroke:none;stroke-width:0;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect6172"

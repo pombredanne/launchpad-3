@@ -15,9 +15,9 @@
    sodipodi:version="0.32"
    inkscape:version="0.46"
    version="1.0"
-   sodipodi:docname="navigation-ne-e.svg"
+   sodipodi:docname="navigation-ne-e-selected.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-launchpad-2.0/lib/canonical/launchpad/images/navigation-ne-e.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2008-2.0-5-nav-menu/lib/canonical/launchpad/icing/navigation-ne-e-selected.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -27,7 +27,7 @@
       <stop
          id="stop6190"
          offset="0"
-         style="stop-color:#eeeeee;stop-opacity:1;" />
+         style="stop-color:#dddddd;stop-opacity:1;" />
       <stop
          id="stop6192"
          offset="1"
@@ -106,15 +106,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="63.75"
-     inkscape:cx="3.4585707"
-     inkscape:cy="296.10879"
+     inkscape:cx="0.77621776"
+     inkscape:cy="297.01703"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1024"
      inkscape:window-height="693"
      inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:window-y="49"
      inkscape:snap-bbox="true">
     <inkscape:grid
        type="xygrid"
