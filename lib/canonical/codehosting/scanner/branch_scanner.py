@@ -35,6 +35,7 @@ class BranchScanner:
         self.log = log
 
     def _registerLaunchpadServer(self):
+        """Register a Launchpad internal transport for scanning branches."""
         authserver = BlockingProxy(ServerProxy(config.codehosting.authserver))
         branch_transport = get_chrooted_transport(
             config.supermirror.branchesdest)
