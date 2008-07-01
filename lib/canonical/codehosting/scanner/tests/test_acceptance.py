@@ -14,6 +14,7 @@ from unittest import TestLoader
 
 import bzrlib.branch
 from bzrlib.transport import get_transport
+from bzrlib.urlutils import local_path_from_url
 
 import transaction
 from zope.component import getUtility
@@ -46,7 +47,8 @@ class BranchScannerTest(BranchTestCase):
     def getWarehouseLocation(self, db_branch):
         """Get the warehouse location for a database branch."""
         destination = os.path.join(
-            config.supermirror.branchesdest, branch_id_to_path(db_branch.id))
+            local_path_from_url(config.supermirror.warehouse_root_url),
+            branch_id_to_path(db_branch.id))
         ensure_base(get_transport(destination))
         self.addCleanup(lambda: shutil.rmtree(destination))
         return destination
