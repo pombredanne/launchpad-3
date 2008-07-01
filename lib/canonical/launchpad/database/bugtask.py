@@ -1591,6 +1591,16 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         store = getUtility(IZStorm).get('main')
         query, clauseTables, orderby = self.buildQuery(params)
+        if len(args) == 0:
+            # Do normal prejoins, if we don't have to do any UNION
+            # queries.  Prejoins don't work well with UNION, and the way
+            # we prefetch objects without prejoins cause problems with
+            # COUNT(*) queries, which get inefficient.
+            return BugTask.select(
+                query, clauseTables=clauseTables, orderBy=orderby,
+                prejoins=['product', 'sourcepackagename'],
+                prejoinClauseTables=['Bug'])
+
         bugtask_fti = SQL('BugTask.fti')
         result = store.find((BugTask, bugtask_fti), query,
                             AutoTables(SQL("1=1"), clauseTables))
