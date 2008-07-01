@@ -138,4 +138,4 @@ longer available for teams.
     >>> browser.open('http://launchpad.dev/~guadamen/+editemails')
     Traceback (most recent call last):
     ...
-    NotFoundError
+    NotFound: Object: <...>, name: u'+editemails'

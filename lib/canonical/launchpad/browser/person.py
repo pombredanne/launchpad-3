@@ -3554,11 +3554,12 @@ class PersonEditEmailsView(LaunchpadFormView):
     custom_widget('mailing_list_auto_subscribe_policy',
                   LaunchpadRadioWidgetWithDescription)
 
-    def __init__(self, context, request):
-        # +editemails is not allowed for teams.
-        if context.is_team:
-            raise NotFoundError
-        super(PersonEditEmailsView, self).__init__(context, request)
+    def initialize(self):
+        if self.context.is_team:
+            # +editemails is not available on teams.
+            name = self.request['PATH_INFO'].split('/')[-1]
+            raise NotFound(self, name, request=self.request)
+        super(PersonEditEmailsView, self).initialize()
 
     def setUpFields(self):
         """Set up fields for this view.
