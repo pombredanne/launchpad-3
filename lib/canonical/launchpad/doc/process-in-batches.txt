@@ -32,7 +32,7 @@ records.
     >>> input = BinaryPackagePublishingHistory.selectBy(
     ...     status=PackagePublishingStatus.PUBLISHED, orderBy=['id'])
 
-We will records the number of records to use in later checks
+We will record the number of records to use in later checks
 
     >>> original_set_size = input.count()
 
@@ -50,7 +50,7 @@ the batches being processed and the amount of resident memory used by
 the process calling it.
 
 By default is starts with 10000 records batches and the LoopTuner will
-adjust it according the default 'goal_seconds' of 2 s,  when
+adjust it according to the default 'goal_seconds' of 2 s,  when
 necessary.
 
     >>> process_in_batches(input, simple_task, logger)
