@@ -738,7 +738,8 @@ class ProductDownloadFileMixin:
         self.product.setSeries(serieses)
 
         # Get all of the releases for all of the serieses in a single
-        # query.
+        # query.  The query sorts the releases properly so we know the
+        # resulting list is sorted correctly.
         release_set = getUtility(IProductReleaseSet)
         release_by_id = {}
         releases = release_set.getReleasesForSerieses(
@@ -749,10 +750,9 @@ class ProductDownloadFileMixin:
             decorated_release = ReleaseWithFiles(release)
             series.addRelease(decorated_release)
             release_by_id[release.id] = decorated_release
-        # Now ensure all releases are sorted.
-        for series in self.product.serieses:
-            series.sortReleases()
-        # Get all of the files for all of the releases.
+
+        # Get all of the files for all of the releases.  The query
+        # returns all releases sorted properly.
         files = release_set.getFilesForReleases(releases)
         for file in files:
             release = release_by_id[file.productrelease.id]
